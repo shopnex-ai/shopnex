@@ -11,7 +11,7 @@ interface PageProps {
 }
 
 export default async function Page({ params }: PageProps) {
-    builder.init("954fa25aa9f845c0ad6a82b2b52c6abd");
+    builder.init(process.env.NEXT_PUBLIC_BUILDER_IO_PUBLIC_KEY!);
 
     const { page } = await params;
     const data = {};
