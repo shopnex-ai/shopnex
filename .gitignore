@@ -43,3 +43,5 @@ next-env.d.ts
 /media
 
 dev.db
+
+/src/app/(frontend)
