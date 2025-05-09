@@ -1,4 +1,4 @@
-import type { StripeWebhookHandler } from "@payloadcms/plugin-stripe/types";
+import type { StripeWebhookHandler } from "@shopnex/stripe-plugin/types";
 
 import Stripe from "stripe";
 
