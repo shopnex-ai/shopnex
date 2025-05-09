@@ -1,23 +1,26 @@
 [
     {
-        "title": "Sale",
-        "handle": "sale",
+        "id": 6,
+        "title": "Bedroom",
+        "imageUrl": "https://cdn.builder.io/api/v1/image/assets/TEMP/43ae98fecd3aafbb952f151f931bda23b075ddc8?placeholderIfAbsent=true&width=2000",
+        "handle": "bedroom",
         "description": null,
-
         "products": []
     },
     {
-        "title": "Latest Drops",
-        "handle": "latest-drops",
+        "id": 5,
+        "title": "Living",
+        "imageUrl": "https://cdn.builder.io/api/v1/image/assets/TEMP/0400ba860802a006c23eeab5fb362dc9546abda2?placeholderIfAbsent=true&width=2000",
+        "handle": "living",
         "description": null,
-
         "products": []
     },
     {
-        "title": "Weekly Picks",
-        "handle": "weekly-picks",
+        "id": 4,
+        "title": "Dining",
+        "imageUrl": "https://cdn.builder.io/api/v1/image/assets/TEMP/507fbfef0bf6791f5e97089af65aefefea798818?placeholderIfAbsent=true&width=2000",
+        "handle": "dining",
         "description": null,
-
         "products": []
     }
 ]
