@@ -66,7 +66,7 @@ export const HeroSection: GlobalConfig = {
         update: admins,
     },
     admin: {
-        group: groups.customizations,
+        group: groups.design,
     },
     fields: [
         {

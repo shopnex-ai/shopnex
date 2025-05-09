@@ -25,7 +25,7 @@ export const Footer: GlobalConfig = {
         update: admins,
     },
     admin: {
-        group: groups.customizations,
+        group: groups.design,
     },
     fields: [
         {

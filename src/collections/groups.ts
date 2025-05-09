@@ -2,7 +2,7 @@ export const groups = {
     catalog: "Products",
     content: "Content",
     customers: "Customers",
-    customizations: "Design",
+    design: "Design",
     orders: "Orders",
     settings: "Settings",
 };

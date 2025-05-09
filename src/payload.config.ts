@@ -21,6 +21,7 @@ import { Footer } from "./globals/Footer";
 import { HeroSection } from "./globals/HeroSection";
 import StoreSettings from "./globals/StoreSettings";
 import { plugins } from "./plugins";
+import { Pages } from "./collections/Pages";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -52,6 +53,7 @@ export default buildConfig({
         Media,
         Policies,
         GiftCards,
+        Pages,
         Payments,
         Locations,
         Shipping,

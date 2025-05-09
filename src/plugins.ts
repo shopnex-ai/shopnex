@@ -1,5 +1,6 @@
 import type { Plugin } from "payload";
 
+import { builderIoPlugin } from "@shopnex/builder-io-plugin";
 import { cjPlugin } from "@shopnex/cj-plugin";
 import { importExportPlugin } from "@shopnex/import-export-plugin";
 import { storePlugin } from "@shopnex/store-plugin";
@@ -39,5 +40,9 @@ export const plugins: Plugin[] = [
                 collectionSlug: "orders",
             },
         ],
+    }),
+    builderIoPlugin({
+        privateKey: process.env.BUILDER_IO_PRIVATE_KEY,
+        publicKey: process.env.NEXT_PUBLIC_BUILDER_IO_PUBLIC_KEY,
     }),
 ];
