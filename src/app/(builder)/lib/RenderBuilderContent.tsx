@@ -160,17 +160,6 @@ export function BuilderContentComponent({ content, data }: BuilderPageProps) {
     return (
         <BuilderComponent
             content={content}
-            context={{
-                calculateItemsTotal: (items: any[]): string =>
-                    `${items.reduce(
-                        (acc, item) =>
-                            +(acc + item.quantity * item.price).toFixed(2),
-                        0
-                    )}`,
-                filterCartItems: (cartItems: any[], itemId: number) => {
-                    return cartItems.filter((_, index) => index !== itemId);
-                },
-            }}
             data={{
                 ...data,
                 cartItems: items,

@@ -12,6 +12,7 @@ import { GiftCards } from "./collections/GiftCards";
 import { Locations } from "./collections/Locations";
 import { Media } from "./collections/Media";
 import { Orders } from "./collections/Orders";
+import { Pages } from "./collections/Pages";
 import { Payments } from "./collections/Payments";
 import { Policies } from "./collections/Policies";
 import { Products } from "./collections/Products/Products";
@@ -21,7 +22,6 @@ import { Footer } from "./globals/Footer";
 import { HeroSection } from "./globals/HeroSection";
 import StoreSettings from "./globals/StoreSettings";
 import { plugins } from "./plugins";
-import { Pages } from "./collections/Pages";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);

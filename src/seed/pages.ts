@@ -1,7 +1,9 @@
 import config from "@payload-config";
+import { importSymbolsInit } from "@shopnex/builder-io-plugin";
 import { getPayload } from "payload";
 
 export const pagesSeed = async () => {
+    await importSymbolsInit(process.env.BUILDER_IO_PRIVATE_KEY!);
     const payload = await getPayload({ config });
     const pages = [
         {
