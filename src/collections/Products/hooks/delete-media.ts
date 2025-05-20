@@ -19,8 +19,8 @@ export const deleteMedia: AfterDeleteHook<Product> = async ({ doc, req }) => {
 
         for (const image of variant.gallery) {
             if (isExpandedDoc<Media>(image)) {
-                if (!mediaMap.has(image.filename)) {
-                    mediaMap.set(image.filename, image);
+                if (!mediaMap.has(image.filename!)) {
+                    mediaMap.set(image.filename!, image);
                 } else {
                     req.payload.logger.debug(
                         `Duplicate filename detected, skipping: ${image.filename}`
