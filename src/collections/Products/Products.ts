@@ -5,6 +5,7 @@ import { description } from "@/fields/description";
 import { handleField } from "@/fields/slug";
 
 import { groups } from "../groups";
+import { deleteMedia } from "./hooks/delete-media";
 
 export const Products: CollectionConfig = {
     slug: "products",
@@ -235,13 +236,6 @@ export const Products: CollectionConfig = {
         },
     ],
     hooks: {
-        beforeRead: [
-            async ({ doc, req }) => {
-                const storeSettings = await req.payload.findGlobal({
-                    slug: "store-settings",
-                });
-                doc.currency = storeSettings.currency;
-            },
-        ],
+        afterDelete: [deleteMedia],
     },
 };
