@@ -1,6 +1,6 @@
 import { getProduct } from "@/app/api/services/products";
 
-import { BuilderPage } from "../../lib/BuilderPage";
+import { BuilderPage } from "../../components/BuilderPage";
 import { getColorOptions } from "../../lib/color";
 
 type ProductPageProps = {

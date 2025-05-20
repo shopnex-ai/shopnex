@@ -1,4 +1,4 @@
-import { BuilderPage } from "../lib/BuilderPage";
+import { BuilderPage } from "../components/BuilderPage";
 
 const CartPage = () => {
     return <BuilderPage data={{}} page={["cart"]} />;

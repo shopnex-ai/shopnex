@@ -1,7 +1,7 @@
 import { listCartPaymentMethods } from "@/app/api/services/payment";
 import _ from "lodash";
 
-import { BuilderPage } from "../lib/BuilderPage";
+import { BuilderPage } from "../components/BuilderPage";
 
 const CheckoutPage = async () => {
     const payments = await listCartPaymentMethods();

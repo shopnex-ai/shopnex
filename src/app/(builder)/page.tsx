@@ -1,6 +1,6 @@
 import { getTopCollections } from "../api/services/collections";
 import { getProducts } from "../api/services/products";
-import { BuilderPage } from "./lib/BuilderPage";
+import { BuilderPage } from "./components/BuilderPage";
 
 const HomePage = async () => {
     const products = await getProducts();

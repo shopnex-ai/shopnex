@@ -9,7 +9,7 @@ interface BuilderPageProps {
 }
 
 export const BuilderPage = async ({ data, page }: BuilderPageProps) => {
-    builder.init("954fa25aa9f845c0ad6a82b2b52c6abd");
+    builder.init(process.env.NEXT_PUBLIC_BUILDER_IO_PUBLIC_KEY!);
 
     const content = await builder
         .get("page", {

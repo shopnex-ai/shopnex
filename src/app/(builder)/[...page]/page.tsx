@@ -2,7 +2,7 @@ import { builder } from "@builder.io/sdk";
 import Head from "next/head";
 import React from "react";
 
-import { RenderBuilderContent } from "../lib/RenderBuilderContent";
+import { RenderBuilderContent } from "../components/RenderBuilderContent";
 
 interface PageProps {
     params: Promise<{
