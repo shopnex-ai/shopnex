@@ -3283,8 +3283,8 @@ packages:
   '@shopnex/builder-io-plugin@1.0.7':
     resolution: {integrity: sha512-Flzf4s2RAAoTLwVxSlxF8IPGFzckmufZPryYbK2JdymqxuXeAjBcds+Zas2djRbhmwBBzzWsNyDqgtsQExquUw==}
 
-  '@shopnex/cj-plugin@1.1.0':
-    resolution: {integrity: sha512-I/0ZtPbZ3+W4++2wGMrsDox0ttJW8ZehL2xmPJPESqj0ABDiq2mIQY9YOYaBCDqI5ycj03KJP8M+Hha8/SsK5Q==}
+  '@shopnex/cj-plugin@1.2.2':
+    resolution: {integrity: sha512-1mSiA/BOHQ6YlPBZHO4YNhiNElCNsio/1ZVo0HFAdfvU4Zlu+exZTGdYkUEzumrLylVx+QTTm2beIDnutP+WDA==}
 
   '@shopnex/import-export-plugin@3.31.3':
     resolution: {integrity: sha512-dn3s/b94UE5WTbcF9IMqztuFWFzAjW5QFKS8ASa2pVd75VCfDwvY6SkOPJOPd19wOynOwbpboP5c2eMhD+Gjaw==}
@@ -3294,6 +3294,9 @@ packages:
 
   '@shopnex/stripe-plugin@3.31.3':
     resolution: {integrity: sha512-VcrE5NPHt6CYAB8At1AX59I0HOi1gjYNIHvqMWy+aL/h9BkMmX3XVez60suiqLV81QacC390yEmRXuZB0SL74Q==}
+
+  '@shopnex/utils@1.0.4':
+    resolution: {integrity: sha512-EJ5leAR9KF5mGE5XhW8+m10vBGQEdRBboLs5oOztib6PsMv2FIf1oJH1yqV3iOQ/wPZMtJZQScnm1g0B7exK7Q==}
 
   '@shopnex/utils@1.0.5':
     resolution: {integrity: sha512-s+rxrFb/4kFC2uXpf6dd8Nr/ClVaZYfB7wRfTgzAxyrN6Vd8SLoXuPrIFxvoTwCcdgSLVFYpGNBuUF4A5fUSfA==}
@@ -11783,7 +11786,7 @@ snapshots:
       - zen-observable
       - zenObservable
 
-  '@shopnex/cj-plugin@1.1.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)':
+  '@shopnex/cj-plugin@1.2.2(bufferutil@4.0.9)(utf-8-validate@6.0.5)':
     dependencies:
       '@lexical/headless': 0.28.0
       '@lexical/html': 0.28.0
@@ -11831,6 +11834,8 @@ snapshots:
       lodash.get: 4.4.2
       stripe: 10.17.0
       uuid: 10.0.0
+
+  '@shopnex/utils@1.0.4': {}
 
   '@shopnex/utils@1.0.5': {}
 
