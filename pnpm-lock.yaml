@@ -51,8 +51,8 @@ importers:
         specifier: 1.0.7
         version: 1.0.7(bufferutil@4.0.9)(encoding@0.1.13)(graphql-tag-pluck@0.8.7)(utf-8-validate@6.0.5)
       '@shopnex/cj-plugin':
-        specifier: 1.1.0
-        version: 1.1.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+        specifier: 1.2.2
+        version: 1.2.2(bufferutil@4.0.9)(utf-8-validate@6.0.5)
       '@shopnex/import-export-plugin':
         specifier: ^3.31.3
         version: 3.31.3(@types/react@19.0.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -3295,8 +3295,8 @@ packages:
   '@shopnex/stripe-plugin@3.31.3':
     resolution: {integrity: sha512-VcrE5NPHt6CYAB8At1AX59I0HOi1gjYNIHvqMWy+aL/h9BkMmX3XVez60suiqLV81QacC390yEmRXuZB0SL74Q==}
 
-  '@shopnex/utils@1.0.4':
-    resolution: {integrity: sha512-EJ5leAR9KF5mGE5XhW8+m10vBGQEdRBboLs5oOztib6PsMv2FIf1oJH1yqV3iOQ/wPZMtJZQScnm1g0B7exK7Q==}
+  '@shopnex/utils@1.0.5':
+    resolution: {integrity: sha512-s+rxrFb/4kFC2uXpf6dd8Nr/ClVaZYfB7wRfTgzAxyrN6Vd8SLoXuPrIFxvoTwCcdgSLVFYpGNBuUF4A5fUSfA==}
 
   '@swc/counter@0.1.3':
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
@@ -11787,7 +11787,7 @@ snapshots:
     dependencies:
       '@lexical/headless': 0.28.0
       '@lexical/html': 0.28.0
-      '@shopnex/utils': 1.0.4
+      '@shopnex/utils': 1.0.5
       axios: 1.8.4
       decimal.js: 10.5.0
       jsdom: 26.0.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
@@ -11832,7 +11832,7 @@ snapshots:
       stripe: 10.17.0
       uuid: 10.0.0
 
-  '@shopnex/utils@1.0.4': {}
+  '@shopnex/utils@1.0.5': {}
 
   '@swc/counter@0.1.3': {}
 
