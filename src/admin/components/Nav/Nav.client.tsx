@@ -1,14 +1,10 @@
 "use client";
 
-import type {
-    NavGroupType} from "@payloadcms/ui/shared";
+import type { NavGroupType } from "@payloadcms/ui/shared";
 
 import { getTranslation } from "@payloadcms/translations";
 import { Link, useConfig, useTranslation } from "@payloadcms/ui";
-import {
-    EntityType,
-    formatAdminURL
-} from "@payloadcms/ui/shared";
+import { EntityType, formatAdminURL } from "@payloadcms/ui/shared";
 import { Home } from "lucide-react";
 import { usePathname } from "next/navigation";
 

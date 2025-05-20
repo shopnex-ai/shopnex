@@ -8,21 +8,21 @@ import { generatePageMetadata, NotFoundPage } from "@payloadcms/next/views";
 import { importMap } from "../importMap";
 
 type Args = {
-	params: Promise<{
-		segments: string[];
-	}>;
-	searchParams: Promise<{
-		[key: string]: string | string[];
-	}>;
+    params: Promise<{
+        segments: string[];
+    }>;
+    searchParams: Promise<{
+        [key: string]: string | string[];
+    }>;
 };
 
 export const generateMetadata = ({
-	params,
-	searchParams,
+    params,
+    searchParams,
 }: Args): Promise<Metadata> =>
-	generatePageMetadata({ config, params, searchParams });
+    generatePageMetadata({ config, params, searchParams });
 
 const NotFound = ({ params, searchParams }: Args) =>
-	NotFoundPage({ config, importMap, params, searchParams });
+    NotFoundPage({ config, importMap, params, searchParams });
 
 export default NotFound;

@@ -31,7 +31,9 @@ type Variant = {
  * Each option is combined with every other option by generating a Cartesian product.
  */
 function generateVariantCombinations(options: Option[]): Variant[] {
-    if (options.length === 0) {return [];}
+    if (options.length === 0) {
+        return [];
+    }
 
     // Generate Cartesian product of options.
     const combinations = options.reduce<VariantOption[][]>(

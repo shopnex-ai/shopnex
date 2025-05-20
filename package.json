@@ -17,7 +17,8 @@
         "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
         "lint:quiet": "cross-env NODE_OPTIONS=--no-deprecation next lint --quiet",
         "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
-        "start": "cross-env NODE_OPTIONS=--no-deprecation next start"
+        "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+        "format": "prettier --write ."
     },
     "dependencies": {
         "@builder.io/dev-tools": "^1.6.29",

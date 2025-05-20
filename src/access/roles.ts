@@ -7,23 +7,23 @@ export const checkRole = (roles: User["roles"] = [], user?: null | User) =>
 type isAdmin = (args: AccessArgs<User>) => boolean;
 
 export const admins: isAdmin = ({ req: { user } }) => {
-	return checkRole(["admin"], user);
+    return checkRole(["admin"], user);
 };
 
 export const anyone: Access = () => true;
 
 export const adminsOrSelf: Access = ({ req: { user } }) => {
-	if (user) {
-		if (checkRole(["admin"], user)) {
-			return true;
-		}
+    if (user) {
+        if (checkRole(["admin"], user)) {
+            return true;
+        }
 
-		return {
-			id: {
-				equals: user.id,
-			},
-		};
-	}
+        return {
+            id: {
+                equals: user.id,
+            },
+        };
+    }
 
-	return false;
+    return false;
 };

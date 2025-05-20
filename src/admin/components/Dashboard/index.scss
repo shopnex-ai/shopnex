@@ -18,8 +18,8 @@
         gap: base(0.8);
 
         &__card-list {
-          width: 100%;
-          grid-template-columns: repeat(4, 1fr);
+            width: 100%;
+            grid-template-columns: repeat(4, 1fr);
         }
 
         &__title {

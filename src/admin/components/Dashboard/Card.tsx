@@ -14,11 +14,7 @@ export type Props = {
 const baseClass = "card";
 
 export const Card = ({ children }: { children: React.ReactNode }) => {
-    return (
-        <div className={`${baseClass}`}>
-            {children}
-        </div>
-    );
+    return <div className={`${baseClass}`}>{children}</div>;
 };
 
 export const CardHeader = ({ children }: { children: React.ReactNode }) => {

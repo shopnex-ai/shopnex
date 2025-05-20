@@ -8,13 +8,13 @@ Thank you for your interest in contributing to ShopNex! Your contributions help 
 
 1. Click the **Fork** button on the GitHub repository.
 2. Clone your forked repository:
-   ```sh
-   git clone https://github.com/shopnex-ai/shopnex.git
-   ```
+    ```sh
+    git clone https://github.com/shopnex-ai/shopnex.git
+    ```
 3. Navigate to the project directory:
-   ```sh
-   cd shopnex
-   ```
+    ```sh
+    cd shopnex
+    ```
 
 ### 2. Set Up the Project
 
@@ -45,13 +45,13 @@ npm test  # or the relevant command for your tech stack
 ### 6. Submit a Pull Request
 
 1. Push your changes to your fork:
-   ```sh
-   git push origin feature-branch-name
-   ```
+    ```sh
+    git push origin feature-branch-name
+    ```
 2. Open a pull request:
-   - Go to the original repository on GitHub.
-   - Click **New Pull Request**.
-   - Select your branch and provide a clear description of the changes.
+    - Go to the original repository on GitHub.
+    - Click **New Pull Request**.
+    - Select your branch and provide a clear description of the changes.
 
 ### 7. Code Review and Merging
 
@@ -67,4 +67,3 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) to ensure a welcoming en
 If you have any questions, feel free to open an issue or ask in the project's discussion forums.
 
 Happy coding! 🚀
-

@@ -5,18 +5,18 @@ $border-radius: 6px;
 
 .nav {
     &__link {
-      display: flex;
+        display: flex;
 
-      &:focus:not(:focus-visible) {
-        box-shadow: none;
-        font-weight: 600;
-      }
+        &:focus:not(:focus-visible) {
+            box-shadow: none;
+            font-weight: 600;
+        }
 
-      &.active {
-        font-weight: normal;
-        padding-left: 0;
-        font-weight: 600;
-      }
+        &.active {
+            font-weight: normal;
+            padding-left: 0;
+            font-weight: 600;
+        }
     }
     .menu {
         list-style: none;

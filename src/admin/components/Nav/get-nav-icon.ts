@@ -1,9 +1,8 @@
-import type {
-    LucideProps} from "lucide-react";
+import type { LucideProps } from "lucide-react";
 import type { ExoticComponent } from "react";
 
 import {
-  Blocks,
+    Blocks,
     ChartArea,
     Image,
     Palette,
