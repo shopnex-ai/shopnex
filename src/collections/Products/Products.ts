@@ -16,11 +16,20 @@ export const Products: CollectionConfig = {
         update: admins,
     },
     admin: {
-        defaultColumns: ["title", "variants", "collections"],
+        defaultColumns: ["title", "image", "variants", "collections"],
         group: groups.catalog,
         useAsTitle: "title",
     },
     fields: [
+        {
+            name: "image",
+            type: "ui",
+            admin: {
+                components: {
+                    Cell: "@/collections/Products/fields/ImageCell",
+                },
+            },
+        },
         {
             name: "pid",
             type: "text",
@@ -169,7 +178,6 @@ export const Products: CollectionConfig = {
                     type: "upload",
                     admin: {
                         components: {
-                            Cell: "@/collections/Products/fields/ImageCell",
                             // Field: "@/custom/custom-image-field#UploadField",
                         },
                         isSortable: false,

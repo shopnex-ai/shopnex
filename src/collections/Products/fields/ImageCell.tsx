@@ -6,9 +6,9 @@ import React from "react";
 const CustomImageCell = async (props: DefaultServerCellComponentProps) => {
     const payload = await getPayload({ config });
 
-    const { cellData } = props;
+    const { rowData } = props;
     const media = await payload.findByID({
-        id: cellData[0],
+        id: rowData?.variants?.[0]?.gallery?.[0],
         collection: "media",
     });
 
