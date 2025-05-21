@@ -9,7 +9,7 @@ type ProductPageProps = {
 
 const ProductPage = async ({ params }: ProductPageProps) => {
     const { productHandle } = await params;
-    const product = await getProduct(productHandle);
+    const product = await getProduct(productHandle)();
     const top4VariantImages = product.variants
         .slice(0, 4)
         .map((variant) => variant.imageUrl);

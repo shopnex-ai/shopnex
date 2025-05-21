@@ -1,4 +1,5 @@
 import config from "@payload-config";
+import { unstable_cache } from "next/cache";
 import { getPayload } from "payload";
 
 export const getVariants = async (variantIds: string[]) => {
@@ -41,32 +42,40 @@ export const getVariants = async (variantIds: string[]) => {
     return variantIds.map((id) => variantsMap.get(id)).filter(Boolean);
 };
 
-export const getProducts = async () => {
-    const payload = await getPayload({ config });
-    const products = await payload.find({
-        collection: "products",
-        where: {
-            visible: {
-                equals: true,
-            },
-        },
-    });
-    return products.docs;
-};
+export const getProducts = unstable_cache(
+    async () => {
+        const payload = await getPayload({ config });
+        const products = await payload.find({
+            collection: "products",
+            where: { visible: { equals: true } },
+        });
+        return products.docs;
+    },
+    ["get-products"], // cache key
+    {
+        revalidate: 60, // match your page revalidate time
+    }
+);
 
-export const getProduct = async (handle: string) => {
-    const payload = await getPayload({ config });
-    const product = await payload.find({
-        collection: "products",
-        limit: 1,
-        where: {
-            handle: {
-                equals: handle,
-            },
-        },
-    });
+export const getProduct = (handle: string) => {
+    return unstable_cache(
+        async () => {
+            const payload = await getPayload({ config });
+            const product = await payload.find({
+                collection: "products",
+                limit: 1,
+                where: {
+                    handle: {
+                        equals: handle,
+                    },
+                },
+            });
 
-    return product.docs[0];
+            return product.docs[0];
+        },
+        ["get-product", handle],
+        { revalidate: 60 }
+    );
 };
 
 export const getPaginatedProducts = async ({

@@ -2,6 +2,8 @@ import { getTopCollections } from "../api/services/collections";
 import { getProducts } from "../api/services/products";
 import { BuilderPage } from "./components/BuilderPage";
 
+export const revalidate = 60;
+
 const HomePage = async () => {
     const products = await getProducts();
     const collections = await getTopCollections();
