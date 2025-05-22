@@ -62,32 +62,10 @@ export type SupportedTimezones =
     | "Pacific/Fiji";
 
 export interface Config {
-  auth: {
-    users: UserAuthOperations;
-  };
-  blocks: {};
-  collections: {
-    orders: Order;
-    collections: Collection;
-    products: Product;
-    users: User;
-    media: Media;
-    policies: Policy;
-    'gift-cards': GiftCard;
-    pages: Page;
-    payments: Payment;
-    locations: Location;
-    shipping: Shipping;
-    carts: Cart;
-    'cj-settings': CjSetting;
-    'plugins-space': PluginsSpace;
-    exports: Export;
-    'payload-jobs': PayloadJob;
-    'payload-locked-documents': PayloadLockedDocument;
-    'payload-preferences': PayloadPreference;
-    'payload-migrations': PayloadMigration;
-  };
-  collectionsJoins: {
+    auth: {
+        users: UserAuthOperations;
+    };
+    blocks: {};
     collections: {
         orders: Order;
         collections: Collection;
@@ -96,6 +74,7 @@ export interface Config {
         media: Media;
         policies: Policy;
         "gift-cards": GiftCard;
+        pages: Page;
         payments: Payment;
         locations: Location;
         shipping: Shipping;
@@ -108,52 +87,66 @@ export interface Config {
         "payload-preferences": PayloadPreference;
         "payload-migrations": PayloadMigration;
     };
-  };
-  collectionsSelect: {
-    orders: OrdersSelect<false> | OrdersSelect<true>;
-    collections: CollectionsSelect<false> | CollectionsSelect<true>;
-    products: ProductsSelect<false> | ProductsSelect<true>;
-    users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
-    policies: PoliciesSelect<false> | PoliciesSelect<true>;
-    'gift-cards': GiftCardsSelect<false> | GiftCardsSelect<true>;
-    pages: PagesSelect<false> | PagesSelect<true>;
-    payments: PaymentsSelect<false> | PaymentsSelect<true>;
-    locations: LocationsSelect<false> | LocationsSelect<true>;
-    shipping: ShippingSelect<false> | ShippingSelect<true>;
-    carts: CartsSelect<false> | CartsSelect<true>;
-    'cj-settings': CjSettingsSelect<false> | CjSettingsSelect<true>;
-    'plugins-space': PluginsSpaceSelect<false> | PluginsSpaceSelect<true>;
-    exports: ExportsSelect<false> | ExportsSelect<true>;
-    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
-    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
-  };
-  db: {
-    defaultIDType: number;
-  };
-  globals: {
-    'store-settings': StoreSetting;
-    'hero-section': HeroSection;
-    footer: Footer;
-  };
-  globalsSelect: {
-    'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
-    'hero-section': HeroSectionSelect<false> | HeroSectionSelect<true>;
-    footer: FooterSelect<false> | FooterSelect<true>;
-  };
-  locale: null;
-  user: User & {
-    collection: 'users';
-  };
-  jobs: {
-    tasks: {
-      createCollectionExport: TaskCreateCollectionExport;
-      inline: {
-        input: unknown;
-        output: unknown;
-      };
+    collectionsJoins: {
+        collections: {
+            products: "products";
+        };
+    };
+    collectionsSelect: {
+        orders: OrdersSelect<false> | OrdersSelect<true>;
+        collections: CollectionsSelect<false> | CollectionsSelect<true>;
+        products: ProductsSelect<false> | ProductsSelect<true>;
+        users: UsersSelect<false> | UsersSelect<true>;
+        media: MediaSelect<false> | MediaSelect<true>;
+        policies: PoliciesSelect<false> | PoliciesSelect<true>;
+        "gift-cards": GiftCardsSelect<false> | GiftCardsSelect<true>;
+        pages: PagesSelect<false> | PagesSelect<true>;
+        payments: PaymentsSelect<false> | PaymentsSelect<true>;
+        locations: LocationsSelect<false> | LocationsSelect<true>;
+        shipping: ShippingSelect<false> | ShippingSelect<true>;
+        carts: CartsSelect<false> | CartsSelect<true>;
+        "cj-settings": CjSettingsSelect<false> | CjSettingsSelect<true>;
+        "plugins-space": PluginsSpaceSelect<false> | PluginsSpaceSelect<true>;
+        exports: ExportsSelect<false> | ExportsSelect<true>;
+        "payload-jobs": PayloadJobsSelect<false> | PayloadJobsSelect<true>;
+        "payload-locked-documents":
+            | PayloadLockedDocumentsSelect<false>
+            | PayloadLockedDocumentsSelect<true>;
+        "payload-preferences":
+            | PayloadPreferencesSelect<false>
+            | PayloadPreferencesSelect<true>;
+        "payload-migrations":
+            | PayloadMigrationsSelect<false>
+            | PayloadMigrationsSelect<true>;
+    };
+    db: {
+        defaultIDType: number;
+    };
+    globals: {
+        "store-settings": StoreSetting;
+        "hero-section": HeroSection;
+        footer: Footer;
+    };
+    globalsSelect: {
+        "store-settings":
+            | StoreSettingsSelect<false>
+            | StoreSettingsSelect<true>;
+        "hero-section": HeroSectionSelect<false> | HeroSectionSelect<true>;
+        footer: FooterSelect<false> | FooterSelect<true>;
+    };
+    locale: null;
+    user: User & {
+        collection: "users";
+    };
+    jobs: {
+        tasks: {
+            createCollectionExport: TaskCreateCollectionExport;
+            inline: {
+                input: unknown;
+                output: unknown;
+            };
+        };
+        workflows: unknown;
     };
 }
 export interface UserAuthOperations {
@@ -461,11 +454,11 @@ export interface GiftCard {
  * via the `definition` "pages".
  */
 export interface Page {
-  id: number;
-  title?: string | null;
-  handle?: string | null;
-  updatedAt: string;
-  createdAt: string;
+    id: number;
+    title?: string | null;
+    handle?: string | null;
+    updatedAt: string;
+    createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -772,6 +765,10 @@ export interface PayloadLockedDocument {
               value: number | GiftCard;
           } | null)
         | ({
+              relationTo: "pages";
+              value: number | Page;
+          } | null)
+        | ({
               relationTo: "payments";
               value: number | Payment;
           } | null)
@@ -807,62 +804,9 @@ export interface PayloadLockedDocument {
     user: {
         relationTo: "users";
         value: number | User;
-      } | null)
-    | ({
-        relationTo: 'media';
-        value: number | Media;
-      } | null)
-    | ({
-        relationTo: 'policies';
-        value: number | Policy;
-      } | null)
-    | ({
-        relationTo: 'gift-cards';
-        value: number | GiftCard;
-      } | null)
-    | ({
-        relationTo: 'pages';
-        value: number | Page;
-      } | null)
-    | ({
-        relationTo: 'payments';
-        value: number | Payment;
-      } | null)
-    | ({
-        relationTo: 'locations';
-        value: number | Location;
-      } | null)
-    | ({
-        relationTo: 'shipping';
-        value: number | Shipping;
-      } | null)
-    | ({
-        relationTo: 'carts';
-        value: number | Cart;
-      } | null)
-    | ({
-        relationTo: 'cj-settings';
-        value: number | CjSetting;
-      } | null)
-    | ({
-        relationTo: 'plugins-space';
-        value: number | PluginsSpace;
-      } | null)
-    | ({
-        relationTo: 'exports';
-        value: number | Export;
-      } | null)
-    | ({
-        relationTo: 'payload-jobs';
-        value: number | PayloadJob;
-      } | null);
-  globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
-  updatedAt: string;
-  createdAt: string;
+    };
+    updatedAt: string;
+    createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1060,10 +1004,10 @@ export interface GiftCardsSelect<T extends boolean = true> {
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
-  title?: T;
-  handle?: T;
-  updatedAt?: T;
-  createdAt?: T;
+    title?: T;
+    handle?: T;
+    updatedAt?: T;
+    createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
