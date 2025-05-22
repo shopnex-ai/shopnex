@@ -37,7 +37,18 @@ This command will guide you through the setup process, prompting you for options
 
 ---
 
-### 2. Optional CLI Flags
+### 2. Choose Your Storefront
+
+ShopNex offers two options for your storefront:
+
+#### Builder.io Visual Builder
+
+If you choose Builder.io as your storefront:
+
+1. Configure your `.env` file with Builder.io credentials
+2. Run `pnpm run pages:seed` to seed your Builder.io pages
+
+### 3. Optional CLI Flags
 
 You can customize the setup behavior using the following flags:
 
