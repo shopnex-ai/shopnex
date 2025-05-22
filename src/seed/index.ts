@@ -6,7 +6,6 @@ import globals from "./globals.json";
 import products from "./products.json";
 
 const seed = async () => {
-    // Get a local copy of Payload by passing your config
     const payload = await getPayload({ config });
 
     await payload.updateGlobal({
@@ -22,7 +21,7 @@ const seed = async () => {
         data: {
             alt: "watch",
             createdAt: "2025-04-20T04:59:11.487Z",
-            filename: `watch-${new Date().getTime()}.png`,
+            filename: `watch-${Date.now()}.png`,
             filesize: 1077498,
             focalX: 50,
             focalY: 50,
@@ -37,20 +36,24 @@ const seed = async () => {
     });
 
     await Promise.all(
-        globals.map(async (global: any) => {
-            return payload.updateGlobal({
+        globals.map((global: any) =>
+            payload.updateGlobal({
                 slug: global.globalType,
-                data: { ...global, backgroundImage: backgroundImage.id },
-            });
-        })
+                data: {
+                    ...global,
+                    backgroundImage: backgroundImage.id,
+                },
+            })
+        )
     );
+
     const collectionResults = await Promise.all(
-        collections.map(async (collection: any) => {
-            return payload.create({
+        collections.map((collection: any) =>
+            payload.create({
                 collection: "collections",
                 data: collection,
-            });
-        })
+            })
+        )
     );
 
     const productCollectionIds = [
@@ -63,16 +66,41 @@ const seed = async () => {
     ];
 
     await Promise.all(
-        products.map(async (product: any, index) => {
-            return payload.create({
+        products.map(async (product: any, index: number) => {
+            for (const variant of product.variants || []) {
+                const filename = variant?.imageUrl?.split("/").pop();
+                if (!filename || !variant.imageUrl) {
+                    continue;
+                }
+                const alt = filename.split(".")[0];
+                const imageUrl = variant.imageUrl;
+
+                const imageResult = await payload.create({
+                    collection: "media",
+                    data: {
+                        alt,
+                        filename,
+                        thumbnailURL: imageUrl,
+                        url: imageUrl,
+                    },
+                });
+                variant.imageUrl = imageResult.url;
+                variant.gallery = [imageResult.id];
+            }
+
+            const productResult = await payload.create({
                 collection: "products",
-                data: { ...product, collections: productCollectionIds[index] },
+                data: {
+                    ...product,
+                    collections: productCollectionIds[index],
+                },
             });
+
+            console.log(`Created product: ${productResult.id}`);
         })
     );
 };
 
-// Call the function here to run your seed script
 console.log("Seeding...");
 await seed();
 console.log("Seeding complete!");
