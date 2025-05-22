@@ -7,8 +7,12 @@ const CustomImageCell = async (props: DefaultServerCellComponentProps) => {
     const payload = await getPayload({ config });
 
     const { rowData } = props;
+    const mediaId = rowData?.variants?.[0]?.gallery?.[0];
+    if (!mediaId) {
+        return null;
+    }
     const media = await payload.findByID({
-        id: rowData?.variants?.[0]?.gallery?.[0],
+        id: mediaId,
         collection: "media",
     });
 
