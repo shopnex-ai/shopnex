@@ -1,26 +1,31 @@
 on:
-    - push
-    - pull_request
+  push:
+  pull_request:
 
 jobs:
-    cache-and-install:
-        runs-on: ubuntu-latest
+  cache-and-install:
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [18, 20]
 
-            - uses: pnpm/action-setup@v4
-              name: Install pnpm
-              with:
-                  version: 9
-                  run_install: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Install Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20
-                  cache: "pnpm"
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
 
-            - name: Install dependencies
-              run: pnpm install
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
