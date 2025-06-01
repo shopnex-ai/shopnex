@@ -1,5 +1,5 @@
+import { payloadSdk } from "@/utils/payload-sdk";
 import config from "@payload-config";
-import { unstable_cache } from "next/cache";
 import { getPayload } from "payload";
 
 export const getVariants = async (variantIds: string[]) => {
@@ -42,40 +42,45 @@ export const getVariants = async (variantIds: string[]) => {
     return variantIds.map((id) => variantsMap.get(id)).filter(Boolean);
 };
 
-export const getProducts = unstable_cache(
-    async () => {
-        const payload = await getPayload({ config });
-        const products = await payload.find({
+export const fetchProducts = async () => {
+    const products = await payloadSdk.find(
+        {
             collection: "products",
-            where: { visible: { equals: true } },
-        });
-        return products.docs;
-    },
-    ["get-products"], // cache key
-    {
-        revalidate: 60, // match your page revalidate time
-    }
-);
-
-export const getProduct = (handle: string) => {
-    return unstable_cache(
-        async () => {
-            const payload = await getPayload({ config });
-            const product = await payload.find({
-                collection: "products",
-                limit: 1,
-                where: {
-                    handle: {
-                        equals: handle,
-                    },
+            limit: 100,
+            where: {
+                visible: {
+                    equals: true,
                 },
-            });
-
-            return product.docs[0];
+            },
         },
-        ["get-product", handle],
-        { revalidate: 60 }
+        {
+            next: {
+                revalidate: 60,
+            },
+        }
     );
+    return products.docs;
+};
+
+export const fetchProduct = async (handle: string) => {
+    const products = await payloadSdk.find(
+        {
+            collection: "products",
+            limit: 1,
+            where: {
+                handle: {
+                    equals: handle,
+                },
+            },
+        },
+        {
+            credentials: "include",
+            next: {
+                revalidate: 60,
+            },
+        }
+    );
+    return products.docs[0];
 };
 
 export const getPaginatedProducts = async ({

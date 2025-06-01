@@ -1,4 +1,4 @@
-import { getProduct } from "@/app/api/services/products";
+import { fetchProduct } from "@/app/api/services/products";
 
 import { BuilderPage } from "../../components/BuilderPage";
 import { getColorOptions } from "../../lib/color";
@@ -9,7 +9,7 @@ type ProductPageProps = {
 
 const ProductPage = async ({ params }: ProductPageProps) => {
     const { productHandle } = await params;
-    const product = await getProduct(productHandle)();
+    const product = await fetchProduct(productHandle);
     const top4VariantImages = product.variants
         .slice(0, 4)
         .map((variant) => variant.imageUrl);

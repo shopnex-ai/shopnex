@@ -1,18 +1,16 @@
-import config from "@payload-config";
-import { unstable_cache } from "next/cache";
-import { getPayload, Sort } from "payload";
+import { payloadSdk } from "@/utils/payload-sdk";
 
-export const getTopCollections = unstable_cache(
-    async () => {
-        const payload = await getPayload({ config });
-        const collections = await payload.find({
+export const fetchTopCollections = async () => {
+    const collections = await payloadSdk.find(
+        {
             collection: "collections",
             limit: 3,
-        });
-        return collections.docs;
-    },
-    ["get-top-collections"],
-    {
-        revalidate: 60,
-    }
-);
+        },
+        {
+            next: {
+                revalidate: 60,
+            },
+        }
+    );
+    return collections.docs;
+};

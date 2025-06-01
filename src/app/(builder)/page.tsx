@@ -1,16 +1,16 @@
-import { getTopCollections } from "../api/services/collections";
-import { getProducts } from "../api/services/products";
+import { fetchTopCollections } from "../api/services/collections";
+import { fetchProducts } from "../api/services/products";
 import { BuilderPage } from "./components/BuilderPage";
 
 export const revalidate = 60;
 
 const HomePage = async () => {
-    const products = await getProducts();
-    const collections = await getTopCollections();
+    const products = await fetchProducts();
+    const collections = await fetchTopCollections();
     const mappedProducts = products.map((product) => ({
         ...product,
         category: "Category 1",
-        description: (product.collections?.[0] as any)?.title,
+        description: product.collections?.[0]?.title,
         image: product.variants[0].imageUrl,
         originalPrice: product.variants[0].originalPrice,
         pageUrl: `/products/${product.handle}`,
