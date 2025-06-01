@@ -31,30 +31,56 @@ type Variant = {
  * Each option is combined with every other option by generating a Cartesian product.
  */
 function generateVariantCombinations(options: Option[]): Variant[] {
-    if (options.length === 0) {
+    // Check if options is undefined or not an array
+    if (!Array.isArray(options) || options.length === 0) {
         return [];
     }
 
-    // Generate Cartesian product of options.
-    const combinations = options.reduce<VariantOption[][]>(
-        (acc, option) =>
-            acc.flatMap((combo) =>
-                option.value.map((value) => [
-                    ...combo,
-                    { option: option.option, value },
-                ])
-            ),
-        [[]]
-    );
+    // Validate that each option has required properties and values
+    const validOptions = options.filter((option): option is Option => {
+        return (
+            option &&
+            typeof option === "object" &&
+            "id" in option &&
+            "option" in option &&
+            Array.isArray(option.value) &&
+            option.value.length > 0
+        );
+    });
 
-    return combinations.map((combo) => ({
-        gallery: [],
-        imageUrl: null,
-        options: combo,
-        originalPrice: null,
-        price: 0,
-        vid: null,
-    }));
+    if (validOptions.length === 0) {
+        return [];
+    }
+
+    // Generate Cartesian product of options with additional error handling
+    try {
+        const combinations = validOptions.reduce<VariantOption[][]>(
+            (acc, option) => {
+                if (!Array.isArray(option.value)) {
+                    return acc;
+                }
+                return acc.flatMap((combo) =>
+                    option.value.map((value) => [
+                        ...combo,
+                        { option: option.option, value },
+                    ])
+                );
+            },
+            [[]]
+        );
+
+        return combinations.map((combo) => ({
+            gallery: [],
+            imageUrl: null,
+            options: combo,
+            originalPrice: null,
+            price: 0,
+            vid: null,
+        }));
+    } catch (error) {
+        console.error("Error generating variant combinations:", error);
+        return [];
+    }
 }
 
 const VariantGenerator = ({ path }: { path: string } & ClientFieldProps) => {
@@ -69,51 +95,67 @@ const VariantGenerator = ({ path }: { path: string } & ClientFieldProps) => {
             }, {})
     );
 
-    const { variantOptions } = reduceFieldsToValues(options, true);
+    const { variantOptions } = reduceFieldsToValues(options, true) || {};
 
     const fieldDispatch = useFormFields(([, dispatch]) => dispatch);
 
     const handleBuildVariants = useCallback(() => {
-        // Shift generation logic here so that variantOptions is freshly read
-        // If variantOptions is undefined or empty, it safely returns an empty array.
-        const variants = generateVariantCombinations(variantOptions || []);
+        try {
+            // Ensure variantOptions is an array
+            if (!Array.isArray(variantOptions)) {
+                toast.error("No variant options found");
+                return;
+            }
 
-        variants.forEach((variant, index) => {
-            fieldDispatch({
-                type: "ADD_ROW",
-                path: "variants",
-                rowIndex: index,
-            });
+            const variants = generateVariantCombinations(variantOptions);
 
-            [
-                { path: `variants.${index}.vid`, value: variant.vid },
-                { path: `variants.${index}.imageUrl`, value: variant.imageUrl },
-                { path: `variants.${index}.price`, value: variant.price },
-                {
-                    path: `variants.${index}.originalPrice`,
-                    value: variant.originalPrice,
-                },
-            ].forEach(({ path, value }) => {
-                fieldDispatch({ type: "UPDATE", path, value });
-            });
+            if (variants.length === 0) {
+                toast.warning("No valid variants could be generated");
+                return;
+            }
 
-            variant.options.forEach((option, optionIndex) => {
+            variants.forEach((variant, index) => {
                 fieldDispatch({
-                    type: "UPDATE",
-                    path: `variants.${index}.options.${optionIndex}.option`,
-                    value: option.option,
+                    type: "ADD_ROW",
+                    path: "variants",
+                    rowIndex: index,
                 });
-                fieldDispatch({
-                    type: "UPDATE",
-                    path: `variants.${index}.options.${optionIndex}.value`,
-                    value: option.value,
+
+                [
+                    { path: `variants.${index}.vid`, value: variant.vid },
+                    {
+                        path: `variants.${index}.imageUrl`,
+                        value: variant.imageUrl,
+                    },
+                    { path: `variants.${index}.price`, value: variant.price },
+                    {
+                        path: `variants.${index}.originalPrice`,
+                        value: variant.originalPrice,
+                    },
+                ].forEach(({ path, value }) => {
+                    fieldDispatch({ type: "UPDATE", path, value });
+                });
+
+                variant.options.forEach((option, optionIndex) => {
+                    fieldDispatch({
+                        type: "UPDATE",
+                        path: `variants.${index}.options.${optionIndex}.option`,
+                        value: option.option,
+                    });
+                    fieldDispatch({
+                        type: "UPDATE",
+                        path: `variants.${index}.options.${optionIndex}.value`,
+                        value: option.value,
+                    });
                 });
             });
-        });
 
-        toast.success("Variants built successfully!");
-        // Call setValue once after variants have been built if needed.
-        setValue("");
+            toast.success("Variants built successfully!");
+            setValue("");
+        } catch (error) {
+            console.error("Error building variants:", error);
+            toast.error("Failed to build variants");
+        }
     }, [fieldDispatch, variantOptions, setValue]);
 
     return <Button onClick={handleBuildVariants}>Build Variants</Button>;
