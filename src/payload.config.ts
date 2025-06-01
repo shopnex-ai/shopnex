@@ -41,6 +41,7 @@ export default buildConfig({
             views: {
                 dashboard: {
                     Component: "@/admin/components/Dashboard/Dashboard",
+                    path: "/",
                 },
             },
         },
