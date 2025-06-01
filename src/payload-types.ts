@@ -82,6 +82,7 @@ export interface Config {
         "cj-settings": CjSetting;
         "plugins-space": PluginsSpace;
         exports: Export;
+        "builder-io": BuilderIo;
         "payload-jobs": PayloadJob;
         "payload-locked-documents": PayloadLockedDocument;
         "payload-preferences": PayloadPreference;
@@ -108,6 +109,7 @@ export interface Config {
         "cj-settings": CjSettingsSelect<false> | CjSettingsSelect<true>;
         "plugins-space": PluginsSpaceSelect<false> | PluginsSpaceSelect<true>;
         exports: ExportsSelect<false> | ExportsSelect<true>;
+        "builder-io": BuilderIoSelect<false> | BuilderIoSelect<true>;
         "payload-jobs": PayloadJobsSelect<false> | PayloadJobsSelect<true>;
         "payload-locked-documents":
             | PayloadLockedDocumentsSelect<false>
@@ -639,6 +641,17 @@ export interface Export {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "builder-io".
+ */
+export interface BuilderIo {
+    id: number;
+    builderIoPrivateKey: string;
+    builderIoPublicKey: string;
+    updatedAt: string;
+    createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs".
  */
 export interface PayloadJob {
@@ -795,6 +808,10 @@ export interface PayloadLockedDocument {
         | ({
               relationTo: "exports";
               value: number | Export;
+          } | null)
+        | ({
+              relationTo: "builder-io";
+              value: number | BuilderIo;
           } | null)
         | ({
               relationTo: "payload-jobs";
@@ -1159,6 +1176,16 @@ export interface ExportsSelect<T extends boolean = true> {
     height?: T;
     focalX?: T;
     focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "builder-io_select".
+ */
+export interface BuilderIoSelect<T extends boolean = true> {
+    builderIoPrivateKey?: T;
+    builderIoPublicKey?: T;
+    updatedAt?: T;
+    createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
