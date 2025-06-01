@@ -35,17 +35,37 @@ const seed = async () => {
         },
     });
 
-    await Promise.all(
-        globals.map((global: any) =>
-            payload.updateGlobal({
-                slug: global.globalType,
-                data: {
-                    ...global,
+    await payload.updateGlobal({
+        slug: "hero-section",
+        data: {
+            type: [
+                {
+                    ctaButtonLink: "/store",
+                    ctaButtonText: "Shop Now",
+                    subtitle: "With Timeless Men's Watches",
+                    title: "Elevate Your Style",
+
                     backgroundImage: backgroundImage.id,
+                    blockName: null,
+                    blockType: "hero",
                 },
-            })
-        )
-    );
+            ],
+        },
+    });
+
+    await payload.updateGlobal({
+        slug: "footer",
+        data: {
+            type: [
+                {
+                    blockName: null,
+                    blockType: "basic-footer",
+                    copyright: (globals[1].type[0] as any).copyright,
+                    poweredBy: (globals[1].type[0] as any).poweredBy,
+                },
+            ],
+        },
+    });
 
     const collectionResults = await Promise.all(
         collections.map((collection: any) =>

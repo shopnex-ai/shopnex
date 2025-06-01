@@ -28,7 +28,7 @@
                                         "format": 0,
                                         "mode": "normal",
                                         "style": "",
-                                        "text": "© {{dateYear}} {{storeName}} Store. All rights reserved...",
+                                        "text": "© {{dateYear}} {{storeName}} Store. All rights reserved.",
                                         "type": "text",
                                         "version": 1
                                     }
