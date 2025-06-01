@@ -1,6 +1,5 @@
 import { builder } from "@builder.io/sdk";
 import { unstable_cache } from "next/cache";
-import Head from "next/head";
 
 import { RenderBuilderContent } from "./RenderBuilderContent";
 
@@ -35,13 +34,13 @@ export const BuilderPage = async ({ data, page }: BuilderPageProps) => {
     const content = await getCachedBuilderPage("/" + (page?.join("/") || ""))();
     return (
         <>
-            <Head>
+            <>
                 <title>{content?.data.title || "ShopNext"}</title>
                 <meta
                     content={content?.data.description || ""}
                     name="description"
                 />
-            </Head>
+            </>
             <RenderBuilderContent content={content} data={data} />
         </>
     );
