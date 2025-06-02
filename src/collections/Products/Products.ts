@@ -119,23 +119,28 @@ export const Products: CollectionConfig = {
                     },
                     fields: [
                         {
-                            name: "option",
-                            type: "text",
-                            admin: {
-                                placeholder: "Enter an option",
-                            },
-                            required: true,
-                        },
-                        {
-                            name: "value",
-                            type: "text",
-                            admin: {
-                                description:
-                                    "(press enter to add multiple values)",
-                                placeholder: "Enter a value",
-                            },
-                            hasMany: true,
-                            required: true,
+                            type: "row",
+                            fields: [
+                                {
+                                    name: "option",
+                                    type: "text",
+                                    admin: {
+                                        placeholder: "Enter an option",
+                                    },
+                                    required: true,
+                                },
+                                {
+                                    name: "value",
+                                    type: "text",
+                                    admin: {
+                                        description:
+                                            "(press enter to add multiple values)",
+                                        placeholder: "Enter a value",
+                                    },
+                                    hasMany: true,
+                                    required: true,
+                                },
+                            ],
                         },
                     ],
                     maxRows: 5,
@@ -156,6 +161,12 @@ export const Products: CollectionConfig = {
         {
             name: "variants",
             type: "array",
+            admin: {
+                components: {
+                    RowLabel: "@/collections/Products/fields/VariantRowLabel",
+                },
+                initCollapsed: true,
+            },
             fields: [
                 {
                     name: "vid",
@@ -191,6 +202,7 @@ export const Products: CollectionConfig = {
                     type: "number",
                     required: true,
                 },
+
                 {
                     name: "originalPrice",
                     type: "number",
@@ -202,16 +214,28 @@ export const Products: CollectionConfig = {
                 {
                     name: "options",
                     type: "array",
+                    admin: {
+                        components: {
+                            RowLabel:
+                                "@/collections/Products/fields/OptionRowLabel",
+                        },
+                    },
                     fields: [
                         {
-                            name: "option",
-                            type: "text",
-                            required: true,
-                        },
-                        {
-                            name: "value",
-                            type: "text",
-                            required: true,
+                            type: "row",
+                            fields: [
+                                {
+                                    name: "option",
+                                    type: "text",
+                                    label: "Name",
+                                    required: true,
+                                },
+                                {
+                                    name: "value",
+                                    type: "text",
+                                    required: true,
+                                },
+                            ],
                         },
                     ],
                     label: "Options",

@@ -26,6 +26,8 @@ import { BlockquoteFeatureClient as BlockquoteFeatureClient_e70f5e05f09f93e00b99
 import { UploadFeatureClient as UploadFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from "@payloadcms/richtext-lexical/client";
 import { default as default_e49979b57f52dbb3fe02cec65aa4998b } from "@/collections/Products/fields/ImageCell";
 import { default as default_f0f7b12584c89e13c6a87d8efa94a229 } from "@/collections/Products/fields/BuildVariantsButton";
+import { default as default_3c59176b2ff1d26ac22ac2944241cb35 } from "@/collections/Products/fields/OptionRowLabel";
+import { default as default_f22cadbcf95d70613e3cffb6affc278d } from "@/collections/Products/fields/VariantRowLabel";
 import { ApiToken as ApiToken_d63109af7e7e829a8cdb207ca8c3245a } from "@shopnex/stripe-plugin/client";
 import { ApiToken as ApiToken_4db7f57ea512297f27e20ca12ad3336a } from "@shopnex/utils/rsc";
 import { PluginEditView as PluginEditView_57ab7ef8acde5e865fd68d3a08a07070 } from "@shopnex/store-plugin/client";
@@ -96,6 +98,10 @@ export const importMap = {
         default_e49979b57f52dbb3fe02cec65aa4998b,
     "@/collections/Products/fields/BuildVariantsButton#default":
         default_f0f7b12584c89e13c6a87d8efa94a229,
+    "@/collections/Products/fields/OptionRowLabel#default":
+        default_3c59176b2ff1d26ac22ac2944241cb35,
+    "@/collections/Products/fields/VariantRowLabel#default":
+        default_f22cadbcf95d70613e3cffb6affc278d,
     "@shopnex/stripe-plugin/client#ApiToken":
         ApiToken_d63109af7e7e829a8cdb207ca8c3245a,
     "@shopnex/utils/rsc#ApiToken": ApiToken_4db7f57ea512297f27e20ca12ad3336a,
