@@ -56,6 +56,9 @@ importers:
       '@shopnex/import-export-plugin':
         specifier: ^3.31.3
         version: 3.31.3(@types/react@19.0.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@shopnex/payload-sdk':
+        specifier: 3.1.5
+        version: 3.1.5(typescript@5.7.3)
       '@shopnex/store-plugin':
         specifier: 1.0.14
         version: 1.0.14(@types/react@19.0.7)(react@19.0.0)
@@ -3288,6 +3291,9 @@ packages:
 
   '@shopnex/import-export-plugin@3.31.3':
     resolution: {integrity: sha512-dn3s/b94UE5WTbcF9IMqztuFWFzAjW5QFKS8ASa2pVd75VCfDwvY6SkOPJOPd19wOynOwbpboP5c2eMhD+Gjaw==}
+
+  '@shopnex/payload-sdk@3.1.5':
+    resolution: {integrity: sha512-roA4WRPUAkI0shSyD7sr+gBq4CSHcGX8oqVw9htjMGMyoxSsSXXgD2u6iY7PjKGue+hH+lcPxkpgYWrVmYmbfQ==}
 
   '@shopnex/store-plugin@1.0.14':
     resolution: {integrity: sha512-XgGl1+Z3Lb83lQWHOHZyTyvEDwHUqajtEdNk1D+jmMaAwQRiyW5yHRiRm+IsqjiIPc9k+ssvCVn0JYgkFbfFTA==}
@@ -11816,6 +11822,13 @@ snapshots:
       - react-native
       - rollup
       - supports-color
+
+  '@shopnex/payload-sdk@3.1.5(typescript@5.7.3)':
+    dependencies:
+      qs-esm: 7.0.2
+      ts-essentials: 10.0.3(typescript@5.7.3)
+    transitivePeerDependencies:
+      - typescript
 
   '@shopnex/store-plugin@1.0.14(@types/react@19.0.7)(react@19.0.0)':
     dependencies:
