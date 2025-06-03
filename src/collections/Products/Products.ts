@@ -177,6 +177,14 @@ export const Products: CollectionConfig = {
                     label: "Variant ID",
                 },
                 {
+                    name: "sku",
+                    type: "text",
+                    defaultValue: () => {
+                        return `SN-${crypto.randomUUID().slice(0, 8)}`;
+                    },
+                    label: "SKU",
+                },
+                {
                     name: "imageUrl",
                     type: "text",
                     admin: {
@@ -197,18 +205,27 @@ export const Products: CollectionConfig = {
                     label: "Image",
                     relationTo: "media",
                 },
-                {
-                    name: "price",
-                    type: "number",
-                    required: true,
-                },
 
                 {
-                    name: "originalPrice",
-                    type: "number",
-                    admin: {
-                        disabled: true,
-                    },
+                    type: "row",
+                    fields: [
+                        {
+                            name: "price",
+                            type: "number",
+                            required: true,
+                        },
+
+                        {
+                            name: "originalPrice",
+                            type: "number",
+                        },
+                        {
+                            name: "stockCount",
+                            type: "number",
+                            defaultValue: 0,
+                            min: 0,
+                        },
+                    ],
                 },
 
                 {
