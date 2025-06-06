@@ -1,11 +1,7 @@
 import { payloadSdk } from "@/utils/payload-sdk";
-import config from "@payload-config";
-import { getPayload } from "payload";
 
 export const getVariants = async (variantIds: string[]) => {
-    const payload = await getPayload({ config });
-
-    const products = await payload.find({
+    const products = await payloadSdk.find({
         collection: "products",
         where: {
             "variants.id": {
@@ -96,8 +92,6 @@ export const getPaginatedProducts = async ({
     productsIds?: string[];
     sortBy?: string;
 }) => {
-    const payload = await getPayload({ config });
-
     let where = {};
 
     if (collectionId) {
@@ -125,7 +119,7 @@ export const getPaginatedProducts = async ({
             ? `variants.[0].${sortName}`
             : `-variants.[0].${sortName}`;
 
-    const products = await payload.find({
+    const products = await payloadSdk.find({
         collection: "products",
         limit,
         page,

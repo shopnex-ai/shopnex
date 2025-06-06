@@ -37,7 +37,7 @@
         "@shopnex/builder-io-plugin": "^1.0.9",
         "@shopnex/cj-plugin": "1.2.2",
         "@shopnex/import-export-plugin": "^3.31.3",
-        "@shopnex/payload-sdk": "3.1.5",
+        "@shopnex/payload-sdk": "^3.1.5",
         "@shopnex/store-plugin": "1.0.14",
         "@shopnex/stripe-plugin": "3.31.3",
         "@tailwindcss/postcss": "^4.0.9",

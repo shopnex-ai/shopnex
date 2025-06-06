@@ -1,6 +1,6 @@
 import type { Block, GlobalConfig } from "payload";
 
-import { admins } from "@/access/roles";
+import { admins, anyone } from "@/access/roles";
 import { groups } from "@/collections/groups";
 
 const HeroBlock: Block = {
@@ -62,7 +62,7 @@ const CarouselBlock: Block = {
 export const HeroSection: GlobalConfig = {
     slug: "hero-section",
     access: {
-        read: admins,
+        read: anyone,
         update: admins,
     },
     admin: {

@@ -33,6 +33,16 @@ export const Users: CollectionConfig = {
         {
             name: "roles",
             type: "select",
+            access: {
+                create: ({ req }) => {
+                    const isAdmin = !!req.user?.roles?.includes("admin");
+                    return isAdmin;
+                },
+                update: ({ req }) => {
+                    const isAdmin = !!req.user?.roles?.includes("admin");
+                    return isAdmin;
+                },
+            },
             defaultValue: ["customer"],
             hasMany: true,
             options: [
