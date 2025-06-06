@@ -57,7 +57,7 @@ importers:
         specifier: ^3.31.3
         version: 3.31.3(@types/react@19.0.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@shopnex/payload-sdk':
-        specifier: 3.1.5
+        specifier: ^3.1.5
         version: 3.1.5(typescript@5.7.3)
       '@shopnex/store-plugin':
         specifier: 1.0.14
