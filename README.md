@@ -106,6 +106,8 @@ pnpm dlx create-shopnex-app my-store --fresh --skip-env
 
 - 🗂️ Import Mapping – Easily import collection data from various systems via CSV or Excel
 
+- 📦 Monorepo Architecture - Streamlined development with workspace management and shared dependencies
+
 ## 🛠️ Contributing
 
 > 💡 Pro tip: Don’t forget to ⭐ star the repo and **fork** it to make it your own!

@@ -1,0 +1,82 @@
+{
+    "name": "shopnex-new",
+    "version": "1.0.0",
+    "description": "A blank template to get started with Payload 3.0",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "build": "cross-env NODE_OPTIONS=--no-deprecation next build",
+        "dev": "cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation\" next dev",
+        "db:seed": "payload run ./src/seed",
+        "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation next dev",
+        "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+        "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+        "generate:schema": "payload generate:db-schema",
+        "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
+        "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
+        "lint:quiet": "cross-env NODE_OPTIONS=--no-deprecation next lint --quiet",
+        "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+        "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@builder.io/dev-tools": "^1.6.29",
+        "@builder.io/react": "^8.1.0",
+        "@builder.io/sdk": "^6.0.7",
+        "@headlessui/react": "^2.2.0",
+        "@medusajs/icons": "^2.5.1",
+        "@medusajs/ui": "^4.0.6",
+        "@medusajs/ui-preset": "^2.5.1",
+        "@payloadcms/db-sqlite": "3.31.0",
+        "@payloadcms/next": "3.31.0",
+        "@payloadcms/richtext-lexical": "3.31.0",
+        "@payloadcms/translations": "3.31.0",
+        "@payloadcms/ui": "3.31.0",
+        "@radix-ui/react-accordion": "^1.2.3",
+        "@shopnex/cj-plugin": "1.2.2",
+        "@shopnex/import-export-plugin": "^3.31.3",
+        "@shopnex/payload-sdk": "^3.1.5",
+        "@shopnex/store-plugin": "1.0.14",
+        "@shopnex/stripe-plugin": "3.31.3",
+        "@tailwindcss/postcss": "^4.0.9",
+        "@tailwindcss/typography": "^0.5.16",
+        "axios": "^1.8.2",
+        "cheerio": "^1.0.0",
+        "clsx": "^2.1.1",
+        "cross-env": "^7.0.3",
+        "currency-codes": "^2.2.0",
+        "decimal.js": "^10.5.0",
+        "graphql": "^16.8.1",
+        "jsdom": "^26.0.0",
+        "lodash": "^4.17.21",
+        "lucide-react": "^0.484.0",
+        "next": "15.2.4",
+        "payload": "3.31.0",
+        "rate-limiter-flexible": "^6.1.0",
+        "react": "19.0.0",
+        "react-dom": "19.0.0",
+        "react-use-cart": "^1.14.0",
+        "recharts": "^2.15.1",
+        "sharp": "0.32.6",
+        "slugify": "^1.6.6",
+        "stripe": "^17.7.0",
+        "tailwind-merge": "^3.0.2",
+        "tailwindcss-radix": "^4.0.2"
+    },
+    "devDependencies": {},
+    "engines": {
+        "node": "^18.20.2 || >=20.9.0",
+        "pnpm": "^9 || ^10"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "sharp"
+        ],
+        "overrides": {
+            "tar-fs": "^3.0.9",
+            "esbuild": "^0.25.0",
+            "image-size": "^1.2.1",
+            "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+        }
+    }
+}

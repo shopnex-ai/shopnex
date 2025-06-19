@@ -10,7 +10,9 @@ export const admins: isAdmin = ({ req: { user } }) => {
     return checkRole(["admin"], user);
 };
 
-export const anyone: Access = () => true;
+export const anyone: Access = () => {
+    return true;
+};
 
 export const adminsOrSelf: Access = ({ req: { user } }) => {
     if (user) {

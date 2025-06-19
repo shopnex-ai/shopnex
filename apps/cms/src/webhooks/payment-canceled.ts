@@ -32,7 +32,7 @@ export const paymentCanceled: StripeWebhookHandler<{
                 orderStatus: "canceled",
             },
             where: {
-                orderNumber: {
+                orderId: {
                     equals: orderId,
                 },
             },

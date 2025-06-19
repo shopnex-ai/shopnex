@@ -1,38 +1,42 @@
 # Roadmap
 
-## v1.0.0
+## v1.0.0 – eCommerce platform with multi-channel support & self-hosting guide
 
 ## Core
 
-- Improve product management, less spaces between variants
-- Add omni channel functionality
-- Add inventory management
-- shipping management
-- Improve cart management
+- [x] Product Management
+- [x] Inventory Management
+- [ ] Improve Checkout Flow
+- [ ] Improve Cart Management
+- [ ] Order History / Tracking
+- [ ] Omni-Channel Functionality
+- [ ] Shipping Management
 
 ## Plugins
 
-- add shippo fulfillment
-- add paypal payment
-- shopify source
-- Brightpearl
-- botpress channel
-- email channel
+- [x] Stripe Payment
+- [x] CJ Dropshipping
+- [ ] Shippo Fulfillment
+- [ ] PayPal Payment
+- [ ] Mollie Payment
+- [ ] Shopify Source Integration
+- [ ] Brightpearl Integration
 
-- Mollie payment
-- Facebook channel
+## Channels
+
+- [ ] Botpress Channel
+- [ ] Facebook Channel
 
 ## Storefronts
 
-- custom storefront
-- builer.io storefront
-- plasmic storefront
+- [x] Custom Storefront
+- [x] Builder.io Storefront
+- [ ] Plasmic Storefront
 
 ## Documentation
 
-- cloud quick start
-- self hosting quick start
-- plugins
-- storefronts
-- authentication
-- multi-tenancy
+- [ ] Self-Hosting Quick Start
+- [ ] Plugin Development
+- [ ] Storefront Integration
+- [ ] Authentication
+- [ ] Multi-Tenancy Guide
