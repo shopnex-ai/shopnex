@@ -6,7 +6,7 @@ import { buildConfig } from "payload";
 import sharp from "sharp";
 
 import { populatePolicies as createDefaultPolicies } from "./app/api/services/policies";
-import { Carts } from "./collections/Carts";
+import { Carts } from "./collections/Carts/Carts";
 import { Collections } from "./collections/Collections";
 import { GiftCards } from "./collections/GiftCards";
 import { Locations } from "./collections/Locations";

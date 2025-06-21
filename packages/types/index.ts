@@ -68,22 +68,18 @@ export interface Config {
   blocks: {};
   collections: {
     orders: Order;
-    products: Product;
     collections: Collection;
-    customers: Customer;
-    themes: Theme;
-    pages: Page;
-    media: Media;
-    shops: Shop;
+    products: Product;
     users: User;
-    admins: Admin;
+    media: Media;
     policies: Policy;
-    shipping: Shipping;
     'gift-cards': GiftCard;
-    locations: Location;
     payments: Payment;
-    'plugins-space': PluginsSpace;
+    locations: Location;
+    shipping: Shipping;
+    carts: Cart;
     'cj-settings': CjSetting;
+    'plugins-space': PluginsSpace;
     exports: Export;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -97,22 +93,18 @@ export interface Config {
   };
   collectionsSelect: {
     orders: OrdersSelect<false> | OrdersSelect<true>;
-    products: ProductsSelect<false> | ProductsSelect<true>;
     collections: CollectionsSelect<false> | CollectionsSelect<true>;
-    customers: CustomersSelect<false> | CustomersSelect<true>;
-    themes: ThemesSelect<false> | ThemesSelect<true>;
-    pages: PagesSelect<false> | PagesSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
-    shops: ShopsSelect<false> | ShopsSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
-    admins: AdminsSelect<false> | AdminsSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
     policies: PoliciesSelect<false> | PoliciesSelect<true>;
-    shipping: ShippingSelect<false> | ShippingSelect<true>;
     'gift-cards': GiftCardsSelect<false> | GiftCardsSelect<true>;
-    locations: LocationsSelect<false> | LocationsSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
-    'plugins-space': PluginsSpaceSelect<false> | PluginsSpaceSelect<true>;
+    locations: LocationsSelect<false> | LocationsSelect<true>;
+    shipping: ShippingSelect<false> | ShippingSelect<true>;
+    carts: CartsSelect<false> | CartsSelect<true>;
     'cj-settings': CjSettingsSelect<false> | CjSettingsSelect<true>;
+    'plugins-space': PluginsSpaceSelect<false> | PluginsSpaceSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -122,8 +114,16 @@ export interface Config {
   db: {
     defaultIDType: number;
   };
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'store-settings': StoreSetting;
+    'hero-section': HeroSection;
+    footer: Footer;
+  };
+  globalsSelect: {
+    'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
+    'hero-section': HeroSectionSelect<false> | HeroSectionSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
+  };
   locale: null;
   user: User & {
     collection: 'users';
@@ -163,10 +163,10 @@ export interface UserAuthOperations {
  */
 export interface Order {
   id: number;
-  shop?: (number | null) | Shop;
   orderId: string;
   user?: (number | null) | User;
   items: {
+    product?: (number | null) | Product;
     variant: {
       variantId: string;
       name: string;
@@ -229,53 +229,13 @@ export interface Order {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shops".
- */
-export interface Shop {
-  id: number;
-  /**
-   * This is the name of your store. It'll show up in your dashboard and online store.
-   */
-  name: string;
-  /**
-   * Want to use your own domain? Enter it here, like myshop.com.
-   */
-  domain?: string | null;
-  /**
-   * Your store’s live URL. Set automatically based on your store settings.
-   */
-  onlineStore?: string | null;
-  handle?: string | null;
-  /**
-   * Allows visitors to view your store without logging in. (This is set automatically.)
-   */
-  allowPublicRead?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number;
-  roles?: ('super-admin' | 'user')[] | null;
-  shops?:
-    | {
-        shop: number | Shop;
-        roles: ('shop-admin' | 'shop-viewer')[];
-        id?: string | null;
-      }[]
-    | null;
-  onBoardingStep?: number | null;
-  /**
-   * Type your store's niche.
-   */
-  niche?: string | null;
-  /**
-   * Type your store's sub-niche.
-   */
-  subNiche?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  roles?: ('admin' | 'customer')[] | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -283,8 +243,6 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
-  _verified?: boolean | null;
-  _verificationToken?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password?: string | null;
@@ -295,7 +253,6 @@ export interface User {
  */
 export interface Product {
   id: number;
-  shop?: (number | null) | Shop;
   pid?: string | null;
   title: string;
   currency?: string | null;
@@ -371,7 +328,6 @@ export interface Product {
  */
 export interface Collection {
   id: number;
-  shop?: (number | null) | Shop;
   title: string;
   imageUrl?: string | null;
   handle?: string | null;
@@ -404,9 +360,7 @@ export interface Collection {
  */
 export interface Media {
   id: number;
-  shop?: (number | null) | Shop;
   alt: string;
-  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -416,88 +370,8 @@ export interface Media {
   filesize?: number | null;
   width?: number | null;
   height?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers".
- */
-export interface Customer {
-  id: number;
-  shop?: (number | null) | Shop;
-  name?: string | null;
-  picture?: string | null;
-  user: number | User;
-  issuerName: string;
-  scope?: string | null;
-  sub: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "themes".
- */
-export interface Theme {
-  id: number;
-  shop?: (number | null) | Shop;
-  title?: string | null;
-  /**
-   * Choose the editor mode for your storefront.
-   */
-  editorMode: (
-    | {
-        builderIoPublicKey: string;
-        builderIoPrivateKey: string;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'builder-io';
-      }
-    | {
-        apiKey?: string | null;
-        /**
-         * Optional: Link to your live storefront. Press enter to add multiple values
-         */
-        storefrontUrls?: string[] | null;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'custom-storefront-block';
-      }
-  )[];
-  /**
-   * Explore top-rated free themes loved by store owners—designed to help you launch quickly and look great.
-   */
-  customStorefrontThemes?: {};
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages".
- */
-export interface Page {
-  id: number;
-  shop?: (number | null) | Shop;
-  title?: string | null;
-  visibility?: ('public' | 'private') | null;
-  handle?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "admins".
- */
-export interface Admin {
-  id: number;
-  shop?: (number | null) | Shop;
-  name?: string | null;
-  picture?: string | null;
-  user: number | User;
-  issuerName?: string | null;
-  scope?: string | null;
-  sub?: string | null;
-  updatedAt: string;
-  createdAt: string;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -505,7 +379,6 @@ export interface Admin {
  */
 export interface Policy {
   id: number;
-  shop?: (number | null) | Shop;
   title: string;
   description?: {
     root: {
@@ -528,59 +401,10 @@ export interface Policy {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shipping".
- */
-export interface Shipping {
-  id: number;
-  name: string;
-  enabled?: boolean | null;
-  location?: (number | null) | Location;
-  /**
-   * Select a shipping provider
-   */
-  shippingProvider?:
-    | {
-        name: string;
-        rate: number;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'manual';
-      }[]
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "locations".
- */
-export interface Location {
-  id: number;
-  shop?: (number | null) | Shop;
-  name: string;
-  address: string;
-  /**
-   * @minItems 2
-   * @maxItems 2
-   */
-  coordinates?: [number, number] | null;
-  contactPhone?: string | null;
-  /**
-   * e.g., Mon-Fri: 9am - 6pm
-   */
-  hours?: string | null;
-  enabled?: boolean | null;
-  isPickupLocation?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "gift-cards".
  */
 export interface GiftCard {
   id: number;
-  shop?: (number | null) | Shop;
   code: string;
   value: number;
   customer?: (number | null) | User;
@@ -597,7 +421,6 @@ export interface GiftCard {
  */
 export interface Payment {
   id: number;
-  shop?: (number | null) | Shop;
   name: string;
   enabled?: boolean | null;
   providers?:
@@ -635,13 +458,67 @@ export interface Payment {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plugins-space".
+ * via the `definition` "locations".
  */
-export interface PluginsSpace {
+export interface Location {
   id: number;
-  pluginName?: string | null;
-  displayName?: string | null;
-  pluginVersion?: string | null;
+  name: string;
+  address: string;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates?: [number, number] | null;
+  contactPhone?: string | null;
+  /**
+   * e.g., Mon-Fri: 9am - 6pm
+   */
+  hours?: string | null;
+  enabled?: boolean | null;
+  isPickupLocation?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipping".
+ */
+export interface Shipping {
+  id: number;
+  name: string;
+  enabled?: boolean | null;
+  location?: (number | null) | Location;
+  /**
+   * Select a shipping provider
+   */
+  shippingProvider?:
+    | {
+        name: string;
+        rate: number;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'manual';
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "carts".
+ */
+export interface Cart {
+  id: number;
+  sessionId?: string | null;
+  customer?: (number | null) | User;
+  cartItems?:
+    | {
+        variantId: string;
+        quantity: number;
+        id?: string | null;
+      }[]
+    | null;
+  completed?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -651,7 +528,6 @@ export interface PluginsSpace {
  */
 export interface CjSetting {
   id: number;
-  shop?: (number | null) | Shop;
   emailAddress?: string | null;
   apiToken?: string | null;
   refreshToken?: string | null;
@@ -668,6 +544,18 @@ export interface CjSetting {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugins-space".
+ */
+export interface PluginsSpace {
+  id: number;
+  pluginName?: string | null;
+  displayName?: string | null;
+  pluginVersion?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -810,68 +698,52 @@ export interface PayloadLockedDocument {
         value: number | Order;
       } | null)
     | ({
-        relationTo: 'products';
-        value: number | Product;
-      } | null)
-    | ({
         relationTo: 'collections';
         value: number | Collection;
       } | null)
     | ({
-        relationTo: 'customers';
-        value: number | Customer;
-      } | null)
-    | ({
-        relationTo: 'themes';
-        value: number | Theme;
-      } | null)
-    | ({
-        relationTo: 'pages';
-        value: number | Page;
-      } | null)
-    | ({
-        relationTo: 'media';
-        value: number | Media;
-      } | null)
-    | ({
-        relationTo: 'shops';
-        value: number | Shop;
+        relationTo: 'products';
+        value: number | Product;
       } | null)
     | ({
         relationTo: 'users';
         value: number | User;
       } | null)
     | ({
-        relationTo: 'admins';
-        value: number | Admin;
+        relationTo: 'media';
+        value: number | Media;
       } | null)
     | ({
         relationTo: 'policies';
         value: number | Policy;
       } | null)
     | ({
-        relationTo: 'shipping';
-        value: number | Shipping;
-      } | null)
-    | ({
         relationTo: 'gift-cards';
         value: number | GiftCard;
-      } | null)
-    | ({
-        relationTo: 'locations';
-        value: number | Location;
       } | null)
     | ({
         relationTo: 'payments';
         value: number | Payment;
       } | null)
     | ({
-        relationTo: 'plugins-space';
-        value: number | PluginsSpace;
+        relationTo: 'locations';
+        value: number | Location;
+      } | null)
+    | ({
+        relationTo: 'shipping';
+        value: number | Shipping;
+      } | null)
+    | ({
+        relationTo: 'carts';
+        value: number | Cart;
       } | null)
     | ({
         relationTo: 'cj-settings';
         value: number | CjSetting;
+      } | null)
+    | ({
+        relationTo: 'plugins-space';
+        value: number | PluginsSpace;
       } | null)
     | ({
         relationTo: 'exports';
@@ -928,12 +800,12 @@ export interface PayloadMigration {
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
-  shop?: T;
   orderId?: T;
   user?: T;
   items?:
     | T
     | {
+        product?: T;
         variant?:
           | T
           | {
@@ -962,10 +834,22 @@ export interface OrdersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collections_select".
+ */
+export interface CollectionsSelect<T extends boolean = true> {
+  title?: T;
+  imageUrl?: T;
+  handle?: T;
+  description?: T;
+  products?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
-  shop?: T;
   pid?: T;
   title?: T;
   currency?: T;
@@ -1013,84 +897,28 @@ export interface ProductsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "collections_select".
+ * via the `definition` "users_select".
  */
-export interface CollectionsSelect<T extends boolean = true> {
-  shop?: T;
-  title?: T;
-  imageUrl?: T;
-  handle?: T;
-  description?: T;
-  products?: T;
+export interface UsersSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
+  roles?: T;
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers_select".
- */
-export interface CustomersSelect<T extends boolean = true> {
-  shop?: T;
-  name?: T;
-  picture?: T;
-  user?: T;
-  issuerName?: T;
-  scope?: T;
-  sub?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "themes_select".
- */
-export interface ThemesSelect<T extends boolean = true> {
-  shop?: T;
-  title?: T;
-  editorMode?:
-    | T
-    | {
-        'builder-io'?:
-          | T
-          | {
-              builderIoPublicKey?: T;
-              builderIoPrivateKey?: T;
-              id?: T;
-              blockName?: T;
-            };
-        'custom-storefront-block'?:
-          | T
-          | {
-              apiKey?: T;
-              storefrontUrls?: T;
-              id?: T;
-              blockName?: T;
-            };
-      };
-  customStorefrontThemes?: T | {};
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "pages_select".
- */
-export interface PagesSelect<T extends boolean = true> {
-  shop?: T;
-  title?: T;
-  visibility?: T;
-  handle?: T;
-  updatedAt?: T;
-  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  shop?: T;
   alt?: T;
-  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -1100,69 +928,14 @@ export interface MediaSelect<T extends boolean = true> {
   filesize?: T;
   width?: T;
   height?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shops_select".
- */
-export interface ShopsSelect<T extends boolean = true> {
-  name?: T;
-  domain?: T;
-  onlineStore?: T;
-  handle?: T;
-  allowPublicRead?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users_select".
- */
-export interface UsersSelect<T extends boolean = true> {
-  roles?: T;
-  shops?:
-    | T
-    | {
-        shop?: T;
-        roles?: T;
-        id?: T;
-      };
-  onBoardingStep?: T;
-  niche?: T;
-  subNiche?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  _verified?: T;
-  _verificationToken?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "admins_select".
- */
-export interface AdminsSelect<T extends boolean = true> {
-  shop?: T;
-  name?: T;
-  picture?: T;
-  user?: T;
-  issuerName?: T;
-  scope?: T;
-  sub?: T;
-  updatedAt?: T;
-  createdAt?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "policies_select".
  */
 export interface PoliciesSelect<T extends boolean = true> {
-  shop?: T;
   title?: T;
   description?: T;
   handle?: T;
@@ -1171,33 +944,9 @@ export interface PoliciesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "shipping_select".
- */
-export interface ShippingSelect<T extends boolean = true> {
-  name?: T;
-  enabled?: T;
-  location?: T;
-  shippingProvider?:
-    | T
-    | {
-        manual?:
-          | T
-          | {
-              name?: T;
-              rate?: T;
-              id?: T;
-              blockName?: T;
-            };
-      };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "gift-cards_select".
  */
 export interface GiftCardsSelect<T extends boolean = true> {
-  shop?: T;
   code?: T;
   value?: T;
   customer?: T;
@@ -1207,26 +956,9 @@ export interface GiftCardsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "locations_select".
- */
-export interface LocationsSelect<T extends boolean = true> {
-  shop?: T;
-  name?: T;
-  address?: T;
-  coordinates?: T;
-  contactPhone?: T;
-  hours?: T;
-  enabled?: T;
-  isPickupLocation?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payments_select".
  */
 export interface PaymentsSelect<T extends boolean = true> {
-  shop?: T;
   name?: T;
   enabled?: T;
   providers?:
@@ -1263,12 +995,57 @@ export interface PaymentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "plugins-space_select".
+ * via the `definition` "locations_select".
  */
-export interface PluginsSpaceSelect<T extends boolean = true> {
-  pluginName?: T;
-  displayName?: T;
-  pluginVersion?: T;
+export interface LocationsSelect<T extends boolean = true> {
+  name?: T;
+  address?: T;
+  coordinates?: T;
+  contactPhone?: T;
+  hours?: T;
+  enabled?: T;
+  isPickupLocation?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "shipping_select".
+ */
+export interface ShippingSelect<T extends boolean = true> {
+  name?: T;
+  enabled?: T;
+  location?: T;
+  shippingProvider?:
+    | T
+    | {
+        manual?:
+          | T
+          | {
+              name?: T;
+              rate?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "carts_select".
+ */
+export interface CartsSelect<T extends boolean = true> {
+  sessionId?: T;
+  customer?: T;
+  cartItems?:
+    | T
+    | {
+        variantId?: T;
+        quantity?: T;
+        id?: T;
+      };
+  completed?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1277,7 +1054,6 @@ export interface PluginsSpaceSelect<T extends boolean = true> {
  * via the `definition` "cj-settings_select".
  */
 export interface CjSettingsSelect<T extends boolean = true> {
-  shop?: T;
   emailAddress?: T;
   apiToken?: T;
   refreshToken?: T;
@@ -1291,6 +1067,17 @@ export interface CjSettingsSelect<T extends boolean = true> {
         productUrl?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plugins-space_select".
+ */
+export interface PluginsSpaceSelect<T extends boolean = true> {
+  pluginName?: T;
+  displayName?: T;
+  pluginVersion?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1382,6 +1169,341 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings".
+ */
+export interface StoreSetting {
+  id: number;
+  name?: string | null;
+  currency?:
+    | (
+        | 'AED'
+        | 'AFN'
+        | 'ALL'
+        | 'AMD'
+        | 'ANG'
+        | 'AOA'
+        | 'ARS'
+        | 'AUD'
+        | 'AWG'
+        | 'AZN'
+        | 'BAM'
+        | 'BBD'
+        | 'BDT'
+        | 'BGN'
+        | 'BHD'
+        | 'BIF'
+        | 'BMD'
+        | 'BND'
+        | 'BOB'
+        | 'BOV'
+        | 'BRL'
+        | 'BSD'
+        | 'BTN'
+        | 'BWP'
+        | 'BYN'
+        | 'BZD'
+        | 'CAD'
+        | 'CDF'
+        | 'CHE'
+        | 'CHF'
+        | 'CHW'
+        | 'CLF'
+        | 'CLP'
+        | 'CNY'
+        | 'COP'
+        | 'COU'
+        | 'CRC'
+        | 'CUC'
+        | 'CUP'
+        | 'CVE'
+        | 'CZK'
+        | 'DJF'
+        | 'DKK'
+        | 'DOP'
+        | 'DZD'
+        | 'EGP'
+        | 'ERN'
+        | 'ETB'
+        | 'EUR'
+        | 'FJD'
+        | 'FKP'
+        | 'GBP'
+        | 'GEL'
+        | 'GHS'
+        | 'GIP'
+        | 'GMD'
+        | 'GNF'
+        | 'GTQ'
+        | 'GYD'
+        | 'HKD'
+        | 'HNL'
+        | 'HTG'
+        | 'HUF'
+        | 'IDR'
+        | 'ILS'
+        | 'INR'
+        | 'IQD'
+        | 'IRR'
+        | 'ISK'
+        | 'JMD'
+        | 'JOD'
+        | 'JPY'
+        | 'KES'
+        | 'KGS'
+        | 'KHR'
+        | 'KMF'
+        | 'KPW'
+        | 'KRW'
+        | 'KWD'
+        | 'KYD'
+        | 'KZT'
+        | 'LAK'
+        | 'LBP'
+        | 'LKR'
+        | 'LRD'
+        | 'LSL'
+        | 'LYD'
+        | 'MAD'
+        | 'MDL'
+        | 'MGA'
+        | 'MKD'
+        | 'MMK'
+        | 'MNT'
+        | 'MOP'
+        | 'MRU'
+        | 'MUR'
+        | 'MVR'
+        | 'MWK'
+        | 'MXN'
+        | 'MXV'
+        | 'MYR'
+        | 'MZN'
+        | 'NAD'
+        | 'NGN'
+        | 'NIO'
+        | 'NOK'
+        | 'NPR'
+        | 'NZD'
+        | 'OMR'
+        | 'PAB'
+        | 'PEN'
+        | 'PGK'
+        | 'PHP'
+        | 'PKR'
+        | 'PLN'
+        | 'PYG'
+        | 'QAR'
+        | 'RON'
+        | 'RSD'
+        | 'RUB'
+        | 'RWF'
+        | 'SAR'
+        | 'SBD'
+        | 'SCR'
+        | 'SDG'
+        | 'SEK'
+        | 'SGD'
+        | 'SHP'
+        | 'SLE'
+        | 'SOS'
+        | 'SRD'
+        | 'SSP'
+        | 'STN'
+        | 'SVC'
+        | 'SYP'
+        | 'SZL'
+        | 'THB'
+        | 'TJS'
+        | 'TMT'
+        | 'TND'
+        | 'TOP'
+        | 'TRY'
+        | 'TTD'
+        | 'TWD'
+        | 'TZS'
+        | 'UAH'
+        | 'UGX'
+        | 'USD'
+        | 'USN'
+        | 'UYI'
+        | 'UYU'
+        | 'UYW'
+        | 'UZS'
+        | 'VED'
+        | 'VES'
+        | 'VND'
+        | 'VUV'
+        | 'WST'
+        | 'XAF'
+        | 'XAG'
+        | 'XAU'
+        | 'XBA'
+        | 'XBB'
+        | 'XBC'
+        | 'XBD'
+        | 'XCD'
+        | 'XDR'
+        | 'XOF'
+        | 'XPD'
+        | 'XPF'
+        | 'XPT'
+        | 'XSU'
+        | 'XTS'
+        | 'XUA'
+        | 'XXX'
+        | 'YER'
+        | 'ZAR'
+        | 'ZMW'
+        | 'ZWG'
+      )
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hero-section".
+ */
+export interface HeroSection {
+  id: number;
+  type: (
+    | {
+        title: string;
+        subtitle?: string | null;
+        ctaButtonText?: string | null;
+        ctaButtonLink?: string | null;
+        backgroundImage?: (number | null) | Media;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'hero';
+      }
+    | {
+        title: string;
+        subtitle?: string | null;
+        featuredProducts?: (number | Media)[] | null;
+        backgroundImage?: (number | null) | Media;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'carousel';
+      }
+  )[];
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  type?:
+    | {
+        copyright: {
+          root: {
+            type: string;
+            children: {
+              type: string;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        poweredBy?: {
+          root: {
+            type: string;
+            children: {
+              type: string;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        } | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'basic-footer';
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings_select".
+ */
+export interface StoreSettingsSelect<T extends boolean = true> {
+  name?: T;
+  currency?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hero-section_select".
+ */
+export interface HeroSectionSelect<T extends boolean = true> {
+  type?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              ctaButtonText?: T;
+              ctaButtonLink?: T;
+              backgroundImage?: T;
+              id?: T;
+              blockName?: T;
+            };
+        carousel?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              featuredProducts?: T;
+              backgroundImage?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  type?:
+    | T
+    | {
+        'basic-footer'?:
+          | T
+          | {
+              copyright?: T;
+              poweredBy?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

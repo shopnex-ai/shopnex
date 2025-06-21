@@ -524,14 +524,16 @@ export interface Shipping {
  */
 export interface Cart {
   id: number;
-  sessionId: string;
+  sessionId?: string | null;
+  customer?: (number | null) | User;
   cartItems?:
     | {
-        product: number | Product;
+        variantId: string;
         quantity: number;
         id?: string | null;
       }[]
     | null;
+  completed?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1079,13 +1081,15 @@ export interface ShippingSelect<T extends boolean = true> {
  */
 export interface CartsSelect<T extends boolean = true> {
   sessionId?: T;
+  customer?: T;
   cartItems?:
     | T
     | {
-        product?: T;
+        variantId?: T;
         quantity?: T;
         id?: T;
       };
+  completed?: T;
   updatedAt?: T;
   createdAt?: T;
 }

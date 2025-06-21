@@ -10,7 +10,7 @@
         "db:seed": "payload run ./src/seed",
         "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=\"${NODE_OPTIONS} --no-deprecation next dev",
         "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
-        "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+        "generate:types": "payload generate:types && mv ./src/payload-types.ts ../../packages/types/index.ts",
         "generate:schema": "payload generate:db-schema",
         "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
         "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
@@ -36,7 +36,7 @@
         "@shopnex/builder-io-plugin": "^1.0.9",
         "@shopnex/cj-plugin": "1.2.2",
         "@shopnex/import-export-plugin": "^3.31.3",
-        "@shopnex/payload-sdk": "^3.1.5",
+        "@shopnex/payload-sdk": "^3.1.7",
         "@shopnex/store-plugin": "1.0.14",
         "@shopnex/stripe-plugin": "3.31.3",
         "@tailwindcss/postcss": "^4.0.9",
@@ -48,6 +48,7 @@
         "currency-codes": "^2.2.0",
         "decimal.js": "^10.5.0",
         "graphql": "^16.8.1",
+        "js-cookie": "^3.0.5",
         "jsdom": "^26.0.0",
         "lodash": "^4.17.21",
         "lucide-react": "^0.484.0",
@@ -78,5 +79,8 @@
             "image-size": "^1.2.1",
             "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
         }
+    },
+    "devDependencies": {
+        "@types/js-cookie": "^3.0.6"
     }
 }
