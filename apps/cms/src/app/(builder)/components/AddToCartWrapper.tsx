@@ -1,6 +1,12 @@
 "use client";
 
+import { createCart, updateCart } from "@/app/api/services/cart";
+import Cookies from "js-cookie";
 import { useCart } from "react-use-cart";
+
+const getCartSessionId = () => {
+    return Cookies.get("cart-session");
+};
 
 export function AddToCartWrapper({
     children,
@@ -13,7 +19,9 @@ export function AddToCartWrapper({
 }: any) {
     const { addItem } = useCart();
 
-    const handleAddItem = () => {
+    const cartSessionId = getCartSessionId();
+
+    const handleAddItem = async () => {
         addItem(
             {
                 id: variantId,
@@ -25,14 +33,26 @@ export function AddToCartWrapper({
             },
             quantity
         );
+
+        if (cartSessionId) {
+            await updateCart({
+                id: variantId,
+                quantity,
+            });
+        } else {
+            await createCart({
+                id: variantId,
+                quantity,
+            });
+        }
     };
 
     return (
         <div
             onClick={handleAddItem}
-            onKeyDown={(e) => {
+            onKeyDown={async (e) => {
                 if (e.key === "Enter" || e.key === " ") {
-                    handleAddItem();
+                    await handleAddItem();
                 }
             }}
             role="button"
