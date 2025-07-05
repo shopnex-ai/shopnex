@@ -2,7 +2,10 @@ import type { CollectionConfig } from "payload";
 
 import { admins, adminsOrSelf, anyone } from "@/access/roles";
 
-import { groups } from "./groups";
+import { groups } from "../groups";
+import { checkoutEndpoint } from "./endpoints/checkout";
+import { OrderTimeline } from "./fields/OrderTimeline";
+import { addOrderTimelineEntry } from "./hooks/add-order-timeline-entry";
 
 export const Orders: CollectionConfig = {
     slug: "orders",
@@ -16,12 +19,13 @@ export const Orders: CollectionConfig = {
         group: groups.orders,
         useAsTitle: "orderId",
     },
+    endpoints: [checkoutEndpoint],
     fields: [
         {
             name: "orderId",
             type: "text",
             required: true,
-            unique: true, // Ensures no duplicate orders
+            unique: true,
         },
         {
             name: "user",
@@ -30,49 +34,9 @@ export const Orders: CollectionConfig = {
             required: false,
         },
         {
-            name: "items",
-            type: "array",
-            fields: [
-                {
-                    name: "product",
-                    type: "relationship",
-                    relationTo: "products",
-                    required: false,
-                },
-                {
-                    name: "variant",
-                    type: "group",
-                    fields: [
-                        {
-                            name: "variantId",
-                            type: "text",
-                            required: true,
-                        },
-                        {
-                            name: "name",
-                            type: "text",
-                            required: true,
-                        },
-                        {
-                            name: "price",
-                            type: "number",
-                            required: true,
-                        },
-                    ],
-                },
-                {
-                    name: "quantity",
-                    type: "number",
-                    min: 1,
-                    required: true,
-                },
-                {
-                    name: "totalPrice",
-                    type: "number",
-                    required: true,
-                },
-            ],
-            required: true,
+            name: "cart",
+            type: "relationship",
+            relationTo: "carts",
         },
         {
             name: "totalAmount",
@@ -130,9 +94,20 @@ export const Orders: CollectionConfig = {
             required: true,
         },
         {
+            name: "sessionUrl",
+            type: "text",
+            admin: {
+                disabled: true,
+            },
+            virtual: true,
+        },
+        {
             name: "paymentGateway",
             type: "select",
-            options: [{ label: "Stripe", value: "stripe" }],
+            options: [
+                { label: "Stripe", value: "stripe" },
+                { label: "Manual", value: "manual" },
+            ],
         },
         {
             name: "paymentMethod",
@@ -217,21 +192,9 @@ export const Orders: CollectionConfig = {
                 }),
             ],
         },
-        {
-            name: "updatedAt",
-            type: "date",
-            admin: {
-                readOnly: true,
-            },
-            defaultValue: () => new Date(),
-        },
-        {
-            name: "createdAt",
-            type: "date",
-            admin: {
-                readOnly: true,
-            },
-            defaultValue: () => new Date(),
-        },
+        OrderTimeline,
     ],
+    hooks: {
+        beforeChange: [addOrderTimelineEntry],
+    },
 };

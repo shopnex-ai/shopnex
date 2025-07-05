@@ -1,9 +1,6 @@
-import {
-    Endpoint,
-    generateCookie,
-    getCookieExpiration,
-    mergeHeaders,
-} from "payload";
+import type { Endpoint } from "payload";
+
+import { generateCookie, getCookieExpiration, mergeHeaders } from "payload";
 
 export const initSessionCart: Endpoint = {
     handler: async (req) => {

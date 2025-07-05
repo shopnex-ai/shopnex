@@ -1,9 +1,14 @@
 import type { Block, CollectionConfig } from "payload";
 
+import { admins, anyone } from "@/access/roles";
+
 import { groups } from "./groups";
 
 export const ManualProvider: Block = {
     slug: "manualProvider",
+    admin: {
+        disableBlockName: true,
+    },
     fields: [
         {
             name: "providerName",
@@ -71,6 +76,12 @@ export const ManualProvider: Block = {
 
 export const Payments: CollectionConfig = {
     slug: "payments",
+    access: {
+        create: admins,
+        delete: admins,
+        read: anyone,
+        update: admins,
+    },
     admin: {
         group: groups.settings,
         useAsTitle: "name",
@@ -87,6 +98,7 @@ export const Payments: CollectionConfig = {
             admin: {
                 position: "sidebar",
             },
+            defaultValue: true,
         },
         {
             name: "providers",

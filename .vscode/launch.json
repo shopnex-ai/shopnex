@@ -8,7 +8,7 @@
             "name": "Next.js: debug full stack",
             "type": "node",
             "request": "launch",
-            "program": "${workspaceFolder}/node_modules/next/dist/bin/next",
+            "program": "${workspaceFolder}/apps/cms/node_modules/next/dist/bin/next",
             "runtimeArgs": ["--inspect"],
             "skipFiles": ["<node_internals>/**"],
             "serverReadyAction": {
@@ -16,9 +16,9 @@
                 "killOnServerStop": true,
                 "pattern": "- Local:.+(https?://.+)",
                 "uriFormat": "%s",
-                "webRoot": "${workspaceFolder}"
+                "webRoot": "${workspaceFolder}/apps/cms"
             },
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/apps/cms"
         }
     ]
 }

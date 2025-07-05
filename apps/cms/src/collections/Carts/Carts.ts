@@ -1,4 +1,3 @@
-import { anyone } from "@/access/roles";
 import { type CollectionConfig } from "payload";
 
 import { groups } from "../groups";
@@ -19,14 +18,6 @@ export const Carts: CollectionConfig = {
     },
     fields: [
         {
-            name: "sessionId",
-            type: "text",
-            admin: {
-                position: "sidebar",
-                readOnly: true,
-            },
-        },
-        {
             name: "customer",
             type: "relationship",
             admin: {
@@ -44,6 +35,12 @@ export const Carts: CollectionConfig = {
                     required: true,
                 },
                 {
+                    name: "product",
+                    type: "relationship",
+                    relationTo: "products",
+                    required: true,
+                },
+                {
                     name: "quantity",
                     type: "number",
                     required: true,
@@ -53,23 +50,13 @@ export const Carts: CollectionConfig = {
         {
             name: "completed",
             type: "checkbox",
-            defaultValue: false,
             admin: {
                 position: "sidebar",
             },
+            defaultValue: false,
         },
     ],
     hooks: {
         afterChange: [sessionCartCreate],
-        beforeValidate: [
-            ({ data, operation }) => {
-                if (operation !== "create" || !data) {
-                    return;
-                }
-                const sessionId = crypto.randomUUID();
-
-                data.sessionId = sessionId;
-            },
-        ],
     },
 };

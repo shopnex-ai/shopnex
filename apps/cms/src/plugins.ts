@@ -10,6 +10,12 @@ import { paymentCanceled } from "./webhooks/payment-canceled";
 import { paymentSucceeded } from "./webhooks/payment-succeeded";
 
 export const plugins: Plugin[] = [
+    storePlugin({}),
+    cjPlugin({
+        cjApiKey: process.env.CJ_PASSWORD || "",
+        cjEmailAddress: process.env.CJ_EMAIL_ADDRESS || "",
+        cjRefreshToken: process.env.CJ_REFRESH_TOKEN,
+    }),
     stripePlugin({
         isTestKey: Boolean(process.env.NEXT_PUBLIC_STRIPE_IS_TEST_KEY),
         logs: true,
@@ -23,12 +29,6 @@ export const plugins: Plugin[] = [
             "payment_intent.succeeded": paymentSucceeded,
         },
     }),
-    cjPlugin({
-        cjApiKey: process.env.CJ_PASSWORD || "",
-        cjEmailAddress: process.env.CJ_EMAIL_ADDRESS || "",
-        cjRefreshToken: process.env.CJ_REFRESH_TOKEN,
-    }),
-    storePlugin({}),
     importExportPlugin({
         collections: ["products", "orders"],
         disableJobsQueue: true,

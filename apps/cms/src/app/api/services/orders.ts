@@ -59,6 +59,7 @@ export const getOrder = async (orderId: string) => {
         const payload = await getPayload({ config });
         const order = await payload.find({
             collection: "orders",
+            depth: 5,
             where: {
                 sessionId: {
                     equals: orderId,

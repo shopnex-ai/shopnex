@@ -28,22 +28,19 @@
         "@medusajs/icons": "^2.5.1",
         "@medusajs/ui": "^4.0.6",
         "@medusajs/ui-preset": "^2.5.1",
-        "@payloadcms/db-sqlite": "3.31.0",
-        "@payloadcms/next": "3.31.0",
-        "@payloadcms/richtext-lexical": "3.31.0",
-        "@payloadcms/translations": "3.31.0",
-        "@payloadcms/ui": "3.31.0",
         "@radix-ui/react-accordion": "^1.2.3",
         "@shopnex/builder-io-plugin": "^1.0.9",
         "@shopnex/cj-plugin": "1.2.2",
         "@shopnex/import-export-plugin": "^3.31.3",
         "@shopnex/payload-sdk": "^3.1.7",
         "@shopnex/store-plugin": "1.0.14",
-        "@shopnex/stripe-plugin": "3.31.3",
-        "@tailwindcss/postcss": "^4.0.9",
+        "@shopnex/stripe-plugin": "3.31.4",
+        "@shopnex/utils": "^1.0.6",
+        "@tailwindcss/postcss": "^4.1.3",
         "@tailwindcss/typography": "^0.5.16",
         "axios": "^1.8.2",
         "cheerio": "^1.0.0",
+        "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cross-env": "^7.0.3",
         "currency-codes": "^2.2.0",
@@ -51,10 +48,11 @@
         "graphql": "^16.8.1",
         "js-cookie": "^3.0.5",
         "jsdom": "^26.0.0",
+        "libsql": "^0.5.13",
         "lodash": "^4.17.21",
         "lucide-react": "^0.484.0",
         "next": "15.2.4",
-        "payload": "3.31.0",
+        "postcss": "^8.5.4",
         "rate-limiter-flexible": "^6.1.0",
         "react": "19.0.0",
         "react-dom": "19.0.0",
@@ -63,7 +61,8 @@
         "sharp": "0.32.6",
         "slugify": "^1.6.6",
         "stripe": "^17.7.0",
-        "tailwind-merge": "^3.0.2",
+        "tailwind-merge": "^3.2.0",
+        "tailwindcss": "^4.1.8",
         "tailwindcss-radix": "^4.0.2"
     },
     "engines": {
@@ -82,6 +81,8 @@
         }
     },
     "devDependencies": {
-        "@types/js-cookie": "^3.0.6"
+        "@types/js-cookie": "^3.0.6",
+        "@types/stripe": "^8.0.417",
+        "tw-animate-css": "^1.3.4"
     }
 }

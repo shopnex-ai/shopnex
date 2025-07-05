@@ -1,0 +1,106 @@
+---
+title: Stripe Plugin Setup
+description: How to connect your Stripe account to enable payments in your store.
+---
+
+# 💳 Connect Your Stripe Account
+
+To start accepting payments in your store, connect your **Stripe** account by providing the required credentials below.
+
+> 🛍️ This plugin is built for SaaS eCommerce platforms — each store can use its own Stripe account.
+
+---
+
+## 🛠 Required Information
+
+You’ll need to collect the following values from your Stripe dashboard:
+
+| Field               | Where to find it      | Example                        |
+| ------------------- | --------------------- | ------------------------------ |
+| **Publishable Key** | Developers → API keys | `pk_live_...`                  |
+| **Secret Key**      | Developers → API keys | `sk_live_...`                  |
+| **Webhook Secret**  | Developers → Webhooks | `whsec_...`                    |
+| **Test Mode**       | (Optional toggle)     | Enable if you're still testing |
+
+---
+
+## 📘 Step-by-Step Guide
+
+### 1. Log in to your Stripe account
+
+Go to [https://dashboard.stripe.com](https://dashboard.stripe.com)
+
+---
+
+### 2. Get your **Publishable Key** and **Secret Key**
+
+- In the sidebar, go to **Developers → API keys**
+- Copy:
+    - `Publishable key` → use in the "Publishable Key" field
+    - `Secret key` → click "Reveal live key" and copy it
+
+> ⚠️ **Never share your Secret Key.** Paste it only into your Stripe plugin settings.
+
+---
+
+### 3. Create a Webhook Secret
+
+1. Go to **Developers → Webhooks**
+2. Click **"Add endpoint"**
+3. Use the following URL:
+
+```
+
+[https://your-store.com/api/stripe/webhook](https://your-store.com/api/stripe/webhook)
+
+```
+
+4. Under **Events to send**, select:
+
+- `checkout.session.completed`
+- `invoice.paid`
+- `payment_intent.succeeded`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+5. Click **Add endpoint**
+6. After it's created, click it, and copy the **"Signing secret"** — that is your **Webhook Secret**
+
+---
+
+## ⚙️ Fill in the Plugin Settings
+
+Once you have all the credentials, return to the **Stripe Settings** page in your admin dashboard and enter:
+
+```plaintext
+✔ Publishable Key
+✔ Secret Key
+✔ Webhook Secret
+✔ Enable Test Mode (if needed)
+```
+
+> 🧪 If you're testing your store, use Stripe **test keys** starting with `pk_test_`, `sk_test_`, and **test cards** (like `4242 4242 4242 4242`).
+
+---
+
+## ✅ You're Ready!
+
+Once connected:
+
+- Customers can pay using credit/debit cards securely via Stripe.
+- You can receive payouts from Stripe based on your country and banking info.
+- Webhooks will update orders and subscriptions automatically.
+
+---
+
+## 🧠 Tips for Developers
+
+If you're a developer or advanced user:
+
+- Use [Stripe CLI](https://stripe.com/docs/stripe-cli) to test webhooks locally
+- Rotate your secret keys periodically
+- Make sure webhook routes are **protected and verified**
+
+---
+
+If you need help, reach out to support or see [Stripe Plugin Troubleshooting](./troubleshooting).

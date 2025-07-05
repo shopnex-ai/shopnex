@@ -1,0 +1,87 @@
+# CJ Dropshipping Plugin Setup
+
+This guide walks you through configuring the CJ Dropshipping integration plugin.
+
+## 🔐 Credentials
+
+Begin by filling in the **required** credentials to authenticate with the CJ Dropshipping API.
+
+> ⚠️ Only **Email Address** and **API Token** are required.  
+> Other fields (**Refresh Token**, **Access Token**, and their expiry fields\*\*) will be updated automatically by the system. You should only modify them manually in rare or advanced cases (e.g. debugging or token override).
+
+| Field                    | Description                                                                 |
+| ------------------------ | --------------------------------------------------------------------------- |
+| **Email Address**        | ✅ Required – the email associated with your CJ Dropshipping account.       |
+| **API Token**            | ✅ Required – the API token provided by CJ Dropshipping for authentication. |
+| **Refresh Token**        | Auto-managed – used to renew your access token when it expires.             |
+| **Refresh Token Expiry** | Auto-managed – the date and time when the refresh token becomes invalid.    |
+| **Access Token**         | Auto-managed – temporary token used to authorize requests.                  |
+| **Access Token Expiry**  | Auto-managed – the expiry date and time for the access token.               |
+
+---
+
+### 🛠️ How to Get Your Email & API Token
+
+If you're not sure where to get this information, follow these steps:
+
+1. **Create an account** at [CJ Dropshipping](https://app.cjdropshipping.com/).
+2. After logging in, go to the **Authorization** section in your account dashboard.
+3. Click **API** from the sidebar.
+4. Create a new store integration if needed.
+5. You’ll be presented with an **API Key** — this is your **API Token**.
+6. Use the **email you registered with CJ** as the **Email Address**.
+
+> Make sure to keep your API token secure. Treat it like a password — never share it publicly.
+
+## 🖼️ Logo Area POD
+
+This section is for customizing your Print-on-Demand (POD) logo:
+
+- Click **Create New** to upload a new logo.
+- Or select **Choose from existing** to use a previously uploaded logo.
+- You can also drag and drop a logo file directly into the box.
+
+> Logos will be associated with your POD products during sync.
+
+## 🛒 Products
+
+List the products you want to sync with CJ Dropshipping:
+
+### Adding a Product
+
+Each product requires a **Product URL**:
+
+```txt
+https://cjdropshipping.com/product/mens-t-shirt-t-shirt-overalls-p-2503190327561613000.html
+```
+
+You can add multiple product URLs by clicking **Add Product** in the UI.
+
+---
+
+### Example
+
+```json
+{
+    "productUrl": "https://cjdropshipping.com/product/mens-t-shirt-t-shirt-overalls-p-2503190327561613000.html"
+}
+```
+
+---
+
+## ✅ Saving Configuration
+
+Once all the required fields are filled, click **Save** in the top-right corner to store your configuration.
+
+This will allow the system to begin syncing your credentials, POD logos, and selected products with CJ Dropshipping's API.
+
+---
+
+## 🧪 Troubleshooting
+
+- **Invalid Product URL?** Ensure you're using the correct CJ product URL format.
+- **No Logo?** If you don't upload a logo, your POD products may appear unbranded.
+
+---
+
+Need more help? Refer to the [CJ Dropshipping API docs](https://developers.cjdropshipping.com/) or contact your platform administrator.

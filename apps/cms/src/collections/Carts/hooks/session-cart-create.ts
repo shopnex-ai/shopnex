@@ -17,7 +17,7 @@ export const sessionCartCreate: AfterChangeHook<Cart> = ({
         expires: getCookieExpiration({ seconds: 60 * 60 * 24 * 30 }),
         path: "/",
         returnCookieAsObject: false,
-        value: doc.sessionId!,
+        value: String(doc.id),
     });
 
     const newHeaders = new Headers({

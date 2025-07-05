@@ -1,0 +1,233 @@
+import { Steps, Tabs, FileTree } from "nextra/components";
+
+# Getting Started with ShopNex
+
+Welcome to **ShopNex**, the open-source eCommerce platform built on top of [Payload CMS](https://payloadcms.com). This guide will help you set up your self-hosted store in just a few minutes using our CLI tool.
+
+Whether you're building a simple store or a large commerce platform, ShopNex gives you a strong foundation with modern technologies and powerful customization options.
+
+---
+
+## 🧱 Requirements
+
+Before you begin, make sure you have the following installed:
+
+- [Node.js](https://nodejs.org/) (v18 or later)
+- [pnpm](https://pnpm.io/) or [npm](https://www.npmjs.com/)
+- Git
+
+---
+
+## ⚙️ Setup Steps
+
+<Steps>
+
+Use the official CLI to generate your project:
+
+<Tabs items={["pnpm", "npm", "yarn"]}>
+    <Tabs.Tab>```bash pnpm dlx create-shopnex-app ```</Tabs.Tab>
+    <Tabs.Tab>npx create-shopnex-app</Tabs.Tab>
+    <Tabs.Tab>yarn create shopnex-app</Tabs.Tab>
+</Tabs>
+
+You'll be guided through the setup process, including:
+
+- Naming your project
+- Selecting a database (e.g., MongoDB or PostgreSQL)
+- Choosing optional features
+- Configuring environment variables
+
+---
+
+## 🏪 Choose Your Storefront
+
+ShopNex supports flexible frontend integrations. You can choose between:
+
+### 🧱 Builder.io (Visual Storefront)
+
+To use Builder.io as your storefront:
+
+1. Add your Builder.io credentials in the `.env` file.
+2. Run the following command to seed example pages:
+
+```bash
+pnpm run pages:seed
+```
+
+---
+
+## CLI Options
+
+The CLI accepts optional flags to customize your installation:
+
+| Flag         | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| `--fresh`    | Skip seeding example data for a clean setup                               |
+| `--skip-env` | Skip environment variable setup (you can configure `.env` manually later) |
+| `--skip-dev` | Prevents the development server from auto-starting after setup            |
+
+**Example usage:**
+
+```bash
+pnpm dlx create-shopnex-app my-store --fresh --skip-env
+```
+
+</Steps>
+
+## 📁 Project Structure
+
+Here’s an overview of the core folders in your new ShopNex project:
+
+<FileTree>
+  <FileTree.Folder name="src" defaultOpen>
+    <FileTree.Folder name="access">
+      <FileTree.File name="roles.ts" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="admin">
+      <FileTree.Folder name="components">
+        <FileTree.Folder name="Dashboard" />
+        <FileTree.Folder name="Nav" />
+      </FileTree.Folder>
+      <FileTree.File name="types.ts" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="app">
+      <FileTree.Folder name="(frontend)">
+        <FileTree.Folder name="_components" />
+        <FileTree.Folder name="_context" />
+        <FileTree.Folder name="_hooks" />
+        <FileTree.Folder name="_providers" />
+        <FileTree.Folder name="_templates" />
+        <FileTree.Folder name="_types" />
+        <FileTree.Folder name="_util" />
+        <FileTree.Folder name="(checkout)" />
+        <FileTree.Folder name="(main)" />
+        <FileTree.File name="globals.css" />
+        <FileTree.File name="layout.tsx" />
+        <FileTree.File name="not-found.tsx" />
+      </FileTree.Folder>
+      <FileTree.Folder name="(payload)">
+        <FileTree.Folder name="admin" />
+        <FileTree.Folder name="api" />
+        <FileTree.File name="custom.scss" />
+        <FileTree.File name="layout.tsx" />
+      </FileTree.Folder>
+      <FileTree.Folder name="api">
+        <FileTree.Folder name="actions" />
+        <FileTree.Folder name="my-route" />
+        <FileTree.Folder name="services" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+
+    <FileTree.Folder name="collections">
+      <FileTree.Folder name="Carts">
+        <FileTree.Folder name="access" />
+        <FileTree.File name="Carts.ts" />
+        <FileTree.Folder name="endpoints" />
+        <FileTree.Folder name="hooks" />
+      </FileTree.Folder>
+      <FileTree.Folder name="Orders">
+        <FileTree.Folder name="fields" />
+        <FileTree.Folder name="hooks" />
+        <FileTree.File name="Orders.ts" />
+      </FileTree.Folder>
+      <FileTree.Folder name="Products">
+        <FileTree.Folder name="fields" />
+        <FileTree.Folder name="hooks" />
+        <FileTree.File name="Products.ts" />
+      </FileTree.Folder>
+      <FileTree.File name="Collections.ts" />
+      <FileTree.File name="GiftCards.ts" />
+      <FileTree.File name="groups.ts" />
+      <FileTree.File name="Locations.ts" />
+      <FileTree.File name="Media.ts" />
+      <FileTree.File name="Options.ts" />
+      <FileTree.File name="Payments.ts" />
+      <FileTree.File name="Policies.ts" />
+      <FileTree.File name="Shipping.ts" />
+      <FileTree.File name="Users.ts" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="fields">
+      <FileTree.File name="description.ts" />
+      <FileTree.File name="slug.ts" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="globals">
+      <FileTree.File name="Footer.ts" />
+      <FileTree.File name="HeroSection.ts" />
+      <FileTree.File name="StoreSettings.ts" />
+    </FileTree.Folder>
+
+    <FileTree.File name="payload-types.ts" />
+    <FileTree.File name="payload.config.ts" />
+    <FileTree.File name="plugins.ts" />
+
+    <FileTree.Folder name="seed">
+      <FileTree.File name="collections.json" />
+      <FileTree.File name="globals.json" />
+      <FileTree.File name="index.ts" />
+      <FileTree.File name="products.json" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="utils">
+      <FileTree.File name="check-credentials.ts" />
+      <FileTree.File name="fetch-exchange-rates.ts" />
+      <FileTree.File name="format-slug.ts" />
+      <FileTree.File name="generate-gift-card-code.ts" />
+      <FileTree.File name="get-client-ip.ts" />
+      <FileTree.File name="is-expended-doc.ts" />
+      <FileTree.File name="map-products.ts" />
+      <FileTree.File name="payload-sdk.ts" />
+    </FileTree.Folder>
+
+    <FileTree.Folder name="webhooks">
+      <FileTree.File name="payment-canceled.ts" />
+      <FileTree.File name="payment-succeeded.ts" />
+    </FileTree.Folder>
+
+  </FileTree.Folder>
+</FileTree>
+
+---
+
+## ✨ Features Overview
+
+- ✅ **Analytics Dashboard** – View sales and store performance metrics
+- 🎨 **Custom Branding** – Style your store with Tailwind and custom admin theming
+- 💳 **Stripe Checkout** – Secure, modern payment flow
+- 🛒 **Visual Storefront** – Optional Builder.io integration
+- 📦 **Dropshipping Integration** – Native support for CJ Dropshipping
+- 📁 **Order Management** – View and manage orders and customer data
+- 🧩 **Plugin Marketplace** – Extend functionality with installable plugins
+- 🗂️ **Data Import** – CSV/Excel import mapping
+- 🔗 **Monorepo Support** – Easy plugin and workspace management
+
+---
+
+## 🛠️ Contributing
+
+We love community contributions!
+
+- ⭐ Star the [GitHub repo](https://github.com/your-org/shopnex)
+- 🐛 Report bugs or request features via [GitHub Issues](https://github.com/your-org/shopnex/issues)
+- 🔧 Fork the repo and submit a pull request
+- 💬 Join the community on [Discord](https://discord.gg/your-discord-link)
+
+Before contributing, please:
+
+- Check open issues and PRs
+- Follow project-specific contribution guidelines
+
+---
+
+## 📚 Next Steps
+
+- [Configuration Guide](./configuration)
+- [Deploying Your Store](./deployment)
+- [Plugin System Overview](./plugins)
+
+---
+
+Let me know if you want this version converted into an `.mdx` page with layout or localized sidebar links for Nextra/Docsify/Documenso/etc.

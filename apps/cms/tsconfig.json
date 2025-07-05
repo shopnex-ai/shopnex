@@ -24,13 +24,12 @@
         },
         "target": "ES2022"
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-    "exclude": [
-        "dist",
-        "build",
-        "node_modules",
-        "src/app/(frontend)/_components/checkout/**/*.tsx",
-        "src/app/(frontend)/(checkout)/**/*.tsx",
-        "src/app/(frontend)/_templates/**/*.tsx"
-    ]
+    "include": [
+        "next-env.d.ts",
+        "**/*.ts",
+        "**/*.tsx",
+        ".next/types/**/*.ts",
+        "postcss.config.mjs"
+    ],
+    "exclude": ["dist", "build", "node_modules"]
 }

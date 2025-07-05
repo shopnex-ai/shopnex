@@ -3,7 +3,7 @@ import Stripe from "stripe";
 
 export const mapToStripeLineItems = (
     variants: {
-        gallery: { url: string }[];
+        gallery: [string];
         id: string;
         options: { id: string; option: string; value: string }[];
         price: number;
@@ -11,6 +11,7 @@ export const mapToStripeLineItems = (
     }[]
 ): Stripe.Checkout.SessionCreateParams.LineItem[] => {
     return variants.map((variant) => {
+        const imageUrl = `${process.env.NEXT_PUBLIC_SERVER_URL}${variant.gallery[0]}`;
         return {
             price_data: {
                 currency: "usd", // Adjust if needed
@@ -19,10 +20,7 @@ export const mapToStripeLineItems = (
                     description: variant.options
                         .map((opt) => `${opt.option}: ${opt.value}`)
                         .join(", "),
-                    images:
-                        variant.gallery.length > 0
-                            ? [variant.gallery[0].url]
-                            : [],
+                    images: variant.gallery.length > 0 ? [imageUrl] : [],
                 },
                 unit_amount: +new Decimal(variant.price).times(100).toFixed(0),
             },

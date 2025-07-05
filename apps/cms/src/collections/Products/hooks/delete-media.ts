@@ -1,9 +1,12 @@
 import type { Media, Product } from "@/payload-types";
-import type { AfterDeleteHook } from "node_modules/payload/dist/collections/config/types";
+import type { CollectionAfterDeleteHook } from "payload";
 
 import { isExpandedDoc } from "@/utils/is-expended-doc";
 
-export const deleteMedia: AfterDeleteHook<Product> = async ({ doc, req }) => {
+export const deleteMedia: CollectionAfterDeleteHook<Product> = async ({
+    doc,
+    req,
+}) => {
     const { payload } = req;
     req.payload.logger.debug(`Starting to delete media for product: ${doc.id}`);
 

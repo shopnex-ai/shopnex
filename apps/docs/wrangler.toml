@@ -1,0 +1,26 @@
+name = "docs"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Add your environment variables here
+# MY_VAR = "my-value"
+
+[site]
+bucket = "./public"
+
+[build]
+command = "npm run build"
+
+[env.production]
+# Production-specific settings
+zone_id = ""
+route = ""
+
+[env.development]
+# Development-specific settings
+
+[[rules]]
+type = "ESModule"
+globs = ["**/*.js", "**/*.ts"]

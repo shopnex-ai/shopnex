@@ -19,7 +19,13 @@
         "format": "prettier --write ."
     },
     "dependencies": {
-        "@shopnex/types": "workspace:*"
+        "@shopnex/types": "workspace:*",
+        "@payloadcms/db-sqlite": "3.31.0",
+        "@payloadcms/next": "3.31.0",
+        "@payloadcms/richtext-lexical": "3.31.0",
+        "@payloadcms/translations": "3.31.0",
+        "@payloadcms/ui": "3.31.0",
+        "payload": "3.31.0"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3.2.0",

@@ -45,3 +45,6 @@ media
 dev.db
 
 /src/app/(frontend)
+_pagefind
+
+out

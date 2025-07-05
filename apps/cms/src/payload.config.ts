@@ -11,7 +11,7 @@ import { Collections } from "./collections/Collections";
 import { GiftCards } from "./collections/GiftCards";
 import { Locations } from "./collections/Locations";
 import { Media } from "./collections/Media";
-import { Orders } from "./collections/Orders";
+import { Orders } from "./collections/Orders/Orders";
 import { Pages } from "./collections/Pages";
 import { Payments } from "./collections/Payments";
 import { Policies } from "./collections/Policies";

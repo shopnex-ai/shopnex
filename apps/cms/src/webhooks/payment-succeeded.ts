@@ -1,4 +1,5 @@
 import type { StripeWebhookHandler } from "@shopnex/stripe-plugin/types";
+import type { Payload } from "payload";
 
 import Stripe from "stripe";
 
@@ -11,6 +12,7 @@ export const paymentSucceeded: StripeWebhookHandler<{
     };
     id: string;
 }> = async ({ event, payload }) => {
+    const { logger } = payload;
     const paymentIntent = event.data.object;
 
     // Extract relevant details
@@ -23,7 +25,7 @@ export const paymentSucceeded: StripeWebhookHandler<{
     );
 
     if (!orderId) {
-        console.error("❌ Missing order ID in payment metadata");
+        logger.error("❌ Missing order ID in payment metadata");
         return;
     }
 
@@ -89,22 +91,23 @@ export const paymentSucceeded: StripeWebhookHandler<{
             throw new Error(result.errors[0].message);
         }
 
-        payload.logger.info(
-            `✅ Payment successful for Order ID: ${orderId}`,
-            result
-        );
+        logger.info(`✅ Payment successful for Order ID: ${orderId}`, result);
 
         // (Optional) Send confirmation email
         if (customerEmail) {
             sendOrderConfirmationEmail(customerEmail, orderId);
         }
     } catch (error) {
-        payload.logger.error("❌ Error updating order status:", error);
+        logger.error("❌ Error updating order status:", error);
     }
 };
 
-function sendOrderConfirmationEmail(email: string, orderId: string) {
-    console.log(
+function sendOrderConfirmationEmail(
+    email: string,
+    orderId: string,
+    logger: Payload["logger"]
+) {
+    logger.info(
         `📧 Sending confirmation email to ${email} for Order ID: ${orderId}`
     );
 }

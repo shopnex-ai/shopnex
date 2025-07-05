@@ -1,7 +1,4 @@
 import { payloadSdk } from "@/utils/payload-sdk";
-import config from "@payload-config";
-import { get } from "lodash";
-import { getPayload } from "payload";
 
 export const setAddresses = (cartId: string, addresses: any) => {
     return null;
@@ -26,14 +23,19 @@ export const setShippingMethod = ({ cartId, shippingMethodId }: any) => {
     return {};
 };
 
-export async function createCart(item: { id: string; quantity: number }) {
+export async function createCart(item: {
+    id: string;
+    productId: number;
+    quantity: number;
+}) {
     await payloadSdk.create({
         collection: "carts",
         data: {
             cartItems: [
                 {
-                    variantId: item.id,
+                    product: item.productId,
                     quantity: item.quantity,
+                    variantId: item.id,
                 },
             ],
         },
@@ -68,8 +70,8 @@ export async function updateCart(item: { id: string; quantity: number }) {
         updatedCartItems = [
             ...existingItems,
             {
-                variantId: item.id,
                 quantity: item.quantity,
+                variantId: item.id,
             },
         ];
     }
