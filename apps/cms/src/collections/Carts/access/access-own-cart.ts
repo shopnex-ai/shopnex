@@ -9,18 +9,18 @@ export const canAccessOwnCart = ({ req }: any) => {
     }
     const cookies = parseCookies(req.headers);
 
-    const sessionId = cookies.get("cart-session");
-    if (!sessionId) {
+    const cardId = cookies.get("cart-session");
+    if (!cardId) {
         return {
-            sessionId: {
+            id: {
                 equals: null,
             },
         };
     }
 
     return {
-        sessionId: {
-            equals: sessionId,
+        id: {
+            equals: cardId,
         },
     };
 };

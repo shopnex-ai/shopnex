@@ -77,14 +77,10 @@ export async function updateCart(item: { id: string; quantity: number }) {
     }
 
     await payloadSdk.update({
+        id: cartResult.id,
         collection: "carts",
         data: {
             cartItems: updatedCartItems,
-        },
-        where: {
-            sessionId: {
-                equals: cartResult.sessionId,
-            },
         },
     });
 }
