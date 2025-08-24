@@ -3,4 +3,5 @@ packages:
     - "packages/*"
     - "apps/cms"
     - "apps/shop"
+    - "apps/shop-adrian"
 

@@ -1,0 +1,27 @@
+{
+    "name": "@shopnex/shop-adrian",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --port 3050",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@shopnex/payload-sdk": "^3.1.7",
+        "@shopnex/types": "^0.0.3",
+        "js-cookie": "^3.0.5",
+        "next": "15.3.5",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "react-use-cart": "^1.14.0"
+    },
+    "devDependencies": {
+        "@types/js-cookie": "^3.0.6",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "typescript": "^5"
+    }
+}

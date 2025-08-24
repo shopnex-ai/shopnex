@@ -323,6 +323,46 @@ importers:
         specifier: ^5
         version: 5.7.3
 
+  apps/shop-adrian:
+    dependencies:
+      '@shopnex/payload-sdk':
+        specifier: ^3.1.7
+        version: 3.1.7(typescript@5.7.3)
+      '@shopnex/types':
+        specifier: ^0.0.3
+        version: 0.0.3
+      js-cookie:
+        specifier: ^3.0.5
+        version: 3.0.5
+      next:
+        specifier: 15.3.5
+        version: 15.3.5(@playwright/test@1.55.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)(sass@1.77.4)
+      react:
+        specifier: ^19.0.0
+        version: 19.0.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.0.0(react@19.0.0)
+      react-use-cart:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.0.0)
+    devDependencies:
+      '@types/js-cookie':
+        specifier: ^3.0.6
+        version: 3.0.6
+      '@types/node':
+        specifier: ^20
+        version: 20.19.9
+      '@types/react':
+        specifier: ^19
+        version: 19.0.7
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.0.3(@types/react@19.0.7)
+      typescript:
+        specifier: ^5
+        version: 5.7.3
+
   packages/types: {}
 
 packages:

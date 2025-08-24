@@ -1,0 +1,215 @@
+@import 'tailwindcss';
+
+@config '../../../tailwind.config.ts';
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@layer utilities {
+  body {
+    margin: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .direction-rtl {
+    direction: rtl;
+  }
+
+  .header {
+    z-index: 10;
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    position: relative;
+    transition:
+      transform 0.3s,
+      width 0.3s,
+      max-width 0.3s,
+      background-color 0.3s,
+      backdrop-filter 0.3s,
+      padding 0.3s;
+    justify-content: space-between;
+  }
+
+  .header.scrolled {
+    background-color: rgba(230, 234, 249, 0.5);
+  }
+
+  .header.scrolled .backdrop_blur {
+    backdrop-filter: blur(16px);
+    z-index: -30;
+  }
+
+  @media (min-width: 768px) {
+    .header.opened {
+      padding: 1.5rem 0;
+    }
+
+    .header.scrolled {
+      border-radius: 1.5rem;
+      max-width: 76rem;
+    }
+
+    .header.scrolled .backdrop_blur {
+      border-radius: 1.5rem;
+    }
+  }
+
+  .header_hidden {
+    transform: translateX(-50%) translateY(-100%);
+  }
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: auto;
+    font-weight: auto;
+  }
+
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 240 5% 96%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 240 6% 90%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.2rem;
+
+    --success: 196 52% 74%;
+    --warning: 34 89% 85%;
+    --error: 10 100% 86%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  [data-theme="dark"] {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+
+    --card: 0 0% 4%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 0, 0%, 15%, 0.5;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --success: 196 100% 14%;
+    --warning: 34 51% 25%;
+    --error: 10 39% 43%;
+  }
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer utilities {
+  html body[data-scroll-locked] {
+    overflow: visible !important;
+    margin-right: 0 !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply flex min-h-screen flex-col bg-background text-foreground;
+  }
+}
+
+/* html {
+  opacity: 0;
+}
+
+html[data-theme="dark"],
+html[data-theme="light"] {
+  opacity: initial;
+} */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
