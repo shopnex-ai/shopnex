@@ -71,6 +71,7 @@ export interface Config {
     collections: Collection;
     products: Product;
     users: User;
+    customer: Customer;
     campaigns: Campaign;
     media: Media;
     policies: Policy;
@@ -84,6 +85,8 @@ export interface Config {
     locations: Location;
     shipping: Shipping;
     'checkout-sessions': CheckoutSession;
+    coupons: Coupon;
+    'tax-rules': TaxRule;
     'cj-settings': CjSetting;
     exports: Export;
     'email-templates': EmailTemplate;
@@ -102,6 +105,7 @@ export interface Config {
     collections: CollectionsSelect<false> | CollectionsSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    customer: CustomerSelect<false> | CustomerSelect<true>;
     campaigns: CampaignsSelect<false> | CampaignsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     policies: PoliciesSelect<false> | PoliciesSelect<true>;
@@ -115,6 +119,8 @@ export interface Config {
     locations: LocationsSelect<false> | LocationsSelect<true>;
     shipping: ShippingSelect<false> | ShippingSelect<true>;
     'checkout-sessions': CheckoutSessionsSelect<false> | CheckoutSessionsSelect<true>;
+    coupons: CouponsSelect<false> | CouponsSelect<true>;
+    'tax-rules': TaxRulesSelect<false> | TaxRulesSelect<true>;
     'cj-settings': CjSettingsSelect<false> | CjSettingsSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
     'email-templates': EmailTemplatesSelect<false> | EmailTemplatesSelect<true>;
@@ -173,6 +179,18 @@ export interface Order {
   id: number;
   orderId: string;
   totalAmount: number;
+  /**
+   * Subtotal before tax and shipping
+   */
+  subtotal?: number | null;
+  /**
+   * Total tax amount
+   */
+  taxAmount?: number | null;
+  /**
+   * Shipping cost
+   */
+  shippingAmount?: number | null;
   user?: (number | null) | User;
   cart?: (number | null) | Cart;
   source?: ('manual' | 'cj') | null;
@@ -186,6 +204,21 @@ export interface Order {
   sessionUrl?: string | null;
   paymentMethod?: string | null;
   receiptUrl?: string | null;
+  taxBreakdown?: {
+    ruleName?: string;
+    rate?: number;
+    amount?: number;
+    type?: string;
+    [k: string]: unknown;
+  }[];
+  /**
+   * Applied coupon code
+   */
+  couponCode?: string | null;
+  /**
+   * Total discount applied
+   */
+  discountAmount?: number | null;
   metadata?:
     | {
         [k: string]: unknown;
@@ -352,6 +385,22 @@ export interface Product {
     price: number;
     originalPrice?: number | null;
     stockCount?: number | null;
+    /**
+     * Alert when stock falls below this amount
+     */
+    lowStockThreshold?: number | null;
+    /**
+     * Enable inventory tracking for this variant
+     */
+    trackInventory?: boolean | null;
+    /**
+     * Allow customers to order when out of stock
+     */
+    allowBackorders?: boolean | null;
+    /**
+     * Auto-calculated based on stock levels
+     */
+    inventoryStatus?: ('in_stock' | 'low_stock' | 'out_of_stock' | 'discontinued') | null;
     options?:
       | {
           option: string;
@@ -531,6 +580,75 @@ export interface Location {
   hours?: string | null;
   enabled?: boolean | null;
   isPickupLocation?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer".
+ */
+export interface Customer {
+  id: number;
+  /**
+   * Associated user account
+   */
+  user: number | User;
+  /**
+   * Saved customer addresses
+   */
+  addresses?:
+    | {
+        /**
+         * Address label (e.g., Home, Work, Billing)
+         */
+        label: string;
+        /**
+         * Set as default address
+         */
+        isDefault?: boolean | null;
+        addressType: 'shipping' | 'billing' | 'both';
+        firstName: string;
+        lastName: string;
+        company?: string | null;
+        address1: string;
+        address2?: string | null;
+        city: string;
+        state: string;
+        zipCode: string;
+        country: string;
+        phone?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Customer purchase statistics
+   */
+  statistics?: {
+    /**
+     * Total number of orders placed
+     */
+    totalOrders?: number | null;
+    /**
+     * Total amount spent
+     */
+    totalSpent?: number | null;
+    /**
+     * Average order value
+     */
+    averageOrderValue?: number | null;
+    /**
+     * Date of first order
+     */
+    firstOrderDate?: string | null;
+    /**
+     * Date of most recent order
+     */
+    lastOrderDate?: string | null;
+  };
+  /**
+   * Internal notes about this customer
+   */
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -779,6 +897,134 @@ export interface CheckoutSession {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons".
+ */
+export interface Coupon {
+  id: number;
+  /**
+   * Unique coupon code that customers will enter
+   */
+  code: string;
+  discountType: 'percentage' | 'fixed' | 'free_shipping';
+  /**
+   * For percentage: enter value without % (e.g., 10 for 10%). For fixed: enter amount in store currency.
+   */
+  discountValue?: number | null;
+  /**
+   * Minimum order amount required to use this coupon
+   */
+  minimumOrderAmount?: number | null;
+  /**
+   * Maximum discount amount (useful for percentage coupons)
+   */
+  maximumDiscountAmount?: number | null;
+  /**
+   * Maximum number of times this coupon can be used (leave empty for unlimited)
+   */
+  usageLimit?: number | null;
+  /**
+   * Maximum uses per customer (leave empty for unlimited)
+   */
+  usageLimitPerCustomer?: number | null;
+  /**
+   * When this coupon becomes active
+   */
+  startsAt?: string | null;
+  /**
+   * When this coupon expires
+   */
+  expiresAt?: string | null;
+  /**
+   * Leave empty to apply to all products, or select specific products
+   */
+  applicableProducts?: (number | Product)[] | null;
+  /**
+   * Apply coupon to specific collections/categories
+   */
+  applicableCollections?: (number | Collection)[] | null;
+  /**
+   * Products that this coupon cannot be applied to
+   */
+  excludedProducts?: (number | Product)[] | null;
+  active?: boolean | null;
+  /**
+   * Number of times this coupon has been used
+   */
+  usageCount?: number | null;
+  /**
+   * Internal description for admin reference
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-rules".
+ */
+export interface TaxRule {
+  id: number;
+  /**
+   * Name for this tax rule (e.g., 'California Sales Tax', 'UK VAT')
+   */
+  name: string;
+  /**
+   * Tax rate as percentage (e.g., 8.5 for 8.5%)
+   */
+  rate: number;
+  taxType: 'sales_tax' | 'vat' | 'gst' | 'other';
+  region: {
+    /**
+     * Country code (e.g., US, UK, CA)
+     */
+    country: string;
+    /**
+     * State/Province code (e.g., CA, NY, ON)
+     */
+    state?: string | null;
+    /**
+     * Specific city (optional)
+     */
+    city?: string | null;
+    /**
+     * Specific ZIP/postal code (optional)
+     */
+    zipCode?: string | null;
+  };
+  /**
+   * Leave empty to apply to all products, or select specific products
+   */
+  applicableProducts?: (number | Product)[] | null;
+  /**
+   * Apply tax to specific collections/categories
+   */
+  applicableCollections?: (number | Collection)[] | null;
+  /**
+   * Products exempt from this tax rule
+   */
+  exemptProducts?: (number | Product)[] | null;
+  /**
+   * Apply tax to shipping costs
+   */
+  includeShipping?: boolean | null;
+  /**
+   * Calculate tax on top of other taxes
+   */
+  compoundTax?: boolean | null;
+  active?: boolean | null;
+  /**
+   * Priority order for applying multiple tax rules (lower number = higher priority)
+   */
+  priority?: number | null;
+  /**
+   * Internal notes about this tax rule
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cj-settings".
  */
 export interface CjSetting {
@@ -953,6 +1199,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'customer';
+        value: number | Customer;
+      } | null)
+    | ({
         relationTo: 'campaigns';
         value: number | Campaign;
       } | null)
@@ -1003,6 +1253,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'checkout-sessions';
         value: number | CheckoutSession;
+      } | null)
+    | ({
+        relationTo: 'coupons';
+        value: number | Coupon;
+      } | null)
+    | ({
+        relationTo: 'tax-rules';
+        value: number | TaxRule;
       } | null)
     | ({
         relationTo: 'cj-settings';
@@ -1069,6 +1327,9 @@ export interface PayloadMigration {
 export interface OrdersSelect<T extends boolean = true> {
   orderId?: T;
   totalAmount?: T;
+  subtotal?: T;
+  taxAmount?: T;
+  shippingAmount?: T;
   user?: T;
   cart?: T;
   source?: T;
@@ -1082,6 +1343,9 @@ export interface OrdersSelect<T extends boolean = true> {
   sessionUrl?: T;
   paymentMethod?: T;
   receiptUrl?: T;
+  taxBreakdown?: T;
+  couponCode?: T;
+  discountAmount?: T;
   metadata?: T;
   shippingAddress?: T;
   billingAddress?: T;
@@ -1148,6 +1412,10 @@ export interface ProductsSelect<T extends boolean = true> {
         price?: T;
         originalPrice?: T;
         stockCount?: T;
+        lowStockThreshold?: T;
+        trackInventory?: T;
+        allowBackorders?: T;
+        inventoryStatus?: T;
         options?:
           | T
           | {
@@ -1197,6 +1465,43 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customer_select".
+ */
+export interface CustomerSelect<T extends boolean = true> {
+  user?: T;
+  addresses?:
+    | T
+    | {
+        label?: T;
+        isDefault?: T;
+        addressType?: T;
+        firstName?: T;
+        lastName?: T;
+        company?: T;
+        address1?: T;
+        address2?: T;
+        city?: T;
+        state?: T;
+        zipCode?: T;
+        country?: T;
+        phone?: T;
+        id?: T;
+      };
+  statistics?:
+    | T
+    | {
+        totalOrders?: T;
+        totalSpent?: T;
+        averageOrderValue?: T;
+        firstOrderDate?: T;
+        lastOrderDate?: T;
+      };
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1476,6 +1781,56 @@ export interface CheckoutSessionsSelect<T extends boolean = true> {
   payment?: T;
   shippingAddress?: T;
   billingAddress?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "coupons_select".
+ */
+export interface CouponsSelect<T extends boolean = true> {
+  code?: T;
+  discountType?: T;
+  discountValue?: T;
+  minimumOrderAmount?: T;
+  maximumDiscountAmount?: T;
+  usageLimit?: T;
+  usageLimitPerCustomer?: T;
+  startsAt?: T;
+  expiresAt?: T;
+  applicableProducts?: T;
+  applicableCollections?: T;
+  excludedProducts?: T;
+  active?: T;
+  usageCount?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tax-rules_select".
+ */
+export interface TaxRulesSelect<T extends boolean = true> {
+  name?: T;
+  rate?: T;
+  taxType?: T;
+  region?:
+    | T
+    | {
+        country?: T;
+        state?: T;
+        city?: T;
+        zipCode?: T;
+      };
+  applicableProducts?: T;
+  applicableCollections?: T;
+  exemptProducts?: T;
+  includeShipping?: T;
+  compoundTax?: T;
+  active?: T;
+  priority?: T;
+  description?: T;
   updatedAt?: T;
   createdAt?: T;
 }

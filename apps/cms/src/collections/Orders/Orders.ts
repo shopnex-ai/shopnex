@@ -46,6 +46,35 @@ export const Orders: CollectionConfig = {
             type: "row",
             fields: [
                 {
+                    name: "subtotal",
+                    type: "number",
+                    min: 0,
+                    admin: {
+                        description: "Subtotal before tax and shipping",
+                    },
+                },
+                {
+                    name: "taxAmount",
+                    type: "number",
+                    min: 0,
+                    admin: {
+                        description: "Total tax amount",
+                    },
+                },
+                {
+                    name: "shippingAmount",
+                    type: "number",
+                    min: 0,
+                    admin: {
+                        description: "Shipping cost",
+                    },
+                },
+            ],
+        },
+        {
+            type: "row",
+            fields: [
+                {
                     name: "user",
                     type: "relationship",
                     relationTo: "users",
@@ -159,6 +188,43 @@ export const Orders: CollectionConfig = {
                 readOnly: true,
             },
             required: false,
+        },
+        {
+            name: "taxBreakdown",
+            type: "json",
+            admin: {
+                description: "Detailed tax calculation breakdown",
+                readOnly: true,
+            },
+            typescriptSchema: [
+                () => ({
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            ruleName: { type: "string" },
+                            rate: { type: "number" },
+                            amount: { type: "number" },
+                            type: { type: "string" },
+                        },
+                    },
+                }),
+            ],
+        },
+        {
+            name: "couponCode",
+            type: "text",
+            admin: {
+                description: "Applied coupon code",
+            },
+        },
+        {
+            name: "discountAmount",
+            type: "number",
+            min: 0,
+            admin: {
+                description: "Total discount applied",
+            },
         },
         {
             name: "metadata",

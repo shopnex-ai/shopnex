@@ -13,7 +13,7 @@ export const Users: CollectionConfig = {
         update: admins,
     },
     admin: {
-        group: groups.customers,
+        group: groups.settings,
         useAsTitle: "email",
     },
 

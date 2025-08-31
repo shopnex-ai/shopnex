@@ -6,6 +6,7 @@ import { HandleField } from "@/fields/handle";
 
 import { groups } from "../groups";
 import { deleteMedia } from "./hooks/delete-media";
+import { updateInventoryStatus } from "./hooks/update-inventory-status";
 import { SeoField } from "@/fields/seo";
 
 export const Products: CollectionConfig = {
@@ -226,6 +227,51 @@ export const Products: CollectionConfig = {
                             defaultValue: 0,
                             min: 0,
                         },
+                        {
+                            name: "lowStockThreshold",
+                            type: "number",
+                            defaultValue: 5,
+                            min: 0,
+                            admin: {
+                                description: "Alert when stock falls below this amount",
+                            },
+                        },
+                    ],
+                },
+                {
+                    type: "row",
+                    fields: [
+                        {
+                            name: "trackInventory",
+                            type: "checkbox",
+                            defaultValue: true,
+                            admin: {
+                                description: "Enable inventory tracking for this variant",
+                            },
+                        },
+                        {
+                            name: "allowBackorders",
+                            type: "checkbox",
+                            defaultValue: false,
+                            admin: {
+                                description: "Allow customers to order when out of stock",
+                            },
+                        },
+                        {
+                            name: "inventoryStatus",
+                            type: "select",
+                            defaultValue: "in_stock",
+                            options: [
+                                { label: "In Stock", value: "in_stock" },
+                                { label: "Low Stock", value: "low_stock" },
+                                { label: "Out of Stock", value: "out_of_stock" },
+                                { label: "Discontinued", value: "discontinued" },
+                            ],
+                            admin: {
+                                readOnly: true,
+                                description: "Auto-calculated based on stock levels",
+                            },
+                        },
                     ],
                 },
 
@@ -288,5 +334,6 @@ export const Products: CollectionConfig = {
     ],
     hooks: {
         afterDelete: [deleteMedia],
+        beforeChange: [updateInventoryStatus],
     },
 };

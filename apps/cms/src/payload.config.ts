@@ -7,6 +7,8 @@ import sharp from "sharp";
 
 import { Carts } from "./collections/Carts/Carts";
 import { Collections } from "./collections/Collections";
+import { Coupons } from "./collections/Coupons/Coupons";
+import { Customers } from "./collections/Customers";
 import { GiftCards } from "./collections/GiftCards";
 import { Locations } from "./collections/Locations";
 import { Media } from "./collections/Media";
@@ -15,6 +17,7 @@ import { Payments } from "./collections/Payments";
 import { Policies } from "./collections/Policies";
 import { Products } from "./collections/Products/Products";
 import { Shipping } from "./collections/Shipping";
+import { TaxRules } from "./collections/TaxRules";
 import { Users } from "./collections/Users";
 import StoreSettings from "./globals/StoreSettings";
 import { plugins } from "./plugins";
@@ -50,6 +53,7 @@ export default buildConfig({
         Collections,
         Products,
         Users,
+        Customers,
         Campaigns,
         Media,
         Policies,
@@ -63,6 +67,8 @@ export default buildConfig({
         Locations,
         Shipping,
         CheckoutSessions,
+        Coupons,
+        TaxRules,
     ],
     globals: [StoreSettings],
     cors: {

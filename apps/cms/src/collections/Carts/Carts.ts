@@ -14,7 +14,7 @@ export const Carts: CollectionConfig = {
     },
     admin: {
         group: groups.customers,
-        useAsTitle: "id",
+        useAsTitle: "sessionId",
     },
     endpoints: [createCartSession, updateCartSession],
     fields: [
