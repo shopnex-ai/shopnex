@@ -1,0 +1,239 @@
+.footer2 {
+  background-color: rgb(34, 34, 34);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  padding: 40px 0;
+
+  &__container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__logo {
+    display: inline-block;
+    
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  }
+
+  &__description {
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__social {
+    display: flex;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &__social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+
+  &__social-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 16px;
+  }
+
+  &__navigation {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__nav-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__nav-section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+
+  &__contact {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__contact-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__contact-link,
+  &__contact-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.2s ease;
+  }
+
+  &__contact-link {
+    &:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+
+  &__contact-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  &__newsletter {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__form-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__form-title {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &__form-input-wrapper {
+    position: relative;
+    display: flex;
+  }
+
+  &__form-input {
+    width: 100%;
+    padding: 10px 40px 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.4);
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  &__form-submit {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: rgba(255, 255, 255, 1);
+    }
+  }
+
+  &__copyright {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 1rem;
+    line-height: 1.4;
+  }
+}

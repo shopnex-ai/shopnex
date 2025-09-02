@@ -31,6 +31,7 @@
         "@shopnex/sidebar-plugin": "0.0.2",
         "@shopnex/store-plugin": "^1.0.15",
         "@shopnex/stripe-plugin": "^3.31.10",
+        "@shopnex/puck-editor-plugin": "workspace:*",
         "@shopnex/utils": "^1.0.6",
         "@tailwindcss/postcss": "^4.1.3",
         "@tailwindcss/typography": "^0.5.16",

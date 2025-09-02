@@ -1,0 +1,314 @@
+// Container and grid system
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+}
+
+.col12 {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding: 0 15px;
+}
+
+.col6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 0 15px;
+}
+
+.col4 {
+  flex: 0 0 33.333333%;
+  max-width: 33.333333%;
+  padding: 0 15px;
+}
+
+.col3 {
+  flex: 0 0 25%;
+  max-width: 25%;
+  padding: 0 15px;
+}
+
+// Main section
+.trendingItems {
+  padding: 60px 0;
+  background-color: #fff;
+}
+
+// Section heading
+.sectionHeading {
+  text-align: center;
+  margin-bottom: 50px;
+
+  h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+    text-transform: capitalize;
+  }
+}
+
+// Trending item card
+.trendingItem {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+  overflow: hidden;
+  position: relative;
+
+  &:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+
+    .itemActions {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+// Item image container
+.itemImage {
+  position: relative;
+  padding: 20px;
+  text-align: center;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+
+  a {
+    display: block;
+    text-decoration: none;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover img {
+    transform: scale(1.05);
+  }
+}
+
+// Badge styles
+.badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+.badgeNew {
+  background-color: #4CAF50;
+}
+
+.badgeTopSelling {
+  background-color: #FF5722;
+}
+
+.badgeTradeIn {
+  background-color: #2196F3;
+}
+
+// Item actions (floating buttons)
+.itemActions {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.actionBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #007bff;
+    color: white;
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.cartBtn {
+  background: #007bff;
+  color: white;
+
+  &:hover {
+    background: #0056b3;
+  }
+}
+
+// Item content
+.itemContent {
+  padding: 20px;
+  text-align: center;
+}
+
+.category {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.itemName {
+  display: block;
+  text-decoration: none;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: #007bff;
+  }
+}
+
+// Price wrapper
+.priceWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.originalPrice {
+  font-size: 14px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.currentPrice {
+  font-size: 18px;
+  font-weight: 700;
+  color: #007bff;
+}
+
+// Responsive design
+@media (max-width: 992px) {
+  .col3 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+  
+  .col4 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (max-width: 768px) {
+  .trendingItems {
+    padding: 40px 0;
+  }
+  
+  .sectionHeading {
+    margin-bottom: 30px;
+    
+    h2 {
+      font-size: 2rem;
+    }
+  }
+  
+  .col3,
+  .col4,
+  .col6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+  
+  .itemImage {
+    min-height: 200px;
+    padding: 15px;
+  }
+  
+  .itemContent {
+    padding: 15px;
+  }
+  
+  .itemActions {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 10px;
+  }
+  
+  .row {
+    margin: 0 -10px;
+  }
+  
+  .col12,
+  .col6,
+  .col4,
+  .col3 {
+    padding: 0 10px;
+  }
+  
+  .sectionHeading h2 {
+    font-size: 1.75rem;
+  }
+  
+  .itemName {
+    font-size: 14px;
+  }
+  
+  .currentPrice {
+    font-size: 16px;
+  }
+}

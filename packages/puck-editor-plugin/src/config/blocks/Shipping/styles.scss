@@ -1,0 +1,282 @@
+.shipping-section {
+  margin-top: 30px;
+  padding-left: 30px;
+  color: #666;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  box-sizing: border-box;
+
+  .shipping-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    color: inherit;
+  }
+
+  .shipping-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #fff;
+    padding: 20px;
+  }
+
+  .delivery-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: start;
+    justify-content: center;
+
+    @media (min-width: 640px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .delivery-option {
+      &:first-child {
+        margin-left: 0;
+      }
+    }
+
+    .delivery-link {
+      display: block;
+      padding: 15px;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      text-align: center;
+
+      &:hover {
+        background-color: #f8f8f8;
+        border-color: #ddd;
+      }
+
+      &.active {
+        background-color: #f0f0f0;
+        border-color: #ccc;
+        font-weight: 500;
+      }
+
+      .delivery-title {
+        font-weight: 500;
+        text-transform: capitalize;
+        margin-bottom: 4px;
+      }
+
+      .delivery-description {
+        font-size: 0.9em;
+        color: #888;
+      }
+    }
+  }
+
+  .shipping-content {
+    .store-pickup {
+      .pickup-info {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+
+        @media (min-width: 640px) {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .map-placeholder {
+          position: relative;
+          height: 200px;
+          background-color: #e5e3df;
+          border-radius: 4px;
+          overflow: hidden;
+
+          .map-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+
+            .error-icon {
+              font-size: 2rem;
+              margin-bottom: 8px;
+            }
+
+            .error-title {
+              font-weight: 500;
+              margin-bottom: 4px;
+            }
+
+            .error-message {
+              font-size: 0.9em;
+              color: #888;
+            }
+          }
+        }
+
+        .store-details {
+          font-size: 0.9em;
+          padding: 10px 0;
+
+          .store-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+          }
+
+          .store-address,
+          .store-hours {
+            margin-bottom: 4px;
+            line-height: 1.4;
+          }
+        }
+      }
+    }
+
+    .city-delivery,
+    .regional-delivery {
+      .address-form {
+        .form-row {
+          display: grid;
+          gap: 10px;
+          margin-bottom: 15px;
+
+          &:first-child {
+            grid-template-columns: 1fr auto;
+
+            .street {
+              grid-column: 1;
+            }
+
+            .house {
+              grid-column: 2;
+              width: 100px;
+            }
+
+            .city {
+              grid-column: 1;
+            }
+
+            .postcode {
+              grid-column: 2;
+              width: 120px;
+            }
+          }
+
+          &.details {
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+
+            @media (min-width: 640px) {
+              grid-template-columns: repeat(4, 1fr);
+            }
+          }
+        }
+
+        .form-group {
+          &.full-width {
+            margin-bottom: 15px;
+          }
+
+          label {
+            display: block;
+          }
+
+          .form-label {
+            font-size: 0.9em;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #333;
+
+            &.required::after {
+              content: " *";
+              color: #e74c3c;
+            }
+          }
+
+          .form-input,
+          .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #fff;
+            transition: border-color 0.2s ease;
+
+            &:focus {
+              outline: none;
+              border-color: #007bff;
+              box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+            }
+          }
+
+          .form-textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #fff;
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.2s ease;
+
+            &:focus {
+              outline: none;
+              border-color: #007bff;
+              box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+            }
+
+            &::placeholder {
+              color: #999;
+            }
+          }
+        }
+
+        .delivery-schedule {
+          margin-top: 20px;
+
+          .schedule-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+          }
+
+          .schedule-selects {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+
+            @media (min-width: 640px) {
+              grid-template-columns: 200px 200px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 639px) {
+  .shipping-section {
+    padding-left: 15px;
+    margin-top: 20px;
+
+    .shipping-card {
+      padding: 15px;
+    }
+
+    .delivery-options {
+      grid-template-columns: 1fr;
+      gap: 8px;
+
+      .delivery-link {
+        padding: 12px;
+      }
+    }
+  }
+}

@@ -136,6 +136,9 @@ importers:
       '@shopnex/payload-sdk':
         specifier: ^3.1.7
         version: 3.1.7(typescript@5.7.3)
+      '@shopnex/puck-editor-plugin':
+        specifier: workspace:*
+        version: link:../../packages/puck-editor-plugin
       '@shopnex/quick-actions-plugin':
         specifier: ^0.0.4
         version: 0.0.4(@types/react-dom@19.1.0(@types/react@19.1.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.7.3)

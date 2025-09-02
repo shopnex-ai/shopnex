@@ -12,6 +12,7 @@ import { easyEmailPlugin } from "@shopnex/easy-email-plugin";
 import { seoPlugin } from "@payloadcms/plugin-seo";
 import { analyticsPlugin } from "@shopnex/analytics-plugin";
 import { sidebarPlugin } from "@shopnex/sidebar-plugin";
+import { puckEditorPlugin } from "@shopnex/puck-editor-plugin";
 
 export const plugins: Plugin[] = [
     cjPlugin({
@@ -90,4 +91,5 @@ export const plugins: Plugin[] = [
     }),
     analyticsPlugin({}),
     sidebarPlugin(),
+    puckEditorPlugin({}),
 ];

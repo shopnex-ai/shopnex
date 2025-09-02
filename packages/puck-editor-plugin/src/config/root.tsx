@@ -26,7 +26,7 @@ export const Root: RootConfig<{
         description: "Meta description",
     },
     render: ({ children }) => {
-        return <div>{children}</div>;
+        return <div style={{ height: "100%" }}>{children}</div>;
     },
 };
 

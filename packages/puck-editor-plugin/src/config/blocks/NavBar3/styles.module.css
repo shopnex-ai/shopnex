@@ -1,0 +1,276 @@
+/* NavBar2 Component Styles */
+.navbarContainer {
+    background-color: rgb(255, 255, 255);
+    border-bottom: 1px solid rgb(229, 229, 229);
+    box-sizing: border-box;
+    font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    color: rgb(102, 102, 102);
+    font-weight: 400;
+    display: block;
+    width: 100%;
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    height: 61px;
+}
+
+.navbarContainerFixed {
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 980;
+}
+
+.navbarContainerStatic {
+    position: relative;
+}
+
+.navbar {
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.navbarLeft {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.navbarRight {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.navbarToggle {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: inherit;
+}
+
+.navbarItem {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+}
+
+.navbarButton {
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.navbarButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.logo {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.navbarNav {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+.navbarNav li {
+    position: relative;
+}
+
+.navbarNav a {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+.navbarNav a:hover {
+    color: rgb(51, 51, 51);
+}
+
+.navbarDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid rgb(229, 229, 229);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1000;
+}
+
+.navbarNav li:hover .navbarDropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.searchDropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid rgb(229, 229, 229);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    min-width: 300px;
+    z-index: 1000;
+}
+
+.searchForm {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.searchInput {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid rgb(229, 229, 229);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: rgb(102, 102, 102);
+}
+
+.badge {
+    background-color: rgb(220, 53, 69);
+    color: white;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.userDropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid rgb(229, 229, 229);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    z-index: 1000;
+}
+
+.userNav {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+}
+
+.userNav li {
+    margin: 0;
+}
+
+.userNav a {
+    display: block;
+    padding: 8px 16px;
+    text-decoration: none;
+    color: inherit;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.userNav a:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.divider {
+    height: 1px;
+    background-color: rgb(229, 229, 229);
+    margin: 4px 0;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5;
+}
+
+.chevronIcon {
+    width: 12px;
+    height: 12px;
+    margin-left: 4px;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: inherit;
+}
+
+/* Mobile specific styles */
+@media (max-width: 959px) {
+    .navbarNav {
+        display: none;
+    }
+
+    .navbarToggle {
+        display: block;
+    }
+}
+
+@media (min-width: 960px) {
+    .navbarToggle {
+        display: none;
+    }
+
+    .navbarNav {
+        display: flex;
+    }
+}
+
+/* Responsive utilities */
+.hiddenMobile {
+    display: none;
+}
+
+@media (min-width: 960px) {
+    .hiddenMobile {
+        display: flex;
+    }
+}
+
+.visibleMobile {
+    display: flex;
+}
+
+@media (min-width: 960px) {
+    .visibleMobile {
+        display: none;
+    }
+}

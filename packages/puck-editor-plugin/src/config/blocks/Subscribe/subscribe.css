@@ -1,0 +1,112 @@
+.subscribe-section {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 400;
+    box-sizing: border-box;
+}
+
+.subscribe-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+.subscribe-header {
+    text-align: center;
+}
+
+.subscribe-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: normal;
+}
+
+.subscribe-subtitle {
+    margin-top: 5px;
+}
+
+.subscribe-form-wrapper {
+    margin-top: 20px;
+}
+
+.subscribe-form-grid {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.subscribe-input-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    min-width: 200px;
+}
+
+.subscribe-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none;
+}
+
+.subscribe-input {
+    width: 100%;
+    padding: 10px 12px;
+    padding-left: 40px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #666;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
+.subscribe-input:focus {
+    outline: none;
+    border-color: #1e87f0;
+    box-shadow: 0 0 0 2px rgba(30, 135, 240, 0.1);
+}
+
+.subscribe-button {
+    background-color: #1e87f0;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: normal;
+    cursor: pointer;
+    text-transform: none;
+    line-height: 20px;
+    min-height: 40px;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.subscribe-button:hover {
+    background-color: #1876db;
+}
+
+.subscribe-button:active {
+    background-color: #1565c0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .subscribe-form-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .subscribe-input-wrapper {
+        max-width: 100%;
+        min-width: 280px;
+    }
+}
