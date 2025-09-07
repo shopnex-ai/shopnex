@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Truck, Shield, Headphones, RotateCcw } from "lucide-react";
+import {
+    getFeaturedProducts,
+    getCollections,
+    getFlashDeals,
+    getPromotionalBanners,
+} from "@/lib/payload-sdk";
 
 // Sample product data
 const featuredProducts = [
@@ -71,7 +77,41 @@ const categories = [
     },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+    const [
+        featuredProductsData,
+        collectionsData = [],
+        flashDealsData = [],
+        promotionalBannersData = [],
+    ] = await Promise.all([
+        getFeaturedProducts(),
+        getCollections(),
+        getFlashDeals(),
+        getPromotionalBanners(),
+    ]);
+
+    const formattedProducts = featuredProductsData.map((product: any) => ({
+        id: product.id,
+        name: product.title,
+        price: product.variants?.[0]?.price || 0,
+        originalPrice: product.variants?.[0]?.originalPrice,
+        rating: 4.5, // Default rating since it's not in CMS
+        reviewCount: Math.floor(Math.random() * 1000) + 100, // Mock review count
+        image: product.variants?.[0]?.gallery?.[0]?.url || "/placeholder.svg",
+        badge: product.featured ? "Featured" : undefined,
+    }));
+
+    const formattedCategories = collectionsData
+        .slice(0, 4)
+        .map((collection: any) => ({
+            name: collection.title,
+            image:
+                collection.image?.url ||
+                collection.imageUrl ||
+                "/placeholder.svg",
+            itemCount: `${collection.products?.length || 0} items`,
+        }));
+
     return (
         <div className="min-h-screen bg-background">
             <Header />
@@ -123,7 +163,7 @@ export default function HomePage() {
                 </section>
 
                 {/* Flash Deals */}
-                <FlashDeals />
+                <FlashDeals deals={flashDealsData} />
 
                 {/* Trust Signals */}
                 <section className="py-12 bg-muted/30">
@@ -202,7 +242,10 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {categories.map((category) => (
+                            {(formattedCategories.length > 0
+                                ? formattedCategories
+                                : categories
+                            ).map((category) => (
                                 <Card
                                     key={category.name}
                                     className="group cursor-pointer overflow-hidden hover:shadow-lg transition-all duration-300"
@@ -254,7 +297,10 @@ export default function HomePage() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {featuredProducts.map((product) => (
+                            {(formattedProducts.length > 0
+                                ? formattedProducts
+                                : featuredProducts
+                            ).map((product) => (
                                 <ProductCard key={product.id} {...product} />
                             ))}
                         </div>
@@ -269,41 +315,86 @@ export default function HomePage() {
                 </section>
 
                 {/* Promotional Banner */}
-                <section className="py-16">
-                    <div className="container mx-auto px-4">
-                        <Card className="relative overflow-hidden bg-gradient-to-r from-primary to-secondary text-primary-foreground">
-                            <CardContent className="p-8 md:p-12">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                                    <div>
-                                        <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
-                                            Special Offer
-                                        </h2>
-                                        <p className="text-lg mb-6 opacity-90">
-                                            Get up to 50% off on selected items.
-                                            Limited time offer - don&apos;t miss
-                                            out!
-                                        </p>
-                                        <Button
-                                            size="lg"
-                                            variant="secondary"
-                                            className="px-8"
+                {promotionalBannersData.length > 0 && (
+                    <section className="py-16">
+                        <div className="container mx-auto px-4">
+                            {promotionalBannersData
+                                .slice(0, 1)
+                                .map((banner) => {
+                                    const gradientClass =
+                                        {
+                                            "primary-secondary":
+                                                "from-primary to-secondary",
+                                            "red-orange":
+                                                "from-red-500 to-orange-500",
+                                            "blue-purple":
+                                                "from-blue-500 to-purple-500",
+                                            "green-teal":
+                                                "from-green-500 to-teal-500",
+                                        }[banner.backgroundGradient] ||
+                                        "from-primary to-secondary";
+
+                                    return (
+                                        <Card
+                                            key={banner.id}
+                                            className={`relative overflow-hidden bg-gradient-to-r ${gradientClass} text-primary-foreground`}
                                         >
-                                            Shop Sale Items
-                                            <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    <div className="relative">
-                                        <img
-                                            src="/special-offer-sale-banner.png"
-                                            alt="Special Offer"
-                                            className="w-full h-auto rounded-lg"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </section>
+                                            <CardContent className="p-8 md:p-12">
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                                                    <div>
+                                                        <h2 className="text-3xl md:text-4xl font-heading font-bold mb-4">
+                                                            {banner.title}
+                                                        </h2>
+                                                        {banner.subtitle && (
+                                                            <h3 className="text-xl mb-2 opacity-90">
+                                                                {
+                                                                    banner.subtitle
+                                                                }
+                                                            </h3>
+                                                        )}
+                                                        <p className="text-lg mb-6 opacity-90">
+                                                            {banner.description}
+                                                        </p>
+                                                        {banner.buttonText &&
+                                                            banner.buttonUrl && (
+                                                                <Button
+                                                                    size="lg"
+                                                                    variant="secondary"
+                                                                    className="px-8"
+                                                                    asChild
+                                                                >
+                                                                    <a
+                                                                        href={
+                                                                            banner.buttonUrl
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            banner.buttonText
+                                                                        }
+                                                                        <ArrowRight className="ml-2 h-4 w-4" />
+                                                                    </a>
+                                                                </Button>
+                                                            )}
+                                                    </div>
+                                                    <div className="relative">
+                                                        <img
+                                                            src={
+                                                                banner.image
+                                                                    ?.url ||
+                                                                "/special-offer-sale-banner.png"
+                                                            }
+                                                            alt={banner.title}
+                                                            className="w-full h-auto rounded-lg"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                        </div>
+                    </section>
+                )}
             </main>
 
             <Footer />

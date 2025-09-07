@@ -24,6 +24,7 @@ import { HeroPage } from "./collections/pages/Hero";
 import { FooterPage } from "./collections/pages/Footer";
 import { Campaigns } from "./collections/Campaigns/Campaigns";
 import { Plugins } from "./collections/Plugins/Plugins";
+import { PromotionalBanners } from "./collections/PromotionalBanners";
 import { syncPlugin } from "./collections/Plugins/utils/sync-plugin";
 
 const filename = fileURLToPath(import.meta.url);
@@ -59,6 +60,7 @@ export default buildConfig({
         HeroPage,
         FooterPage,
         Plugins,
+        PromotionalBanners,
         Payments,
         Locations,
         Shipping,

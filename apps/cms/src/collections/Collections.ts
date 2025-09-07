@@ -26,8 +26,16 @@ export const Collections: CollectionConfig = {
             required: true,
         },
         {
+            name: "image",
+            type: "upload",
+            relationTo: "media",
+        },
+        {
             name: "imageUrl",
             type: "text",
+            admin: {
+                description: "Alternative image URL if not using upload",
+            },
         },
         HandleField(),
         description(),

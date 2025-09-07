@@ -80,6 +80,7 @@ export interface Config {
     'hero-page': HeroPage;
     'footer-page': FooterPage;
     plugins: Plugin;
+    'promotional-banners': PromotionalBanner;
     payments: Payment;
     locations: Location;
     shipping: Shipping;
@@ -87,7 +88,6 @@ export interface Config {
     'cj-settings': CjSetting;
     exports: Export;
     'email-templates': EmailTemplate;
-    'puck-pages': PuckPage;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -112,6 +112,7 @@ export interface Config {
     'hero-page': HeroPageSelect<false> | HeroPageSelect<true>;
     'footer-page': FooterPageSelect<false> | FooterPageSelect<true>;
     plugins: PluginsSelect<false> | PluginsSelect<true>;
+    'promotional-banners': PromotionalBannersSelect<false> | PromotionalBannersSelect<true>;
     payments: PaymentsSelect<false> | PaymentsSelect<true>;
     locations: LocationsSelect<false> | LocationsSelect<true>;
     shipping: ShippingSelect<false> | ShippingSelect<true>;
@@ -119,7 +120,6 @@ export interface Config {
     'cj-settings': CjSettingsSelect<false> | CjSettingsSelect<true>;
     exports: ExportsSelect<false> | ExportsSelect<true>;
     'email-templates': EmailTemplatesSelect<false> | EmailTemplatesSelect<true>;
-    'puck-pages': PuckPagesSelect<false> | PuckPagesSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -311,6 +311,7 @@ export interface Product {
   title: string;
   currency?: string | null;
   visible?: boolean | null;
+  featured?: boolean | null;
   /**
    * Choose where this product should be available to customers.
    */
@@ -387,6 +388,10 @@ export interface Product {
 export interface Collection {
   id: number;
   title: string;
+  image?: (number | null) | Media;
+  /**
+   * Alternative image URL if not using upload
+   */
   imageUrl?: string | null;
   handle?: string | null;
   description?: {
@@ -749,6 +754,29 @@ export interface Plugin {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotional-banners".
+ */
+export interface PromotionalBanner {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  description?: string | null;
+  buttonText?: string | null;
+  buttonUrl?: string | null;
+  image?: (number | null) | Media;
+  backgroundGradient?: ('primary-secondary' | 'red-orange' | 'blue-purple' | 'green-teal') | null;
+  active?: boolean | null;
+  /**
+   * Higher numbers appear first
+   */
+  priority?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "checkout-sessions".
  */
 export interface CheckoutSession {
@@ -838,26 +866,6 @@ export interface Export {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "puck-pages".
- */
-export interface PuckPage {
-  id: number;
-  title: string;
-  handle: string;
-  page:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1011,6 +1019,10 @@ export interface PayloadLockedDocument {
         value: number | Plugin;
       } | null)
     | ({
+        relationTo: 'promotional-banners';
+        value: number | PromotionalBanner;
+      } | null)
+    | ({
         relationTo: 'payments';
         value: number | Payment;
       } | null)
@@ -1037,10 +1049,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'email-templates';
         value: number | EmailTemplate;
-      } | null)
-    | ({
-        relationTo: 'puck-pages';
-        value: number | PuckPage;
       } | null)
     | ({
         relationTo: 'payload-jobs';
@@ -1130,6 +1138,7 @@ export interface OrdersSelect<T extends boolean = true> {
  */
 export interface CollectionsSelect<T extends boolean = true> {
   title?: T;
+  image?: T;
   imageUrl?: T;
   handle?: T;
   description?: T;
@@ -1152,6 +1161,7 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   currency?: T;
   visible?: T;
+  featured?: T;
   salesChannels?: T;
   source?: T;
   description?: T;
@@ -1411,6 +1421,25 @@ export interface PluginsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotional-banners_select".
+ */
+export interface PromotionalBannersSelect<T extends boolean = true> {
+  title?: T;
+  subtitle?: T;
+  description?: T;
+  buttonText?: T;
+  buttonUrl?: T;
+  image?: T;
+  backgroundGradient?: T;
+  active?: T;
+  priority?: T;
+  startDate?: T;
+  endDate?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payments_select".
  */
 export interface PaymentsSelect<T extends boolean = true> {
@@ -1560,17 +1589,6 @@ export interface EmailTemplatesSelect<T extends boolean = true> {
   name?: T;
   html?: T;
   json?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "puck-pages_select".
- */
-export interface PuckPagesSelect<T extends boolean = true> {
-  title?: T;
-  handle?: T;
-  page?: T;
   updatedAt?: T;
   createdAt?: T;
 }

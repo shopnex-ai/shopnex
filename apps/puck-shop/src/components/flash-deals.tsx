@@ -8,7 +8,7 @@ import { Clock, Flame } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-const flashDeals = [
+const defaultFlashDeals = [
   {
     id: "1",
     name: "Wireless Gaming Mouse",
@@ -41,7 +41,31 @@ const flashDeals = [
   },
 ]
 
-export function FlashDeals() {
+interface FlashDealsProps {
+  deals?: any[]
+}
+
+function formatDealsData(deals: any[]) {
+  return deals.map((product: any) => {
+    const variant = product.variants?.[0]
+    const salePrice = variant?.price || 0
+    const originalPrice = variant?.originalPrice || salePrice
+    const discount = originalPrice > salePrice ? Math.round(((originalPrice - salePrice) / originalPrice) * 100) : 0
+    
+    return {
+      id: product.id,
+      name: product.title,
+      salePrice,
+      originalPrice,
+      discount,
+      image: variant?.gallery?.[0]?.url || "/placeholder.svg",
+      stock: variant?.stockCount || 0,
+      sold: Math.floor(Math.random() * 100) + 20, // Mock sold count
+    }
+  })
+}
+
+export function FlashDeals({ deals = [] }: FlashDealsProps) {
   const [timeLeft, setTimeLeft] = useState({
     hours: 23,
     minutes: 45,
@@ -91,7 +115,7 @@ export function FlashDeals() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {flashDeals.map((deal) => (
+          {(deals.length > 0 ? formatDealsData(deals) : defaultFlashDeals).map((deal) => (
             <Card key={deal.id} className="group hover:shadow-lg transition-shadow">
               <CardContent className="p-4">
                 <div className="relative mb-4">

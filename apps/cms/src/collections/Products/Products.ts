@@ -60,6 +60,15 @@ export const Products: CollectionConfig = {
             label: "Visibility",
         },
         {
+            name: "featured",
+            type: "checkbox",
+            admin: {
+                position: "sidebar",
+            },
+            defaultValue: false,
+            label: "Featured Product",
+        },
+        {
             name: "salesChannels",
             type: "select",
             admin: {
