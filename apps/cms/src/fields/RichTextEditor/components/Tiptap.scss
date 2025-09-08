@@ -14,7 +14,7 @@ $tiptap-active-bg: #eaeef2;
     border: 1px solid $tiptap-border-color;
     border-radius: 12px;
     // background: #fff;
-    overflow: hidden;
+    overflow: visible !important;
     transition: border-color 0.2s ease;
     margin-bottom: 2rem;
 
@@ -34,6 +34,10 @@ $tiptap-active-bg: #eaeef2;
     overflow-y: auto;
     height: auto;
 
+    .btn--style-icon-label {
+        font-weight: 400;
+    }
+
     &:focus-within {
         border-color: $tiptap-focus-color;
     }
@@ -50,10 +54,176 @@ $tiptap-active-bg: #eaeef2;
 
     .tiptap-toolbar {
         display: flex;
-        gap: 4px;
+        justify-content: space-between;
         padding: 6px;
         border-bottom: 1px solid var(--theme-elevation-150);
         // background: $tiptap-toolbar-bg;
+
+        .tiptap-toolbar-buttons {
+            display: flex;
+            align-items: center;
+        }
+
+        .tiptap-heading-dropdown {
+            min-width: 140px;
+            z-index: 100;
+
+            .tiptap-select {
+                font-size: 14px;
+
+                .rs__control {
+                    min-height: 32px;
+                    border: none;
+                    border-radius: 6px;
+                    background: var(--theme-input-bg);
+                    box-shadow: none;
+                    padding: 0;
+
+                    &:hover {
+                        border-color: var(--theme-elevation-200);
+                    }
+
+                    &--is-focused {
+                        border-color: var(--theme-text);
+                        box-shadow: none;
+                    }
+                }
+
+                .rs__value-container {
+                    padding: 2px 8px;
+                }
+
+                .rs__single-value {
+                    color: var(--theme-text);
+                    font-size: 14px;
+                }
+
+                .rs__dropdown-indicator {
+                    padding: 4px;
+                    color: var(--theme-elevation-500);
+                }
+
+                .rs__menu {
+                    border: 1px solid var(--theme-elevation-150);
+                    border-radius: 6px;
+                    background: var(--theme-input-bg);
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }
+
+                .rs__option {
+                    padding: 8px 12px;
+                    color: var(--theme-text);
+                    background: transparent;
+                    font-size: 14px;
+
+                    &:hover {
+                        background: var(--theme-elevation-50);
+                    }
+
+                    &--is-selected {
+                        background: var(--theme-elevation-100);
+                        color: var(--theme-text);
+                    }
+
+                    &--is-focused {
+                        background: var(--theme-elevation-50);
+                    }
+                }
+            }
+        }
+
+        .color-picker-container {
+            position: relative;
+
+            .color-picker-button {
+                display: flex;
+                gap: 1rem;
+            }
+
+            .color-picker-modal {
+                position: absolute;
+                top: 40px;
+                left: 0;
+                background: var(--theme-input-bg);
+                border: 1px solid var(--theme-elevation-150);
+                border-radius: 8px;
+                padding: 16px;
+                min-width: 280px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 1000;
+
+                .color-picker-tabs {
+                    display: flex;
+                    margin-bottom: 12px;
+                    border-bottom: 2px solid var(--theme-elevation-100);
+                    border-radius: 0;
+
+                    button {
+                        border-radius: 0;
+                        background: none;
+                        border: none;
+                        padding: 8px 16px;
+                        cursor: pointer;
+                        color: var(--theme-text);
+                        font-size: 14px;
+                        border-bottom: 2px solid transparent;
+                        transition: all 0.2s ease;
+
+                        &:hover {
+                            background: var(--theme-elevation-50);
+                        }
+
+                        &.active {
+                            border-bottom-color: var(--theme-text);
+                            font-weight: 600;
+                        }
+                    }
+                }
+
+                .color-grid {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    gap: 6px;
+                    margin-bottom: 12px;
+
+                    .color-swatch {
+                        width: 28px;
+                        height: 28px;
+                        border: 2px solid var(--theme-elevation-150);
+                        border-radius: 4px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+
+                        &:hover {
+                            transform: scale(1.1);
+                            border-color: var(--theme-text);
+                        }
+                    }
+                }
+
+                .color-input-section {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding-top: 8px;
+                    border-top: 1px solid var(--theme-elevation-100);
+
+                    .color-input {
+                        width: 40px;
+                        height: 32px;
+                        border: 1px solid var(--theme-elevation-150);
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }
+
+                    span {
+                        color: var(--theme-text);
+                        font-size: 14px;
+                        font-family: monospace;
+                    }
+                }
+            }
+        }
 
         button {
             border: none;
@@ -66,7 +236,17 @@ $tiptap-active-bg: #eaeef2;
             transition: background 0.15s ease;
 
             &.is-active {
-                font-weight: bold;
+            }
+
+            &.btn--disabled {
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+        }
+
+        .tiptap-select {
+            &.rs--is-disabled {
+                opacity: 0.4;
             }
         }
     }
@@ -83,6 +263,13 @@ $tiptap-active-bg: #eaeef2;
         ul,
         ol {
             padding-left: 20px;
+        }
+
+        .tiptap-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 8px 0;
         }
     }
 }
