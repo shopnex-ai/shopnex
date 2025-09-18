@@ -82,7 +82,7 @@ export default buildConfig({
     },
     db: sqliteAdapter({
         client: {
-            url: process.env.DATABASE_URI || "./dev.db",
+            url: process.env.DATABASE_URI || "",
         },
     }),
     editor: lexicalEditor(),
