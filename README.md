@@ -43,25 +43,6 @@ yarn create shopnex-app my-store
 npx create-shopnex-app my-store
 ```
 
-## 📁 Project Structure
-
-```text
-my-store/
-├── src/
-│   ├── app/
-│   │   ├── (payload)/        # Payload CMS admin & API
-│   │   └── (storefront)/     # Next.js storefront
-│   ├── collections/          # Data models
-│   │   ├── Products/
-│   │   ├── Orders/
-│   │   ├── Collections/
-│   │   └── Users/
-│   ├── fields/              # Reusable field types
-│   └── utils/               # Helper functions
-├── payload.config.ts        # Payload CMS configuration
-└── package.json
-```
-
 ## ✨ Core Features
 
 ### 🛒 Complete E-commerce
@@ -99,9 +80,42 @@ my-store/
 - **SQLite/Database** - Flexible data storage
 - **Testing Suite** - E2E and integration tests
 
+## 📁 Project Structure
+
+```text
+my-store/
+├── src/
+│   ├── app/
+│   │   ├── (payload)/        # Payload CMS admin & API
+│   │   └── (storefront)/     # Next.js storefront
+│   ├── collections/          # Data models
+│   │   ├── Products/
+│   │   ├── Orders/
+│   │   ├── Collections/
+│   │   └── Users/
+│   ├── fields/              # Reusable field types
+│   └── utils/               # Helper functions
+├── payload.config.ts        # Payload CMS configuration
+└── package.json
+```
+
+## 🗺️ Roadmap
+
+✅ Done · 🔄 In Progress · 📋 Planned · 🔍 Investigating
+
+| 🛒 Core | 🔌 Plugins | 🎨 Storefronts | 📚 Docs |
+|---|---|---|---|
+| ✅ Product Management | ✅ Stripe Payment | ✅ Custom Storefront | 📋 Self-Hosting |
+| ✅ Inventory Management | ✅ CJ Dropshipping | ✅ Builder.io | 📋 Plugin Development |
+| 🔄 Checkout Flow | 📋 Shippo Fulfillment | ✅ Puck Editor | 📋 Storefront Integration |
+| 🔄 Cart Management | 📋 PayPal Payment | 📋 Plasmic | 📋 Authentication |
+| 📋 Order History / Tracking | 📋 Mollie Payment | 🔍 Mobile (React Native) | 📋 Multi-Tenancy Guide |
+| 📋 Omni-Channel | 📋 Shopify Source | 🔍 POS Integration | |
+| 📋 Shipping Management | 📋 Brightpearl | 🔍 Marketplaces | |
+
 ## 🛠️ Contributing
 
-> 💡 Pro tip: Don’t forget to ⭐ star the repo and **fork** it to make it your own!
+> 💡 Pro tip: Don't forget to ⭐ star the repo and **fork** it to make it your own!
 
 We welcome contributions! If you find any bugs or have ideas for improvements, feel free to:
 
