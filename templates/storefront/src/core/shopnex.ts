@@ -2,14 +2,19 @@
 // same API for the cart (core/cart), with the settings from `browserConfig`.
 import { ORPCError, createStorefrontClient, safe } from '@shopnex/storefront-sdk'
 
-const baseUrl = import.meta.env.SHOPNEX_URL ?? 'http://localhost:3000'
-const publishableKey = import.meta.env.SHOPNEX_PUBLISHABLE_KEY || undefined
+// process.env first: a production build must read these when it starts, not when it was built
+// (import.meta.env is what `astro dev` fills from .env)
+const env = (name: 'SHOPNEX_URL' | 'SHOPNEX_PUBLIC_URL' | 'SHOPNEX_PUBLISHABLE_KEY') =>
+  process.env[name] ?? import.meta.env[name]
+
+const baseUrl = env('SHOPNEX_URL') ?? 'http://localhost:3000'
+const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined
 
 export const shopnex = createStorefrontClient({ baseUrl, publishableKey })
 
 /** What the browser needs to call the Storefront API (both are public) */
 export const browserConfig = {
-  baseUrl: import.meta.env.SHOPNEX_PUBLIC_URL || baseUrl,
+  baseUrl: env('SHOPNEX_PUBLIC_URL') || baseUrl,
   publishableKey: publishableKey ?? null,
 }
 

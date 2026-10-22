@@ -1,0 +1,16 @@
+# One public port in front of both apps. Admin, API and hosted checkout go to the admin app;
+# everything else (/, /products, /collections, /pages, theme assets…) is the storefront.
+{
+	admin off
+	auto_https off
+}
+
+:{$PUBLIC_PORT} {
+	@admin path /admin /admin/* /api/* /checkout/* /assets/* /fonts/* /favicon.svg
+	handle @admin {
+		reverse_proxy localhost:{$ADMIN_PORT}
+	}
+	handle {
+		reverse_proxy localhost:{$STOREFRONT_PORT}
+	}
+}

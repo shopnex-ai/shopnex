@@ -3,3 +3,4 @@
 .git
 .env
 .data
+**/dist

@@ -257,7 +257,7 @@ function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<str
   }
 }
 
-const adminOrigin = new URL(import.meta.env.SHOPNEX_URL ?? 'http://localhost:3000').origin
+const adminOrigin = new URL(browserConfig.baseUrl).origin
 
 /**
  * What the storefront adds to every page's head: Storefront API settings for theme scripts, the preview, and
