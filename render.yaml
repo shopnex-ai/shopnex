@@ -1,0 +1,20 @@
+# Render Blueprint: https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex
+services:
+  - type: web
+    name: shopnex
+    runtime: docker
+    branch: v2
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: shopnex-db, property: connectionString }
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: TENANCY_MODE
+        value: single
+      - key: DEFAULT_SHOP_NAME
+        value: My Shop
+databases:
+  - name: shopnex-db
+    plan: basic-256mb

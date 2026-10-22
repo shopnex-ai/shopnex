@@ -1,0 +1,21 @@
+# DigitalOcean App Platform: https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2
+spec:
+  name: shopnex
+  services:
+    - name: web
+      git:
+        repo_clone_url: https://github.com/shopnex-ai/shopnex.git
+        branch: v2
+      dockerfile_path: Dockerfile
+      http_port: 3000
+      instance_size_slug: apps-s-1vcpu-2gb
+      envs:
+        - { key: DATABASE_URL, scope: RUN_TIME, value: "${db.DATABASE_URL}" }
+        - { key: BETTER_AUTH_SECRET, scope: RUN_TIME, type: SECRET }
+        - { key: BETTER_AUTH_URL, scope: RUN_TIME, value: "${APP_URL}" }
+        - { key: APP_URL, scope: RUN_TIME, value: "${APP_URL}" }
+        - { key: TENANCY_MODE, scope: RUN_TIME, value: single }
+  databases:
+    - name: db
+      engine: PG
+      production: false
