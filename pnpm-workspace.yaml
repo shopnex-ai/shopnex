@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - modules/*
+  - packages/*
+  - templates/*
+  - e2e
+catalog:
+  '@orpc/client': ^1.15.7
+  '@orpc/server': ^1.15.7
+  '@types/node': ^22.20.5
+  drizzle-orm: ^0.45.4
+  hono: ^4.13.13
+  tailwindcss: ^4.3.3
+  zod: ^4.6.7
+patchedDependencies:
+  '@codemirror/lang-liquid@6.3.3': patches/@codemirror__lang-liquid@6.3.3.patch

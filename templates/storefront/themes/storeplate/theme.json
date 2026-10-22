@@ -1,0 +1,343 @@
+{
+  "id": "storeplate",
+  "name": "Storeplate",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 150
+    },
+    {
+      "id": "color_primary",
+      "label": "Buttons",
+      "type": "color",
+      "default": "#121212"
+    },
+    {
+      "id": "color_body",
+      "label": "Background",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "id": "color_border",
+      "label": "Borders",
+      "type": "color",
+      "default": "#eaeaea"
+    },
+    {
+      "id": "color_light",
+      "label": "Light background",
+      "type": "color",
+      "default": "#f2f2f2"
+    },
+    {
+      "id": "color_dark",
+      "label": "Dark accents",
+      "type": "color",
+      "default": "#000000"
+    },
+    {
+      "id": "color_text",
+      "label": "Text",
+      "type": "color",
+      "default": "#444444"
+    },
+    {
+      "id": "color_text_dark",
+      "label": "Headings",
+      "type": "color",
+      "default": "#000000"
+    },
+    {
+      "id": "color_text_light",
+      "label": "Muted text",
+      "type": "color",
+      "default": "#666666"
+    },
+    {
+      "id": "font",
+      "label": "Font",
+      "type": "select",
+      "options": [
+        {
+          "value": "Karla",
+          "label": "Karla"
+        },
+        {
+          "value": "Inter",
+          "label": "Inter"
+        },
+        {
+          "value": "Work Sans",
+          "label": "Work Sans"
+        },
+        {
+          "value": "DM Sans",
+          "label": "DM Sans"
+        },
+        {
+          "value": "Lora",
+          "label": "Lora"
+        }
+      ],
+      "default": "Karla"
+    },
+    {
+      "id": "sticky_header",
+      "label": "Sticky header",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "id": "announcement_text",
+      "label": "Announcement bar",
+      "info": "Shown above the header when set",
+      "type": "text"
+    },
+    {
+      "id": "announcement_link",
+      "label": "Announcement link",
+      "type": "url"
+    },
+    {
+      "id": "footer_text",
+      "label": "Footer text",
+      "info": "Defaults to © year and the shop name",
+      "type": "text"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "type": "code",
+      "language": "css"
+    }
+  ],
+  "sections": {
+    "hero_slider": {
+      "name": "Hero slider",
+      "settings": [
+        {
+          "id": "collection",
+          "label": "Products from",
+          "info": "One slide per product. Empty: the newest products.",
+          "type": "collection"
+        },
+        {
+          "id": "count",
+          "label": "Slides",
+          "type": "range",
+          "min": 1,
+          "max": 8,
+          "step": 1,
+          "default": 3
+        },
+        {
+          "id": "button_label",
+          "label": "Button",
+          "type": "text",
+          "default": "Shop Now"
+        }
+      ],
+      "limit": 1
+    },
+    "collections": {
+      "name": "Collections",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Collections"
+        },
+        {
+          "id": "count",
+          "label": "Collections shown",
+          "type": "range",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 6
+        }
+      ]
+    },
+    "featured_products": {
+      "name": "Featured products",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Featured Products"
+        },
+        {
+          "id": "subheading",
+          "label": "Subheading",
+          "type": "text",
+          "default": "Explore Today’s Featured Picks!"
+        },
+        {
+          "id": "collection",
+          "label": "Products from",
+          "info": "Empty: the newest products.",
+          "type": "collection"
+        },
+        {
+          "id": "count",
+          "label": "Products shown",
+          "type": "range",
+          "min": 4,
+          "max": 16,
+          "step": 4,
+          "default": 8
+        },
+        {
+          "id": "show_all",
+          "label": "Show “See all products” button",
+          "type": "checkbox",
+          "default": true
+        }
+      ]
+    },
+    "call_to_action": {
+      "name": "Call to action",
+      "settings": [
+        {
+          "id": "subheading",
+          "label": "Subheading",
+          "type": "text",
+          "default": "Deal of the Week"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Get 25% off our new collection"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Fresh arrivals, picked for you. For a limited time only."
+        },
+        {
+          "id": "image",
+          "label": "Image",
+          "type": "image",
+          "default": "/shopnex/assets/storeplate/call-to-action.png"
+        },
+        {
+          "id": "button_label",
+          "label": "Button",
+          "type": "text",
+          "default": "Shop Now"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        }
+      ]
+    },
+    "rich_text": {
+      "name": "Rich text",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Talk about your brand"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Share what makes your products special, your story, or what buyers can expect."
+        }
+      ]
+    },
+    "custom_html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "type": "code",
+          "language": "html"
+        }
+      ]
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        {
+          "id": "hero",
+          "type": "hero_slider",
+          "settings": {}
+        },
+        {
+          "id": "collections",
+          "type": "collections",
+          "settings": {}
+        },
+        {
+          "id": "featured",
+          "type": "featured_products",
+          "settings": {}
+        },
+        {
+          "id": "cta",
+          "type": "call_to_action",
+          "settings": {}
+        }
+      ]
+    }
+  },
+  "presets": {
+    "sand": {
+      "name": "Sand",
+      "description": "Warm neutrals with an earthy accent",
+      "settings": {
+        "color_primary": "#8a5a3b",
+        "color_body": "#fdfaf6",
+        "color_border": "#eadfd2",
+        "color_light": "#f4ede4",
+        "color_dark": "#2b2118",
+        "color_text": "#4a3f35",
+        "color_text_dark": "#2b2118",
+        "color_text_light": "#7d6e60",
+        "font": "Lora"
+      }
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Crisp white with deep blue",
+      "settings": {
+        "color_primary": "#1f4e79",
+        "color_body": "#ffffff",
+        "color_border": "#dbe6f0",
+        "color_light": "#eef4f9",
+        "color_dark": "#0f2a42",
+        "color_text": "#3d4b59",
+        "color_text_dark": "#0f2a42",
+        "color_text_light": "#6b7c8c",
+        "font": "DM Sans"
+      }
+    }
+  }
+}

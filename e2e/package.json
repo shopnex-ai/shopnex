@@ -1,0 +1,25 @@
+{
+  "name": "@shopnex/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --env-file=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/apps": "workspace:*",
+    "@shopnex/cart": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
+    "@shopnex/marketplace-sdk": "workspace:*",
+    "@shopnex/orders": "workspace:*",
+    "@shopnex/payments": "workspace:*",
+    "@shopnex/pricing": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

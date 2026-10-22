@@ -1,0 +1,4 @@
+{%- comment -%} The merchant's own HTML, output as is (a `code` setting: only staff can edit it) {%- endcomment -%}
+{%- if section.settings.html != blank -%}
+  <div class="container">{{ section.settings.html }}</div>
+{%- endif -%}

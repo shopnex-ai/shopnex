@@ -1,0 +1,30 @@
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.count -%}
+<section class="section">
+  <div class="container">
+    {%- if section.settings.heading != blank or section.settings.subheading != blank %}
+      <div class="mb-6 text-center md:mb-14">
+        {%- if section.settings.heading != blank %}
+          <h2 class="mb-2">{{ section.settings.heading }}</h2>
+        {%- endif %}
+        {%- if section.settings.subheading != blank %}
+          <p class="md:h5">{{ section.settings.subheading }}</p>
+        {%- endif %}
+      </div>
+    {%- endif %}
+    {%- if products.size == 0 %}
+      <p class="text-center text-text-light">Products you add in the admin show up here.</p>
+    {%- else %}
+      <div class="row">
+        {%- for product in products %}
+          {% render 'product-card', product: product, class: 'col-6 mb-8 md:col-4 md:mb-14 lg:col-3' %}
+        {%- endfor %}
+      </div>
+    {%- endif %}
+    {%- if section.settings.show_all and products.size > 0 %}
+      <div class="flex justify-center">
+        <a class="btn btn-primary btn-sm font-medium md:btn-lg" href="{{ source.url }}">+ See All Products</a>
+      </div>
+    {%- endif %}
+  </div>
+</section>

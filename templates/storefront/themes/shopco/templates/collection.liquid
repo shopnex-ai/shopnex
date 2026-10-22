@@ -1,0 +1,100 @@
+{%- comment -%}
+  /products and /collections/{handle}: the collections as a filter panel (folded on phones), then the
+  products three across with sort options and paging
+{%- endcomment -%}
+{%- if collection.handle == 'all' -%}
+  {%- assign page_title = 'Shop' -%}
+{%- endif -%}
+{%- assign description = collection.description | strip_html | strip -%}
+{%- capture filters -%}
+  <ul class="m-0 flex list-none flex-col gap-1 p-0">
+    <li>
+      <a href="/products" class="flex items-center justify-between py-2 text-[16px] transition hover:text-ink {% if collection.handle == 'all' %}font-bold text-ink{% else %}text-soft{% endif %}">
+        All products {% render 'icon', name: 'chevron-right', class: 'ico-sm' %}
+      </a>
+    </li>
+    {%- for c in collections %}
+      <li>
+        <a href="{{ c.url }}" class="flex items-center justify-between py-2 text-[16px] transition hover:text-ink {% if collection.handle == c.handle %}font-bold text-ink{% else %}text-soft{% endif %}">
+          {{ c.title }} {% render 'icon', name: 'chevron-right', class: 'ico-sm' %}
+        </a>
+      </li>
+    {%- endfor %}
+  </ul>
+{%- endcapture -%}
+<main class="mx-auto max-w-[1240px] px-4 xl:px-0">
+  <hr class="m-0 border-line" />
+  {% render 'breadcrumbs', current: collection.title %}
+
+  <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+    <aside class="hidden w-[295px] flex-none rounded-[20px] border border-line px-6 py-5 lg:sticky lg:top-28 lg:block">
+      <div class="mb-4 flex items-center justify-between border-b border-line pb-5">
+        <span class="text-[20px] font-bold">Collections</span>
+        {% render 'icon', name: 'sliders', class: 'ico text-faint' %}
+      </div>
+      {{ filters }}
+    </aside>
+
+    <section class="flex min-w-0 flex-1 flex-col gap-5">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 class="m-0 text-[24px] font-bold md:text-[32px]">{{ collection.title }}</h1>
+        <span class="flex-1"></span>
+        <span class="text-[14px] text-soft md:text-[16px]">
+          {{- collection.products.size }} {{ collection.products.size | pluralize: 'product', 'products' }}
+          {%- if paginate.next %} on this page{% endif -%}
+        </span>
+        {%- if collection.sort_options.size > 0 %}
+          <label class="flex items-center gap-1 text-[14px] text-soft md:text-[16px]">
+            Sort by:
+            <select data-sort aria-label="Sort" class="cursor-pointer bg-transparent font-medium text-ink outline-none">
+              {%- for option in collection.sort_options %}
+                <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.name }}</option>
+              {%- endfor %}
+            </select>
+          </label>
+        {%- endif %}
+        <details class="group/filters w-full lg:hidden">
+          <summary class="flex w-fit cursor-pointer items-center gap-2 rounded-full bg-surface px-4 py-2 text-[14px]">
+            {% render 'icon', name: 'sliders', class: 'ico-sm' %} Collections
+          </summary>
+          <div class="mt-3 rounded-[20px] border border-line px-5 py-3">{{ filters }}</div>
+        </details>
+      </div>
+      {%- if description != blank %}
+        <p class="m-0 max-w-[70ch] text-[14px] leading-[22px] text-soft md:text-[16px]">{{ description }}</p>
+      {%- endif %}
+
+      {%- if collection.products.size == 0 %}
+        <div class="flex flex-col items-center gap-4 rounded-[20px] bg-surface px-6 py-20 text-center">
+          <p class="m-0 text-[20px] font-bold">Nothing here yet</p>
+          {%- if collection.handle != 'all' %}
+            <a href="/products" class="btn-line">See all products</a>
+          {%- endif %}
+        </div>
+      {%- else %}
+        <div class="grid grid-cols-2 gap-x-3.5 gap-y-6 md:grid-cols-3 md:gap-x-5 md:gap-y-9">
+          {%- for p in collection.products %}
+            {% render 'product-card', product: p %}
+          {%- endfor %}
+        </div>
+      {%- endif %}
+
+      {%- if paginate.next or paginate.first %}
+        <div class="flex items-center justify-between border-t border-line pt-5">
+          {%- if paginate.first %}
+            <a href="{{ paginate.first.url }}" class="flex items-center gap-2 rounded-[8px] border border-line px-3.5 py-2 text-[14px] font-medium transition hover:bg-surface">
+              {% render 'icon', name: 'arrow-left', class: 'ico-sm' %} First page
+            </a>
+          {%- else %}
+            <span></span>
+          {%- endif %}
+          {%- if paginate.next %}
+            <a href="{{ paginate.next.url }}" class="flex items-center gap-2 rounded-[8px] border border-line px-3.5 py-2 text-[14px] font-medium transition hover:bg-surface">
+              Next {% render 'icon', name: 'arrow-right', class: 'ico-sm' %}
+            </a>
+          {%- endif %}
+        </div>
+      {%- endif %}
+    </section>
+  </div>
+</main>

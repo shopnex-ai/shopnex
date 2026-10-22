@@ -1,0 +1,70 @@
+{%- comment -%}
+  Every Storeplate page: head (theme stylesheet, the merchant's colors and font), header, footer, cart drawer.
+{%- endcomment -%}
+{%- comment -%} Google Fonts parameters for the fonts merchants can pick (theme.json: font) {%- endcomment -%}
+{%- case settings.font -%}
+  {%- when 'Inter' -%}{%- assign font_spec = 'Inter:wght@400;500;700' -%}
+  {%- when 'Work Sans' -%}{%- assign font_spec = 'Work+Sans:wght@400;500;700' -%}
+  {%- when 'DM Sans' -%}{%- assign font_spec = 'DM+Sans:wght@400;500;700' -%}
+  {%- when 'Lora' -%}{%- assign font_spec = 'Lora:wght@400;500;700' -%}
+  {%- else -%}{%- assign font_spec = 'Karla:wght@400;500;700' -%}
+{%- endcase -%}
+{%- if page_title != blank and request.page_type == 'index' -%}
+  {%- assign title = page_title -%}
+{%- elsif page_title != blank -%}
+  {%- assign title = page_title | append: ' – ' | append: shop.name -%}
+{%- else -%}
+  {%- assign title = shop.name -%}
+{%- endif -%}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <title>{{ title }}</title>
+    {%- if page_description != blank %}
+    <meta name="description" content="{{ page_description }}" />
+    {%- endif %}
+    <meta property="og:title" content="{{ title }}" />
+    {%- if page_description != blank %}
+    <meta property="og:description" content="{{ page_description }}" />
+    {%- endif %}
+    {%- if page_image != blank %}
+    <meta property="og:image" content="{{ page_image }}" />
+    {%- endif %}
+    <link rel="icon" href="{{ 'favicon.png' | asset_url }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ font_spec }}&display=swap" />
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {%- comment %} Color settings are validated hex values, so they're safe in CSS {% endcomment %}
+    <style>
+      :root {
+        --color-primary: {{ settings.color_primary }};
+        --color-body: {{ settings.color_body }};
+        --color-border: {{ settings.color_border }};
+        --color-light: {{ settings.color_light }};
+        --color-dark: {{ settings.color_dark }};
+        --color-text: {{ settings.color_text }};
+        --color-text-dark: {{ settings.color_text_dark }};
+        --color-text-light: {{ settings.color_text_light }};
+        --font-primary: '{{ settings.font }}', sans-serif;
+      }
+    </style>
+    {%- if settings.custom_css != blank %}
+    <style>{{ settings.custom_css | replace: '</', '<\/' | raw }}</style>
+    {%- endif %}
+    {{ content_for_header }}
+  </head>
+  <body class="flex min-h-screen flex-col">
+    {% render 'announcement' %}
+    {% render 'header' %}
+    <main class="grow" id="main-content">
+      {{ content_for_layout }}
+    </main>
+    {% render 'footer' %}
+    {%- comment %} The cart drawer is a React island (src/islands/CartDrawer.tsx), rendered in the browser {% endcomment %}
+    <div data-island="CartDrawer" data-props='{"placeholder":"{{ 'product-placeholder.jpg' | asset_url }}"}'></div>
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>

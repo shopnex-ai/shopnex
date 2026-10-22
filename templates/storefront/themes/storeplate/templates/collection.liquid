@@ -1,0 +1,91 @@
+{%- comment -%} /products and /collections/{handle}: collections on the side, sort options, the grid, next page {%- endcomment -%}
+{%- assign description = collection.description | strip_html | strip -%}
+{%- assign current_sort = collection.sort_options.first -%}
+{%- for option in collection.sort_options -%}
+  {%- if option.selected -%}{%- assign current_sort = option -%}{%- endif -%}
+{%- endfor -%}
+<section class="section-sm pt-4!">
+  <div class="container">
+    <div class="row">
+      <aside class="col-12 mb-8 lg:col-3 lg:mb-0">
+        <h3 class="h5 mb-4">Collections</h3>
+        <ul class="flex flex-wrap gap-2 lg:flex-col lg:gap-0 lg:space-y-1">
+          <li>
+            <a
+              href="/products"
+              class="block rounded-md px-3 py-1 transition hover:text-text-dark max-lg:border max-lg:border-border {% if collection.handle == 'all' %}font-semibold text-text-dark{% else %}text-text-light{% endif %}"
+            >
+              All products
+            </a>
+          </li>
+          {%- for c in collections %}
+            <li>
+              <a
+                href="{{ c.url }}"
+                class="block rounded-md px-3 py-1 transition hover:text-text-dark max-lg:border max-lg:border-border {% if collection.handle == c.handle %}font-semibold text-text-dark{% else %}text-text-light{% endif %}"
+              >
+                {{- c.title -}}
+              </a>
+            </li>
+          {%- endfor %}
+        </ul>
+      </aside>
+
+      <div class="col-12 lg:col-9">
+        <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 class="h2">{{ collection.title }}</h1>
+            {%- if description != blank %}
+              <p class="mt-2 max-w-2xl text-text-light">{{ description }}</p>
+            {%- endif %}
+          </div>
+          <details class="relative z-20">
+            <summary class="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-4 py-2 font-medium">
+              Sort: {{ current_sort.name }}
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </summary>
+            <ul class="absolute right-0 mt-2 w-56 rounded-md bg-body p-2 shadow">
+              {%- for option in collection.sort_options %}
+                <li>
+                  <a
+                    href="{{ option.url }}"
+                    class="block rounded px-3 py-1.5 hover:bg-light {% if option.value == current_sort.value %}font-semibold text-text-dark{% endif %}"
+                  >
+                    {{- option.name -}}
+                  </a>
+                </li>
+              {%- endfor %}
+            </ul>
+          </details>
+        </div>
+
+        {%- if collection.products.size == 0 %}
+          <div class="mx-auto pt-5 text-center">
+            <img class="mx-auto mb-6" src="{{ 'no-search-found.png' | asset_url }}" alt="" width="211" height="184" />
+            <h2 class="h3 mb-4">No products here yet</h2>
+            <a href="/products" class="btn btn-outline-primary">See all products</a>
+          </div>
+        {%- else %}
+          <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {%- for product in collection.products %}
+              {% render 'product-card', product: product %}
+            {%- endfor %}
+          </div>
+        {%- endif %}
+
+        {%- if paginate.next or paginate.first %}
+          <div class="flex justify-center gap-4 pt-10">
+            {%- if paginate.first %}
+              <a class="btn btn-outline-primary" href="{{ paginate.first.url }}">First page</a>
+            {%- endif %}
+            {%- if paginate.next %}
+              <a class="btn btn-primary" href="{{ paginate.next.url }}">Next page</a>
+            {%- endif %}
+          </div>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</section>

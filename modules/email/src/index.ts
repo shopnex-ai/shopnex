@@ -1,0 +1,8 @@
+export * as emailService from './email'
+export * as notificationService from './notifications'
+export type { EmailMessage, SmtpInput, TestStep } from './email'
+export { notify, type OrderEvent, type OrderView, type TemplateInput } from './notifications'
+export { startEmailWorker } from './worker'
+export { EmailError, type EmailErrorCode } from './errors'
+export { checkLiquid, type LiquidProblem } from './liquid'
+export { NOTIFICATIONS, SMTP_PRESETS, type Notification, type SmtpConfig, type SmtpPreset } from '@shopnex/db/schema'

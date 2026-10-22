@@ -1,0 +1,12 @@
+<section class="section-sm">
+  <div class="container">
+    <div class="mx-auto max-w-3xl text-center">
+      {%- if section.settings.heading != blank %}
+        <h2 class="mb-4">{{ section.settings.heading }}</h2>
+      {%- endif %}
+      {%- if section.settings.text != blank %}
+        <p class="whitespace-pre-line md:text-lg">{{ section.settings.text }}</p>
+      {%- endif %}
+    </div>
+  </div>
+</section>

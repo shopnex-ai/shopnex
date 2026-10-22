@@ -1,0 +1,54 @@
+{%- comment -%} The shop's collections in a Swiper carousel (src/sliders.ts) {%- endcomment -%}
+{%- if collections.size > 0 -%}
+  <section class="section">
+    <div class="container">
+      {%- if section.settings.heading != blank %}
+        <div class="mb-6 text-center md:mb-14">
+          <h2>{{ section.settings.heading }}</h2>
+        </div>
+      {%- endif %}
+      <div class="group/slider relative">
+        <div class="swiper" data-collections-slider>
+          <div class="swiper-wrapper">
+            {%- for c in collections limit: section.settings.count %}
+              <div class="swiper-slide">
+                <div class="relative text-center">
+                  <img
+                    src="{% if c.image %}{{ c.image | image_url }}{% else %}{{ 'product-placeholder.jpg' | asset_url }}{% endif %}"
+                    width="424"
+                    height="306"
+                    alt="{{ c.title }}"
+                    class="h-[150px] w-full rounded-md object-cover md:h-[250px] lg:h-[306px]"
+                  />
+                  <div class="py-6">
+                    <h3 class="h4 mb-2 font-medium">
+                      <a class="after:absolute after:inset-0" href="{{ c.url }}">{{ c.title }}</a>
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            {%- endfor %}
+          </div>
+        </div>
+        <div class="absolute top-[33%] z-10 hidden w-full px-4 text-text-dark opacity-0 transition-opacity duration-300 group-hover/slider:opacity-100 md:block">
+          <button
+            type="button"
+            data-slider-prev
+            aria-label="Previous collections"
+            class="absolute left-4 rounded-md bg-body p-2 shadow-sm lg:p-3"
+          >
+            {% render 'icon-arrow-left' %}
+          </button>
+          <button
+            type="button"
+            data-slider-next
+            aria-label="Next collections"
+            class="absolute right-4 rounded-md bg-body p-2 shadow-sm lg:p-3"
+          >
+            {% render 'icon-arrow-right' %}
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}

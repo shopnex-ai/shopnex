@@ -1,0 +1,82 @@
+{%- comment -%}
+  Maison's header: a strip of collections (like the original's archive-house tabs), then the serif masthead
+  with the main menu (Online store → Navigation, "main-menu") and the bag.
+{%- endcomment -%}
+{%- if settings.show_collections_bar and collections.size > 0 -%}
+  <div class="border-b border-line bg-tint">
+    <div class="eti no-scrollbar mx-auto flex max-w-[1240px] items-center gap-x-[22px] overflow-x-auto px-3 py-1.5 sm:px-6 sm:py-[9px]">
+      <span class="hidden flex-none text-faint sm:inline">Collections</span>
+      {%- for c in collections limit: 8 %}
+        <a
+          href="{{ c.url }}"
+          class="flex-none whitespace-nowrap {% if request.path == c.url %}tab-on{% else %}text-muted transition hover:text-ink{% endif %}"
+        >
+          {{- c.title -}}
+        </a>
+      {%- endfor %}
+    </div>
+  </div>
+{%- endif %}
+
+{%- assign menu = linklists['main-menu'] %}
+<header class="sticky top-0 z-30 border-b border-rule bg-card">
+  <div class="mx-auto flex max-w-[1240px] flex-wrap items-center gap-x-3 gap-y-2 p-2 sm:gap-x-[26px] sm:gap-y-3.5 sm:px-6 sm:py-3.5">
+    <a
+      href="/"
+      class="font-sf order-1 min-w-0 flex-1 basis-auto truncate text-[18px] tracking-[0.01em] text-ink sm:order-none sm:text-[20px]"
+    >
+      {{- shop.name -}}
+    </a>
+    <nav
+      aria-label="Main"
+      class="order-3 flex basis-full flex-wrap items-center gap-x-4 gap-y-2 text-[13.5px] tracking-[0.02em] sm:order-none sm:basis-auto sm:gap-[22px]"
+    >
+      {%- if menu -%}
+        {%- for link in menu.links %}
+          <div class="group relative">
+            <a
+              href="{{ link.url }}"
+              class="pb-0.5 transition hover:text-acc {% if link.active %}border-b border-acc text-acc{% else %}text-soft{% endif %}"
+            >
+              {{- link.title -}}
+            </a>
+            {%- if link.links.size > 0 %}
+              <div class="invisible absolute top-full left-0 z-40 pt-3 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                <div class="flex min-w-[220px] flex-col gap-3 border border-line bg-card p-4 shadow-[0_18px_32px_-24px_oklch(0.22_0.006_0/0.35)]">
+                  {%- for child in link.links %}
+                    <a href="{{ child.url }}" class="font-sf text-[15px] transition hover:text-acc">{{ child.title }}</a>
+                  {%- endfor %}
+                </div>
+              </div>
+            {%- endif %}
+          </div>
+        {%- endfor %}
+      {%- else -%}
+        {%- comment %} No main menu yet {% endcomment %}
+        <div class="group relative">
+          <a
+            href="/"
+            class="pb-0.5 transition hover:text-acc {% if request.path == '/' %}border-b border-acc text-acc{% else %}text-soft{% endif %}"
+            >Home</a
+          >
+        </div>
+        <div class="group relative">
+          <a
+            href="/products"
+            class="pb-0.5 transition hover:text-acc {% if request.path == '/products' %}border-b border-acc text-acc{% else %}text-soft{% endif %}"
+            >Archive</a
+          >
+        </div>
+      {%- endif %}
+    </nav>
+    <button
+      type="button"
+      data-bag-open
+      title="Bag"
+      class="order-2 flex cursor-pointer items-center gap-1.5 text-[13.5px] text-soft transition hover:text-acc sm:order-none"
+    >
+      {% render 'icon-bag' %}
+      <span>Bag · <span data-bag-count>0</span></span>
+    </button>
+  </div>
+</header>

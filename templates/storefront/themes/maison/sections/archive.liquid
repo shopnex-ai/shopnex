@@ -1,0 +1,9 @@
+{%- comment -%} The home page's archive: collections rail, products from a collection (or the newest), Grid / List {%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.count -%}
+{% render 'archive',
+  products: products,
+  active: source.handle,
+  view: section.settings.default_view,
+  more_url: source.url
+%}

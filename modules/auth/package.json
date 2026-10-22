@@ -1,0 +1,26 @@
+{
+  "name": "@shopnex/auth",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./providers": "./src/providers.ts",
+    "./roles": "./src/roles.ts",
+    "./setup": "./src/setup.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "create-super-admin": "tsx --env-file=../../.env scripts/create-super-admin.ts"
+  },
+  "dependencies": {
+    "@shopnex/db": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "better-auth": "^1.7.12",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

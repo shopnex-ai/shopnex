@@ -1,0 +1,19 @@
+{
+  "name": "@shopnex/theme",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "liquidjs": "10.30.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

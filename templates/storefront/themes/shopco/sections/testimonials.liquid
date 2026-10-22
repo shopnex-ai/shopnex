@@ -1,0 +1,43 @@
+{%- comment -%}
+  Testimonials: up to five quotes as cards in a swipeable row, with arrow buttons (src/theme.ts)
+{%- endcomment -%}
+{%- capture cards -%}
+  {%- for i in (1..5) -%}
+    {%- assign name_key = 'name_' | append: i -%}
+    {%- assign quote_key = 'quote_' | append: i -%}
+    {%- assign quote = section.settings[quote_key] | strip -%}
+    {%- if quote != blank -%}
+      <figure class="m-0 flex w-[min(400px,calc(100vw-2rem))] flex-none snap-start flex-col gap-3 rounded-[20px] border border-line px-6 py-6 md:px-8 md:py-7">
+        {%- if section.settings.show_stars -%}
+          <span class="flex gap-1.5 text-star">
+            {%- for star in (1..5) %}{% render 'icon', name: 'star', class: 'h-[19px] w-[19px] md:h-[23px] md:w-[23px]' %}{% endfor -%}
+          </span>
+        {%- endif -%}
+        {%- assign name = section.settings[name_key] | strip -%}
+        {%- if name != blank -%}
+          <figcaption class="flex items-center gap-1 text-[16px] font-bold md:text-[20px]">
+            {{- name }} {% render 'icon', name: 'verified', class: 'h-5 w-5 md:h-6 md:w-6' -%}
+          </figcaption>
+        {%- endif -%}
+        <blockquote class="m-0 text-[14px] leading-[20px] whitespace-pre-line text-soft md:text-[16px] md:leading-[22px]">“{{ quote }}”</blockquote>
+      </figure>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if cards != blank -%}
+  <section data-carousel class="mx-auto max-w-[1240px] px-4 py-12 md:py-20 xl:px-0">
+    <div class="mb-6 flex items-end gap-4 md:mb-10">
+      {%- if section.settings.heading != blank %}
+        <h2 class="font-display m-0 text-[32px] md:text-[48px]">{{ section.settings.heading }}</h2>
+      {%- endif %}
+      <span class="flex-1"></span>
+      <button type="button" data-carousel-prev aria-label="Previous" class="cursor-pointer p-1 transition hover:opacity-60">
+        {% render 'icon', name: 'arrow-left', class: 'ico' %}
+      </button>
+      <button type="button" data-carousel-next aria-label="Next" class="cursor-pointer p-1 transition hover:opacity-60">
+        {% render 'icon', name: 'arrow-right', class: 'ico' %}
+      </button>
+    </div>
+    <div data-carousel-track class="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto md:gap-5">{{ cards }}</div>
+  </section>
+{%- endif -%}

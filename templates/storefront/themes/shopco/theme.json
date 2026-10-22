@@ -1,0 +1,515 @@
+{
+  "id": "shopco",
+  "name": "Shopco",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "accent_color",
+      "label": "Accent color",
+      "info": "Buttons, the announcement bar, the brand strip and the newsletter box",
+      "type": "color",
+      "default": "#000000"
+    },
+    {
+      "id": "background_color",
+      "label": "Background color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "id": "text_color",
+      "label": "Text color",
+      "type": "color",
+      "default": "#000000"
+    },
+    {
+      "id": "surface_color",
+      "label": "Panel color",
+      "info": "Behind product photos, the footer and the style grid",
+      "type": "color",
+      "default": "#f0f0f0"
+    },
+    {
+      "id": "sale_color",
+      "label": "Sale color",
+      "info": "Discount badges and savings",
+      "type": "color",
+      "default": "#ff3333"
+    },
+    {
+      "id": "heading_font",
+      "label": "Heading font",
+      "type": "select",
+      "options": [
+        {
+          "value": "Archivo",
+          "label": "Archivo Expanded"
+        },
+        {
+          "value": "Archivo Black",
+          "label": "Archivo Black"
+        },
+        {
+          "value": "Anton",
+          "label": "Anton"
+        },
+        {
+          "value": "Bricolage Grotesque",
+          "label": "Bricolage Grotesque"
+        }
+      ],
+      "default": "Archivo"
+    },
+    {
+      "id": "body_font",
+      "label": "Body font",
+      "type": "select",
+      "options": [
+        {
+          "value": "Plus Jakarta Sans",
+          "label": "Plus Jakarta Sans"
+        },
+        {
+          "value": "DM Sans",
+          "label": "DM Sans"
+        },
+        {
+          "value": "Inter",
+          "label": "Inter"
+        },
+        {
+          "value": "Manrope",
+          "label": "Manrope"
+        }
+      ],
+      "default": "Plus Jakarta Sans"
+    },
+    {
+      "id": "announcement_text",
+      "label": "Announcement",
+      "info": "The bar above the header; empty hides it",
+      "type": "text",
+      "default": "Sign up and get 20% off your first order."
+    },
+    {
+      "id": "announcement_link_label",
+      "label": "Announcement link label",
+      "type": "text",
+      "default": "Sign up now"
+    },
+    {
+      "id": "announcement_link",
+      "label": "Announcement link",
+      "type": "url"
+    },
+    {
+      "id": "newsletter_heading",
+      "label": "Newsletter heading",
+      "type": "text",
+      "default": "Stay up to date about our latest offers"
+    },
+    {
+      "id": "newsletter_action",
+      "label": "Newsletter form URL",
+      "info": "Where the email is posted: your email tool's form action (Mailchimp, Kit, Buttondown…). Empty hides the newsletter box.",
+      "type": "url"
+    },
+    {
+      "id": "newsletter_field",
+      "label": "Newsletter email field name",
+      "info": "The form field your email tool expects, e.g. EMAIL for Mailchimp",
+      "type": "text",
+      "default": "email"
+    },
+    {
+      "id": "footer_text",
+      "label": "Footer text",
+      "info": "Under the shop name in the footer",
+      "type": "textarea",
+      "default": "We have clothes that suit your style and which you’re proud to wear. From women to men."
+    },
+    {
+      "id": "copyright",
+      "label": "Copyright line",
+      "info": "Defaults to © year and the shop name",
+      "type": "text"
+    },
+    {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "shipping_text",
+      "label": "Shipping & returns",
+      "info": "A tab on every product page; empty hides it. A blank line starts a new paragraph.",
+      "type": "textarea"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Added after the theme styles on every page",
+      "type": "code",
+      "language": "css"
+    },
+    {
+      "id": "head_html",
+      "label": "Head code",
+      "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "type": "code",
+      "language": "html"
+    }
+  ],
+  "sections": {
+    "hero": {
+      "name": "Hero",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Find clothes that match your style"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style."
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text",
+          "default": "Shop now"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "image",
+          "label": "Image URL",
+          "info": "A cut-out photo works best: it sits at the bottom right of the hero",
+          "type": "image"
+        },
+        {
+          "id": "stat_1_value",
+          "label": "Figure 1",
+          "type": "text",
+          "default": "200+"
+        },
+        {
+          "id": "stat_1_label",
+          "label": "Figure 1 label",
+          "type": "text",
+          "default": "International brands"
+        },
+        {
+          "id": "stat_2_value",
+          "label": "Figure 2",
+          "type": "text",
+          "default": "2,000+"
+        },
+        {
+          "id": "stat_2_label",
+          "label": "Figure 2 label",
+          "type": "text",
+          "default": "High-quality products"
+        },
+        {
+          "id": "stat_3_value",
+          "label": "Figure 3",
+          "type": "text",
+          "default": "30,000+"
+        },
+        {
+          "id": "stat_3_label",
+          "label": "Figure 3 label",
+          "type": "text",
+          "default": "Happy customers"
+        }
+      ],
+      "limit": 1
+    },
+    "brands": {
+      "name": "Brand strip",
+      "settings": [
+        {
+          "id": "names",
+          "label": "Brands",
+          "info": "One per line. Empty: the vendors of your products.",
+          "type": "textarea"
+        }
+      ]
+    },
+    "product-row": {
+      "name": "Product row",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "New arrivals"
+        },
+        {
+          "id": "collection",
+          "label": "Collection",
+          "info": "Empty: the newest products",
+          "type": "collection"
+        },
+        {
+          "id": "limit",
+          "label": "Products shown",
+          "type": "range",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "info": "Links to the collection; empty hides it",
+          "type": "text",
+          "default": "View all"
+        },
+        {
+          "id": "divider",
+          "label": "Line above",
+          "type": "checkbox",
+          "default": false
+        }
+      ]
+    },
+    "style-grid": {
+      "name": "Collection grid",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Browse by style"
+        },
+        {
+          "id": "collection_1",
+          "label": "Collection 1",
+          "info": "Empty tiles: your first collections. A collection's image fills its tile.",
+          "type": "collection"
+        },
+        {
+          "id": "collection_2",
+          "label": "Collection 2",
+          "type": "collection"
+        },
+        {
+          "id": "collection_3",
+          "label": "Collection 3",
+          "type": "collection"
+        },
+        {
+          "id": "collection_4",
+          "label": "Collection 4",
+          "type": "collection"
+        }
+      ],
+      "limit": 1
+    },
+    "testimonials": {
+      "name": "Testimonials",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Our happy customers"
+        },
+        {
+          "id": "name_1",
+          "label": "Customer 1",
+          "type": "text",
+          "default": "Sarah M."
+        },
+        {
+          "id": "quote_1",
+          "label": "Quote 1",
+          "type": "textarea",
+          "default": "I’m blown away by the quality and style of the clothes I received. From casual wear to elegant dresses, every piece I’ve bought has exceeded my expectations."
+        },
+        {
+          "id": "name_2",
+          "label": "Customer 2",
+          "type": "text",
+          "default": "Alex K."
+        },
+        {
+          "id": "quote_2",
+          "label": "Quote 2",
+          "type": "textarea",
+          "default": "Finding clothes that align with my personal style used to be a challenge. The range of options here is truly remarkable, catering to a variety of tastes and occasions."
+        },
+        {
+          "id": "name_3",
+          "label": "Customer 3",
+          "type": "text",
+          "default": "James L."
+        },
+        {
+          "id": "quote_3",
+          "label": "Quote 3",
+          "type": "textarea",
+          "default": "As someone who’s always on the lookout for unique fashion pieces, I’m thrilled I found this shop. The selection is not only diverse but also on point with the latest trends."
+        },
+        {
+          "id": "name_4",
+          "label": "Customer 4",
+          "type": "text"
+        },
+        {
+          "id": "quote_4",
+          "label": "Quote 4",
+          "type": "textarea"
+        },
+        {
+          "id": "name_5",
+          "label": "Customer 5",
+          "type": "text"
+        },
+        {
+          "id": "quote_5",
+          "label": "Quote 5",
+          "type": "textarea"
+        },
+        {
+          "id": "show_stars",
+          "label": "Show five stars",
+          "type": "checkbox",
+          "default": true
+        }
+      ]
+    },
+    "rich-text": {
+      "name": "Text",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Made to be worn"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "info": "A blank line starts a new paragraph",
+          "type": "textarea"
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        }
+      ]
+    },
+    "custom-html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "info": "Shown as is, scripts and styles included",
+          "type": "code",
+          "language": "html",
+          "default": "<p style=\"text-align:center\">Your HTML here</p>"
+        }
+      ]
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        {
+          "id": "hero",
+          "type": "hero",
+          "settings": {}
+        },
+        {
+          "id": "brands",
+          "type": "brands",
+          "settings": {}
+        },
+        {
+          "id": "new-arrivals",
+          "type": "product-row",
+          "settings": {}
+        },
+        {
+          "id": "top-selling",
+          "type": "product-row",
+          "settings": {
+            "heading": "Top selling",
+            "divider": true
+          }
+        },
+        {
+          "id": "styles",
+          "type": "style-grid",
+          "settings": {}
+        },
+        {
+          "id": "testimonials",
+          "type": "testimonials",
+          "settings": {}
+        }
+      ]
+    }
+  },
+  "presets": {
+    "midnight": {
+      "name": "Midnight",
+      "description": "Deep navy accents on cool grey, Bricolage headings",
+      "settings": {
+        "accent_color": "#1b2a4a",
+        "surface_color": "#eef0f4",
+        "sale_color": "#e0473c",
+        "heading_font": "Bricolage Grotesque",
+        "body_font": "DM Sans"
+      }
+    },
+    "clay": {
+      "name": "Clay",
+      "description": "Warm cream and terracotta, Anton headings",
+      "settings": {
+        "accent_color": "#9c4a2f",
+        "background_color": "#fbf8f3",
+        "text_color": "#2a211c",
+        "surface_color": "#f1e9de",
+        "sale_color": "#c2410c",
+        "heading_font": "Anton",
+        "body_font": "Manrope"
+      }
+    }
+  }
+}

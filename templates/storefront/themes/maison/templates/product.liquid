@@ -1,0 +1,182 @@
+{%- comment -%}
+  Maison's piece record: gallery, then a printed ledger (reference, type, availability), option pickers and
+  Add to bag. The chosen variant is kept in the URL (?variant=id); its price, SKU and image follow it
+  (src/product.ts, which reads the product's JSON below).
+{%- endcomment -%}
+{%- assign variant = product.selected_or_first_available_variant -%}
+{%- assign images = product.images -%}
+{%- if images.size == 0 and variant.image -%}
+  {%- assign images = variant.image | concat: images -%}
+{%- endif -%}
+{%- assign main_image = variant.image | default: images.first -%}
+{%- assign excerpt = product.description | strip_html | strip -%}
+<main class="mx-auto max-w-[1100px] px-6">
+  <nav aria-label="Breadcrumb" class="eti flex flex-wrap gap-x-2.5 gap-y-1 pt-10 text-faint" style="font-size:10.5px">
+    <a href="/products" class="transition hover:text-acc">The archive</a>
+    {%- if product.vendor != blank %}
+      <span>/</span>
+      <span>{{ product.vendor }}</span>
+    {%- endif %}
+    <span>/</span>
+    <span class="text-ink">{{ product.title }}</span>
+  </nav>
+
+  <section class="flex flex-wrap items-start gap-x-14 gap-y-9 pt-8 pb-16" data-product-form>
+    <script type="application/json" data-product-json>
+      {{ product | json | raw }}
+    </script>
+    <div class="flex min-w-0 flex-[1_1_380px] flex-col gap-3">
+      <div class="hatch relative aspect-[4/5] overflow-hidden border border-line">
+        {%- if main_image %}
+          <img
+            data-main-image
+            src="{{ main_image | image_url }}"
+            alt="{{ main_image.alt | default: product.title }}"
+            class="absolute inset-0 h-full w-full object-cover"
+          />
+        {%- endif %}
+        {%- if product.type != blank %}
+          <span class="absolute bottom-3.5 left-3.5 bg-card px-1.5 py-[3px] font-mono text-[10px] tracking-[0.08em] text-faint">
+            {{- product.type -}}
+          </span>
+        {%- endif %}
+      </div>
+      {%- if images.size > 1 %}
+        <div class="no-scrollbar flex gap-2.5 overflow-x-auto">
+          {%- for image in images %}
+            <button
+              type="button"
+              data-thumb="{{ image | image_url }}"
+              aria-label="Show {{ image.alt | default: 'image' }}"
+              class="hatch relative aspect-[4/5] w-[68px] flex-none cursor-pointer overflow-hidden border transition hover:border-acc {% if image.src == main_image.src %}border-acc{% else %}border-line{% endif %}"
+            >
+              <img src="{{ image | image_url }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+            </button>
+          {%- endfor %}
+        </div>
+      {%- endif %}
+    </div>
+
+    <div class="flex min-w-0 flex-[1_1_380px] flex-col gap-5 md:pt-2">
+      {%- if product.vendor != blank %}
+        <span class="eti text-faint">{{ product.vendor }}</span>
+      {%- endif %}
+      <h1 class="font-sf m-0 text-[clamp(28px,4vw,42px)] leading-[1.12] tracking-[-0.01em]">{{ product.title }}</h1>
+      {%- if excerpt != blank %}
+        <p class="m-0 line-clamp-4 text-[14.5px] leading-[1.75] text-soft">{{ excerpt }}</p>
+      {%- endif %}
+
+      <div class="flex flex-col">
+        <div
+          class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3 {% if variant.sku == blank %}hidden{% endif %}"
+          data-spec-row="sku"
+        >
+          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Reference</span>
+          <span class="min-w-0 flex-1 text-[13.5px] text-ink" data-spec="sku">{{ variant.sku }}</span>
+        </div>
+        {%- if product.type != blank %}
+          <div class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3">
+            <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Type</span>
+            <span class="min-w-0 flex-1 text-[13.5px] text-ink">{{ product.type }}</span>
+          </div>
+        {%- endif %}
+        <div class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3" data-spec-row="availability">
+          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Availability</span>
+          <span class="min-w-0 flex-1 text-[13.5px] text-ink" data-spec="availability">
+            {%- if variant.available %}Available{% else %}Sold out{% endif -%}
+          </span>
+        </div>
+        {%- for option in product.options_with_values %}
+          <div class="flex flex-wrap items-baseline gap-x-[18px] gap-y-2 border-t border-line py-3">
+            <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">{{ option.name }}</span>
+            <div class="flex min-w-0 flex-1 flex-wrap gap-2">
+              {%- for value in option.values %}
+                <button
+                  type="button"
+                  data-option="{{ option.name }}"
+                  data-value="{{ value.name }}"
+                  aria-pressed="{{ value.selected }}"
+                  {% unless value.available %}data-unavailable{% endunless %}
+                  class="cursor-pointer rounded-[2px] border border-rule px-3 py-[6px] text-[12.5px] text-soft transition hover:border-acc hover:text-acc aria-pressed:border-acc aria-pressed:text-acc data-[unavailable]:text-faint data-[unavailable]:line-through"
+                >
+                  {{- value.name -}}
+                </button>
+              {%- endfor %}
+            </div>
+          </div>
+        {%- endfor %}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-x-[14px] gap-y-3.5 border-t border-rule pt-5">
+        <span class="flex items-baseline gap-2.5 font-mono">
+          <span class="text-[19px]" data-price>{{ variant.price | money }}</span>
+          <s
+            class="text-[14px] text-faint {% unless variant.compare_at_price > variant.price %}hidden{% endunless %}"
+            data-compare-at
+          >
+            {%- if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money }}{% endif -%}
+          </s>
+        </span>
+        <span class="flex-1"></span>
+        <button
+          type="button"
+          data-add-to-bag="{{ variant.id }}"
+          {% unless variant.available %}disabled{% endunless %}
+          class="btn-keeper flex items-center gap-2 px-[22px] py-[13px] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {% render 'icon-bag' %}
+          <span data-add-label>{% if variant.available %}Add to bag{% else %}Sold out{% endif %}</span>
+        </button>
+      </div>
+      {%- if product.tags.size > 0 %}
+        <div class="flex flex-wrap gap-2">
+          {%- for tag in product.tags %}
+            <span class="eti border border-line px-2 py-1 text-faint" style="font-size:10px">{{ tag }}</span>
+          {%- endfor %}
+        </div>
+      {%- endif %}
+    </div>
+  </section>
+
+  {%- if product.description != blank %}
+    <section class="border-t border-line pt-10 pb-6">
+      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">The record</h2>
+      <div class="rte max-w-[68ch]">{{ product.description }}</div>
+    </section>
+  {%- endif %}
+
+  {%- if recommendations.products.size > 0 %}
+    <section class="border-t border-line pt-10 pb-10">
+      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">Also in the archive</h2>
+      {% render 'pieces', products: recommendations.products, grid_only: true %}
+    </section>
+  {%- endif %}
+</main>
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": {{ product.title | json | raw }},
+    {%- if product.vendor != blank %}
+    "brand": { "@type": "Brand", "name": {{ product.vendor | json | raw }} },
+    {%- endif %}
+    "image": [
+      {%- for image in images -%}
+        {{ image | image_url | json | raw }}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ],
+    "description": {{ excerpt | json | raw }},
+    "offers": [
+      {%- for v in product.variants -%}
+        {
+          {%- if v.sku != blank %}"sku": {{ v.sku | json | raw }}, {% endif -%}
+          "@type": "Offer",
+          "price": {{ v.price | money_without_currency | json | raw }},
+          "priceCurrency": {{ v.price.currency | json | raw }},
+          "availability": "https://schema.org/{% if v.available %}InStock{% else %}OutOfStock{% endif %}"
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+</script>

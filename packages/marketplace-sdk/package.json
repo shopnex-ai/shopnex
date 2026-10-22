@@ -1,0 +1,22 @@
+{
+  "name": "@shopnex/marketplace-sdk",
+  "version": "0.1.0",
+  "description": "Shopnex App Marketplace API contract + typed clients, and the keys, tokens and signatures apps and instances exchange",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts",
+    "./session-token": "./src/session-token.ts",
+    "./payments": "./src/payments.ts",
+    "./keys": "./src/keys.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/contract": "^1.15.7",
+    "@orpc/openapi-client": "^1.15.7",
+    "zod": "catalog:"
+  }
+}

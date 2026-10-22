@@ -1,0 +1,7 @@
+<a href="/" class="navbar-brand inline-block">
+  {%- if settings.logo != blank -%}
+    <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="h-auto" />
+  {%- else -%}
+    {{ shop.name }}
+  {%- endif -%}
+</a>

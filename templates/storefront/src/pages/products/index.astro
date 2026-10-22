@@ -1,0 +1,7 @@
+---
+import { loadCatalog } from '../../core/catalog'
+import { loadTheme, render } from '../../core/theme'
+
+const [theme, catalog] = await Promise.all([loadTheme(Astro.url), loadCatalog(Astro.url)])
+return render(theme, Astro.url, catalog!)
+---

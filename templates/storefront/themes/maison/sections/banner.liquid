@@ -1,0 +1,27 @@
+{%- comment -%} Image banner: a photo with an optional eyebrow, heading, text and button {%- endcomment -%}
+{%- case section.settings.height -%}
+  {%- when 'small' -%}{%- assign height = 'min-h-[260px]' -%}
+  {%- when 'large' -%}{%- assign height = 'min-h-[560px]' -%}
+  {%- else -%}{%- assign height = 'min-h-[400px]' -%}
+{%- endcase -%}
+<section class="hatch relative mt-8 flex items-end overflow-hidden border border-line {{ height }}">
+  {%- if section.settings.image != blank %}
+    <img src="{{ section.settings.image }}" alt="" class="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+  {%- endif %}
+  <div class="relative m-3 flex max-w-[560px] flex-col gap-3 border border-line bg-card p-5 sm:m-6 sm:p-7">
+    {%- if section.settings.eyebrow != blank %}
+      <span class="eti text-acc">{{ section.settings.eyebrow }}</span>
+    {%- endif %}
+    {%- if section.settings.heading != blank %}
+      <h2 class="font-sf m-0 text-[clamp(24px,3.4vw,34px)] leading-[1.15]">{{ section.settings.heading }}</h2>
+    {%- endif %}
+    {%- if section.settings.text != blank %}
+      <p class="m-0 text-[14px] leading-[1.7] whitespace-pre-line text-soft">{{ section.settings.text }}</p>
+    {%- endif %}
+    {%- if section.settings.button_label != blank and section.settings.button_link != blank %}
+      <a href="{{ section.settings.button_link }}" class="btn-keeper mt-2 self-start px-5 py-3">
+        {{- section.settings.button_label -}}
+      </a>
+    {%- endif %}
+  </div>
+</section>

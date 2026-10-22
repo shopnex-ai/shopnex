@@ -1,0 +1,40 @@
+{%- comment -%}
+  Storeplate's product card: image with a quick "Add to cart" on hover (src/cart-buttons.ts), title, price.
+  {% render 'product-card', product: product, class: '…' %}
+{%- endcomment -%}
+{%- assign button = 'btn btn-primary absolute bottom-12 left-1/2 z-10 -translate-x-1/2 translate-y-full transform whitespace-nowrap drop-shadow-md duration-300 ease-in-out max-md:btn-sm md:bottom-0 md:group-hover:-translate-y-6' -%}
+<div class="group relative text-center {{ class }}">
+  <div class="relative overflow-hidden">
+    <img
+      src="{% if product.featured_image %}{{ product.featured_image | image_url }}{% else %}{{ 'product-placeholder.jpg' | asset_url }}{% endif %}"
+      width="312"
+      height="269"
+      alt="{{ product.featured_image.alt | default: product.title }}"
+      loading="lazy"
+      class="mx-auto h-[150px] w-full rounded-md border border-border object-cover md:h-[269px]"
+    />
+    {%- if product.available == false %}
+      <button type="button" disabled class="{{ button }} cursor-not-allowed">Out Of Stock</button>
+    {%- elsif product.variants.size == 1 %}
+      <button type="button" data-add-to-cart="{{ product.variants.first.id }}" aria-label="Add to cart" class="{{ button }}">
+        <span data-label>Add To Cart</span>
+        <span data-spinner hidden>{% render 'icon-loader' %}</span>
+      </button>
+    {%- else %}
+      <a href="{{ product.url }}" class="{{ button }}">Select Options</a>
+    {%- endif %}
+  </div>
+  <div class="z-20 py-2 text-center md:py-4">
+    <h2 class="text-base font-medium md:text-xl">
+      <a class="after:absolute after:inset-0" href="{{ product.url }}">{{ product.title }}</a>
+    </h2>
+    <div class="mt-2 flex flex-wrap items-center justify-center gap-x-2 md:mt-4">
+      <span class="text-base font-bold text-text-dark md:text-xl">
+        {%- if product.price_varies %}From {% endif %}{{ product.price_min | money -}}
+      </span>
+      {%- if product.compare_at_price_max > product.price_min %}
+        <s class="text-xs font-medium text-text-light md:text-base">{{ product.compare_at_price_max | money }}</s>
+      {%- endif %}
+    </div>
+  </div>
+</div>

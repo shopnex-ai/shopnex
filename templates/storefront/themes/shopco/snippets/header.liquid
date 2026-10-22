@@ -1,0 +1,113 @@
+{%- comment -%}
+  Shopco's header: the announcement bar (theme settings; the buyer can close it, src/theme.ts), then the
+  wordmark, the main menu (Online store → Navigation, "main-menu"; links with children open a dropdown) and
+  the cart. Below md the menu folds into a <details> panel.
+{%- endcomment -%}
+{%- assign announcement = settings.announcement_text | strip -%}
+{%- if announcement != blank -%}
+  <div data-announcement="{{ announcement | handleize }}" class="bg-acc text-on-acc">
+    <div class="relative mx-auto flex max-w-[1240px] items-center justify-center px-10 py-2.5 text-center text-[12px] sm:text-[14px]">
+      <p class="m-0">
+        {{ announcement }}
+        {%- if settings.announcement_link != blank and settings.announcement_link_label != blank %}
+          <a href="{{ settings.announcement_link }}" class="font-medium underline underline-offset-2">
+            {{- settings.announcement_link_label -}}
+          </a>
+        {%- endif %}
+      </p>
+      <button
+        type="button"
+        data-announcement-close
+        aria-label="Close"
+        class="absolute right-4 hidden cursor-pointer opacity-90 hover:opacity-100 sm:block"
+      >
+        {% render 'icon', name: 'close', class: 'ico-sm' %}
+      </button>
+    </div>
+  </div>
+{%- endif %}
+
+{%- assign menu = linklists['main-menu'] %}
+<header class="sticky top-0 z-30 border-b border-line bg-page">
+  <div class="mx-auto flex max-w-[1240px] items-center gap-4 px-4 py-5 md:gap-10 md:py-6 xl:px-0">
+    <details class="group/menu md:hidden">
+      <summary aria-label="Menu" class="flex cursor-pointer items-center">
+        <span class="group-open/menu:hidden">{% render 'icon', name: 'menu', class: 'ico' %}</span>
+        <span class="hidden group-open/menu:block">{% render 'icon', name: 'close', class: 'ico' %}</span>
+      </summary>
+      <nav
+        aria-label="Main"
+        class="absolute inset-x-0 top-full flex max-h-[80vh] flex-col gap-1 overflow-y-auto border-b border-line bg-page px-4 pt-2 pb-6"
+      >
+        {%- if menu -%}
+          {%- for link in menu.links %}
+            <a href="{{ link.url }}" class="py-2 text-[18px] {% if link.active %}font-bold{% endif %}">{{ link.title }}</a>
+            {%- for child in link.links %}
+              <a href="{{ child.url }}" class="py-1.5 pl-4 text-[16px] text-soft">{{ child.title }}</a>
+            {%- endfor %}
+          {%- endfor %}
+        {%- else -%}
+          <a href="/" class="py-2 text-[18px]">Home</a>
+          <a href="/products" class="py-2 text-[18px]">Shop</a>
+          {%- for c in collections limit: 6 %}
+            <a href="{{ c.url }}" class="py-1.5 pl-4 text-[16px] text-soft">{{ c.title }}</a>
+          {%- endfor %}
+        {%- endif %}
+      </nav>
+    </details>
+
+    <a href="/" class="font-display min-w-0 truncate text-[25px] md:text-[32px]">{{ shop.name }}</a>
+
+    <nav aria-label="Main" class="hidden items-center gap-6 text-[16px] md:flex">
+      {%- if menu -%}
+        {%- for link in menu.links %}
+          <div class="group relative">
+            <a
+              href="{{ link.url }}"
+              class="flex items-center gap-1 transition hover:opacity-70 {% if link.active or link.child_active %}font-medium{% endif %}"
+            >
+              {{- link.title -}}
+              {%- if link.links.size > 0 %}{% render 'icon', name: 'chevron-down', class: 'ico-sm' %}{% endif -%}
+            </a>
+            {%- if link.links.size > 0 %}
+              <div class="invisible absolute top-full left-0 z-40 pt-4 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                <div class="flex min-w-[220px] flex-col gap-1 rounded-[20px] border border-line bg-page p-3 shadow-[0_18px_40px_-24px_rgb(0_0_0/0.35)]">
+                  {%- for child in link.links %}
+                    <a href="{{ child.url }}" class="rounded-[12px] px-3 py-2 text-[15px] transition hover:bg-surface">{{ child.title }}</a>
+                  {%- endfor %}
+                </div>
+              </div>
+            {%- endif %}
+          </div>
+        {%- endfor %}
+      {%- else -%}
+        {%- comment %} No main menu yet: the catalog, with the collections as its dropdown {% endcomment %}
+        <div class="group relative">
+          <a href="/products" class="flex items-center gap-1 transition hover:opacity-70">
+            Shop
+            {%- if collections.size > 0 %}{% render 'icon', name: 'chevron-down', class: 'ico-sm' %}{% endif -%}
+          </a>
+          {%- if collections.size > 0 %}
+            <div class="invisible absolute top-full left-0 z-40 pt-4 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+              <div class="flex min-w-[220px] flex-col gap-1 rounded-[20px] border border-line bg-page p-3 shadow-[0_18px_40px_-24px_rgb(0_0_0/0.35)]">
+                {%- for c in collections limit: 8 %}
+                  <a href="{{ c.url }}" class="rounded-[12px] px-3 py-2 text-[15px] transition hover:bg-surface">{{ c.title }}</a>
+                {%- endfor %}
+              </div>
+            </div>
+          {%- endif %}
+        </div>
+        <a href="/products?sort=latest-desc" class="transition hover:opacity-70">New arrivals</a>
+      {%- endif %}
+    </nav>
+
+    <span class="flex-1"></span>
+    <button type="button" data-cart-open aria-label="Cart" class="relative flex cursor-pointer items-center">
+      {% render 'icon', name: 'cart', class: 'ico' %}
+      <span
+        data-cart-count
+        class="absolute -top-2 -right-2.5 hidden min-w-[18px] rounded-full bg-acc px-1 text-center text-[11px] leading-[18px] font-medium text-on-acc [&.show]:block"
+      ></span>
+    </button>
+  </div>
+</header>

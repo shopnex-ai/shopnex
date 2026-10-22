@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+.env
+# Built by scripts/themes.mjs
+themes/*/assets/theme.css
+themes/*/assets/theme.js
+public/shopnex/

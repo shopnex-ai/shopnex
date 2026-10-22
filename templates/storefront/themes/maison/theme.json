@@ -1,0 +1,360 @@
+{
+  "id": "maison",
+  "name": "Maison",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "accent_color",
+      "label": "Accent color",
+      "info": "Buttons, links and highlights",
+      "type": "color",
+      "default": "#803f3b"
+    },
+    {
+      "id": "paper_color",
+      "label": "Background color",
+      "type": "color",
+      "default": "#f6f4f5"
+    },
+    {
+      "id": "ink_color",
+      "label": "Text color",
+      "type": "color",
+      "default": "#1f1d1d"
+    },
+    {
+      "id": "heading_font",
+      "label": "Heading font",
+      "type": "select",
+      "options": [
+        {
+          "value": "Playfair Display",
+          "label": "Playfair Display"
+        },
+        {
+          "value": "Cormorant Garamond",
+          "label": "Cormorant Garamond"
+        },
+        {
+          "value": "DM Serif Display",
+          "label": "DM Serif Display"
+        },
+        {
+          "value": "Fraunces",
+          "label": "Fraunces"
+        },
+        {
+          "value": "Inter Tight",
+          "label": "Inter Tight"
+        }
+      ],
+      "default": "Playfair Display"
+    },
+    {
+      "id": "body_font",
+      "label": "Body font",
+      "type": "select",
+      "options": [
+        {
+          "value": "Karla",
+          "label": "Karla"
+        },
+        {
+          "value": "Inter",
+          "label": "Inter"
+        },
+        {
+          "value": "Work Sans",
+          "label": "Work Sans"
+        },
+        {
+          "value": "IBM Plex Sans",
+          "label": "IBM Plex Sans"
+        }
+      ],
+      "default": "Karla"
+    },
+    {
+      "id": "show_collections_bar",
+      "label": "Collections bar",
+      "info": "Links to your collections above the header",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "id": "footer_text",
+      "label": "Footer text",
+      "info": "Defaults to © year and the shop name",
+      "type": "text"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Added after the theme styles on every page",
+      "type": "code",
+      "language": "css"
+    },
+    {
+      "id": "head_html",
+      "label": "Head code",
+      "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "type": "code",
+      "language": "html"
+    }
+  ],
+  "sections": {
+    "house-hero": {
+      "name": "Hero",
+      "settings": [
+        {
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "type": "text",
+          "default": "Archive editions"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "info": "Empty: the shop name",
+          "type": "text"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea"
+        },
+        {
+          "id": "show_tiles",
+          "label": "Show collection tiles",
+          "info": "Up to three collections with an image",
+          "type": "checkbox",
+          "default": true
+        }
+      ],
+      "limit": 1
+    },
+    "banner": {
+      "name": "Image banner",
+      "settings": [
+        {
+          "id": "image",
+          "label": "Image URL",
+          "type": "image"
+        },
+        {
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "type": "text"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "A printed archive"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea"
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "height",
+          "label": "Height",
+          "type": "select",
+          "options": [
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            }
+          ],
+          "default": "medium"
+        }
+      ]
+    },
+    "featured-collection": {
+      "name": "Featured collection",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "From the archive"
+        },
+        {
+          "id": "collection",
+          "label": "Collection",
+          "info": "Empty: the newest products",
+          "type": "collection"
+        },
+        {
+          "id": "limit",
+          "label": "Products shown",
+          "type": "range",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 4
+        }
+      ]
+    },
+    "rich-text": {
+      "name": "Text",
+      "settings": [
+        {
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "type": "text"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Considered, archival"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "info": "A blank line starts a new paragraph",
+          "type": "textarea"
+        },
+        {
+          "id": "align",
+          "label": "Alignment",
+          "type": "select",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            }
+          ],
+          "default": "center"
+        }
+      ]
+    },
+    "custom-html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "info": "Shown as is, scripts and styles included",
+          "type": "code",
+          "language": "html",
+          "default": "<p style=\"text-align:center\">Your HTML here</p>"
+        }
+      ]
+    },
+    "archive": {
+      "name": "Archive (collections + grid)",
+      "settings": [
+        {
+          "id": "collection",
+          "label": "Products from",
+          "info": "Empty: the newest products",
+          "type": "collection"
+        },
+        {
+          "id": "count",
+          "label": "Products shown",
+          "type": "range",
+          "min": 4,
+          "max": 24,
+          "step": 4,
+          "default": 12
+        },
+        {
+          "id": "default_view",
+          "label": "Default view",
+          "type": "select",
+          "options": [
+            {
+              "value": "grid",
+              "label": "Grid"
+            },
+            {
+              "value": "list",
+              "label": "List"
+            }
+          ],
+          "default": "grid"
+        }
+      ],
+      "limit": 1
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        {
+          "id": "hero",
+          "type": "house-hero",
+          "settings": {}
+        },
+        {
+          "id": "archive",
+          "type": "archive",
+          "settings": {}
+        }
+      ]
+    }
+  },
+  "presets": {
+    "atelier": {
+      "name": "Atelier",
+      "description": "Warm cream and terracotta, Cormorant headings",
+      "settings": {
+        "accent_color": "#a0522d",
+        "paper_color": "#f3ede4",
+        "ink_color": "#2a2420",
+        "heading_font": "Cormorant Garamond",
+        "body_font": "Karla"
+      }
+    },
+    "gallery": {
+      "name": "Gallery",
+      "description": "Bright white and black, modern sans-serif",
+      "settings": {
+        "accent_color": "#111111",
+        "paper_color": "#ffffff",
+        "ink_color": "#111111",
+        "heading_font": "Inter Tight",
+        "body_font": "Inter"
+      }
+    },
+    "verdigris": {
+      "name": "Verdigris",
+      "description": "Soft sage and deep green, DM Serif headings",
+      "settings": {
+        "accent_color": "#2e6b57",
+        "paper_color": "#eef1ec",
+        "ink_color": "#1e2a25",
+        "heading_font": "DM Serif Display",
+        "body_font": "Work Sans"
+      }
+    }
+  }
+}

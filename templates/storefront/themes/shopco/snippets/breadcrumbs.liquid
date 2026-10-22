@@ -1,0 +1,13 @@
+{%- comment -%}
+  Home › … › the current page. {% render 'breadcrumbs', parent: collection, current: product.title %};
+  parent (a collection) is optional.
+{%- endcomment -%}
+<nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-x-2 gap-y-1 py-5 text-[14px] text-soft md:py-6 md:text-[16px]">
+  <a href="/" class="transition hover:text-ink">Home</a>
+  {% render 'icon', name: 'chevron-right', class: 'ico-sm' %}
+  {%- if parent %}
+    <a href="{{ parent.url }}" class="transition hover:text-ink">{{ parent.title }}</a>
+    {% render 'icon', name: 'chevron-right', class: 'ico-sm' %}
+  {%- endif %}
+  <span class="text-ink">{{ current }}</span>
+</nav>

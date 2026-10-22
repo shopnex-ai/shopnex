@@ -1,0 +1,191 @@
+{%- comment -%}
+  Gallery (main image with zoom and arrows, thumbnails), price, option pickers and Add to cart. The chosen
+  variant is kept in the URL (?variant=id); the price, button and gallery follow it (src/product.ts, which reads
+  the product's JSON below).
+{%- endcomment -%}
+{%- assign variant = product.selected_or_first_available_variant -%}
+<section class="md:section-sm">
+  <div class="container">
+    <div class="row justify-center" data-product-form>
+      <script type="application/json" data-product-json>
+        {{ product | json | raw }}
+      </script>
+      <div class="col-10 md:col-8 lg:col-6">
+        {%- if product.images.size == 0 %}
+          <img
+            src="{{ 'product-placeholder.jpg' | asset_url }}"
+            alt=""
+            width="722"
+            height="623"
+            class="w-full rounded-md border border-border"
+          />
+        {%- else %}
+          {%- assign initial = 0 -%}
+          {%- for image in product.images -%}
+            {%- if image.src == variant.image.src -%}{%- assign initial = forloop.index0 -%}{%- endif -%}
+          {%- endfor %}
+          <div class="group/gallery relative">
+            <div class="swiper" data-gallery data-initial="{{ initial }}">
+              <div class="swiper-wrapper">
+                {%- for image in product.images %}
+                  <div class="swiper-slide" data-image="{{ image.src }}">
+                    <div class="mb-6 max-h-[623px] overflow-hidden rounded-md border border-border">
+                      <div class="group relative h-full w-full cursor-zoom-in overflow-hidden rounded-md" data-zoom>
+                        <img
+                          src="{{ image | image_url }}"
+                          alt="{{ image.alt | default: product.title }}"
+                          width="722"
+                          height="623"
+                          class="h-full w-full object-contain"
+                          draggable="false"
+                        />
+                        <span
+                          class="pointer-events-none absolute top-3 right-3 rounded-full bg-white/70 p-1.5 opacity-0 shadow-md transition group-hover:opacity-100"
+                          data-zoom-icon
+                        >
+                          {%- render 'icon-zoom' -%}
+                        </span>
+                        <div
+                          class="absolute inset-0 z-10 hidden"
+                          data-zoom-lens
+                          style="background-image: url('{{ image | image_url }}'); background-size: 200% 200%"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                {%- endfor %}
+              </div>
+            </div>
+            {%- if product.images.size > 1 %}
+              <div class="absolute top-1/2 z-10 hidden w-full -translate-y-1/2 px-6 text-text-dark opacity-0 transition-opacity duration-300 group-hover/gallery:opacity-100 lg:block">
+                <button
+                  type="button"
+                  data-gallery-prev
+                  aria-label="Previous image"
+                  class="absolute left-4 rounded-md bg-body p-4 shadow-sm"
+                >
+                  {% render 'icon-arrow-left' %}
+                </button>
+                <button
+                  type="button"
+                  data-gallery-next
+                  aria-label="Next image"
+                  class="absolute right-4 rounded-md bg-body p-4 shadow-sm"
+                >
+                  {% render 'icon-arrow-right' %}
+                </button>
+              </div>
+            {%- endif %}
+          </div>
+          {%- if product.images.size > 1 %}
+            <div class="swiper storeplate-thumbs" data-gallery-thumbs>
+              <div class="swiper-wrapper">
+                {%- for image in product.images %}
+                  <div class="swiper-slide cursor-pointer">
+                    <div class="overflow-hidden rounded-md border border-border">
+                      <img
+                        src="{{ image | image_url }}"
+                        alt="{{ image.alt | default: product.title }}"
+                        width="168"
+                        height="146"
+                        class="max-h-[146px] w-full object-cover"
+                      />
+                    </div>
+                  </div>
+                {%- endfor %}
+              </div>
+            </div>
+          {%- endif %}
+        {%- endif %}
+      </div>
+
+      <div class="col-10 py-6 md:col-8 md:ml-7 lg:col-5 lg:py-0">
+        {%- if product.vendor != blank %}
+          <p class="mb-2 text-sm tracking-wide text-text-light uppercase">{{ product.vendor }}</p>
+        {%- endif %}
+        <h1 class="mb-2 text-3xl md:h2 md:mb-6">{{ product.title }}</h1>
+
+        <div class="flex items-center gap-2">
+          <h4 class="text-text-light max-md:h2" data-price>{{ variant.price | money }}</h4>
+          <s class="text-text-light max-md:h3 {% unless variant.compare_at_price > variant.price %}hidden{% endunless %}" data-compare-at>
+            {%- if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money }}{% endif -%}
+          </s>
+        </div>
+
+        {%- if product.options_with_values.size > 0 %}
+          <div class="my-10 space-y-6 md:space-y-10">
+            {%- for option in product.options_with_values %}
+              <div>
+                <h5 class="mb-2 max-md:text-base">{{ option.name }}</h5>
+                <div class="flex flex-wrap gap-3">
+                  {%- for value in option.values %}
+                    <button
+                      type="button"
+                      data-option="{{ option.name }}"
+                      data-value="{{ value.name }}"
+                      aria-pressed="{{ value.selected }}"
+                      {% unless value.available %}data-unavailable{% endunless %}
+                      title="{{ option.name }} {{ value.name }}"
+                      class="flex min-w-12 items-center justify-center rounded-md border border-border px-3 py-1.5 text-sm ring-1 ring-transparent transition hover:ring-dark aria-pressed:ring-2 aria-pressed:ring-dark data-[unavailable]:bg-neutral-100 data-[unavailable]:text-neutral-500 data-[unavailable]:line-through"
+                    >
+                      {{- value.name -}}
+                    </button>
+                  {%- endfor %}
+                </div>
+              </div>
+            {%- endfor %}
+          </div>
+        {%- endif %}
+
+        <div class="mt-8 mb-6 flex gap-4 md:mt-10">
+          <button
+            type="button"
+            data-add-to-cart="{{ variant.id }}"
+            {% unless variant.available %}disabled{% endunless %}
+            class="btn btn-primary min-w-40 disabled:cursor-not-allowed disabled:opacity-70 max-md:btn-sm"
+          >
+            <span data-label>{% if variant.available %}Add To Cart{% else %}Out Of Stock{% endif %}</span>
+            <span data-spinner hidden>{% render 'icon-loader' %}</span>
+          </button>
+        </div>
+
+        {%- if product.tags.size > 0 %}
+          <div class="mt-8 flex flex-wrap items-center gap-3">
+            <h5 class="max-md:text-base">Tags:</h5>
+            {%- for tag in product.tags %}
+              <span class="rounded-md bg-light px-2 py-1 text-sm">{{ tag }}</span>
+            {%- endfor %}
+          </div>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{%- if product.description != blank %}
+  <section>
+    <div class="container">
+      <div class="row">
+        <div class="col-10 mx-auto mt-12 lg:col-11">
+          <h2 class="h4 mb-4 border-b-2 border-border pb-3">Description</h2>
+          <div class="content">{{ product.description }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif %}
+
+{%- if recommendations.products.size > 0 %}
+  <section class="section">
+    <div class="container">
+      <div class="mb-6 text-center md:mb-14">
+        <h2 class="mb-2">Related Products</h2>
+      </div>
+      <div class="row">
+        {%- for p in recommendations.products %}
+          {% render 'product-card', product: p, class: 'col-6 mb-8 md:col-4 md:mb-14 lg:col-3' %}
+        {%- endfor %}
+      </div>
+    </div>
+  </section>
+{%- endif %}

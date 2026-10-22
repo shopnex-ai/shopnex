@@ -1,0 +1,38 @@
+{%- comment -%}
+  The bag drawer and the toast for cart errors, on every page; filled in by src/bag.ts. Anything with
+  data-add-to-bag="{variant id}" adds that variant, and data-bag-open opens the drawer.
+{%- endcomment -%}
+<div data-bag-modal class="fixed inset-0 z-[45] hidden justify-end bg-[oklch(0.22_0.006_0/0.42)] [&.open]:flex">
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-label="Your bag"
+    class="anim-slide flex w-[min(480px,100%)] flex-col gap-[22px] overflow-y-auto border-l border-rule bg-paper p-[clamp(20px,4vw,36px)]"
+  >
+    <div class="flex items-baseline gap-4">
+      <span class="eti text-faint">Acquisition bag</span>
+      <span class="flex-1"></span>
+      <button type="button" data-bag-close class="cursor-pointer font-mono text-[12px] text-soft">Close ✕</button>
+    </div>
+    <h2 class="font-sf m-0 text-[26px]">Your bag</h2>
+    <div data-bag-lines class="flex flex-col"></div>
+    <div data-bag-summary class="hidden flex-col gap-3 border-t border-rule pt-[18px] [&.show]:flex">
+      <div data-bag-discounts class="flex flex-col gap-2"></div>
+      <div class="flex items-center gap-4">
+        <span class="eti text-faint">Total</span>
+        <span class="flex-1"></span>
+        <span data-bag-total class="font-mono text-[17px]"></span>
+      </div>
+      <p class="m-0 text-[12.5px] text-muted">Shipping and taxes are calculated at checkout.</p>
+    </div>
+    <a data-bag-checkout class="btn-keeper hidden self-stretch px-5 py-3.5 text-center [&.show]:block">
+      Proceed to checkout
+    </a>
+  </div>
+</div>
+
+<div
+  data-toast
+  role="status"
+  class="anim-fade fixed bottom-8 left-1/2 z-[90] hidden max-w-[90vw] -translate-x-1/2 border border-rule bg-ink px-4 py-2.5 font-mono text-[12px] tracking-[0.04em] text-card"
+></div>

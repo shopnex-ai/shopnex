@@ -1,0 +1,7 @@
+{%- comment -%}
+  The merchant's own HTML, output as is (a `code` setting: only staff can edit it); the wrapper only keeps
+  the page width and spacing
+{%- endcomment -%}
+{%- if section.settings.html != blank -%}
+  <section class="mx-auto max-w-[1240px] px-4 py-10 xl:px-0">{{ section.settings.html }}</section>
+{%- endif -%}

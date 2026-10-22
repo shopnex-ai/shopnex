@@ -1,0 +1,93 @@
+{%- comment -%}
+  Products as Maison's printed cards (grid) or ledger rows (list). Both are rendered; the archive's
+  Grid / List buttons pick one (data-view on the wrapper).
+  {% render 'pieces', products: products, view: 'grid' %}; grid_only: true leaves out the list rows
+  (sections that don't switch views).
+{%- endcomment -%}
+{%- if grid_only or view != 'list' -%}
+  {%- assign view = 'grid' -%}
+{%- endif -%}
+<div data-pieces data-view="{{ view }}" class="group/pieces">
+  <div
+    class="grid gap-x-[30px] gap-y-10 group-data-[view=list]/pieces:hidden"
+    style="grid-template-columns: repeat(auto-fill, minmax(210px, 1fr))"
+  >
+    {%- for p in products %}
+      <article class="flex flex-col gap-3.5">
+        <a href="{{ p.url }}" class="hatch relative block aspect-[4/5] w-full overflow-hidden border border-line">
+          {%- if p.featured_image %}
+            <img
+              src="{{ p.featured_image | image_url }}"
+              alt="{{ p.featured_image.alt | default: p.title }}"
+              loading="lazy"
+              class="absolute inset-0 h-full w-full object-cover"
+            />
+          {%- endif %}
+          {%- if p.type != blank %}
+            <span class="absolute bottom-3 left-3 bg-card px-1.5 py-[3px] font-mono text-[10px] tracking-[0.08em] text-faint">
+              {{- p.type -}}
+            </span>
+          {%- endif %}
+        </a>
+        <div class="flex flex-col gap-1.5">
+          {%- if p.vendor != blank %}
+            <span class="eti text-faint" style="font-size:10px">{{ p.vendor }}</span>
+          {%- endif %}
+          <a href="{{ p.url }}" class="font-sf text-[18px] leading-[1.25] transition hover:text-acc">{{ p.title }}</a>
+          {% render 'price', product: p, class: 'mt-1 text-[13px]' %}
+          {% render 'bag-button', product: p, class: 'mt-2 w-full' %}
+        </div>
+      </article>
+    {%- endfor %}
+  </div>
+
+  {%- unless grid_only %}
+    <div class="hidden flex-col group-data-[view=list]/pieces:flex">
+      {%- for p in products %}
+        {%- assign sku = '' -%}
+        {%- if p.variants.size == 1 -%}
+          {%- assign sku = p.variants.first.sku -%}
+        {%- endif %}
+        <article class="flex flex-wrap items-start gap-x-[26px] gap-y-4 border-b border-line py-[22px] transition hover:bg-card">
+          <a
+            href="{{ p.url }}"
+            class="hatch relative block aspect-[4/5] w-[110px] flex-none overflow-hidden border border-line"
+          >
+            {%- if p.featured_image %}
+              <img
+                src="{{ p.featured_image | image_url }}"
+                alt="{{ p.featured_image.alt | default: p.title }}"
+                loading="lazy"
+                class="absolute inset-0 h-full w-full object-cover"
+              />
+            {%- endif %}
+          </a>
+          <div class="flex min-w-0 flex-[1_1_300px] flex-col gap-[7px]">
+            {%- if p.vendor != blank or sku != blank %}
+              <span class="eti text-faint" style="font-size:10px">
+                {{- p.vendor -}}
+                {%- if p.vendor != blank and sku != blank %} · {% endif -%}
+                {{- sku -}}
+              </span>
+            {%- endif %}
+            <a href="{{ p.url }}" class="font-sf text-[20px] leading-[1.25] transition hover:text-acc">{{ p.title }}</a>
+            {%- assign description = p.description | strip_html | strip %}
+            {%- if description != blank %}
+              <span class="line-clamp-3 max-w-[62ch] text-[13.5px] leading-[1.6] text-soft">{{ description }}</span>
+            {%- endif %}
+            {%- if p.type != blank %}
+              <span class="font-mono text-[11px] text-faint">{{ p.type }}</span>
+            {%- endif %}
+          </div>
+          <div class="flex flex-[0_1_170px] flex-col gap-1.5">
+            {% render 'price', product: p, class: 'text-[14px]' %}
+            <span class="eti text-muted" style="font-size:10px">
+              {%- if p.available %}Available{% else %}Sold out{% endif -%}
+            </span>
+            {% render 'bag-button', product: p, class: 'mt-2' %}
+          </div>
+        </article>
+      {%- endfor %}
+    </div>
+  {%- endunless %}
+</div>

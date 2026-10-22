@@ -1,0 +1,15 @@
+{%- comment -%}
+  "Add to bag" for a product card: adds the only variant (see bag.liquid), or links to the product to pick
+  options. {% render 'bag-button', product: product, class: '…' %}
+{%- endcomment -%}
+{%- assign classes = 'btn-keeper flex items-center justify-center gap-2 px-4 py-2.5 ' | append: class -%}
+{%- if product.available == false -%}
+  <button type="button" disabled class="{{ classes }} cursor-not-allowed opacity-50">Sold out</button>
+{%- elsif product.variants.size == 1 -%}
+  <button type="button" data-add-to-bag="{{ product.variants.first.id }}" class="{{ classes }}">
+    {% render 'icon-bag' %}
+    <span>Add to bag</span>
+  </button>
+{%- else -%}
+  <a href="{{ product.url }}" class="{{ classes }}">Choose options</a>
+{%- endif -%}

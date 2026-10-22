@@ -1,0 +1,15 @@
+{%- comment -%} Featured collection: a heading and a row of products from one collection (or the newest) {%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.limit -%}
+{%- if products.size > 0 -%}
+  <section class="flex flex-col gap-6 border-b border-line py-10">
+    <div class="flex flex-wrap items-baseline gap-4">
+      {%- if section.settings.heading != blank %}
+        <h2 class="font-sf m-0 text-[clamp(22px,3vw,30px)] leading-[1.2]">{{ section.settings.heading }}</h2>
+      {%- endif %}
+      <span class="flex-1"></span>
+      <a href="{{ source.url }}" class="link-rule text-acc">See all →</a>
+    </div>
+    {% render 'pieces', products: products, grid_only: true %}
+  </section>
+{%- endif -%}

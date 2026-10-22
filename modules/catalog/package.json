@@ -1,0 +1,20 @@
+{
+  "name": "@shopnex/catalog",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/db": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "sanitize-html": "^2.18.1"
+  },
+  "devDependencies": {
+    "@types/sanitize-html": "^2.16.2"
+  }
+}

@@ -1,0 +1,46 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index e229be8951953117a361b1404ec0e7e714c77426..702b3ea45410d4e81de7866c1740a750fd118cdd 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -78,7 +78,8 @@ function rawTokenizer(endTag, text, tagStart) {
+         for (;;) {
+             let { next } = input;
+             if (next == 123 /* Ch.BraceL */ && input.peek(1) == 37 /* Ch.Percent */) {
+-                let scan = 2;
++                // `{%- endcomment %}`: skip the whitespace-control dash too
++                let scan = input.peek(2) == 45 /* Ch.Dash */ ? 3 : 2;
+                 for (;; scan++) {
+                     let ch = input.peek(scan);
+                     if (ch != 32 /* Ch.Space */ && ch != 10 /* Ch.Newline */)
+@@ -94,7 +95,7 @@ function rawTokenizer(endTag, text, tagStart) {
+                 if (word == endTag) {
+                     if (input.pos > start)
+                         break;
+-                    input.acceptToken(tagStart, 2);
++                    input.acceptToken(tagStart, input.peek(2) == 45 /* Ch.Dash */ ? 3 : 2);
+                     break;
+                 }
+             }
+diff --git a/dist/index.js b/dist/index.js
+index 50344bec9c8a0c8d3e0e9d21617e2356f45f5bb7..04bf57bb145ebd34504293e97eaf1bee27150e7a 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -76,7 +76,8 @@ function rawTokenizer(endTag, text, tagStart) {
+         for (;;) {
+             let { next } = input;
+             if (next == 123 /* Ch.BraceL */ && input.peek(1) == 37 /* Ch.Percent */) {
+-                let scan = 2;
++                // `{%- endcomment %}`: skip the whitespace-control dash too
++                let scan = input.peek(2) == 45 /* Ch.Dash */ ? 3 : 2;
+                 for (;; scan++) {
+                     let ch = input.peek(scan);
+                     if (ch != 32 /* Ch.Space */ && ch != 10 /* Ch.Newline */)
+@@ -92,7 +93,7 @@ function rawTokenizer(endTag, text, tagStart) {
+                 if (word == endTag) {
+                     if (input.pos > start)
+                         break;
+-                    input.acceptToken(tagStart, 2);
++                    input.acceptToken(tagStart, input.peek(2) == 45 /* Ch.Dash */ ? 3 : 2);
+                     break;
+                 }
+             }

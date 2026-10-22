@@ -1,0 +1,18 @@
+{%- comment -%} Maison's footer. Links come from Online store → Navigation ("footer"). {%- endcomment -%}
+{%- assign footer_text = settings.footer_text | strip -%}
+{%- if footer_text == blank -%}
+  {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+<footer class="mt-20 border-t border-line bg-tint">
+  <div class="eti mx-auto flex max-w-[1240px] flex-col gap-3 px-3 py-5 text-faint sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-6">
+    <span>{{ footer_text }}</span>
+    {%- if menu and menu.links.size > 0 %}
+      <span class="flex flex-wrap gap-x-5 gap-y-1.5">
+        {%- for link in menu.links %}
+          <a href="{{ link.url }}" class="text-soft transition hover:text-acc">{{ link.title }}</a>
+        {%- endfor %}
+      </span>
+    {%- endif %}
+  </div>
+</footer>

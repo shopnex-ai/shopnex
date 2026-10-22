@@ -1,0 +1,252 @@
+/* Maison's styles (https://github.com/njbSaab/astro-njx-maison, MIT), built to assets/theme.css. Colors and fonts
+   are CSS variables that layout/theme.liquid overrides with the merchant's settings, so they change without a
+   rebuild. Tailwind scans the theme's folder (templates and scripts) for classes. */
+@import 'tailwindcss' source('../');
+
+/* ── Maison design tokens ────────────────────────────────────────
+   Printed, editorial light theme: warm paper background, hairline
+   borders, near-zero radii, one warm bordeaux accent. Typography:
+   Playfair Display (serif display) · Karla (text) · Cousine (mono). */
+@theme {
+  --color-paper: oklch(0.97 0.002 0);
+  --color-card: oklch(0.985 0.002 0);
+  --color-tint: oklch(0.955 0.002 0);
+  --color-line: oklch(0.91 0.004 0);
+  --color-rule: oklch(0.88 0.004 0);
+  --color-ink: oklch(0.22 0.006 0);
+  --color-soft: oklch(0.42 0.006 0);
+  --color-muted: oklch(0.5 0.006 0);
+  --color-faint: oklch(0.58 0.006 0);
+  --color-acc: oklch(0.45 0.09 25);
+  --color-acc-deep: oklch(0.35 0.09 25);
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Karla', system-ui, sans-serif;
+  --font-mono: 'Cousine', ui-monospace, monospace;
+}
+
+::selection {
+  background: oklch(0.9 0.03 25);
+}
+input[type='range'] {
+  accent-color: var(--color-acc);
+}
+
+.font-sf {
+  font-family: var(--font-serif);
+  font-weight: 400;
+}
+
+/* mono small-caps label — the theme's signature */
+.eti {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* hatched placeholder behind every photo (shows through on missing images) */
+.hatch {
+  /* image only — the `background` shorthand would reset background-size and
+     defeat the bg-cover/bg-center utilities on photo cards */
+  background-image: repeating-linear-gradient(135deg, oklch(0.94 0.004 0) 0 6px, oklch(0.965 0.002 0) 6px 12px);
+  background-size: cover;
+  background-position: center;
+}
+
+/* outline button that inverts on hover */
+.btn-keeper {
+  border: 1px solid var(--color-acc);
+  color: var(--color-acc);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  cursor: pointer;
+}
+.btn-keeper:hover {
+  background: var(--color-acc);
+  color: var(--color-card);
+}
+
+/* thin line icons (inline SVG uses currentColor) */
+.ico {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.ico-sm {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+/* round icon button that sits on a photo */
+.pin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: oklch(0.985 0.002 0 / 0.92);
+  border: 1px solid var(--color-line);
+  color: var(--color-soft);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.pin-btn:hover {
+  color: var(--color-acc);
+  border-color: var(--color-acc);
+}
+.pin-btn.is-on {
+  background: var(--color-acc);
+  border-color: var(--color-acc);
+  color: var(--color-card);
+}
+
+/* filled keeper button state (item already in the bag) */
+.btn-keeper.is-on {
+  background: var(--color-acc);
+  color: var(--color-card);
+}
+
+/* underlined accent link (mono caps) */
+.link-rule {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-rule);
+  padding-bottom: 2px;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.link-rule:hover {
+  color: var(--color-acc);
+  border-color: var(--color-acc);
+}
+
+/* active tab underline */
+.tab-on {
+  color: var(--color-acc);
+  border-bottom: 1px solid var(--color-acc);
+  padding-bottom: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-tint);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-rule);
+  border: 2px solid var(--color-tint);
+  border-radius: 6px;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-fade {
+  animation: fadeIn 0.18s ease both;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.anim-slide {
+  animation: slideIn 0.22s ease both;
+}
+
+/* slim scrollbar for the sticky facet rail */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* tiles slide in from beyond the right edge — never widen the page */
+html {
+  overflow-x: clip;
+}
+
+/* Merchant-written HTML: product descriptions and content pages */
+.rte {
+  font-size: 14.5px;
+  line-height: 1.75;
+  color: var(--color-soft);
+}
+.rte > * + * {
+  margin-top: 1em;
+}
+.rte :is(h1, h2, h3, h4) {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: var(--color-ink);
+  line-height: 1.25;
+  margin-top: 1.6em;
+}
+.rte h1 {
+  font-size: 30px;
+}
+.rte h2 {
+  font-size: 24px;
+}
+.rte h3 {
+  font-size: 20px;
+}
+.rte a {
+  color: var(--color-acc);
+  border-bottom: 1px solid currentColor;
+}
+.rte :is(ul, ol) {
+  padding-left: 1.4em;
+}
+.rte ul {
+  list-style: disc;
+}
+.rte ol {
+  list-style: decimal;
+}
+.rte blockquote {
+  border-left: 1px solid var(--color-acc);
+  padding-left: 1em;
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.rte img {
+  max-width: 100%;
+  height: auto;
+}
+.rte hr {
+  border-color: var(--color-line);
+}

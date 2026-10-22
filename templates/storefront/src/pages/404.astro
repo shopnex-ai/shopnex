@@ -1,0 +1,5 @@
+---
+import { loadTheme, render } from '../core/theme'
+
+return render(await loadTheme(Astro.url), Astro.url, { template: '404' })
+---

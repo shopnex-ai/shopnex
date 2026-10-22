@@ -1,0 +1,21 @@
+{
+  "name": "@shopnex/apps",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/db": "workspace:*",
+    "@shopnex/marketplace-sdk": "workspace:*",
+    "@shopnex/storefront-sdk": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

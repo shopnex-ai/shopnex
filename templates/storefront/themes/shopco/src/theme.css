@@ -1,0 +1,273 @@
+/* Shopco's styles, built to assets/theme.css. Colors and fonts are CSS variables that layout/theme.liquid
+   overrides with the merchant's settings, so they change without a rebuild; the in-between tones (secondary
+   text, hairlines) are mixed from them. Tailwind scans the theme's folder (templates and scripts) for classes. */
+@import 'tailwindcss' source('../');
+
+/* ── Shopco design tokens ────────────────────────────────────────
+   Bold black-and-white fashion store: wide uppercase display type,
+   pill buttons, rounded photo cards on soft grey panels. */
+@theme {
+  --color-page: #ffffff;
+  --color-ink: #000000;
+  --color-soft: color-mix(in oklab, var(--color-ink) 60%, transparent);
+  --color-faint: color-mix(in oklab, var(--color-ink) 40%, transparent);
+  --color-line: color-mix(in oklab, var(--color-ink) 10%, transparent);
+  --color-surface: #f0f0f0;
+  --color-photo: #f0eeed;
+  --color-hero: #f2f0f1;
+  --color-acc: #000000;
+  --color-on-acc: #ffffff;
+  --color-sale: #ff3333;
+  --color-sale-tint: color-mix(in oklab, var(--color-sale) 10%, transparent);
+  --color-star: #ffc633;
+
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --radius-pill: 62px;
+  --radius-card: 20px;
+  --radius-panel: 40px;
+}
+
+:root {
+  --display-weight: 800;
+  --display-stretch: 125%;
+}
+
+/* Components sit in their layer so utilities (hidden, padding…) can override them */
+@layer components {
+  /* uppercase display type: headings, the logo, big figures */
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: var(--display-weight);
+    font-stretch: var(--display-stretch);
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* filled pill button (accent) */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-acc);
+    color: var(--color-on-acc);
+    font-weight: 500;
+    font-size: 16px;
+    padding: 15px 54px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .btn:hover {
+    opacity: 0.85;
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  /* outlined pill button */
+  .btn-line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-line);
+    color: var(--color-ink);
+    font-weight: 500;
+    font-size: 16px;
+    padding: 15px 54px;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .btn-line:hover {
+    background: var(--color-acc);
+    color: var(--color-on-acc);
+  }
+
+  /* soft grey pill: option values, quantity steppers, inputs */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-soft);
+    font-size: 15px;
+    padding: 11px 22px;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+  }
+  .chip:hover {
+    color: var(--color-ink);
+  }
+  .chip[aria-pressed='true'] {
+    background: var(--color-acc);
+    color: var(--color-on-acc);
+  }
+  .chip[data-unavailable] {
+    text-decoration: line-through;
+    opacity: 0.55;
+  }
+
+  /* round colour swatch (options named Color / Colour) */
+  .swatch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 37px;
+    height: 37px;
+    border-radius: 50%;
+    border: 1px solid var(--color-line);
+    cursor: pointer;
+  }
+  .swatch svg {
+    display: none;
+    width: 16px;
+    height: 16px;
+    color: #fff;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.6));
+  }
+  .swatch[aria-pressed='true'] svg {
+    display: block;
+  }
+  .swatch[aria-pressed='true'] {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  .swatch[data-unavailable] {
+    opacity: 0.35;
+  }
+
+  /* the "-20%" badge */
+  .badge-sale {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--color-sale-tint);
+    color: var(--color-sale);
+    font-weight: 500;
+    font-size: 12px;
+    padding: 6px 14px;
+    line-height: 1;
+  }
+  .badge-sale.lg {
+    font-size: 16px;
+    padding: 8px 14px;
+  }
+
+  .ico {
+    width: 24px;
+    height: 24px;
+    flex: none;
+  }
+  .ico-sm {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* <details> menus without the marker */
+  summary {
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-fade {
+  animation: fadeIn 0.18s ease both;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.anim-slide {
+  animation: slideIn 0.22s ease both;
+}
+
+html {
+  overflow-x: clip;
+}
+
+/* Merchant-written HTML: product descriptions and content pages */
+.rte {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-soft);
+}
+.rte > * + * {
+  margin-top: 1em;
+}
+.rte :is(h1, h2, h3, h4) {
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.25;
+  margin-top: 1.6em;
+}
+.rte h1 {
+  font-size: 28px;
+}
+.rte h2 {
+  font-size: 24px;
+}
+.rte h3 {
+  font-size: 20px;
+}
+.rte a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rte :is(ul, ol) {
+  padding-left: 1.4em;
+}
+.rte ul {
+  list-style: disc;
+}
+.rte ol {
+  list-style: decimal;
+}
+.rte blockquote {
+  border-left: 2px solid var(--color-ink);
+  padding-left: 1em;
+}
+.rte img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+}
+.rte hr {
+  border-color: var(--color-line);
+}

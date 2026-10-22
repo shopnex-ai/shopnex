@@ -1,0 +1,29 @@
+<section class="section">
+  <div class="container">
+    <div class="rounded-xl bg-light px-6 py-8 md:py-16">
+      <div class="row items-center">
+        <div class="order-2 mx-auto mb-10 text-center md:mb-0 lg:order-0 lg:col-6">
+          {%- if section.settings.subheading != blank %}
+            <p class="font-bold text-text-dark md:text-lg">{{ section.settings.subheading }}</p>
+          {%- endif %}
+          {%- if section.settings.heading != blank %}
+            <h2 class="h1 my-2">{{ section.settings.heading }}</h2>
+          {%- endif %}
+          {%- if section.settings.text != blank %}
+            <p class="mb-6 md:text-lg">{{ section.settings.text }}</p>
+          {%- endif %}
+          {%- if section.settings.button_link != blank and section.settings.button_label != blank %}
+            <a class="btn btn-primary btn-sm font-medium md:btn-lg" href="{{ section.settings.button_link }}">
+              {{- section.settings.button_label -}}
+            </a>
+          {%- endif %}
+        </div>
+        {%- if section.settings.image != blank %}
+          <div class="mx-auto mb-6 lg:col-5 lg:mb-0">
+            <img src="{{ section.settings.image }}" width="543" height="390" alt="" class="mx-auto" loading="lazy" />
+          </div>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</section>

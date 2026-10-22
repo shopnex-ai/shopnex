@@ -1,0 +1,23 @@
+{%- comment -%}
+  Brand strip: names set in the display type on the accent band, from the setting (one per line) or, when
+  it's empty, the vendors of the newest products
+{%- endcomment -%}
+{%- assign names = section.settings.names | strip | newline_to_br | split: '<br />' -%}
+{%- if section.settings.names == blank -%}
+  {%- assign names = collections.all.products | map: 'vendor' | compact | uniq -%}
+{%- endif -%}
+{%- capture items -%}
+  {%- for name in names limit: 8 -%}
+    {%- assign label = name | strip -%}
+    {%- if label != blank -%}
+      <span class="font-display text-[22px] whitespace-nowrap md:text-[32px]">{{ label }}</span>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if items != blank -%}
+  <section class="bg-acc text-on-acc">
+    <div class="mx-auto flex max-w-[1240px] flex-wrap items-center justify-center gap-x-8 gap-y-5 px-4 py-10 md:justify-around md:py-11 xl:px-0">
+      {{ items }}
+    </div>
+  </section>
+{%- endif -%}

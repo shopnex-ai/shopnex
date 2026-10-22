@@ -1,0 +1,23 @@
+{%- comment -%}
+  A product as a Shopco card: photo on a rounded panel, title, price with the saving.
+  {% render 'product-card', product: p %}
+{%- endcomment -%}
+<article class="flex min-w-0 flex-col gap-2.5 md:gap-4">
+  <a href="{{ product.url }}" class="group relative block aspect-square overflow-hidden rounded-[13px] bg-photo md:rounded-[20px]">
+    {%- if product.featured_image %}
+      <img
+        src="{{ product.featured_image | image_url }}"
+        alt="{{ product.featured_image.alt | default: product.title }}"
+        loading="lazy"
+        class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+      />
+    {%- endif %}
+    {%- unless product.available %}
+      <span class="absolute top-3 left-3 rounded-full bg-page px-3 py-1 text-[12px] font-medium">Sold out</span>
+    {%- endunless %}
+  </a>
+  <div class="flex flex-col gap-1 md:gap-2">
+    <a href="{{ product.url }}" class="text-[16px] leading-snug font-bold md:text-[20px]">{{ product.title }}</a>
+    {% render 'price', product: product, class: 'text-[20px] md:text-[24px]' %}
+  </div>
+</article>

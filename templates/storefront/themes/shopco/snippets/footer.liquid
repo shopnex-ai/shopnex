@@ -1,0 +1,110 @@
+{%- comment -%}
+  Shopco's footer: the newsletter box (when the theme settings give a form URL; it overlaps the footer's top
+  edge), then the shop name, text and social links beside the footer menu (Online store → Navigation,
+  "footer"): links with children become titled columns, the others share one.
+{%- endcomment -%}
+{%- assign copyright = settings.copyright | strip -%}
+{%- if copyright == blank -%}
+  {%- capture copyright %}{{ shop.name }} © {{ 'now' | date: '%Y' }}, All rights reserved{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+{%- assign has_newsletter = false -%}
+{%- if settings.newsletter_action != blank or request.design_mode -%}
+  {%- assign has_newsletter = true -%}
+{%- endif -%}
+
+<footer class="mt-20">
+  {%- if has_newsletter %}
+    <div class="bg-[linear-gradient(to_bottom,transparent_50%,var(--color-surface)_50%)] px-4 xl:px-0">
+      <div class="mx-auto flex max-w-[1240px] flex-col gap-8 rounded-[20px] bg-acc px-6 py-8 text-on-acc md:flex-row md:items-center md:justify-between md:px-16 md:py-9">
+        <h2 class="font-display m-0 max-w-[551px] text-[32px] md:text-[40px]">{{ settings.newsletter_heading }}</h2>
+        {%- if settings.newsletter_action != blank %}
+          <form
+            action="{{ settings.newsletter_action }}"
+            method="post"
+            target="_blank"
+            class="flex w-full flex-col gap-3.5 md:max-w-[349px]"
+          >
+            <label class="flex items-center gap-3 rounded-full bg-page px-4 py-3 text-ink">
+              {% render 'icon', name: 'mail', class: 'ico text-faint' %}
+              <input
+                type="email"
+                name="{{ settings.newsletter_field | default: 'email' }}"
+                required
+                placeholder="Enter your email address"
+                class="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
+              />
+            </label>
+            <button type="submit" class="cursor-pointer rounded-full bg-page px-4 py-3 text-[16px] font-medium text-ink transition hover:opacity-85">
+              Subscribe to newsletter
+            </button>
+          </form>
+        {%- else %}
+          <p class="m-0 max-w-[349px] text-[14px] opacity-80">
+            Add your email tool’s form URL under Theme settings → Newsletter form URL to show the signup form.
+          </p>
+        {%- endif %}
+      </div>
+    </div>
+  {%- endif %}
+
+  <div class="bg-surface px-4 pb-20 xl:px-0 {% if has_newsletter %}pt-12{% else %}pt-14{% endif %}">
+    <div class="mx-auto max-w-[1240px]">
+      <div class="flex flex-wrap justify-between gap-x-10 gap-y-8 border-b border-line pb-12">
+        <div class="flex max-w-[248px] flex-[1_1_248px] flex-col gap-6">
+          <a href="/" class="font-display text-[29px] md:text-[33px]">{{ shop.name }}</a>
+          {%- if settings.footer_text != blank %}
+            <p class="m-0 text-[14px] leading-[22px] whitespace-pre-line text-soft">{{ settings.footer_text }}</p>
+          {%- endif %}
+          {%- capture socials -%}
+            {%- if settings.x_url != blank %}<a href="{{ settings.x_url }}" aria-label="X" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'x', class: 'ico-sm' %}</a>{% endif -%}
+            {%- if settings.facebook_url != blank %}<a href="{{ settings.facebook_url }}" aria-label="Facebook" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'facebook', class: 'ico-sm' %}</a>{% endif -%}
+            {%- if settings.instagram_url != blank %}<a href="{{ settings.instagram_url }}" aria-label="Instagram" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'instagram', class: 'ico-sm' %}</a>{% endif -%}
+            {%- if settings.tiktok_url != blank %}<a href="{{ settings.tiktok_url }}" aria-label="TikTok" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'tiktok', class: 'ico-sm' %}</a>{% endif -%}
+          {%- endcapture -%}
+          {%- if socials != blank %}
+            <div class="flex gap-3">{{ socials }}</div>
+          {%- endif %}
+        </div>
+
+        <div class="grid flex-[999_1_560px] grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
+          {%- if menu and menu.links.size > 0 -%}
+            {%- for link in menu.links %}
+              {%- if link.links.size > 0 %}
+                <div class="flex flex-col gap-4">
+                  <span class="text-[14px] font-medium tracking-[3px] uppercase">{{ link.title }}</span>
+                  {%- for child in link.links %}
+                    <a href="{{ child.url }}" class="text-[14px] text-soft transition hover:text-ink md:text-[16px]">{{ child.title }}</a>
+                  {%- endfor %}
+                </div>
+              {%- endif %}
+            {%- endfor %}
+            {%- capture loose_links -%}
+              {%- for link in menu.links -%}
+                {%- if link.links.size == 0 -%}
+                  <a href="{{ link.url }}" class="text-[14px] text-soft transition hover:text-ink md:text-[16px]">{{ link.title }}</a>
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endcapture -%}
+            {%- if loose_links != blank %}
+              <div class="flex flex-col gap-4">
+                <span class="text-[14px] font-medium tracking-[3px] uppercase">Links</span>
+                {{ loose_links }}
+              </div>
+            {%- endif %}
+          {%- else -%}
+            {%- comment %} No footer menu yet: the catalog and its collections {% endcomment %}
+            <div class="flex flex-col gap-4">
+              <span class="text-[14px] font-medium tracking-[3px] uppercase">Shop</span>
+              <a href="/products" class="text-[14px] text-soft transition hover:text-ink md:text-[16px]">All products</a>
+              {%- for c in collections limit: 4 %}
+                <a href="{{ c.url }}" class="text-[14px] text-soft transition hover:text-ink md:text-[16px]">{{ c.title }}</a>
+              {%- endfor %}
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+      <p class="m-0 pt-5 text-center text-[14px] text-soft md:text-left">{{ copyright }}</p>
+    </div>
+  </div>
+</footer>

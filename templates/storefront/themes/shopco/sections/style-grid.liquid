@@ -1,0 +1,49 @@
+{%- comment -%}
+  Collection grid ("Browse by style"): four collection tiles on a rounded panel, narrow–wide then wide–narrow.
+  The picked collections, or the shop's first four when none are picked; a collection's image fills its tile.
+{%- endcomment -%}
+{%- assign picked = false -%}
+{%- for i in (1..4) -%}
+  {%- assign key = 'collection_' | append: i -%}
+  {%- if section.settings[key] -%}{%- assign picked = true -%}{%- endif -%}
+{%- endfor -%}
+{%- capture tiles -%}
+  {%- for i in (1..4) -%}
+    {%- if picked -%}
+      {%- assign key = 'collection_' | append: i -%}
+      {%- assign c = section.settings[key] -%}
+    {%- else -%}
+      {%- assign index = i | minus: 1 -%}
+      {%- assign c = collections[index] -%}
+    {%- endif -%}
+    {%- if c -%}
+      {%- if i == 2 or i == 3 -%}{%- assign span = 'md:col-span-2' -%}{%- else -%}{%- assign span = '' -%}{%- endif -%}
+      <a
+        href="{{ c.url }}"
+        class="group relative flex h-[190px] overflow-hidden rounded-[20px] bg-page md:h-[289px] {{ span }}"
+      >
+        {%- if c.image %}
+          <img
+            src="{{ c.image | image_url }}"
+            alt="{{ c.image.alt }}"
+            loading="lazy"
+            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+          />
+        {%- endif %}
+        <span class="relative m-6 self-start rounded-full text-[24px] font-bold md:mx-9 md:text-[36px] {% if c.image %}bg-page/85 px-4 py-1 backdrop-blur-sm{% endif %}">
+          {{- c.title -}}
+        </span>
+      </a>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if tiles != blank -%}
+  <section class="mx-auto max-w-[1240px] px-4 py-6 xl:px-0">
+    <div class="flex flex-col items-center gap-7 rounded-[20px] bg-surface px-6 py-10 md:gap-16 md:rounded-[40px] md:px-16 md:py-[70px]">
+      {%- if section.settings.heading != blank %}
+        <h2 class="font-display m-0 text-center text-[32px] md:text-[48px]">{{ section.settings.heading }}</h2>
+      {%- endif %}
+      <div class="grid w-full grid-cols-1 gap-4 md:grid-cols-3 md:gap-5">{{ tiles }}</div>
+    </div>
+  </section>
+{%- endif -%}

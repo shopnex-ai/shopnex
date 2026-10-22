@@ -1,0 +1,204 @@
+/* Storeplate's styles (https://github.com/zeon-studio/storeplate, MIT), built to assets/theme.css. Colors and the
+   font are CSS variables that layout/theme.liquid overrides with the merchant's settings, so they change without
+   a rebuild. Tailwind scans the theme's folder (templates and scripts) for classes. */
+@import 'tailwindcss' source('../');
+@import 'swiper/css';
+@import 'swiper/css/pagination';
+@import 'swiper/css/navigation';
+@import 'swiper/css/thumbs';
+@import 'swiper/css/free-mode';
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+@plugin 'tailwind-bootstrap-grid';
+
+@theme {
+  --color-primary: #121212;
+  --color-body: #fff;
+  --color-border: #eaeaea;
+  --color-light: #f2f2f2;
+  --color-dark: #000;
+  --color-text: #444;
+  --color-text-dark: #000;
+  --color-text-light: #666;
+
+  --font-primary: Karla, sans-serif;
+
+  --text-base: 16px;
+  --text-base-sm: 12.8px;
+  --text-h6: 1.2rem;
+  --text-h5: 1.44rem;
+  --text-h4: 1.728rem;
+  --text-h3: 2.0736rem;
+  --text-h3-sm: 1.86624rem;
+  --text-h2: 2.48832rem;
+  --text-h2-sm: 2.239488rem;
+  --text-h1: 2.986rem;
+  --text-h1-sm: 2.6873856rem;
+}
+
+@layer base {
+  html {
+    @apply text-base-sm md:text-base;
+  }
+
+  body {
+    @apply bg-body font-primary text-base leading-relaxed font-normal text-text;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-primary leading-tight font-bold text-text-dark;
+  }
+
+  h1,
+  .h1 {
+    @apply text-h1-sm md:text-h1;
+  }
+
+  h2,
+  .h2 {
+    @apply text-h2-sm md:text-h2;
+  }
+
+  h3,
+  .h3 {
+    @apply text-h3-sm md:text-h3;
+  }
+
+  h4,
+  .h4 {
+    @apply text-h4;
+  }
+
+  h5,
+  .h5 {
+    @apply text-h5;
+  }
+
+  h6,
+  .h6 {
+    @apply text-h6;
+  }
+
+  b,
+  strong {
+    @apply font-semibold;
+  }
+
+  button {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .section {
+    @apply py-14 xl:py-28;
+  }
+
+  .container {
+    @apply mx-auto !max-w-[1320px] px-4;
+  }
+
+  .btn {
+    @apply inline-block cursor-pointer rounded-md border border-transparent px-5 py-2 font-semibold transition;
+  }
+
+  .btn-primary {
+    @apply border-primary bg-primary text-center text-white;
+  }
+
+  .btn-outline-primary {
+    @apply border-dark bg-transparent text-text-dark hover:bg-dark hover:text-white;
+  }
+
+  .header {
+    @apply bg-body py-6;
+  }
+
+  .navbar {
+    @apply relative flex flex-wrap items-center justify-between;
+  }
+
+  .navbar-brand {
+    @apply text-xl font-semibold text-dark;
+  }
+
+  .nav-link {
+    @apply block cursor-pointer p-3 text-2xl font-bold text-text-light transition hover:text-text-dark lg:px-2 lg:py-3;
+  }
+
+  .nav-list {
+    @apply space-y-2;
+  }
+
+  .nav-dropdown-link {
+    @apply block py-1 text-xl font-medium text-text-light transition hover:text-text-dark;
+  }
+
+  .submenu-arrow.active {
+    @apply rotate-180;
+  }
+
+  .form-input {
+    @apply w-full rounded border border-border bg-transparent px-3 py-2 text-text-dark placeholder:text-text-light focus:border-dark focus:ring-transparent md:px-6 md:py-4;
+  }
+
+  .footer-link {
+    @apply text-sm font-medium text-text-light transition hover:text-text-dark md:text-base;
+  }
+
+  .banner-pagination-bullet {
+    @apply h-2.5 w-2.5 cursor-pointer rounded-full bg-light opacity-100;
+  }
+
+  .banner-pagination-bullet-active {
+    @apply h-2.5 w-5 bg-dark duration-200;
+  }
+
+  .swiper-pagination {
+    @apply static! mt-9 flex items-center justify-center space-x-2 text-center;
+  }
+
+  .swiper-button-disabled {
+    @apply opacity-50;
+  }
+
+  .content {
+    @apply prose max-w-none;
+    @apply prose-headings:mt-[0.6em] prose-headings:mb-[0.6em] prose-headings:text-text-dark;
+    @apply prose-h1:text-h1-sm md:prose-h1:text-h1;
+    @apply prose-h2:text-h2-sm md:prose-h2:text-h2;
+    @apply prose-h3:text-h3-sm md:prose-h3:text-h3;
+    @apply prose-img:max-w-full prose-img:rounded;
+    @apply prose-hr:border-border;
+    @apply prose-p:text-base prose-p:text-text;
+    @apply prose-blockquote:rounded-lg prose-blockquote:border prose-blockquote:border-l-10 prose-blockquote:border-primary prose-blockquote:bg-light prose-blockquote:px-8 prose-blockquote:py-10 prose-blockquote:text-2xl prose-blockquote:text-text-dark prose-blockquote:not-italic;
+    @apply prose-strong:text-text-dark;
+    @apply prose-a:text-text prose-a:underline prose-a:hover:text-primary;
+    @apply prose-li:text-text;
+  }
+}
+
+@utility btn-sm {
+  @apply px-4 py-1.5 text-sm font-medium;
+}
+
+@utility btn-lg {
+  @apply px-12 py-4 text-xl;
+}
+
+@utility section-sm {
+  @apply py-16 xl:py-20;
+}
+
+.bg-gradient {
+  @apply bg-linear-to-r from-light to-light/25;
+}
+
+.shadow {
+  box-shadow: 0px 4px 40px rgba(0, 0, 0, 0.05);
+}

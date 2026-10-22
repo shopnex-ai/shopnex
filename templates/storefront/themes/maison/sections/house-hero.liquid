@@ -1,0 +1,42 @@
+{%- comment -%}
+  Hero: eyebrow, heading (the shop name unless set) and text, beside tiles of up to three collections that
+  have an image
+{%- endcomment -%}
+{%- assign heading = section.settings.heading | strip | default: shop.name -%}
+{%- assign text = section.settings.text | strip -%}
+<section class="flex flex-wrap items-center gap-x-6 gap-y-3.5 border-b border-line pt-7 pb-4 sm:gap-x-12 sm:gap-y-7 sm:pt-14 sm:pb-9">
+  <div class="flex min-w-0 flex-[1_1_380px] flex-col">
+    {%- if section.settings.eyebrow != blank %}
+      <div class="eti mb-[18px] text-acc" style="letter-spacing:0.18em">{{ section.settings.eyebrow }}</div>
+    {%- endif %}
+    {%- if heading != blank %}
+      <h1 class="font-sf m-0 text-[clamp(30px,4.4vw,46px)] leading-[1.1] tracking-[-0.01em]">{{ heading }}</h1>
+    {%- endif %}
+    {%- if text != blank %}
+      <p class="m-0 mt-5 max-w-[54ch] text-[14.5px] leading-[1.7] whitespace-pre-line text-soft">{{ text }}</p>
+    {%- endif %}
+  </div>
+  {%- if section.settings.show_tiles %}
+    {%- assign tiles = collections | where: 'image' %}
+    {%- if tiles.size > 0 %}
+      <div class="no-scrollbar flex min-w-0 flex-[1_1_360px] snap-x snap-mandatory gap-3 overflow-x-auto sm:snap-none sm:overflow-visible">
+        {%- for c in tiles limit: 3 %}
+          <a
+            href="{{ c.url }}"
+            class="hatch group relative flex aspect-[3/4] w-[64%] flex-none snap-center items-end overflow-hidden border border-line p-2.5 shadow-[0_14px_28px_-18px_oklch(0.22_0.006_0/0.45)] transition hover:border-acc sm:w-auto sm:min-w-0 sm:flex-1"
+          >
+            <img
+              src="{{ c.image | image_url }}"
+              alt="{{ c.image.alt }}"
+              class="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+            />
+            <span class="relative bg-card px-1.5 py-[3px] font-mono text-[10px] tracking-[0.08em] text-faint transition group-hover:text-acc">
+              {{- c.title -}}
+            </span>
+          </a>
+        {%- endfor %}
+      </div>
+    {%- endif %}
+  {%- endif %}
+</section>

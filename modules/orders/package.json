@@ -1,0 +1,20 @@
+{
+  "name": "@shopnex/orders",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/catalog": "workspace:*",
+    "@shopnex/customers": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
+    "@shopnex/pricing": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
+    "drizzle-orm": "catalog:"
+  }
+}

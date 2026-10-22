@@ -1,0 +1,28 @@
+{%- comment -%}
+  Product row: a centered heading over products from one collection (or the newest) and a "View all"
+  button. Four across on desktop; a swipeable row on phones.
+{%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.limit -%}
+{%- if products.size > 0 -%}
+  <section class="mx-auto max-w-[1240px] px-4 xl:px-0">
+    {%- if section.settings.divider %}
+      <hr class="m-0 border-line" />
+    {%- endif %}
+    <div class="flex flex-col items-center gap-8 py-12 md:gap-14 md:py-[72px]">
+      {%- if section.settings.heading != blank %}
+        <h2 class="font-display m-0 text-center text-[32px] md:text-[48px]">{{ section.settings.heading }}</h2>
+      {%- endif %}
+      <div class="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] snap-x snap-mandatory gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:w-full md:snap-none md:grid-cols-4 md:gap-5 md:overflow-visible md:px-0">
+        {%- for p in products %}
+          <div class="w-[198px] flex-none snap-start md:w-auto">
+            {% render 'product-card', product: p %}
+          </div>
+        {%- endfor %}
+      </div>
+      {%- if section.settings.button_label != blank %}
+        <a href="{{ source.url }}" class="btn-line w-full md:w-auto md:min-w-[218px]">{{ section.settings.button_label }}</a>
+      {%- endif %}
+    </div>
+  </section>
+{%- endif -%}

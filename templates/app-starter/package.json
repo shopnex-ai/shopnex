@@ -1,0 +1,20 @@
+{
+  "name": "shopnex-app-starter",
+  "private": true,
+  "type": "module",
+  "description": "Minimal embedded Shopnex app on @shopnex/app: no database, no OAuth code; Admin API, app data, webhooks, admin-styled UI",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/server.tsx",
+    "start": "tsx --env-file-if-exists=.env src/server.tsx",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "@shopnex/app": "workspace:*",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

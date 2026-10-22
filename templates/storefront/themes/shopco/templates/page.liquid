@@ -1,0 +1,9 @@
+{%- comment -%} Content pages from Online store → Pages (the content is sanitized HTML from Shopnex) {%- endcomment -%}
+<main class="mx-auto max-w-[1240px] px-4 xl:px-0">
+  <hr class="m-0 border-line" />
+  {% render 'breadcrumbs', current: page.title %}
+  <div class="mx-auto max-w-[760px] pt-4">
+    <h1 class="font-display m-0 mb-8 text-[32px] md:text-[48px]">{{ page.title }}</h1>
+    <div class="rte">{{ page.content }}</div>
+  </div>
+</main>

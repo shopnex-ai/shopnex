@@ -1,0 +1,18 @@
+{%- comment -%} Text: eyebrow, heading and plain-text paragraphs (a blank line starts a new one) {%- endcomment -%}
+{%- assign paragraphs = section.settings.text | strip | newline_to_br | split: '<br />
+<br />
+' -%}
+<section class="flex flex-col gap-4 border-b border-line py-12 sm:py-16 {% if section.settings.align == 'center' %}items-center text-center{% endif %}">
+  {%- if section.settings.eyebrow != blank %}
+    <span class="eti text-acc" style="letter-spacing:0.18em">{{ section.settings.eyebrow }}</span>
+  {%- endif %}
+  {%- if section.settings.heading != blank %}
+    <h2 class="font-sf m-0 text-[clamp(26px,3.6vw,38px)] leading-[1.15]">{{ section.settings.heading }}</h2>
+  {%- endif %}
+  {%- for paragraph in paragraphs %}
+    {%- assign lines = paragraph | replace: '<br />', '' | strip %}
+    {%- if lines != blank %}
+      <p class="m-0 max-w-[62ch] text-[14.5px] leading-[1.75] whitespace-pre-line text-soft">{{ lines }}</p>
+    {%- endif %}
+  {%- endfor %}
+</section>

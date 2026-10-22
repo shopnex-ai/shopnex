@@ -1,0 +1,639 @@
+// Business logic only — no HTTP / oRPC / Hono imports in this module.
+// Registry (super admins) → the shop owner/admin consents → installation backed by an API token. Installing
+// happens right in the admin (managed install) or, for apps with redirect URLs, through an OAuth authorization
+// code. Apps authenticate with client assertions signed by their own key (we only store the public half) and
+// get access tokens with one of three grants:
+//   authorization_code  code from the consent screen → long-lived token (sk_…), for apps that store it
+//   token_exchange      session token from the embedded admin page → 1-hour access token
+//   client_credentials  shop_id of a live installation → 1-hour access token (background work)
+// Codes are only stored as SHA-256 hashes.
+import { createHash, randomBytes } from 'node:crypto'
+import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
+import { db, schema, type Conn } from '@shopnex/db'
+import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
+import {
+  decodeJwt,
+  generateKeyPair,
+  publicKeyOf,
+  signJwt,
+  verifyClientAssertion,
+  verifyJwt,
+} from '@shopnex/marketplace-sdk/keys'
+import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@shopnex/marketplace-sdk/session-token'
+import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
+import { AppError } from './errors'
+import { instanceSigner, ownKey } from './keys'
+import { instanceUrl } from './marketplace'
+
+const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
+const random = (bytes: number) => randomBytes(bytes).toString('base64url')
+
+const CODE_TTL_MS = 10 * 60_000
+const ACCESS_TOKEN_TTL_S = 3600
+const ACCESS_TOKEN_TYP = 'at+jwt'
+
+export type AppInput = {
+  name: string
+  description?: string | null
+  iconUrl?: string | null
+  appUrl: string
+  redirectUrls: string[]
+  scopes: ApiScope[]
+}
+
+export function publicApp(app: App) {
+  return { ...app, managed: app.redirectUrls.length === 0 }
+}
+
+// --- registry (super admins) ---
+
+// A new key pair: the private key is only in this return value (the app keeps it as SHOPNEX_APP_KEY)
+export async function registerApp(input: AppInput, createdById: string | null) {
+  const { privateKey, publicKey } = await generateKeyPair()
+  const [app] = await db
+    .insert(schema.apps)
+    .values({
+      ...input,
+      scopes: normalizeScopes(input.scopes),
+      clientId: 'app_' + random(12),
+      publicKey,
+      createdById,
+    })
+    .returning()
+  return { app: publicApp(app!), privateKey }
+}
+
+// Registry functions only touch custom apps; marketplace apps are edited by their vendor on the marketplace
+const customApp = (id: string) => and(eq(schema.apps.id, id), eq(schema.apps.source, 'custom'))
+
+export async function listApps() {
+  const rows = await db
+    .select()
+    .from(schema.apps)
+    .where(eq(schema.apps.source, 'custom'))
+    .orderBy(asc(schema.apps.name))
+  return rows.map(publicApp)
+}
+
+export async function getApp(id: string) {
+  const [app] = await db.select().from(schema.apps).where(customApp(id))
+  return app ? publicApp(app) : null
+}
+
+// Narrowing `scopes` doesn't touch existing installations; they keep what they were granted until re-authorized
+export async function updateApp(id: string, patch: Partial<AppInput>) {
+  const [app] = await db
+    .update(schema.apps)
+    .set({ ...patch, ...(patch.scopes && { scopes: normalizeScopes(patch.scopes) }), updatedAt: new Date() })
+    .where(customApp(id))
+    .returning()
+  return app ? publicApp(app) : null
+}
+
+// Uninstalls it everywhere: its tokens (and their webhooks) and installations are deleted with it
+export async function deleteApp(id: string) {
+  const [app] = await db.delete(schema.apps).where(customApp(id)).returning()
+  return app ? publicApp(app) : null
+}
+
+// The old key stops working right away
+export async function rotateKey(id: string) {
+  const { privateKey, publicKey } = await generateKeyPair()
+  const [app] = await db.update(schema.apps).set({ publicKey, updatedAt: new Date() }).where(customApp(id)).returning()
+  return app ? { app: publicApp(app), privateKey } : null
+}
+
+// --- OAuth: authorize (consent page) ---
+
+// `scope` as apps send it: comma- or space-separated. Unknown names are an error, not ignored.
+export function parseScopes(scope: string): ApiScope[] | null {
+  const names = scope.split(/[\s,]+/).filter(Boolean)
+  if (!names.every((n): n is ApiScope => (API_SCOPES as readonly string[]).includes(n))) return null
+  return normalizeScopes(names as ApiScope[])
+}
+
+// write_* covers read_*
+const covers = (granted: readonly ApiScope[], scope: ApiScope) =>
+  granted.includes(scope) ||
+  (scope.startsWith('read_') && granted.includes(scope.replace('read_', 'write_') as ApiScope))
+
+/**
+ * Checks an authorize request. invalid_client / invalid_redirect_uri must be shown to the merchant (never
+ * redirect to an unverified URL); invalid_scope can be sent back to the verified redirect_uri.
+ * Without `scope`, the app gets everything it was registered with.
+ */
+export async function validateAuthorizeRequest(input: { clientId: string; redirectUri?: string; scope?: string }) {
+  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.clientId, input.clientId))
+  if (!app) throw new AppError('invalid_client', 'Unknown app (client_id)')
+  if (app.delistedAt) throw new AppError('invalid_client', 'This app is no longer available in the App Store')
+  // Without redirect_uri: a managed install (the consent screen installs it, nothing is sent to the app)
+  if (input.redirectUri !== undefined && !app.redirectUrls.includes(input.redirectUri)) {
+    throw new AppError('invalid_redirect_uri', 'redirect_uri is not registered for this app')
+  }
+  const scopes = input.scope ? parseScopes(input.scope) : app.scopes
+  if (!scopes || scopes.length === 0 || !scopes.every((s) => covers(app.scopes, s))) {
+    throw new AppError('invalid_scope', `Requested scopes must be among: ${app.scopes.join(', ')}`)
+  }
+  return { app: publicApp(app), scopes }
+}
+
+// The merchant approved: a single-use code the app's backend exchanges within 10 minutes
+export async function createAuthorizationCode(input: {
+  appId: string
+  shopId: string
+  userId: string
+  scopes: ApiScope[]
+  redirectUri: string
+}) {
+  const code = random(32)
+  await db.insert(schema.appAuthorizationCodes).values({
+    ...input,
+    codeHash: hash(code),
+    expiresAt: new Date(Date.now() + CODE_TTL_MS),
+  })
+  // Housekeeping: drop codes that expired over a day ago
+  await db
+    .delete(schema.appAuthorizationCodes)
+    .where(lt(schema.appAuthorizationCodes.expiresAt, sql`now() - interval '1 day'`))
+  return code
+}
+
+// --- OAuth: tokens (app backend) ---
+
+/**
+ * The app proves who it is with a client assertion signed by its key, addressed to this instance. Throws
+ * invalid_client for unknown apps, apps without a key, and assertions that don't check out.
+ */
+export async function authenticateClient(clientId: string, assertion: string) {
+  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.clientId, clientId))
+  const valid =
+    app?.publicKey &&
+    (await verifyClientAssertion(assertion, app.publicKey, { clientId, audience: await instanceUrl() }))
+  if (!app || !valid) throw new AppError('invalid_client', 'Invalid client_id or client_assertion')
+  return app
+}
+
+/**
+ * Code → long-lived access token (sk_…), and the installation is created (or updated). Re-authorizing rotates
+ * the installation's token in place: the old one stops working, its webhook subscriptions stay.
+ */
+export async function exchangeCode(input: {
+  clientId: string
+  clientAssertion: string
+  code: string
+  redirectUri: string
+}) {
+  const app = await authenticateClient(input.clientId, input.clientAssertion)
+  return db.transaction(async (tx) => {
+    const [code] = await tx
+      .select()
+      .from(schema.appAuthorizationCodes)
+      .where(
+        and(
+          eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
+          eq(schema.appAuthorizationCodes.appId, app.id),
+        ),
+      )
+      .for('update')
+    if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
+      throw new AppError(
+        'invalid_grant',
+        'Authorization code is invalid, expired, already used, or for another redirect_uri',
+      )
+    }
+    await tx
+      .update(schema.appAuthorizationCodes)
+      .set({ usedAt: new Date() })
+      .where(eq(schema.appAuthorizationCodes.id, code.id))
+
+    const { token, ...secret } = mintToken()
+    const installation = await install(tx, {
+      app,
+      shopId: code.shopId,
+      userId: code.userId,
+      scopes: code.scopes,
+      secret,
+    })
+    return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id }
+  })
+}
+
+// The live installation of an app on a shop, with its (unrevoked) token
+async function liveInstallation(appId: string, shopId: string) {
+  const [row] = await db
+    .select({ installation: schema.appInstallations, token: schema.apiTokens })
+    .from(schema.appInstallations)
+    .innerJoin(
+      schema.apiTokens,
+      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+    )
+    .where(
+      and(
+        eq(schema.appInstallations.appId, appId),
+        eq(schema.appInstallations.shopId, shopId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+  return row ?? null
+}
+
+type AccessTokenClaims = {
+  iss: string
+  sub: string
+  client_id: string
+  shop_id: string
+  scope: string
+  iat: number
+  exp: number
+}
+
+// A 1-hour Admin API token for an installation: a JWT this instance signs, checked on every request against
+// the installation (uninstalling revokes it at once)
+async function issueAccessToken(app: App, installation: AppInstallation) {
+  const now = Math.floor(Date.now() / 1000)
+  const accessToken = await signJwt(await instanceSigner(), ACCESS_TOKEN_TYP, {
+    iss: await instanceUrl(),
+    sub: installation.id,
+    client_id: app.clientId,
+    shop_id: installation.shopId,
+    scope: installation.scopes.join(','),
+    iat: now,
+    exp: now + ACCESS_TOKEN_TTL_S,
+  } satisfies AccessTokenClaims)
+  return {
+    accessToken,
+    expiresIn: ACCESS_TOKEN_TTL_S,
+    scopes: installation.scopes,
+    shopId: installation.shopId,
+    installationId: installation.id,
+  }
+}
+
+/** Session token (from the embedded admin page) → access token for its installation */
+export async function exchangeSessionToken(input: { clientId: string; clientAssertion: string; subjectToken: string }) {
+  const app = await authenticateClient(input.clientId, input.clientAssertion)
+  const claims = await verifyJwt<SessionTokenClaims>(input.subjectToken, SESSION_TOKEN_TYP, (header) =>
+    ownKey(header.kid),
+  )
+  if (!claims || claims.aud !== app.clientId) throw new AppError('invalid_grant', 'Invalid or expired session token')
+  const live = await liveInstallation(app.id, claims.shop_id)
+  if (!live || live.installation.id !== claims.sid) throw new AppError('invalid_grant', 'App is not installed')
+  return issueAccessToken(app, live.installation)
+}
+
+/** Background work: an access token for the app's live installation on `shopId` */
+export async function clientCredentials(input: { clientId: string; clientAssertion: string; shopId: string }) {
+  const app = await authenticateClient(input.clientId, input.clientAssertion)
+  const live = await liveInstallation(app.id, input.shopId)
+  if (!live) throw new AppError('invalid_grant', 'App is not installed on this shop')
+  return issueAccessToken(app, live.installation)
+}
+
+/** Bearer access token (JWT) → the installation's API token and shop. Null if invalid, expired or uninstalled. */
+export async function resolveAccessToken(
+  token: string,
+): Promise<{ token: ApiToken; shop: typeof schema.shops.$inferSelect } | null> {
+  if (decodeJwt(token)?.header.typ !== ACCESS_TOKEN_TYP) return null
+  const claims = await verifyJwt<AccessTokenClaims>(token, ACCESS_TOKEN_TYP, (header) => ownKey(header.kid))
+  if (!claims) return null
+  const [row] = await db
+    .select({ token: schema.apiTokens, shop: schema.shops })
+    .from(schema.appInstallations)
+    .innerJoin(
+      schema.apiTokens,
+      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+    )
+    .innerJoin(schema.shops, eq(schema.shops.id, schema.appInstallations.shopId))
+    .where(
+      and(
+        eq(schema.appInstallations.id, claims.sub),
+        eq(schema.appInstallations.shopId, claims.shop_id),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+  if (!row) return null
+  touchToken(row.token.id)
+  return row
+}
+
+/**
+ * Managed install: the merchant approved in the admin. Creates (or updates) the installation; the app gets
+ * tokens with the token exchange / client credentials grants, so no token leaves this function.
+ */
+export async function installManaged(input: { appId: string; shopId: string; userId: string; scopes: ApiScope[] }) {
+  return db.transaction(async (tx) => {
+    const [app] = await tx.select().from(schema.apps).where(eq(schema.apps.id, input.appId))
+    if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
+    const { token: _, ...secret } = mintToken()
+    return install(tx, { app, shopId: input.shopId, userId: input.userId, scopes: input.scopes, secret })
+  })
+}
+
+async function install(
+  tx: Conn,
+  input: {
+    app: App
+    shopId: string
+    userId: string | null
+    scopes: ApiScope[]
+    secret: { tokenHash: string; tokenPrefix: string }
+  },
+) {
+  const [existing] = await tx
+    .select({ installation: schema.appInstallations, token: schema.apiTokens })
+    .from(schema.appInstallations)
+    .leftJoin(
+      schema.apiTokens,
+      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+    )
+    .where(and(eq(schema.appInstallations.appId, input.app.id), eq(schema.appInstallations.shopId, input.shopId)))
+    .for('update', { of: schema.appInstallations })
+
+  // Already installed: new secret and scopes on the same token row
+  if (existing?.token && !existing.installation.uninstalledAt) {
+    await tx
+      .update(schema.apiTokens)
+      .set({ ...input.secret, scopes: input.scopes, name: input.app.name })
+      .where(eq(schema.apiTokens.id, existing.token.id))
+    const [installation] = await tx
+      .update(schema.appInstallations)
+      .set({ scopes: input.scopes })
+      .where(eq(schema.appInstallations.id, existing.installation.id))
+      .returning()
+    return installation!
+  }
+
+  const [token] = await tx
+    .insert(schema.apiTokens)
+    .values({
+      shopId: input.shopId,
+      appId: input.app.id,
+      name: input.app.name,
+      scopes: input.scopes,
+      createdById: input.userId,
+      ...input.secret,
+    })
+    .returning({ id: schema.apiTokens.id })
+  const values = {
+    apiTokenId: token!.id,
+    scopes: input.scopes,
+    installedById: input.userId,
+    installedAt: new Date(),
+    uninstalledAt: null,
+  }
+  const [installation] = existing
+    ? await tx
+        .update(schema.appInstallations)
+        .set(values)
+        .where(eq(schema.appInstallations.id, existing.installation.id))
+        .returning()
+    : await tx
+        .insert(schema.appInstallations)
+        .values({ ...values, appId: input.app.id, shopId: input.shopId })
+        .returning()
+  return installation!
+}
+
+// --- App Store (marketplace apps synced to this instance) ---
+
+// Installable marketplace apps, with whether this shop already has each
+export async function listAppStore(shopId: string) {
+  const rows = await db
+    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .from(schema.apps)
+    .leftJoin(
+      schema.appInstallations,
+      and(
+        eq(schema.appInstallations.appId, schema.apps.id),
+        eq(schema.appInstallations.shopId, shopId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+    .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
+    .orderBy(asc(schema.apps.name))
+  return rows.map((r) => ({ ...publicApp(r.app), installed: r.installationId !== null }))
+}
+
+// --- installations (shop owners/admins) ---
+
+const installedApps = (shopId: string) =>
+  db
+    .select({
+      installation: schema.appInstallations,
+      app: schema.apps,
+      lastUsedAt: schema.apiTokens.lastUsedAt,
+    })
+    .from(schema.appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
+    .leftJoin(schema.apiTokens, eq(schema.apiTokens.id, schema.appInstallations.apiTokenId))
+    .where(and(eq(schema.appInstallations.shopId, shopId), isNull(schema.appInstallations.uninstalledAt)))
+
+export async function listInstallations(shopId: string) {
+  const rows = await installedApps(shopId).orderBy(desc(schema.appInstallations.installedAt))
+  return rows.map(({ installation, app, lastUsedAt }) => ({
+    ...installation,
+    app: publicApp(app),
+    lastUsedAt,
+  }))
+}
+
+// The shop's live installation of an app (consent page: "already installed")
+export async function getInstallation(shopId: string, appId: string) {
+  const [row] = await db
+    .select()
+    .from(schema.appInstallations)
+    .where(
+      and(
+        eq(schema.appInstallations.shopId, shopId),
+        eq(schema.appInstallations.appId, appId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+  return row ?? null
+}
+
+// Revokes the token (and its webhooks); the row stays so reinstalling is recognised. Null if not installed.
+export async function uninstall(shopId: string, installationId: string) {
+  return db.transaction(async (tx) => {
+    const [installation] = await tx
+      .select()
+      .from(schema.appInstallations)
+      .where(
+        and(
+          eq(schema.appInstallations.shopId, shopId),
+          eq(schema.appInstallations.id, installationId),
+          isNull(schema.appInstallations.uninstalledAt),
+        ),
+      )
+      .for('update')
+    if (!installation) return null
+    if (installation.apiTokenId) await revokeTokenById(shopId, installation.apiTokenId, tx)
+    // A payments app's method leaves checkout with it (orders keep their gateway snapshot)
+    await tx
+      .delete(schema.paymentMethods)
+      .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, installation.appId)))
+    const [updated] = await tx
+      .update(schema.appInstallations)
+      .set({ uninstalledAt: new Date(), apiTokenId: null })
+      .where(eq(schema.appInstallations.id, installationId))
+      .returning()
+    return updated!
+  })
+}
+
+// --- embedded apps ---
+
+// A live installation of this shop, with its app (embedded app page)
+export async function getInstallationWithApp(shopId: string, installationId: string) {
+  const [row] = await db
+    .select({ installation: schema.appInstallations, app: schema.apps })
+    .from(schema.appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
+    .where(
+      and(
+        eq(schema.appInstallations.shopId, shopId),
+        eq(schema.appInstallations.id, installationId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+  if (!row) return null
+  return { ...row.installation, app: publicApp(row.app) }
+}
+
+/**
+ * A 60-second token telling the embedded app which staff member of which shop is using it (see
+ * @shopnex/app-bridge), signed with this instance's key.
+ */
+export async function createSessionToken(input: { shopId: string; installationId: string; userId: string }) {
+  const [row] = await db
+    .select({ installation: schema.appInstallations, clientId: schema.apps.clientId })
+    .from(schema.appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
+    .where(
+      and(
+        eq(schema.appInstallations.shopId, input.shopId),
+        eq(schema.appInstallations.id, input.installationId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+  if (!row) throw new AppError('INSTALLATION_NOT_FOUND', 'App is not installed')
+  return signSessionToken(await instanceSigner(), {
+    iss: await instanceUrl(),
+    aud: row.clientId,
+    sub: input.userId,
+    shop_id: input.shopId,
+    sid: row.installation.id,
+  })
+}
+
+// --- app data (an app's own per-shop storage) ---
+
+const APP_DATA_MAX_BYTES = 64 * 1024
+const APP_DATA_MAX_KEYS = 100
+
+// The installation an API token belongs to: only an app's own token reaches its data
+async function tokenInstallation(token: ApiToken) {
+  if (!token.appId) throw new AppError('APP_NOT_FOUND', "Only an app's own token can use app data")
+  const [row] = await db
+    .select({ id: schema.appInstallations.id })
+    .from(schema.appInstallations)
+    .where(and(eq(schema.appInstallations.apiTokenId, token.id), isNull(schema.appInstallations.uninstalledAt)))
+  if (!row) throw new AppError('INSTALLATION_NOT_FOUND', 'App is not installed')
+  return row.id
+}
+
+export async function listAppData(token: ApiToken) {
+  const installationId = await tokenInstallation(token)
+  const rows = await db
+    .select({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
+    .from(schema.appData)
+    .where(eq(schema.appData.installationId, installationId))
+    .orderBy(asc(schema.appData.key))
+  return rows
+}
+
+export async function getAppData(token: ApiToken, key: string) {
+  const installationId = await tokenInstallation(token)
+  const [row] = await db
+    .select({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
+    .from(schema.appData)
+    .where(and(eq(schema.appData.installationId, installationId), eq(schema.appData.key, key)))
+  return row ?? null
+}
+
+export async function setAppData(token: ApiToken, key: string, value: unknown) {
+  const installationId = await tokenInstallation(token)
+  if (JSON.stringify(value).length > APP_DATA_MAX_BYTES) {
+    throw new AppError('APP_DATA_TOO_LARGE', `A value can be at most ${APP_DATA_MAX_BYTES / 1024} KB`)
+  }
+  return db.transaction(async (tx) => {
+    const [{ count }] = (await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.appData)
+      .where(and(eq(schema.appData.installationId, installationId), sql`${schema.appData.key} <> ${key}`))) as [
+      { count: number },
+    ]
+    if (count >= APP_DATA_MAX_KEYS) {
+      throw new AppError('APP_DATA_TOO_LARGE', `An app can keep at most ${APP_DATA_MAX_KEYS} keys per shop`)
+    }
+    const [row] = await tx
+      .insert(schema.appData)
+      .values({ installationId, key, value })
+      .onConflictDoUpdate({
+        target: [schema.appData.installationId, schema.appData.key],
+        set: { value, updatedAt: new Date() },
+      })
+      .returning({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
+    return row!
+  })
+}
+
+export async function deleteAppData(token: ApiToken, key: string) {
+  const installationId = await tokenInstallation(token)
+  const [row] = await db
+    .delete(schema.appData)
+    .where(and(eq(schema.appData.installationId, installationId), eq(schema.appData.key, key)))
+    .returning({ key: schema.appData.key })
+  return row ?? null
+}
+
+// --- bundled apps ---
+
+/**
+ * First-party apps that ship with Shopnex and run next to it (e.g. apps/stripe). Each is registered as a
+ * custom, managed app from env, with a fixed client id; its public key comes from the private key both sides
+ * read (same .env), so staff only click Install. Without its URL and key in env it's left alone.
+ */
+const BUNDLED_APPS = [
+  {
+    clientId: 'app_stripe',
+    urlEnv: 'STRIPE_APP_URL',
+    keyEnv: 'STRIPE_APP_KEY',
+    name: 'Stripe',
+    description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
+    scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
+  },
+]
+
+export async function registerBundledApps() {
+  for (const bundled of BUNDLED_APPS) {
+    const url = process.env[bundled.urlEnv]?.replace(/\/$/, '')
+    const key = process.env[bundled.keyEnv]
+    if (!url || !key) continue
+    const values = {
+      source: 'custom' as const,
+      name: bundled.name,
+      description: bundled.description,
+      iconUrl: `${url}/icon.svg`,
+      appUrl: url,
+      redirectUrls: [],
+      scopes: normalizeScopes(bundled.scopes),
+      publicKey: await publicKeyOf(key),
+      updatedAt: new Date(),
+    }
+    await db
+      .insert(schema.apps)
+      .values({ ...values, clientId: bundled.clientId })
+      .onConflictDoUpdate({ target: schema.apps.clientId, set: values })
+  }
+}

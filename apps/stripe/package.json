@@ -1,0 +1,21 @@
+{
+  "name": "@shopnex/stripe",
+  "private": true,
+  "type": "module",
+  "description": "Bundled payments app: card payments with Stripe Checkout (Shopnex payment sessions), built on @shopnex/app",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.tsx",
+    "start": "tsx --env-file-if-exists=../../.env src/server.tsx",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "@shopnex/app": "workspace:*",
+    "hono": "catalog:",
+    "stripe": "^23.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

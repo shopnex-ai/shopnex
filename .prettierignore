@@ -1,0 +1,14 @@
+node_modules
+.next
+.astro
+dist
+build
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+**/migrations/meta
+next-env.d.ts
+*.tsbuildinfo
+templates/storefront/themes/*/assets/theme.*
+templates/storefront/public/shopnex

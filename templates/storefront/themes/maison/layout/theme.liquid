@@ -1,0 +1,114 @@
+{%- comment -%}
+  Every Maison page: head (theme stylesheet, the merchant's colors and fonts), collections bar, masthead,
+  footer, bag drawer.
+{%- endcomment -%}
+{%- comment -%} Google Fonts parameters for the fonts merchants can pick (theme.json: heading_font, body_font) {%- endcomment -%}
+{%- case settings.heading_font -%}
+  {%- when 'Cormorant Garamond' -%}
+    {%- assign heading_spec = 'Cormorant+Garamond:ital,wght@0,400;0,500;1,400' -%}
+    {%- assign heading_fallback = 'Georgia, serif' -%}
+  {%- when 'DM Serif Display' -%}
+    {%- assign heading_spec = 'DM+Serif+Display:ital@0;1' -%}
+    {%- assign heading_fallback = 'Georgia, serif' -%}
+  {%- when 'Fraunces' -%}
+    {%- assign heading_spec = 'Fraunces:ital,wght@0,400;0,500;1,400' -%}
+    {%- assign heading_fallback = 'Georgia, serif' -%}
+  {%- when 'Inter Tight' -%}
+    {%- assign heading_spec = 'Inter+Tight:ital,wght@0,400;0,500;1,400' -%}
+    {%- assign heading_fallback = 'system-ui, sans-serif' -%}
+  {%- else -%}
+    {%- assign heading_spec = 'Playfair+Display:ital,wght@0,400;0,500;1,400' -%}
+    {%- assign heading_fallback = 'Georgia, serif' -%}
+{%- endcase -%}
+{%- case settings.body_font -%}
+  {%- when 'Inter' -%}
+    {%- assign body_spec = 'Inter:wght@300;400;500;600' -%}
+  {%- when 'Work Sans' -%}
+    {%- assign body_spec = 'Work+Sans:wght@300;400;500;600' -%}
+  {%- when 'IBM Plex Sans' -%}
+    {%- assign body_spec = 'IBM+Plex+Sans:wght@300;400;500;600' -%}
+  {%- else -%}
+    {%- assign body_spec = 'Karla:wght@300;400;500;600' -%}
+{%- endcase -%}
+{%- comment -%}
+  Unchanged colors and fonts keep the tokens in theme.css (oklch), so a shop that never customized anything
+  looks exactly like the original theme (the defaults here are theme.json's). Color settings are validated hex
+  values, so they're safe in CSS. A new background or text color also sets the tones between them (borders,
+  cards, secondary text).
+{%- endcomment -%}
+{%- capture theme_style -%}
+  {%- if settings.accent_color != '#803f3b' -%}
+    --color-acc:{{ settings.accent_color }};--color-acc-deep:color-mix(in oklch, {{ settings.accent_color }}, black 25%);
+  {%- endif -%}
+  {%- if settings.paper_color != '#f6f4f5' or settings.ink_color != '#1f1d1d' -%}
+    {%- assign paper = settings.paper_color -%}
+    {%- assign ink = settings.ink_color -%}
+    --color-paper:{{ paper }};
+    --color-card:color-mix(in oklch, {{ paper }}, white 50%);
+    --color-tint:color-mix(in oklch, {{ paper }}, {{ ink }} 2%);
+    --color-line:color-mix(in oklch, {{ paper }}, {{ ink }} 8%);
+    --color-rule:color-mix(in oklch, {{ paper }}, {{ ink }} 12%);
+    --color-ink:{{ ink }};
+    --color-soft:color-mix(in oklch, {{ ink }}, {{ paper }} 27%);
+    --color-muted:color-mix(in oklch, {{ ink }}, {{ paper }} 37%);
+    --color-faint:color-mix(in oklch, {{ ink }}, {{ paper }} 48%);
+  {%- endif -%}
+  {%- if settings.heading_font != 'Playfair Display' -%}
+    --font-serif:'{{ settings.heading_font }}', {{ heading_fallback }};
+  {%- endif -%}
+  {%- if settings.body_font != 'Karla' -%}
+    --font-sans:'{{ settings.body_font }}', system-ui, sans-serif;
+  {%- endif -%}
+{%- endcapture -%}
+{%- if page_title != blank and request.page_type == 'index' -%}
+  {%- assign title = page_title -%}
+{%- elsif page_title != blank -%}
+  {%- assign title = page_title | append: ' — ' | append: shop.name -%}
+{%- else -%}
+  {%- assign title = shop.name -%}
+{%- endif -%}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    {%- if page_description != blank %}
+    <meta name="description" content="{{ page_description }}" />
+    {%- endif %}
+    <meta property="og:site_name" content="{{ shop.name }}" />
+    <meta property="og:title" content="{{ title }}" />
+    {%- if page_description != blank %}
+    <meta property="og:description" content="{{ page_description }}" />
+    {%- endif %}
+    {%- if page_image != blank %}
+    <meta property="og:image" content="{{ page_image }}" />
+    {%- endif %}
+    <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family={{ heading_spec }}&family={{ body_spec }}&family=Cousine:wght@400&display=swap"
+    />
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {%- if theme_style != blank %}
+    <style>:root{ {{- theme_style -}} }</style>
+    {%- endif %}
+    {%- if settings.custom_css != blank %}
+    {%- comment %} Code settings are output as is (only staff can edit them); `</style` can't end the tag early {% endcomment %}
+    <style>{{ settings.custom_css | replace: '</style', '<\/style' | raw }}</style>
+    {%- endif %}
+    {{ content_for_header }}
+    {{ settings.head_html }}
+  </head>
+  <body class="flex min-h-screen flex-col bg-paper font-sans text-ink antialiased">
+    {% render 'header' %}
+    <div class="grow">
+      {{ content_for_layout }}
+    </div>
+    {% render 'footer' %}
+    {% render 'bag' %}
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>

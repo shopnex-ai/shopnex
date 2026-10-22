@@ -1,0 +1,23 @@
+{%- comment -%} Storeplate's footer. Links come from Online store → Navigation ("footer"). {%- endcomment -%}
+{%- assign footer_text = settings.footer_text | strip -%}
+{%- if footer_text == blank -%}
+  {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+<footer class="bg-light">
+  <div class="container">
+    <div class="flex flex-col items-center justify-between gap-y-4 py-10 md:flex-row md:pt-20 md:pb-14">
+      {% render 'logo' %}
+      {%- if menu and menu.links.size > 0 %}
+        <ul class="flex flex-wrap justify-center gap-x-4 lg:gap-x-10">
+          {%- for link in menu.links %}
+            <li class="footer-link"><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {%- endfor %}
+        </ul>
+      {%- endif %}
+    </div>
+    <div class="border-t border-border py-5 text-center text-sm font-light text-text-light md:text-left">
+      {{- footer_text -}}
+    </div>
+  </div>
+</footer>

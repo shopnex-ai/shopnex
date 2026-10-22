@@ -1,0 +1,24 @@
+{
+  "name": "@shopnex/email",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./worker": "./src/worker.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/db": "workspace:*",
+    "@shopnex/storefront-sdk": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "liquidjs": "10.30.0",
+    "nodemailer": "10.0.16"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

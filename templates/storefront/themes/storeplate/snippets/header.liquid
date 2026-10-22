@@ -1,0 +1,119 @@
+{%- comment -%}
+  Storeplate's header: logo, the main menu (inline on large screens, in a side drawer otherwise; src/header.ts),
+  cart. Links come from Online store → Navigation ("main-menu").
+{%- endcomment -%}
+{%- assign menu = linklists['main-menu'] -%}
+{%- if menu -%}
+  {%- assign links = menu.links -%}
+{%- endif -%}
+{%- comment %} Product pages count as the catalog's (link.active alone leaves them out) {% endcomment -%}
+{%- assign on_product = false -%}
+{%- if request.page_type == 'product' -%}{%- assign on_product = true -%}{%- endif -%}
+<header class="header z-30 transition-shadow duration-300 {% if settings.sticky_header %}sticky top-0{% endif %}">
+  <nav class="navbar container">
+    <div class="flex items-center gap-x-7 lg:gap-x-14">
+      {% render 'logo' %}
+      <ul class="hidden items-center gap-x-6 lg:flex">
+        {%- if menu %}
+          {%- for link in links %}
+            <li class="group relative">
+              <a
+                href="{{ link.url }}"
+                class="py-2 font-medium transition hover:text-text-dark {% if link.active or on_product and link.url == '/products' %}text-text-dark{% else %}text-text-light{% endif %}"
+              >
+                {{- link.title -}}
+              </a>
+              {%- if link.links.size > 0 %}
+                <ul class="invisible absolute top-full left-0 z-40 min-w-48 rounded-md bg-body p-4 opacity-0 shadow transition group-hover:visible group-hover:opacity-100">
+                  {%- for child in link.links %}
+                    <li>
+                      <a href="{{ child.url }}" class="block py-1 text-text-light hover:text-text-dark">{{ child.title }}</a>
+                    </li>
+                  {%- endfor %}
+                </ul>
+              {%- endif %}
+            </li>
+          {%- endfor %}
+        {%- else %}
+          {%- comment %} No main menu yet {% endcomment %}
+          <li class="group relative">
+            <a
+              href="/"
+              class="py-2 font-medium transition hover:text-text-dark {% if request.path == '/' %}text-text-dark{% else %}text-text-light{% endif %}"
+              >Home</a
+            >
+          </li>
+          <li class="group relative">
+            <a
+              href="/products"
+              class="py-2 font-medium transition hover:text-text-dark {% if request.path == '/products' %}text-text-dark{% else %}text-text-light{% endif %}"
+              >Products</a
+            >
+          </li>
+        {%- endif %}
+      </ul>
+    </div>
+
+    <div class="flex items-center gap-x-6">
+      {%- comment %} A React island (src/islands/CartButton.tsx); the cart is only known in the browser {% endcomment %}
+      <div data-island="CartButton" class="flex min-w-5 items-center"></div>
+      <button
+        type="button"
+        class="rounded-md border border-border p-1 text-text-dark lg:hidden"
+        data-menu-open
+        aria-label="Open menu"
+      >
+        <svg class="block h-5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="fixed inset-0 z-40 hidden bg-black opacity-50" data-menu-overlay></div>
+  <div
+    class="fixed top-0 left-0 z-50 h-full w-full -translate-x-full transform overflow-y-auto bg-body p-9 transition-transform md:w-96"
+    data-menu-drawer
+  >
+    <div class="mb-14 flex items-center justify-between">
+      {% render 'logo' %}
+      <button type="button" class="p-2" data-menu-close aria-label="Close menu">
+        <svg class="block h-5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+          <polygon
+            points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+            transform="rotate(45 10 10)"
+          ></polygon>
+        </svg>
+      </button>
+    </div>
+    <ul class="nav-list">
+      {%- if menu %}
+        {%- for link in links %}
+          <li>
+            {%- if link.links.size > 0 %}
+              <button type="button" class="nav-link flex w-full items-center justify-between" data-submenu-toggle>
+                {{ link.title }}
+                <svg class="submenu-arrow h-4 w-4 transition-transform" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+              <ul class="mt-2 hidden space-y-2 py-2 pl-4">
+                <li><a href="{{ link.url }}" class="nav-dropdown-link">All {{ link.title }}</a></li>
+                {%- for child in link.links %}
+                  <li><a href="{{ child.url }}" class="nav-dropdown-link">{{ child.title }}</a></li>
+                {%- endfor %}
+              </ul>
+            {%- else %}
+              <a href="{{ link.url }}" class="nav-link {% if link.active or on_product and link.url == '/products' %}text-text-dark{% endif %}">{{ link.title }}</a>
+            {%- endif %}
+          </li>
+        {%- endfor %}
+      {%- else %}
+        <li><a href="/" class="nav-link {% if request.path == '/' %}text-text-dark{% endif %}">Home</a></li>
+        <li>
+          <a href="/products" class="nav-link {% if request.path == '/products' %}text-text-dark{% endif %}">Products</a>
+        </li>
+      {%- endif %}
+    </ul>
+  </div>
+</header>

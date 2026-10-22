@@ -1,0 +1,49 @@
+{%- comment -%} One slide per product (from a collection, or the newest); a Swiper carousel (src/sliders.ts) {%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.count -%}
+{%- if products.size > 0 -%}
+  <section>
+    <div class="container">
+      <div class="bg-gradient rounded-md py-10">
+        <div class="swiper" data-hero-slider>
+          <div class="swiper-wrapper">
+            {%- for p in products %}
+              {%- assign text = p.description | strip_html | strip | truncate: 160, '' %}
+              <div class="swiper-slide">
+                <div class="row items-center px-7 xl:px-16">
+                  <div class="order-2 sm:col-12 lg:order-0 lg:col-6">
+                    <div class="py-10 text-center lg:py-0">
+                      {%- if text != blank %}
+                        <p class="mb-2 line-clamp-2 font-medium text-text-light md:text-xl lg:mb-3">{{ text }}</p>
+                      {%- endif %}
+                      <div class="row">
+                        <h1 class="col-10 mx-auto mb-4 sm:col-8 lg:col-12 lg:mb-10">{{ p.title }}</h1>
+                      </div>
+                      {%- if section.settings.button_label != blank %}
+                        <a class="btn btn-primary btn-sm font-medium md:btn-lg" href="{{ p.url }}">
+                          {{- section.settings.button_label -}}
+                        </a>
+                      {%- endif %}
+                    </div>
+                  </div>
+                  <div class="sm:col-12 lg:col-6">
+                    {%- if p.featured_image %}
+                      <img
+                        src="{{ p.featured_image | image_url }}"
+                        class="mx-auto max-h-[420px] w-[388px] object-contain lg:w-full"
+                        width="507"
+                        height="385"
+                        alt="{{ p.title }}"
+                      />
+                    {%- endif %}
+                  </div>
+                </div>
+              </div>
+            {%- endfor %}
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}

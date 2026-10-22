@@ -1,0 +1,25 @@
+{
+  "name": "@shopnex/storefront-sdk",
+  "version": "1.0.0",
+  "description": "Shopnex Storefront API contract + typed client for any storefront (Next, Astro, …)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/contract.ts",
+    "./constants": "./src/constants.ts",
+    "./cart": "./src/cart.ts",
+    "./money": "./src/money.ts",
+    "./theme": "./src/theme.ts",
+    "./theme-preview": "./src/theme-preview.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:",
+    "@orpc/contract": "^1.15.7",
+    "@orpc/openapi-client": "^1.15.7",
+    "nanostores": "^1.3.0",
+    "zod": "catalog:"
+  }
+}

@@ -1,0 +1,11 @@
+---
+import { loadCatalog } from '../../core/catalog'
+import { loadTheme, render } from '../../core/theme'
+
+const handle = Astro.params.handle!
+// Shopify's path for all products
+if (handle === 'all') return Astro.redirect(`/products${Astro.url.search}`)
+
+const [theme, catalog] = await Promise.all([loadTheme(Astro.url), loadCatalog(Astro.url, handle)])
+return render(theme, Astro.url, catalog ?? { template: '404' })
+---

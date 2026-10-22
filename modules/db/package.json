@@ -1,0 +1,26 @@
+{
+  "name": "@shopnex/db",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./secrets": "./src/secrets.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "drizzle-orm": "catalog:",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "dotenv": "^17.2.3"
+  }
+}

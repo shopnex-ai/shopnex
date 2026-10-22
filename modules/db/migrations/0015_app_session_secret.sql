@@ -1,0 +1,1 @@
+ALTER TABLE "app_installations" ADD COLUMN "session_secret" text;

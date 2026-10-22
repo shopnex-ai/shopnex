@@ -1,0 +1,21 @@
+{
+  "name": "@shopnex/app",
+  "version": "0.1.0",
+  "description": "Build Shopnex apps with no database and no OAuth code: authenticate, Admin API, per-shop data, signed requests, and admin-styled UI components",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/app-bridge": "workspace:*",
+    "@shopnex/marketplace-sdk": "workspace:*",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

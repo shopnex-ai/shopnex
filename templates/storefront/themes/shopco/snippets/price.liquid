@@ -1,0 +1,14 @@
+{%- comment -%}
+  A product's price ("From" when variants differ), its compare-at price struck through, and the saving as a
+  "-20%" badge. {% render 'price', product: product, class: '…' %}; large: true for the product page.
+{%- endcomment -%}
+<span class="flex flex-wrap items-center gap-x-2.5 gap-y-1 font-bold {{ class }}">
+  <span>{% if product.price_varies %}<span class="font-normal text-soft">From</span> {% endif %}{{ product.price_min | money }}</span>
+  {%- if product.compare_at_price_max > product.price_min %}
+    {%- assign saving = product.compare_at_price_max | minus: product.price_min | times: 100.0 | divided_by: product.compare_at_price_max | round %}
+    <s class="text-faint">{{ product.compare_at_price_max | money }}</s>
+    {%- if saving > 0 %}
+      <span class="badge-sale {% if large %}lg{% endif %}">-{{ saving }}%</span>
+    {%- endif %}
+  {%- endif %}
+</span>

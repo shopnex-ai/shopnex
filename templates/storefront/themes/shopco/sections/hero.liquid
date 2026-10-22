@@ -1,0 +1,42 @@
+{%- comment -%}
+  Hero: the big uppercase heading, text, button and up to three figures on the soft panel, beside an
+  optional cut-out photo with two sparkles
+{%- endcomment -%}
+{%- assign s = section.settings -%}
+<section class="overflow-hidden bg-hero">
+  <div class="mx-auto flex max-w-[1240px] flex-col md:min-h-[580px] md:flex-row md:items-stretch">
+    <div class="flex flex-col items-start gap-5 px-4 pt-10 pb-8 md:w-1/2 md:shrink-0 md:gap-8 lg:w-[600px] md:py-[100px] xl:px-0">
+      {%- if s.heading != blank %}
+        <h1 class="font-display m-0 text-[36px] leading-[34px] md:text-[64px] md:leading-[64px]">{{ s.heading }}</h1>
+      {%- endif %}
+      {%- if s.text != blank %}
+        <p class="m-0 max-w-[545px] text-[14px] leading-[20px] whitespace-pre-line text-soft md:text-[16px] md:leading-[22px]">{{ s.text }}</p>
+      {%- endif %}
+      {%- if s.button_label != blank and s.button_link != blank %}
+        <a href="{{ s.button_link }}" class="btn w-full md:w-auto">{{ s.button_label }}</a>
+      {%- endif %}
+      {%- capture stats -%}
+        {%- if s.stat_1_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_1_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_1_label }}</span></div>{% endif -%}
+        {%- if s.stat_2_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_2_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_2_label }}</span></div>{% endif -%}
+        {%- if s.stat_3_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_3_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_3_label }}</span></div>{% endif -%}
+      {%- endcapture -%}
+      {%- if stats != blank %}
+        <div class="flex w-full flex-wrap justify-center gap-x-8 gap-y-3 pt-1 md:justify-start md:gap-x-0 lg:flex-nowrap md:[&>*+*]:ml-6 md:[&>*+*]:border-l md:[&>*+*]:border-line md:[&>*+*]:pl-6">
+          {{ stats }}
+        </div>
+      {%- endif %}
+    </div>
+
+    <div class="relative flex min-h-[220px] flex-1 items-end justify-center md:min-h-0">
+      {%- if s.image != blank %}
+        <img src="{{ s.image }}" alt="" class="relative max-h-[448px] w-full object-contain object-bottom md:max-h-[640px]" />
+      {%- endif %}
+      <span class="absolute top-6 right-6 text-ink md:top-[86px] md:right-2">
+        {% render 'icon', name: 'sparkle', class: 'h-[76px] w-[76px] md:h-[104px] md:w-[104px]' %}
+      </span>
+      <span class="absolute top-[38%] left-6 text-ink md:left-10">
+        {% render 'icon', name: 'sparkle', class: 'h-[44px] w-[44px] md:h-[56px] md:w-[56px]' %}
+      </span>
+    </div>
+  </div>
+</section>

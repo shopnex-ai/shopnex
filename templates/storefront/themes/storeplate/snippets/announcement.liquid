@@ -1,0 +1,10 @@
+{%- assign text = settings.announcement_text | strip -%}
+{%- if text != blank -%}
+  <div class="relative z-50 bg-dark px-4 py-2 text-center text-sm text-white">
+    {%- if settings.announcement_link != blank -%}
+      <a href="{{ settings.announcement_link }}" class="underline-offset-2 hover:underline">{{ text }}</a>
+    {%- else -%}
+      {{ text }}
+    {%- endif -%}
+  </div>
+{%- endif -%}
