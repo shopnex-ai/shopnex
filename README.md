@@ -1,6 +1,51 @@
-# Shopnex new
+# Shopnex
 
-## Phase 1
+Open-source, self-hosted e-commerce. Run your own shop with an admin, a themeable storefront, hosted checkout,
+a typed API and webhooks, and extend it with out-of-process apps. No code or CLI needed for day-to-day selling.
+
+- **Admin**: products, collections, orders, discounts, shipping, taxes, staff and settings in the browser
+- **Storefront**: a bundled Astro storefront with Liquid themes, or bring your own through the Storefront API (aligned with Shopify's)
+- **Hosted checkout**: shipping rates, payment methods, discount codes, order confirmation
+- **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
+- **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
+
+## Quick start
+
+Requires Node (see `.node-version`), [pnpm](https://pnpm.io) and PostgreSQL.
+
+```sh
+pnpm install
+cp .env.example .env        # set the database URL and app secret
+pnpm db:migrate
+pnpm dev                    # admin on :3000, storefront on :4321
+```
+
+Open http://localhost:3000 and follow the setup wizard to create the owner account and your shop.
+Anyone who reaches a fresh install can claim it, so finish setup right after deploying. More options are under [Setup](#setup).
+
+## Documentation
+
+Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). The rest of this file is the developer
+reference: repository layout, API, apps and webhooks, tenancy, and the roadmap.
+
+## Our promise
+
+Everything in this repository stays open source. No feature is ever moved from the open-source edition to a
+cloud-only one. The optional app marketplace is the only part of Shopnex that lives in a hosted service, and
+self-hosted instances work fully without it.
+
+## Contributing
+
+Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
+as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+## Repository layout
 
 /apps
 
