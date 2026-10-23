@@ -28,12 +28,6 @@ Anyone who reaches a fresh install can claim it, so finish setup right after dep
 Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). The rest of this file is the developer
 reference: repository layout, API, apps and webhooks, tenancy, and the roadmap.
 
-## Our promise
-
-Everything in this repository stays open source. No feature is ever moved from the open-source edition to a
-cloud-only one. The optional app marketplace is the only part of Shopnex that lives in a hosted service, and
-self-hosted instances work fully without it.
-
 ## Contributing
 
 Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
