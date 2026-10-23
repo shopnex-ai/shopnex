@@ -81,6 +81,7 @@ function stop(exitCode = 0) {
 
 process.on('SIGINT', () => stop(0))
 process.on('SIGTERM', () => stop(0))
+process.on('SIGHUP', () => stop(0))
 
 run('app', 36, ['--filter', '@shopnex/admin-ui', 'dev'])
 
