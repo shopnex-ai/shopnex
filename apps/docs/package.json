@@ -5,13 +5,17 @@
   "description": "Shopnex documentation site (Fumadocs on Next.js)",
   "scripts": {
     "dev": "next dev --port 3400",
-    "build": "next build",
-    "start": "next start --port 3400",
+    "build": "pnpm openapi && next build",
     "postinstall": "fumadocs-mdx",
-    "typecheck": "fumadocs-mdx && tsc"
+    "typecheck": "fumadocs-mdx && tsc",
+    "openapi": "tsx scripts/generate-openapi.ts",
+    "preview": "pnpm dlx serve out -l 3400"
   },
   "dependencies": {
-    "@scalar/nextjs-api-reference": "0.12.11",
+    "@orpc/openapi": "^1.15.7",
+    "@orpc/zod": "^1.15.7",
+    "@shopnex/api": "workspace:*",
+    "@shopnex/storefront-sdk": "workspace:*",
     "fumadocs-core": "16.17.7",
     "fumadocs-mdx": "15.4.9",
     "fumadocs-ui": "16.17.7",
@@ -26,6 +30,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "postcss": "^8.5.0",
-    "tailwindcss": "catalog:"
+    "tailwindcss": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

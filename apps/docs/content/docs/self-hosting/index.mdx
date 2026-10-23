@@ -1,16 +1,55 @@
 ---
 title: Self-hosting
-description: Run Shopnex in production.
+description: Deploy Shopnex in one click or on your own server.
 ---
 
-Shopnex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port.
+Shopnex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port. Pick the way you want to run it.
+
+## One-click deploy
+
+Each of these creates the app and a Postgres database for you.
+
+<Cards>
+  <Card title="Render" href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+    App plus managed Postgres, HTTPS included.
+  </Card>
+  <Card title="DigitalOcean" href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+    App Platform with a managed database.
+  </Card>
+  <Card title="Railway" href="/docs/self-hosting/railway">
+    App, Postgres and a volume from one template.
+  </Card>
+  <Card title="AWS" href="https://shopnex.ai/download">
+    A server with a fixed IP, launched from CloudFormation.
+  </Card>
+</Cards>
+
+<Callout type="warn">
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+</Callout>
+
+## Your own server
+
+<Cards>
+  <Card title="Install script" href="/docs/self-hosting/docker">
+    `curl -fsSL https://shopnex.ai/install.sh | sh` on a fresh Linux server, or run the Docker image yourself.
+  </Card>
+  <Card title="Dokploy, Coolify, Portainer" href="/docs/self-hosting/dokploy">
+    One Docker Compose file: the prebuilt image plus Postgres.
+  </Card>
+</Cards>
+
+## After you deploy
+
+<Cards>
+  <Card title="Configuration" href="/docs/self-hosting/configuration">Environment variables.</Card>
+  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">Optional OAuth providers.</Card>
+  <Card title="End-to-end tests" href="/docs/self-hosting/testing">Run the e2e suite.</Card>
+</Cards>
+
+## How the image is wired
 
 - **Admin, API and checkout** (`/admin`, `/api/*`, `/checkout/*`, plus admin assets) go to the admin app.
 - **Everything else** (`/`, `/products`, `/collections`, `/pages`, theme assets) goes to the storefront.
 
-<Cards>
-  <Card title="Configuration" href="/docs/self-hosting/configuration">Environment variables.</Card>
-  <Card title="Docker & Render" href="/docs/self-hosting/docker">Image, entrypoint and one-click deploy.</Card>
-  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">Optional OAuth providers.</Card>
-  <Card title="End-to-end tests" href="/docs/self-hosting/testing">Run the e2e suite.</Card>
-</Cards>
+Every option above runs this same image, so a platform only needs to forward one port and give the app a Postgres `DATABASE_URL`.

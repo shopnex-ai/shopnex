@@ -245,9 +245,18 @@ importers:
 
   apps/docs:
     dependencies:
-      '@scalar/nextjs-api-reference':
-        specifier: 0.12.11
-        version: 0.12.11(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)
+      '@orpc/openapi':
+        specifier: ^1.15.7
+        version: 1.15.7(crossws@0.3.5)
+      '@orpc/zod':
+        specifier: ^1.15.7
+        version: 1.15.7(@orpc/contract@1.15.7)(@orpc/server@1.15.7(crossws@0.3.5))(crossws@0.3.5)(zod@4.6.7)
+      '@shopnex/api':
+        specifier: workspace:*
+        version: link:../../modules/api
+      '@shopnex/storefront-sdk':
+        specifier: workspace:*
+        version: link:../../packages/storefront-sdk
       fumadocs-core:
         specifier: 16.17.7
         version: 16.17.7(@mdx-js/mdx@3.1.1)(@tanstack/react-router@1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@types/estree-jsx@1.0.5)(@types/hast@3.0.5)(@types/mdast@4.0.4)(@types/react@19.3.0)(lucide-react@1.61.0(@types/react@19.3.0)(react@19.3.1))(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
@@ -288,6 +297,9 @@ importers:
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   apps/stripe:
     dependencies:
@@ -3151,33 +3163,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@scalar/client-side-rendering@0.4.12':
-    resolution: {integrity: sha512-FjzUNhDgMlrIqANp3Lj/2XuRoSL8glyueE6Qc62Y1HzNQEEmk2pmdCTAfrN7bU9L49X5qtNAn3KZdL8ng1taBw==}
-    engines: {node: '>=22'}
-
-  '@scalar/helpers@0.16.4':
-    resolution: {integrity: sha512-9eILWzUcAkHEuYMMvijpSIy69t+Vkq+NudLB/7lgARFTWqXfQpIxW1L3VH7ogKyRie5+E4CNZ3PSvlw6IIfLGw==}
-    engines: {node: '>=22'}
-
-  '@scalar/nextjs-api-reference@0.12.11':
-    resolution: {integrity: sha512-qxLfZJwAaliD4EqNnTH5fEX907psoSUTx7MGxpD5dImRu/RYc5eLK30EbcKRpZ8AixsF5zZVZzDBcklq9uvNFQ==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      next: ^15.0.0 || ^16.0.0
-      react: ^19.0.0
-
-  '@scalar/schemas@0.14.0':
-    resolution: {integrity: sha512-tYNfeIOk/G5o/DiW2Yc2tFlNvE42Ls1aHUOQSSeFugjBgv53p3u3tlu7gA5N4uMaS8mQCumURusc/cb4RmiX2g==}
-    engines: {node: '>=22'}
-
-  '@scalar/types@0.24.0':
-    resolution: {integrity: sha512-x4O8ddCvh+59zwh9Xc+bG2QACxYARcPDfJBYiUzD/hzSxb6vpcms+WKgMksBfYWCZneO6e5Kt6hZFBoE9D9YCg==}
-    engines: {node: '>=22'}
-
-  '@scalar/validation@0.6.7':
-    resolution: {integrity: sha512-xvmeYb0LOg9B598oVA/1fs9MvnMdtWjQYG3v2Wgftewizr7tQjsdDYT1TQahlDzqRG+r+ml6zlSkPrFiCE5jHQ==}
-    engines: {node: '>=20'}
-
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
 
@@ -5825,11 +5810,6 @@ packages:
   nanoid@3.3.20:
     resolution: {integrity: sha512-uKdg2G3GNCKQn9byYOpxbGqrT2fGO5KRt5J/8b3pok8rT6qxGWF6hxMyJiEYtAf+FVyYuD9hRaDqX5uPFYJ4ZQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
-  nanoid@5.1.16:
-    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
-    engines: {node: ^18 || >=20}
     hasBin: true
 
   nanostores@1.5.5:
@@ -9440,35 +9420,6 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.64.12':
     optional: true
 
-  '@scalar/client-side-rendering@0.4.12':
-    dependencies:
-      '@scalar/helpers': 0.16.4
-      '@scalar/schemas': 0.14.0
-      '@scalar/types': 0.24.0
-      '@scalar/validation': 0.6.7
-
-  '@scalar/helpers@0.16.4': {}
-
-  '@scalar/nextjs-api-reference@0.12.11(next@16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react@19.3.1)':
-    dependencies:
-      '@scalar/client-side-rendering': 0.4.12
-      next: 16.4.2(@babel/core@7.29.7)(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      react: 19.3.1
-
-  '@scalar/schemas@0.14.0':
-    dependencies:
-      '@scalar/helpers': 0.16.4
-      '@scalar/validation': 0.6.7
-
-  '@scalar/types@0.24.0':
-    dependencies:
-      '@scalar/helpers': 0.16.4
-      nanoid: 5.1.16
-      type-fest: 5.10.0
-      zod: 4.6.7
-
-  '@scalar/validation@0.6.7': {}
-
   '@sec-ant/readable-stream@0.4.1': {}
 
   '@shadcn/registry@0.2.0':
@@ -12479,8 +12430,6 @@ snapshots:
   muggle-string@0.4.1: {}
 
   nanoid@3.3.20: {}
-
-  nanoid@5.1.16: {}
 
   nanostores@1.5.5: {}
 

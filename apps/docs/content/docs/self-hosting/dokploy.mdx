@@ -1,0 +1,83 @@
+---
+title: Dokploy & similar platforms
+description: Deploy Shopnex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
+---
+
+Platforms that run Docker Compose on your own server can deploy Shopnex from one compose file: the prebuilt image plus a Postgres database. Nothing is built on the server.
+
+## The compose file
+
+Download it from [shopnex.ai/deploy/docker-compose.yml](https://shopnex.ai/deploy/docker-compose.yml) or copy it:
+
+```yaml
+services:
+  shopnex:
+    image: ghcr.io/shopnex-ai/shopnex:latest
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://shopnex:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/shopnex
+      APP_URL: ${APP_URL:?set APP_URL, e.g. https://shop.example.com}
+      BETTER_AUTH_URL: ${APP_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      TENANCY_MODE: single
+      DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
+    volumes:
+      - shopnex-data:/data
+    expose:
+      - "3000"
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shopnex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: shopnex
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shopnex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  shopnex-data:
+  db-data:
+```
+
+Set two variables on the platform:
+
+| Variable | Description |
+| --- | --- |
+| `POSTGRES_PASSWORD` | Password for the bundled database. |
+| `APP_URL` | Public origin, e.g. `https://shop.example.com`. |
+
+`BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex-data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
+
+## Dokploy
+
+1. Create a **Compose** service in a project and choose the **Raw** provider.
+2. Paste the compose file and add `POSTGRES_PASSWORD` and `APP_URL` under **Environment**.
+3. Under **Domains**, add your host with service `shopnex` and port `3000`, and enable HTTPS with Let's Encrypt. Point the domain's DNS at the server first.
+4. Click **Deploy**.
+
+To update, press **Deploy** again; `pull_policy: always` fetches the newest image.
+
+## Coolify, Portainer and others
+
+Any platform that accepts a compose file works the same way: Coolify (a Docker Compose resource), Portainer (a stack from the web editor), or plain `docker compose up -d`. Give the `shopnex` service your domain on port `3000` and let the platform's proxy handle HTTPS. If you run without a proxy, replace `expose` with `ports: ["3000:3000"]`.
+
+The container already includes Caddy, which routes the admin and API to the admin app and everything else to the storefront, so the platform only needs to forward one port.
+
+<Callout type="warn">
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+</Callout>
+
+## Servers with little memory
+
+Use the prebuilt image rather than building on the server. The build needs far more memory than running the shop does, and can fail on a 2 GB machine.

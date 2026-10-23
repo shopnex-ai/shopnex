@@ -19,7 +19,7 @@ description: Endpoints, transports and authentication.
 The machine-readable spec is served at `/api/v1/openapi.json`, and every instance hosts its own interactive reference at `/api/v1/docs`.
 
 <Callout title="Interactive reference">
-  The [API reference](/reference) on this site renders the same spec with Scalar. It loads the spec from the
-  instance in `SHOPNEX_URL` (default `http://localhost:3000`), so start Shopnex first. Admin endpoints use your
-  admin session cookie, or send `Authorization: Bearer sk_…`.
+  The [API reference](/reference) on this site renders the same spec with Scalar. It is generated from the API
+  router when the docs are built, so it needs no running instance. Admin endpoints use your admin session cookie,
+  or send `Authorization: Bearer sk_…`.
 </Callout>
