@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { clearAdminContext } from '@/lib/admin-context'
 import { currencyOptions } from '@/lib/currency'
 import { orpc, type Outputs } from '@/lib/orpc'
 
@@ -57,6 +58,7 @@ function ShopForm({ shop }: { shop: Shop }) {
       form.reset(toValues(saved))
       toast.success('Settings saved')
       // The sidebar and header show the shop name (server-rendered)
+      clearAdminContext(router)
       router.invalidate()
     } catch (error) {
       setServerError(form, error)

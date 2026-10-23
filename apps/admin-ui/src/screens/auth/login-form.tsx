@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { clearAdminContext } from '@/lib/admin-context'
 import { SocialButtons } from './social-buttons'
 
 // Only same-app admin paths, so ?next= can't be used to send people elsewhere
@@ -38,6 +39,7 @@ export function LoginForm({ providers, error, next }: { providers: SocialProvide
       toast.error(error.message ?? 'Could not sign in')
       return
     }
+    clearAdminContext(router)
     await navigate({ href: destination, replace: true })
     await router.invalidate()
   }

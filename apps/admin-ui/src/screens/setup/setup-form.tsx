@@ -7,6 +7,7 @@ import { FormError, SelectField, TextField, useZodForm } from '@/components/admi
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldSeparator } from '@/components/ui/field'
+import { clearAdminContext } from '@/lib/admin-context'
 import { currencyOptions } from '@/lib/currency'
 import { runSetup } from './actions'
 
@@ -25,6 +26,7 @@ export function SetupForm() {
     }
     const signIn = await authClient.signIn.email({ email: values.email, password: values.password })
     // The account exists either way; worst case they sign in by hand
+    clearAdminContext(router)
     await navigate({ to: signIn.error ? '/admin/login' : '/admin', replace: true })
     await router.invalidate()
   })

@@ -10,6 +10,7 @@ import { SocialButtons } from '@/components/auth/social-buttons'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { clearAdminContext } from '@/lib/admin-context'
 
 // Accepting makes them a member and sets this shop as their active one
 async function accept(invitationId: string) {
@@ -29,6 +30,7 @@ export function AcceptInvitation({ invitationId }: { invitationId: string }) {
       onClick={async () => {
         setPending(true)
         if (await accept(invitationId)) {
+          clearAdminContext(router)
           await navigate({ to: '/admin', replace: true })
           await router.invalidate()
         } else {
@@ -72,6 +74,7 @@ export function InviteSignUpForm({
     }
     // Signed in now; joining can still fail (e.g. the invite was cancelled meanwhile) — the page then explains
     await accept(invitationId)
+    clearAdminContext(router)
     await navigate({ to: '/admin', replace: true })
     await router.invalidate()
   }

@@ -3,11 +3,12 @@ import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
-import { getAdminContext } from '@/lib/session.functions'
+import { NavigationProgress } from '@/components/admin/navigation-progress'
+import { adminContextQuery } from '@/lib/admin-context'
 
 export const Route = createFileRoute('/admin')({
-  beforeLoad: async ({ location }) => {
-    const access = await getAdminContext()
+  beforeLoad: async ({ location, context }) => {
+    const access = await context.queryClient.ensureQueryData(adminContextQuery)
     if (location.pathname === '/admin/setup') {
       if (access.setupComplete) throw redirect({ to: '/admin/login' })
       return { access }
@@ -51,6 +52,7 @@ function AdminLayout() {
   }
   return (
     <SidebarProvider defaultOpen>
+      <NavigationProgress />
       <AppSidebar
         shop={{ name: tenant.shop.name, superAdmin: tenant.superAdmin }}
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
