@@ -1,0 +1,17 @@
+{%- comment -%} Text: a heading, plain-text paragraphs (a blank line starts a new one) and a button {%- endcomment -%}
+{%- assign paragraphs = section.settings.text | strip | newline_to_br | split: '<br />
+<br />' -%}
+<section class="grid w-full justify-items-start gap-4 px-6 py-12 md:gap-6 md:px-8 md:py-16 lg:px-12">
+  {%- if section.settings.heading != blank %}
+    <h2 class="font-heading max-w-md text-heading">{{ section.settings.heading }}</h2>
+  {%- endif %}
+  {%- for paragraph in paragraphs %}
+    {%- assign lines = paragraph | replace: '<br />', '' | strip %}
+    {%- if lines != blank %}
+      <p class="m-0 max-w-prose-narrow text-lead whitespace-pre-line">{{ lines }}</p>
+    {%- endif %}
+  {%- endfor %}
+  {%- if section.settings.button_label != blank and section.settings.button_link != blank %}
+    <a href="{{ section.settings.button_link }}" class="btn">{{ section.settings.button_label }}</a>
+  {%- endif %}
+</section>

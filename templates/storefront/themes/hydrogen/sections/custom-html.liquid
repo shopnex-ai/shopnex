@@ -1,0 +1,7 @@
+{%- comment -%}
+  The merchant's own HTML, output as is (a `code` setting: only staff can edit it); the wrapper only keeps
+  the page padding
+{%- endcomment -%}
+{%- if section.settings.html != blank -%}
+  <section class="px-6 py-10 md:px-8 lg:px-12">{{ section.settings.html }}</section>
+{%- endif -%}

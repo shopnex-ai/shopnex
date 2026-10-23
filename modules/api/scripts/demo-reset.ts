@@ -21,6 +21,11 @@ if (['localhost', '127.0.0.1', '::1'].includes(hostname) && !process.argv.includ
   console.error(`DATABASE_URL points at ${hostname}${pathname}. Add --allow-local if you really mean to wipe it.`)
   process.exit(1)
 }
+// Checked before anything is dropped: demo-seed needs these, and failing after the wipe leaves an empty database
+if (!process.env.DEMO_OWNER_EMAIL || !process.env.DEMO_OWNER_PASSWORD) {
+  console.error('Set DEMO_OWNER_EMAIL and DEMO_OWNER_PASSWORD first (nothing was changed).')
+  process.exit(1)
+}
 console.log(`Resetting ${hostname}${pathname}`)
 
 const root = fileURLToPath(new URL('../../..', import.meta.url))

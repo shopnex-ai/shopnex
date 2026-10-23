@@ -1,6 +1,7 @@
 {
   "name": "shopnex",
   "private": true,
+  "license": "MIT",
   "packageManager": "pnpm@10.7.1",
   "scripts": {
     "dev": "node scripts/dev.mjs",

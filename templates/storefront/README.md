@@ -35,6 +35,7 @@ themes/
   storeplate/          the default theme; its cart is a React island
   maison/              a printed, editorial theme (serif type, hairline rules); plain scripts, no islands
   shopco/              a bold fashion store (wide uppercase type, pill buttons, rounded cards); plain scripts
+  hydrogen/            a quiet store in Shopify Hydrogen's style (system type, 4:5 photos, sticky gallery); plain scripts
 ```
 
 ## A theme
@@ -87,3 +88,5 @@ The Maison theme is adapted from [Maison](https://github.com/njbSaab/astro-njx-m
 The Shopco theme's design is based on the SHOP.CO e-commerce website kit from the Figma Community by
 TODO-creator-name (TODO-figma-community-link), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); its
 markup and code are new. Product photos and brand logos from the kit aren't included.
+The Hydrogen theme is a port of [hydrogen-theme](https://github.com/montalvomiguelo/hydrogen-theme) by Miguel
+Montalvo (MIT), itself a port of Shopify Hydrogen's default template, from Shopify OS 2.0 to Shopnex's Liquid.

@@ -1,0 +1,19 @@
+{%- comment -%}
+  One footer menu: a heading over links. An accordion below md, a plain column from md up.
+  {% render 'footer-column', title: 'Shop', links: links_html %}
+{%- endcomment -%}
+<section class="pt-10 first-of-type:-mt-10 md:pt-0 first-of-type:md:mt-0">
+  <details class="md:hidden">
+    <summary>
+      <h3 class="font-heading flex max-w-prose justify-between overflow-hidden text-lead whitespace-pre-wrap">
+        <span class="shrink">{{ title }}</span>
+        {% render 'icon', name: 'caret', class: 'icon' %}
+      </h3>
+    </summary>
+    <nav class="grid gap-2 pt-4 pb-2">{{ links }}</nav>
+  </details>
+  <div class="hidden gap-4 md:grid">
+    <h3 class="font-heading max-w-prose text-lead whitespace-pre-wrap">{{ title }}</h3>
+    <nav class="grid gap-2 pb-6">{{ links }}</nav>
+  </div>
+</section>

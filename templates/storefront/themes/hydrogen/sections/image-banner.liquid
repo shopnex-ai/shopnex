@@ -1,0 +1,36 @@
+{%- comment -%}
+  Image banner: one or two photos behind a heading, text and link at the bottom, over a fade of the page
+  color. Full page height (minus the header) unless the merchant turns it off.
+{%- endcomment -%}
+{%- assign s = section.settings -%}
+{%- assign banner_class = 'aspect-[4/5] sm:aspect-square md:aspect-[5/4] lg:aspect-[3/2] xl:aspect-[2/1]' -%}
+{%- if s.full_page_height -%}
+  {%- assign banner_class = 'h-screen-no-nav' -%}
+{%- endif -%}
+{%- assign loading = 'eager' -%}
+{%- if section.index0 > 0 -%}
+  {%- assign loading = 'lazy' -%}
+{%- endif -%}
+<section class="relative isolate flex w-full flex-col justify-end {{ banner_class }}">
+  <div class="pointer-events-none absolute inset-0 -z-10 grid flex-grow auto-cols-fr grid-flow-col content-stretch overflow-clip">
+    {%- if s.image != blank %}
+      <div><img src="{{ s.image }}" alt="" loading="{{ loading }}" class="block h-full w-full object-cover" /></div>
+    {%- elsif s.image_2 == blank %}
+      <div class="bg-primary/20"></div>
+    {%- endif %}
+    {%- if s.image_2 != blank %}
+      <div class="{% if s.image != blank %}hidden md:block{% endif %}"><img src="{{ s.image_2 }}" alt="" loading="{{ loading }}" class="block h-full w-full object-cover" /></div>
+    {%- endif %}
+  </div>
+  <div class="flex flex-col items-baseline justify-between gap-4 bg-gradient-to-t from-contrast/60 to-contrast/0 px-6 py-8 text-primary sm:px-8 md:px-12">
+    {%- if s.heading != blank %}
+      <h2 class="font-heading max-w-md text-display">{{ s.heading }}</h2>
+    {%- endif %}
+    {%- if s.text != blank %}
+      <p class="m-0 max-w-prose-narrow text-lead font-bold whitespace-pre-line">{{ s.text }}</p>
+    {%- endif %}
+    {%- if s.button_label != blank and s.button_link != blank %}
+      <a href="{{ s.button_link }}" class="text-lead font-bold">{{ s.button_label }}</a>
+    {%- endif %}
+  </div>
+</section>

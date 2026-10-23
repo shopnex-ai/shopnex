@@ -1,0 +1,226 @@
+/* Hydrogen's styles, built to assets/theme.css. Colors and fonts are CSS variables that layout/theme.liquid
+   overrides with the merchant's settings, so they change without a rebuild. Tailwind scans the theme's folder
+   (templates and scripts) for classes. */
+@import 'tailwindcss' source('../');
+
+/* ── Hydrogen design tokens ──────────────────────────────────────
+   Plain and quiet: system type, small radii, hairlines, 4:5 photos. */
+@theme {
+  --color-primary: #141414;
+  --color-contrast: #fafaf9;
+  --color-accent: #bf4800;
+
+  --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  --spacing-nav: var(--height-nav);
+  --spacing-screen-no-nav: calc(var(--screen-height, 100vh) - var(--height-nav));
+  --spacing-mobileGallery: calc(100vw - 3rem);
+  --spacing-prose-narrow: 45ch;
+  --spacing-prose-wide: 80ch;
+
+  --text-display: var(--font-size-display);
+  --text-display--line-height: 1.1;
+  --text-heading: var(--font-size-heading);
+  --text-heading--line-height: 1.25;
+  --text-lead: var(--font-size-lead);
+  --text-lead--line-height: 1.333;
+  --text-copy: var(--font-size-copy);
+  --text-copy--line-height: 1.5;
+  --text-fine: var(--font-size-fine);
+  --text-fine--line-height: 1.333;
+
+  --shadow-border: inset 0px 0px 0px 1px color-mix(in oklab, var(--color-primary) 8%, transparent);
+}
+
+:root {
+  --font-heading: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --heading-weight: 700;
+
+  --font-size-fine: 0.75rem;
+  --font-size-copy: 1rem;
+  --font-size-lead: 1.125rem;
+  --font-size-heading: 2rem;
+  --font-size-display: 3rem;
+  --height-nav: 3rem;
+  --screen-height: 100vh;
+
+  @media (min-width: 32em) {
+    --height-nav: 4rem;
+  }
+  @media (min-width: 48em) {
+    --height-nav: 6rem;
+    --font-size-heading: 2.25rem;
+    --font-size-display: 3.75rem;
+  }
+  @supports (height: 100lvh) {
+    --screen-height: 100lvh;
+  }
+}
+
+* {
+  font-variant-ligatures: none;
+}
+
+html {
+  overflow-x: clip;
+  scroll-padding-top: 10rem;
+}
+
+/* Components sit in their layer so utilities (hidden, padding…) can override them */
+@layer components {
+  .font-heading {
+    font-family: var(--font-heading);
+    font-weight: var(--heading-weight);
+    margin: 0;
+  }
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex: none;
+  }
+
+  /* filled button */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--color-primary);
+    color: var(--color-contrast);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .btn:hover {
+    opacity: 0.85;
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* variant values: plain text, the chosen one underlined */
+  .opt {
+    cursor: pointer;
+    padding: 0.25rem 0;
+    line-height: 1;
+    border-bottom: 1.5px solid transparent;
+    transition: all 0.2s;
+  }
+  .opt[aria-pressed='true'] {
+    border-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
+  }
+  .opt[data-unavailable] {
+    opacity: 0.4;
+    text-decoration: line-through;
+  }
+
+  /* a row of cards you swipe */
+  .swimlane {
+    display: grid;
+    width: 100%;
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: 1rem;
+    overflow-x: scroll;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.5rem;
+    padding: 0 1.5rem 1rem;
+  }
+
+  .hidden-scroll {
+    scrollbar-width: none;
+  }
+  .hidden-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* <details> without the marker */
+  summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  details[open] > summary .icon-caret {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.anim-fade {
+  animation: fadeIn 0.18s ease both;
+}
+@keyframes slideIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.anim-slide {
+  animation: slideIn 0.22s ease both;
+}
+
+/* Merchant-written HTML: product descriptions and content pages */
+.rte {
+  line-height: 1.6;
+}
+.rte > * + * {
+  margin-top: 1em;
+}
+.rte :is(h1, h2, h3, h4) {
+  font-family: var(--font-heading);
+  font-weight: var(--heading-weight);
+  line-height: 1.25;
+  margin-top: 1.6em;
+}
+.rte :is(h1, h2, h3, h4):first-child {
+  margin-top: 0;
+}
+.rte h1 {
+  font-size: 1.75rem;
+}
+.rte h2 {
+  font-size: 1.5rem;
+}
+.rte h3 {
+  font-size: 1.25rem;
+}
+.rte a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.rte :is(ul, ol) {
+  padding-left: 1.4em;
+}
+.rte ul {
+  list-style: disc;
+}
+.rte ol {
+  list-style: decimal;
+}
+.rte blockquote {
+  border-left: 2px solid currentColor;
+  padding-left: 1em;
+}
+.rte img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.25rem;
+}

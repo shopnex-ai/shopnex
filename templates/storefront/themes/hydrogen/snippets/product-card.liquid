@@ -1,0 +1,28 @@
+{%- comment -%}
+  A product as a Hydrogen card: 4:5 photo, title, price. The whole card is the link.
+  {% render 'product-card', product: p, class: 'w-80' %}
+{%- endcomment -%}
+<div class="relative">
+  <a href="{{ product.url }}" class="absolute inset-0 z-[1]">
+    <span class="sr-only">{{ product.title }}</span>
+  </a>
+  <div class="grid snap-start gap-6 {{ class }}">
+    <div class="relative aspect-[4/5] overflow-hidden rounded bg-primary/5">
+      {%- if product.featured_image %}
+        <img
+          src="{{ product.featured_image | image_url }}"
+          alt="{{ product.featured_image.alt | default: product.title }}"
+          loading="lazy"
+          class="h-full w-full object-cover object-center"
+        />
+      {%- endif %}
+      {%- unless product.available %}
+        <span class="absolute top-3 left-3 rounded bg-contrast px-2 py-1 text-fine">Sold out</span>
+      {%- endunless %}
+    </div>
+    <div class="grid gap-1">
+      <h3 class="text-copy">{{ product.title }}</h3>
+      {% render 'price', product: product %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,285 @@
+{
+  "id": "hydrogen",
+  "name": "Hydrogen",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "primary_color",
+      "label": "Text color",
+      "info": "Text, buttons and lines",
+      "type": "color",
+      "default": "#141414"
+    },
+    {
+      "id": "contrast_color",
+      "label": "Background color",
+      "info": "Pages, the header and the cart",
+      "type": "color",
+      "default": "#fafaf9"
+    },
+    {
+      "id": "accent_color",
+      "label": "Accent color",
+      "info": "Sale prices and notices",
+      "type": "color",
+      "default": "#bf4800"
+    },
+    {
+      "id": "heading_font",
+      "label": "Heading font",
+      "type": "select",
+      "options": [
+        { "value": "System", "label": "Helvetica / system" },
+        { "value": "Inter", "label": "Inter" },
+        { "value": "Space Grotesk", "label": "Space Grotesk" },
+        { "value": "Playfair Display", "label": "Playfair Display" },
+        { "value": "DM Serif Display", "label": "DM Serif Display" }
+      ],
+      "default": "System"
+    },
+    {
+      "id": "body_font",
+      "label": "Body font",
+      "type": "select",
+      "options": [
+        { "value": "System", "label": "Helvetica / system" },
+        { "value": "Inter", "label": "Inter" },
+        { "value": "DM Sans", "label": "DM Sans" },
+        { "value": "Source Sans 3", "label": "Source Sans 3" }
+      ],
+      "default": "System"
+    },
+    {
+      "id": "sticky_header",
+      "label": "Sticky header",
+      "info": "Shows on the screen as customers scroll up",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "id": "copyright",
+      "label": "Copyright",
+      "info": "Defaults to © year and the shop name",
+      "type": "text"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "shipping_title",
+      "label": "Product tab title",
+      "type": "text",
+      "default": "Shipping information"
+    },
+    {
+      "id": "shipping_text",
+      "label": "Product tab text",
+      "info": "A collapsible tab on every product page, e.g. shipping and returns; empty hides it. A blank line starts a new paragraph.",
+      "type": "textarea"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Added after the theme styles on every page",
+      "type": "code",
+      "language": "css"
+    },
+    {
+      "id": "head_html",
+      "label": "Head HTML",
+      "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "type": "code",
+      "language": "html"
+    }
+  ],
+  "sections": {
+    "image-banner": {
+      "name": "Image banner",
+      "settings": [
+        {
+          "id": "image",
+          "label": "First image",
+          "type": "image"
+        },
+        {
+          "id": "image_2",
+          "label": "Second image",
+          "info": "Shown beside the first on larger screens",
+          "type": "image"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Image banner"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Give customers details about the banner image(s) or content on the template."
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text",
+          "default": "Shop all →"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "full_page_height",
+          "label": "Full page height",
+          "type": "checkbox",
+          "default": true
+        }
+      ]
+    },
+    "featured-collection": {
+      "name": "Featured collection",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Featured collection"
+        },
+        {
+          "id": "collection",
+          "label": "Collection",
+          "info": "Empty: the newest products",
+          "type": "collection"
+        },
+        {
+          "id": "limit",
+          "label": "Maximum products to show",
+          "type": "range",
+          "min": 4,
+          "max": 15,
+          "step": 1,
+          "default": 8
+        }
+      ]
+    },
+    "collection-list": {
+      "name": "Collection list",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Collections"
+        },
+        {
+          "id": "collection_1",
+          "label": "Collection 1",
+          "info": "No collections picked: your first ones",
+          "type": "collection"
+        },
+        { "id": "collection_2", "label": "Collection 2", "type": "collection" },
+        { "id": "collection_3", "label": "Collection 3", "type": "collection" },
+        { "id": "collection_4", "label": "Collection 4", "type": "collection" },
+        { "id": "collection_5", "label": "Collection 5", "type": "collection" },
+        { "id": "collection_6", "label": "Collection 6", "type": "collection" },
+        {
+          "id": "columns",
+          "label": "Columns on desktop",
+          "type": "range",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "default": 3
+        }
+      ]
+    },
+    "rich-text": {
+      "name": "Text",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Talk about your brand"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "info": "A blank line starts a new paragraph",
+          "type": "textarea",
+          "default": "Share information about your brand with your customers."
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        }
+      ]
+    },
+    "custom-html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "info": "Shown as is, scripts and styles included",
+          "type": "code",
+          "language": "html",
+          "default": "<p>Your HTML here</p>"
+        }
+      ]
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        { "id": "banner", "type": "image-banner", "settings": {} },
+        { "id": "featured", "type": "featured-collection", "settings": {} },
+        { "id": "collections", "type": "collection-list", "settings": {} }
+      ]
+    }
+  },
+  "presets": {
+    "dark": {
+      "name": "Dark",
+      "description": "Hydrogen's dark scheme: light text on charcoal, orange accent",
+      "settings": {
+        "primary_color": "#fafafa",
+        "contrast_color": "#202124",
+        "accent_color": "#eb5628"
+      }
+    }
+  }
+}

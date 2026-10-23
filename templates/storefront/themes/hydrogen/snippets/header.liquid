@@ -1,0 +1,66 @@
+{%- comment -%}
+  Hydrogen's header: the shop name and the main menu (Online store → Navigation, "main-menu") on the left, the
+  cart on the right. Sticky headers hide as the buyer scrolls down and return on the way up (src/ui.ts). Below
+  lg the menu folds into a <details> panel.
+{%- endcomment -%}
+{%- assign menu = linklists['main-menu'] -%}
+<div data-header {% if settings.sticky_header %}data-sticky class="sticky top-0 z-10 transition-transform duration-300"{% else %}class="relative z-10"{% endif %}>
+  <header class="relative flex h-nav w-full items-center justify-between gap-4 bg-contrast/80 px-4 leading-none text-primary backdrop-blur-lg md:px-8 lg:gap-8 lg:px-12 lg:py-8">
+    <div class="flex w-full items-center justify-start gap-4 lg:hidden">
+      <details class="group/menu">
+        <summary aria-label="Menu" class="flex h-8 w-8 cursor-pointer items-center justify-center">
+          <span class="group-open/menu:hidden">{% render 'icon', name: 'menu', class: 'icon' %}</span>
+          <span class="hidden group-open/menu:block">{% render 'icon', name: 'close', class: 'icon' %}</span>
+        </summary>
+        <nav
+          aria-label="Main"
+          class="absolute inset-x-0 top-full flex max-h-[80vh] flex-col gap-1 overflow-y-auto bg-contrast px-4 pt-2 pb-6 shadow-border md:px-8"
+        >
+          {%- if menu -%}
+            {%- for link in menu.links %}
+              <a href="{{ link.url }}" class="py-2 text-lead {% if link.active or link.child_active %}font-bold{% endif %}">{{ link.title }}</a>
+              {%- for child in link.links %}
+                <a href="{{ child.url }}" class="py-1.5 pl-4 text-copy text-primary/60">{{ child.title }}</a>
+              {%- endfor %}
+            {%- endfor %}
+          {%- else -%}
+            <a href="/products" class="py-2 text-lead">Shop</a>
+            {%- for c in collections limit: 6 %}
+              <a href="{{ c.url }}" class="py-1.5 pl-4 text-copy text-primary/60">{{ c.title }}</a>
+            {%- endfor %}
+          {%- endif %}
+        </nav>
+      </details>
+    </div>
+
+    <div class="flex w-full items-center gap-12 lg:w-auto">
+      {%- if request.page_type == 'index' %}<h1 class="m-0 w-full text-[inherit] font-[inherit] lg:w-auto">{% endif -%}
+      <a href="/" class="font-heading flex h-full w-full flex-grow items-center justify-center self-stretch leading-[3rem] md:leading-[4rem] lg:inline lg:h-auto lg:w-auto lg:leading-none">{{ shop.name }}</a>
+      {%- if request.page_type == 'index' %}</h1>{% endif %}
+
+      <nav aria-label="Main" class="hidden gap-8 lg:flex">
+        {%- if menu -%}
+          {%- for link in menu.links %}
+            <a href="{{ link.url }}" class="{% if link.active or link.child_active %}font-bold{% endif %}">{{ link.title }}</a>
+          {%- endfor %}
+        {%- else -%}
+          <a href="/products">Shop</a>
+          {%- for c in collections limit: 4 %}
+            <a href="{{ c.url }}">{{ c.title }}</a>
+          {%- endfor %}
+        {%- endif %}
+      </nav>
+    </div>
+
+    <div class="flex w-full items-center justify-end gap-4 lg:w-auto lg:gap-1">
+      <button type="button" data-cart-open class="relative flex h-8 w-8 cursor-pointer items-center justify-center">
+        {% render 'icon', name: 'bag', class: 'icon' %}
+        <span class="sr-only">Cart</span>
+        <span
+          data-cart-count
+          class="absolute right-0 bottom-0 hidden h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-none text-contrast [&.show]:flex"
+        ></span>
+      </button>
+    </div>
+  </header>
+</div>

@@ -1,0 +1,51 @@
+{%- comment -%}
+  Hydrogen's footer: the footer menu (Online store → Navigation, "footer") as titled columns (links with
+  children each make a column, the others share "Quick links"), social links, and the copyright line.
+{%- endcomment -%}
+{%- assign copyright = settings.copyright | strip -%}
+{%- if copyright == blank -%}
+  {%- capture copyright %}© {{ 'now' | date: '%Y' }}, {{ shop.name }}{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+<footer class="min-h-[25rem] w-full grid-cols-1 border-b border-none bg-contrast px-6 py-8 text-primary md:grid md:grid-flow-row md:grid-cols-2 md:items-start md:gap-8 md:px-8 lg:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] lg:gap-12 lg:px-12">
+  {%- if menu and menu.links.size > 0 -%}
+    {%- for link in menu.links %}
+      {%- if link.links.size > 0 %}
+        {%- capture links -%}
+          {%- for child in link.links -%}<a href="{{ child.url }}">{{ child.title }}</a>{%- endfor -%}
+        {%- endcapture -%}
+        {% render 'footer-column', title: link.title, links: links %}
+      {%- endif %}
+    {%- endfor %}
+    {%- capture loose_links -%}
+      {%- for link in menu.links -%}
+        {%- if link.links.size == 0 -%}<a href="{{ link.url }}">{{ link.title }}</a>{%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if loose_links != blank %}
+      {% render 'footer-column', title: 'Quick links', links: loose_links %}
+    {%- endif %}
+  {%- else -%}
+    {%- comment %} No footer menu yet: the catalog and its collections {% endcomment %}
+    {%- capture links -%}
+      <a href="/products">All products</a>
+      {%- for c in collections limit: 5 -%}<a href="{{ c.url }}">{{ c.title }}</a>{%- endfor -%}
+    {%- endcapture -%}
+    {% render 'footer-column', title: 'Shop', links: links %}
+  {%- endif -%}
+
+  {%- capture socials -%}
+    {%- if settings.x_url != blank %}<a href="{{ settings.x_url }}" aria-label="X" rel="noopener" target="_blank">{% render 'icon', name: 'x', class: 'icon' %}</a>{% endif -%}
+    {%- if settings.facebook_url != blank %}<a href="{{ settings.facebook_url }}" aria-label="Facebook" rel="noopener" target="_blank">{% render 'icon', name: 'facebook', class: 'icon' %}</a>{% endif -%}
+    {%- if settings.instagram_url != blank %}<a href="{{ settings.instagram_url }}" aria-label="Instagram" rel="noopener" target="_blank">{% render 'icon', name: 'instagram', class: 'icon' %}</a>{% endif -%}
+    {%- if settings.tiktok_url != blank %}<a href="{{ settings.tiktok_url }}" aria-label="TikTok" rel="noopener" target="_blank">{% render 'icon', name: 'tiktok', class: 'icon' %}</a>{% endif -%}
+    {%- if settings.youtube_url != blank %}<a href="{{ settings.youtube_url }}" aria-label="YouTube" rel="noopener" target="_blank">{% render 'icon', name: 'youtube', class: 'icon' %}</a>{% endif -%}
+  {%- endcapture -%}
+  {%- if socials != blank %}
+    <div class="flex gap-4 pt-10 md:pt-0">{{ socials }}</div>
+  {%- endif %}
+
+  <div class="self-end pt-14 opacity-50 md:col-span-2 md:pt-8 lg:col-span-full">
+    <a href="/">{{ copyright }}</a>
+  </div>
+</footer>

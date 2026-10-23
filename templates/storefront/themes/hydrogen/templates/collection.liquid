@@ -1,0 +1,56 @@
+{%- comment -%}
+  /products and /collections/{handle}: the title and description, then the products two to four across with
+  sort options and paging
+{%- endcomment -%}
+{%- if collection.handle == 'all' -%}
+  {%- assign page_title = 'Shop' -%}
+{%- endif -%}
+{%- assign description = collection.description | strip_html | strip -%}
+<main>
+  <div class="grid w-full justify-items-start gap-8 px-6 py-12 md:px-8 lg:px-12">
+    <h1 class="font-heading text-heading">{{ collection.title }}</h1>
+    {%- if description != blank %}
+      <p class="m-0 max-w-prose-narrow text-copy">{{ description }}</p>
+    {%- endif %}
+  </div>
+
+  <div class="grid w-full gap-4 border-none p-6 md:gap-8 md:p-8 lg:p-12">
+    {%- if collection.sort_options.size > 0 and collection.products.size > 0 %}
+      <label class="flex items-center justify-end gap-2 text-copy">
+        Sort by
+        <select data-sort aria-label="Sort" class="cursor-pointer border-0 bg-transparent py-1 pr-8 pl-0 font-bold focus:ring-0 focus:outline-none">
+          {%- for option in collection.sort_options %}
+            <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.name }}</option>
+          {%- endfor %}
+        </select>
+      </label>
+    {%- endif %}
+
+    {%- if collection.products.size == 0 %}
+      <p class="m-0 py-12 text-copy">No products found.</p>
+    {%- else %}
+      <div class="grid grid-flow-row grid-cols-2 gap-2 gap-y-6 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
+        {%- for p in collection.products %}
+          {% render 'product-card', product: p %}
+        {%- endfor %}
+      </div>
+    {%- endif %}
+
+    {%- if paginate.next or paginate.first %}
+      <nav aria-label="Pagination" class="flex items-center justify-between pt-4">
+        {%- if paginate.first %}
+          <a href="{{ paginate.first.url }}" class="flex items-center gap-2 font-bold">
+            {% render 'icon', name: 'arrow-left', class: 'icon' %} First page
+          </a>
+        {%- else %}
+          <span></span>
+        {%- endif %}
+        {%- if paginate.next %}
+          <a href="{{ paginate.next.url }}" class="flex items-center gap-2 font-bold">
+            Next page {% render 'icon', name: 'arrow-right', class: 'icon' %}
+          </a>
+        {%- endif %}
+      </nav>
+    {%- endif %}
+  </div>
+</main>

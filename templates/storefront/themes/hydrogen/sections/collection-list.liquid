@@ -1,0 +1,46 @@
+{%- comment -%}
+  Collection list: a heading over a grid of collection cards (3:2 image, name). The picked collections, or the
+  shop's first ones when none are picked.
+{%- endcomment -%}
+{%- assign picked = false -%}
+{%- for i in (1..6) -%}
+  {%- assign key = 'collection_' | append: i -%}
+  {%- if section.settings[key] -%}{%- assign picked = true -%}{%- endif -%}
+{%- endfor -%}
+{%- capture cards -%}
+  {%- for i in (1..6) -%}
+    {%- if picked -%}
+      {%- assign key = 'collection_' | append: i -%}
+      {%- assign c = section.settings[key] -%}
+    {%- else -%}
+      {%- assign index = i | minus: 1 -%}
+      {%- assign c = collections[index] -%}
+    {%- endif -%}
+    {%- if c -%}
+      <div class="relative">
+        <a href="{{ c.url }}" class="absolute inset-0 z-[1]"><span class="sr-only">{{ c.title }}</span></a>
+        <div class="grid gap-4">
+          <div class="aspect-[3/2] overflow-hidden rounded bg-primary/5">
+            {%- if c.image %}
+              <img src="{{ c.image | image_url }}" alt="{{ c.image.alt | default: c.title }}" loading="lazy" class="h-full w-full object-cover object-center" />
+            {%- endif %}
+          </div>
+          <h3 class="font-heading text-lead">{{ c.title }}</h3>
+        </div>
+      </div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if cards != blank -%}
+  <section class="grid w-full gap-4 p-6 md:gap-8 md:p-8 lg:p-12">
+    {%- if section.settings.heading != blank %}
+      <h2 class="font-heading text-lead">{{ section.settings.heading }}</h2>
+    {%- endif %}
+    <div
+      class="grid grid-flow-row grid-cols-1 gap-2 gap-y-6 sm:grid-cols-[repeat(var(--columns-desktop),minmax(0,1fr))] md:gap-4 lg:gap-6"
+      style="--columns-desktop: {{ section.settings.columns | default: 3 }}"
+    >
+      {{ cards }}
+    </div>
+  </section>
+{%- endif -%}

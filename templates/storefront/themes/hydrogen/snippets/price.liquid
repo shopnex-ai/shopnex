@@ -1,0 +1,18 @@
+{%- comment -%}
+  A product's price: the sale price with the regular one struck through, "From …" when variants differ.
+  {% render 'price', product: product, class: '…' %}
+{%- endcomment -%}
+<div class="relative z-0 flex gap-4 text-copy {{ class }}">
+  {%- if product.compare_at_price_max > product.price_min %}
+    <span class="sr-only">Sale price</span>
+    <span>{{ product.price_min | money }}</span>
+    <span class="sr-only">Regular price</span>
+    <s class="opacity-50">{{ product.compare_at_price_max | money }}</s>
+  {%- elsif product.price_varies %}
+    <span class="sr-only">Regular price</span>
+    <span>From {{ product.price_min | money }}</span>
+  {%- else %}
+    <span class="sr-only">Regular price</span>
+    <span>{{ product.price_min | money }}</span>
+  {%- endif %}
+</div>

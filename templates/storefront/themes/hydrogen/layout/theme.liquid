@@ -1,0 +1,97 @@
+{%- comment -%}
+  Every Hydrogen page: head (theme stylesheet, the merchant's colors and fonts), header, footer, cart drawer.
+{%- endcomment -%}
+{%- comment -%} Google Fonts parameters for the fonts merchants can pick (theme.json: heading_font, body_font) {%- endcomment -%}
+{%- assign heading_spec = '' -%}
+{%- assign heading_weight = '700' -%}
+{%- case settings.heading_font -%}
+  {%- when 'Inter' -%}
+    {%- assign heading_spec = 'Inter:wght@400;700' -%}
+  {%- when 'Space Grotesk' -%}
+    {%- assign heading_spec = 'Space+Grotesk:wght@400;700' -%}
+  {%- when 'Playfair Display' -%}
+    {%- assign heading_spec = 'Playfair+Display:wght@400;700' -%}
+  {%- when 'DM Serif Display' -%}
+    {%- assign heading_spec = 'DM+Serif+Display' -%}
+    {%- assign heading_weight = '400' -%}
+{%- endcase -%}
+{%- assign body_spec = '' -%}
+{%- case settings.body_font -%}
+  {%- when 'Inter' -%}
+    {%- assign body_spec = 'Inter:wght@400;700' -%}
+  {%- when 'DM Sans' -%}
+    {%- assign body_spec = 'DM+Sans:wght@400;700' -%}
+  {%- when 'Source Sans 3' -%}
+    {%- assign body_spec = 'Source+Sans+3:wght@400;700' -%}
+{%- endcase -%}
+{%- capture fonts_query -%}
+  {%- if heading_spec != blank -%}&family={{ heading_spec }}{%- endif -%}
+  {%- if body_spec != blank and body_spec != heading_spec -%}&family={{ body_spec }}{%- endif -%}
+{%- endcapture -%}
+{%- comment -%}
+  Unchanged colors and fonts keep the tokens in theme.css (the defaults here are theme.json's). Color
+  settings are validated hex values, so they're safe in CSS.
+{%- endcomment -%}
+{%- capture theme_style -%}
+  {%- if settings.primary_color != '#141414' -%}--color-primary:{{ settings.primary_color }};{%- endif -%}
+  {%- if settings.contrast_color != '#fafaf9' -%}--color-contrast:{{ settings.contrast_color }};{%- endif -%}
+  {%- if settings.accent_color != '#bf4800' -%}--color-accent:{{ settings.accent_color }};{%- endif -%}
+  {%- if settings.heading_font != 'System' -%}
+    --font-heading:'{{ settings.heading_font }}', 'Helvetica Neue', Helvetica, Arial, sans-serif;--heading-weight:{{ heading_weight }};
+  {%- endif -%}
+  {%- if settings.body_font != 'System' -%}
+    --font-body:'{{ settings.body_font }}', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  {%- endif -%}
+{%- endcapture -%}
+{%- if page_title != blank and request.page_type == 'index' -%}
+  {%- assign title = page_title -%}
+{%- elsif page_title != blank -%}
+  {%- assign title = page_title | append: ' — ' | append: shop.name -%}
+{%- else -%}
+  {%- assign title = shop.name -%}
+{%- endif -%}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    {%- if page_description != blank %}
+    <meta name="description" content="{{ page_description }}" />
+    {%- endif %}
+    <meta property="og:site_name" content="{{ shop.name }}" />
+    <meta property="og:title" content="{{ title }}" />
+    {%- if page_description != blank %}
+    <meta property="og:description" content="{{ page_description }}" />
+    {%- endif %}
+    {%- if page_image != blank %}
+    <meta property="og:image" content="{{ page_image }}" />
+    {%- endif %}
+    <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}" />
+    {%- if fonts_query != blank %}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap{{ fonts_query | strip }}" />
+    {%- endif %}
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {%- if theme_style != blank %}
+    <style>:root{ {{- theme_style -}} }</style>
+    {%- endif %}
+    {%- if settings.custom_css != blank %}
+    {%- comment %} Code settings are output as is (only staff can edit them); `</style` can't end the tag early {% endcomment %}
+    <style>{{ settings.custom_css | replace: '</style', '<\/style' | raw }}</style>
+    {%- endif %}
+    {{ content_for_header }}
+    {{ settings.head_html }}
+  </head>
+  <body class="font-body grid min-h-screen grid-cols-[100%] grid-rows-[auto_1fr_auto] bg-contrast text-primary/90 antialiased">
+    <a href="#MainContent" class="btn sr-only focus:not-sr-only focus:absolute focus:z-50">Skip to content</a>
+    {% render 'header' %}
+    <div id="MainContent" tabindex="-1">
+      {{ content_for_layout }}
+    </div>
+    {% render 'footer' %}
+    {% render 'cart-drawer' %}
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>

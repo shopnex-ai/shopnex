@@ -1,0 +1,19 @@
+{%- comment -%}
+  Featured collection: a heading over a swipeable row of product cards, from one collection or the newest
+{%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.limit -%}
+{%- if products.size > 0 -%}
+  <section class="grid w-full gap-4 py-6 md:gap-8 md:py-8 lg:py-12">
+    {%- if section.settings.heading != blank %}
+      <div class="px-6 md:px-8 lg:px-12">
+        <h2 class="font-heading text-lead">{{ section.settings.heading }}</h2>
+      </div>
+    {%- endif %}
+    <div class="swimlane hidden-scroll -mt-1 pt-1 md:scroll-px-8 md:px-8 md:pb-8 lg:scroll-px-12 lg:px-12">
+      {%- for p in products %}
+        {% render 'product-card', product: p, class: 'w-80' %}
+      {%- endfor %}
+    </div>
+  </section>
+{%- endif -%}

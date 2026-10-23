@@ -3,13 +3,14 @@
 // Fixtures object and removed by cleanup(), so runs leave the dev database as they found it
 // (stock restocked, order counter and shop settings restored).
 import assert from 'node:assert/strict'
+import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
 import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
 import { db, schema } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
-import { createApiToken, getShopById, type ApiScope } from '@shopnex/tenancy'
+import { createApiToken, createStorefrontKey, getShopById, type ApiScope } from '@shopnex/tenancy'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -24,6 +25,25 @@ export async function call(method: string, path: string, body?: unknown, headers
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   return { status: r.status, body: (await r.json().catch(() => null)) as any } satisfies Response
+}
+
+export const AUTH = `${APP_URL}/api/auth`
+export const PASSWORD = 'e2e-Passw0rd!'
+
+/** A Better Auth endpoint (sign-up, sign-in, …); `cookie` is the session cookie from an earlier response */
+export async function authCall(path: string, body: unknown, cookie?: string) {
+  const r = await fetch(AUTH + path, {
+    method: 'POST',
+    // Better Auth checks the origin of requests that carry cookies
+    headers: { 'content-type': 'application/json', origin: APP_URL, ...(cookie && { cookie }) },
+    body: JSON.stringify(body),
+  })
+  const setCookies = r.headers.getSetCookie().map((c) => c.split(';')[0]!)
+  return {
+    status: r.status,
+    body: (await r.json().catch(() => null)) as any,
+    cookie: setCookies.length ? setCookies.join('; ') : undefined,
+  }
 }
 
 /** Asserts the status (default 200) and returns the body */
@@ -96,6 +116,10 @@ export class Fixtures {
   private taxRates: string[] = []
   private shippingRates: string[] = []
   private tokens: string[] = []
+  private users: string[] = []
+  private shops: string[] = []
+  private seq = 0
+  private readonly run = randomBytes(4).toString('hex')
 
   async init() {
     this.shopBefore = await getShopById(SHOP)
@@ -103,10 +127,108 @@ export class Fixtures {
   }
 
   /** Bearer headers for an API token with these scopes */
-  async token(scopes: ApiScope[]) {
-    const token = await createApiToken(SHOP, { name: 'e2e', scopes, createdById: null })
+  async token(scopes: ApiScope[], shopId = SHOP) {
+    return (await this.mintToken(scopes, shopId)).headers
+  }
+
+  async mintToken(scopes: ApiScope[], shopId = SHOP) {
+    const token = await createApiToken(shopId, { name: 'e2e', scopes, createdById: null })
     this.tokens.push(token.id)
-    return { authorization: `Bearer ${token.token}` }
+    return { id: token.id, token: token.token, headers: { authorization: `Bearer ${token.token}` } }
+  }
+
+  /** A token created through the API, removed with the rest */
+  apiToken(id: string) {
+    this.tokens.push(id)
+  }
+
+  /** A second, empty shop (removed with everything in it) */
+  async shop() {
+    const id = `e2e-${this.run}-${++this.seq}`
+    const [shop] = await db
+      .insert(schema.shops)
+      .values({ id, name: `E2E shop ${id}`, slug: id })
+      .returning()
+    this.shops.push(id)
+    return shop!
+  }
+
+  async storefrontKey(shopId: string) {
+    return createStorefrontKey(shopId, 'e2e')
+  }
+
+  /** The account that owns the invitations made below (invitations need an inviter) */
+  private inviter?: Promise<string>
+  private inviterId() {
+    this.inviter ??= (async () => {
+      const id = `e2e-inviter-${this.run}`
+      await db.insert(schema.user).values({ id, name: 'E2E inviter', email: `${id}@example.com` })
+      this.users.push(id)
+      return id
+    })()
+    return this.inviter
+  }
+
+  /** A pending invitation written straight to the database; `expiresInMs` < 0 for an expired one */
+  async invitation(shopId: string, email: string, role: 'admin' | 'member', expiresInMs = 86400e3) {
+    const id = randomBytes(24).toString('base64url')
+    await db.insert(schema.shopInvitations).values({
+      id,
+      organizationId: shopId,
+      email,
+      role,
+      status: 'pending',
+      expiresAt: new Date(Date.now() + expiresInMs),
+      inviterId: await this.inviterId(),
+    })
+    return id
+  }
+
+  /** Signs up (the email needs a pending invitation) and returns the session cookie */
+  async signUp(email: string) {
+    const r = await authCall('/sign-up/email', { name: 'E2E staff', email, password: PASSWORD })
+    if (r.status === 200) this.users.push(r.body.user.id)
+    return r
+  }
+
+  mail(label: string) {
+    return `e2e-${label}-${++this.seq}-${this.run}@example.com`
+  }
+
+  /**
+   * A signed-in staff account through the real flow: invitation → sign-up → accept.
+   *   owner / admin / member: that role in the shop
+   *   outsider: signed up and signed in, but a member of no shop
+   *   superadmin: platform super admin, a member of no shop
+   */
+  async account(role: 'owner' | 'admin' | 'member' | 'outsider' | 'superadmin', shopId = SHOP) {
+    const email = this.mail(role)
+    const invitationId = await this.invitation(shopId, email, role === 'admin' ? 'admin' : 'member')
+    const signUp = await this.signUp(email)
+    assert.equal(signUp.status, 200, JSON.stringify(signUp.body))
+    const id = signUp.body.user.id as string
+    const cookie = signUp.cookie!
+    if (role === 'outsider' || role === 'superadmin') {
+      await db
+        .update(schema.shopInvitations)
+        .set({ status: 'canceled' })
+        .where(eq(schema.shopInvitations.id, invitationId))
+      if (role === 'superadmin') await db.update(schema.user).set({ role: 'superadmin' }).where(eq(schema.user.id, id))
+    } else {
+      const accepted = await authCall('/organization/accept-invitation', { invitationId }, cookie)
+      assert.equal(accepted.status, 200, JSON.stringify(accepted.body))
+      if (role === 'owner') {
+        await db
+          .update(schema.shopMembers)
+          .set({ role: 'owner' })
+          .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+      }
+    }
+    const [member] = await db
+      .select({ id: schema.shopMembers.id })
+      .from(schema.shopMembers)
+      .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+    return { id, email, memberId: member?.id as string, headers: { cookie } }
   }
 
   /** An order placed outside complete() (cleaned up like the others) */
@@ -166,6 +288,8 @@ export class Fixtures {
     if (this.shippingRates.length) {
       await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.id, this.shippingRates))
     }
+    if (this.users.length) await db.delete(schema.user).where(inArray(schema.user.id, this.users))
+    if (this.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, this.shops))
     if (this.tokens.length) await db.delete(schema.apiTokens).where(inArray(schema.apiTokens.id, this.tokens))
     if (this.shopBefore) {
       const { taxesIncluded, taxShipping, nextOrderNumber } = this.shopBefore
