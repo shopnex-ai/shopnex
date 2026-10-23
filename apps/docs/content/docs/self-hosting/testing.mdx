@@ -1,0 +1,13 @@
+---
+title: End-to-end tests
+description: Run the e2e suite against a dev instance.
+---
+
+```sh
+pnpm dev     # the tests call the running app (APP_URL, default http://localhost:3000)
+pnpm e2e     # e2e/tests/*.test.ts, node:test via tsx
+```
+
+Tests run against the dev database, using the Storefront API over HTTP and services for staff-only setup. Everything a test creates goes through `Fixtures` (`e2e/lib.ts`) and is removed afterwards: orders are cancelled with restock and deleted, and the order counter and shop settings are restored.
+
+The shop needs two active, in-stock variants.

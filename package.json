@@ -10,6 +10,7 @@
     "db:migrate": "pnpm --filter @shopnex/db migrate",
     "create-super-admin": "pnpm --filter @shopnex/auth create-super-admin",
     "dev:app": "pnpm --filter @shopnex/admin-ui dev",
+    "dev:docs": "pnpm --filter @shopnex/docs dev",
     "dev:stripe": "pnpm --filter @shopnex/stripe dev",
     "e2e": "pnpm --filter @shopnex/e2e test",
     "lint": "eslint .",

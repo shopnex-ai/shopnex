@@ -1,0 +1,32 @@
+---
+title: Architecture
+description: How the modules fit together.
+---
+
+```txt
+modules/
+  api         Hono app + oRPC router (mounted by admin-ui at /api)
+  catalog     products, collections, options → values → variants
+  customers   shop-scoped customers; guests matched by email
+  cart        server-side carts + checkout → order (one transaction, idempotent)
+  orders      orders, line items with price snapshots, status transitions
+  tenancy     TENANCY_MODE, default shop, current shop resolution
+  auth        Better Auth integration
+  db          drizzle client, schemas, migrations
+  theme       themes + component definitions
+  apps        installable apps, OAuth codes, installations, marketplace sync
+  webhooks    outbound webhooks: endpoints, outbox, delivery worker
+```
+
+## Rules
+
+- Domain modules (catalog, customers, orders) contain business logic only: no HTTP, oRPC or Hono imports.
+- Every service takes `shopId` first and an optional `conn` (database or transaction).
+- Dependencies point one way: orders → catalog, customers.
+- Domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`.
+
+## Request flow
+
+- **Hono** is transport: CORS, logging, headers, auth mount, raw-body webhooks.
+- **oRPC** holds procedures, validation and auth guards (`pub`, `authed`, in `modules/api/src/orpc.ts`).
+- TanStack server functions call procedures via `apps/admin-ui/src/lib/orpc.server.ts`; admin screens use `apps/admin-ui/src/lib/orpc.ts` with TanStack Query.

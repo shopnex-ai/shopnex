@@ -1,0 +1,46 @@
+---
+title: Storefront API
+description: Public, contract-first API for storefronts.
+---
+
+The contract lives in `packages/storefront-sdk/src/contract.ts` (SDK 1.0.0) and is aligned with Shopify's Storefront API 2026-10. See the SDK's `CHANGELOG.md` for the mapping and deliberate differences. Only additive changes will be made.
+
+## Shop resolution
+
+The `x-shopnex-key` header selects that key's shop (an invalid or revoked key returns 401). Without it, the default shop is used (single mode) or the request host (multi mode). Publishable keys are public.
+
+## Catalog
+
+```ts
+const shop = await shopnex.shop.get() // { name, handle, currencyCode }
+const page = await shopnex.products.list({ first: 20, collection: 'summer', sortKey: 'PRICE' })
+const next = await shopnex.products.list({ first: 20, after: page.pageInfo.endCursor! })
+```
+
+Only `active` products are visible; `draft` and `archived` are admin-only. Prices are `{ amountMinor, currencyCode }`.
+
+## Cart and checkout
+
+```ts
+const cart = await shopnex.cart.create({ lines: [{ merchandiseId, quantity: 1 }] })
+await shopnex.cart.discountCodesUpdate({ cartId: cart.id, discountCodes: ['SUMMER20'] })
+
+const options = await shopnex.checkout.options({ cartId: cart.id, countryCode: 'US' })
+await shopnex.checkout.complete({
+  cartId: cart.id,
+  email,
+  shippingAddress,
+  shippingRateId,
+  paymentMethodId,
+}) // → { orderNumber }
+```
+
+- Prices stay live until the order is placed.
+- `checkout.options` lists shipping rates and payment methods, and returns `cost` (subtotal, shipping, discount, `totalTaxAmount`, `taxesIncluded`, total) for the chosen rate and address.
+- Discounts: one code for now. Unknown codes come back with `applicable: false`; `checkout.complete` refuses them with `DISCOUNT_NOT_APPLICABLE`.
+- Orders follow Shopify's model: `financialStatus`, `fulfillmentStatus`, `cancelledAt`, shipping lines, transactions, fulfillments.
+- Or redirect to `cart.checkoutUrl` for the hosted checkout.
+
+## Errors
+
+Typed in the contract, e.g. `OUT_OF_STOCK { merchandiseId, available }`, `MERCHANDISE_NOT_FOUND`, `LINE_NOT_FOUND`, `CART_COMPLETED`.

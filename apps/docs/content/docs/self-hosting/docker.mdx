@@ -1,0 +1,39 @@
+---
+title: Docker & Render
+description: Deploy the single-image build.
+---
+
+## Docker
+
+The `Dockerfile` builds the admin and the default storefront into one Node 24 image with Caddy.
+
+```sh
+docker build -t shopnex .
+docker run -p 3000:3000 \
+  -e DATABASE_URL=postgres://… \
+  -e APP_URL=https://shop.example.com \
+  -v shopnex-data:/data \
+  shopnex
+```
+
+The image generates `BETTER_AUTH_SECRET` into `/data` if you don't set one, so keep that volume.
+
+On start, `deploy/start.sh`:
+
+1. requires `DATABASE_URL`, generates `BETTER_AUTH_SECRET` if unset, and defaults `BETTER_AUTH_URL` to `APP_URL`;
+2. runs `pnpm db:migrate`;
+3. starts the admin (port 3001), the storefront (port 4321) and Caddy on `$PORT` (default 3000).
+
+If any process exits, the container exits so your platform restarts it.
+
+## Render
+
+`render.yaml` is a Render Blueprint: a Docker web service on the `v2` branch with a managed Postgres database, a generated `BETTER_AUTH_SECRET`, and `TENANCY_MODE=single`. `APP_URL` falls back to `RENDER_EXTERNAL_URL`. The health check is `/admin/login`.
+
+<Callout type="warn">
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+</Callout>
+
+## Storefronts on their own domain
+
+Storefronts can also be deployed separately, on their own domain, using a publishable key. Admin, API and checkout stay on the platform domain.

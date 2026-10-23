@@ -1,0 +1,16 @@
+---
+title: Self-hosting
+description: Run Shopnex in production.
+---
+
+Shopnex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port.
+
+- **Admin, API and checkout** (`/admin`, `/api/*`, `/checkout/*`, plus admin assets) go to the admin app.
+- **Everything else** (`/`, `/products`, `/collections`, `/pages`, theme assets) goes to the storefront.
+
+<Cards>
+  <Card title="Configuration" href="/docs/self-hosting/configuration">Environment variables.</Card>
+  <Card title="Docker & Render" href="/docs/self-hosting/docker">Image, entrypoint and one-click deploy.</Card>
+  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">Optional OAuth providers.</Card>
+  <Card title="End-to-end tests" href="/docs/self-hosting/testing">Run the e2e suite.</Card>
+</Cards>

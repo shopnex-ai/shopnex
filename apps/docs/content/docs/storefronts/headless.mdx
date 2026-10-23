@@ -1,0 +1,25 @@
+---
+title: Headless storefronts
+description: Build your own storefront with the Storefront SDK.
+---
+
+Any frontend can sell through Shopnex using `@shopnex/storefront-sdk`. Create a publishable key (safe in browser code) with `POST /api/v1/admin/storefront-keys` or in Settings, then:
+
+```ts
+import { createStorefrontClient } from '@shopnex/storefront-sdk'
+
+const shopnex = createStorefrontClient({
+  baseUrl: 'http://localhost:3000',
+  publishableKey: 'pk_…',
+})
+
+const { nodes, pageInfo } = await shopnex.products.list({ first: 20, sortKey: 'PRICE' })
+const product = await shopnex.products.getByHandle({ handle: 'pocket-chronometer' })
+
+const cart = await shopnex.cart.create({
+  lines: [{ merchandiseId: product.variants[0].id, quantity: 1 }],
+})
+location.href = cart.checkoutUrl // hosted checkout
+```
+
+See the [Storefront API reference](/docs/api/storefront) for everything the contract covers.

@@ -1,0 +1,28 @@
+---
+title: Writing a theme
+description: Folder layout and build for Liquid themes.
+---
+
+Bundled themes: **storeplate** (default), **maison** (editorial, serif type), **shopco** (bold fashion). Theme names follow Shopify's Liquid objects, so Shopify theme developers feel at home.
+
+```txt
+themes/<id>/
+  theme.json             ThemeDefinition: settings, section types, default pages, styles
+  layout/theme.liquid    every page: {{ content_for_header }} in <head>, {{ content_for_layout }} in <body>
+  templates/             index, collection, product, page, 404
+  sections/<type>.liquid one per section type in theme.json
+  snippets/              for {% render 'name' %}
+  assets/                served at /shopnex/assets/<id>/…, linked with {{ 'file' | asset_url }}
+  src/theme.css          → assets/theme.css (Tailwind)
+  src/theme.ts           → assets/theme.js (esbuild: TypeScript, npm packages, React islands)
+```
+
+<Callout type="warn">
+  `id` in `theme.json` must match the folder name and stay stable: shops' customizations are stored under it.
+</Callout>
+
+1. Create the folder under `templates/storefront/themes/`.
+2. Add it to `themes/index.json` (the first entry is the default).
+3. Run `pnpm dev`. It rebuilds `assets/theme.css` and `assets/theme.js` on change; templates and `theme.json` are read on every request in dev.
+
+Built assets are build output and are not committed.

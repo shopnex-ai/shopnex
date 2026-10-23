@@ -1,0 +1,24 @@
+---
+title: Admin API & tokens
+description: Call the Admin REST API with scoped tokens.
+---
+
+In **Settings → API tokens** (owners and admins), create a secret token (`sk_…`). It is shown once and stored as a SHA-256 hash.
+
+```sh
+curl https://shop.example.com/api/v1/admin/shop \
+  -H "Authorization: Bearer sk_…"
+```
+
+## Scopes
+
+| Scope | Access |
+| --- | --- |
+| `read_products` / `write_products` | products, variants, collections |
+| `read_orders` / `write_orders` | orders |
+| `read_customers` / `write_customers` | customers |
+| `read_discounts` / `write_discounts` | discounts |
+
+Write includes read. `GET /admin/shop` works with any token.
+
+Never reachable with a token: shop settings, staff, storefront keys, API tokens, and shipping, payment and tax settings. Routes opt in with `scoped('read_orders')` or `adminOrToken` in `modules/api/src/orpc.ts`; `admin` and `shopManager` stay session-only.

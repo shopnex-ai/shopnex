@@ -1,0 +1,22 @@
+---
+title: Storefronts
+description: The bundled storefront and how it renders themes.
+---
+
+The default storefront (`templates/storefront`) is one Astro app that renders whichever theme the shop uses. Merchants pick and customize themes in **Online store → Themes**; nothing in the template needs editing to run a shop.
+
+```sh
+pnpm dev                                # from the repo root: admin :3000 + storefront :4321
+pnpm --dir templates/storefront dev     # on its own (copy .env.example to .env)
+pnpm --dir templates/storefront build   # theme assets, then the server
+```
+
+## How it works
+
+- Themes are **Liquid templates** (LiquidJS), not code. The server never runs a theme's JavaScript, so a theme can come from anyone. Templates are HTML-escaped by default, read files only from their own folder, and are time- and memory-limited.
+- Every request asks Shopnex which theme is live (`storefront.theme.current`) and renders its template for the route. The theme editor preview renders the draft instead.
+- Routes are the same for every theme: `/`, `/products`, `/collections/{handle}`, `/products/{handle}`, `/pages/{handle}`, and the 404 page.
+- The cart runs in the browser against the Storefront API; checkout is Shopnex's hosted page.
+- `/shopnex/theme.json` lists theme definitions so the admin can offer them and edit their settings.
+
+Requires Node ≥ 22.22.

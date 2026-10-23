@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "index",
+    "quickstart",
+    "---Run Shopnex---",
+    "self-hosting",
+    "concepts",
+    "---Build---",
+    "storefronts",
+    "api",
+    "apps"
+  ]
+}

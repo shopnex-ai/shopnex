@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: Shopnex is an open-source commerce platform you can run yourself, extend with apps and put any storefront in front of.
+---
+
+Shopnex is a commerce platform with a simple rule: if a merchant has to touch code, the CLI or `.env` to run a shop, that is a product bug. `.env` holds infrastructure only (database URL, app secret); everything else lives in the admin.
+
+## What's in the box
+
+| Part | What it does |
+| --- | --- |
+| **Admin** | Products, orders, staff, shipping, payments, themes, apps and settings, on `/admin`. |
+| **Storefront API** | A public, typed API (aligned with Shopify's Storefront API) for any storefront. |
+| **Admin API** | REST and RPC API for integrations, secured with scoped API tokens or app tokens. |
+| **Hosted checkout** | A checkout page every storefront redirects to, on `/checkout/{token}`. |
+| **Default storefront** | An Astro storefront that renders Liquid themes you edit under Online store → Themes. |
+| **Apps** | Out-of-process extensions that open inside the admin, with a marketplace for discovery. |
+| **Webhooks** | Signed outbound events for orders, products and customers. |
+
+## Where to go next
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart">Run Shopnex locally in a few minutes.</Card>
+  <Card title="Self-hosting" href="/docs/self-hosting">Deploy with Docker or one click on Render.</Card>
+  <Card title="Storefront API" href="/docs/api/storefront">Build a headless storefront with the SDK.</Card>
+  <Card title="Build an app" href="/docs/apps">Extend the admin with an embedded app.</Card>
+</Cards>
+
+## Repository layout
+
+```txt
+apps/        admin-ui (TanStack Start), stripe (bundled payments app), docs
+modules/     domain and infrastructure modules (catalog, orders, cart, auth, db, api, …)
+packages/    SDKs: app, app-bridge, storefront-sdk, marketplace-sdk
+templates/   storefront (Astro), app-starter (Hono)
+```

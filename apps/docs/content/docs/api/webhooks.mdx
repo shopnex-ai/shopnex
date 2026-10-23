@@ -1,0 +1,31 @@
+---
+title: Webhooks
+description: Signed outbound events.
+---
+
+In **Settings → Webhooks** (owners and admins) add a URL, pick events, send a test, inspect deliveries and redeliver.
+
+## Topics
+
+`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+
+## Payload
+
+```json
+{ "type": "order.created", "timestamp": "…", "shopId": "…", "data": { } }
+```
+
+`data` is the resource as the admin API returns it, snapshotted when the event happened.
+
+## Verifying
+
+Deliveries follow [Standard Webhooks](https://www.standardwebhooks.com): `webhook-id` (the same on retries, so dedupe on it), `webhook-timestamp` and `webhook-signature`. Verify with any of its libraries and the endpoint's `whsec_…` secret. Apps can use `verifyWebhook(c)` from `@shopnex/app`.
+
+## Delivery
+
+- Services call `emit(tx, …)` inside their transaction (outbox), so a rolled-back change sends nothing.
+- A worker polls every 3 seconds and claims rows with `SKIP LOCKED`, so several instances are safe.
+- Non-2xx or a 10-second timeout retries after 1m, 5m, 30m, 2h, 5h, 8h, 8h, then fails. Finished deliveries are kept 30 days.
+- Order is not guaranteed: use `data.updatedAt`.
+- Stock changes from checkout don't emit `product.updated`; see `order.created`.
+- A token manages only the subscriptions it created, for topics it can read (`order.*` needs `read_orders`). Revoking the token deletes them.

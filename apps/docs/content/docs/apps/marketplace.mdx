@@ -1,0 +1,26 @@
+---
+title: App Marketplace
+description: Publish apps and discover them from any instance.
+---
+
+The marketplace is a separate hosted service; self-hosted Shopnex instances connect to it.
+
+```txt
+Vendor ──▶ Marketplace  ◀── catalog sync / install reports ──  Shopnex instance
+             ▲                                                   ▲
+             └──── app verifies installs ──── App ── OAuth + Admin API ──┘
+```
+
+## Vendors
+
+Sign up at the marketplace, create an app (App URL, max access, optional redirect URLs) to get a client ID and private key, then publish it.
+
+## Instances
+
+In **Admin → Apps → Marketplace** (super admins), connect once. The marketplace verifies your public URL by fetching `GET {url}/api/v1/marketplace/challenge`, then issues an instance key. The catalog syncs every 10 minutes (or on "Sync now") into the local `apps` table with `source = 'marketplace'`; apps gone from the catalog are delisted.
+
+## Trust
+
+Anyone can run an instance, so apps confirm installs with the marketplace via `POST {marketplace}/api/v1/installations/verify` (a client assertion, `instance_url` and `shop_id`). `@shopnex/app` does this when `SHOPNEX_MARKETPLACE_URL` is set, and caches the answer for an hour. Instances report installs and uninstalls, and send the full list on every sync.
+
+Custom apps (**Admin → Apps → Custom apps**) are for private integrations that never touch the marketplace.

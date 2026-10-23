@@ -7,5 +7,6 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm build && pnpm --dir templates/storefront build
 ENV NODE_ENV=production PORT=3000
+VOLUME /data
 EXPOSE 3000
 CMD ["deploy/start.sh"]

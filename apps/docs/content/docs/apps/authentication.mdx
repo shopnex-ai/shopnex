@@ -1,0 +1,36 @@
+---
+title: Authentication
+description: Keys, session tokens and access tokens.
+---
+
+## Instance keys
+
+Each instance has an Ed25519 signing key, created on first use and published at `GET /api/v1/oauth/jwks`. It signs session tokens, access tokens, payments requests and a `v1a` signature on every webhook delivery (next to the endpoint's HMAC `v1`, with `shopnex-instance` and `shopnex-key-id` headers).
+
+## Client assertions
+
+An app proves who it is with a 60-second JWT signed by its key, addressed to the server it calls (RFC 7523, `client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer`). An instance only sees assertions meant for itself, so it can't replay them against another instance or the marketplace.
+
+## Session tokens
+
+A JWT (EdDSA, 60 s) with `iss` (instance origin), `aud` (client_id), `sub` (staff user), `shop_id` and `sid` (installation). Verify it with:
+
+```ts
+import { verifySessionToken, createJwksResolver } from '@shopnex/marketplace-sdk'
+
+await verifySessionToken(token, { clientId, keys: createJwksResolver() })
+```
+
+or just call `shopnex.authenticate(c)`.
+
+## Getting access tokens
+
+`POST /api/v1/oauth/token`:
+
+| Grant | Input | Result |
+| --- | --- | --- |
+| `urn:ietf:params:oauth:grant-type:token-exchange` | `subject_token` = a session token | 1-hour token |
+| `client_credentials` | `shop_id` | 1-hour token for its installation there (background work) |
+| `authorization_code` | `code`, `redirect_uri`, client assertion | long-lived `sk_…` token |
+
+Access tokens are JWTs checked against the installation on every request, so uninstalling revokes them at once. Authorization codes are single-use and expire after 10 minutes.

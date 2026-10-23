@@ -1,0 +1,45 @@
+---
+title: "@shopnex/app SDK"
+description: An app in a few routes and no database.
+---
+
+```tsx
+import { Hono } from 'hono'
+import { createShopnexApp } from '@shopnex/app'
+import { Page, Card, Button } from '@shopnex/app/ui'
+
+const shopnex = createShopnexApp() // SHOPNEX_CLIENT_ID, SHOPNEX_APP_KEY
+const app = new Hono()
+app.route('/', shopnex.routes) // /shopnex/app.js + app-bridge.js
+
+app.get('/api/stats', async (c) => {
+  const { shop, admin } = await shopnex.authenticate(c)
+  return c.json({ shop: shop.name, orders: await admin.get('/orders?limit=1') })
+})
+
+app.get('/', async (c) => {
+  await shopnex.authenticate(c)
+  return c.html(
+    <Page title="My App">
+      <Card>
+        <Button action="/api/refresh" reload>Refresh</Button>
+      </Card>
+    </Page>,
+  )
+})
+```
+
+## API
+
+- `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) to `{ shop, userId, admin, data, payments }`. Sets `frame-ancestors`.
+- `forShop(instance, shopId)`: for background work.
+- `verifyPaymentsRequest(c, 'payment' | 'refund')` and `verifyWebhook(c)`: checked against the instance's published keys.
+- `data.get/set/delete` and `data.getSecret/setSecret`: secrets are AES-GCM encrypted with a key derived from the app key, unreadable in Shopnex's database.
+
+## UI components
+
+`@shopnex/app/ui` provides `Page`, `Card`, `Stack`, `Inline`, `Text`, `Badge`, `Banner`, `Stat`, `Button`, `Form`, `TextField`, `Select`, `Checkbox`, `Code`, built on `hono/jsx` with admin styles and light/dark support. `<Form action>` and `<Button action>` call the app's backend with fresh session tokens; there is no client build.
+
+## App bridge
+
+Frontends that need more use `@shopnex/app-bridge`: `getSessionToken()`, `authenticatedFetch()` (fresh token per request, no third-party cookies), `toast()` and `redirect()` (top-level, only to the admin or the app's own origin).

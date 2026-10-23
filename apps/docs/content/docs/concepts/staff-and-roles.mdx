@@ -1,0 +1,18 @@
+---
+title: Staff & roles
+description: Invitations, roles and super admins.
+---
+
+Accounts are invitation-only. The setup wizard creates the first account; everyone else needs a pending invitation. This covers email and OAuth sign-up.
+
+- Invite staff from **Admin → Staff**. Invite links are copied from the admin and expire after 7 days.
+- Roles: `owner`, `admin`, `staff`. Owners and admins manage API tokens, webhooks and storefront keys.
+- A **super admin** (platform role `superadmin`) can act in every shop without membership and manage users. The setup wizard's account is one.
+
+## Creating or recovering a super admin
+
+```sh
+pnpm create-super-admin --email you@example.com [--password ...]
+```
+
+A random password is printed if you omit `--password`.

@@ -1,0 +1,37 @@
+---
+title: Apps
+description: Extend Shopnex out of process.
+---
+
+Apps run outside the core and never ship third-party code into it. Super admins register apps in **Admin → Apps** (name, app URL, maximum scopes, optional redirect URLs) and receive a `client_id` and a private key (`snxk_…`). The key is shown once and never stored: Shopnex keeps only the Ed25519 public half.
+
+Generate a key pair locally with:
+
+```sh
+pnpm app:keygen
+```
+
+No secret is ever shared: the instance signs with its own key, the app with its own.
+
+## Two ways to install
+
+- **Managed install** (no redirect URLs): Install opens the consent screen, approving creates the installation and opens the app inside the admin.
+- **OAuth** (redirect URLs set): `/admin/oauth/authorize?client_id=…&redirect_uri=…&scope=…&state=…`, then `redirect_uri?code=…&state=…&shop_id=…&instance=…`.
+
+Either way the installation is backed by an ordinary API token with the approved scopes, which can manage its own webhooks. Approving again updates scopes. Uninstalling revokes the token and deletes its webhooks; deleting an app uninstalls it everywhere.
+
+## Embedded apps
+
+"Open" in Admin → Apps loads the app in an iframe at `/admin/apps/{installation}` with `shop_id`, `instance`, `embedded=1` and a `session_token`. Apps should send `Content-Security-Policy: frame-ancestors {instance}`; `shopnex.authenticate(c)` does this for you.
+
+## App data
+
+`GET|PUT|DELETE /api/v1/admin/app-data/{key}` (and `GET /admin/app-data`) gives an app its own JSON per shop: 64 KB per value, 100 keys, reachable only with the app's token. It survives reinstall and is deleted with the app.
+
+## Start from the template
+
+```sh
+cd templates/app-starter && cp .env.example .env && pnpm dev   # :4500
+```
+
+Fill `SHOPNEX_CLIENT_ID` and `SHOPNEX_APP_KEY` from the dashboard. `apps/stripe` is a full, real example.

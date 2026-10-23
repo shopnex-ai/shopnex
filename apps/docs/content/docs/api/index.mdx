@@ -1,0 +1,25 @@
+---
+title: API overview
+description: Endpoints, transports and authentication.
+---
+
+```txt
+/api/auth/*          Better Auth
+/api/rpc/*           oRPC (typed client used by the admin)
+/api/v1/*            oRPC OpenAPI/REST (/v1/storefront/*, /v1/admin/*)
+/api/v1/openapi.json OpenAPI spec
+/api/webhooks/*      plain Hono routes (raw body)
+```
+
+| API | Auth | For |
+| --- | --- | --- |
+| Storefront (`/v1/storefront`) | publishable key in `x-shopnex-key` | storefronts, public |
+| Admin (`/v1/admin`) | session, `sk_…` API token, or app token | integrations, apps |
+
+The machine-readable spec is served at `/api/v1/openapi.json`, and every instance hosts its own interactive reference at `/api/v1/docs`.
+
+<Callout title="Interactive reference">
+  The [API reference](/reference) on this site renders the same spec with Scalar. It loads the spec from the
+  instance in `SHOPNEX_URL` (default `http://localhost:3000`), so start Shopnex first. Admin endpoints use your
+  admin session cookie, or send `Authorization: Bearer sk_…`.
+</Callout>

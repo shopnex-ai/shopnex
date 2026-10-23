@@ -1,0 +1,31 @@
+{
+  "name": "@shopnex/docs",
+  "private": true,
+  "type": "module",
+  "description": "Shopnex documentation site (Fumadocs on Next.js)",
+  "scripts": {
+    "dev": "next dev --port 3400",
+    "build": "next build",
+    "start": "next start --port 3400",
+    "postinstall": "fumadocs-mdx",
+    "typecheck": "fumadocs-mdx && tsc"
+  },
+  "dependencies": {
+    "@scalar/nextjs-api-reference": "0.12.11",
+    "fumadocs-core": "16.17.7",
+    "fumadocs-mdx": "15.4.9",
+    "fumadocs-ui": "16.17.7",
+    "next": "16.4.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdx": "2.0.14",
+    "@types/node": "catalog:",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "postcss": "^8.5.0",
+    "tailwindcss": "catalog:"
+  }
+}

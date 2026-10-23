@@ -1,0 +1,20 @@
+---
+title: Google & GitHub sign-in
+description: Optional OAuth providers for staff.
+---
+
+Set both the client ID and secret for a provider in `.env`. A provider's button appears on the login page only when both are set.
+
+```sh
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+```
+
+Register these callback URLs (replace the origin with your `BETTER_AUTH_URL`):
+
+- **Google** (Google Cloud Console → Credentials → OAuth client, "Web application"): `http://localhost:3000/api/auth/callback/google`
+- **GitHub** (Settings → Developer settings → OAuth Apps): `http://localhost:3000/api/auth/callback/github`
+
+Accounts are invitation-only, so OAuth sign-in also needs a pending invitation unless it is the first account created by the setup wizard.

@@ -1,0 +1,55 @@
+---
+title: Quickstart
+description: Run Shopnex locally and create your first shop.
+---
+
+## Requirements
+
+- Node.js 22.22 or newer (`nvm install && nvm use` reads `.nvmrc`)
+- pnpm 10 (`corepack enable`)
+- PostgreSQL
+
+## Install and run
+
+```sh
+pnpm install
+cp .env.example .env        # one .env at the repo root
+pnpm db:migrate
+pnpm dev                    # admin on :3000 + default storefront on :4321
+```
+
+Open [http://localhost:3000](http://localhost:3000). A fresh install redirects to `/admin/setup`: create the owner account, name the shop and pick its currency.
+
+<Callout type="warn" title="Finish setup right after deploying">
+  Anyone who reaches a fresh install can claim it. Complete the setup wizard before sharing the URL.
+</Callout>
+
+## Choosing what `pnpm dev` starts
+
+`pnpm dev` runs `scripts/dev.mjs`, which starts the admin and a storefront with prefixed logs. Ctrl+C stops both.
+
+```sh
+STOREFRONT=<folder> pnpm dev     # pick a template (folder in templates/)
+STOREFRONT=none pnpm dev         # admin only (same as pnpm dev:app)
+STOREFRONT_PORT=4400 pnpm dev    # change the template port
+STRIPE=none pnpm dev             # skip a bundled app
+```
+
+## Local ports
+
+| Port | Service |
+| --- | --- |
+| 3000 | admin: admin, API, hosted checkout |
+| 3400 | these docs (`pnpm dev:docs`) |
+| 4321 | storefront template |
+| 4500 | app-starter (third-party app development) |
+| 4600 | bundled Stripe app |
+
+Ports are a local-development convention. In production each app gets its own hostname and listens on whatever `PORT` its platform assigns.
+
+## Next steps
+
+1. Add a product under **Products**.
+2. Configure shipping and payments under **Settings**.
+3. Pick a theme under **Online store → Themes**.
+4. Invite staff from **Staff**.

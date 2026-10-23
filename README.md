@@ -4,6 +4,8 @@
 
 /apps
 
+- /docs # documentation (Fumadocs on Next.js) on :3400 — `pnpm dev:docs`; pages in `apps/docs/content/docs`
+
 - /admin-ui # TanStack Start + shadcn on :3000 — admin (`/admin`), API (`/api/*`), hosted checkout (`/checkout/*`); `/` → `/admin`
 
 - /landing # marketing site (Astro + Tailwind, static) on :3300 — `pnpm dev:landing`; links and copy in `src/site.ts`
@@ -175,7 +177,6 @@ admin, data, payments }`; sets `frame-ancestors`. `forShop(instance, shopId)` fo
 ## App Marketplace
 
 A separate hosted service; self-hosted Shopnex installs connect to it.
-Free apps only for now (billing comes later).
 
 ```
 Vendor ──▶ Marketplace (:3200)  ◀── catalog sync / install reports ──  Shopnex instance (:3000)
@@ -290,6 +291,7 @@ Bundled apps (`apps/<name>` built on `@shopnex/app`, e.g. `apps/stripe`) start w
 | 3000 | admin-ui: admin, API, hosted checkout                       |
 | 3200 | marketplace                                                 |
 | 3300 | landing                                                     |
+| 3400 | docs                                                        |
 | 4321 | storefront template                                         |
 | 4500 | app-starter (third-party app development)                   |
 | 46xx | bundled first-party apps, in order: 4600 stripe, 4601 next… |
