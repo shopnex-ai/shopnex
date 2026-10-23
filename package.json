@@ -18,6 +18,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "app:keygen": "node scripts/app-keygen.mjs",
+    "demo:seed": "pnpm --filter @shopnex/api demo:seed",
     "demo:reset": "pnpm --filter @shopnex/api demo:reset"
   },
   "devDependencies": {

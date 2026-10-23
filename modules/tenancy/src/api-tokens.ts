@@ -5,6 +5,8 @@ import { API_SCOPES, type ApiScope, type ApiToken, type Shop } from '@shopnex/db
 
 export const API_TOKEN_PREFIX = 'sk_'
 
+// Tokens are 256 bits of CSPRNG output, not user-chosen passwords, so there is nothing to brute-force:
+// a fast hash is correct (and keeps per-request lookup cheap). A slow KDF (bcrypt/argon2) would only add latency.
 const hash = (token: string) => createHash('sha256').update(token).digest('hex')
 
 // write_* includes read_*
