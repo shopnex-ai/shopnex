@@ -1,0 +1,67 @@
+name: Demo image
+
+# Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:latest) for the demo.
+# The Dokploy app uses Provider "Docker" with that image. If DOKPLOY_URL, DOKPLOY_APP_ID and
+# the DOKPLOY_API_KEY secret are set, a redeploy is triggered after the push; otherwise it only pushes.
+# Unlike a full env sync, this never touches the app's environment in Dokploy.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'apps/docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: demo-image
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy on Dokploy
+        env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_APP_ID: ${{ vars.DOKPLOY_APP_ID }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+        run: |
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_APP_ID" ] || [ -z "$DOKPLOY_API_KEY" ]; then
+            echo "Dokploy not configured, image pushed only"
+            exit 0
+          fi
+          jq -n --arg id "$DOKPLOY_APP_ID" '{applicationId: $id}' \
+          | curl -fsS -X POST "$DOKPLOY_URL/api/application.deploy" \
+              -H "x-api-key: $DOKPLOY_API_KEY" -H "Content-Type: application/json" \
+              --data-binary @- -o /dev/null
+          echo "Deploy triggered for ${{ steps.image.outputs.name }}:${{ github.sha }}"

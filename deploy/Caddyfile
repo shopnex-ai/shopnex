@@ -6,7 +6,7 @@
 }
 
 :{$PUBLIC_PORT} {
-	@admin path /admin /admin/* /api/* /checkout/* /assets/* /fonts/* /favicon.svg
+	@admin path /admin /admin/* /_serverFn/* /api/* /checkout/* /assets/* /fonts/* /favicon.svg
 	handle @admin {
 		reverse_proxy localhost:{$ADMIN_PORT}
 	}
