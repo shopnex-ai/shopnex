@@ -2,7 +2,7 @@ import type { PayloadHandler } from "payload";
 
 import { parse as parseCookie } from "cookie";
 import { unflatten } from "flat";
-import { APIError } from "payload";
+import { APIError, Forbidden } from "payload";
 
 // Normalize prices if there are variants
 function normalizePrices(documents: any[]) {
@@ -43,57 +43,71 @@ function mergeByHandle(documents: any[]) {
     return Array.from(mergedMap.values());
 }
 
-export const importHandler: PayloadHandler = async (req) => {
-    const body = await req.json?.();
-
-    if (!body?.data?.rows || !Array.isArray(body.data.rows)) {
-        throw new APIError("Request data with 'rows' is required.");
-    }
-
-    const cookieHeader = req.headers.get("cookie") || "";
-    const cookies = parseCookie(cookieHeader);
-
-    const shopId = cookies["payload-tenant"];
-
-    if (!body.collectionSlug) {
-        throw new APIError("Missing 'collectionSlug' in body.");
-    }
-
-    req.payload.logger.info(
-        `Import request received for collection: ${body.collectionSlug} from tenant ${shopId}`
-    );
-
-    const user = req.user;
-
-    const documents = body.data.rows.map((row: any) => {
-        const normalizedValue: Record<string, any> = {};
-        for (const key in row.values) {
-            const normalizedKey = key.replace(/\[/g, ".").replace(/\]/g, "");
-            normalizedValue[normalizedKey] = row.values[key];
+// The target collection is fixed by the route the handler is mounted on and
+// never taken from the request body.
+export const createImportHandler =
+    (collectionSlug: string): PayloadHandler =>
+    async (req) => {
+        if (!req.user) {
+            throw new Forbidden(req.t);
         }
 
-        const data: any = unflatten(normalizedValue);
-        return {
-            ...data,
-            ...(shopId && { shop: shopId }),
-        };
-    });
+        const body = await req.json?.();
 
-    const normalized = normalizePrices(documents);
-    const finalDocuments = mergeByHandle(normalized);
+        if (!body?.data?.rows || !Array.isArray(body.data.rows)) {
+            throw new APIError("Request data with 'rows' is required.");
+        }
 
-    const createdDocs = await Promise.all(
-        finalDocuments.map((doc: any) =>
-            req.payload.create({
-                collection: body.collectionSlug,
-                data: doc,
-                user,
-            })
-        )
-    );
+        const cookieHeader = req.headers.get("cookie") || "";
+        const cookies = parseCookie(cookieHeader);
 
-    return Response.json({
-        data: createdDocs,
-        status: 200,
-    });
-};
+        const shopId = cookies["payload-tenant"];
+
+        if (body.collectionSlug && body.collectionSlug !== collectionSlug) {
+            throw new APIError(
+                `'collectionSlug' must match the endpoint collection '${collectionSlug}'.`,
+                400
+            );
+        }
+
+        req.payload.logger.info(
+            `Import request received for collection: ${collectionSlug} from tenant ${shopId}`
+        );
+
+        const user = req.user;
+
+        const documents = body.data.rows.map((row: any) => {
+            const normalizedValue: Record<string, any> = {};
+            for (const key in row.values) {
+                const normalizedKey = key
+                    .replace(/\[/g, ".")
+                    .replace(/\]/g, "");
+                normalizedValue[normalizedKey] = row.values[key];
+            }
+
+            const data: any = unflatten(normalizedValue);
+            return {
+                ...data,
+                ...(shopId && { shop: shopId }),
+            };
+        });
+
+        const normalized = normalizePrices(documents);
+        const finalDocuments = mergeByHandle(normalized);
+
+        const createdDocs = await Promise.all(
+            finalDocuments.map((doc: any) =>
+                req.payload.create({
+                    collection: collectionSlug as any,
+                    data: doc,
+                    overrideAccess: false,
+                    user,
+                })
+            )
+        );
+
+        return Response.json({
+            data: createdDocs,
+            status: 200,
+        });
+    };

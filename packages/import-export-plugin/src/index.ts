@@ -7,7 +7,7 @@ import type { ImportExportPluginConfig } from "./types";
 import pkg from "../package.json";
 import { getCreateCollectionExportTask } from "./export/getCreateExportCollectionTask";
 import { getExportCollection } from "./getExportCollection";
-import { importHandler } from "./import/importHandler";
+import { createImportHandler } from "./import/importHandler";
 import { translations } from "./translations/index";
 
 export const importExportPlugin =
@@ -49,7 +49,7 @@ export const importExportPlugin =
                     collection.endpoints = [];
                 }
                 collection.endpoints?.push({
-                    handler: importHandler,
+                    handler: createImportHandler(collectionSlug),
                     method: "post",
                     path: "/import",
                 });
