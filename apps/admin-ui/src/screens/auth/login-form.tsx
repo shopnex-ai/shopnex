@@ -15,7 +15,17 @@ import { SocialButtons } from './social-buttons'
 // Only same-app admin paths, so ?next= can't be used to send people elsewhere
 const safeNext = (next?: string) => (next?.startsWith('/admin/') && !next.startsWith('//') ? next : '/admin')
 
-export function LoginForm({ providers, error, next }: { providers: SocialProvider[]; error?: string; next?: string }) {
+export function LoginForm({
+  providers,
+  error,
+  next,
+  defaults,
+}: {
+  providers: SocialProvider[]
+  error?: string
+  next?: string
+  defaults?: { email: string; password: string } | null
+}) {
   const destination = safeNext(next)
   const navigate = useNavigate()
   const router = useRouter()
@@ -55,11 +65,26 @@ export function LoginForm({ providers, error, next }: { providers: SocialProvide
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input id="email" name="email" type="email" autoComplete="email" placeholder="m@example.com" required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="m@example.com"
+                defaultValue={defaults?.email}
+                required
+              />
             </Field>
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Input id="password" name="password" type="password" autoComplete="current-password" required />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                defaultValue={defaults?.password}
+                required
+              />
             </Field>
             <Field>
               <Button type="submit" disabled={pending}>

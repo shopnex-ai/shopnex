@@ -38,14 +38,13 @@ function AdminLayout() {
   if (pathname === '/admin/setup' || pathname === '/admin/login' || pathname.startsWith('/admin/invite/'))
     return <Outlet />
   const { session, tenant } = access
-  if (!session || !tenant) {
+  // No session: beforeLoad is redirecting. The context is stale for a moment while navigating
+  // from /admin/login, so render nothing instead of flashing a message.
+  if (!session) return null
+  if (!tenant) {
     return (
       <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-muted-foreground">
-          {tenant === null
-            ? 'You are not a member of a shop yet, or you do not have access to one.'
-            : 'Sign in to continue.'}
-        </p>
+        <p className="text-muted-foreground">You are not a member of a shop yet, or you do not have access to one.</p>
         <SignOutButton />
       </main>
     )

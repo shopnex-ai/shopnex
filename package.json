@@ -17,7 +17,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "app:keygen": "node scripts/app-keygen.mjs"
+    "app:keygen": "node scripts/app-keygen.mjs",
+    "demo:reset": "pnpm --filter @shopnex/api demo:reset"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

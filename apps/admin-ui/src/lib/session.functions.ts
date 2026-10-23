@@ -6,6 +6,13 @@ import { resolveAdminShop } from '@shopnex/tenancy'
 
 export const getSocialProviders = createServerFn({ method: 'GET' }).handler(() => enabledSocialProviders)
 
+// Public demo only (DEMO_MODE=true): the shared login that /admin/login?demo prefills. These credentials are
+// meant to be public, which is why nothing else ever returns them.
+export const getDemoLogin = createServerFn({ method: 'GET' }).handler(() => {
+  const { DEMO_MODE, DEMO_EMAIL, DEMO_PASSWORD } = process.env
+  return DEMO_MODE === 'true' && DEMO_EMAIL && DEMO_PASSWORD ? { email: DEMO_EMAIL, password: DEMO_PASSWORD } : null
+})
+
 export const getAdminContext = createServerFn({ method: 'GET' }).handler(async () => {
   const setupComplete = await isSetupComplete()
   if (!setupComplete) return { setupComplete, session: null, tenant: null }
