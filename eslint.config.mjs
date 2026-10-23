@@ -13,6 +13,8 @@ export default defineConfig(
     '**/.next/',
     '**/.astro/',
     '**/dist/',
+    '**/out/',
+    '**/.source/',
     '**/build/',
     '**/coverage/',
     '**/playwright-report/',

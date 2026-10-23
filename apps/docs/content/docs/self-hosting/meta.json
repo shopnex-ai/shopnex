@@ -1,1 +1,1 @@
-{"title": "Self-hosting", "pages": ["index", "configuration", "docker", "dokploy", "railway", "oauth", "testing"]}
+{ "title": "Self-hosting", "pages": ["configuration", "docker", "dokploy", "railway", "oauth", "testing"] }
