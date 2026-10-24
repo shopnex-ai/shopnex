@@ -16,6 +16,8 @@ docker run -p 3000:3000 \
   shopnex
 ```
 
+`DATABASE_URL` is required. To try the image without a database server, set `DATABASE_URL=pglite:///data/pglite` (embedded Postgres on the volume): one container, no rolling deploys, no managed backups. Use Postgres for a real shop.
+
 The image generates `BETTER_AUTH_SECRET` into `/data` if you don't set one, so keep that volume.
 
 On start, `deploy/start.sh`:

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-nocheck
 // One command for local development: the TanStack Shopnex app + one storefront template.
 //
 //   pnpm dev                                     app (:3000) + the Shopnex storefront (:4321, templates/storefront)

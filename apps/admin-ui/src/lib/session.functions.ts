@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { isSetupComplete } from '@shopnex/auth/setup'
 import { auth, enabledSocialProviders, isSuperAdmin } from '@shopnex/auth'
+import { dbTarget } from '@shopnex/db'
 import { resolveAdminShop } from '@shopnex/tenancy'
 
 export const getSocialProviders = createServerFn({ method: 'GET' }).handler(() => enabledSocialProviders)
@@ -15,15 +16,17 @@ export const getDemoLogin = createServerFn({ method: 'GET' }).handler(() => {
 
 export const getAdminContext = createServerFn({ method: 'GET' }).handler(async () => {
   const setupComplete = await isSetupComplete()
-  if (!setupComplete) return { setupComplete, session: null, tenant: null }
+  // Embedded Postgres (PGlite) is single-process with no backups: the admin says so on every page
+  const embeddedDatabase = dbTarget().kind === 'pglite'
+  if (!setupComplete) return { setupComplete, embeddedDatabase, session: null, tenant: null }
   const session = await auth.api.getSession({ headers: getRequest().headers })
-  if (!session) return { setupComplete, session: null, tenant: null }
+  if (!session) return { setupComplete, embeddedDatabase, session: null, tenant: null }
   const tenant = await resolveAdminShop({
     userId: session.user.id,
     activeShopId: session.session.activeOrganizationId,
     superAdmin: isSuperAdmin(session.user),
   })
-  return { setupComplete, session, tenant }
+  return { setupComplete, embeddedDatabase, session, tenant }
 })
 
 export const getSetupStatus = createServerFn({ method: 'GET' }).handler(async () => isSetupComplete())

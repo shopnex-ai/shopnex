@@ -9,18 +9,20 @@
   },
   "scripts": {
     "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
+    "migrate": "tsx scripts/migrate.ts",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.11",
     "drizzle-orm": "catalog:",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "^8.23.1",
+    "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.11",
-    "dotenv": "^17.2.3"
+    "tsx": "^4.23.15"
   }
 }

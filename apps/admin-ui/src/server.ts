@@ -5,6 +5,7 @@ const startupGlobal = globalThis as StartupGlobal
 
 function startBackgroundServices() {
   startupGlobal.shopnexBackgroundServices ??= (async () => {
+    await (await import('@shopnex/db')).migrateEmbedded()
     const [
       { startDeliveryWorker },
       { startPaymentsWorker },

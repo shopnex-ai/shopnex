@@ -57,6 +57,13 @@ function AdminLayout() {
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
       />
       <SidebarInset>
+        {access.embeddedDatabase && (
+          <div role="alert" className="border-b border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950">
+            <strong>Embedded database, not for production.</strong> This shop runs on a single-process database with no
+            backups. Back up the <code>.data/pglite</code> folder (or your <code>DATABASE_URL</code> folder), and move
+            to PostgreSQL before taking real orders.
+          </div>
+        )}
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />

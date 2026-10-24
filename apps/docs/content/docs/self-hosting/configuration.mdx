@@ -7,7 +7,7 @@ description: Environment variables read from the root .env.
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. |
+| `DATABASE_URL` | production: yes | PostgreSQL connection string. Unset works only in development (embedded Postgres, PGlite, in `.data/pglite`); in production the app refuses to start without it. `pglite://<folder>` opts into embedded Postgres on purpose: one process, no backups. |
 | `BETTER_AUTH_SECRET` | yes | Long random string. Also used to encrypt provider keys at rest. |
 | `BETTER_AUTH_URL` | yes | Public origin of the app, e.g. `https://shop.example.com`. |
 | `APP_URL` | yes | Public origin used in hosted checkout links. |

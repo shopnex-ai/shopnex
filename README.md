@@ -11,11 +11,11 @@ a typed API and webhooks, and extend it with out-of-process apps. No code or CLI
 
 ## Quick start
 
-Requires Node (see `.node-version`), [pnpm](https://pnpm.io) and PostgreSQL.
+Requires Node (see `.node-version`) and [pnpm](https://pnpm.io). No database to install for development: Shopnex runs on embedded Postgres ([PGlite](https://pglite.dev), stored in `.data/`). Production needs `DATABASE_URL` pointing at PostgreSQL.
 
 ```sh
 pnpm install
-cp .env.example .env        # set the database URL and app secret
+cp .env.example .env        # set the app secret (and DATABASE_URL to use your own Postgres)
 pnpm db:migrate
 pnpm dev                    # admin on :3000, storefront on :4321
 ```

@@ -2,7 +2,7 @@
 // first account is created as platform super admin and owner of the default shop.
 // Like WordPress/Ghost, whoever reaches a fresh install first can claim it — finish setup right after deploying.
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db, schema, withAdvisoryLock } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shopnex/tenancy'
 import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
@@ -37,9 +37,7 @@ export async function isSetupComplete() {
 }
 
 export async function completeSetup(input: SetupInput) {
-  const client = await db.$client.connect()
-  try {
-    await client.query('select pg_advisory_lock($1)', [SETUP_LOCK_KEY])
+  return withAdvisoryLock(SETUP_LOCK_KEY, async () => {
     if (await isSetupComplete()) throw new SetupError('Setup is already complete — sign in instead')
 
     await ensureDefaultShop()
@@ -54,8 +52,5 @@ export async function completeSetup(input: SetupInput) {
 
     complete = true
     return user
-  } finally {
-    await client.query('select pg_advisory_unlock($1)', [SETUP_LOCK_KEY]).catch(() => {})
-    client.release()
-  }
+  })
 }

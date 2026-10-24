@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   return {
     envDir: appDir,
     server: { port: 3000 },
-    ssr: { external: ['pg'] },
+    ssr: { external: ['pg', '@electric-sql/pglite'] },
     resolve: {
       tsconfigPaths: true,
       alias: [

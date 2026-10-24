@@ -19,7 +19,7 @@ if [ -z "$BETTER_AUTH_SECRET" ]; then
   BETTER_AUTH_SECRET="$(cat "$SECRET_FILE")"
 fi
 export BETTER_AUTH_SECRET
-: "${DATABASE_URL:?set DATABASE_URL}"
+: "${DATABASE_URL:?set DATABASE_URL (postgres://…, or pglite:///data/pglite for embedded Postgres on one container)}"
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
 

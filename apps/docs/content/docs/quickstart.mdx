@@ -7,7 +7,7 @@ description: Run Shopnex locally and create your first shop.
 
 - Node.js 22.22 or newer (`nvm install && nvm use` reads `.nvmrc`)
 - pnpm 10 (`corepack enable`)
-- PostgreSQL
+- Nothing else: the default database is embedded Postgres in `.data/` (set `DATABASE_URL` to use your own PostgreSQL)
 
 ## Install and run
 
@@ -22,6 +22,10 @@ Open [http://localhost:3000](http://localhost:3000). A fresh install redirects t
 
 <Callout type="warn" title="Finish setup right after deploying">
   Anyone who reaches a fresh install can claim it. Complete the setup wizard before sharing the URL.
+</Callout>
+
+<Callout title="Embedded database limits">
+  The default database (PGlite) is real Postgres running inside the app process, so it takes one process at a time: stop `pnpm dev` before running `pnpm db:migrate` or other scripts against it. It is for local development and demos; production refuses to start without `DATABASE_URL`. Set `DATABASE_URL=postgres://…`; the schema and migrations are the same.
 </Callout>
 
 ## Choosing what `pnpm dev` starts
