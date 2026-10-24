@@ -20,6 +20,8 @@
     "format:check": "prettier --check .",
     "app:keygen": "node scripts/app-keygen.mjs",
     "demo:seed": "pnpm --filter @shopnex/api demo:seed",
+    "demo:products": "pnpm --filter @shopnex/api demo:products",
+    "demo:orders": "pnpm --filter @shopnex/api demo:orders",
     "demo:reset": "pnpm --filter @shopnex/api demo:reset"
   },
   "devDependencies": {

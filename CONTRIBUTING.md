@@ -12,7 +12,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-See the [README](README.md) for the repository layout and setup details. Node version is in `.node-version`.
+See [docs/architecture.md](docs/architecture.md) for the repository layout and [docs/development.md](docs/development.md) for setup details. Node version is in `.node-version`.
 
 ## Before you open a PR
 

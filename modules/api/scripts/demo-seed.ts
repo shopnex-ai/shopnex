@@ -10,8 +10,9 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { auth, SUPER_ADMIN_ROLE, withSignUpAllowed } from '@shopnex/auth'
-import { collectionService, productService, type ProductInput } from '@shopnex/catalog'
 import { menuService, pageService } from '@shopnex/content'
+import { seedDemoCatalog } from './lib/demo-catalog'
+import { seedDemoOrders } from './lib/demo-orders'
 import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shopnex/tenancy'
 
 const ownerEmail = process.env.DEMO_OWNER_EMAIL?.toLowerCase()
@@ -48,112 +49,7 @@ async function createAccount(name: string, email: string, password: string, supe
 await createAccount('Shop Owner', ownerEmail, ownerPassword, true)
 await createAccount('Demo User', demoEmail, demoPassword, false)
 
-const image = (seed: string) => ({ url: `https://picsum.photos/seed/${seed}/900/900`, alt: seed.replaceAll('-', ' ') })
-const sizes = ['S', 'M', 'L']
-const withSizes = (priceCents: number): Pick<ProductInput, 'options' | 'variants'> => ({
-  options: [{ name: 'Size', values: sizes }],
-  variants: sizes.map((size) => ({ options: { Size: size }, priceCents, inventoryQuantity: 25 })),
-})
-
-const catalog: { collection: string; products: ProductInput[] }[] = [
-  {
-    collection: 'Apparel',
-    products: [
-      {
-        title: 'Classic Cotton Tee',
-        description: 'A soft, everyday t-shirt in heavyweight cotton.',
-        vendor: 'Shopnex',
-        productType: 'T-shirt',
-        tags: ['basics'],
-        images: [image('cotton-tee')],
-        ...withSizes(2400),
-      },
-      {
-        title: 'Everyday Hoodie',
-        description: 'Brushed fleece hoodie with a relaxed fit.',
-        vendor: 'Shopnex',
-        productType: 'Hoodie',
-        tags: ['basics', 'winter'],
-        images: [image('everyday-hoodie')],
-        ...withSizes(5800),
-      },
-      {
-        title: 'Linen Overshirt',
-        description: 'Lightweight linen layer for warm evenings.',
-        vendor: 'Shopnex',
-        productType: 'Shirt',
-        images: [image('linen-overshirt')],
-        ...withSizes(6800),
-      },
-    ],
-  },
-  {
-    collection: 'Accessories',
-    products: [
-      {
-        title: 'Canvas Tote Bag',
-        description: 'Sturdy canvas tote with an inside pocket.',
-        vendor: 'Shopnex',
-        productType: 'Bag',
-        images: [image('canvas-tote')],
-        priceCents: 1800,
-      },
-      {
-        title: 'Wool Beanie',
-        description: 'Warm ribbed beanie in merino wool.',
-        vendor: 'Shopnex',
-        productType: 'Hat',
-        images: [image('wool-beanie')],
-        priceCents: 2200,
-      },
-      {
-        title: 'Leather Card Holder',
-        description: 'Slim vegetable-tanned leather card holder.',
-        vendor: 'Shopnex',
-        productType: 'Wallet',
-        images: [image('card-holder')],
-        priceCents: 3200,
-      },
-    ],
-  },
-  {
-    collection: 'Home',
-    products: [
-      {
-        title: 'Ceramic Mug',
-        description: 'Hand-glazed 350 ml stoneware mug.',
-        vendor: 'Shopnex',
-        productType: 'Mug',
-        images: [image('ceramic-mug')],
-        priceCents: 1600,
-      },
-      {
-        title: 'Soy Candle',
-        description: 'Slow-burning soy wax candle, cedar and amber.',
-        vendor: 'Shopnex',
-        productType: 'Candle',
-        images: [image('soy-candle')],
-        priceCents: 2000,
-      },
-    ],
-  },
-]
-
-const collections = []
-const productIds: string[] = []
-for (const group of catalog) {
-  const collection = await collectionService.create(DEFAULT_SHOP_ID, {
-    title: group.collection,
-    description: `${group.collection} from the Shopnex demo store.`,
-    imageUrl: group.products[0]?.images?.[0]?.url,
-  })
-  collections.push(collection)
-  for (const input of group.products) {
-    const product = await productService.create(DEFAULT_SHOP_ID, input)
-    productIds.push(product.id)
-    await collectionService.addProduct(DEFAULT_SHOP_ID, collection.id, product.id)
-  }
-}
+const { collections, productIds } = await seedDemoCatalog(DEFAULT_SHOP_ID)
 
 const about = await pageService.create(DEFAULT_SHOP_ID, {
   title: 'About',
@@ -194,6 +90,8 @@ await menuService.create(DEFAULT_SHOP_ID, {
   })),
 })
 
-console.log(`Seeded ${productIds.length} products, ${collections.length} collections.`)
+const sales = await seedDemoOrders(DEFAULT_SHOP_ID)
+
+console.log(`Seeded ${productIds.length} products, ${collections.length} collections, ${sales.orders} orders.`)
 console.log(`Owner: ${ownerEmail} (private). Demo login: ${demoEmail} / ${demoPassword}`)
 process.exit(0)

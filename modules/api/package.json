@@ -10,6 +10,8 @@
   "scripts": {
     "typecheck": "tsc",
     "demo:seed": "tsx --env-file-if-exists=../../.env scripts/demo-seed.ts",
+    "demo:products": "tsx --env-file-if-exists=../../.env scripts/demo-products.ts",
+    "demo:orders": "tsx --env-file-if-exists=../../.env scripts/demo-orders.ts",
     "demo:reset": "tsx scripts/demo-reset.ts"
   },
   "dependencies": {
