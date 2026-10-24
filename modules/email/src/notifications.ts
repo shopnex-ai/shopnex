@@ -1,6 +1,7 @@
 // Notifications: the emails Shopnex sends by itself when an order changes, rendered from the shop's Liquid
 // (Settings → Notifications, built-in defaults until edited). `notify` runs inside the transaction that made the
 // change and queues rendered emails in the outbox (email_deliveries); the worker sends them.
+import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type {
@@ -100,7 +101,7 @@ const adminUrl = (orderId: string) =>
   `${(process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/admin/orders/${orderId}`
 
 function shopScope(shop: Shop) {
-  return { name: shop.name, url: shop.storefrontUrl, logo_url: shop.logo, currency: shop.currency }
+  return { name: shop.name, url: withStorefrontUrl(shop).storefrontUrl, logo_url: shop.logo, currency: shop.currency }
 }
 
 function orderScope(order: OrderView) {

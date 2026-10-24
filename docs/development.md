@@ -14,7 +14,7 @@ name the shop and pick its currency. Anyone who reaches a fresh install can clai
 Shop name/currency and storefront keys can be changed later under Settings.
 
 `pnpm dev` (scripts/dev.mjs) starts TanStack admin and a storefront together (`templates/storefront` unless
-`STOREFRONT` says otherwise), with prefixed logs; Ctrl+C stops both. The storefront gets `COMMERCE_PROVIDER=shopnex`
+`STOREFRONT` says otherwise), with prefixed logs; Ctrl+C stops both. The admin uses that storefront's address as the Storefront URL until you save one under Settings (`STOREFRONT_URL` does the same in production, single-shop installs only). The storefront gets `COMMERCE_PROVIDER=shopnex`
 and `SHOPNEX_URL` automatically.
 
 ```sh

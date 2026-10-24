@@ -1,7 +1,15 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { DEFAULT_SHOP_ID } from './config'
+import { DEFAULT_SHOP_ID, isMultiTenant } from './config'
+
+// Zero setup: a single shop that hasn't saved a Storefront URL uses STOREFRONT_URL (`pnpm dev` sets it to the
+// bundled storefront). Multi-tenant shops each need their own, so nothing is guessed there.
+export function withStorefrontUrl<T extends schema.Shop | null>(shop: T): T {
+  const fallback = process.env.STOREFRONT_URL?.trim().replace(/\/$/, '')
+  if (!shop || shop.storefrontUrl || isMultiTenant || !fallback) return shop
+  return { ...shop, storefrontUrl: fallback }
+}
 
 let defaultShopCreated: Promise<void> | undefined
 
@@ -26,7 +34,12 @@ export async function ensureDefaultShop(): Promise<schema.Shop> {
 // Returns null when the shop doesn't exist
 export async function updateShop(
   id: string,
-  patch: Partial<Pick<schema.Shop, 'name' | 'currency' | 'storefrontUrl' | 'seoTitle' | 'seoDescription' | 'taxesIncluded' | 'taxShipping'>>,
+  patch: Partial<
+    Pick<
+      schema.Shop,
+      'name' | 'currency' | 'storefrontUrl' | 'seoTitle' | 'seoDescription' | 'taxesIncluded' | 'taxShipping'
+    >
+  >,
 ) {
   const [shop] = await db.update(schema.shops).set(patch).where(eq(schema.shops.id, id)).returning()
   return shop ?? null
@@ -34,12 +47,12 @@ export async function updateShop(
 
 export async function getShopById(id: string) {
   const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, id))
-  return shop ?? null
+  return withStorefrontUrl(shop ?? null)
 }
 
 export async function getFirstShop() {
   const [shop] = await db.select().from(schema.shops).orderBy(asc(schema.shops.createdAt)).limit(1)
-  return shop ?? null
+  return withStorefrontUrl(shop ?? null)
 }
 
 export async function getShopByDomain(domain: string) {
@@ -48,7 +61,7 @@ export async function getShopByDomain(domain: string) {
     .from(schema.shopDomains)
     .innerJoin(schema.shops, eq(schema.shops.id, schema.shopDomains.shopId))
     .where(eq(schema.shopDomains.domain, domain.toLowerCase()))
-  return row?.shop ?? null
+  return withStorefrontUrl(row?.shop ?? null)
 }
 
 export async function getMembership(shopId: string, userId: string) {

@@ -20,7 +20,7 @@ export const loadStorefront = createServerFn({ method: 'GET' })
     if (!storefrontUrl)
       return {
         storefront: null,
-        storefrontError: 'Set your Storefront URL under Settings (for local development: http://localhost:4321).',
+        storefrontError: 'Set your Storefront URL under Settings, or STOREFRONT_URL in .env.',
       }
     const url = new URL(THEME_DEFINITION_PATH, storefrontUrl)
     let themes

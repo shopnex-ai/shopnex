@@ -83,7 +83,10 @@ process.on('SIGINT', () => stop(0))
 process.on('SIGTERM', () => stop(0))
 process.on('SIGHUP', () => stop(0))
 
-run('app', 36, ['--filter', '@shopnex/admin-ui', 'dev'])
+// The admin falls back to this when no Storefront URL is saved in Settings (zero setup)
+const storefrontUrl =
+  process.env.STOREFRONT_URL ?? (template !== 'none' ? `http://localhost:${templatePort}` : undefined)
+run('app', 36, ['--filter', '@shopnex/admin-ui', 'dev'], { env: { ...process.env, STOREFRONT_URL: storefrontUrl } })
 
 // Bundled apps (apps/<name> on @shopnex/app, e.g. apps/stripe): each runs when .env sets <NAME>_APP_URL
 const bundledApps = listBundledApps().filter((app) => process.env[app.envName] !== 'none')
