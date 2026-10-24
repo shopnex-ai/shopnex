@@ -29,3 +29,61 @@ jobs:
       - run: pnpm typecheck
 
       - run: pnpm build
+
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shopnex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnex
+      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
+      BETTER_AUTH_URL: http://localhost:3000
+      STOREFRONT_URL: http://localhost:4321
+      DEMO_OWNER_EMAIL: owner@example.com
+      DEMO_OWNER_PASSWORD: ci-owner-Passw0rd!
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - run: pnpm db:migrate
+
+      # An empty database with a shop, accounts and the demo catalog (the tests need active, in-stock variants)
+      - run: pnpm demo:seed
+
+      - name: Start the app and the storefront
+        run: |
+          (cd apps/admin-ui && PORT=3000 node server.mjs > "$RUNNER_TEMP/app.log" 2>&1) &
+          (cd templates/storefront && HOST=127.0.0.1 PORT=4321 SHOPNEX_URL=http://localhost:3000 \
+            node dist/server/entry.mjs > "$RUNNER_TEMP/storefront.log" 2>&1) &
+          npx --yes wait-on@8 -t 60000 http-get://localhost:3000/api/v1/storefront/shop http://localhost:4321/
+
+      - run: pnpm e2e
+
+      - name: Server logs
+        if: failure()
+        run: tail -n 100 "$RUNNER_TEMP/app.log" "$RUNNER_TEMP/storefront.log"
