@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "tsx --env-file=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
+    "test": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
     "typecheck": "tsc"
   },
   "dependencies": {
