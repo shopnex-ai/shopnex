@@ -9,6 +9,11 @@ const read = scoped('read_products')
 const write = scoped('write_products')
 
 export const products = {
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/products/bulk' })
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => productService.removeMany(context.shop.id, input.ids)),
+
   list: read
     .route({ method: 'GET', path: '/admin/products' })
     .input(pagination.extend({ search: z.string().trim().max(200).optional() }))

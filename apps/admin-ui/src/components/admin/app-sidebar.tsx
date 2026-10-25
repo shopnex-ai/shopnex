@@ -9,6 +9,7 @@ import {
   CodeIcon,
   CreditCardIcon,
   ExternalLinkIcon,
+  LayersIcon,
   HardDriveIcon,
   HouseIcon,
   KeyRoundIcon,
@@ -67,7 +68,7 @@ type NavItem = {
   /** Only this exact path is active */ exact?: boolean
 }
 
-// Add screens here as they're built (collections…)
+// Add screens here as they're built
 const nav: { label: string; items: NavItem[] }[] = [
   {
     label: 'Store',
@@ -75,6 +76,7 @@ const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin', label: 'Home', icon: HouseIcon, exact: true },
       { href: '/admin/orders', label: 'Orders', icon: ShoppingCartIcon },
       { href: '/admin/products', label: 'Products', icon: PackageIcon },
+      { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
       // Theme library and editor; Pages and Navigation are their own entries

@@ -11,6 +11,11 @@ const read = scoped('read_customers')
 const write = scoped('write_customers')
 
 export const customers = {
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/customers/bulk' })
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => customerService.removeMany(context.shop.id, input.ids)),
+
   list: read
     .route({ method: 'GET', path: '/admin/customers' })
     .input(pagination.extend({ search: z.string().trim().max(200).optional() }))

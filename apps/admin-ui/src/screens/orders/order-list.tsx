@@ -1,6 +1,6 @@
 'use client'
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { FinancialStatusBadge, FulfillmentStatusBadge } from '@/components/admin/order-status'
@@ -10,7 +10,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
-import { orpc, type Inputs, type Outputs } from '@/lib/orpc'
+import { client, orpc, type Inputs, type Outputs } from '@/lib/orpc'
+import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
+import { ExportOrdersDialog } from './export-orders'
+import { ImportOrdersDialog } from './import-orders'
 
 type Order = Outputs['admin']['orders']['list']['items'][number]
 
@@ -67,6 +70,7 @@ const VIEWS: { key: string; label: string; filters: ListFilters; empty: string }
 ]
 
 export function OrderList() {
+  const queryClient = useQueryClient()
   const { page, pageSize, search, range, setPage, setSearch, filter, setFilter } = useListParams()
   const view = VIEWS.find((v) => v.key === filter('view')) ?? VIEWS[0]!
   const { data, error, isPending } = useQuery({
@@ -77,7 +81,7 @@ export function OrderList() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Orders" />
+      <PageHeader title="Orders" actions={<div className="flex items-center gap-2"><ImportOrdersDialog /><ExportOrdersDialog /></div>} />
       <div className="flex flex-wrap gap-1" role="group" aria-label="Order views">
         {VIEWS.map((v) => (
           <Button
@@ -101,6 +105,15 @@ export function OrderList() {
         error={error}
         empty={search ? `No orders match “${search}”.` : view.empty}
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
+        selectionActions={(ids, clearSelection) => <DeleteSelectedButton
+          ids={ids}
+          entity={ids.length === 1 ? 'order' : 'orders'}
+          remove={(selected) => client.admin.orders.deleteMany({ ids: selected })}
+          onDeleted={async () => {
+            clearSelection()
+            await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.key() })
+          }}
+        />}
       />
     </div>
   )

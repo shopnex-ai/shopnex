@@ -4,12 +4,12 @@
 // Sorting/filtering happen on the server, so the table only uses core features.
 import { Link, useNavigate, useRouter, type ToOptions } from '@tanstack/react-router'
 import type { MouseEvent, ReactNode } from 'react'
-import { createColumnHelper, tableFeatures, useTable, type ColumnDef, type RowData } from '@tanstack/react-table'
+import { createColumnHelper, rowSelectionFeature, tableFeatures, useTable, type ColumnDef, type RowData } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-const features = tableFeatures({ columnMeta: {} as { className?: string } })
+const features = tableFeatures({ columnMeta: {} as { className?: string }, rowSelectionFeature })
 
 type Features = typeof features
 // `any` value: one table mixes columns of different value types
@@ -27,6 +27,7 @@ type DataTableProps<TData extends RowData> = {
   isPending?: boolean
   error?: Error | null
   empty?: ReactNode
+  selectionActions?: (ids: string[], clearSelection: () => void) => ReactNode
   /** Omit for tables that show a fixed slice (e.g. "recent orders") */
   pagination?: PaginationProps
 }
@@ -46,12 +47,14 @@ export function DataTable<TData extends RowData>({
   isPending,
   error,
   empty = 'Nothing here yet.',
+  selectionActions,
   pagination,
 }: DataTableProps<TData>) {
   const navigate = useNavigate()
   const router = useRouter()
   const table = useTable({ features, columns, data: data ?? [], getRowId: (row) => getRowId(row) })
   const rows = table.getRowModel().rows
+  const selectedIds = table.getSelectedRowIds()
 
   const onRowClick = (link: ToOptions) => (e: MouseEvent) => {
     // Let links/buttons inside the row, and text selection, behave normally
@@ -69,7 +72,26 @@ export function DataTable<TData extends RowData>({
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
-                {group.headers.map((header) => (
+                <TableHead className="w-10">
+                  <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center" onClick={(event) => {
+                    event.stopPropagation()
+                    if ((event.target as HTMLElement).tagName !== 'INPUT') table.toggleAllPageRowsSelected()
+                  }}>
+                    <input type="checkbox" aria-label="Select all rows on this page" checked={table.getIsAllPageRowsSelected()}
+                      ref={(element) => {
+                        if (element) element.indeterminate = table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
+                      }}
+                      onChange={table.getToggleAllPageRowsSelectedHandler()} className="size-4 cursor-pointer accent-primary" />
+                  </div>
+                </TableHead>
+                {selectedIds.length > 0 ? (
+                  <TableHead colSpan={columns.length} className="h-10">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span>{selectedIds.length} selected</span>
+                      {selectionActions?.(selectedIds, () => table.resetRowSelection(true))}
+                    </div>
+                  </TableHead>
+                ) : group.headers.map((header) => (
                   <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
                     {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                   </TableHead>
@@ -81,7 +103,7 @@ export function DataTable<TData extends RowData>({
             {isPending && !data ? (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={i}>
-                  {columns.map((_, j) => (
+                  {[null, ...columns].map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full max-w-40" />
                     </TableCell>
@@ -90,13 +112,13 @@ export function DataTable<TData extends RowData>({
               ))
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-8 text-center text-destructive">
+                <TableCell colSpan={columns.length + 1} className="py-8 text-center text-destructive">
                   {error.message}
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
                   {empty}
                 </TableCell>
               </TableRow>
@@ -107,6 +129,15 @@ export function DataTable<TData extends RowData>({
                   onClick={rowLink ? onRowClick(rowLink(row.original)) : undefined}
                   className={rowLink ? 'cursor-pointer' : undefined}
                 >
+                    <TableCell className="w-10 cursor-pointer" onClick={(event) => {
+                      event.stopPropagation()
+                      if ((event.target as HTMLElement).tagName !== 'INPUT') row.toggleSelected()
+                    }}>
+                      <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center">
+                        <input type="checkbox" aria-label={`Select row ${row.id}`} checked={row.getIsSelected()}
+                          onChange={row.getToggleSelectedHandler()} className="size-4 cursor-pointer accent-primary" />
+                      </div>
+                    </TableCell>
                   {row.getAllCells().map((cell, i) => (
                     <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                       {i === 0 && rowLink ? (

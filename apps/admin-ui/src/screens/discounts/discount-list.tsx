@@ -34,6 +34,10 @@ import { Field, FieldGroup } from '@/components/ui/field'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { client } from '@/lib/orpc'
+import { ImportDiscountsDialog } from './import-discounts'
+import { ExportDiscountsDialog } from './export-discounts'
+import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 
 type Discount = Outputs['admin']['discounts']['list'][number]
 
@@ -54,6 +58,7 @@ function status(d: Discount): { label: string; variant: 'default' | 'secondary' 
 }
 
 export function DiscountList({ currency }: { currency: string }) {
+  const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.discounts.list.queryOptions())
   const money = (cents: number) => formatMoney(cents, currency)
 
@@ -101,7 +106,7 @@ export function DiscountList({ currency }: { currency: string }) {
       <PageHeader
         title="Discounts"
         description="Codes buyers enter at checkout. One code per order."
-        actions={<DiscountDialog currency={currency} />}
+        actions={<div className="flex gap-2"><ImportDiscountsDialog currency={currency} /><ExportDiscountsDialog /><DiscountDialog currency={currency} /></div>}
       />
       <Card>
         <CardContent>
@@ -112,6 +117,15 @@ export function DiscountList({ currency }: { currency: string }) {
             isPending={isPending}
             error={error}
             empty="No discounts yet."
+            selectionActions={(ids, clearSelection) => <DeleteSelectedButton
+              ids={ids}
+              entity={ids.length === 1 ? 'discount' : 'discounts'}
+              remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
+              onDeleted={async () => {
+                clearSelection()
+                await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
+              }}
+            />}
           />
         </CardContent>
       </Card>

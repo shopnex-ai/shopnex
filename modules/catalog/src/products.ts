@@ -171,6 +171,15 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
+export async function removeMany(shopId: string, ids: string[]) {
+  if (!ids.length) return 0
+  const deleted = await db
+    .delete(schema.products)
+    .where(and(eq(schema.products.shopId, shopId), inArray(schema.products.id, ids)))
+    .returning({ id: schema.products.id })
+  return deleted.length
+}
+
 export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
   const [row] = await conn
     .select()

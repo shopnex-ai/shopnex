@@ -1,6 +1,6 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
-import { and, asc, eq, max } from 'drizzle-orm'
+import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { CatalogError } from './errors'
 import { sanitizeHtml } from './html'
@@ -69,6 +69,75 @@ export async function create(shopId: string, input: CollectionInput) {
       .returning()
     return row!
   })
+}
+
+// Partial update; a changed slug must stay unique within the shop
+export async function update(shopId: string, id: string, patch: Partial<CollectionInput>) {
+  return db.transaction(async (tx) => {
+    const existing = await getById(shopId, id, tx)
+    if (!existing) return null
+    if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, schema.collections, shopId, patch.slug, id))) {
+      throw new CatalogError('SLUG_TAKEN', `Slug "${patch.slug}" is already used by another collection`)
+    }
+    const [row] = await tx
+      .update(schema.collections)
+      .set({
+        updatedAt: new Date(),
+        ...(patch.title !== undefined && { title: patch.title }),
+        ...(patch.slug !== undefined && { slug: patch.slug }),
+        ...(patch.description !== undefined && { description: patch.description }),
+        ...(patch.descriptionHtml !== undefined && {
+          descriptionHtml: patch.descriptionHtml ? sanitizeHtml(patch.descriptionHtml) || null : null,
+        }),
+        ...(patch.imageUrl !== undefined && { imageUrl: patch.imageUrl }),
+        ...(patch.seo?.title !== undefined && { seoTitle: patch.seo.title }),
+        ...(patch.seo?.description !== undefined && { seoDescription: patch.seo.description }),
+      })
+      .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+      .returning()
+    return row ?? null
+  })
+}
+
+// Products stay; only their membership rows cascade away
+export async function remove(shopId: string, id: string) {
+  const [row] = await db
+    .delete(schema.collections)
+    .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+    .returning()
+  return row ?? null
+}
+
+export async function removeMany(shopId: string, ids: string[]) {
+  if (!ids.length) return 0
+  const deleted = await db
+    .delete(schema.collections)
+    .where(and(eq(schema.collections.shopId, shopId), inArray(schema.collections.id, ids)))
+    .returning({ id: schema.collections.id })
+  return deleted.length
+}
+
+// collectionId → number of products, for the given collections (all belong to this shop)
+export async function productCounts(shopId: string, ids: string[], conn: Conn = db) {
+  if (!ids.length) return new Map<string, number>()
+  const rows = await conn
+    .select({ id: schema.productCollections.collectionId, n: count() })
+    .from(schema.productCollections)
+    .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+    .where(and(eq(schema.collections.shopId, shopId), inArray(schema.productCollections.collectionId, ids)))
+    .groupBy(schema.productCollections.collectionId)
+  return new Map(rows.map((r) => [r.id, r.n]))
+}
+
+// Members in collection order
+export async function listProducts(shopId: string, collectionId: string, conn: Conn = db) {
+  return conn
+    .select({ id: schema.products.id, title: schema.products.title, status: schema.products.status })
+    .from(schema.productCollections)
+    .innerJoin(schema.products, eq(schema.products.id, schema.productCollections.productId))
+    .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+    .where(and(eq(schema.collections.shopId, shopId), eq(schema.productCollections.collectionId, collectionId)))
+    .orderBy(asc(schema.productCollections.position))
 }
 
 // Idempotent; new products go to the end of the collection

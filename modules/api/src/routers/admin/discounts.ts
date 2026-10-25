@@ -15,6 +15,11 @@ const write = scoped('write_discounts')
 
 // Discount codes buyers enter at checkout (one per order)
 export const discounts = {
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/discounts/bulk' })
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => discountService.removeMany(context.shop.id, input.ids)),
+
   list: read
     .route({ method: 'GET', path: '/admin/discounts' })
     .handler(({ context }) => discountService.list(context.shop.id)),

@@ -1,6 +1,6 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
-import { and, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, or, type SQL } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { NewCustomer } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
@@ -71,6 +71,15 @@ export async function update(
     .returning()
   if (row) await emit(conn, shopId, 'customer.updated', () => row)
   return row ?? null
+}
+
+export async function removeMany(shopId: string, ids: string[]) {
+  if (!ids.length) return 0
+  const deleted = await db
+    .delete(schema.customers)
+    .where(and(eq(schema.customers.shopId, shopId), inArray(schema.customers.id, ids)))
+    .returning({ id: schema.customers.id })
+  return deleted.length
 }
 
 // Used by checkout: guests are matched by email within the shop

@@ -11,7 +11,64 @@ const id = z.object({ id: z.uuid() })
 const read = scoped('read_orders')
 const write = scoped('write_orders')
 
+const importedAddress = z.object({
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  company: z.string().nullable(),
+  address1: z.string(),
+  address2: z.string().nullable(),
+  city: z.string(),
+  province: z.string().nullable(),
+  countryCode: z.string().regex(/^[A-Z]{2}$/),
+  zip: z.string().nullable(),
+  phone: z.string().nullable(),
+})
+
+const importedOrder = z.object({
+  sourceOrderName: z.string().trim().min(1).max(100),
+  email: z.email(),
+  name: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  financialStatus: z.enum(FINANCIAL_STATUSES),
+  fulfillmentStatus: z.enum(FULFILLMENT_STATUSES),
+  cancelledAt: z.coerce.date().nullable().optional(),
+  fulfilledAt: z.coerce.date().nullable().optional(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  subtotalCents: z.number().int().nonnegative(),
+  shippingCents: z.number().int().nonnegative(),
+  taxCents: z.number().int().nonnegative(),
+  discountCents: z.number().int().nonnegative(),
+  totalCents: z.number().int().nonnegative(),
+  discountCodes: z.array(z.string().max(100)).max(50),
+  shippingTitle: z.string().max(200).nullable().optional(),
+  shippingAddress: importedAddress.nullable().optional(),
+  billingAddress: importedAddress.nullable().optional(),
+  paymentMethodName: z.string().max(200).nullable().optional(),
+  note: z.string().max(10_000).nullable().optional(),
+  createdAt: z.coerce.date(),
+  items: z.array(z.object({
+    title: z.string().min(1).max(500),
+    variantTitle: z.string().max(500).nullable().optional(),
+    sku: z.string().max(200).nullable().optional(),
+    vendor: z.string().max(200).nullable().optional(),
+    imageUrl: z.url({ protocol: /^https?$/ }).nullable().optional(),
+    unitPriceCents: z.number().int().nonnegative(),
+    quantity: z.number().int().min(1).max(9999),
+    discountCents: z.number().int().nonnegative(),
+  })).min(1).max(500),
+})
+
 export const orders = {
+  importHistorical: write
+    .route({ method: 'POST', path: '/admin/orders/import' })
+    .input(z.object({ orders: z.array(importedOrder).min(1).max(50) }))
+    .handler(({ input, context }) => orderService.importHistoricalMany(context.shop.id, input.orders)),
+
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/orders/bulk' })
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => orderService.removeMany(context.shop.id, input.ids)),
+
   list: read
     .route({ method: 'GET', path: '/admin/orders' })
     .input(

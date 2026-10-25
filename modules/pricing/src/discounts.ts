@@ -1,6 +1,6 @@
 // Discount codes (admin: Discounts). Business logic only; every query is scoped by shopId.
 // One code per order. Usage is recorded when an order is placed (see redeem), under the discount's row lock.
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { Discount, NewDiscount } from '@shopnex/db/schema'
 import { PricingError } from './errors'
@@ -102,6 +102,15 @@ export async function remove(shopId: string, id: string) {
     .where(and(eq(schema.discounts.shopId, shopId), eq(schema.discounts.id, id)))
     .returning()
   return row ?? null
+}
+
+export async function removeMany(shopId: string, ids: string[]) {
+  if (!ids.length) return 0
+  const deleted = await db
+    .delete(schema.discounts)
+    .where(and(eq(schema.discounts.shopId, shopId), inArray(schema.discounts.id, ids)))
+    .returning({ id: schema.discounts.id })
+  return deleted.length
 }
 
 /** Why a discount can't be used right now (null = it can). Not about the cart: see calculate's minimum subtotal. */

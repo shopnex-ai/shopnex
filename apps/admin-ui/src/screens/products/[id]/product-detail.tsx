@@ -2,6 +2,8 @@
 
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useController } from 'react-hook-form'
+import { useId } from 'react'
 import { toast } from 'sonner'
 import { productFields } from '@shopnex/api/schemas'
 import {
@@ -14,10 +16,11 @@ import {
   useZodForm,
 } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
+import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { FieldGroup } from '@/components/ui/field'
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { MediaCard } from './media-card'
@@ -28,7 +31,7 @@ export type Product = Outputs['admin']['products']['get']
 const productForm = productFields.pick({
   title: true,
   status: true,
-  description: true,
+  descriptionHtml: true,
   vendor: true,
   productType: true,
   tags: true,
@@ -44,16 +47,18 @@ const statusOptions = [
 
 const back = { to: '/admin/products', label: 'Products' } as const
 
-// Plain text of an HTML description (this component only renders in the browser, after the query)
-function htmlToText(html: string) {
-  const doc = new DOMParser().parseFromString(html.replace(/<br\s*\/?>|<\/(p|li|h\d)>/gi, '$&\n'), 'text/html')
-  return (doc.body.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim()
+function plainTextToHtml(text: string | null) {
+  if (!text) return ''
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`)
+    .join('')
 }
 
 const toValues = (p: Product) => ({
   title: p.title,
   status: p.status,
-  description: p.description ?? (p.descriptionHtml ? htmlToText(p.descriptionHtml) : null),
+  descriptionHtml: p.descriptionHtml ?? plainTextToHtml(p.description),
   vendor: p.vendor,
   productType: p.productType,
   tags: p.tags,
@@ -91,17 +96,19 @@ export function ProductDetail({ id, currency }: { id: string; currency: string }
 
 function ProductEditor({ product, currency }: { product: Product; currency: string }) {
   const queryClient = useQueryClient()
+  const descriptionId = useId()
   const form = useZodForm(productForm, { defaultValues: toValues(product) })
+  const description = useController({ control: form.control, name: 'descriptionHtml' })
   const update = useMutation(orpc.admin.products.update.mutationOptions())
   const { isDirty, isSubmitting, dirtyFields } = form.formState
 
-  const onSubmit = form.handleSubmit(async ({ description, ...values }) => {
+  const onSubmit = form.handleSubmit(async ({ descriptionHtml, ...values }) => {
     try {
       const saved = await update.mutateAsync({
         id: product.id,
         ...values,
-        // Only touch the description when it was edited: plain text replaces any HTML formatting
-        ...(dirtyFields.description && { description, descriptionHtml: null }),
+        // Only replace the stored description when the rich-text field was edited.
+        ...(dirtyFields.descriptionHtml && { descriptionHtml: descriptionHtml || null, description: null }),
       })
       queryClient.setQueryData(orpc.admin.products.get.queryKey({ input: { id: product.id } }), saved)
       await queryClient.invalidateQueries({ queryKey: orpc.admin.products.list.key() })
@@ -148,18 +155,15 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
               <CardContent>
                 <FieldGroup>
                   <TextField control={form.control} name="title" label="Title" />
-                  <TextareaField
-                    control={form.control}
-                    name="description"
-                    label="Description"
-                    nullable
-                    rows={6}
-                    description={
-                      product.descriptionHtml
-                        ? 'This description has formatting. Editing it here saves plain text and removes the formatting.'
-                        : undefined
-                    }
-                  />
+                  <Field>
+                    <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
+                    <RichTextEditor
+                      id={descriptionId}
+                      value={description.field.value ?? ''}
+                      onChange={description.field.onChange}
+                      invalid={!!description.fieldState.error}
+                    />
+                  </Field>
                 </FieldGroup>
               </CardContent>
             </Card>

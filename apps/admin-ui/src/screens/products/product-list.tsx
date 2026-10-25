@@ -1,6 +1,6 @@
 'use client'
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImageIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
@@ -10,8 +10,11 @@ import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
-import { orpc, type Outputs } from '@/lib/orpc'
+import { client, orpc, type Outputs } from '@/lib/orpc'
 import { NewProductButton } from './new-product-button'
+import { ImportProductsDialog } from './import-products'
+import { ExportProductsDialog } from './export-products'
+import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 
 type Product = Outputs['admin']['products']['list']['items'][number]
 
@@ -47,9 +50,10 @@ const columnsFor = (currency: string) => {
               <ImageIcon className="size-4 text-muted-foreground" />
             )}
           </div>
-          <span className="font-medium">{p.title}</span>
+          <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>{p.title}</span>
         </div>
       ),
+      meta: { className: 'w-96 max-w-96' },
     }),
     col.accessor('status', {
       header: 'Status',
@@ -75,6 +79,7 @@ const columnsFor = (currency: string) => {
 }
 
 export function ProductList({ currency }: { currency: string }) {
+  const queryClient = useQueryClient()
   const columns = useMemo(() => columnsFor(currency), [currency])
   const { page, pageSize, search, range, setPage, setSearch } = useListParams()
   const { data, error, isPending } = useQuery({
@@ -84,7 +89,16 @@ export function ProductList({ currency }: { currency: string }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Products" actions={<NewProductButton currency={currency} />} />
+      <PageHeader
+        title="Products"
+        actions={
+          <div className="flex items-center gap-2">
+            <ImportProductsDialog />
+            <ExportProductsDialog />
+            <NewProductButton currency={currency} />
+          </div>
+        }
+      />
       <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />
       <DataTable
         columns={columns}
@@ -95,6 +109,15 @@ export function ProductList({ currency }: { currency: string }) {
         error={error}
         empty={search ? `No products match “${search}”.` : 'No products yet. Create one to start selling.'}
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
+        selectionActions={(ids, clearSelection) => <DeleteSelectedButton
+          ids={ids}
+          entity={ids.length === 1 ? 'product' : 'products'}
+          remove={(selected) => client.admin.products.deleteMany({ ids: selected })}
+          onDeleted={async () => {
+            clearSelection()
+            await queryClient.invalidateQueries({ queryKey: orpc.admin.products.key() })
+          }}
+        />}
       />
     </div>
   )

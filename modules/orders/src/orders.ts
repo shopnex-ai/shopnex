@@ -2,7 +2,7 @@
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 // Lifecycle follows Shopify: payment (financialStatus) and shipping (fulfillmentStatus) move independently;
 // cancelling is its own fact (cancelledAt) and voids or refunds the payment.
-import { and, count, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
 import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
@@ -33,6 +33,40 @@ export type CreateOrderInput = {
   // Case-insensitive. An unusable code fails the order (the buyer was shown the discounted total).
   discountCode?: string
   note?: string
+}
+
+export type ImportedOrderInput = {
+  sourceOrderName: string
+  email: string
+  name?: string | null
+  phone?: string | null
+  financialStatus: FinancialStatus
+  fulfillmentStatus: FulfillmentStatus
+  cancelledAt?: Date | null
+  fulfilledAt?: Date | null
+  currency: string
+  subtotalCents: number
+  shippingCents: number
+  taxCents: number
+  discountCents: number
+  totalCents: number
+  discountCodes: string[]
+  shippingTitle?: string | null
+  shippingAddress?: MailingAddress | null
+  billingAddress?: MailingAddress | null
+  paymentMethodName?: string | null
+  note?: string | null
+  createdAt: Date
+  items: {
+    title: string
+    variantTitle?: string | null
+    sku?: string | null
+    vendor?: string | null
+    imageUrl?: string | null
+    unitPriceCents: number
+    quantity: number
+    discountCents: number
+  }[]
 }
 
 export type ListOrdersInput = {
@@ -115,6 +149,102 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   ])
 
   return { ...order, items, shippingLines, transactions, fulfillments, customer }
+}
+
+export async function removeMany(shopId: string, ids: string[]) {
+  if (!ids.length) return 0
+  const deleted = await db
+    .delete(schema.orders)
+    .where(and(eq(schema.orders.shopId, shopId), inArray(schema.orders.id, ids)))
+    .returning({ id: schema.orders.id })
+  return deleted.length
+}
+
+/**
+ * Adds historical imported orders without reserving stock, capturing payment, or sending order notifications.
+ * Orders whose source name was already imported are skipped, so re-uploading a file is safe.
+ */
+export async function importHistoricalMany(shopId: string, inputs: ImportedOrderInput[]) {
+  return db.transaction(async (tx) => {
+    const imported = []
+    const skipped: string[] = []
+    for (const input of inputs) {
+      const marker = `[Imported order ${input.sourceOrderName}]`
+      const [existing] = await tx
+        .select({ id: schema.orders.id })
+        .from(schema.orders)
+        .where(and(eq(schema.orders.shopId, shopId), sql`left(${schema.orders.note}, ${marker.length}) = ${marker}`))
+        .limit(1)
+      if (existing) { skipped.push(input.sourceOrderName); continue }
+      const customer = await customerService.findOrCreateByEmail(shopId, {
+        email: input.email,
+        name: input.name ?? null,
+        phone: input.phone ?? null,
+        userId: null,
+      }, tx)
+      const [shop] = await tx
+        .update(schema.shops)
+        .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
+        .where(eq(schema.shops.id, shopId))
+        .returning({ orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1` })
+      if (!shop) throw new OrderError('CUSTOMER_NOT_FOUND', 'Shop not found')
+      const importedNote = `${marker}${input.note ? `\n${input.note}` : ''}`
+      const [order] = await tx.insert(schema.orders).values({
+        shopId,
+        orderNumber: shop.orderNumber,
+        customerId: customer.id,
+        email: input.email,
+        phone: input.phone ?? null,
+        financialStatus: input.financialStatus,
+        fulfillmentStatus: input.fulfillmentStatus,
+        cancelledAt: input.cancelledAt ?? null,
+        cancelReason: null,
+        currency: input.currency,
+        subtotalCents: input.subtotalCents,
+        shippingCents: input.shippingCents,
+        taxCents: input.taxCents,
+        discountCents: input.discountCents,
+        totalCents: input.totalCents,
+        taxesIncluded: false,
+        taxLines: [],
+        discountCodes: input.discountCodes,
+        shippingAddress: input.shippingAddress ?? null,
+        billingAddress: input.billingAddress ?? input.shippingAddress ?? null,
+        paymentGateway: 'imported',
+        paymentMethodName: input.paymentMethodName ?? null,
+        note: importedNote,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      }).returning()
+      await tx.insert(schema.orderItems).values(input.items.map((item) => ({
+        orderId: order!.id,
+        productId: null,
+        variantId: null,
+        title: item.title,
+        variantTitle: item.variantTitle ?? null,
+        sku: item.sku ?? null,
+        vendor: item.vendor ?? null,
+        imageUrl: item.imageUrl ?? null,
+        unitPriceCents: item.unitPriceCents,
+        quantity: item.quantity,
+        discountCents: item.discountCents,
+      })))
+      if (input.shippingTitle && input.shippingCents > 0) {
+        await tx.insert(schema.orderShippingLines).values({
+          orderId: order!.id,
+          title: input.shippingTitle,
+          code: null,
+          priceCents: input.shippingCents,
+          discountCents: 0,
+        })
+      }
+      if (input.fulfillmentStatus === 'fulfilled') {
+        await tx.insert(schema.fulfillments).values({ orderId: order!.id, createdAt: input.fulfilledAt ?? input.createdAt })
+      }
+      imported.push(order!)
+    }
+    return { imported, skipped }
+  })
 }
 
 // Pass `conn` to run inside an outer transaction (e.g. checkout completing a cart atomically)
