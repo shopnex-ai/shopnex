@@ -23,8 +23,9 @@
     {%- endif %}
   </div>
   <div class="flex flex-col items-baseline justify-between gap-4 bg-gradient-to-t from-contrast/60 to-contrast/0 px-6 py-8 text-primary sm:px-8 md:px-12">
-    {%- if s.heading != blank %}
-      <h2 class="font-heading max-w-md text-display">{{ s.heading }}</h2>
+    {%- assign heading = s.heading | default: shop.name -%}
+    {%- if heading != blank %}
+      <h2 class="font-heading max-w-md text-display">{{ heading }}</h2>
     {%- endif %}
     {%- if s.text != blank %}
       <p class="m-0 max-w-prose-narrow text-lead font-bold whitespace-pre-line">{{ s.text }}</p>

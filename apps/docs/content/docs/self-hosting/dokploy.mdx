@@ -3,11 +3,13 @@ title: Dokploy & similar platforms
 description: Deploy Shopnex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
 ---
 
+import { SITE_URL } from '@/lib/site'
+
 Platforms that run Docker Compose on your own server can deploy Shopnex from one compose file: the prebuilt image plus a Postgres database. Nothing is built on the server.
 
 ## The compose file
 
-Download it from [shopnex.ai/deploy/docker-compose.yml](https://shopnex.ai/deploy/docker-compose.yml) or copy it:
+Download it from <a href={`${SITE_URL}/deploy/docker-compose.yml`}>the Shopnex site</a> or copy it:
 
 ```yaml
 services:

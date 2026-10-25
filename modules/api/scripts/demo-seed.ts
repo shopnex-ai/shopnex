@@ -17,7 +17,7 @@ import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shop
 
 const ownerEmail = process.env.DEMO_OWNER_EMAIL?.toLowerCase()
 const ownerPassword = process.env.DEMO_OWNER_PASSWORD
-const demoEmail = (process.env.DEMO_EMAIL ?? 'demo@shopnex.ai').toLowerCase()
+const demoEmail = (process.env.DEMO_EMAIL ?? 'demo@example.com').toLowerCase()
 const demoPassword = process.env.DEMO_PASSWORD ?? 'shopnex-demo'
 
 if (!ownerEmail || !ownerPassword) {
@@ -60,7 +60,7 @@ const about = await pageService.create(DEFAULT_SHOP_ID, {
 const contact = await pageService.create(DEFAULT_SHOP_ID, {
   title: 'Contact',
   published: true,
-  bodyHtml: '<p>Questions about Shopnex? Visit shopnex.ai.</p>',
+  bodyHtml: '<p>Questions about Shopnex? Visit the project website.</p>',
 })
 
 await menuService.create(DEFAULT_SHOP_ID, {
