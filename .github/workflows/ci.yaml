@@ -43,17 +43,7 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Build the image
-        run: docker build -f Dockerfile.app --build-arg APP=${{ matrix.app }} -t app-under-test .
-
-      - name: Starts and serves
-        run: |
-          NAME=$(echo "${{ matrix.app }}" | tr a-z- A-Z_)
-          KEY=$(node scripts/app-keygen.mjs | sed -n 's/^private key: //p')
-          docker run -d --name app -p 4600:4600 -e "${NAME}_APP_URL=http://localhost:4600" -e "${NAME}_APP_KEY=$KEY" app-under-test
-          for i in $(seq 1 20); do curl -fsS http://localhost:4600/shopnex/app.js -o /dev/null && exit 0; sleep 1; done
-          docker logs app
-          exit 1
+      - run: scripts/smoke-app.sh ${{ matrix.app }}
 
   e2e:
     name: End-to-end tests
