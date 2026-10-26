@@ -4,7 +4,7 @@ import { ThemesProblem } from './definition'
 import { ThemeEditor } from './[id]/theme-editor'
 
 export function ThemeEditorPage() {
-  const { theme, storefront, definition } = useLoaderData({ from: '/admin/online-store/themes/$id' })
+  const { theme, storefront, definition, previewCatalog } = useLoaderData({ from: '/admin/online-store/themes/$id' })
   if (!definition) {
     return (
       <ThemesProblem>
@@ -23,6 +23,7 @@ export function ThemeEditorPage() {
     <ThemeEditor
       key={theme.id}
       definition={definition}
+      previewCatalog={previewCatalog}
       storefrontUrl={storefront.storefront?.url ?? ''}
       theme={{ id: theme.id, name: theme.name, live: theme.role === 'live' }}
       initialDraft={theme.draft}
