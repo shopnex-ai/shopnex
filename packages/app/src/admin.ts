@@ -79,9 +79,13 @@ export type AppData = {
 
 const SECRET_PREFIX = 'enc:v1:'
 
-export function createAppData(admin: AdminClient, cipher: Promise<CryptoKey>): AppData {
+/** Plain JSON key-value storage; `createAppData` adds secrets on top of any of these */
+export type KeyValue = Pick<AppData, 'get' | 'set' | 'delete'>
+
+/** The default backend: the shop's own storage in Shopnex (Admin API) */
+export function remoteKeyValue(admin: AdminClient): KeyValue {
   const path = (key: string) => `/app-data/${encodeURIComponent(key)}`
-  const data: AppData = {
+  return {
     async get<T>(key: string) {
       try {
         return (await admin.get<{ value: T }>(path(key))).value
@@ -100,6 +104,12 @@ export function createAppData(admin: AdminClient, cipher: Promise<CryptoKey>): A
         if (!(error instanceof ShopnexError && error.status === 404)) throw error
       }
     },
+  }
+}
+
+export function createAppData(kv: KeyValue, cipher: Promise<CryptoKey>): AppData {
+  const data: AppData = {
+    ...kv,
     async getSecret(key) {
       const sealed = await data.get<string>(key)
       if (typeof sealed !== 'string' || !sealed.startsWith(SECRET_PREFIX)) return null

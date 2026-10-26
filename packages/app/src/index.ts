@@ -23,6 +23,7 @@ import {
   createClientAssertion,
   createJwksResolver,
   importPrivateKey,
+  publicKeyOf,
   verify,
   type JwksResolverOptions,
 } from '@shopnex/marketplace-sdk/keys'
@@ -32,7 +33,15 @@ import {
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
 import { verifySessionToken } from '@shopnex/marketplace-sdk/session-token'
-import { createAdminClient, createAppData, deriveDataKey, errorOf, type AdminClient, type AppData } from './admin'
+import {
+  createAdminClient,
+  createAppData,
+  deriveDataKey,
+  errorOf,
+  remoteKeyValue,
+  type AdminClient,
+  type AppData,
+} from './admin'
 import { clientScript } from './client'
 
 export { ShopnexError, type AdminClient, type AppData } from './admin'
@@ -48,6 +57,8 @@ export type ShopnexAppOptions = {
    * Shopnex instance). Default: SHOPNEX_MARKETPLACE_URL; unset, any instance that installed the app is served.
    */
   marketplaceUrl?: string
+  /** Where the app keeps a shop's data. Default: the shop's storage in Shopnex; see `openLocalStore` for SQLite */
+  data?: (instance: string, shopId: string) => AppData
   /** Instances allowed over plain http (default: localhost only) */
   allowHttp?: JwksResolverOptions['allowHttp']
 }
@@ -175,7 +186,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       shopId,
       installationId: first.installationId,
       admin,
-      data: createAppData(admin, dataKey),
+      data: options.data?.(instance, shopId) ?? createAppData(remoteKeyValue(admin), dataKey),
       payments: {
         resolve: async (id, externalId) => void (await admin.post(session(id, 'resolve'), { externalId })),
         reject: async (id, reason) => void (await admin.post(session(id, 'reject'), { reason })),
@@ -282,6 +293,10 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   )
   routes.get('/shopnex/app.js', (c) =>
     c.body(clientScript, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
+  )
+  // Who this app is, for an instance that knows only its URL (bundled apps: Shopnex reads this at startup)
+  routes.get('/.well-known/shopnex-app.json', async (c) =>
+    c.json({ clientId, publicKey: await publicKeyOf(await privateKey) }, 200, { 'cache-control': 'no-store' }),
   )
 
   return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyWebhook }
