@@ -1,5 +1,5 @@
 // Stripe for Shopnex: a bundled payments app on @shopnex/app. Runs next to Shopnex (its own process) and keeps
-// nothing itself: the merchant's Stripe keys live in the shop's app data, encrypted with this app's key.
+// its data in DATA_DIR (SQLite): the merchant's Stripe keys are stored there, encrypted with this app's key.
 //
 //   GET  /                      Embedded settings page (session token)
 //   POST /api/settings          Save the Stripe key (+ webhook secret when local), register "Credit card"
@@ -11,6 +11,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import Stripe from 'stripe'
 import { ShopnexError, createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
+import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
 
 const env = (name: string) => {
@@ -23,8 +24,10 @@ const APP_URL = env('STRIPE_APP_URL').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 
-// Registered by Shopnex itself from the same env (bundled app): see registerBundledApps in @shopnex/apps
-const shopnex = createShopnexApp({ clientId: 'app_stripe', appKey: env('STRIPE_APP_KEY') })
+// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). Shopnex reads the public key
+// from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
+const store = await openLocalStore()
+const shopnex = createShopnexApp({ clientId: 'app_stripe', appKey: store.appKey, data: store.dataFor })
 
 // --- the shop's Stripe connection (app data) ---
 

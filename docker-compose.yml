@@ -32,9 +32,8 @@ services:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/shopnex
       APP_URL: '${APP_URL:?required: public origin of Shopnex}'
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
-      # Registers the Stripe app (Settings → Payments → Install); the same two values as the stripe service
+      # Registers the Stripe app (Settings → Payments → Install): where to find it
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required: public origin of the Stripe app}'
-      STRIPE_APP_KEY: '${STRIPE_APP_KEY:?required: from `pnpm app:keygen`}'
 
   stripe:
     build:
@@ -43,10 +42,13 @@ services:
       args: { APP: stripe }
     ports:
       - '4600:4600'
+    volumes:
+      - stripe_data:/data # the app's identity and its shops' settings: keep it
     environment:
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required}'
-      STRIPE_APP_KEY: '${STRIPE_APP_KEY:?required}'
+      DATA_DIR: /data
 
 volumes:
   db:
   data:
+  stripe_data:

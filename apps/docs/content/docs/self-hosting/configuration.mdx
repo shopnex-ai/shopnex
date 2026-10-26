@@ -5,19 +5,18 @@ description: Environment variables read from the root .env.
 
 `.env` keeps infrastructure only. Shop name, currency, shipping, payments and storefront keys are changed in the admin under **Settings**.
 
-| Variable                                    | Required | Description                                                                                                                                                      |
-| ------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | yes      | PostgreSQL connection string.                                                                                                                                    |
-| `BETTER_AUTH_SECRET`                        | yes      | Long random string. Also used to encrypt provider keys at rest.                                                                                                  |
-| `BETTER_AUTH_URL`                           | yes      | Public origin of the app, e.g. `https://shop.example.com`.                                                                                                       |
-| `APP_URL`                                   | yes      | Public origin used in hosted checkout links.                                                                                                                     |
-| `TENANCY_MODE`                              | no       | `single` (default) or `multi`. See [Tenancy](/docs/concepts/tenancy).                                                                                            |
-| `DEFAULT_SHOP_NAME`                         | no       | Name of the default shop.                                                                                                                                        |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | no       | Enables Google sign-in.                                                                                                                                          |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | no       | Enables GitHub sign-in.                                                                                                                                          |
-| `MARKETPLACE_URL`                           | no       | App Marketplace instances connect to.                                                                                                                            |
-| `STRIPE_APP_URL`                            | no       | Public URL of the bundled Stripe app. With Docker the app runs in its own container (`Dockerfile.app`) on its own public URL, e.g. `https://stripe.example.com`. |
-| `STRIPE_APP_KEY`                            | no       | The Stripe app's private key, from `pnpm app:keygen`. Set the same value in the app's container and in Shopnex's.                                                |
+| Variable                                    | Required | Description                                                                                                                                                                                      |
+| ------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                              | yes      | PostgreSQL connection string.                                                                                                                                                                    |
+| `BETTER_AUTH_SECRET`                        | yes      | Long random string. Also used to encrypt provider keys at rest.                                                                                                                                  |
+| `BETTER_AUTH_URL`                           | yes      | Public origin of the app, e.g. `https://shop.example.com`.                                                                                                                                       |
+| `APP_URL`                                   | yes      | Public origin used in hosted checkout links.                                                                                                                                                     |
+| `TENANCY_MODE`                              | no       | `single` (default) or `multi`. See [Tenancy](/docs/concepts/tenancy).                                                                                                                            |
+| `DEFAULT_SHOP_NAME`                         | no       | Name of the default shop.                                                                                                                                                                        |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | no       | Enables Google sign-in.                                                                                                                                                                          |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | no       | Enables GitHub sign-in.                                                                                                                                                                          |
+| `MARKETPLACE_URL`                           | no       | App Marketplace instances connect to.                                                                                                                                                            |
+| `STRIPE_APP_URL`                            | no       | Public URL of the bundled Stripe app. With Docker the app runs in its own container (`Dockerfile.app`) on its own URL, e.g. `https://stripe.example.com`, with a volume on `/data` for its data. |
 
 <Callout>`apps/admin-ui/.env` is a symlink to the root `.env`; Vite loads it for the admin app.</Callout>
 

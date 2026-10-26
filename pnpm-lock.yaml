@@ -328,6 +328,9 @@ importers:
 
   e2e:
     dependencies:
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../packages/app
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../modules/apps

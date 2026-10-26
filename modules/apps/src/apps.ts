@@ -14,7 +14,7 @@ import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shop
 import {
   decodeJwt,
   generateKeyPair,
-  publicKeyOf,
+  importPublicKey,
   signJwt,
   verifyClientAssertion,
   verifyJwt,
@@ -601,39 +601,72 @@ export async function deleteAppData(token: ApiToken, key: string) {
 
 /**
  * First-party apps that ship with Shopnex and run next to it (e.g. apps/stripe). Each is registered as a
- * custom, managed app from env, with a fixed client id; its public key comes from the private key both sides
- * read (same .env), so staff only click Install. Without its URL and key in env it's left alone.
+ * custom, managed app with a fixed client id, so staff only click Install. Shopnex learns its public key from
+ * the app itself (GET {url}/.well-known/shopnex-app.json), so the only setting is the app's URL; without it the
+ * app is left alone. The URL is operator config, which is why the key is trusted.
  */
 const BUNDLED_APPS = [
   {
     clientId: 'app_stripe',
     urlEnv: 'STRIPE_APP_URL',
-    keyEnv: 'STRIPE_APP_KEY',
     name: 'Stripe',
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
   },
 ]
 
-export async function registerBundledApps() {
+type BundledApp = (typeof BUNDLED_APPS)[number]
+
+async function syncBundledApp(bundled: BundledApp, url: string) {
+  const res = await fetch(`${url}/.well-known/shopnex-app.json`, {
+    redirect: 'error',
+    signal: AbortSignal.timeout(5000),
+  })
+  if (!res.ok) throw new Error(`${url} answered ${res.status}`)
+  const identity = (await res.json()) as { clientId?: string; publicKey?: string }
+  if (identity.clientId !== bundled.clientId || typeof identity.publicKey !== 'string') {
+    throw new Error(`${url} is not the ${bundled.name} app`)
+  }
+  await importPublicKey(identity.publicKey) // throws unless it's an Ed25519 key
+  const values = {
+    source: 'custom' as const,
+    name: bundled.name,
+    description: bundled.description,
+    iconUrl: `${url}/icon.svg`,
+    appUrl: url,
+    redirectUrls: [],
+    scopes: normalizeScopes(bundled.scopes),
+    publicKey: identity.publicKey,
+    updatedAt: new Date(),
+  }
+  await db
+    .insert(schema.apps)
+    .values({ ...values, clientId: bundled.clientId })
+    .onConflictDoUpdate({ target: schema.apps.clientId, set: values })
+}
+
+/**
+ * Registers the configured bundled apps. The app may start after Shopnex, so a failure is retried with a growing
+ * delay; once registered it is checked again now and then, which picks up a replaced key (the app's data folder
+ * was recreated: it is a new app and merchants reconnect).
+ */
+export function registerBundledApps() {
   for (const bundled of BUNDLED_APPS) {
-    const url = process.env[bundled.urlEnv]?.replace(/\/$/, '')
-    const key = process.env[bundled.keyEnv]
-    if (!url || !key) continue
-    const values = {
-      source: 'custom' as const,
-      name: bundled.name,
-      description: bundled.description,
-      iconUrl: `${url}/icon.svg`,
-      appUrl: url,
-      redirectUrls: [],
-      scopes: normalizeScopes(bundled.scopes),
-      publicKey: await publicKeyOf(key),
-      updatedAt: new Date(),
+    const url = process.env[bundled.urlEnv]?.trim().replace(/\/$/, '')
+    if (!url) continue
+    const attempt = async (failures: number) => {
+      let next = 10 * 60_000
+      try {
+        await syncBundledApp(bundled, url)
+        failures = 0
+      } catch (error) {
+        if (failures === 0)
+          console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
+        next = Math.min(5000 * 2 ** failures, 60_000)
+        failures++
+      }
+      setTimeout(() => void attempt(failures), next).unref()
     }
-    await db
-      .insert(schema.apps)
-      .values({ ...values, clientId: bundled.clientId })
-      .onConflictDoUpdate({ target: schema.apps.clientId, set: values })
+    void attempt(0)
   }
 }

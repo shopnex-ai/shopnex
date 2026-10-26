@@ -22,7 +22,7 @@ function startBackgroundServices() {
     startPaymentsWorker()
     startEmailWorker()
     marketplaceService.startMarketplaceSync()
-    await appService.registerBundledApps().catch((error) => console.error('[apps] bundled apps:', error))
+    appService.registerBundledApps()
   })().catch((error) => {
     startupGlobal.shopnexBackgroundServices = undefined
     throw error
