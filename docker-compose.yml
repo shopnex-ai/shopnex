@@ -1,0 +1,54 @@
+# Shopnex with its database and the Stripe app, each in its own container:
+#
+#   cp .env.example .env     # fill the values marked "required" below
+#   docker compose up --build
+#
+# The apps are separate containers on their own public URL (a subdomain each), because browsers and Stripe
+# reach them directly. Put a reverse proxy / platform routing in front of 3000 (Shopnex) and 4600 (Stripe).
+name: shopnex
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: shopnex
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      retries: 10
+
+  admin:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports:
+      - '3000:3000'
+    volumes:
+      - data:/data
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/shopnex
+      APP_URL: '${APP_URL:?required: public origin of Shopnex}'
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      # Registers the Stripe app (Settings → Payments → Install): where to find it
+      STRIPE_APP_URL: '${STRIPE_APP_URL:?required: public origin of the Stripe app}'
+
+  stripe:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args: { APP: stripe }
+    ports:
+      - '4600:4600'
+    volumes:
+      - stripe_data:/data # the app's identity and its shops' settings: keep it
+    environment:
+      STRIPE_APP_URL: '${STRIPE_APP_URL:?required}'
+      DATA_DIR: /data
+
+volumes:
+  db:
+  data:
+  stripe_data:

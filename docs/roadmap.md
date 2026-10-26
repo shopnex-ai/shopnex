@@ -8,7 +8,7 @@ Rule: if a merchant has to touch code, the CLI or `.env` to do something, it's a
 - ✅ first-run setup wizard in the browser (owner account, shop name, currency) — replaces `pnpm create-super-admin` for new installs
 - settings module stored in the database (OAuth, SMTP, payment providers); provider keys encrypted at rest with the app secret
 - ✅ payments: manual methods (bank transfer, cash on delivery…) with checkout details + payment instructions; staff mark orders as paid
-- payments: connect Stripe from the admin — Stripe Checkout (hosted page), webhook marks the order paid
+- ✅ payments: connect Stripe from the admin — Stripe Checkout (hosted page), webhook marks the order paid (`apps/stripe`)
 - ✅ shipping: flat rates with optional free-shipping threshold (one zone: every address)
 - ✅ admin: create products; orders (#1001 numbers, Unpaid/Unfulfilled/Cancelled views, mark as paid, fulfill with tracking, cancel with restock); settings (shop, storefront URL, shipping, payments, storefront keys)
 - ✅ admin: staff (invite by link, roles admin/staff, remove); open sign-up closed
@@ -21,7 +21,7 @@ Rule: if a merchant has to touch code, the CLI or `.env` to do something, it's a
 
 ### 2. Run and update
 
-- Docker image / `docker compose up`, migrations run automatically on boot
+- ✅ Docker image runs the admin, storefront and migrations on boot; each bundled app (Stripe…) is its own small Alpine image (`Dockerfile.app`); `docker-compose.yml` runs them together
 - versioned releases with an upgrade path that never requires forking
 
 ### 3. Extend

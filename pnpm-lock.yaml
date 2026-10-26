@@ -40,6 +40,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.13.0(jiti@2.7.0))
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
       eslint:
         specifier: ^10.13.0
         version: 10.13.0(jiti@2.7.0)
@@ -325,6 +328,9 @@ importers:
 
   e2e:
     dependencies:
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../packages/app
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../modules/apps

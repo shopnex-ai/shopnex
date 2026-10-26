@@ -6,3 +6,6 @@ next-env.d.ts
 
 # Uploaded files (local storage)
 .data
+
+# Bundled apps (scripts/bundle-app.mjs)
+apps/*/dist
