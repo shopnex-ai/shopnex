@@ -1,6 +1,7 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
+import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import { CatalogError } from './errors'
 import { sanitizeHtml } from './html'
@@ -17,11 +18,21 @@ export type CollectionInput = {
   seo?: { title?: string | null; description?: string | null }
 }
 
-export async function list(shopId: string, opts: { limit: number; offset: number }, conn: Conn = db) {
+/** `channelId`: only collections published on that channel now (storefronts) */
+export async function list(
+  shopId: string,
+  opts: { limit: number; offset: number; channelId?: string },
+  conn: Conn = db,
+) {
   return conn
     .select()
     .from(schema.collections)
-    .where(eq(schema.collections.shopId, shopId))
+    .where(
+      and(
+        eq(schema.collections.shopId, shopId),
+        opts.channelId ? publicationService.liveOn('collection', opts.channelId, schema.collections.id) : undefined,
+      ),
+    )
     .orderBy(asc(schema.collections.createdAt))
     .limit(opts.limit)
     .offset(opts.offset)
@@ -41,6 +52,22 @@ export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
     .from(schema.collections)
     .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.slug, slug)))
   return row ?? null
+}
+
+/** Of these collection slugs, the ones published on the channel now (for what a storefront may name or filter by) */
+export async function liveSlugs(shopId: string, channelId: string, slugs: string[], conn: Conn = db) {
+  if (!slugs.length) return new Set<string>()
+  const rows = await conn
+    .select({ slug: schema.collections.slug })
+    .from(schema.collections)
+    .where(
+      and(
+        eq(schema.collections.shopId, shopId),
+        inArray(schema.collections.slug, slugs),
+        publicationService.liveOn('collection', channelId, schema.collections.id),
+      ),
+    )
+  return new Set(rows.map((r) => r.slug))
 }
 
 export async function create(shopId: string, input: CollectionInput) {
@@ -67,6 +94,7 @@ export async function create(shopId: string, input: CollectionInput) {
         seoDescription: input.seo?.description ?? null,
       })
       .returning()
+    await publicationService.autoPublish(shopId, 'collection', row!.id, tx)
     return row!
   })
 }
@@ -76,7 +104,11 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
   return db.transaction(async (tx) => {
     const existing = await getById(shopId, id, tx)
     if (!existing) return null
-    if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, schema.collections, shopId, patch.slug, id))) {
+    if (
+      patch.slug &&
+      patch.slug !== existing.slug &&
+      (await isSlugTaken(tx, schema.collections, shopId, patch.slug, id))
+    ) {
       throw new CatalogError('SLUG_TAKEN', `Slug "${patch.slug}" is already used by another collection`)
     }
     const [row] = await tx
@@ -105,6 +137,7 @@ export async function remove(shopId: string, id: string) {
     .delete(schema.collections)
     .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
     .returning()
+  if (row) await publicationService.removeFor(shopId, 'collection', [id])
   return row ?? null
 }
 
@@ -114,6 +147,11 @@ export async function removeMany(shopId: string, ids: string[]) {
     .delete(schema.collections)
     .where(and(eq(schema.collections.shopId, shopId), inArray(schema.collections.id, ids)))
     .returning({ id: schema.collections.id })
+  await publicationService.removeFor(
+    shopId,
+    'collection',
+    deleted.map((c) => c.id),
+  )
   return deleted.length
 }
 

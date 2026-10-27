@@ -2,7 +2,7 @@ import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'dri
 import { productVariants } from './catalog'
 import { customers } from './customers'
 import { orders } from './orders'
-import { shops } from './tenancy'
+import { channels, shops } from './tenancy'
 
 export const CART_STATUSES = ['active', 'completed'] as const
 export type CartStatus = (typeof CART_STATUSES)[number]
@@ -17,6 +17,10 @@ export const carts = pgTable(
     shopId: text('shop_id')
       .notNull()
       .references(() => shops.id, { onDelete: 'cascade' }),
+    // The channel the buyer shops on: only what's published there can be added, and the order belongs to it
+    channelId: uuid('channel_id')
+      .notNull()
+      .references(() => channels.id, { onDelete: 'cascade' }),
     token: text('token').notNull().unique(),
     status: text('status').$type<CartStatus>().notNull().default('active'),
     customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),

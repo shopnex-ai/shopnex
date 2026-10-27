@@ -1,6 +1,7 @@
 import { ORPCError, implement, os } from '@orpc/server'
 import { AppError, appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
+import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
 import { ContentError } from '@shopnex/content'
@@ -41,6 +42,15 @@ const domainErrors = base.middleware(async ({ next }) => {
         error.code === 'ORDER_NOT_FOUND'
           ? 'NOT_FOUND'
           : error.code === 'ORDER_CANCELLED' || error.code === 'INVALID_STATUS_TRANSITION'
+            ? 'CONFLICT'
+            : 'BAD_REQUEST'
+      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+    }
+    if (error instanceof ChannelError) {
+      const status =
+        error.code === 'CHANNEL_NOT_FOUND'
+          ? 'NOT_FOUND'
+          : error.code === 'HANDLE_TAKEN' || error.code === 'CHANNEL_IN_USE' || error.code === 'CHANNEL_PROTECTED'
             ? 'CONFLICT'
             : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
@@ -190,7 +200,8 @@ const storefrontErrors = base.middleware(async ({ next }) => {
 })
 
 // Public storefront procedures implement the published contract (@shopnex/storefront-sdk).
-// Shop comes from the publishable key, else the default shop (single) / request host (multi).
+// Shop and channel come from the publishable key, else the default shop (single) / request host (multi) and
+// its Online Store.
 export const storefront = implement(storefrontContract)
   .$context<Context>()
   .use(storefrontErrors)
@@ -201,7 +212,7 @@ export const storefront = implement(storefrontContract)
         ? new ORPCError('UNAUTHORIZED', { message: 'Invalid or revoked publishable key' })
         : new ORPCError('NOT_FOUND', { message: 'Shop not found' })
     }
-    return next({ context: { shop: result.shop } })
+    return next({ context: { shop: result.shop, channelId: result.channelId } })
   })
 
 type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>

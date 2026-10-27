@@ -52,6 +52,7 @@ const kindLabel: Record<string, string> = {
 
 export function OrderDetail({ id }: { id: string }) {
   const order = useQuery(orpc.admin.orders.get.queryOptions({ input: { id } }))
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
 
   if (order.isPending) {
     return (
@@ -264,6 +265,12 @@ export function OrderDetail({ id }: { id: string }) {
               <p className="text-muted-foreground">{o.email}</p>
               {o.phone && <p className="text-muted-foreground">{o.phone}</p>}
             </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales channel</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm">{channels.data?.find((c) => c.id === o.channelId)?.name ?? '—'}</CardContent>
           </Card>
           <Card>
             <CardHeader>

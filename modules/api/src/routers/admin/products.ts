@@ -1,12 +1,25 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { publicationService } from '@shopnex/channels'
 import { productService, variantService } from '@shopnex/catalog'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
-import { optionInput, productFields, variantInput, variantsInput } from './schemas'
+import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
 
 const read = scoped('read_products')
 const write = scoped('write_products')
+const readPublications = scoped('read_publications')
+const writePublications = scoped('write_publications')
+
+// The channels each product is published on (a scheduled one has a date in the future)
+async function withPublications<T extends { id: string }>(shopId: string, items: T[]) {
+  const byProduct = await publicationService.listFor(
+    shopId,
+    'product',
+    items.map((i) => i.id),
+  )
+  return items.map((item) => ({ ...item, publications: byProduct.get(item.id) ?? [] }))
+}
 
 export const products = {
   deleteMany: write
@@ -22,10 +35,10 @@ export const products = {
         productService.list(context.shop.id, input),
         productService.count(context.shop.id, input),
       ])
-      return { items: await productService.withDetails(rows), total }
+      return { items: await withPublications(context.shop.id, await productService.withDetails(rows)), total }
     }),
 
-  // Same shape as list items: images, options, variants, collection slugs
+  // Images, options, variants, collection slugs (the list also has `publications`; get those with GET …/publications)
   get: read
     .route({ method: 'GET', path: '/admin/products/{id}' })
     .input(z.object({ id: z.uuid() }))
@@ -33,6 +46,24 @@ export const products = {
       const product = await productService.getById(context.shop.id, input.id)
       if (!product) throw new ORPCError('NOT_FOUND')
       return (await productService.withDetails([product]))[0]!
+    }),
+
+  publications: readPublications
+    .route({ method: 'GET', path: '/admin/products/{id}/publications' })
+    .input(z.object({ id: z.uuid() }))
+    .handler(async ({ input, context }) => {
+      if (!(await productService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      return (await publicationService.listFor(context.shop.id, 'product', [input.id])).get(input.id)!
+    }),
+
+  // Publishes the product on exactly these channels (an unpublished product, by status, is still hidden)
+  setPublications: writePublications
+    .route({ method: 'PUT', path: '/admin/products/{id}/publications' })
+    .input(publicationsInput.extend({ id: z.uuid() }))
+    .handler(async ({ input, context }) => {
+      const publications = await productService.setPublications(context.shop.id, input.id, input.publications)
+      if (!publications) throw new ORPCError('NOT_FOUND')
+      return publications
     }),
 
   create: write

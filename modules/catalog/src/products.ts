@@ -1,6 +1,7 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, count as sqlCount, desc, eq, ilike, inArray, type SQL } from 'drizzle-orm'
+import { publicationService, type PublicationInput } from '@shopnex/channels'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
@@ -92,6 +93,8 @@ export type ListOptions = {
   status?: ProductStatus
   /** Title contains (case-insensitive) */
   search?: string
+  /** Only products published on this channel now. Storefronts pass their channel (with status 'active'). */
+  channelId?: string
 }
 
 function ordering(opts: ListOptions): SQL[] {
@@ -115,11 +118,12 @@ function ordering(opts: ListOptions): SQL[] {
 }
 
 // The collection filter needs the collection join (see list / count)
-function filters(shopId: string, opts: Pick<ListOptions, 'status' | 'collection' | 'search'>) {
+function filters(shopId: string, opts: Pick<ListOptions, 'status' | 'collection' | 'search' | 'channelId'>) {
   return and(
     eq(schema.products.shopId, shopId),
     opts.status ? eq(schema.products.status, opts.status) : undefined,
     opts.collection ? eq(schema.collections.slug, opts.collection) : undefined,
+    opts.channelId ? publicationService.liveOn('product', opts.channelId, schema.products.id) : undefined,
     opts.search ? ilike(schema.products.title, `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`) : undefined,
   )
 }
@@ -150,7 +154,7 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
 // Total for the same filters as `list` (admin pagination)
 export async function count(
   shopId: string,
-  opts: Pick<ListOptions, 'status' | 'collection' | 'search'>,
+  opts: Pick<ListOptions, 'status' | 'collection' | 'search' | 'channelId'>,
   conn: Conn = db,
 ) {
   const query = conn.select({ total: sqlCount() }).from(schema.products)
@@ -177,6 +181,11 @@ export async function removeMany(shopId: string, ids: string[]) {
     .delete(schema.products)
     .where(and(eq(schema.products.shopId, shopId), inArray(schema.products.id, ids)))
     .returning({ id: schema.products.id })
+  await publicationService.removeFor(
+    shopId,
+    'product',
+    deleted.map((p) => p.id),
+  )
   return deleted.length
 }
 
@@ -252,12 +261,27 @@ export async function create(shopId: string, input: ProductInput) {
       })
       .returning()
     await applyVariants(tx, shopId, product!.id, { options: input.options ?? [], variants })
+    // Like Shopify, a new product is on the Online Store (and any channel that wants new products)
+    await publicationService.autoPublish(shopId, 'product', product!.id, tx)
     if (input.images) await replaceImages(tx, product!.id, input.images)
     return withDetailsAndEmit(tx, shopId, product!.id, 'product.created')
   })
 }
 
 type ProductTopic = 'product.created' | 'product.updated'
+
+/**
+ * Publishes the product on exactly these channels and queues `product.updated`, so apps that mirror the
+ * catalog learn it appeared on or left a channel. Null when there's no such product.
+ */
+export async function setPublications(shopId: string, id: string, items: PublicationInput[]) {
+  return db.transaction(async (tx) => {
+    if (!(await getById(shopId, id, tx))) return null
+    await publicationService.set(shopId, 'product', id, items, tx)
+    await emitProductEvent(tx, shopId, id, 'product.updated')
+    return (await publicationService.listFor(shopId, 'product', [id], tx)).get(id)!
+  })
+}
 
 async function reload(conn: Conn, id: string) {
   const [fresh] = await conn.select().from(schema.products).where(eq(schema.products.id, id))

@@ -20,6 +20,7 @@ import {
   shippingRates,
   shops,
   storefrontKeys,
+  CHANNEL_TYPES,
   WEBHOOK_TOPICS,
   webhookEndpoints,
   API_SCOPES,
@@ -125,8 +126,26 @@ export const customerInput = createInsertSchema(customers, {
   phone: (s) => s.min(1),
 }).pick({ email: true, name: true, phone: true })
 
-export const storefrontKeyInput = createInsertSchema(storefrontKeys, { name: (s) => s.min(1).max(100) }).pick({
-  name: true,
+export const storefrontKeyInput = createInsertSchema(storefrontKeys, { name: (s) => s.min(1).max(100) })
+  .pick({ name: true })
+  // The channel the key reads; omitted: the Online Store
+  .extend({ channelId: z.uuid().optional() })
+
+// Settings → Channels. The handle and type are fixed once created.
+export const channelInput = z.object({
+  name: z.string().trim().min(1).max(100),
+  handle: z.string().min(1).max(60).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens').optional(),
+  type: z.enum(CHANNEL_TYPES).optional(),
+  autoPublish: z.boolean().optional(),
+})
+
+// Where a product or collection is published: the full list (channels left out are unpublished). A date in the
+// future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
+export const publicationsInput = z.object({
+  publications: z
+    .array(z.object({ channelId: z.uuid(), publishAt: z.coerce.date().nullish() }))
+    .max(50)
+    .refine((list) => new Set(list.map((p) => p.channelId)).size === list.length, 'Each channel once'),
 })
 
 // Settings → API tokens

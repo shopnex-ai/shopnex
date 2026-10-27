@@ -4,6 +4,7 @@
 // cancelling is its own fact (cancelledAt) and voids or refunds the payment.
 import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
+import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import { notify } from '@shopnex/email'
@@ -33,6 +34,8 @@ export type CreateOrderInput = {
   // Case-insensitive. An unusable code fails the order (the buyer was shown the discounted total).
   discountCode?: string
   note?: string
+  // The channel the order is placed on (checkout passes the cart's); orders made by staff go to the Online Store
+  channelId?: string
 }
 
 export type ImportedOrderInput = {
@@ -166,6 +169,7 @@ export async function removeMany(shopId: string, ids: string[]) {
  */
 export async function importHistoricalMany(shopId: string, inputs: ImportedOrderInput[]) {
   return db.transaction(async (tx) => {
+    const channel = await channelService.getDefault(shopId, tx)
     const imported = []
     const skipped: string[] = []
     for (const input of inputs) {
@@ -192,6 +196,7 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
       const [order] = await tx.insert(schema.orders).values({
         shopId,
         orderNumber: shop.orderNumber,
+        channelId: channel.id,
         customerId: customer.id,
         email: input.email,
         phone: input.phone ?? null,
@@ -262,6 +267,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
           )
         : null
     if (!customer) throw new OrderError('CUSTOMER_NOT_FOUND', 'Customer not found (pass customerId or email)')
+    const channel = await channelService.resolve(shopId, input.channelId, tx)
 
     // Resolve every line to a variant. Prices come from the catalog, never from the caller.
     const variantIds = [...new Set(input.items.flatMap((i) => ('variantId' in i ? [i.variantId] : [])))]
@@ -370,6 +376,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       .values({
         shopId,
         orderNumber: shop!.orderNumber,
+        channelId: channel.id,
         customerId: customer.id,
         email: customer.email,
         phone: input.phone ?? input.shippingAddress?.phone ?? null,

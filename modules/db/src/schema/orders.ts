@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { products, productVariants } from './catalog'
 import { customers } from './customers'
-import { shops } from './tenancy'
+import { channels, shops } from './tenancy'
 
 // Shopify displayFinancialStatus (lowercase). Manual payments stay `pending` until marked as paid.
 export const FINANCIAL_STATUSES = [
@@ -55,6 +55,10 @@ export const orders = pgTable(
       .references(() => shops.id, { onDelete: 'cascade' }),
     // Per-shop sequence starting at 1001 (shops.next_order_number); shown as "#1001"
     orderNumber: integer('order_number').notNull(),
+    // Where the order was placed (Shopify: channel); kept when the order is, so a channel with orders can’t be deleted
+    channelId: uuid('channel_id')
+      .notNull()
+      .references(() => channels.id),
     customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
     // Snapshot of the contact details at order time (customer record may change)
     email: text('email').notNull(),
