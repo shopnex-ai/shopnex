@@ -11,6 +11,7 @@ import {
   themeSourcePath,
   withoutCodeSettings,
 } from '@shopnex/storefront-sdk/theme'
+import { DraftConflictError } from '@shopnex/drafts'
 import { checkLiquid, createPreviewToken, themeService, type ShopTheme } from '@shopnex/theme'
 import { z } from 'zod'
 import { admin } from '../../orpc'
@@ -98,17 +99,19 @@ export const themes = {
       const { files: _, ...theme } = found(await themeService.get(context.shop.id, input.id))
       return theme
     }),
-  // Edit code: the theme's own Liquid files (from the storefront) and the copy's edits of them. A path in
-  // `edited` but not `original` is a snippet the merchant added.
+  // Edit code: the theme's own Liquid files (from the storefront) and the copy's edits of them, drafts included
+  // (`edited`; `changed` are the paths not yet published). A path in `edited` but not `original` is a snippet
+  // the merchant added. `rev` is the draft's, to say which one is being published.
   files: admin
     .route({ method: 'GET', path: '/admin/themes/{id}/files' })
     .input(id)
     .handler(async ({ input, context }) => {
       const copy = found(await themeService.get(context.shop.id, input.id))
       const original = await storefrontSource(context.shop.storefrontUrl, context.shop.id, copy)
-      return { original, edited: copy.files, version: copy.filesVersion }
+      const { files, changed, rev } = await themeService.codeDraft(context.shop.id, copy)
+      return { original, edited: files, changed, rev }
     }),
-  // Saves one file; buyers see it right away when this is the live theme. Liquid that doesn't parse is
+  // Autosaves one file to the draft (a null source puts the theme's own back). Liquid that doesn't parse is
   // refused with where it went wrong.
   saveFile: admin
     .route({ method: 'PUT', path: '/admin/themes/{id}/files' })
@@ -117,25 +120,49 @@ export const themes = {
         path: ThemeFilePath,
         source: z
           .string()
-          .refine((s) => Buffer.byteLength(s) <= MAX_THEME_FILE_BYTES, { message: 'The file is too large' }),
+          .refine((s) => Buffer.byteLength(s) <= MAX_THEME_FILE_BYTES, { message: 'The file is too large' })
+          .nullable(),
       }),
     )
     .handler(async ({ input, context }) => {
       const copy = found(await themeService.get(context.shop.id, input.id))
-      if (!(input.path in copy.files) && Object.keys(copy.files).length >= MAX_THEME_FILES) {
-        throw new ORPCError('BAD_REQUEST', { message: `A theme can have at most ${MAX_THEME_FILES} edited files` })
-      }
-      const problem = checkLiquid(input.source)
-      if (problem) {
-        throw new ORPCError('BAD_REQUEST', { message: `Liquid error: ${problem.message}`, data: problem })
+      if (input.source !== null) {
+        const { files } = await themeService.codeDraft(context.shop.id, copy)
+        if (!(input.path in files) && Object.keys(files).length >= MAX_THEME_FILES) {
+          throw new ORPCError('BAD_REQUEST', { message: `A theme can have at most ${MAX_THEME_FILES} edited files` })
+        }
+        const problem = checkLiquid(input.source)
+        if (problem) {
+          throw new ORPCError('BAD_REQUEST', { message: `Liquid error: ${problem.message}`, data: problem })
+        }
       }
       return found(await themeService.saveFile(context.shop.id, input.id, input.path, input.source))
     }),
-  // Back to the theme's own file, or deletes an added snippet
+  // Back to the theme's own file, or deletes an added snippet, in the draft
   deleteFile: admin
     .route({ method: 'DELETE', path: '/admin/themes/{id}/files' })
     .input(id.extend({ path: ThemeFilePath }))
-    .handler(async ({ input, context }) => found(await themeService.deleteFile(context.shop.id, input.id, input.path))),
+    .handler(async ({ input, context }) =>
+      found(await themeService.saveFile(context.shop.id, input.id, input.path, null)),
+    ),
+  // The code draft goes live when this copy is (buyers get it right away on the live theme). The design
+  // draft isn't touched, and this never changes which theme is live. `rev`: the draft the editor saw.
+  publishCode: admin
+    .route({ method: 'POST', path: '/admin/themes/{id}/files/publish' })
+    .input(id.extend({ rev: z.number().int().nonnegative().optional() }))
+    .handler(async ({ input, context }) => {
+      try {
+        return found(await themeService.publishCode(context.shop.id, input.id, input.rev))
+      } catch (error) {
+        if (error instanceof DraftConflictError) throw new ORPCError('CONFLICT', { message: error.message })
+        throw error
+      }
+    }),
+  // Throws the unpublished code edits away
+  discardCode: admin
+    .route({ method: 'POST', path: '/admin/themes/{id}/files/discard' })
+    .input(id)
+    .handler(async ({ input, context }) => found(await themeService.discardCode(context.shop.id, input.id))),
   // Adds a copy of the storefront's theme when the library has none (the first one goes live). Null: one exists.
   ensure: admin
     .route({ method: 'POST', path: '/admin/themes/ensure' })

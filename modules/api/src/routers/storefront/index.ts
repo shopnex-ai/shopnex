@@ -265,7 +265,8 @@ export const storefrontRouter = storefront.router({
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
       const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
       if (copy) {
-        const files = Object.keys(copy.files).length ? { copyId: copy.id, version: copy.filesVersion } : null
+        const code = await themeService.codeDraft(context.shop.id, copy)
+        const files = Object.keys(code.files).length ? { copyId: copy.id, version: code.version } : null
         return { themeId: copy.themeId, document: copy.draft, preview: true, files }
       }
       const live = await themeService.getLive(context.shop.id)
@@ -276,11 +277,14 @@ export const storefrontRouter = storefront.router({
         files: live?.hasFiles ? { copyId: live.id, version: live.filesVersion } : null,
       }
     }),
-    // Code edits have no draft: the preview and the live theme read the copy's files alike
+    // The preview reads the copy's code draft over its files; the live theme only what was published
     files: storefront.theme.files.handler(async ({ input, context }) => {
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
       const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
-      if (copy) return { copyId: copy.id, version: copy.filesVersion, files: copy.files }
+      if (copy) {
+        const code = await themeService.codeDraft(context.shop.id, copy)
+        return { copyId: copy.id, version: code.version, files: code.files }
+      }
       const live = await themeService.getLive(context.shop.id)
       if (!live) return { copyId: null, version: 0, files: {} }
       const row = await themeService.get(context.shop.id, live.id)

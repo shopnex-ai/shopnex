@@ -1,13 +1,18 @@
 // Theme library storage (admin: Online store → Themes). Every query is scoped by shopId.
 // Documents are validated by the API layer (ThemeDocument in @shopnex/storefront-sdk/theme); this module
 // only stores them: the editor saves a copy's draft, publishing copies the draft to what storefronts see
-// and makes that copy the shop's live theme (at most one). Storefronts render the live copy: one with
+// and makes that copy the shop's live theme (at most one). Code edits (Edit code) have their own draft and
+// publish, apart from the document's (see "Code" below). Storefronts render the live copy: one with
 // several themes renders its theme (`getLive`), a single-theme storefront only when it's a copy of its own.
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
-import type { StoredThemeDocument } from '@shopnex/db/schema'
+import { applyChanges, draftJoin, draftService, hasDraft } from '@shopnex/drafts'
+import type { ShopTheme, StoredThemeDocument } from '@shopnex/db/schema'
 
 const t = schema.shopThemes
+
+/** The entity type of a copy's code draft (entity_drafts) */
+export const CODE_DRAFT = 'theme_code'
 
 const byId = (shopId: string, id: string) => and(eq(t.shopId, shopId), eq(t.id, id))
 
@@ -28,11 +33,12 @@ export async function list(shopId: string, conn: Conn = db) {
       marketplaceThemeId: t.marketplaceThemeId,
       publishedAt: t.publishedAt,
       // jsonb equality ignores key order
-      unpublishedChanges: sql<boolean>`${t.draft} is distinct from ${t.published}`,
+      unpublishedChanges: sql<boolean>`${t.draft} is distinct from ${t.published} or ${hasDraft}`,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
     })
     .from(t)
+    .leftJoin(schema.entityDrafts, draftJoin(CODE_DRAFT, t.shopId, t.id))
     .where(eq(t.shopId, shopId))
     .orderBy(sql`${t.role} = 'live' desc`, desc(t.updatedAt))
 }
@@ -136,37 +142,58 @@ export async function duplicate(shopId: string, id: string, name?: string, conn:
       files: source.files,
     })
     .returning()
+  await draftService.copy(shopId, CODE_DRAFT, id, row!.id, conn)
   return row!
 }
 
-// --- Code (Edit code): edited Liquid files, applied to the copy as soon as they're saved ---
+// --- Code (Edit code): the copy's Liquid files. Edits go to a draft (autosaved, read by the preview);
+// publishing them writes `files`, which buyers get when the copy is live. Apart from the document's draft. ---
 
-/** Adds or replaces one file. Null when there's no such copy. */
-export async function saveFile(shopId: string, id: string, path: string, source: string, conn: Conn = db) {
-  const [row] = await conn
-    .update(t)
-    .set({
-      files: sql`${t.files} || jsonb_build_object(${path}::text, ${source}::text)`,
-      filesVersion: sql`${t.filesVersion} + 1`,
-      updatedAt: new Date(),
-    })
-    .where(byId(shopId, id))
-    .returning({ filesVersion: t.filesVersion, updatedAt: t.updatedAt })
-  return row ?? null
+/** The files as the preview shows them: the copy's, with the draft over them */
+export async function codeDraft(shopId: string, copy: Pick<ShopTheme, 'id' | 'files' | 'filesVersion'>, conn: Conn = db) {
+  const { changes, rev } = await draftService.get(shopId, CODE_DRAFT, copy.id, conn)
+  return {
+    files: applyChanges(copy.files, changes),
+    changed: Object.keys(changes),
+    rev,
+    // Bumps on every save and publish of either, so storefronts can tell versions of the preview apart
+    version: copy.filesVersion + rev,
+  }
 }
 
-/** Back to the theme's own file (or a new snippet is gone). Null when there's no such copy. */
-export async function deleteFile(shopId: string, id: string, path: string, conn: Conn = db) {
-  const [row] = await conn
-    .update(t)
-    .set({
-      files: sql`${t.files} - ${path}::text`,
-      filesVersion: sql`${t.filesVersion} + 1`,
-      updatedAt: new Date(),
-    })
-    .where(byId(shopId, id))
-    .returning({ filesVersion: t.filesVersion, updatedAt: t.updatedAt })
-  return row ?? null
+/** Adds or replaces one file in the draft; a null source puts the theme's own file back (or removes a snippet). Null when there's no such copy. */
+export async function saveFile(shopId: string, id: string, path: string, source: string | null, conn: Conn = db) {
+  if (!(await get(shopId, id, conn))) return null
+  return { rev: await draftService.patch(shopId, CODE_DRAFT, id, { [path]: source }, conn) }
+}
+
+/** Writes the draft to the copy's files. `published` is false when there was nothing to publish. Null when there's no such copy. */
+export async function publishCode(shopId: string, id: string, expectedRev?: number, conn: Conn = db) {
+  if (!(await get(shopId, id, conn))) return null
+  return draftService.publish(
+    shopId,
+    CODE_DRAFT,
+    id,
+    async (tx, changes) => {
+      const [row] = await tx.select({ files: t.files }).from(t).where(byId(shopId, id)).for('update')
+      await tx
+        .update(t)
+        .set({
+          files: applyChanges(row!.files, changes),
+          filesVersion: sql`${t.filesVersion} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(byId(shopId, id))
+    },
+    { expectedRev },
+    conn,
+  )
+}
+
+/** Back to the published files. Null when there's no such copy. */
+export async function discardCode(shopId: string, id: string, conn: Conn = db) {
+  if (!(await get(shopId, id, conn))) return null
+  return { rev: await draftService.discard(shopId, CODE_DRAFT, id, conn) }
 }
 
 export async function rename(shopId: string, id: string, name: string, conn: Conn = db) {
@@ -180,6 +207,7 @@ export async function remove(shopId: string, id: string, conn: Conn = db) {
     .delete(t)
     .where(and(byId(shopId, id), ne(t.role, 'live')))
     .returning({ id: t.id })
+  if (row) await draftService.remove(shopId, CODE_DRAFT, id, conn)
   return row ?? null
 }
 
