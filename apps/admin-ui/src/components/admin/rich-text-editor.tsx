@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils'
 
 // Content styles (no typography plugin in the admin)
 const contentClass = cn(
-  'min-h-64 px-3 py-2 text-sm outline-none',
+  'h-64 max-h-96 overflow-y-auto px-3 py-2 text-sm outline-none',
   '[&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold',
   '[&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6',
   '[&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground',
@@ -138,9 +138,8 @@ export function RichTextEditor({
           id={id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          rows={14}
           spellCheck={false}
-          className="rounded-none border-0 font-mono text-xs shadow-none focus-visible:ring-0"
+          className="h-64 max-h-96 min-h-0 field-sizing-fixed resize-none overflow-y-auto rounded-none border-0 px-3 py-2 text-sm leading-5 font-mono shadow-none focus-visible:ring-0"
         />
       ) : (
         <EditorContent editor={editor} />
