@@ -25,6 +25,7 @@
     "@shopnex/content": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/drafts": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/files": "workspace:*",
     "@shopnex/orders": "workspace:*",

@@ -401,6 +401,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/drafts':
+        specifier: workspace:*
+        version: link:../drafts
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
@@ -586,6 +589,19 @@ importers:
         specifier: ^0.31.11
         version: 0.31.11
 
+  modules/drafts:
+    dependencies:
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+
   modules/email:
     dependencies:
       '@shopnex/db':
@@ -715,6 +731,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/drafts':
+        specifier: workspace:*
+        version: link:../drafts
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)

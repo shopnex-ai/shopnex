@@ -1,14 +1,14 @@
 'use client'
 
 // Edit code (Shopify-style): the theme's Liquid files on the left, the file in the middle, the storefront on
-// the right. The originals come from the storefront; Shopnex keeps the copy's edited files, and a save
-// applies right away (no draft): on the live theme buyers see it at once. Unsaved edits are kept per file
-// while switching between them.
+// the right. The originals come from the storefront; Shopnex keeps the copy's edited files. Edits autosave to
+// a draft (the preview shows it) and Publish writes the draft to the copy: on the live theme buyers see it then.
+// Unsaved edits are kept per file while switching between them.
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, FilePlusIcon, PaletteIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
 import { Badge } from '@/components/ui/badge'
@@ -30,6 +30,7 @@ import { PreviewFrame } from '../preview-frame'
 import { LiquidEditor } from '@/components/admin/liquid-editor'
 import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
 import { PreviewPageSelect } from '../../preview-page-select'
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { previewPageForPath, previewPagePath, templatePreviewPage, type PreviewCatalog } from '../../preview-pages'
 
 type Props = {
@@ -43,6 +44,8 @@ type Props = {
 }
 
 type Problem = { message: string; line: number | null }
+
+const AUTOSAVE_MS = 600
 
 const FOLDER_NAMES: Record<(typeof THEME_CODE_FOLDERS)[number], string> = {
   layout: 'Layout',
@@ -65,21 +68,30 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   const id = theme.id
   const files = useQuery({ ...orpc.admin.themes.files.queryOptions({ input: { id } }), retry: false })
   const original = files.data?.original
-  // What Shopnex has saved, kept up to date by this page's saves
+  // What Shopnex has saved (the draft over the published files), kept up to date by this page's saves
   const [edited, setEdited] = useState<Record<string, string> | null>(null)
+  // The paths whose saved version isn't published yet, and the draft's rev this page last saw
+  const [changed, setChanged] = useState<Set<string>>(new Set())
+  const rev = useRef(0)
   useEffect(() => {
-    if (files.data && !edited) setEdited(files.data.edited)
+    if (files.data && !edited) {
+      setEdited(files.data.edited)
+      setChanged(new Set(files.data.changed))
+      rev.current = files.data.rev
+    }
   }, [files.data, edited])
 
   const [selected, setSelected] = useState('layout/theme.liquid')
   const [buffers, setBuffers] = useState<Record<string, string>>({})
+  const buffersRef = useRef(buffers)
+  buffersRef.current = buffers
   // Remounts the editor when its file's content is replaced from outside (reset)
   const [generation, setGeneration] = useState(0)
   const [problem, setProblem] = useState<(Problem & { path: string }) | null>(null)
   const [showPreview, setShowPreview] = useState(true)
   const [previewPage, setPreviewPage] = useState('home')
   const [reloadKey, setReloadKey] = useState(0)
-  const [confirm, setConfirm] = useState<'reset' | 'delete' | null>(null)
+  const [confirm, setConfirm] = useState<'reset' | 'delete' | 'publish' | 'discard' | null>(null)
   const [adding, setAdding] = useState(false)
 
   const saved = (path: string) => edited?.[path] ?? original?.[path]
@@ -113,14 +125,22 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [dirtyPaths.length])
 
-  const afterChange = (path: string, source: string | undefined) => {
+  // `source` undefined: the copy has no edit of the file anymore. `expected`: the buffer is only dropped when it
+  // still is what was saved, so keystrokes typed during the save aren't lost.
+  const afterChange = (path: string, saved: { source: string | undefined; rev: number }, expected?: string) => {
+    rev.current = Math.max(rev.current, saved.rev)
     setEdited((files) => {
       const next = { ...files }
-      if (source === undefined) delete next[path]
-      else next[path] = source
+      if (saved.source === undefined) delete next[path]
+      else next[path] = saved.source
       return next
     })
-    setBuffers(({ [path]: _, ...rest }) => rest)
+    setChanged((paths) => new Set(paths).add(path))
+    setBuffers((current) => {
+      if (expected !== undefined && current[path] !== expected) return current
+      const { [path]: _, ...rest } = current
+      return rest
+    })
     setProblem((p) => (p?.path === path ? null : p))
     setReloadKey((k) => k + 1)
   }
@@ -129,22 +149,51 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     mutationFn: async (path: string) => {
       const source = content(path)
       // Back to the theme's own content: drop the edit instead of keeping a copy of it
-      if (original?.[path] === source) await client.admin.themes.deleteFile({ id, path })
-      else await client.admin.themes.saveFile({ id, path, source })
-      return { path, source: original?.[path] === source ? undefined : source }
+      const { rev } =
+        original?.[path] === source
+          ? await client.admin.themes.deleteFile({ id, path })
+          : await client.admin.themes.saveFile({ id, path, source })
+      return { path, source: original?.[path] === source ? undefined : source, rev, savedSource: source }
     },
-    onSuccess: ({ path, source }) => {
-      afterChange(path, source)
-      toast.success(theme.live ? `Saved ${fileName(path)} · live in your store` : `Saved ${fileName(path)}`)
-    },
+    onSuccess: ({ path, source, rev, savedSource }) => afterChange(path, { source, rev }, savedSource),
     onError: (error, path) => setProblem({ path, ...problemOf(error) }),
   })
 
+  // One file at a time, so the saves of a file land in the order they were typed. Files whose last save was
+  // refused wait for their next edit.
+  const inFlight = useRef<Promise<void> | null>(null)
+  const problemRef = useRef(problem)
+  problemRef.current = problem
+  const savedRef = useRef(saved)
+  savedRef.current = saved
+  const saveAll = useCallback(async () => {
+    // Wait for a run that's going (its files may be older than what is typed now), then do our own
+    while (inFlight.current) await inFlight.current
+    const run = (async () => {
+      for (const path of Object.keys(buffersRef.current)) {
+        const buffer = buffersRef.current[path]
+        if (buffer === undefined || buffer === savedRef.current(path) || problemRef.current?.path === path) continue
+        await save.mutateAsync(path).catch(() => {})
+      }
+    })()
+    inFlight.current = run
+    try {
+      await run
+    } finally {
+      inFlight.current = null
+    }
+  }, [save])
+  const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(() => void saveAll(), AUTOSAVE_MS)
+  const pending = JSON.stringify(dirtyPaths.map((path) => buffers[path]))
+  useEffect(() => {
+    if (dirtyPaths.length) scheduleAutosave()
+  }, [pending, dirtyPaths.length, scheduleAutosave])
+
   const remove = useMutation({
-    mutationFn: (path: string) => client.admin.themes.deleteFile({ id, path }).then(() => path),
-    onSuccess: (path) => {
+    mutationFn: (path: string) => client.admin.themes.deleteFile({ id, path }).then(({ rev }) => ({ path, rev })),
+    onSuccess: ({ path, rev }) => {
       const added = !(path in (original ?? {}))
-      afterChange(path, undefined)
+      afterChange(path, { source: undefined, rev })
       setConfirm(null)
       setGeneration((g) => g + 1)
       if (added) setSelected('layout/theme.liquid')
@@ -154,9 +203,9 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   })
 
   const create = useMutation({
-    mutationFn: (path: string) => client.admin.themes.saveFile({ id, path, source: '' }).then(() => path),
-    onSuccess: (path) => {
-      afterChange(path, '')
+    mutationFn: (path: string) => client.admin.themes.saveFile({ id, path, source: '' }).then(({ rev }) => ({ path, rev })),
+    onSuccess: ({ path, rev }) => {
+      afterChange(path, { source: '', rev })
       setSelected(path)
       setAdding(false)
     },
@@ -164,8 +213,47 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   })
 
   const onSave = () => {
-    if (isDirty(selected) && !save.isPending) save.mutate(selected)
+    cancelAutosave()
+    void saveAll()
   }
+
+  const publish = useMutation({
+    mutationFn: async () => {
+      cancelAutosave()
+      // Whatever is still typed goes to the draft first; a refused file stops the publish
+      await saveAll()
+      if (Object.keys(buffersRef.current).some((path) => buffersRef.current[path] !== savedRef.current(path))) {
+        throw new Error('Fix the Liquid error first')
+      }
+      return client.admin.themes.publishCode({ id, rev: rev.current })
+    },
+    onSuccess: (result) => {
+      rev.current = result.rev
+      setChanged(new Set())
+      setConfirm(null)
+      toast.success(result.published ? 'Published: your code changes are in the theme' : 'Nothing to publish')
+    },
+    onError: (error) => {
+      setConfirm(null)
+      toast.error(error.message)
+    },
+  })
+
+  const discard = useMutation({
+    mutationFn: () => client.admin.themes.discardCode({ id }),
+    onSuccess: async () => {
+      setConfirm(null)
+      setBuffers({})
+      setProblem(null)
+      setEdited(null)
+      rev.current = 0
+      await files.refetch()
+      setGeneration((g) => g + 1)
+      setReloadKey((k) => k + 1)
+      toast.success('Unpublished code changes discarded')
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   const isEdited = edited ? selected in edited : false
   const isAdded = original ? !(selected in original) : false
@@ -189,8 +277,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         </h1>
         <p className="text-xs text-muted-foreground">
           {theme.live
-            ? 'This is your live theme: saved changes show in your store right away'
-            : 'Saved changes show when this theme is published'}
+            ? 'Changes autosave to a draft you can preview. Publish to update your store.'
+            : 'Changes autosave to a draft you can preview. Your store uses them once this theme is live.'}
         </p>
       </div>
       <Button
@@ -213,8 +301,20 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
           {showPreview ? <EyeOffIcon /> : <EyeIcon />}
         </Button>
       )}
-      <Button size="sm" disabled={!isDirty(selected) || save.isPending} onClick={onSave}>
-        {save.isPending ? 'Saving…' : 'Save'}
+      {changed.size > 0 && (
+        <Button variant="ghost" size="sm" disabled={publish.isPending} onClick={() => setConfirm('discard')}>
+          Discard
+        </Button>
+      )}
+      <Button variant="outline" size="sm" disabled={!dirtyPaths.length || save.isPending} onClick={onSave}>
+        {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Save now' : 'Saved to draft'}
+      </Button>
+      <Button
+        size="sm"
+        disabled={publish.isPending || (!dirtyPaths.length && changed.size === 0)}
+        onClick={() => (theme.live ? setConfirm('publish') : publish.mutate())}
+      >
+        {publish.isPending ? 'Publishing…' : 'Publish'}
       </Button>
     </div>
   )
@@ -274,12 +374,18 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
                       >
                         <span className="truncate">{fileName(path)}</span>
                         {isDirty(path) ? (
-                          <span className="ml-auto size-1.5 shrink-0 rounded-full bg-amber-500" title="Unsaved" />
+                          <span className="ml-auto size-1.5 shrink-0 rounded-full bg-amber-500" title="Saving…" />
                         ) : !(path in original) ? (
                           <span className="ml-auto text-[10px] text-muted-foreground">new</span>
                         ) : (
                           path in edited && (
-                            <span className="ml-auto size-1.5 shrink-0 rounded-full bg-primary" title="Edited" />
+                            <span
+                              className={cn(
+                                'ml-auto size-1.5 shrink-0 rounded-full',
+                                changed.has(path) ? 'bg-sky-500' : 'bg-primary',
+                              )}
+                              title={changed.has(path) ? 'Draft, not published' : 'Edited'}
+                            />
                           )
                         )}
                       </button>
@@ -313,8 +419,12 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
             <LiquidEditor
               key={`${selected}:${generation}`}
               value={content(selected)}
-              onChange={(value) => setBuffers((b) => ({ ...b, [selected]: value }))}
+              onChange={(value) => {
+                setBuffers((b) => ({ ...b, [selected]: value }))
+                setProblem((current) => (current?.path === selected ? null : current))
+              }}
               onSave={onSave}
+              readOnly={publish.isPending}
               line={problem?.path === selected ? problem.line : null}
             />
           </div>
@@ -350,20 +460,40 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirm === 'delete' ? `Delete ${fileName(selected)}?` : `Reset ${fileName(selected)}?`}
+              {confirm === 'publish'
+                ? 'Publish code changes?'
+                : confirm === 'discard'
+                  ? 'Discard unpublished code changes?'
+                  : confirm === 'delete'
+                    ? `Delete ${fileName(selected)}?`
+                    : `Reset ${fileName(selected)}?`}
             </DialogTitle>
             <DialogDescription>
-              {confirm === 'delete'
-                ? 'Templates that render it will fail until you remove those {% render %} tags.'
-                : 'Your changes to this file are deleted and it goes back to the theme’s version.'}
-              {theme.live && ' Buyers see this right away.'}
+              {confirm === 'publish'
+                ? 'Buyers see your code changes right away. Your unpublished design changes stay as they are.'
+                : confirm === 'discard'
+                  ? 'Every file goes back to its published version. Design changes are not affected.'
+                  : confirm === 'delete'
+                    ? 'Templates that render it will fail until you remove those {% render %} tags.'
+                    : 'Your changes to this file are deleted and it goes back to the theme’s version.'}
+              {(confirm === 'delete' || confirm === 'reset') && ' This is a draft until you publish.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-            <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(selected)}>
-              {confirm === 'delete' ? 'Delete file' : 'Reset file'}
-            </Button>
+            {confirm === 'publish' ? (
+              <Button disabled={publish.isPending} onClick={() => publish.mutate()}>
+                Publish
+              </Button>
+            ) : confirm === 'discard' ? (
+              <Button variant="destructive" disabled={discard.isPending} onClick={() => discard.mutate()}>
+                Discard changes
+              </Button>
+            ) : (
+              <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(selected)}>
+                {confirm === 'delete' ? 'Delete file' : 'Reset file'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
