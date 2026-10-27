@@ -2,8 +2,9 @@
 // customize: the editor saves the draft, publishing copies it to `published` and makes the copy the live
 // one, which is what storefronts render. A shop has at most one live copy; the rest are unpublished. The document format belongs to
 // the Storefront API (ThemeDocument in @shopnex/storefront-sdk/theme); it's validated there, not here.
-// `files` are the copy's code edits (Online store → Themes → Edit code): Liquid files that replace the
-// theme's own or add snippets. Unlike the document they have no draft: a save applies to the copy right away.
+// `files` are the copy's published code edits (Online store → Themes → Edit code): Liquid files that replace
+// the theme's own or add snippets. Their draft is not here but in entity_drafts (type "theme_code"), and is
+// published on its own, apart from the document's.
 import { sql } from 'drizzle-orm'
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { shops } from './tenancy'
@@ -38,7 +39,7 @@ export const shopThemes = pgTable(
     publishedAt: timestamp('published_at'),
     // Edited Liquid by path in the theme ("snippets/header.liquid" → source)
     files: jsonb('files').$type<Record<string, string>>().notNull().default({}),
-    // Bumped on every file change, so storefronts know when to reload them
+    // Bumped when files are published, so storefronts know when to reload them
     filesVersion: integer('files_version').notNull().default(0),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

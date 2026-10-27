@@ -15,6 +15,7 @@ type Props = {
   value: string
   onChange: (value: string) => void
   onSave: () => void
+  readOnly?: boolean
   /** Scrolls to and selects this line (1-based) when it changes */
   line?: number | null
 }
@@ -38,10 +39,11 @@ const surface = EditorView.theme({
   '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'color-mix(in oklch, var(--muted) 55%, transparent)' },
 })
 
-export function LiquidEditor({ value, onChange, onSave, line }: Props) {
+export function LiquidEditor({ value, onChange, onSave, line, readOnly = false }: Props) {
   const parent = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView>(null)
   const colors = useRef(new Compartment())
+  const editable = useRef(new Compartment())
   const callbacks = useRef({ onChange, onSave })
   callbacks.current = { onChange, onSave }
   const { resolvedTheme } = useTheme()
@@ -58,6 +60,7 @@ export function LiquidEditor({ value, onChange, onSave, line }: Props) {
           layout,
           Prec.high(surface),
           colors.current.of(dark ? oneDark : []),
+          editable.current.of(EditorView.editable.of(!readOnly)),
           keymap.of([indentWithTab]),
           Prec.highest(
             keymap.of([
@@ -80,6 +83,10 @@ export function LiquidEditor({ value, onChange, onSave, line }: Props) {
     return () => view.current?.destroy()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uncontrolled: `value` is only the start
   }, [])
+
+  useEffect(() => {
+    view.current?.dispatch({ effects: editable.current.reconfigure(EditorView.editable.of(!readOnly)) })
+  }, [readOnly])
 
   useEffect(() => {
     view.current?.dispatch({ effects: colors.current.reconfigure(dark ? oneDark : []) })

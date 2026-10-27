@@ -92,13 +92,14 @@ export function themes(): Theme[] {
 
 export const findTheme = (id: string) => themes().find((t) => t.id === id)
 
-// Engines for copies with edited files, by copy and files version (a save makes a new one). Small: a shop
-// renders its live copy, plus the copy in the editor's preview.
+// Engines for copies with edited files, by copy and files version (a save makes a new one). The preview shows
+// the code draft, so it's keyed apart from the published files. Small: a shop renders its live copy, plus the
+// copy in the editor's preview.
 const MAX_EDITED = 20
 const edited = new Map<string, Promise<Liquid>>()
 
 function editedLiquid(theme: Theme, files: { copyId: string; version: number }, previewToken?: string) {
-  const key = `${theme.id}:${files.copyId}:${files.version}`
+  const key = `${theme.id}:${files.copyId}:${previewToken ? 'draft' : 'live'}:${files.version}`
   let liquid = edited.get(key)
   if (!liquid) {
     liquid = shopnex.theme.files({ previewToken }).then((loaded) => createLiquid(theme.id, theme.dir, loaded.files))
