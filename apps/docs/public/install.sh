@@ -24,8 +24,8 @@ say() { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
 die() { printf '\033[31mError: %s\033[0m\n' "$1" >&2; exit 1; }
 
 # ── checks ───────────────────────────────────────────────────────────────────
-[ "$(uname -s)" = "Linux" ] || die "This installer supports Debian/Ubuntu Linux. On other systems, see https://shopnex.ai/docs/self-hosting"
-command -v apt-get >/dev/null 2>&1 || die "apt-get not found. This installer supports Debian and Ubuntu; see https://shopnex.ai/docs/self-hosting for other systems."
+[ "$(uname -s)" = "Linux" ] || die "This installer supports Debian/Ubuntu Linux. On other systems, see https://docs.shopnex.ai/docs/self-hosting"
+command -v apt-get >/dev/null 2>&1 || die "apt-get not found. This installer supports Debian and Ubuntu; see https://docs.shopnex.ai/docs/self-hosting for other systems."
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
