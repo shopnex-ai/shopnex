@@ -25,7 +25,7 @@ export function ThemeEditorPage() {
       definition={definition}
       previewCatalog={previewCatalog}
       storefrontUrl={storefront.storefront?.url ?? ''}
-      theme={{ id: theme.id, name: theme.name, live: theme.role === 'live' }}
+      theme={{ id: theme.id, name: theme.name, live: theme.role === 'live', codeUnpublished: theme.codeUnpublished }}
       initialDraft={theme.draft}
       initialPublished={theme.published}
     />

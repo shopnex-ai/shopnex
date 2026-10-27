@@ -38,8 +38,11 @@ export const shopThemes = pgTable(
     publishedAt: timestamp('published_at'),
     // Edited Liquid by path in the theme ("snippets/header.liquid" → source)
     files: jsonb('files').$type<Record<string, string>>().notNull().default({}),
-    // Bumped on every file change, so storefronts know when to reload them
+    // Published Liquid overrides; storefront buyers always read this set
     filesVersion: integer('files_version').notNull().default(0),
+    // Autosaved code draft; editor previews read this set until the theme is published
+    draftFiles: jsonb('draft_files').$type<Record<string, string>>().notNull().default({}),
+    draftFilesVersion: integer('draft_files_version').notNull().default(0),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

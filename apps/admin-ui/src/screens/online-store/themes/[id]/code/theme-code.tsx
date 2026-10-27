@@ -1,14 +1,13 @@
 'use client'
 
 // Edit code (Shopify-style): the theme's Liquid files on the left, the file in the middle, the storefront on
-// the right. The originals come from the storefront; Shopnex keeps the copy's edited files, and a save
-// applies right away (no draft): on the live theme buyers see it at once. Unsaved edits are kept per file
-// while switching between them.
+// the right. The originals come from the storefront; Shopnex autosaves edits to the copy's draft files,
+// which the preview reads. Publishing applies those files to the live storefront.
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowLeftIcon, EyeIcon, EyeOffIcon, FilePlusIcon, PaletteIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
 import { Badge } from '@/components/ui/badge'
@@ -73,6 +72,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
 
   const [selected, setSelected] = useState('layout/theme.liquid')
   const [buffers, setBuffers] = useState<Record<string, string>>({})
+  const buffersRef = useRef(buffers)
+  buffersRef.current = buffers
   // Remounts the editor when its file's content is replaced from outside (reset)
   const [generation, setGeneration] = useState(0)
   const [problem, setProblem] = useState<(Problem & { path: string }) | null>(null)
@@ -113,14 +114,18 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [dirtyPaths.length])
 
-  const afterChange = (path: string, source: string | undefined) => {
+  const afterChange = (path: string, source: string | undefined, expected?: string) => {
     setEdited((files) => {
       const next = { ...files }
       if (source === undefined) delete next[path]
       else next[path] = source
       return next
     })
-    setBuffers(({ [path]: _, ...rest }) => rest)
+    setBuffers((current) => {
+      if (expected !== undefined && current[path] !== expected) return current
+      const { [path]: _, ...rest } = current
+      return rest
+    })
     setProblem((p) => (p?.path === path ? null : p))
     setReloadKey((k) => k + 1)
   }
@@ -131,11 +136,10 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
       // Back to the theme's own content: drop the edit instead of keeping a copy of it
       if (original?.[path] === source) await client.admin.themes.deleteFile({ id, path })
       else await client.admin.themes.saveFile({ id, path, source })
-      return { path, source: original?.[path] === source ? undefined : source }
+      return { path, source: original?.[path] === source ? undefined : source, savedSource: source }
     },
-    onSuccess: ({ path, source }) => {
-      afterChange(path, source)
-      toast.success(theme.live ? `Saved ${fileName(path)} · live in your store` : `Saved ${fileName(path)}`)
+    onSuccess: ({ path, source, savedSource }) => {
+      afterChange(path, source, savedSource)
     },
     onError: (error, path) => setProblem({ path, ...problemOf(error) }),
   })
@@ -167,6 +171,18 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     if (isDirty(selected) && !save.isPending) save.mutate(selected)
   }
 
+  const pendingCode = JSON.stringify(dirtyPaths.map((path) => [path, buffers[path]]))
+  useEffect(() => {
+    const timers = dirtyPaths.map((path) =>
+      setTimeout(() => {
+        if (path in buffersRef.current && !save.isPending && problem?.path !== path) save.mutate(path)
+      }, 600),
+    )
+    return () => timers.forEach(clearTimeout)
+    // The serialized pending edits reset the debounce when a buffer changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingCode, save.isPending, problem?.path])
+
   const isEdited = edited ? selected in edited : false
   const isAdded = original ? !(selected in original) : false
 
@@ -189,8 +205,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         </h1>
         <p className="text-xs text-muted-foreground">
           {theme.live
-            ? 'This is your live theme: saved changes show in your store right away'
-            : 'Saved changes show when this theme is published'}
+            ? 'Code changes autosave to the draft preview. Publish to update your store.'
+            : 'Code changes autosave to the draft preview. Publish this theme to make them live.'}
         </p>
       </div>
       <Button
@@ -213,8 +229,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
           {showPreview ? <EyeOffIcon /> : <EyeIcon />}
         </Button>
       )}
-      <Button size="sm" disabled={!isDirty(selected) || save.isPending} onClick={onSave}>
-        {save.isPending ? 'Saving…' : 'Save'}
+      <Button size="sm" variant="outline" disabled={!dirtyPaths.length && !save.isPending} onClick={onSave}>
+        {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Saving shortly…' : 'Saved to draft'}
       </Button>
     </div>
   )
@@ -313,7 +329,10 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
             <LiquidEditor
               key={`${selected}:${generation}`}
               value={content(selected)}
-              onChange={(value) => setBuffers((b) => ({ ...b, [selected]: value }))}
+              onChange={(value) => {
+                setBuffers((b) => ({ ...b, [selected]: value }))
+                setProblem((current) => (current?.path === selected ? null : current))
+              }}
               onSave={onSave}
               line={problem?.path === selected ? problem.line : null}
             />

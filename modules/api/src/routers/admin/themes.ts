@@ -83,7 +83,7 @@ async function storefrontSource(storefrontUrl: string | null, shopId: string, co
 }
 
 // A library entry without its documents and code (`list` entries also say whether the draft differs)
-const summary = ({ shopId: _, draft: __, published: ___, files: ____, ...entry }: ShopTheme) => entry
+const summary = ({ shopId: _, draft: __, published: ___, files: ____, draftFiles: _____, ...entry }: ShopTheme) => entry
 
 // Theme library (Online store → Themes) and its editor. Each theme is a copy the merchant customizes; one
 // is live. Staff only for now; read_themes / write_themes scopes for apps can come later.
@@ -95,8 +95,9 @@ export const themes = {
     .route({ method: 'GET', path: '/admin/themes/{id}' })
     .input(id)
     .handler(async ({ input, context }) => {
-      const { files: _, ...theme } = found(await themeService.get(context.shop.id, input.id))
-      return theme
+      const row = found(await themeService.get(context.shop.id, input.id))
+      const { files: __, draftFiles, ...theme } = row
+      return { ...theme, codeUnpublished: JSON.stringify(draftFiles) !== JSON.stringify(row.files) }
     }),
   // Edit code: the theme's own Liquid files (from the storefront) and the copy's edits of them. A path in
   // `edited` but not `original` is a snippet the merchant added.
@@ -106,10 +107,9 @@ export const themes = {
     .handler(async ({ input, context }) => {
       const copy = found(await themeService.get(context.shop.id, input.id))
       const original = await storefrontSource(context.shop.storefrontUrl, context.shop.id, copy)
-      return { original, edited: copy.files, version: copy.filesVersion }
+      return { original, edited: copy.draftFiles, version: copy.draftFilesVersion }
     }),
-  // Saves one file; buyers see it right away when this is the live theme. Liquid that doesn't parse is
-  // refused with where it went wrong.
+  // Autosaves one file to the draft. Liquid that doesn't parse is refused with where it went wrong.
   saveFile: admin
     .route({ method: 'PUT', path: '/admin/themes/{id}/files' })
     .input(
@@ -122,7 +122,7 @@ export const themes = {
     )
     .handler(async ({ input, context }) => {
       const copy = found(await themeService.get(context.shop.id, input.id))
-      if (!(input.path in copy.files) && Object.keys(copy.files).length >= MAX_THEME_FILES) {
+      if (!(input.path in copy.draftFiles) && Object.keys(copy.draftFiles).length >= MAX_THEME_FILES) {
         throw new ORPCError('BAD_REQUEST', { message: `A theme can have at most ${MAX_THEME_FILES} edited files` })
       }
       const problem = checkLiquid(input.source)
@@ -131,7 +131,7 @@ export const themes = {
       }
       return found(await themeService.saveFile(context.shop.id, input.id, input.path, input.source))
     }),
-  // Back to the theme's own file, or deletes an added snippet
+  // Back to the theme's own file, or deletes an added snippet, in the draft
   deleteFile: admin
     .route({ method: 'DELETE', path: '/admin/themes/{id}/files' })
     .input(id.extend({ path: ThemeFilePath }))

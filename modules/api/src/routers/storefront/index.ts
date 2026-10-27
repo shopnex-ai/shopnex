@@ -265,7 +265,7 @@ export const storefrontRouter = storefront.router({
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
       const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
       if (copy) {
-        const files = Object.keys(copy.files).length ? { copyId: copy.id, version: copy.filesVersion } : null
+        const files = Object.keys(copy.draftFiles).length ? { copyId: copy.id, version: copy.draftFilesVersion } : null
         return { themeId: copy.themeId, document: copy.draft, preview: true, files }
       }
       const live = await themeService.getLive(context.shop.id)
@@ -280,7 +280,7 @@ export const storefrontRouter = storefront.router({
     files: storefront.theme.files.handler(async ({ input, context }) => {
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
       const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
-      if (copy) return { copyId: copy.id, version: copy.filesVersion, files: copy.files }
+      if (copy) return { copyId: copy.id, version: copy.draftFilesVersion, files: copy.draftFiles }
       const live = await themeService.getLive(context.shop.id)
       if (!live) return { copyId: null, version: 0, files: {} }
       const row = await themeService.get(context.shop.id, live.id)

@@ -28,7 +28,7 @@ export async function list(shopId: string, conn: Conn = db) {
       marketplaceThemeId: t.marketplaceThemeId,
       publishedAt: t.publishedAt,
       // jsonb equality ignores key order
-      unpublishedChanges: sql<boolean>`${t.draft} is distinct from ${t.published}`,
+      unpublishedChanges: sql<boolean>`${t.draft} is distinct from ${t.published} or ${t.draftFiles} is distinct from ${t.files}`,
       createdAt: t.createdAt,
       updatedAt: t.updatedAt,
     })
@@ -105,7 +105,10 @@ export async function publish(shopId: string, id: string, conn: Conn = db) {
       .where(and(eq(t.shopId, shopId), eq(t.role, 'live'), ne(t.id, id)))
     const [row] = await tx
       .update(t)
-      .set({ role: 'live', published: sql`${t.draft}`, publishedAt: new Date(), updatedAt: new Date() })
+      .set({
+        role: 'live', published: sql`${t.draft}`, files: sql`${t.draftFiles}`,
+        filesVersion: sql`${t.filesVersion} + 1`, publishedAt: new Date(), updatedAt: new Date(),
+      })
       .where(byId(shopId, id))
       .returning()
     return row!
@@ -116,7 +119,7 @@ export async function publish(shopId: string, id: string, conn: Conn = db) {
 export async function discardDraft(shopId: string, id: string, conn: Conn = db) {
   const [row] = await conn
     .update(t)
-    .set({ draft: sql`${t.published}`, updatedAt: new Date() })
+    .set({ draft: sql`${t.published}`, draftFiles: sql`${t.files}`, draftFilesVersion: sql`${t.draftFilesVersion} + 1`, updatedAt: new Date() })
     .where(and(byId(shopId, id), sql`${t.published} is not null`))
     .returning()
   return row ?? null
@@ -134,24 +137,26 @@ export async function duplicate(shopId: string, id: string, name?: string, conn:
       name: name ?? `Copy of ${source.name}`,
       draft: source.draft,
       files: source.files,
+      draftFiles: source.draftFiles,
+      draftFilesVersion: source.draftFilesVersion,
     })
     .returning()
   return row!
 }
 
-// --- Code (Edit code): edited Liquid files, applied to the copy as soon as they're saved ---
+// --- Code (Edit code): autosaved Liquid draft files, published with the theme ---
 
 /** Adds or replaces one file. Null when there's no such copy. */
 export async function saveFile(shopId: string, id: string, path: string, source: string, conn: Conn = db) {
   const [row] = await conn
     .update(t)
     .set({
-      files: sql`${t.files} || jsonb_build_object(${path}::text, ${source}::text)`,
-      filesVersion: sql`${t.filesVersion} + 1`,
+      draftFiles: sql`${t.draftFiles} || jsonb_build_object(${path}::text, ${source}::text)`,
+      draftFilesVersion: sql`${t.draftFilesVersion} + 1`,
       updatedAt: new Date(),
     })
     .where(byId(shopId, id))
-    .returning({ filesVersion: t.filesVersion, updatedAt: t.updatedAt })
+    .returning({ filesVersion: t.draftFilesVersion, updatedAt: t.updatedAt })
   return row ?? null
 }
 
@@ -160,12 +165,12 @@ export async function deleteFile(shopId: string, id: string, path: string, conn:
   const [row] = await conn
     .update(t)
     .set({
-      files: sql`${t.files} - ${path}::text`,
-      filesVersion: sql`${t.filesVersion} + 1`,
+      draftFiles: sql`${t.draftFiles} - ${path}::text`,
+      draftFilesVersion: sql`${t.draftFilesVersion} + 1`,
       updatedAt: new Date(),
     })
     .where(byId(shopId, id))
-    .returning({ filesVersion: t.filesVersion, updatedAt: t.updatedAt })
+    .returning({ filesVersion: t.draftFilesVersion, updatedAt: t.updatedAt })
   return row ?? null
 }
 

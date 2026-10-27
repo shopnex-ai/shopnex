@@ -44,7 +44,7 @@ type Props = {
   previewCatalog: PreviewCatalog
   storefrontUrl: string
   /** The library copy being edited */
-  theme: { id: string; name: string; live: boolean }
+  theme: { id: string; name: string; live: boolean; codeUnpublished: boolean }
   initialDraft: ThemeDocument
   initialPublished: ThemeDocument | null
 }
@@ -64,6 +64,7 @@ const newSectionId = () => `s${crypto.randomUUID().replaceAll('-', '').slice(0, 
 export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, initialDraft, initialPublished }: Props) {
   const id = theme.id
   const [live, setLive] = useState(theme.live)
+  const [codeUnpublished, setCodeUnpublished] = useState(theme.codeUnpublished)
   const [draft, setDraft] = useState(initialDraft)
   const [published, setPublished] = useState(initialPublished)
   const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
@@ -172,7 +173,7 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
 
   // ── publish / discard ──
   // An unpublished copy can always be published: that makes it the live theme
-  const unpublished = !live || published === null || stable(draft) !== stable(published)
+  const unpublished = !live || published === null || stable(draft) !== stable(published) || codeUnpublished
 
   const publish = useMutation({
     mutationFn: async () => {
@@ -183,6 +184,7 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
     },
     onSuccess: () => {
       setPublished(latest.current)
+      setCodeUnpublished(false)
       setConfirmPublish(false)
       toast.success(
         live ? 'Published: your storefront shows these changes now' : `${theme.name} is now your live theme`,
@@ -202,6 +204,7 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
     onSuccess: ({ draft: restored }) => {
       latest.current = restored
       setDraft(restored)
+      setCodeUnpublished(false)
       setSaveState('saved')
       setSelected(null)
       setConfirmDiscard(false)
