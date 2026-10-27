@@ -35,6 +35,7 @@ import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
 import { PreviewPageSelect } from '../preview-page-select'
 import { previewPagePath, type PreviewCatalog } from '../preview-pages'
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 
 const HOME = 'home'
 const AUTOSAVE_MS = 700
@@ -77,12 +78,16 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
 
   // ── autosave: one request at a time, always the latest document ──
   const latest = useRef(draft)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const inFlight = useRef<Promise<void> | null>(null)
   const dirty = useRef(false)
+  const flushRef = useRef<() => void>(() => {})
+  const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback(
+    () => flushRef.current(),
+    AUTOSAVE_MS,
+  )
 
   const flush = useCallback(async (): Promise<boolean> => {
-    clearTimeout(timer.current)
+    cancelAutosave()
     if (inFlight.current) await inFlight.current
     if (!dirty.current) return true
     dirty.current = false
@@ -106,7 +111,10 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
     if (ok && dirty.current) return flush()
     setSaveState(ok ? 'saved' : 'error')
     return ok
-  }, [id])
+  }, [cancelAutosave, id])
+  flushRef.current = () => {
+    void flush()
+  }
 
   const update = useCallback(
     (next: ThemeDocument) => {
@@ -114,10 +122,9 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
       dirty.current = true
       setDraft(next)
       setSaveState('pending')
-      clearTimeout(timer.current)
-      timer.current = setTimeout(flush, AUTOSAVE_MS)
+      scheduleAutosave()
     },
-    [flush],
+    [scheduleAutosave],
   )
 
   // Leaving with unsaved edits: let the browser ask
@@ -196,7 +203,7 @@ export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, 
 
   const discard = useMutation({
     mutationFn: async () => {
-      clearTimeout(timer.current)
+      cancelAutosave()
       dirty.current = false
       if (inFlight.current) await inFlight.current
       return client.admin.themes.discardDraft({ id })

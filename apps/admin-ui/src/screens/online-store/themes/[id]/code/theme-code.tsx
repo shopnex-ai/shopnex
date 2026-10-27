@@ -30,6 +30,7 @@ import { LiquidEditor } from '@/components/admin/liquid-editor'
 import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
 import { PreviewPageSelect } from '../../preview-page-select'
 import { previewPageForPath, previewPagePath, templatePreviewPage, type PreviewCatalog } from '../../preview-pages'
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 
 type Props = {
   storefrontUrl: string | null
@@ -172,16 +173,15 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   }
 
   const pendingCode = JSON.stringify(dirtyPaths.map((path) => [path, buffers[path]]))
+  const { schedule: scheduleAutosave, cancel: cancelAutosave } = useDebouncedCallback((paths: string[]) => {
+    for (const path of paths) {
+      if (path in buffersRef.current && !save.isPending && problem?.path !== path) save.mutate(path)
+    }
+  }, 600)
   useEffect(() => {
-    const timers = dirtyPaths.map((path) =>
-      setTimeout(() => {
-        if (path in buffersRef.current && !save.isPending && problem?.path !== path) save.mutate(path)
-      }, 600),
-    )
-    return () => timers.forEach(clearTimeout)
-    // The serialized pending edits reset the debounce when a buffer changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingCode, save.isPending, problem?.path])
+    if (save.isPending) cancelAutosave()
+    else scheduleAutosave(dirtyPaths)
+  }, [pendingCode, save.isPending, problem?.path, scheduleAutosave, cancelAutosave])
 
   const isEdited = edited ? selected in edited : false
   const isAdded = original ? !(selected in original) : false
