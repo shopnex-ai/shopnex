@@ -9,7 +9,7 @@ async function all<T extends { handle: string; title: string }>(list: (args: { f
     nodes.push(...page.nodes)
     after = page.pageInfo.hasNextPage ? page.pageInfo.endCursor ?? undefined : undefined
     if (!after) break
-  } while (true)
+  } while (after)
   return nodes
 }
 
