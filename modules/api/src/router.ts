@@ -31,6 +31,7 @@ import { products as adminProducts } from './routers/admin/products'
 import { shop as adminShop } from './routers/admin/shop'
 import { staff as adminStaff } from './routers/admin/staff'
 import { storage as adminStorage } from './routers/admin/storage'
+import { channels as adminChannels } from './routers/admin/channels'
 import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
 import { themes as adminThemes } from './routers/admin/themes'
 import { webhooks as adminWebhooks } from './routers/admin/webhooks'
@@ -62,6 +63,7 @@ export const router = {
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
     files: tagged('Admin · Files').router(adminFiles),
+    channels: tagged('Admin · Channels').router(adminChannels),
     storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
     staff: tagged('Admin · Staff').router(adminStaff),
     storage: tagged('Admin · Storage').router(adminStorage),

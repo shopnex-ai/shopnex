@@ -1,6 +1,7 @@
 'use client'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { FinancialStatusBadge, FulfillmentStatusBadge } from '@/components/admin/order-status'
@@ -18,7 +19,8 @@ import { ImportOrdersDialog } from './import-orders'
 type Order = Outputs['admin']['orders']['list']['items'][number]
 
 const col = columnHelper<Order>()
-const columns = [
+// The channel column only appears once the shop has more than one
+const columnsFor = (channels: { id: string; name: string }[] | undefined) => [
   col.accessor('orderNumber', { header: 'Order', cell: (c) => orderName(c.getValue()) }),
   col.accessor('createdAt', {
     header: 'Date',
@@ -29,6 +31,14 @@ const columns = [
     header: 'Customer',
     cell: ({ row: { original: o } }) => o.customerName ?? o.email,
   }),
+  ...(channels && channels.length > 1
+    ? [
+        col.accessor('channelId', {
+          header: 'Channel',
+          cell: ({ row: { original: o } }) => channels.find((c) => c.id === o.channelId)?.name ?? '—',
+        }),
+      ]
+    : []),
   col.accessor('financialStatus', {
     header: 'Payment',
     cell: ({ row: { original: o } }) => <FinancialStatusBadge status={o.financialStatus} />,
@@ -72,6 +82,8 @@ const VIEWS: { key: string; label: string; filters: ListFilters; empty: string }
 export function OrderList() {
   const queryClient = useQueryClient()
   const { page, pageSize, search, range, setPage, setSearch, filter, setFilter } = useListParams()
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  const columns = useMemo(() => columnsFor(channels.data), [channels.data])
   const view = VIEWS.find((v) => v.key === filter('view')) ?? VIEWS[0]!
   const { data, error, isPending } = useQuery({
     ...orpc.admin.orders.list.queryOptions({ input: { ...range, ...view.filters, search: search || undefined } }),

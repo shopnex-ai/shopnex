@@ -4,6 +4,7 @@
 //   - a variant picks exactly one value per option; each combination exists at most once per product
 //   - variants are the source of truth for price; products.price_cents is a cached minimum (syncPriceCache)
 import { and, asc, eq, inArray, min, ne, notInArray, sql } from 'drizzle-orm'
+import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { ProductVariant } from '@shopnex/db/schema'
 import { CatalogError } from './errors'
@@ -375,7 +376,8 @@ const orderSnapshotFields = {
   >`coalesce(${schema.productVariants.imageUrl}, (select ${schema.productImages.url} from ${schema.productImages} where ${schema.productImages.productId} = ${schema.products.id} order by ${schema.productImages.position} limit 1))`,
 }
 
-export async function getManyByIds(shopId: string, ids: string[], conn: Conn = db) {
+/** `channelId`: only variants of products published on that channel now */
+export async function getManyByIds(shopId: string, ids: string[], conn: Conn = db, opts: { channelId?: string } = {}) {
   if (ids.length === 0) return []
   return conn
     .select({
@@ -386,7 +388,13 @@ export async function getManyByIds(shopId: string, ids: string[], conn: Conn = d
     })
     .from(schema.productVariants)
     .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(and(eq(schema.productVariants.shopId, shopId), inArray(schema.productVariants.id, ids)))
+    .where(
+      and(
+        eq(schema.productVariants.shopId, shopId),
+        inArray(schema.productVariants.id, ids),
+        opts.channelId ? publicationService.liveOn('product', opts.channelId, schema.products.id) : undefined,
+      ),
+    )
 }
 
 // For orders: all variants of the given products (with product title), scoped to the shop

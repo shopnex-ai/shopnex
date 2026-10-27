@@ -1,3 +1,4 @@
+import { channelService } from '@shopnex/channels'
 import type { Shop } from '@shopnex/db/schema'
 import { isMultiTenant } from './config'
 import { getShopByStorefrontKey } from './keys'
@@ -24,21 +25,31 @@ function hostOf(headers: Headers) {
 
 export const PUBLISHABLE_KEY_HEADER = 'x-shopnex-key'
 
-export type StorefrontResolution = { ok: true; shop: Shop } | { ok: false; reason: 'invalid_key' | 'shop_not_found' }
+// channelId: what the storefront sees is what's published on this channel
+export type StorefrontResolution =
+  | { ok: true; shop: Shop; channelId: string }
+  | { ok: false; reason: 'invalid_key' | 'shop_not_found' }
 
 // Storefront, in order:
-//   1. x-shopnex-key header → that key's shop (external storefronts; an invalid key is an error, never a fallback)
+//   1. x-shopnex-key header → that key's shop and channel (external storefronts; an invalid key is an error,
+//      never a fallback)
 //   2. single mode → default shop
 //   3. multi mode  → shop mapped to the request host
+// Without a key the channel is the shop's Online Store.
 export async function resolveStorefrontShop(headers: Headers): Promise<StorefrontResolution> {
   const key = headers.get(PUBLISHABLE_KEY_HEADER)
   if (key) {
-    const shop = await getShopByStorefrontKey(key)
-    return shop ? { ok: true, shop } : { ok: false, reason: 'invalid_key' }
+    const found = await getShopByStorefrontKey(key)
+    return found ? { ok: true, shop: found.shop, channelId: found.channelId } : { ok: false, reason: 'invalid_key' }
   }
-  if (!isMultiTenant) return { ok: true, shop: await ensureDefaultShop() }
+  if (!isMultiTenant) {
+    const shop = await ensureDefaultShop()
+    return { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+  }
   const shop = await getShopByDomain(hostOf(headers))
-  return shop ? { ok: true, shop } : { ok: false, reason: 'shop_not_found' }
+  return shop
+    ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+    : { ok: false, reason: 'shop_not_found' }
 }
 
 // Admin: single → default shop; multi → session's active shop, else the user's first shop.

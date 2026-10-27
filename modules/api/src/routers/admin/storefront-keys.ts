@@ -12,7 +12,7 @@ export const storefrontKeys = {
   create: shopManager
     .route({ method: 'POST', path: '/admin/storefront-keys' })
     .input(storefrontKeyInput)
-    .handler(({ input, context }) => createStorefrontKey(context.shop.id, input.name)),
+    .handler(({ input, context }) => createStorefrontKey(context.shop.id, input.name, input.channelId)),
 
   revoke: shopManager
     .route({ method: 'POST', path: '/admin/storefront-keys/{id}/revoke' })

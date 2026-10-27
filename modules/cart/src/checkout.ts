@@ -183,13 +183,14 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
     const items = await cartService.lineInputs(tx, cart.id)
     if (items.length === 0) throw new CartError('EMPTY_CART', 'Cart is empty')
 
-    // A product may have been unpublished/archived since it was added
+    // A product may have been unpublished (from this channel) or archived since it was added
     const sellable = new Set(
       (
         await variantService.getManyByIds(
           shopId,
           items.map((i) => i.variantId),
           tx,
+          { channelId: cart.channelId },
         )
       )
         .filter((r) => r.productStatus === 'active')
@@ -232,6 +233,7 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
           instructions: method.instructions,
         },
         discountCode: cart.discountCode ?? undefined,
+        channelId: cart.channelId,
       },
       tx,
     )

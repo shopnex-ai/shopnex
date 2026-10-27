@@ -218,6 +218,13 @@
       "when": 1793103281789,
       "tag": "0030_theme_code_drafts",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793104821377,
+      "tag": "0031_sales_channels",
+      "breakpoints": true
     }
   ]
 }

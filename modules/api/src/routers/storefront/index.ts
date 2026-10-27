@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { cartService, checkoutService, type CartView } from '@shopnex/cart'
+import { publicationService } from '@shopnex/channels'
 import {
   collectionService,
   escapeHtml,
@@ -184,10 +185,25 @@ async function paginate<T>(
   return { nodes, pageInfo: { hasNextPage, endCursor: nodes.length ? encodeCursor(offset + nodes.length) : null } }
 }
 
-// Storefronts only ever see active products
-async function activeProduct(row: Awaited<ReturnType<typeof productService.getById>>, currency: string) {
-  if (!row || row.status !== 'active') throw new ORPCError('NOT_FOUND')
-  return toProduct((await productService.withDetails([row]))[0]!, currency)
+// Storefronts only ever see active products that are published on their channel
+async function activeProduct(
+  row: Awaited<ReturnType<typeof productService.getById>>,
+  currency: string,
+  channelId: string,
+) {
+  if (!row || row.status !== 'active' || !(await publicationService.isLive(row.shopId, channelId, 'product', row.id))) {
+    throw new ORPCError('NOT_FOUND')
+  }
+  const [product] = await withLiveCollections(await productService.withDetails([row]), row.shopId, channelId)
+  return toProduct(product!, currency)
+}
+
+// A product names only the collections published on the storefront's channel
+async function withLiveCollections(products: ProductWithDetails[], shopId: string, channelId: string) {
+  const live = await collectionService.liveSlugs(shopId, channelId, [
+    ...new Set(products.flatMap((p) => p.collectionSlugs)),
+  ])
+  return products.map((p) => ({ ...p, collectionSlugs: p.collectionSlugs.filter((slug) => live.has(slug)) }))
 }
 
 export const storefrontRouter = storefront.router({
@@ -202,6 +218,13 @@ export const storefrontRouter = storefront.router({
   },
   products: {
     list: storefront.products.list.handler(async ({ input, context }) => {
+      // A collection that isn't published on this channel doesn't exist here, so it has no products either
+      if (
+        input.collection &&
+        !(await collectionService.liveSlugs(context.shop.id, context.channelId, [input.collection])).size
+      ) {
+        return { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }
+      }
       const page = await paginate(input, async (limit, offset) =>
         productService.withDetails(
           await productService.list(context.shop.id, {
@@ -211,26 +234,39 @@ export const storefrontRouter = storefront.router({
             sortKey: input.sortKey,
             reverse: input.reverse,
             status: 'active',
+            channelId: context.channelId,
           }),
         ),
       )
-      return { ...page, nodes: page.nodes.map((p) => toProduct(p, context.shop.currency)) }
+      const nodes = await withLiveCollections(page.nodes, context.shop.id, context.channelId)
+      return { ...page, nodes: nodes.map((p) => toProduct(p, context.shop.currency)) }
     }),
     get: storefront.products.get.handler(async ({ input, context }) =>
-      activeProduct(await productService.getById(context.shop.id, input.id), context.shop.currency),
+      activeProduct(await productService.getById(context.shop.id, input.id), context.shop.currency, context.channelId),
     ),
     getByHandle: storefront.products.getByHandle.handler(async ({ input, context }) =>
-      activeProduct(await productService.getBySlug(context.shop.id, input.handle), context.shop.currency),
+      activeProduct(
+        await productService.getBySlug(context.shop.id, input.handle),
+        context.shop.currency,
+        context.channelId,
+      ),
     ),
   },
   collections: {
     list: storefront.collections.list.handler(async ({ input, context }) => {
-      const page = await paginate(input, (limit, offset) => collectionService.list(context.shop.id, { limit, offset }))
+      const page = await paginate(input, (limit, offset) =>
+        collectionService.list(context.shop.id, { limit, offset, channelId: context.channelId }),
+      )
       return { ...page, nodes: page.nodes.map(toCollection) }
     }),
     getByHandle: storefront.collections.getByHandle.handler(async ({ input, context }) => {
       const collection = await collectionService.getBySlug(context.shop.id, input.handle)
-      if (!collection) throw new ORPCError('NOT_FOUND')
+      if (
+        !collection ||
+        !(await publicationService.isLive(context.shop.id, context.channelId, 'collection', collection.id))
+      ) {
+        throw new ORPCError('NOT_FOUND')
+      }
       return toCollection(collection)
     }),
   },
@@ -304,6 +340,7 @@ export const storefrontRouter = storefront.router({
       toCart(
         await cartService.create(
           context.shop.id,
+          context.channelId,
           input.lines?.map((l) => ({ variantId: l.merchandiseId, quantity: l.quantity })),
         ),
       ),

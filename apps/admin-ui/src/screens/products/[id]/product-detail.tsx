@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
 
@@ -188,6 +189,8 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
                 />
               </CardContent>
             </Card>
+
+            <ProductChannelsCard productId={product.id} />
 
             <Card>
               <CardHeader>
