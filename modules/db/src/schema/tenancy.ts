@@ -86,6 +86,34 @@ export const STAFF_ROLES = ['admin', 'member'] as const
 export type StaffRole = (typeof STAFF_ROLES)[number]
 export type ShopMember = typeof shopMembers.$inferSelect
 
+// Where a shop sells (Shopify: sales channels): the Online Store, a headless storefront, later POS and the like.
+// What a channel shows is decided by resource_publications; storefront keys, carts and orders belong to one.
+export const CHANNEL_TYPES = ['online_store', 'headless'] as const
+export type ChannelType = (typeof CHANNEL_TYPES)[number]
+
+// Every shop has this channel (created lazily, and by the migration for existing shops); it can't be deleted
+export const DEFAULT_CHANNEL_HANDLE = 'online-store'
+
+export const channels = pgTable(
+  'channels',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    // Unique per shop
+    handle: text('handle').notNull(),
+    name: text('name').notNull(),
+    type: text('type').$type<ChannelType>().notNull().default('headless'),
+    // New products and collections are published here when they're created (as the Online Store does in Shopify)
+    autoPublish: boolean('auto_publish').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('channels_shop_handle_idx').on(t.shopId, t.handle)],
+)
+
+export type Channel = typeof channels.$inferSelect
+
 // Publishable keys identify a shop for external storefronts (sent as x-shopnex-key).
 // They are public (shipped in browser code): they select a shop, they don't grant extra access.
 export const storefrontKeys = pgTable('storefront_keys', {
@@ -95,6 +123,10 @@ export const storefrontKeys = pgTable('storefront_keys', {
     .references(() => shops.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   token: text('token').notNull().unique(),
+  // The channel this key reads: storefronts using it see what's published there
+  channelId: uuid('channel_id')
+    .notNull()
+    .references(() => channels.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   revokedAt: timestamp('revoked_at'),
 })
@@ -112,6 +144,9 @@ export const API_SCOPES = [
   'write_customers',
   'read_discounts',
   'write_discounts',
+  // Sales channels and what's published on them
+  'read_publications',
+  'write_publications',
   // Payments apps: resolve / reject the payment and refund sessions sent to them
   'read_payment_sessions',
   'write_payment_sessions',

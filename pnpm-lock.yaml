@@ -337,6 +337,9 @@ importers:
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../modules/cart
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../modules/channels
       '@shopnex/db':
         specifier: workspace:*
         version: link:../modules/db
@@ -392,6 +395,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/content':
         specifier: workspace:*
         version: link:../content
@@ -500,6 +506,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -522,6 +531,9 @@ importers:
 
   modules/catalog:
     dependencies:
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -538,6 +550,19 @@ importers:
       '@types/sanitize-html':
         specifier: ^2.16.2
         version: 2.16.2
+
+  modules/channels:
+    dependencies:
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
 
   modules/content:
     dependencies:
@@ -657,6 +682,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/customers':
         specifier: workspace:*
         version: link:../customers
@@ -715,6 +743,9 @@ importers:
 
   modules/tenancy:
     dependencies:
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db

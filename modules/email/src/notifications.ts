@@ -432,6 +432,7 @@ function sampleOrder(shop: Shop): OrderView {
   return {
     id: 'sample',
     shopId: shop.id,
+    channelId: 'sample',
     orderNumber: 1001,
     customerId: null,
     email: 'jamie@example.com',

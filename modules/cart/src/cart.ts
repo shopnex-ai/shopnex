@@ -172,7 +172,8 @@ export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
 async function setLines(conn: Conn, cart: Cart, lines: LineInput[]) {
   const ids = [...new Set(lines.map((l) => l.variantId))]
   const found = new Map(
-    (await variantService.getManyByIds(cart.shopId, ids, conn))
+    // Only what's published on the cart's channel can be bought there
+    (await variantService.getManyByIds(cart.shopId, ids, conn, { channelId: cart.channelId }))
       .filter((r) => r.productStatus === 'active')
       .map((r) => [r.variant.id, r.variant]),
   )
@@ -235,9 +236,13 @@ async function resolveLineIds(conn: Conn, cartId: string, lineIds: string[]) {
   return lines
 }
 
-export async function create(shopId: string, lines: LineInput[] = []) {
+/** `channelId`: the channel the buyer shops on (the storefront's; see resolveStorefrontShop) */
+export async function create(shopId: string, channelId: string, lines: LineInput[] = []) {
   return db.transaction(async (tx) => {
-    const [cart] = await tx.insert(schema.carts).values({ shopId, token: newToken(), expiresAt: expiry() }).returning()
+    const [cart] = await tx
+      .insert(schema.carts)
+      .values({ shopId, channelId, token: newToken(), expiresAt: expiry() })
+      .returning()
     if (lines.length) await setLines(tx, cart!, mergeAdds([], lines))
     return view(cart!, tx)
   })

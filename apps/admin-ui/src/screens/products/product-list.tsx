@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImageIcon } from 'lucide-react'
 import { useMemo } from 'react'
+import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { PageHeader } from '@/components/admin/page-header'
@@ -36,7 +37,7 @@ function price(p: Product, currency: string) {
   return min === max ? formatMoney(min, currency) : `${formatMoney(min, currency)} – ${formatMoney(max, currency)}`
 }
 
-const columnsFor = (currency: string) => {
+const columnsFor = (currency: string, channels: { id: string; name: string }[] | undefined) => {
   const col = columnHelper<Product>()
   return [
     col.accessor('title', {
@@ -63,6 +64,12 @@ const columnsFor = (currency: string) => {
         </Badge>
       ),
     }),
+    col.display({
+      id: 'channels',
+      header: 'Sales channels',
+      cell: ({ row }) =>
+        publishedOn(row.original.publications, channels) ?? <span className="text-muted-foreground">Not published</span>,
+    }),
     col.display({ id: 'inventory', header: 'Inventory', cell: ({ row }) => inventory(row.original) }),
     col.display({
       id: 'price',
@@ -80,7 +87,8 @@ const columnsFor = (currency: string) => {
 
 export function ProductList({ currency }: { currency: string }) {
   const queryClient = useQueryClient()
-  const columns = useMemo(() => columnsFor(currency), [currency])
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  const columns = useMemo(() => columnsFor(currency, channels.data), [currency, channels.data])
   const { page, pageSize, search, range, setPage, setSearch } = useListParams()
   const { data, error, isPending } = useQuery({
     ...orpc.admin.products.list.queryOptions({ input: { ...range, search: search || undefined } }),

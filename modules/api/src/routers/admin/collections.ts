@@ -1,9 +1,10 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { collectionService } from '@shopnex/catalog'
+import { publicationService } from '@shopnex/channels'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
-import { collectionInput } from './schemas'
+import { collectionInput, publicationsInput } from './schemas'
 
 const membership = z.object({ id: z.uuid(), productId: z.uuid() })
 
@@ -11,6 +12,8 @@ const id = z.object({ id: z.uuid() })
 
 const read = scoped('read_products')
 const write = scoped('write_products')
+const readPublications = scoped('read_publications')
+const writePublications = scoped('write_publications')
 
 export const collections = {
   list: read
@@ -22,7 +25,34 @@ export const collections = {
         context.shop.id,
         rows.map((r) => r.id),
       )
-      return rows.map((r) => ({ ...r, productCount: counts.get(r.id) ?? 0 }))
+      const publications = await publicationService.listFor(
+        context.shop.id,
+        'collection',
+        rows.map((r) => r.id),
+      )
+      return rows.map((r) => ({
+        ...r,
+        productCount: counts.get(r.id) ?? 0,
+        publications: publications.get(r.id) ?? [],
+      }))
+    }),
+
+  publications: readPublications
+    .route({ method: 'GET', path: '/admin/collections/{id}/publications' })
+    .input(id)
+    .handler(async ({ input, context }) => {
+      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id])).get(input.id)!
+    }),
+
+  // Publishes the collection on exactly these channels
+  setPublications: writePublications
+    .route({ method: 'PUT', path: '/admin/collections/{id}/publications' })
+    .input(publicationsInput.extend(id.shape))
+    .handler(async ({ input, context }) => {
+      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      await publicationService.set(context.shop.id, 'collection', input.id, input.publications)
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id])).get(input.id)!
     }),
 
   deleteMany: write

@@ -3,6 +3,7 @@
 // Rows are inserted directly (no stock changes, webhooks or emails). Customers use @demo.shopnex.test addresses,
 // which is also how a previous run is recognised (a domain nothing else uses, since --replace deletes by it) and replaced.
 import { and, eq, inArray, like, sql } from 'drizzle-orm'
+import { channelService } from '@shopnex/channels'
 import { db, schema } from '@shopnex/db'
 
 const DEMO_DOMAIN = '@demo.shopnex.test'
@@ -56,6 +57,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
 
   const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
   if (!shop) throw new Error(`Shop "${shopId}" not found.`)
+  const channel = await channelService.getDefault(shopId)
 
   const variants = await db
     .select({
@@ -193,6 +195,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
         .insert(schema.orders)
         .values({
           shopId,
+          channelId: channel.id,
           orderNumber: orderNumber++,
           customerId: customerIds.get(o.person)!,
           email: person.email,

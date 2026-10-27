@@ -5,6 +5,7 @@ import { PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { collectionInput } from '@shopnex/api/schemas'
+import { ChannelPicker, publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { FormError, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
@@ -30,6 +31,7 @@ export function CollectionList() {
   const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.collections.list.queryOptions({ input: { limit: 100 } }))
 
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
   const col = columnHelper<Collection>()
   const columns = [
     col.accessor('title', {
@@ -40,6 +42,12 @@ export function CollectionList() {
           <span className="font-mono text-xs text-muted-foreground">/{c.slug}</span>
         </span>
       ),
+    }),
+    col.display({
+      id: 'channels',
+      header: 'Sales channels',
+      cell: ({ row: { original: c } }) =>
+        publishedOn(c.publications, channels.data) ?? <span className="text-muted-foreground">Not published</span>,
     }),
     col.accessor('productCount', {
       header: 'Products',
@@ -175,6 +183,7 @@ function CollectionDialog({ collection }: { collection?: Collection }) {
             </Field>
           </FieldGroup>
         </form>
+        {collection && open && <CollectionChannels collection={collection} />}
         {collection && open && <CollectionProducts collectionId={collection.id} />}
       </DialogContent>
     </Dialog>
@@ -255,6 +264,29 @@ function CollectionProducts({ collectionId }: { collectionId: string }) {
           </SelectContent>
         </Select>
       )}
+    </div>
+  )
+}
+
+function CollectionChannels({ collection }: { collection: Collection }) {
+  const queryClient = useQueryClient()
+  const save = useMutation(orpc.admin.collections.setPublications.mutationOptions())
+  return (
+    <div className="space-y-2 border-t pt-4">
+      <p className="text-sm font-medium">Sales channels</p>
+      <ChannelPicker
+        publications={collection.publications}
+        isPending={false}
+        saving={save.isPending}
+        onSave={async (channelIds) => {
+          try {
+            await save.mutateAsync({ id: collection.id, publications: channelIds.map((channelId) => ({ channelId })) })
+            await queryClient.invalidateQueries({ queryKey: orpc.admin.collections.key() })
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not save sales channels')
+          }
+        }}
+      />
     </div>
   )
 }

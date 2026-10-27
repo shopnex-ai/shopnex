@@ -35,6 +35,7 @@ import { Route as AdminOnlineStoreThemesRouteRouteImport } from './routes/admin/
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
+import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
 import { Route as AdminSettingsNotificationsRouteRouteImport } from './routes/admin/settings/notifications/route'
@@ -185,6 +186,11 @@ const AdminSettingsApiTokensRoute = AdminSettingsApiTokensRouteImport.update({
   path: '/api-tokens',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsChannelsRoute = AdminSettingsChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsEmailRoute = AdminSettingsEmailRouteImport.update({
   id: '/email',
   path: '/email',
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
+  '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
+  '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -389,6 +397,7 @@ export interface FileRoutesById {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
+  '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
+    | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/payments'
@@ -478,6 +488,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
+    | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/payments'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
+    | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/payments'
@@ -728,6 +740,13 @@ declare module '@tanstack/react-router' {
       path: '/api-tokens'
       fullPath: '/admin/settings/api-tokens'
       preLoaderRoute: typeof AdminSettingsApiTokensRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/channels': {
+      id: '/admin/settings/channels'
+      path: '/channels'
+      fullPath: '/admin/settings/channels'
+      preLoaderRoute: typeof AdminSettingsChannelsRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/email': {
@@ -973,6 +992,7 @@ const AdminSettingsNotificationsRouteRouteWithChildren =
 interface AdminSettingsRouteRouteChildren {
   AdminSettingsNotificationsRouteRoute: typeof AdminSettingsNotificationsRouteRouteWithChildren
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
+  AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
@@ -988,6 +1008,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsNotificationsRouteRoute:
     AdminSettingsNotificationsRouteRouteWithChildren,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
+  AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,

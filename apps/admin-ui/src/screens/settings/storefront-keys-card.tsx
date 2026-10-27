@@ -21,14 +21,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldGroup } from '@/components/ui/field'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/format'
 import { orpc, type Outputs } from '@/lib/orpc'
 
 type StorefrontKey = Outputs['admin']['storefrontKeys']['list'][number]
 
 const col = columnHelper<StorefrontKey>()
-const columns = [
+const columnsFor = (channelName: (id: string) => string) => [
   col.accessor('name', { header: 'Name' }),
+  col.accessor('channelId', { header: 'Channel', cell: ({ row: { original: k } }) => channelName(k.channelId) }),
   col.accessor('token', {
     header: 'Key',
     cell: ({ row: { original: k } }) => (
@@ -54,6 +57,8 @@ const columns = [
 
 export function StorefrontKeysCard() {
   const { data, error, isPending } = useQuery(orpc.admin.storefrontKeys.list.queryOptions())
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  const columns = columnsFor((id) => channels.data?.find((c) => c.id === id)?.name ?? '—')
   return (
     <Card>
       <CardHeader>
@@ -100,11 +105,13 @@ function NewKeyButton() {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const form = useZodForm(storefrontKeyInput, { defaultValues: { name: '' } })
+  const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  const [channelId, setChannelId] = useState<string | null>(null)
   const create = useMutation(orpc.admin.storefrontKeys.create.mutationOptions())
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await create.mutateAsync(values)
+      await create.mutateAsync({ ...values, channelId: channelId ?? undefined })
       await queryClient.invalidateQueries({ queryKey: orpc.admin.storefrontKeys.key() })
       toast.success('Key created')
       setOpen(false)
@@ -134,6 +141,28 @@ function NewKeyButton() {
               placeholder="Main storefront"
               autoComplete="off"
             />
+            {channels.data && channels.data.length > 1 && (
+              <Field>
+                <Label>Channel</Label>
+                <Select
+                  items={channels.data.map((c) => ({ value: c.id, label: c.name }))}
+                  value={channelId ?? channels.data[0]!.id}
+                  onValueChange={(value) => setChannelId(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {channels.data.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">The storefront sees what’s published on this channel.</p>
+              </Field>
+            )}
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-end">
               <Button type="submit" disabled={form.formState.isSubmitting}>

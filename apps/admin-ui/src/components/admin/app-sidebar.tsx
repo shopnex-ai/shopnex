@@ -22,6 +22,7 @@ import {
   PackageIcon,
   PercentIcon,
   SettingsIcon,
+  Share2Icon,
   StoreIcon,
   ShoppingCartIcon,
   SunIcon,
@@ -119,6 +120,7 @@ const settingsNav: { label: string; items: NavItem[] }[] = [
   {
     label: 'Developers',
     items: [
+      { href: '/admin/settings/channels', label: 'Sales channels', icon: Share2Icon },
       { href: '/admin/settings/storefront-keys', label: 'Storefront keys', icon: KeyRoundIcon },
       { href: '/admin/settings/api-tokens', label: 'API tokens', icon: CodeIcon },
       { href: '/admin/settings/webhooks', label: 'Webhooks', icon: WebhookIcon },
