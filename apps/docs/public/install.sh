@@ -99,6 +99,41 @@ env_set SHOPNEX_DOMAIN "$SHOPNEX_DOMAIN"
 env_set SHOPNEX_STRIPE_DOMAIN "${SHOPNEX_STRIPE_DOMAIN:-}"
 $SUDO chmod 600 "$ENV_FILE"
 
+# ── dashboard updates ────────────────────────────────────────────────────────
+# A root script on the host does the updating, so no container ever gets access to Docker. The app can only
+# drop a version string into $SHOPNEX_DIR/update/request; the script checks it before doing anything.
+UPDATER=""
+if curl -fsSL "https://raw.githubusercontent.com/$REPO/$SHOPNEX_VERSION/deploy/shopnex-update.sh" -o /tmp/shopnex-update.sh 2>/dev/null; then
+  $SUDO install -o root -g root -m 755 /tmp/shopnex-update.sh /usr/local/sbin/shopnex-update
+  rm -f /tmp/shopnex-update.sh
+  $SUDO mkdir -p "$SHOPNEX_DIR/update/request" "$SHOPNEX_DIR/update/status" "$SHOPNEX_DIR/backups"
+  $SUDO tee /etc/systemd/system/shopnex-update.service >/dev/null <<EOF
+[Unit]
+Description=Update Shopnex
+
+[Service]
+Type=oneshot
+Environment=SHOPNEX_DIR=$SHOPNEX_DIR
+ExecStart=/usr/local/sbin/shopnex-update
+TimeoutStartSec=900
+EOF
+  $SUDO tee /etc/systemd/system/shopnex-update.path >/dev/null <<EOF
+[Unit]
+Description=Watch for a Shopnex update request
+
+[Path]
+PathExists=$SHOPNEX_DIR/update/request/pending
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  $SUDO systemctl daemon-reload
+  $SUDO systemctl enable --now shopnex-update.path >/dev/null 2>&1
+  UPDATER=1
+else
+  printf 'Note: %s has no dashboard updater, so updates need this installer. Continuing.\n' "$SHOPNEX_VERSION"
+fi
+
 # ── web server ───────────────────────────────────────────────────────────────
 # Caddy runs as a container in front of the app. The app itself stays on 127.0.0.1.
 if [ -n "$SHOPNEX_DOMAIN" ]; then
@@ -126,13 +161,24 @@ EOF
   STRIPE_BLOCK=""
 fi
 
+UPDATER_BLOCK=""
+if [ -n "$UPDATER" ]; then
+  # request/ is writable by the app, status/ is read-only: only the host script ever writes the status
+  UPDATER_BLOCK="    volumes:
+      - ./update/request:/update/request
+      - ./update/status:/update/status:ro
+    environment:
+      SHOPNEX_UPDATER_DIR: /update
+"
+fi
+
 $SUDO tee "$SHOPNEX_DIR/docker-compose.override.yml" >/dev/null <<EOF
 # Written by install.sh; re-running the installer replaces it.
 services:
   shopnex:
     ports: !override
       - '127.0.0.1:3000:3000'
-${STRIPE_BLOCK}  caddy:
+${UPDATER_BLOCK}${STRIPE_BLOCK}  caddy:
     image: caddy:2
     restart: unless-stopped
     depends_on: [shopnex, stripe]

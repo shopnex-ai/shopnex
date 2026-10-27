@@ -1,3 +1,4 @@
+import { readFile, writeFile } from 'node:fs/promises'
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth, isSuperAdmin } from '@shopnex/auth'
@@ -12,6 +13,17 @@ export type UpdateStatus = {
   latest: string | null
   updateAvailable: boolean
   releaseUrl: string | null
+  /** The host updater from install.sh is wired in, so this server can update itself on request */
+  canUpdate: boolean
+}
+
+export type UpdateProgress = {
+  state: 'running' | 'done' | 'failed'
+  version: string
+  step: string
+  message: string
+  /** Seconds since the epoch, written by the host updater */
+  at: number
 }
 
 type Release = { tag: string; url: string }
@@ -53,19 +65,64 @@ function isNewer(latest: string, current: string): boolean {
   return false
 }
 
+// Set only when install.sh mounted the updater's request and status folders into this container
+const updaterDir = () => process.env.SHOPNEX_UPDATER_DIR || null
+
 // Super admins only: updating is a server-level decision, and the answer is the same for every shop.
-export const getUpdateStatus = createServerFn({ method: 'GET' }).handler(async (): Promise<UpdateStatus | null> => {
+async function requireSuperAdmin(): Promise<boolean> {
   const session = await auth.api.getSession({ headers: getRequest().headers })
-  if (!session || !isSuperAdmin(session.user)) return null
+  return !!session && isSuperAdmin(session.user)
+}
+
+export const getUpdateStatus = createServerFn({ method: 'GET' }).handler(async (): Promise<UpdateStatus | null> => {
+  if (!(await requireSuperAdmin())) return null
   const current = process.env.APP_VERSION || null
-  const none = { current, latest: null, updateAvailable: false, releaseUrl: null }
+  const none = { current, latest: null, updateAvailable: false, releaseUrl: null, canUpdate: false }
   if (process.env.SHOPNEX_UPDATE_CHECK === 'false') return none
   const release = await latestRelease()
   if (!release) return none
+  const updateAvailable = current !== null && isNewer(release.tag, current)
   return {
     current,
     latest: release.tag,
-    updateAvailable: current !== null && isNewer(release.tag, current),
+    updateAvailable,
     releaseUrl: release.url,
+    canUpdate: updateAvailable && updaterDir() !== null,
   }
+})
+
+// The host updater writes this file; the folder is mounted read-only here
+export const getUpdateProgress = createServerFn({ method: 'GET' }).handler(async (): Promise<UpdateProgress | null> => {
+  const dir = updaterDir()
+  if (!dir || !(await requireSuperAdmin())) return null
+  try {
+    const raw = JSON.parse(await readFile(`${dir}/status/status.json`, 'utf8')) as Partial<UpdateProgress>
+    if (raw.state !== 'running' && raw.state !== 'done' && raw.state !== 'failed') return null
+    return {
+      state: raw.state,
+      version: String(raw.version ?? ''),
+      step: String(raw.step ?? ''),
+      message: String(raw.message ?? ''),
+      at: Number(raw.at ?? 0),
+    }
+  } catch {
+    return null
+  }
+})
+
+// Asks the host updater to move to the newest release. The browser never names the version: it has to be the
+// release GitHub reports as latest, and the host script checks it again before touching anything.
+export const requestUpdate = createServerFn({ method: 'POST' }).handler(async (): Promise<{ requestedAt: number }> => {
+  const dir = updaterDir()
+  if (!dir || !(await requireSuperAdmin())) throw new Error('Updating from the dashboard is not available here.')
+  const current = process.env.APP_VERSION
+  const release = await latestRelease()
+  if (!current || !release || !isNewer(release.tag, current)) throw new Error('This server is already up to date.')
+  try {
+    // 'wx' fails when a request is already waiting, so a double click cannot queue two updates
+    await writeFile(`${dir}/request/pending`, release.tag, { flag: 'wx' })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw new Error('Could not reach the updater.')
+  }
+  return { requestedAt: Math.floor(Date.now() / 1000) }
 })

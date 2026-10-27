@@ -34,7 +34,22 @@ To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`.
 
 ## Update
 
-Run the same command again. It moves to the newest release and keeps your database, secrets and domain. Back up your database first. To stay on a specific version, set `SHOPNEX_VERSION`.
+When a new release is out, the admin shows **Update available** at the bottom of the sidebar (super admins only). Click it, then **Update**. Shopnex takes a database backup, switches to the new version, and rolls back to the old one if the new one does not start. Expect a minute or two of downtime.
+
+You can also run the install command again, or set `SHOPNEX_VERSION` to a release tag. Nothing is ever updated without a click.
+
+Backups are written to `/opt/shopnex/backups` before every update, and the five newest are kept. A rollback restores the old version of Shopnex but cannot undo database changes the new version already made, so restore from the backup if you need to go back further.
+
+### How the update button stays safe
+
+The Shopnex container has no access to Docker. A small script owned by root runs on the server (`/usr/local/sbin/shopnex-update`, started by a systemd path unit) and does the update. The app can only write a version number into one folder, and the script refuses anything that is not a published, newer release. The app can read the progress the script reports but cannot change it.
+
+To turn the button off, remove the script and the watcher:
+
+```sh
+sudo systemctl disable --now shopnex-update.path
+sudo rm /usr/local/sbin/shopnex-update
+```
 
 ## Manage it
 
