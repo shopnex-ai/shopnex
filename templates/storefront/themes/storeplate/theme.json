@@ -306,6 +306,11 @@
           "settings": {}
         }
       ]
+    },
+    "collection": {
+      "name": "Product listing",
+      "path": "/products",
+      "sections": []
     }
   },
   "presets": {

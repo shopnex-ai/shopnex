@@ -26,10 +26,12 @@ type Props = {
   copyId: string
   reloadKey: number
   selectedSectionId: string | null
+  /** Which page of the storefront to show, e.g. "/collections/all" */
+  path?: string
   device: 'desktop' | 'mobile'
 }
 
-export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSectionId, device }: Props) {
+export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSectionId, path = '/', device }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const origin = new URL(storefrontUrl).origin
   const [token, setToken] = useState<string | null>(null)
@@ -67,12 +69,12 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
   }, [origin])
 
   // A new src (token renewed) or a hard reload loads a fresh page, which has to say "ready" again
-  useEffect(() => setReady(false), [token, hardReloads])
+  useEffect(() => setReady(false), [token, hardReloads, path])
   useEffect(() => {
     if (!token || ready) return
     const timer = setTimeout(() => setNoBridge(true), READY_TIMEOUT_MS)
     return () => clearTimeout(timer)
-  }, [token, ready, hardReloads])
+  }, [token, ready, hardReloads, path])
 
   useEffect(() => {
     if (reloadKey === 0) return
@@ -86,7 +88,7 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSectionId, ready])
 
-  const src = token ? `${storefrontUrl.replace(/\/$/, '')}/?${THEME_PREVIEW_PARAM}=${encodeURIComponent(token)}` : null
+  const src = token ? `${storefrontUrl.replace(/\/$/, '')}${path}?${THEME_PREVIEW_PARAM}=${encodeURIComponent(token)}` : null
 
   return (
     <div className="flex h-full flex-col">

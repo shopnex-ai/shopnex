@@ -33,12 +33,15 @@ import { PreviewFrame } from './preview-frame'
 import { SectionList } from './section-list'
 import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
+import { PreviewPageSelect } from '../preview-page-select'
+import { previewPagePath, type PreviewCatalog } from '../preview-pages'
 
-const PAGE = 'home'
+const HOME = 'home'
 const AUTOSAVE_MS = 700
 
 type Props = {
   definition: ThemeDefinition
+  previewCatalog: PreviewCatalog
   storefrontUrl: string
   /** The library copy being edited */
   theme: { id: string; name: string; live: boolean }
@@ -58,11 +61,12 @@ const stable = (value: unknown): string =>
 
 const newSectionId = () => `s${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`
 
-export function ThemeEditor({ definition, storefrontUrl, theme, initialDraft, initialPublished }: Props) {
+export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, initialDraft, initialPublished }: Props) {
   const id = theme.id
   const [live, setLive] = useState(theme.live)
   const [draft, setDraft] = useState(initialDraft)
   const [published, setPublished] = useState(initialPublished)
+  const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
   const [selected, setSelected] = useState<string | null>(null) // section id; null = theme settings
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [saveState, setSaveState] = useState<SaveState>('saved')
@@ -125,9 +129,11 @@ export function ThemeEditor({ definition, storefrontUrl, theme, initialDraft, in
   }, [])
 
   // ── document edits ──
-  const sections = draft.pages[PAGE]?.sections ?? []
+  // A page the merchant hasn't edited yet shows the theme's default sections (as the storefront does)
+  const sections = draft.pages[page]?.sections ?? definition.pages[page]?.sections ?? []
   const setSections = (next: ThemeSection[]) =>
-    update({ ...draft, pages: { ...draft.pages, [PAGE]: { sections: next } } })
+    update({ ...draft, pages: { ...draft.pages, [page]: { sections: next } } })
+  const pagePath = previewPagePath(page, definition, previewCatalog)
 
   function addSection(type: string) {
     const section: ThemeSection = {
@@ -229,7 +235,7 @@ export function ThemeEditor({ definition, storefrontUrl, theme, initialDraft, in
         <div className="mr-auto min-w-0">
           <h1 className="flex items-center gap-2 text-sm font-semibold">
             <span className="truncate">
-              {theme.name} · {definition.pages?.[PAGE]?.name ?? 'Home page'}
+              {theme.name} · {definition.pages[page]?.name ?? page}
             </span>
             <Badge variant={live ? 'secondary' : 'outline'}>{live ? 'Live' : 'Unpublished'}</Badge>
           </h1>
@@ -282,6 +288,18 @@ export function ThemeEditor({ definition, storefrontUrl, theme, initialDraft, in
       <div className="flex min-h-0 flex-1">
         <aside className="w-64 shrink-0 space-y-4 overflow-y-auto border-r p-3">
           <div>
+            {definition.pages && (
+              <PreviewPageSelect
+                definition={definition}
+                catalog={previewCatalog}
+                value={page}
+                onChange={(value) => {
+                  setPage(value)
+                  setSelected(null)
+                }}
+                className="mb-3 w-full"
+              />
+            )}
             <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Sections</h2>
             <SectionList
               definition={definition}
@@ -311,6 +329,7 @@ export function ThemeEditor({ definition, storefrontUrl, theme, initialDraft, in
             copyId={id}
             reloadKey={reloadKey}
             selectedSectionId={selected}
+            path={pagePath}
             device={device}
           />
         </main>
