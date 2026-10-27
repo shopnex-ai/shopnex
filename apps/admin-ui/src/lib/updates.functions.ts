@@ -122,7 +122,8 @@ export const requestUpdate = createServerFn({ method: 'POST' }).handler(async ()
     // 'wx' fails when a request is already waiting, so a double click cannot queue two updates
     await writeFile(`${dir}/request/pending`, release.tag, { flag: 'wx' })
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw new Error('Could not reach the updater.')
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST')
+      throw new Error('Could not reach the updater.', { cause: error })
   }
   return { requestedAt: Math.floor(Date.now() / 1000) }
 })
