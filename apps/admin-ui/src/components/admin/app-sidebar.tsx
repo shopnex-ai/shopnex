@@ -36,6 +36,7 @@ import {
 import { Link, useLocation, type ToOptions } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
+import { UpdateNotice } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -180,6 +181,7 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <UpdateNotice enabled={shop.superAdmin} />
         <UserMenu user={user} />
       </SidebarFooter>
     </Sidebar>
