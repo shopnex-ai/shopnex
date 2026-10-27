@@ -11,12 +11,21 @@ export const DEFAULT_HANDLE = schema.DEFAULT_CHANNEL_HANDLE
 
 export type ChannelInput = { name: string; handle?: string; type?: ChannelType; autoPublish?: boolean }
 
-const slugify = (name: string) =>
-  name
+// "Wholesale Portal!" → "wholesale-portal". Trims with a loop, not a regex: this runs on caller input.
+function slugify(name: string) {
+  const slug = name
+    .slice(0, 200)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60) || 'channel'
+    .slice(0, 60)
+  let start = 0
+  let end = slug.length
+  while (slug[start] === '-') start++
+  while (end > start && slug[end - 1] === '-') end--
+  return slug.slice(start, end) || 'channel'
+}
 
 /** The shop's channels, Online Store first */
 export async function list(shopId: string, conn: Conn = db) {
