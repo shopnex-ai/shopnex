@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { DownloadIcon } from 'lucide-react'
+import { ArrowRightIcon, DownloadIcon, ExternalLinkIcon, TriangleAlertIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,7 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
+import { DropdownMenuLabel } from '@/components/ui/dropdown-menu'
+import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { getUpdateStatus } from '@/lib/updates.functions'
 
 const updateStatusQuery = {
@@ -23,56 +24,83 @@ const updateStatusQuery = {
   retry: false,
 }
 
-// Super admins only; everyone else gets null from the server, so nothing renders
-export function UpdateNotice({ enabled }: { enabled: boolean }) {
-  const { data } = useQuery({ ...updateStatusQuery, enabled })
-  if (!data) return null
+function useUpdateStatus(enabled: boolean) {
+  return useQuery({ ...updateStatusQuery, enabled }).data
+}
+
+// Rendered inside the sidebar's bottom menu next to Settings and API reference. Super admins only; everyone
+// else gets null from the server, so nothing renders.
+export function UpdateMenuItem({ enabled }: { enabled: boolean }) {
+  const data = useUpdateStatus(enabled)
+  if (!data?.updateAvailable) return null
 
   return (
-    <>
-      {data.updateAvailable && (
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Dialog>
-              <DialogTrigger render={<SidebarMenuButton tooltip="Update available" className="justify-center" />}>
-                <DownloadIcon />
-                <span>Update available</span>
-                <span className="ml-auto size-2 rounded-full bg-green-500" aria-hidden />
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Shopnex {data.latest} is available</DialogTitle>
-                  <DialogDescription>You are on {data.current}. Updates are never applied automatically.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3 text-sm">
-                  <p>Back up your database first, then update the way you installed Shopnex:</p>
-                  <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-                    <li>
-                      <strong className="text-foreground">Install script:</strong> run the install command again.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Docker Compose, Dokploy, Coolify:</strong> set{' '}
-                      <code>SHOPNEX_VERSION={data.latest}</code>, then pull and restart the stack.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Render, DigitalOcean:</strong> redeploy from the new
-                      release.
-                    </li>
-                  </ul>
-                </div>
-                <DialogFooter>
-                  <Button render={<a href={data.releaseUrl ?? '#'} target="_blank" rel="noopener" />}>
-                    Release notes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      )}
-      <p className="px-2 text-center text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-        Version {data.current ?? 'dev'}
-      </p>
-    </>
+    <SidebarMenuItem>
+      <Dialog>
+        <DialogTrigger render={<SidebarMenuButton tooltip="Update available" size="sm" />}>
+          <DownloadIcon />
+          <span>Update available</span>
+          <span className="ml-auto size-1.5 rounded-full bg-green-500" aria-hidden />
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-500/15 text-green-600 dark:text-green-400">
+              <DownloadIcon className="size-5" />
+            </div>
+            <DialogTitle className="text-lg">A new version of Shopnex is available</DialogTitle>
+            <DialogDescription className="flex items-center gap-2 pt-1">
+              <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs">{data.current}</code>
+              <ArrowRightIcon className="size-3.5" />
+              <code className="rounded-md bg-green-500/15 px-2 py-0.5 font-mono text-xs font-medium text-green-700 dark:text-green-400">
+                {data.latest}
+              </code>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <p>
+              <span className="font-medium">Back up your database first.</span>{' '}
+              <span className="text-muted-foreground">Updates are never applied automatically.</span>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Then update the way you installed Shopnex</p>
+            <UpdateMethod title="Install script">Run the install command again on your server.</UpdateMethod>
+            <UpdateMethod title="Docker Compose, Dokploy, Coolify">
+              Set the version, then pull and restart the stack.
+              <pre className="mt-2 overflow-x-auto rounded-md bg-muted p-2.5 font-mono text-xs text-foreground">
+                {`SHOPNEX_VERSION=${data.latest}\ndocker compose pull && docker compose up -d`}
+              </pre>
+            </UpdateMethod>
+            <UpdateMethod title="Render, DigitalOcean">Redeploy from the new release.</UpdateMethod>
+          </div>
+
+          <DialogFooter>
+            <Button render={<a href={data.releaseUrl ?? '#'} target="_blank" rel="noopener" />}>
+              Release notes
+              <ExternalLinkIcon />
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SidebarMenuItem>
+  )
+}
+
+// Shown at the bottom of the account menu
+export function VersionLabel({ enabled }: { enabled: boolean }) {
+  const data = useUpdateStatus(enabled)
+  if (!data) return null
+  return <DropdownMenuLabel className="text-xs">Version {data.current ?? 'dev'}</DropdownMenuLabel>
+}
+
+function UpdateMethod({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border p-3 text-sm">
+      <p className="font-medium">{title}</p>
+      <div className="mt-0.5 text-muted-foreground">{children}</div>
+    </div>
   )
 }

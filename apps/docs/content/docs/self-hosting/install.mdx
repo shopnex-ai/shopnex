@@ -1,0 +1,48 @@
+---
+title: Install on a server
+description: Install Shopnex on your own Ubuntu or Debian server with one command, using Docker Compose.
+---
+
+import { SITE_URL } from '@/lib/site'
+
+The installer sets up Docker if needed, then runs the released Shopnex images and a Postgres database with Docker Compose in `/opt/shopnex`. Nothing is built on your server. You need a fresh Ubuntu or Debian server with at least 2 GB of memory.
+
+<code>{`curl -fsSL ${SITE_URL}/install.sh | sh`}</code>
+
+When it finishes, open the address it prints and complete the setup wizard at `/admin/setup`.
+
+<Callout type="warn">
+  Complete the setup wizard right after installing. Until you do, anyone who finds the address could claim your shop.
+</Callout>
+
+## Use your own domain
+
+Point two DNS records at the server: `shop.example.com` for the shop and `stripe.shop.example.com` for the Stripe app. Then run the installer with the domain. HTTPS is set up automatically.
+
+<code>{`curl -fsSL ${SITE_URL}/install.sh | SHOPNEX_DOMAIN=shop.example.com sh`}</code>
+
+To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`.
+
+## Options
+
+| Variable                | Default                    | What it does                                      |
+| ----------------------- | -------------------------- | ------------------------------------------------- |
+| `SHOPNEX_DOMAIN`        | the server's IP address    | Public domain. Turns on HTTPS.                    |
+| `SHOPNEX_STRIPE_DOMAIN` | `stripe.<SHOPNEX_DOMAIN>`  | Domain for the Stripe app.                        |
+| `SHOPNEX_VERSION`       | the latest release         | Release tag to install, for example `v1.2.3`.     |
+| `SHOPNEX_DIR`           | `/opt/shopnex`             | Where the Compose file and `.env` are kept.       |
+
+## Update
+
+Run the same command again. It moves to the newest release and keeps your database, secrets and domain. Back up your database first. To stay on a specific version, set `SHOPNEX_VERSION`.
+
+## Manage it
+
+Everything lives in `/opt/shopnex`. Your settings are in `.env`.
+
+```sh
+cd /opt/shopnex
+docker compose logs -f shopnex   # logs
+docker compose ps                # what is running
+docker compose restart shopnex   # restart
+```
