@@ -36,6 +36,7 @@ import {
 import { Link, useLocation, type ToOptions } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
+import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -176,11 +177,12 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
                 <ExternalLinkIcon className="ml-auto opacity-50" />
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <UpdateMenuItem enabled={shop.superAdmin} />
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <UserMenu user={user} />
+        <UserMenu user={user} superAdmin={shop.superAdmin} />
       </SidebarFooter>
     </Sidebar>
   )
@@ -252,7 +254,7 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   )
 }
 
-function UserMenu({ user }: { user: SidebarUser }) {
+function UserMenu({ user, superAdmin }: { user: SidebarUser; superAdmin: boolean }) {
   const { isMobile } = useSidebar()
   const { theme, setTheme } = useTheme()
   const signOut = useSignOut()
@@ -308,6 +310,7 @@ function UserMenu({ user }: { user: SidebarUser }) {
               <LogOutIcon />
               Sign out
             </DropdownMenuItem>
+            <VersionLabel enabled={superAdmin} />
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

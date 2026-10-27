@@ -6,7 +6,9 @@ COPY --from=caddy:2 /usr/bin/caddy /usr/local/bin/caddy
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm build && pnpm --dir templates/storefront build
-ENV NODE_ENV=production PORT=3000
+# Release tag, set by the release workflow. Empty for branch builds, which never show an update badge.
+ARG APP_VERSION=
+ENV NODE_ENV=production PORT=3000 APP_VERSION=$APP_VERSION
 VOLUME /data
 EXPOSE 3000
 CMD ["deploy/start.sh"]
