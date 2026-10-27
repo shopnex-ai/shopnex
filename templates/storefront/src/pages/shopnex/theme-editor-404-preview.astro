@@ -1,0 +1,9 @@
+---
+import { loadTheme, render } from '../../core/theme'
+
+const theme = await loadTheme(Astro.url)
+const response = await render(theme, Astro.url, { template: '404' })
+// Keep the 404 template's content in the editor iframe while returning a successful navigation response.
+if (theme.preview) return new Response(response.body, { status: 200, headers: response.headers })
+return response
+---

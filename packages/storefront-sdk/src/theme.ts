@@ -108,7 +108,15 @@ export const ThemeDefinition = z.object({
   version: z.string().max(50).optional(),
   settings: z.array(ThemeSettingField).default([]),
   sections: z.record(Id, ThemeSectionDefinition),
-  pages: z.record(Id, z.object({ name: z.string().min(1).max(100), sections: z.array(ThemeSection) })),
+  pages: z.record(
+    Id,
+    z.object({
+      name: z.string().min(1).max(100),
+      /** Where the editor's preview shows this page (e.g. "/collections/all"); "/" for "home" when left out */
+      path: z.string().regex(/^\/[^?#]*$/, 'A path like /collections/all').optional(),
+      sections: z.array(ThemeSection),
+    }),
+  ),
   /** Styles the merchant can start from, in display order. The theme's own defaults are always offered too. */
   presets: z.record(Id, ThemePreset).default({}),
 })

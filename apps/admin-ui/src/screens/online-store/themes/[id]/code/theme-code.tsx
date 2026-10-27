@@ -28,11 +28,18 @@ import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from '../preview-frame'
 import { LiquidEditor } from '@/components/admin/liquid-editor'
+import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
+import { PreviewPageSelect } from '../../preview-page-select'
+import { previewPageForPath, previewPagePath, templatePreviewPage, type PreviewCatalog } from '../../preview-pages'
 
 type Props = {
   storefrontUrl: string | null
   /** The library copy being edited */
   theme: { id: string; name: string; live: boolean }
+  /** Each page's sections and where the preview shows it, to find the one a section file renders */
+  pages: { path: string | null; sections: { id: string; type: string }[] }[]
+  previewCatalog: PreviewCatalog
+  definition: ThemeDefinition | null
 }
 
 type Problem = { message: string; line: number | null }
@@ -44,7 +51,7 @@ const FOLDER_NAMES: Record<(typeof THEME_CODE_FOLDERS)[number], string> = {
   snippets: 'Snippets',
 }
 
-const fileName = (path: string) => path.slice(path.indexOf('/') + 1)
+const fileName = (path: string) => path.slice(path.indexOf('/') + 1).replace(/\.liquid$/, '')
 
 function problemOf(error: unknown): Problem {
   const data = error instanceof ORPCError ? (error.data as Partial<Problem> | undefined) : undefined
@@ -54,7 +61,7 @@ function problemOf(error: unknown): Problem {
   }
 }
 
-export function ThemeCode({ storefrontUrl, theme }: Props) {
+export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCatalog, definition }: Props) {
   const id = theme.id
   const files = useQuery({ ...orpc.admin.themes.files.queryOptions({ input: { id } }), retry: false })
   const original = files.data?.original
@@ -70,6 +77,7 @@ export function ThemeCode({ storefrontUrl, theme }: Props) {
   const [generation, setGeneration] = useState(0)
   const [problem, setProblem] = useState<(Problem & { path: string }) | null>(null)
   const [showPreview, setShowPreview] = useState(true)
+  const [previewPage, setPreviewPage] = useState('home')
   const [reloadKey, setReloadKey] = useState(0)
   const [confirm, setConfirm] = useState<'reset' | 'delete' | null>(null)
   const [adding, setAdding] = useState(false)
@@ -78,6 +86,19 @@ export function ThemeCode({ storefrontUrl, theme }: Props) {
   const content = (path: string) => buffers[path] ?? saved(path) ?? ''
   const isDirty = (path: string) => path in buffers && buffers[path] !== saved(path)
   const dirtyPaths = Object.keys(buffers).filter(isDirty)
+
+  // Opening sections/{type}.liquid points the preview at that section, on the first page that has one
+  const shown = themePages
+    .filter((p) => p.path)
+    .flatMap((p) => p.sections.map((s) => ({ path: p.path!, ...s })))
+    .find((s) => `sections/${s.type}.liquid` === selected)
+  const previewSectionId = shown?.id ?? null
+  useEffect(() => {
+    const templatePage = templatePreviewPage(selected)
+    if (templatePage) setPreviewPage(templatePage)
+    else if (shown?.path) setPreviewPage(previewPageForPath(shown.path, definition, previewCatalog))
+  }, [selected, shown?.path, definition, previewCatalog])
+  const selectedPreviewPath = previewPagePath(previewPage, definition, previewCatalog)
 
   const paths = useMemo(
     () => [...new Set([...Object.keys(original ?? {}), ...Object.keys(edited ?? {})])].sort(),
@@ -272,7 +293,7 @@ export function ThemeCode({ storefrontUrl, theme }: Props) {
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-2 border-b px-3 py-1.5">
             <span className="mr-auto truncate font-mono text-xs">
-              {selected}
+              {selected.replace(/\.liquid$/, '')}
               {isDirty(selected) && ' •'}
             </span>
             {isEdited && !isAdded && (
@@ -304,11 +325,21 @@ export function ThemeCode({ storefrontUrl, theme }: Props) {
 
         {storefrontUrl && showPreview && (
           <aside className="hidden w-[40%] shrink-0 border-l lg:block">
+            <div className="border-b p-2">
+              <PreviewPageSelect
+                definition={definition}
+                catalog={previewCatalog}
+                value={previewPage}
+                onChange={setPreviewPage}
+                className="w-full"
+              />
+            </div>
             <PreviewFrame
               storefrontUrl={storefrontUrl}
               copyId={id}
               reloadKey={reloadKey}
-              selectedSectionId={null}
+              selectedSectionId={previewSectionId}
+              path={selectedPreviewPath}
               device="desktop"
             />
           </aside>
