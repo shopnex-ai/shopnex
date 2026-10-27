@@ -63,6 +63,7 @@ function problemOf(error: unknown): Problem {
 
 export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCatalog, definition }: Props) {
   const id = theme.id
+  const [live, setLive] = useState(theme.live)
   const files = useQuery({ ...orpc.admin.themes.files.queryOptions({ input: { id } }), retry: false })
   const original = files.data?.original
   // What Shopnex has saved, kept up to date by this page's saves
@@ -183,6 +184,19 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     else scheduleAutosave(dirtyPaths)
   }, [pendingCode, save.isPending, problem?.path, scheduleAutosave, cancelAutosave])
 
+  const publish = useMutation({
+    mutationFn: async () => {
+      cancelAutosave()
+      for (const path of dirtyPaths) await save.mutateAsync(path)
+      return client.admin.themes.publish({ id })
+    },
+    onSuccess: () => {
+      setLive(true)
+      toast.success('Published: your storefront now shows the theme changes')
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : 'Could not publish'),
+  })
+
   const isEdited = edited ? selected in edited : false
   const isAdded = original ? !(selected in original) : false
 
@@ -192,7 +206,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         variant="ghost"
         size="icon-sm"
         nativeButton={false}
-        render={<Link to={theme.live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
+        render={<Link to={live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
         aria-label="Back to themes"
         title="Back to themes"
       >
@@ -201,10 +215,10 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
       <div className="mr-auto min-w-0">
         <h1 className="flex items-center gap-2 text-sm font-semibold">
           <span className="truncate">{theme.name} · Edit code</span>
-          <Badge variant={theme.live ? 'secondary' : 'outline'}>{theme.live ? 'Live' : 'Unpublished'}</Badge>
+          <Badge variant={live ? 'secondary' : 'outline'}>{live ? 'Live' : 'Unpublished'}</Badge>
         </h1>
         <p className="text-xs text-muted-foreground">
-          {theme.live
+          {live
             ? 'Code changes autosave to the draft preview. Publish to update your store.'
             : 'Code changes autosave to the draft preview. Publish this theme to make them live.'}
         </p>
@@ -231,6 +245,9 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
       )}
       <Button size="sm" variant="outline" disabled={!dirtyPaths.length && !save.isPending} onClick={onSave}>
         {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Saving shortly…' : 'Saved to draft'}
+      </Button>
+      <Button size="sm" disabled={publish.isPending || save.isPending} onClick={() => publish.mutate()}>
+        {publish.isPending ? 'Publishing…' : 'Publish'}
       </Button>
     </div>
   )
@@ -334,6 +351,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
                 setProblem((current) => (current?.path === selected ? null : current))
               }}
               onSave={onSave}
+              readOnly={publish.isPending}
               line={problem?.path === selected ? problem.line : null}
             />
           </div>
