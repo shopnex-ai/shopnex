@@ -4,6 +4,7 @@
 // drizzle-zod re-applies the column's nullable/optional on top of each refinement.
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import {
   PRODUCT_STATUSES,
   SLUG_PATTERN,
@@ -443,3 +444,30 @@ export const paymentsAppConfigureInput = z.object({
   /** false hides the method at checkout (e.g. until the merchant has entered provider keys) */
   ready: z.boolean(),
 })
+
+// AI apps (see @shopnex/marketplace-sdk/ai)
+export const aiAppConfigureInput = z.object({
+  /** Capability → URL receiving its signed AiRunRequests (on the app's own origin). Left out: not provided. */
+  capabilities: z.partialRecord(z.enum(AI_CAPABILITIES), z.url({ protocol: /^https?$/ })),
+})
+
+const aiRunFor = <C extends AiCapability>(capability: C) =>
+  z.object({
+    capability: z.literal(capability),
+    productId: z.uuid(),
+    /** One of the apps providing the capability (GET /admin/ai/capabilities); default: the first */
+    appId: z.uuid().optional(),
+    input: aiCapabilities[capability].input.optional(),
+  })
+
+// One entry per capability, so each one's input is typed
+export const aiRunInput = z.discriminatedUnion('capability', [aiRunFor('product.description'), aiRunFor('product.seo')])
+
+export {
+  AI_CAPABILITIES,
+  AI_LENGTHS,
+  AI_TONES,
+  aiCapabilities,
+  type AiCapability,
+  type AiOutput,
+} from '@shopnex/marketplace-sdk/ai'

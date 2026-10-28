@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [stripe]
+        app: [stripe, ai]
     steps:
       - uses: actions/checkout@v4
 

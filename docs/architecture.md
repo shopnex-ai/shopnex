@@ -36,6 +36,7 @@
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker
+- /ai # AI capabilities provided by apps: which app provides what (per shop), running one, generations → uses apps, catalog
 
 Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
@@ -87,3 +88,21 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 - Super admin (platform role `superadmin`, Better Auth admin plugin): can act in every shop without membership, manage users (`/api/auth/admin/*`, `authClient.admin.*`). The account created by the setup wizard is one; to create or promote another (or recover access):
   `pnpm create-super-admin --email you@example.com [--password ...]` (random password printed if omitted)
 - Switching single → multi needs no data migration: add rows to `shop_domains` and set `TENANCY_MODE=multi`
+
+## AI capabilities
+
+No model provider lives in core: AI features come from installed apps (contract: `@shopnex/marketplace-sdk/ai`,
+docs: `apps/docs/content/docs/apps/ai.mdx`). Core owns capability discovery, permissions, the commerce context and
+what gets saved; the app owns provider, model, prompts and keys. It's the payments-app pattern applied to AI.
+
+```text
+Admin ✨ Generate → POST /admin/ai/run → modules/ai → signed AiRunRequest → AI app → any provider
+                    (read_products)       picks the app, loads the product, checks + sanitizes the answer
+```
+
+- Capabilities (`product.description`, `product.seo`) are a typed, versioned registry with zod input/output schemas;
+  additive changes only, a breaking change is a new name
+- Apps register what they provide per shop with `POST /admin/ai-app/configure` (scope `write_ai_capabilities`,
+  URLs on the app's origin) → `ai_providers`. Uninstalling removes them
+- `POST /admin/ai/run` returns a suggestion and never writes: the admin puts it in the form as an unsaved change
+- Every run is an `ai_generations` row (input, output, usage, status, staff feedback) for audit and quality

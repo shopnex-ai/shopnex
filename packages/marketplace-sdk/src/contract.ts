@@ -7,8 +7,8 @@
 import { oc, type InferContractRouterInputs, type InferContractRouterOutputs } from '@orpc/contract'
 import { z } from 'zod'
 
-// Must match the Shopnex Admin API scopes (API_SCOPES in @shopnex/db), except the payment session scopes:
-// payments apps are custom or bundled apps until marketplace listings are reviewed
+// Must match the Shopnex Admin API scopes (API_SCOPES in @shopnex/db), except the payment session and AI
+// capability scopes: payments and AI apps are custom or bundled apps until marketplace listings are reviewed
 export const SCOPES = [
   'read_products',
   'write_products',

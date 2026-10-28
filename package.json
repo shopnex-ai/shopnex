@@ -13,6 +13,7 @@
     "dev:app": "pnpm --filter @shopnex/admin-ui dev",
     "dev:docs": "pnpm --filter @shopnex/docs dev",
     "dev:stripe": "pnpm --filter @shopnex/stripe dev",
+    "dev:ai": "pnpm --filter @shopnex/ai-app dev",
     "e2e": "pnpm --filter @shopnex/e2e test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

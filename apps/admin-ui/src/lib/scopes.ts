@@ -5,6 +5,11 @@ export const SCOPE_RESOURCES = [
   { key: 'customers', label: 'Customers', hint: 'Customer names, emails and phones' },
   { key: 'discounts', label: 'Discounts', hint: 'Discount codes and their usage' },
   { key: 'payment_sessions', label: 'Payment sessions', hint: 'Take payments and refunds (payments apps)' },
+  {
+    key: 'ai_capabilities',
+    label: 'AI capabilities',
+    hint: 'Provide AI suggestions, e.g. product descriptions (AI apps)',
+  },
 ] as const
 
 export type Access = 'none' | 'read' | 'write'

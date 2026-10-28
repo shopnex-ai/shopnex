@@ -17,11 +17,13 @@ When it finishes, open the address it prints and complete the setup wizard at `/
 
 ## Use your own domain
 
-Point two DNS records at the server: `shop.example.com` for the shop and `stripe.shop.example.com` for the Stripe app. Then run the installer with the domain. HTTPS is set up automatically.
+Point three DNS records at the server: `shop.example.com` for the shop, `stripe.shop.example.com` for the Stripe app and `ai.shop.example.com` for the AI app. Then run the installer with the domain. HTTPS is set up automatically.
 
 <code>{`curl -fsSL ${SITE_URL}/install.sh | SHOPNEX_DOMAIN=shop.example.com sh`}</code>
 
-To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`.
+To use different names for the apps, also set `SHOPNEX_STRIPE_DOMAIN` or `SHOPNEX_AI_DOMAIN`.
+
+Installed before the AI app existed? Updates keep working without it. Add the `ai.` DNS record and run the install command again to turn it on.
 
 ## Options
 
@@ -29,6 +31,7 @@ To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`.
 | ----------------------- | ------------------------- | --------------------------------------------- |
 | `SHOPNEX_DOMAIN`        | the server's IP address   | Public domain. Turns on HTTPS.                |
 | `SHOPNEX_STRIPE_DOMAIN` | `stripe.<SHOPNEX_DOMAIN>` | Domain for the Stripe app.                    |
+| `SHOPNEX_AI_DOMAIN`     | `ai.<SHOPNEX_DOMAIN>`     | Domain for the AI app.                        |
 | `SHOPNEX_VERSION`       | the latest release        | Release tag to install, for example `v1.2.3`. |
 | `SHOPNEX_DIR`           | `/opt/shopnex`            | Where the Compose file and `.env` are kept.   |
 

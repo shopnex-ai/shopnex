@@ -1,0 +1,21 @@
+{
+  "name": "@shopnex/ai",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/apps": "workspace:*",
+    "@shopnex/catalog": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/marketplace-sdk": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

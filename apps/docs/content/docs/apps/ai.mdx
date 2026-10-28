@@ -1,0 +1,79 @@
+---
+title: AI apps
+description: Provide AI features like product descriptions, with any model provider.
+---
+
+Shopnex has no built-in model provider. AI features come from apps: an app declares the **capabilities** it
+provides, and the admin shows a ✨ **Generate** button wherever one is available. Uninstall the app and the
+buttons disappear.
+
+Shopnex owns the commerce side: who may ask, which data the app sees, and what gets saved. The app owns the AI
+side: provider, model, prompts and API keys. Results are suggestions. Nothing is saved until staff press Save.
+
+```text
+Admin ✨ Generate → POST /admin/ai/run → Shopnex loads the product → signed request → your app → any model
+```
+
+## The bundled AI app
+
+`apps/ai` ships with Shopnex and runs next to it like the Stripe app (set `AI_APP_URL`). Staff install it from
+**Apps → Add AI to your shop**, pick **Anthropic (Claude)** or **OpenAI**, and paste their own API key (stored
+encrypted in the app's data folder). They can also set a model and a brand voice applied to everything it writes.
+It's also a complete example of an AI app: `src/prompts.ts` builds the requests, `src/claude.ts` and
+`src/openai.ts` call each provider with structured outputs.
+
+## Capabilities
+
+| Capability            | Input                               | Output                   |
+| --------------------- | ----------------------------------- | ------------------------ |
+| `product.description` | `tone?`, `length?`, `instructions?` | `{ descriptionHtml }`    |
+| `product.seo`         | `instructions?`                     | `{ title, description }` |
+
+Schemas live in `@shopnex/marketplace-sdk/ai` (`aiCapabilities`). Capabilities only change additively; a
+breaking change gets a new name.
+
+## Build one
+
+Register the app with the `write_ai_capabilities` scope. Once the merchant has entered a provider key, tell
+Shopnex what you provide:
+
+```ts
+await shop.ai.configure({
+  'product.description': `${APP_URL}/ai/run`,
+  'product.seo': `${APP_URL}/ai/run`,
+})
+```
+
+URLs must be on the app's own origin. Each call replaces the previous set; `{}` provides nothing.
+
+Shopnex then POSTs a signed `AiRunRequest` containing the capability, the staff's input and a snapshot of the
+product (title, description as text, options, variants with prices, tags, images, collections). The app never
+needs `read_products`. Answer within 60 seconds:
+
+```ts
+app.post('/ai/run', async (c) => {
+  const { request, shop } = await shopnex.verifyAiRequest(c)
+  const apiKey = await shop.data.getSecret('provider_key')
+  switch (request.capability) {
+    case 'product.description': {
+      const html = await writeDescription(apiKey, request.subject.product, request.input)
+      return c.json({ output: { descriptionHtml: html }, usage: { model: 'my-model' } })
+    }
+    case 'product.seo': {
+      const seo = await writeSeo(apiKey, request.subject.product, request.input)
+      return c.json({ output: seo })
+    }
+  }
+})
+```
+
+Shopnex checks the answer against the capability's output schema (a mismatch is a 502 for staff) and
+sanitizes HTML. Every run is kept as a generation with its usage and whether staff used the suggestion.
+
+## Admin API
+
+- `GET /admin/ai/capabilities`: available capabilities and the apps providing them.
+- `POST /admin/ai/run` `{ capability, productId, input?, appId? }`: needs `read_products`. Returns
+  `{ id, app, output, usage }` without saving anything.
+- `POST /admin/ai/generations/{id}/feedback` `{ feedback: 'accepted' | 'rejected' }`.
+- `POST /admin/ai-app/configure` `{ capabilities }`: AI app tokens only.

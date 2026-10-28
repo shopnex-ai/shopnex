@@ -19,10 +19,11 @@ import { PageHeader } from '@/components/admin/page-header'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { GenerateDescription, GenerateSeo } from './ai-generate'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
@@ -52,7 +53,10 @@ function plainTextToHtml(text: string | null) {
   if (!text) return ''
   return text
     .split(/\n{2,}/)
-    .map((paragraph) => `<p>${paragraph.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`)
+    .map(
+      (paragraph) =>
+        `<p>${paragraph.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`,
+    )
     .join('')
 }
 
@@ -157,7 +161,13 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
                 <FieldGroup>
                   <TextField control={form.control} name="title" label="Title" />
                   <Field>
-                    <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
+                    <div className="flex items-center justify-between gap-2">
+                      <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
+                      <GenerateDescription
+                        productId={product.id}
+                        onUse={(html) => form.setValue('descriptionHtml', html, { shouldDirty: true })}
+                      />
+                    </div>
                     <RichTextEditor
                       id={descriptionId}
                       value={description.field.value ?? ''}
@@ -223,6 +233,15 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
               <CardHeader>
                 <CardTitle>Search engine listing</CardTitle>
                 <CardDescription>How this product appears in search results and its URL.</CardDescription>
+                <CardAction>
+                  <GenerateSeo
+                    productId={product.id}
+                    onUse={(seo) => {
+                      form.setValue('seo.title', seo.title, { shouldDirty: true })
+                      form.setValue('seo.description', seo.description, { shouldDirty: true })
+                    }}
+                  />
+                </CardAction>
               </CardHeader>
               <CardContent>
                 <FieldGroup>

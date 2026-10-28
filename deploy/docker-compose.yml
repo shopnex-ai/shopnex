@@ -1,5 +1,7 @@
-# Production deployment using matching, versioned Shopnex and Stripe images.
+# Production deployment using matching, versioned Shopnex, Stripe app and AI app images.
 # Set SHOPNEX_VERSION to a published release tag (for example v1.2.3).
+# The AI app is optional: it runs with COMPOSE_PROFILES=ai and AI_APP_URL set (install.sh sets both), so installs
+# made before it existed keep updating without it.
 name: shopnex
 
 services:
@@ -36,6 +38,7 @@ services:
       TENANCY_MODE: single
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       STRIPE_APP_URL: ${STRIPE_APP_URL:?set STRIPE_APP_URL to the public Stripe app URL}
+      AI_APP_URL: ${AI_APP_URL:-}
 
   stripe:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:?set SHOPNEX_VERSION to a release tag}
@@ -49,7 +52,22 @@ services:
       STRIPE_APP_URL: ${STRIPE_APP_URL:?set STRIPE_APP_URL to the public Stripe app URL}
       DATA_DIR: /data
 
+  ai:
+    image: ghcr.io/shopnex-ai/shopnex-ai:${SHOPNEX_VERSION:?set SHOPNEX_VERSION to a release tag}
+    profiles: [ai]
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - '4601:4601'
+    volumes:
+      - ai_data:/data
+    environment:
+      AI_APP_URL: ${AI_APP_URL:-}
+      PORT: 4601
+      DATA_DIR: /data
+
 volumes:
   db:
   shopnex_data:
   stripe_data:
+  ai_data:

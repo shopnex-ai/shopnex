@@ -472,6 +472,10 @@ export async function uninstall(shopId: string, installationId: string) {
     await tx
       .delete(schema.paymentMethods)
       .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, installation.appId)))
+    // So do an AI app's capabilities (its generations stay in the shop's history)
+    await tx
+      .delete(schema.aiProviders)
+      .where(and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, installation.appId)))
     const [updated] = await tx
       .update(schema.appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })
@@ -612,6 +616,13 @@ const BUNDLED_APPS = [
     name: 'Stripe',
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
+  },
+  {
+    clientId: 'app_ai',
+    urlEnv: 'AI_APP_URL',
+    name: 'AI',
+    description: 'Product descriptions and search listings written with Claude or OpenAI, using your own API key.',
+    scopes: ['write_ai_capabilities'] as ApiScope[],
   },
 ]
 
