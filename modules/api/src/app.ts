@@ -40,6 +40,13 @@ const scalarPrivacy = {
   showDeveloperTools: 'never',
 }
 
+// Behind a TLS-terminating proxy the request URL says http://, which the browser blocks as mixed content
+// on an https page; a same-origin path works everywhere
+const specPath = (specUrl: string) => {
+  const { pathname, search } = new URL(specUrl)
+  return pathname + search
+}
+
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 const apiReference = new OpenAPIReferencePlugin({
@@ -79,7 +86,7 @@ const apiReference = new OpenAPIReferencePlugin({
   <body>
     <div id="app"></div>
     <script src="${SCALAR_SCRIPT}" integrity="${SCALAR_INTEGRITY}" crossorigin="anonymous"></script>
-    <script>Scalar.createApiReference('#app', ${JSON.stringify({ url: specUrl, ...scalarPrivacy })})</script>
+    <script>Scalar.createApiReference('#app', ${JSON.stringify({ url: specPath(specUrl), ...scalarPrivacy })})</script>
   </body>
 </html>`,
 })

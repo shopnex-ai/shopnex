@@ -14,17 +14,22 @@ commands.
    git checkout main && git pull
    ```
 
-2. Pick the next version ([semver](https://semver.org)). The latest tag is:
+2. Bump the version everywhere. This sets `version` in every workspace
+   `package.json` (except `@shopnex/storefront-sdk`, which is versioned on its
+   own) from the latest tag:
 
    ```sh
-   git describe --tags --abbrev=0
+   pnpm bump patch   # or: minor | major | 1.2.3
    ```
 
-3. Tag and push:
+   Commit the result, open a PR to `main` and merge it, then
+   `git checkout main && git pull`.
+
+3. Tag the merge commit and push. Use the version `pnpm bump` printed:
 
    ```sh
-   git tag v0.8.0
-   git push origin v0.8.0
+   git tag v0.9.2
+   git push origin v0.9.2
    ```
 
 4. Watch the run in the **Actions** tab, then review the release under
@@ -36,6 +41,8 @@ commands.
 ## Notes
 
 - Tags with a suffix (e.g. `v0.8.0-rc.1`) are published as pre-releases.
+- Stable releases also move the `latest` GHCR tag, and `docker save` archives of
+  both images are attached to the release as assets.
 - Every release tag, including pre-releases, gets matching versioned GHCR tags
   for Shopnex and the Stripe app. Both images are published for `linux/amd64`.
 - Fix a bad release by deleting the GitHub Release and tag
