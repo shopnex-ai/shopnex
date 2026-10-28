@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @shopnex/admin-ui build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r --parallel typecheck",
     "db:generate": "pnpm --filter @shopnex/db generate",
     "db:migrate": "pnpm --filter @shopnex/db migrate",
     "create-super-admin": "pnpm --filter @shopnex/auth create-super-admin",
