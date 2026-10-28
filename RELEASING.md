@@ -14,17 +14,22 @@ commands.
    git checkout main && git pull
    ```
 
-2. Pick the next version ([semver](https://semver.org)). The latest tag is:
+2. Bump the version everywhere. This sets `version` in every workspace
+   `package.json` (except `@shopnex/storefront-sdk`, which is versioned on its
+   own) from the latest tag:
 
    ```sh
-   git describe --tags --abbrev=0
+   pnpm bump patch   # or: minor | major | 1.2.3
    ```
 
-3. Tag and push:
+   Commit the result, open a PR to `main` and merge it, then
+   `git checkout main && git pull`.
+
+3. Tag the merge commit and push. Use the version `pnpm bump` printed:
 
    ```sh
-   git tag v0.8.0
-   git push origin v0.8.0
+   git tag v0.9.2
+   git push origin v0.9.2
    ```
 
 4. Watch the run in the **Actions** tab, then review the release under

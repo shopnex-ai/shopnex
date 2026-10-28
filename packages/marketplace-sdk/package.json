@@ -1,6 +1,6 @@
 {
   "name": "@shopnex/marketplace-sdk",
-  "version": "0.1.0",
+  "version": "0.9.1",
   "description": "Shopnex App Marketplace API contract + typed clients, and the keys, tokens and signatures apps and instances exchange",
   "type": "module",
   "exports": {
