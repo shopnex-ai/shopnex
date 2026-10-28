@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { NoAccess } from '@/components/admin/no-access'
 
 // Each settings page is its own route; the admin layout swaps in the settings sidebar under /admin/settings
 export const Route = createFileRoute('/admin/settings')({
@@ -17,7 +18,7 @@ function SettingsLayout() {
       {canManage ? (
         <Outlet />
       ) : (
-        <p className="text-muted-foreground">Only shop owners and admins can change settings.</p>
+        <NoAccess message="Only shop owners and admins can change settings." />
       )}
     </div>
   )
