@@ -8,7 +8,35 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same PR replaces the older run; runs on main always finish
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
+  # Docs-only pull requests skip the app image and e2e jobs. The skipped jobs still satisfy the required checks.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          code=true
+          if [ "$EVENT" = pull_request ]; then
+            other=$(git diff --name-only "origin/$BASE...HEAD" | grep -vE '\.(md|mdx)$|^docs/|^apps/docs/' || true)
+            [ -z "$other" ] && code=false
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   check:
     name: Lint, typecheck, build
     runs-on: ubuntu-latest
@@ -28,10 +56,14 @@ jobs:
 
       - run: pnpm typecheck
 
+      - run: pnpm test
+
       - run: pnpm build
 
   app-image:
     name: App image (${{ matrix.app }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,6 +79,8 @@ jobs:
 
   e2e:
     name: End-to-end tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
