@@ -31,8 +31,9 @@ jobs:
           BASE: ${{ github.base_ref }}
         run: |
           code=true
-          if [ "$EVENT" = pull_request ] && ! git diff --name-only "origin/$BASE...HEAD" | grep -qvE '\.(md|mdx)$|^docs/|^apps/docs/'; then
-            code=false
+          if [ "$EVENT" = pull_request ]; then
+            other=$(git diff --name-only "origin/$BASE...HEAD" | grep -vE '\.(md|mdx)$|^docs/|^apps/docs/' || true)
+            [ -z "$other" ] && code=false
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
 
