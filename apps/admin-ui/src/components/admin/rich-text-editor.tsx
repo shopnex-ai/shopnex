@@ -20,7 +20,7 @@ import {
   UnderlineIcon,
   Undo2Icon,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -43,11 +43,14 @@ export function RichTextEditor({
   value,
   onChange,
   invalid,
+  actions,
 }: {
   id?: string
   value: string
   onChange: (html: string) => void
   invalid?: boolean
+  /** Extra toolbar buttons, at the end next to HTML (e.g. Generate) */
+  actions?: ReactNode
 }) {
   const [source, setSource] = useState(false)
   const [prompt, setPrompt] = useState<Prompt>(null)
@@ -96,17 +99,19 @@ export function RichTextEditor({
     <div className={cn('overflow-hidden rounded-lg bg-card shadow-field', invalid && 'ring-1 ring-destructive')}>
       <div className="flex flex-wrap items-center gap-0.5 border-b p-1">
         {editor && !source && <Formatting editor={editor} onPrompt={openPrompt} />}
-        <Button
-          type="button"
-          variant={source ? 'secondary' : 'ghost'}
-          size="sm"
-          className="ml-auto"
-          aria-pressed={source}
-          onClick={() => setSource(!source)}
-        >
-          <CodeXmlIcon />
-          HTML
-        </Button>
+        <div className="ml-auto flex items-center gap-0.5">
+          {actions}
+          <Button
+            type="button"
+            variant={source ? 'secondary' : 'ghost'}
+            size="sm"
+            aria-pressed={source}
+            onClick={() => setSource(!source)}
+          >
+            <CodeXmlIcon />
+            HTML
+          </Button>
+        </div>
       </div>
       {prompt && (
         <div className="flex items-center gap-2 border-b p-2">

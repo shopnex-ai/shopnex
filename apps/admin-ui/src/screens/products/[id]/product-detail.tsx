@@ -161,18 +161,18 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
                 <FieldGroup>
                   <TextField control={form.control} name="title" label="Title" />
                   <Field>
-                    <div className="flex items-center justify-between gap-2">
-                      <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
-                      <GenerateDescription
-                        productId={product.id}
-                        onUse={(html) => form.setValue('descriptionHtml', html, { shouldDirty: true })}
-                      />
-                    </div>
+                    <FieldLabel htmlFor={descriptionId}>Description</FieldLabel>
                     <RichTextEditor
                       id={descriptionId}
                       value={description.field.value ?? ''}
                       onChange={description.field.onChange}
                       invalid={!!description.fieldState.error}
+                      actions={
+                        <GenerateDescription
+                          productId={product.id}
+                          onUse={(html) => form.setValue('descriptionHtml', html, { shouldDirty: true })}
+                        />
+                      }
                     />
                   </Field>
                 </FieldGroup>
