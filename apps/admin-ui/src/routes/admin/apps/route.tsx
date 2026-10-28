@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
+import { NoAccess } from '@/components/admin/no-access'
 import { PageHeader } from '@/components/admin/page-header'
 import { AppRegistryCard } from '@/screens/apps/app-registry-card'
 import { AppStoreCard } from '@/screens/apps/app-store-card'
@@ -34,7 +35,7 @@ function AppsPage() {
           )}
         </>
       ) : (
-        <p className="text-muted-foreground">Only shop owners and admins can manage apps.</p>
+        <NoAccess message="Only shop owners and admins can manage apps." />
       )}
     </div>
   )
