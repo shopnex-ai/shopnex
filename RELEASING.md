@@ -36,6 +36,8 @@ commands.
 ## Notes
 
 - Tags with a suffix (e.g. `v0.8.0-rc.1`) are published as pre-releases.
+- Stable releases also move the `latest` GHCR tag, and `docker save` archives of
+  both images are attached to the release as assets.
 - Every release tag, including pre-releases, gets matching versioned GHCR tags
   for Shopnex and the Stripe app. Both images are published for `linux/amd64`.
 - Fix a bad release by deleting the GitHub Release and tag
