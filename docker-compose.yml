@@ -35,8 +35,6 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       # Registers the Stripe app (Settings → Payments → Install): where to find it
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required: public origin of the Stripe app}'
-      # Registers the AI app (Apps → Add AI to your shop)
-      AI_APP_URL: '${AI_APP_URL:-http://localhost:4601}'
 
   stripe:
     build:
@@ -51,22 +49,7 @@ services:
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required}'
       DATA_DIR: /data
 
-  ai:
-    build:
-      context: .
-      dockerfile: Dockerfile.app
-      args: { APP: ai }
-    ports:
-      - '4601:4601'
-    volumes:
-      - ai_data:/data # the app's identity and its shops' provider keys: keep it
-    environment:
-      AI_APP_URL: '${AI_APP_URL:-http://localhost:4601}'
-      DATA_DIR: /data
-      PORT: 4601
-
 volumes:
   db:
   data:
   stripe_data:
-  ai_data:

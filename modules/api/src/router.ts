@@ -1,6 +1,6 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
-import { ai as adminAi, aiAppApi as adminAiApp } from './routers/admin/ai'
+import { ai as adminAi, aiAppApi as adminAiApp, aiSettings as adminAiSettings } from './routers/admin/ai'
 import { apiTokens as adminApiTokens } from './routers/admin/api-tokens'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
 import {
@@ -77,6 +77,7 @@ export const router = {
     paymentSessions: tagged('Admin · Payments apps').router(adminPaymentSessions),
     taxRates: tagged('Admin · Taxes').router(adminTaxRates),
     ai: tagged('Admin · AI').router(adminAi),
+    aiSettings: tagged('Admin · AI').router(adminAiSettings),
     aiApp: tagged('Admin · AI apps').router(adminAiApp),
     webhooks: tagged('Admin · Webhooks').router(adminWebhooks),
     apiTokens: tagged('Admin · API tokens').router(adminApiTokens),

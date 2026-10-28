@@ -4,7 +4,7 @@
 #
 # The app container never gets Docker access. All it can do is write a version string into that one directory,
 # and everything below treats the string as untrusted: it must be a plain vX.Y.Z, newer than the running version,
-# and published as every image. Progress goes to $DIR/update/status, which the container can only read.
+# and published as both images. Progress goes to $DIR/update/status, which the container can only read.
 set -u
 
 DIR="${SHOPNEX_DIR:-/opt/shopnex}"
@@ -48,7 +48,7 @@ CURRENT="$(env_get SHOPNEX_VERSION)"
 [ "$VERSION" != "$CURRENT" ] || fail checking "Already on $VERSION."
 [ "$(printf '%s\n%s\n' "${CURRENT#v}" "${VERSION#v}" | sort -V | tail -n 1)" = "${VERSION#v}" ] \
   || fail checking "Refused: $VERSION is older than the running $CURRENT."
-for image in "ghcr.io/$REPO:$VERSION" "ghcr.io/$REPO-stripe:$VERSION" "ghcr.io/$REPO-ai:$VERSION"; do
+for image in "ghcr.io/$REPO:$VERSION" "ghcr.io/$REPO-stripe:$VERSION"; do
   docker manifest inspect "$image" >/dev/null 2>&1 || fail checking "Refused: $image is not published."
 done
 

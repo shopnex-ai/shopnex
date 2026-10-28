@@ -4,16 +4,14 @@
 #   curl -fsSL https://shopnex.ai/install.sh | sh
 #   curl -fsSL https://shopnex.ai/install.sh | SHOPNEX_DOMAIN=shop.example.com sh
 #
-# Installs Docker if it is missing, then runs the released Shopnex images (admin, storefront, Stripe app, AI app
-# and Postgres) with Docker Compose in /opt/shopnex. With SHOPNEX_DOMAIN set, Caddy serves HTTPS for the shop on
-# that domain, for the Stripe app on stripe.<domain> and for the AI app on ai.<domain> (point all three DNS
-# records at this server first).
+# Installs Docker if it is missing, then runs the released Shopnex images (admin, storefront, Stripe app and
+# Postgres) with Docker Compose in /opt/shopnex. With SHOPNEX_DOMAIN set, Caddy serves HTTPS for the shop on that
+# domain and for the Stripe app on stripe.<domain> (point both DNS records at this server first).
 # Safe to re-run: it keeps your database and .env, and moves to the newest release.
 #
 # Options (environment variables):
-#   SHOPNEX_DOMAIN         public domain. Default: this server's IP on :80, Stripe app on :4600, AI app on :4601
+#   SHOPNEX_DOMAIN         public domain. Default: this server's IP on :80, Stripe app on :4600
 #   SHOPNEX_STRIPE_DOMAIN  domain for the Stripe app                          Default: stripe.<SHOPNEX_DOMAIN>
-#   SHOPNEX_AI_DOMAIN      domain for the AI app                              Default: ai.<SHOPNEX_DOMAIN>
 #   SHOPNEX_VERSION        release tag to install, e.g. v1.2.3                 Default: the latest release
 #   SHOPNEX_DIR            install directory                                   Default: /opt/shopnex
 set -eu
@@ -84,19 +82,15 @@ env_set() {
 # Keep what an earlier run chose when this run does not say otherwise
 SHOPNEX_DOMAIN="${SHOPNEX_DOMAIN:-$(env_get SHOPNEX_DOMAIN)}"
 SHOPNEX_STRIPE_DOMAIN="${SHOPNEX_STRIPE_DOMAIN:-$(env_get SHOPNEX_STRIPE_DOMAIN)}"
-SHOPNEX_AI_DOMAIN="${SHOPNEX_AI_DOMAIN:-$(env_get SHOPNEX_AI_DOMAIN)}"
 
 if [ -n "$SHOPNEX_DOMAIN" ]; then
   SHOPNEX_STRIPE_DOMAIN="${SHOPNEX_STRIPE_DOMAIN:-stripe.$SHOPNEX_DOMAIN}"
   APP_URL="https://$SHOPNEX_DOMAIN"
   STRIPE_APP_URL="https://$SHOPNEX_STRIPE_DOMAIN"
-  SHOPNEX_AI_DOMAIN="${SHOPNEX_AI_DOMAIN:-ai.$SHOPNEX_DOMAIN}"
-  AI_APP_URL="https://$SHOPNEX_AI_DOMAIN"
 else
   IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | cut -d' ' -f1)"
   APP_URL="http://$IP"
   STRIPE_APP_URL="http://$IP:4600"
-  AI_APP_URL="http://$IP:4601"
 fi
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -109,10 +103,6 @@ env_set APP_URL "$APP_URL"
 env_set STRIPE_APP_URL "$STRIPE_APP_URL"
 env_set SHOPNEX_DOMAIN "$SHOPNEX_DOMAIN"
 env_set SHOPNEX_STRIPE_DOMAIN "${SHOPNEX_STRIPE_DOMAIN:-}"
-env_set AI_APP_URL "$AI_APP_URL"
-env_set SHOPNEX_AI_DOMAIN "${SHOPNEX_AI_DOMAIN:-}"
-# The AI app is a Compose profile (installs from before it existed keep updating without it)
-env_set COMPOSE_PROFILES ai
 $SUDO chmod 600 "$ENV_FILE"
 
 # ── dashboard updates ────────────────────────────────────────────────────────
@@ -162,16 +152,10 @@ $SHOPNEX_DOMAIN {
 $SHOPNEX_STRIPE_DOMAIN {
 	reverse_proxy stripe:4600
 }
-
-$SHOPNEX_AI_DOMAIN {
-	reverse_proxy ai:4601
-}
 EOF
   CADDY_PORTS="- '80:80'
       - '443:443'"
-  APPS_BLOCK="  stripe:
-    ports: !reset []
-  ai:
+  STRIPE_BLOCK="  stripe:
     ports: !reset []
 "
 else
@@ -181,7 +165,7 @@ else
 }
 EOF
   CADDY_PORTS="- '80:80'"
-  APPS_BLOCK=""
+  STRIPE_BLOCK=""
 fi
 
 UPDATER_BLOCK=""
@@ -201,7 +185,7 @@ services:
   shopnex:
     ports: !override
       - '127.0.0.1:3000:3000'
-${UPDATER_BLOCK}${APPS_BLOCK}  caddy:
+${UPDATER_BLOCK}${STRIPE_BLOCK}  caddy:
     image: caddy:2
     restart: unless-stopped
     depends_on: [shopnex, stripe]

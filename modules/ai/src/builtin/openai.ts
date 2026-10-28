@@ -1,14 +1,11 @@
-// OpenAI (Responses API): one structured-output request per run
+// OpenAI (Responses API): one structured-output request per run. Loaded on first use (see ./index).
 import OpenAI from 'openai'
 import { zodTextFormat } from 'openai/helpers/zod'
-import type { AiRunRequest, AiRunResponse } from '@shopnex/app'
+import type { AiRunRequest, AiRunResponse } from '@shopnex/marketplace-sdk/ai'
 import { GenerationError, SYSTEM, prompt, type Settings } from './prompts'
 
-// Any model the key can use works (checked on save); this is only what a new setup starts with
-export const OPENAI_DEFAULT_MODEL = 'gpt-6.1-sol'
-
-// Shopnex calls with a 60-second budget: answer (or fail) well inside it
-const client = (apiKey: string) => new OpenAI({ apiKey, timeout: 50_000, maxRetries: 1 })
+// Staff are waiting: one attempt that answers (or fails) within a minute; they can press Try again
+const client = (apiKey: string) => new OpenAI({ apiKey, timeout: 55_000, maxRetries: 0 })
 
 /** Checks the key can use the model */
 export async function verify(apiKey: string, model: string) {
@@ -17,10 +14,10 @@ export async function verify(apiKey: string, model: string) {
 
 function explain(error: unknown, model: string): never {
   if (error instanceof OpenAI.AuthenticationError) {
-    throw new GenerationError('OpenAI rejected the API key. Enter a new one in the AI app.')
+    throw new GenerationError('OpenAI rejected the API key. Enter a new one in Settings → AI.')
   }
   if (error instanceof OpenAI.PermissionDeniedError || error instanceof OpenAI.NotFoundError) {
-    throw new GenerationError(`This API key can't use ${model}. Pick another model in the AI app.`)
+    throw new GenerationError(`This API key can't use ${model}. Pick another model in Settings → AI.`)
   }
   if (error instanceof OpenAI.RateLimitError) {
     throw new GenerationError(

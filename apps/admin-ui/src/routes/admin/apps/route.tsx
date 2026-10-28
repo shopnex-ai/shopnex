@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
 import { PageHeader } from '@/components/admin/page-header'
-import { AiAppsCard } from '@/screens/apps/ai-apps-card'
 import { AppRegistryCard } from '@/screens/apps/app-registry-card'
 import { AppStoreCard } from '@/screens/apps/app-store-card'
 import { InstalledAppsCard } from '@/screens/apps/installed-apps-card'
@@ -26,7 +25,6 @@ function AppsPage() {
       {canManage ? (
         <>
           <InstalledAppsCard />
-          <AiAppsCard shopId={tenant.shop.id} />
           <AppStoreCard shopId={tenant.shop.id} superAdmin={tenant.superAdmin} />
           {tenant.superAdmin && (
             <>

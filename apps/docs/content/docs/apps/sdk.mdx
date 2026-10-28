@@ -36,7 +36,7 @@ app.get('/', async (c) => {
 - `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) to `{ shop, userId, admin, data, payments, ai }`. Sets `frame-ancestors`.
 - `forShop(instance, shopId)`: for background work.
 - `verifyPaymentsRequest(c, 'payment' | 'refund')`, `verifyAiRequest(c)` and `verifyWebhook(c)`: checked against the instance's published keys.
-- `ai.configure({ 'product.description': url, … })`: the AI capabilities the app provides for the shop (see [AI apps](/docs/apps/ai)).
+- `ai.configure({ 'product.description': url, … })`: the AI capabilities the app provides for the shop (see [AI](/docs/apps/ai)).
 - `data.get/set/delete` and `data.getSecret/setSecret`: secrets are AES-GCM encrypted with a key derived from the app key, unreadable in Shopnex's database.
 
 ## UI components

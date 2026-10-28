@@ -246,34 +246,6 @@ importers:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
-  apps/ai:
-    dependencies:
-      '@anthropic-ai/sdk':
-        specifier: ^1.3.0
-        version: 1.3.0(zod@4.6.7)
-      '@hono/node-server':
-        specifier: ^2.1.5
-        version: 2.1.5(hono@4.13.13)
-      '@shopnex/app':
-        specifier: workspace:*
-        version: link:../../packages/app
-      hono:
-        specifier: 'catalog:'
-        version: 4.13.13
-      openai:
-        specifier: ^7.45.1
-        version: 7.45.1(undici@8.12.3)(zod@4.6.7)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.20.5
-      tsx:
-        specifier: ^4.23.15
-        version: 4.23.15
-
   apps/docs:
     dependencies:
       '@orpc/openapi':
@@ -402,6 +374,9 @@ importers:
 
   modules/ai:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^1.3.0
+        version: 1.3.0(zod@4.6.7)
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../apps
@@ -417,6 +392,12 @@ importers:
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      openai:
+        specifier: ^7.45.1
+        version: 7.45.1(undici@8.12.3)(zod@4.6.7)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

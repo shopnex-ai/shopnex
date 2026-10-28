@@ -23,6 +23,7 @@ import {
   storefrontKeys,
   CHANNEL_TYPES,
   WEBHOOK_TOPICS,
+  AI_BUILTIN_PROVIDERS,
   webhookEndpoints,
   API_SCOPES,
   DISCOUNT_TYPES,
@@ -445,7 +446,7 @@ export const paymentsAppConfigureInput = z.object({
   ready: z.boolean(),
 })
 
-// AI apps (see @shopnex/marketplace-sdk/ai)
+// AI capabilities (see @shopnex/marketplace-sdk/ai)
 export const aiAppConfigureInput = z.object({
   /** Capability → URL receiving its signed AiRunRequests (on the app's own origin). Left out: not provided. */
   capabilities: z.partialRecord(z.enum(AI_CAPABILITIES), z.url({ protocol: /^https?$/ })),
@@ -455,13 +456,23 @@ const aiRunFor = <C extends AiCapability>(capability: C) =>
   z.object({
     capability: z.literal(capability),
     productId: z.uuid(),
-    /** One of the apps providing the capability (GET /admin/ai/capabilities); default: the first */
-    appId: z.uuid().optional(),
+    /** Who should answer: "builtin" or an app's id (GET /admin/ai/capabilities); default: the first */
+    providerId: z.union([z.literal('builtin'), z.uuid()]).optional(),
     input: aiCapabilities[capability].input.optional(),
   })
 
 // One entry per capability, so each one's input is typed
 export const aiRunInput = z.discriminatedUnion('capability', [aiRunFor('product.description'), aiRunFor('product.seo')])
+
+// Settings → AI: built-in AI with the shop's own key
+export const aiSettingsInput = z.object({
+  provider: z.enum(AI_BUILTIN_PROVIDERS),
+  /** Empty keeps the saved key (same provider only) */
+  apiKey: z.string().trim().max(500).optional(),
+  /** Empty for the provider's default */
+  model: z.string().trim().max(100).optional(),
+  brandVoice: z.string().trim().max(1000).optional(),
+})
 
 export {
   AI_CAPABILITIES,

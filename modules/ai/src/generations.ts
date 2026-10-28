@@ -1,7 +1,7 @@
-// Business logic only — no HTTP / oRPC / Hono imports in this module (outbound calls to apps aside).
-// Running a capability: Shopnex picks the app, builds the context itself (the app never reads the shop's data
-// on its own), sends a signed request and checks the answer against the capability's schema. The result is a
-// suggestion: saving it is an ordinary write by whoever asked.
+// Business logic only — no HTTP / oRPC / Hono imports in this module (outbound calls to providers aside).
+// Running a capability: Shopnex picks the provider (built-in AI from Settings → AI first, then installed apps),
+// builds the context itself (a provider never reads the shop's data on its own) and checks the answer against the
+// capability's schema. The result is a suggestion: saving it is an ordinary write by whoever asked.
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { instanceSigner, instanceUrl } from '@shopnex/apps'
@@ -19,8 +19,9 @@ import {
   type AiRunRequest,
   type AiUsage,
 } from '@shopnex/marketplace-sdk/ai'
+import * as builtin from './builtin'
 import { AiError } from './errors'
-import { providers } from './providers'
+import { BUILTIN, providers } from './providers'
 
 // Models are slow; staff are waiting on the other end, so not much longer than this
 const TIMEOUT_MS = 60_000
@@ -31,8 +32,8 @@ export type RunInput<C extends AiCapability = AiCapability> = {
   /** The product (every capability so far has a product subject) */
   subjectId: string
   input?: AiInput<C>
-  /** Use this app instead of the shop's default for the capability */
-  appId?: string
+  /** BUILTIN or an app's id, instead of the shop's default for the capability */
+  providerId?: string
   /** Staff who asked; null for an API token */
   userId?: string | null
 }
@@ -40,7 +41,8 @@ export type RunInput<C extends AiCapability = AiCapability> = {
 export type RunResult<C extends AiCapability = AiCapability> = {
   id: string
   capability: C
-  app: { id: string; name: string }
+  /** BUILTIN or the app's id */
+  provider: { id: string; name: string }
   output: AiOutput<C>
   usage: AiUsage | null
 }
@@ -92,7 +94,7 @@ async function post(url: string, id: string, body: string) {
   }
 }
 
-// Whatever the app says, a description is stored like any other: sanitized
+// Whoever wrote it, a description is stored like any other: sanitized
 function clean<C extends AiCapability>(capability: C, output: AiOutput<C>): AiOutput<C> {
   if (capability === 'product.description') {
     const o = output as AiOutput<'product.description'>
@@ -106,16 +108,20 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
   const definition = aiCapabilities[capability]
   const input = definition.input.parse(request.input ?? {}) as AiInput<C>
 
-  const candidates = await providers(shopId, [capability])
-  const provider = request.appId ? candidates.find((p) => p.app.id === request.appId) : candidates[0]
-  if (!provider) {
+  // Built-in AI is the default when it's on; an app is used when asked for, or when built-in AI is off
+  const [own, apps] = await Promise.all([builtin.active(shopId), providers(shopId, [capability])])
+  const wanted = request.providerId
+  const app = wanted && wanted !== BUILTIN ? apps.find((p) => p.app.id === wanted) : own ? undefined : apps[0]
+  const useBuiltin = !app && own && (!wanted || wanted === BUILTIN)
+  if (!app && !useBuiltin) {
     throw new AiError(
       'CAPABILITY_UNAVAILABLE',
-      request.appId
-        ? `That app doesn't provide ${capability} in this shop`
-        : `No installed app provides ${capability}. Install an AI app first.`,
+      wanted
+        ? `That provider doesn't offer ${capability} in this shop`
+        : `Nothing provides ${capability} yet. Turn on AI in Settings → AI.`,
     )
   }
+  const provider = app ? { id: app.app.id, name: app.app.name } : { id: BUILTIN, name: own!.name }
 
   const [product, [shop]] = await Promise.all([
     productService.getById(shopId, request.subjectId),
@@ -125,7 +131,7 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
   const [details] = await productService.withDetails([product])
 
   const id = randomUUID()
-  const body = JSON.stringify({
+  const runRequest = {
     kind: 'ai.run',
     id,
     instance: await instanceUrl(),
@@ -135,12 +141,12 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
     input,
     shop: { name: shop.name, currency: shop.currency, storefrontUrl: shop.storefrontUrl },
     subject: { type: 'product', product: toAiProduct(details!, shop.currency) },
-  } as AiRunRequest)
+  } as AiRunRequest
 
   const record = {
     id,
     shopId,
-    appId: provider.app.id,
+    appId: app?.app.id ?? null,
     capability,
     subjectType: definition.subject,
     subjectId: product.id,
@@ -150,9 +156,12 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
   const started = Date.now()
   let result: { output: AiOutput<C>; usage?: AiUsage }
   try {
-    const parsed = aiRunResponse(capability).safeParse(await post(provider.url, id, body))
+    const answer = app
+      ? await post(app.url, id, JSON.stringify(runRequest))
+      : await own!.run(runRequest as AiRunRequest)
+    const parsed = aiRunResponse(capability).safeParse(answer)
     if (!parsed.success) {
-      throw new Error(`The app's answer doesn't match ${capability}: ${parsed.error.issues[0]?.message ?? ''}`)
+      throw new Error(`The answer doesn't match ${capability}: ${parsed.error.issues[0]?.message ?? ''}`)
     }
     result = parsed.data as typeof result
   } catch (error) {
@@ -160,7 +169,7 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
     await db
       .insert(schema.aiGenerations)
       .values({ ...record, status: 'failed', errorMessage, durationMs: Date.now() - started })
-    throw new AiError('PROVIDER_FAILED', `${provider.app.name} couldn't do this: ${errorMessage}`)
+    throw new AiError('PROVIDER_FAILED', `${provider.name} couldn't do this: ${errorMessage}`)
   }
 
   const output = clean(capability, result.output)
@@ -171,7 +180,7 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
     usage: result.usage ?? null,
     durationMs: Date.now() - started,
   })
-  return { id, capability, app: { id: provider.app.id, name: provider.app.name }, output, usage: result.usage ?? null }
+  return { id, capability, provider, output, usage: result.usage ?? null }
 }
 
 /** Staff used the suggestion or dismissed it */

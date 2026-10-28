@@ -1,17 +1,11 @@
-// Claude (Anthropic API): one structured-output request per run
+// Claude (Anthropic API): one structured-output request per run. Loaded on first use (see ./index).
 import Anthropic from '@anthropic-ai/sdk'
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod'
-import type { AiRunRequest, AiRunResponse } from '@shopnex/app'
+import type { AiRunRequest, AiRunResponse } from '@shopnex/marketplace-sdk/ai'
 import { GenerationError, SYSTEM, prompt, type Settings } from './prompts'
 
-export const CLAUDE_MODELS = [
-  { value: 'claude-opus-5-5', label: 'Claude Opus 5.5: best writing' },
-  { value: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5: fast, strong writing' },
-  { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5: fastest, lowest cost' },
-]
-
-// Shopnex calls with a 60-second budget: answer (or fail) well inside it
-const client = (apiKey: string) => new Anthropic({ apiKey, timeout: 50_000, maxRetries: 1 })
+// Staff are waiting: one attempt that answers (or fails) within a minute; they can press Try again
+const client = (apiKey: string) => new Anthropic({ apiKey, timeout: 55_000, maxRetries: 0 })
 
 /** Checks the key can use the model */
 export async function verify(apiKey: string, model: string) {
@@ -20,10 +14,10 @@ export async function verify(apiKey: string, model: string) {
 
 function explain(error: unknown, model: string): never {
   if (error instanceof Anthropic.AuthenticationError) {
-    throw new GenerationError('Anthropic rejected the API key. Enter a new one in the AI app.')
+    throw new GenerationError('Anthropic rejected the API key. Enter a new one in Settings → AI.')
   }
   if (error instanceof Anthropic.PermissionDeniedError || error instanceof Anthropic.NotFoundError) {
-    throw new GenerationError(`This API key can't use ${model}. Pick another model in the AI app.`)
+    throw new GenerationError(`This API key can't use ${model}. Pick another model in Settings → AI.`)
   }
   if (error instanceof Anthropic.RateLimitError) {
     throw new GenerationError('Anthropic is rate limiting this API key. Try again in a minute.')

@@ -1,8 +1,7 @@
 import { z } from 'zod'
-import { AI_FEEDBACK, aiProviderService, aiService } from '@shopnex/ai'
-import { marketplaceService } from '@shopnex/apps'
+import { AI_FEEDBACK, aiProviderService, aiService, aiSettingsService } from '@shopnex/ai'
 import { adminOrToken, aiApp, scoped, shopManager } from '../../orpc'
-import { aiAppConfigureInput, aiRunInput } from './schemas'
+import { aiAppConfigureInput, aiRunInput, aiSettingsInput } from './schemas'
 
 // AI apps (see @shopnex/marketplace-sdk/ai): register the capabilities they provide for the shop. App tokens only.
 export const aiAppApi = {
@@ -20,7 +19,7 @@ export const aiAppApi = {
 const productReader = scoped('read_products')
 
 export const ai = {
-  // What staff can use: capabilities with at least one installed app providing them
+  // What staff can use: capabilities with who provides them (built-in AI first, then installed apps)
   capabilities: adminOrToken
     .route({ method: 'GET', path: '/admin/ai/capabilities' })
     .handler(({ context }) => aiProviderService.available(context.shop.id)),
@@ -33,23 +32,35 @@ export const ai = {
         capability: input.capability,
         subjectId: input.productId,
         input: input.input,
-        appId: input.appId,
+        providerId: input.providerId,
         userId: context.userId,
       }),
     ),
-
-  // Admin → Apps: AI apps this shop could install (Install opens the consent screen, or the app's OAuth)
-  availableApps: shopManager.route({ method: 'GET', path: '/admin/ai/apps/available' }).handler(async ({ context }) => {
-    const [instanceUrl, apps] = await Promise.all([
-      marketplaceService.instanceUrl(),
-      aiProviderService.availableApps(context.shop.id),
-    ])
-    return { instanceUrl, apps }
-  }),
 
   // Staff used the suggestion (accepted) or dismissed it (rejected)
   feedback: productReader
     .route({ method: 'POST', path: '/admin/ai/generations/{id}/feedback' })
     .input(z.object({ id: z.uuid(), feedback: z.enum(AI_FEEDBACK) }))
     .handler(({ input, context }) => aiService.feedback(context.shop.id, input.id, input.feedback)),
+}
+
+// Settings → AI: built-in AI with the shop's own key. Owners and admins only; the key is write-only.
+export const aiSettings = {
+  get: shopManager
+    .route({ method: 'GET', path: '/admin/ai/settings' })
+    .handler(({ context }) => aiSettingsService.getSettings(context.shop.id)),
+  // Checks the key can use the model first and fails if the provider refuses it
+  update: shopManager
+    .route({ method: 'PUT', path: '/admin/ai/settings' })
+    .input(aiSettingsInput)
+    .handler(({ input, context }) =>
+      aiSettingsService.save(context.shop.id, {
+        ...input,
+        apiKey: input.apiKey || undefined,
+        model: input.model || undefined,
+      }),
+    ),
+  turnOff: shopManager
+    .route({ method: 'DELETE', path: '/admin/ai/settings' })
+    .handler(({ context }) => aiSettingsService.turnOff(context.shop.id)),
 }

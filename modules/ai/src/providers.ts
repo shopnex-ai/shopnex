@@ -1,10 +1,14 @@
-// AI apps register the capabilities they provide for a shop (like payments apps register their method). The
-// app's own setup decides when: e.g. only once the merchant has entered a provider key. Uninstalling the app
-// removes them (see appService.uninstall).
-import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
+// Who provides AI capabilities in a shop: built-in AI (Settings → AI) provides every capability; installed apps
+// register the ones they provide (like payments apps register their method), when their own setup decides.
+// Uninstalling an app removes them (see appService.uninstall).
+import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
+import * as builtin from './builtin'
 import { AiError } from './errors'
+
+/** The provider id of built-in AI (apps go by their app id) */
+export const BUILTIN = 'builtin'
 
 export type ConfigureInput = {
   /** Capability → the URL that receives its signed AiRunRequests. Capabilities left out are removed. */
@@ -75,39 +79,12 @@ export async function providers(shopId: string, capabilities: readonly string[] 
     .orderBy(asc(schema.aiProviders.createdAt), asc(schema.apps.name))
 }
 
-/** What staff can use in this shop: each available capability with the apps that provide it */
+/** What staff can use in this shop: each available capability with who provides it, the default first */
 export async function available(shopId: string) {
-  const rows = await providers(shopId)
+  const [own, rows] = await Promise.all([builtin.active(shopId), providers(shopId)])
+  const builtIn = own ? [{ id: BUILTIN, name: own.name, iconUrl: null }] : []
   return AI_CAPABILITIES.flatMap((capability) => {
-    const apps = rows.filter((r) => r.capability === capability).map((r) => r.app)
-    return apps.length ? [{ capability, apps }] : []
+    const list = [...builtIn, ...rows.filter((r) => r.capability === capability).map((r) => r.app)]
+    return list.length ? [{ capability, providers: list }] : []
   })
-}
-
-/** Apps that can provide AI capabilities (allowed write_ai_capabilities) and aren't installed in this shop yet */
-export async function availableApps(shopId: string) {
-  const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
-    .from(schema.apps)
-    .leftJoin(
-      schema.appInstallations,
-      and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
-      ),
-    )
-    .where(and(sql`'write_ai_capabilities' = any(${schema.apps.scopes})`, isNull(schema.apps.delistedAt)))
-    .orderBy(asc(schema.apps.name))
-  return rows
-    .filter((r) => r.installationId === null)
-    .map(({ app }) => ({
-      id: app.id,
-      name: app.name,
-      description: app.description,
-      iconUrl: app.iconUrl,
-      appUrl: app.appUrl,
-      clientId: app.clientId,
-      redirectUrls: app.redirectUrls,
-    }))
 }

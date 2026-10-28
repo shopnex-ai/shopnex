@@ -1,6 +1,7 @@
-// AI apps (see @shopnex/marketplace-sdk/ai). An installed app registers the AI capabilities it provides for a
-// shop; staff ask Shopnex, Shopnex sends the app only the data the capability needs and returns its answer as a
-// suggestion. Every run is kept as a generation: what was asked, what came back, and whether staff used it.
+// AI capabilities (see @shopnex/marketplace-sdk/ai). They come from the provider built into Shopnex (Settings →
+// AI, with the shop's own key) or from installed apps that register what they provide. Staff ask Shopnex, Shopnex
+// sends only the data the capability needs and returns the answer as a suggestion. Every run is kept as a
+// generation: what was asked, what came back, and whether staff used it.
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { apps } from './apps'
@@ -27,6 +28,25 @@ export const aiProviders = pgTable(
   (t) => [uniqueIndex('ai_providers_shop_app_capability_idx').on(t.shopId, t.appId, t.capability)],
 )
 
+// Settings → AI: the provider built into Shopnex, called with the shop's own API key. One row per shop; no row
+// means built-in AI is off (apps can still provide capabilities).
+export const AI_BUILTIN_PROVIDERS = ['anthropic', 'openai'] as const
+export type AiBuiltinProvider = (typeof AI_BUILTIN_PROVIDERS)[number]
+
+export const aiSettings = pgTable('ai_settings', {
+  shopId: text('shop_id')
+    .primaryKey()
+    .references(() => shops.id, { onDelete: 'cascade' }),
+  provider: text('provider').$type<AiBuiltinProvider>().notNull(),
+  model: text('model').notNull(),
+  // How the shop sounds, applied to everything written for it
+  brandVoice: text('brand_voice').notNull().default(''),
+  // AES-256-GCM, keyed from BETTER_AUTH_SECRET (see @shopnex/db/secrets)
+  apiKey: text('api_key').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const AI_GENERATION_STATUSES = ['succeeded', 'failed'] as const
 export type AiGenerationStatus = (typeof AI_GENERATION_STATUSES)[number]
 
@@ -42,7 +62,7 @@ export const aiGenerations = pgTable(
     shopId: text('shop_id')
       .notNull()
       .references(() => shops.id, { onDelete: 'cascade' }),
-    // Kept when the app is deleted: the history is the shop's
+    // The app that answered; null for the built-in provider. Kept when the app is deleted: the history is the shop's
     appId: uuid('app_id').references(() => apps.id, { onDelete: 'set null' }),
     capability: text('capability').notNull(),
     subjectType: text('subject_type').notNull(),
@@ -66,4 +86,5 @@ export const aiGenerations = pgTable(
 )
 
 export type AiProvider = typeof aiProviders.$inferSelect
+export type AiSettings = typeof aiSettings.$inferSelect
 export type AiGeneration = typeof aiGenerations.$inferSelect

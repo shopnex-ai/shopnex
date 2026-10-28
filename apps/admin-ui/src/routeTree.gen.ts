@@ -34,6 +34,7 @@ import { Route as AdminOnlineStorePagesRouteRouteImport } from './routes/admin/o
 import { Route as AdminOnlineStoreThemesRouteRouteImport } from './routes/admin/online-store/themes/route'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
+import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
@@ -181,6 +182,11 @@ const AdminProductsIdRoute = AdminProductsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminProductsRouteRoute,
 } as any)
+const AdminSettingsAiRoute = AdminSettingsAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsApiTokensRoute = AdminSettingsApiTokensRouteImport.update({
   id: '/api-tokens',
   path: '/api-tokens',
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
+  '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
     | '/admin/products/$id'
+    | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
     | '/admin/settings/email'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
     | '/admin/products/$id'
+    | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
     | '/admin/settings/email'
@@ -532,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
     | '/admin/products/$id'
+    | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
     | '/admin/settings/email'
@@ -734,6 +746,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/products/$id'
       preLoaderRoute: typeof AdminProductsIdRouteImport
       parentRoute: typeof AdminProductsRouteRoute
+    }
+    '/admin/settings/ai': {
+      id: '/admin/settings/ai'
+      path: '/ai'
+      fullPath: '/admin/settings/ai'
+      preLoaderRoute: typeof AdminSettingsAiRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/api-tokens': {
       id: '/admin/settings/api-tokens'
@@ -991,6 +1010,7 @@ const AdminSettingsNotificationsRouteRouteWithChildren =
 
 interface AdminSettingsRouteRouteChildren {
   AdminSettingsNotificationsRouteRoute: typeof AdminSettingsNotificationsRouteRouteWithChildren
+  AdminSettingsAiRoute: typeof AdminSettingsAiRoute
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
@@ -1007,6 +1027,7 @@ interface AdminSettingsRouteRouteChildren {
 const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsNotificationsRouteRoute:
     AdminSettingsNotificationsRouteRouteWithChildren,
+  AdminSettingsAiRoute: AdminSettingsAiRoute,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,

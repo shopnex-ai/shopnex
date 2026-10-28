@@ -617,13 +617,6 @@ const BUNDLED_APPS = [
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
   },
-  {
-    clientId: 'app_ai',
-    urlEnv: 'AI_APP_URL',
-    name: 'AI',
-    description: 'Product descriptions and search listings written with Claude or OpenAI, using your own API key.',
-    scopes: ['write_ai_capabilities'] as ApiScope[],
-  },
 ]
 
 type BundledApp = (typeof BUNDLED_APPS)[number]

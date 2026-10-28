@@ -36,7 +36,7 @@
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker
-- /ai # AI capabilities provided by apps: which app provides what (per shop), running one, generations → uses apps, catalog
+- /ai # AI capabilities: built-in providers (Claude, OpenAI; Settings → AI), apps that provide capabilities, running one, generations → uses apps, catalog
 
 Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
@@ -91,14 +91,18 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 
 ## AI capabilities
 
-No model provider lives in core: AI features come from installed apps (contract: `@shopnex/marketplace-sdk/ai`,
-docs: `apps/docs/content/docs/apps/ai.mdx`). Core owns capability discovery, permissions, the commerce context and
-what gets saved; the app owns provider, model, prompts and keys. It's the payments-app pattern applied to AI.
+Built in, like email providers: Settings → AI picks Claude or OpenAI with the shop's own key (contract:
+`@shopnex/marketplace-sdk/ai`, docs: `apps/docs/content/docs/apps/ai.mdx`). Apps can provide capabilities too; built-in
+AI answers first when it's on. Core owns permissions, the commerce context and what gets saved either way.
 
 ```text
-Admin ✨ Generate → POST /admin/ai/run → modules/ai → signed AiRunRequest → AI app → any provider
-                    (read_products)       picks the app, loads the product, checks + sanitizes the answer
+Admin ✨ Generate → POST /admin/ai/run → modules/ai ─┬→ built-in provider (modules/ai/src/builtin, shop's key)
+                    (read_products)                  └→ signed AiRunRequest → an app that provides the capability
+                    loads the product, checks the answer against the schema, sanitizes it, records the generation
 ```
+
+- Built-in providers run in the Shopnex process: settings in `ai_settings`, the key encrypted with
+  `@shopnex/db/secrets`, the SDKs imported on first use (Shopnex starts without them), one attempt under a minute
 
 - Capabilities (`product.description`, `product.seo`) are a typed, versioned registry with zod input/output schemas;
   additive changes only, a breaking change is a new name

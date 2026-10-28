@@ -1,16 +1,17 @@
 // What we ask for, whichever provider answers: the same instructions, facts and output shapes for every model.
 // Shopnex checks the answer against the capability's own schema; these only tell the model what to write.
 import { z } from 'zod'
-import type { AiProduct, AiRunRequest } from '@shopnex/app'
+import type { AiBuiltinProvider } from '@shopnex/db/schema'
+import type { AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 
 export type Settings = {
-  provider: 'anthropic' | 'openai'
+  provider: AiBuiltinProvider
   model: string
   /** How the shop sounds, applied to everything written for it */
   brandVoice: string
 }
 
-/** Shown to staff in the admin when a run fails */
+/** A failure staff should read as is (bad key, rate limit, refusal…) */
 export class GenerationError extends Error {}
 
 const LENGTHS = {

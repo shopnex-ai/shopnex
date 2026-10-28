@@ -59,15 +59,6 @@ jobs:
           push: true
           tags: ${{ steps.image.outputs.name }}-stripe:${{ github.ref_name }}
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.app
-          build-args: APP=ai
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.image.outputs.name }}-ai:${{ github.ref_name }}
-
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -84,13 +75,11 @@ jobs:
           TAG: ${{ github.ref_name }}
           IMAGE: ${{ steps.image.outputs.name }}
           STRIPE_IMAGE: ${{ steps.image.outputs.name }}-stripe
-          AI_IMAGE: ${{ steps.image.outputs.name }}-ai
         run: |
           gh release view "$TAG" --json body --jq .body > release-notes.md
           {
             printf '\n\n## Docker image\n\n'
             printf 'Shopnex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
-            printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
-            printf 'AI app: `docker pull %s:%s`\n' "$AI_IMAGE" "$TAG"
+            printf 'Stripe app: `docker pull %s:%s`\n' "$STRIPE_IMAGE" "$TAG"
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md

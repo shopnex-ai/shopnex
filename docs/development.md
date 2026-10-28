@@ -29,15 +29,15 @@ Bundled apps (`apps/<name>` built on `@shopnex/app`, e.g. `apps/stripe`) start w
 
 ### Local ports
 
-| Port | Service                                                              |
-| ---- | -------------------------------------------------------------------- |
-| 3000 | admin-ui: admin, API, hosted checkout                                |
-| 3200 | marketplace                                                          |
-| 3300 | landing                                                              |
-| 3400 | docs                                                                 |
-| 4321 | storefront template                                                  |
-| 4500 | app-starter (third-party app development)                            |
-| 46xx | bundled first-party apps, in order: 4600 stripe, 4601 ai, 4602 next… |
+| Port | Service                                                     |
+| ---- | ----------------------------------------------------------- |
+| 3000 | admin-ui: admin, API, hosted checkout                       |
+| 3200 | marketplace                                                 |
+| 3300 | landing                                                     |
+| 3400 | docs                                                        |
+| 4321 | storefront template                                         |
+| 4500 | app-starter (third-party app development)                   |
+| 46xx | bundled first-party apps, in order: 4600 stripe, 4601 next… |
 
 Ports are a local-dev convention only. Core knows an app by its URL (`<NAME>_APP_URL`, the App URL); in production
 each app gets its own hostname and listens on whatever `PORT` its platform assigns.

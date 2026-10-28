@@ -232,6 +232,13 @@
       "when": 1793161642151,
       "tag": "0032_ai_capabilities",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793165996230,
+      "tag": "0033_ai_settings",
+      "breakpoints": true
     }
   ]
 }

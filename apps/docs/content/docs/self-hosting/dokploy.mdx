@@ -3,7 +3,7 @@ title: Dokploy & similar platforms
 description: Deploy Shopnex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
 ---
 
-Platforms that run Docker Compose on your own server can deploy Shopnex, its Stripe app and its AI app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); set `SHOPNEX_VERSION` to a release tag before deploying.
+Platforms that run Docker Compose on your own server can deploy Shopnex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); set `SHOPNEX_VERSION` to a release tag before deploying.
 
 ## The compose file
 
@@ -26,11 +26,10 @@ services:
       TENANCY_MODE: single
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       STRIPE_APP_URL: ${STRIPE_APP_URL:?set STRIPE_APP_URL}
-      AI_APP_URL: ${AI_APP_URL:?set AI_APP_URL}
     volumes:
       - shopnex-data:/data
     expose:
-      - '3000'
+      - "3000"
 
   stripe:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION}
@@ -42,20 +41,7 @@ services:
     volumes:
       - stripe-data:/data
     expose:
-      - '4600'
-
-  ai:
-    image: ghcr.io/shopnex-ai/shopnex-ai:${SHOPNEX_VERSION}
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      AI_APP_URL: ${AI_APP_URL}
-      PORT: 4601
-      DATA_DIR: /data
-    volumes:
-      - ai-data:/data
-    expose:
-      - '4601'
+      - "4600"
 
   db:
     image: postgres:17
@@ -67,7 +53,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U shopnex']
+      test: ["CMD-SHELL", "pg_isready -U shopnex"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -75,40 +61,37 @@ services:
 volumes:
   shopnex-data:
   stripe-data:
-  ai-data:
   db-data:
 ```
 
 Set these required variables on the platform:
 
-| Variable            | Description                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD` | Password for the bundled database.                                   |
-| `APP_URL`           | Public origin, e.g. `https://shop.example.com`.                      |
-| `STRIPE_APP_URL`    | Public origin for the Stripe app, e.g. `https://stripe.example.com`. |
-| `AI_APP_URL`        | Public origin for the AI app, e.g. `https://ai.example.com`.         |
-| `SHOPNEX_VERSION`   | Release tag for all images, e.g. `v1.2.3`.                           |
+| Variable | Description |
+| --- | --- |
+| `POSTGRES_PASSWORD` | Password for the bundled database. |
+| `APP_URL` | Public origin, e.g. `https://shop.example.com`. |
+| `STRIPE_APP_URL` | Public origin for the Stripe app, e.g. `https://stripe.example.com`. |
+| `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. |
 
 `BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex-data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
 ## Dokploy
 
 1. Create a **Compose** service in a project and choose the **Raw** provider.
-2. Paste the compose file and set `SHOPNEX_VERSION`, `POSTGRES_PASSWORD`, `APP_URL`, `STRIPE_APP_URL`, and `AI_APP_URL` under **Environment**.
-3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, the Stripe host with service `stripe` and port `4600`, and the AI host with service `ai` and port `4601`. Enable HTTPS and point all three DNS records at the server.
+2. Paste the compose file and set `SHOPNEX_VERSION`, `POSTGRES_PASSWORD`, `APP_URL`, and `STRIPE_APP_URL` under **Environment**.
+3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
 4. Click **Deploy**.
 
-To update, change `SHOPNEX_VERSION` to the desired release tag and deploy again. `pull_policy: always` fetches that tagged image. Shopnex and its apps use the same release tag.
+To update, change `SHOPNEX_VERSION` to the desired release tag and deploy again. `pull_policy: always` fetches that tagged image. Shopnex and Stripe use the same release tag.
 
 ## Coolify, Portainer and others
 
-Any platform that accepts a compose file works the same way: Coolify (a Docker Compose resource), Portainer (a stack from the web editor), or plain `docker compose up -d`. Route the Shopnex domain to port `3000`, the Stripe domain to port `4600` and the AI domain to port `4601`; let the platform's proxy handle HTTPS. For plain Docker Compose without a proxy, publish all three ports on the host.
+Any platform that accepts a compose file works the same way: Coolify (a Docker Compose resource), Portainer (a stack from the web editor), or plain `docker compose up -d`. Route the Shopnex domain to port `3000` and the Stripe domain to port `4600`; let the platform's proxy handle HTTPS. For plain Docker Compose without a proxy, publish both ports on the host.
 
 The container already includes Caddy, which routes the admin and API to the admin app and everything else to the storefront, so the platform only needs to forward one port.
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
-  first.
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
 </Callout>
 
 ## Servers with little memory

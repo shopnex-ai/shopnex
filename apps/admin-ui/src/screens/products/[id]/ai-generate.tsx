@@ -1,6 +1,6 @@
 'use client'
 
-// ✨ Generate: asks an AI app installed in the shop (Apps) for a suggestion. "Use" puts it into the product form
+// ✨ Generate: asks the shop's AI (Settings → AI, or an installed AI app) for a suggestion. "Use" puts it into the product form
 // as an unsaved change, so nothing is saved until staff press Save. Hidden when no app provides the capability.
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { SparklesIcon } from 'lucide-react'
@@ -25,12 +25,12 @@ import { orpc } from '@/lib/orpc'
 const label = (value: string) => value[0]!.toUpperCase() + value.slice(1)
 const options = (values: readonly string[]) => values.map((value) => ({ value, label: label(value) }))
 
-function useAiApps(capability: AiCapability) {
+function useAiProviders(capability: AiCapability) {
   const capabilities = useQuery({ ...orpc.admin.ai.capabilities.queryOptions(), staleTime: 60_000 })
-  return capabilities.data?.find((c) => c.capability === capability)?.apps ?? []
+  return capabilities.data?.find((c) => c.capability === capability)?.providers ?? []
 }
 
-type Generated<C extends AiCapability> = { id: string; app: { name: string }; output: AiOutput<C> }
+type Generated<C extends AiCapability> = { id: string; provider: { name: string }; output: AiOutput<C> }
 
 function AiDialog<C extends AiCapability>({
   capability,
@@ -53,15 +53,15 @@ function AiDialog<C extends AiCapability>({
   preview: (output: AiOutput<C>) => ReactNode
   onUse: (output: AiOutput<C>) => void
 }) {
-  const apps = useAiApps(capability)
+  const providers = useAiProviders(capability)
   const [open, setOpen] = useState(false)
-  const [appId, setAppId] = useState<string | null>(null)
+  const [providerId, setProviderId] = useState<string | null>(null)
   const [result, setResult] = useState<Generated<C> | null>(null)
   const run = useMutation(orpc.admin.ai.run.mutationOptions())
   const feedback = useMutation(orpc.admin.ai.feedback.mutationOptions())
 
-  if (apps.length === 0) return null
-  const app = apps.find((a) => a.id === appId) ?? apps[0]!
+  if (providers.length === 0) return null
+  const provider = providers.find((p) => p.id === providerId) ?? providers[0]!
 
   const generate = async () => {
     const values = await input()
@@ -70,7 +70,7 @@ function AiDialog<C extends AiCapability>({
       const generated = await run.mutateAsync({
         capability,
         productId,
-        appId: app.id,
+        providerId: provider.id,
         input: values,
       } as Parameters<typeof run.mutateAsync>[0])
       // The output matches the capability asked for (the API checks it against that capability's schema)
@@ -101,25 +101,25 @@ function AiDialog<C extends AiCapability>({
         {result ? (
           <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border p-3 text-sm">
             {preview(result.output)}
-            <p className="text-xs text-muted-foreground">By {result.app.name}. Review it before saving.</p>
+            <p className="text-xs text-muted-foreground">By {result.provider.name}. Review it before saving.</p>
           </div>
         ) : (
           <FieldGroup>
-            {apps.length > 1 && (
+            {providers.length > 1 && (
               <Field>
-                <FieldLabel>App</FieldLabel>
+                <FieldLabel>Provider</FieldLabel>
                 <Select
-                  items={apps.map((a) => ({ value: a.id, label: a.name }))}
-                  value={app.id}
-                  onValueChange={(value) => setAppId(value)}
+                  items={providers.map((p) => ({ value: p.id, label: p.name }))}
+                  value={provider.id}
+                  onValueChange={(value) => setProviderId(value)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {apps.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name}
+                    {providers.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

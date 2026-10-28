@@ -1,7 +1,17 @@
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry'
 
-type StartupGlobal = typeof globalThis & { shopnexBackgroundServices?: Promise<void> }
+type StartupGlobal = typeof globalThis & {
+  shopnexBackgroundServices?: Promise<void>
+  shopnexRejectionLogger?: true
+}
 const startupGlobal = globalThis as StartupGlobal
+
+// A rejected promise nobody awaited (in a worker, a call to an app or an AI provider…) would make Node exit, taking
+// checkout down with it: log it instead. Registered once, also across dev reloads.
+if (!startupGlobal.shopnexRejectionLogger) {
+  startupGlobal.shopnexRejectionLogger = true
+  process.on('unhandledRejection', (reason) => console.error('[shopnex] unhandled rejection:', reason))
+}
 
 function startBackgroundServices() {
   startupGlobal.shopnexBackgroundServices ??= (async () => {
