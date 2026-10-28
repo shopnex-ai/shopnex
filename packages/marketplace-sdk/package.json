@@ -11,6 +11,7 @@
     "./keys": "./src/keys.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -18,5 +19,9 @@
     "@orpc/contract": "^1.15.7",
     "@orpc/openapi-client": "^1.15.7",
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }
