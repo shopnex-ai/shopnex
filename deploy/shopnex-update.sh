@@ -14,9 +14,11 @@ STATUS_DIR="$DIR/update/status"
 BACKUPS="$DIR/backups"
 KEEP_BACKUPS=5
 
-[ -f "$REQUEST" ] || exit 0
+# Wait for any update already running, then look at the request: a second click made during an update is handled
+# afterwards, never skipped, so the request file cannot linger and keep retriggering the path unit
 exec 9>/run/shopnex-update.lock
-flock -n 9 || exit 0
+flock 9
+[ -f "$REQUEST" ] || exit 0
 
 # Read, then delete right away so a failure below can never leave the path unit retriggering
 # Only characters a release tag can contain survive, which also keeps the status JSON well-formed
@@ -37,6 +39,7 @@ env_set() {
 
 cd "$DIR" || exit 1
 mkdir -p "$STATUS_DIR" "$BACKUPS"
+chmod 700 "$BACKUPS"
 
 # ── check the request ────────────────────────────────────────────────────────
 status running checking "Checking the request"
@@ -52,7 +55,8 @@ done
 # ── back up the database ─────────────────────────────────────────────────────
 status running backup "Backing up the database"
 BACKUP="$BACKUPS/shopnex-$(date +%Y%m%d-%H%M%S)-before-$VERSION.sql"
-docker compose exec -T db pg_dump -U shopnex shopnex > "$BACKUP" 2>/dev/null && [ -s "$BACKUP" ] \
+# The dump holds customer data: readable by root only
+(umask 077 && docker compose exec -T db pg_dump -U shopnex shopnex > "$BACKUP" 2>/dev/null) && [ -s "$BACKUP" ] \
   || { rm -f "$BACKUP"; fail backup "The database backup failed, so nothing was changed."; }
 gzip -f "$BACKUP"
 ls -1t "$BACKUPS"/*.sql.gz 2>/dev/null | tail -n +"$((KEEP_BACKUPS + 1))" | xargs -r rm -f
