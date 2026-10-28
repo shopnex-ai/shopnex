@@ -28,6 +28,8 @@ jobs:
 
       - run: pnpm typecheck
 
+      - run: pnpm --filter shopnex-order-inquiry test
+
       - run: pnpm build
 
   app-image:

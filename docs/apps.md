@@ -76,6 +76,10 @@ admin, data, payments }`; sets `frame-ancestors`. `forShop(instance, shopId)` fo
   backend with fresh session tokens; no client build
 - Marketplace apps set `SHOPNEX_MARKETPLACE_URL`: installs are confirmed with the marketplace (cached an hour)
 
+An optional [order inquiry example](../templates/order-inquiry/README.md) checks a quoted order reference
+before reading an order through the authenticated SDK. It keeps existing order numbers and uses only
+`read_orders`; its README compares the extra code with native lookup and documents the experiment's limits.
+
 ## App Marketplace
 
 A separate hosted service; self-hosted Shopnex installs connect to it.

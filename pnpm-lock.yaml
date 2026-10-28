@@ -859,6 +859,31 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  templates/order-inquiry:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.13)
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../../packages/app
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.13
+      refmint:
+        specifier: 0.1.0-alpha.3
+        version: 0.1.0-alpha.3
+    devDependencies:
+      '@shopnex/marketplace-sdk':
+        specifier: workspace:*
+        version: link:../../packages/marketplace-sdk
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   templates/storefront:
     dependencies:
       '@astrojs/node':
@@ -6432,6 +6457,10 @@ packages:
 
   recma-stringify@1.0.0:
     resolution: {integrity: sha512-cjwII1MdIIVloKvC9ErQ+OgAtwHBmcZ0Bg4ciz78FtbT8In39aAYbaA7zvxQ61xVMSPE8WxhLwLbhif4Js2C+g==}
+
+  refmint@0.1.0-alpha.3:
+    resolution: {integrity: sha512-PPmQ026pZkFzgt2eTt4L+ppsbcpXxeqonOKWoSVoZZKO9dVEm+jUwHZjJteRmfC3+G80fp9EhcQzpfSTaSExjQ==}
+    engines: {node: '>=22'}
 
   regex-recursion@6.0.2:
     resolution: {integrity: sha512-0YCaSCq2VRIebiaUviZNs0cBz1kg5kVS2UKUfNIx8YVs1cN3AV7NTctO5FOKBA+UT2BPJIWZauYHPqJODG50cg==}
@@ -13020,6 +13049,8 @@ snapshots:
       estree-util-to-js: 2.0.0
       unified: 11.0.5
       vfile: 6.0.3
+
+  refmint@0.1.0-alpha.3: {}
 
   regex-recursion@6.0.2:
     dependencies:
