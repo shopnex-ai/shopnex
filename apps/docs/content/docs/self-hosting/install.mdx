@@ -51,6 +51,17 @@ sudo systemctl disable --now shopnex-update.path
 sudo rm /usr/local/sbin/shopnex-update
 ```
 
+## Moving from the older installer
+
+Earlier versions of the installer ran Shopnex directly on the server, with Node and Postgres installed on the host and no Docker. The new installer refuses to run on such a server, because it would start a new, empty shop next to your real one.
+
+There is no automatic migration yet. Until there is, your existing shop keeps running as it is. If you want to move it to Docker, first save two things from the old server:
+
+- a database dump: `sudo -u postgres pg_dump shopnex > shopnex.sql`
+- the `BETTER_AUTH_SECRET` line from `/opt/shopnex/.env`. Saved provider keys are encrypted with it and cannot be read without it.
+
+Then [open an issue](https://github.com/shopnex-ai/shopnex/issues) and we will help you move it.
+
 ## Manage it
 
 Everything lives in `/opt/shopnex`. Your settings are in `.env`.
