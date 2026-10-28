@@ -34,12 +34,23 @@ function explain(error: unknown, model: string): never {
 }
 
 export async function run(apiKey: string, settings: Settings, request: AiRunRequest): Promise<AiRunResponse> {
-  const { name, schema, text, maxTokens } = prompt(request, settings)
+  const { name, schema, text, maxTokens, images } = prompt(request, settings)
   const ask = (reasoning: boolean) =>
     client(apiKey).responses.parse({
       model: settings.model,
       instructions: SYSTEM,
-      input: text,
+      input: images.length
+        ? [
+            {
+              role: 'user' as const,
+              content: [
+                { type: 'input_text' as const, text },
+                // Low detail is plenty for a one-line description, and costs a fraction
+                ...images.map((url) => ({ type: 'input_image' as const, image_url: url, detail: 'low' as const })),
+              ],
+            },
+          ]
+        : text,
       max_output_tokens: maxTokens,
       text: { format: zodTextFormat(schema, name) },
       // Short copy needs little thinking: at the default, reasoning models (gpt-5…) spend ~6,000 tokens and half a

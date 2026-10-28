@@ -104,7 +104,7 @@ Admin ✨ Generate → POST /admin/ai/run → modules/ai ─┬→ built-in prov
 - Built-in providers run in the Shopnex process: settings in `ai_settings`, the key encrypted with
   `@shopnex/db/secrets`, the SDKs imported on first use (Shopnex starts without them), one attempt under a minute
 
-- Capabilities (`product.description`, `product.seo`) are a typed, versioned registry with zod input/output schemas;
+- Capabilities (`product.description`, `product.seo`, `product.image_alt`, `product.classify`, `collection.description`, `collection.seo`, `page.content`) are a typed, versioned registry with zod input/output schemas;
   additive changes only, a breaking change is a new name
 - Apps register what they provide per shop with `POST /admin/ai-app/configure` (scope `write_ai_capabilities`,
   URLs on the app's origin) → `ai_providers`. Uninstalling removes them

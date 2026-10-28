@@ -452,17 +452,30 @@ export const aiAppConfigureInput = z.object({
   capabilities: z.partialRecord(z.enum(AI_CAPABILITIES), z.url({ protocol: /^https?$/ })),
 })
 
-const aiRunFor = <C extends AiCapability>(capability: C) =>
+// What a capability is about: the product or collection to read (a page being written may not exist yet)
+const aiRunFor = <C extends AiCapability, S extends z.ZodRawShape>(capability: C, subject: S) =>
   z.object({
     capability: z.literal(capability),
-    productId: z.uuid(),
+    ...subject,
     /** Who should answer: "builtin" or an app's id (GET /admin/ai/capabilities); default: the first */
     providerId: z.union([z.literal('builtin'), z.uuid()]).optional(),
     input: aiCapabilities[capability].input.optional(),
   })
 
+const product = { productId: z.uuid() }
+const collection = { collectionId: z.uuid() }
+const page = { pageId: z.uuid().optional() }
+
 // One entry per capability, so each one's input is typed
-export const aiRunInput = z.discriminatedUnion('capability', [aiRunFor('product.description'), aiRunFor('product.seo')])
+export const aiRunInput = z.discriminatedUnion('capability', [
+  aiRunFor('product.description', product),
+  aiRunFor('product.seo', product),
+  aiRunFor('product.image_alt', product),
+  aiRunFor('product.classify', product),
+  aiRunFor('collection.description', collection),
+  aiRunFor('collection.seo', collection),
+  aiRunFor('page.content', page),
+])
 
 // Settings → AI: built-in AI with the shop's own key
 export const aiSettingsInput = z.object({
@@ -477,6 +490,7 @@ export const aiSettingsInput = z.object({
 export {
   AI_CAPABILITIES,
   AI_LENGTHS,
+  AI_PAGE_KINDS,
   AI_TONES,
   aiCapabilities,
   type AiCapability,

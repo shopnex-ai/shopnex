@@ -66,7 +66,8 @@ export const aiGenerations = pgTable(
     appId: uuid('app_id').references(() => apps.id, { onDelete: 'set null' }),
     capability: text('capability').notNull(),
     subjectType: text('subject_type').notNull(),
-    subjectId: uuid('subject_id').notNull(),
+    // Null when the subject doesn't exist yet (a page being written)
+    subjectId: uuid('subject_id'),
     input: jsonb('input').notNull(),
     output: jsonb('output'),
     status: text('status').$type<AiGenerationStatus>().notNull(),

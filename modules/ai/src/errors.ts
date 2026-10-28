@@ -5,6 +5,8 @@ export type AiErrorCode =
   // Neither built-in AI nor an installed app provides this capability for the shop (or not the one asked for)
   | 'CAPABILITY_UNAVAILABLE'
   | 'SUBJECT_NOT_FOUND'
+  // The capability is about a product or collection and none was given
+  | 'SUBJECT_REQUIRED'
   | 'GENERATION_NOT_FOUND'
   // The provider (built in or an app) failed, timed out or answered something that doesn't match the output
   | 'PROVIDER_FAILED'

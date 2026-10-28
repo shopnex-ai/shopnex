@@ -1,5 +1,7 @@
+import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { AI_FEEDBACK, aiProviderService, aiService, aiSettingsService } from '@shopnex/ai'
+import { hasScope } from '@shopnex/tenancy'
 import { adminOrToken, aiApp, scoped, shopManager } from '../../orpc'
 import { aiAppConfigureInput, aiRunInput, aiSettingsInput } from './schemas'
 
@@ -14,8 +16,8 @@ export const aiAppApi = {
     }),
 }
 
-// Every capability has a product subject so far: whoever may read the product may ask for a suggestion. Saving
-// it is a separate, ordinary write (e.g. PATCH /admin/products/{id}).
+// Whoever may read the product or collection may ask for a suggestion about it. Saving it is a separate, ordinary
+// write (e.g. PATCH /admin/products/{id}). Pages are staff only, like the pages API.
 const productReader = scoped('read_products')
 
 export const ai = {
@@ -24,18 +26,26 @@ export const ai = {
     .route({ method: 'GET', path: '/admin/ai/capabilities' })
     .handler(({ context }) => aiProviderService.available(context.shop.id)),
 
-  run: productReader
+  run: adminOrToken
     .route({ method: 'POST', path: '/admin/ai/run' })
     .input(aiRunInput)
-    .handler(({ input, context }) =>
-      aiService.run(context.shop.id, {
+    .handler(({ input, context }) => {
+      if (context.token && (input.capability === 'page.content' || !hasScope(context.token.scopes, 'read_products'))) {
+        throw new ORPCError('FORBIDDEN', {
+          message:
+            input.capability === 'page.content'
+              ? 'Page copy is for staff only'
+              : 'This API token needs the read_products scope',
+        })
+      }
+      return aiService.run(context.shop.id, {
         capability: input.capability,
-        subjectId: input.productId,
+        subjectId: 'productId' in input ? input.productId : 'collectionId' in input ? input.collectionId : input.pageId,
         input: input.input,
         providerId: input.providerId,
         userId: context.userId,
-      }),
-    ),
+      })
+    }),
 
   // Staff used the suggestion (accepted) or dismissed it (rejected)
   feedback: productReader

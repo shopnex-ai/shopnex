@@ -32,7 +32,7 @@ function explain(error: unknown, model: string): never {
 }
 
 export async function run(apiKey: string, settings: Settings, request: AiRunRequest): Promise<AiRunResponse> {
-  const { schema, text, maxTokens } = prompt(request, settings)
+  const { schema, text, maxTokens, images } = prompt(request, settings)
   let response
   try {
     response = await client(apiKey).beta.messages.parse({
@@ -41,7 +41,15 @@ export async function run(apiKey: string, settings: Settings, request: AiRunRequ
       // Short marketing copy doesn't need deep thinking
       output_config: { effort: 'low', format: betaZodOutputFormat(schema) },
       system: SYSTEM,
-      messages: [{ role: 'user', content: text }],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            ...images.map((url) => ({ type: 'image' as const, source: { type: 'url' as const, url } })),
+            { type: 'text' as const, text },
+          ],
+        },
+      ],
       // A declined request is retried on the model Anthropic recommends (Haiku has no server-side fallback)
       ...(!settings.model.startsWith('claude-haiku') && {
         betas: ['server-side-fallback-2026-07-01'],

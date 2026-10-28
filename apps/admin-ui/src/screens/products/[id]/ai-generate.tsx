@@ -1,161 +1,11 @@
 'use client'
 
-// ✨ Generate: asks the shop's AI (Settings → AI, or an installed AI app) for a suggestion. "Use" puts it into the product form
-// as an unsaved change, so nothing is saved until staff press Save. Hidden when no app provides the capability.
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { SparklesIcon } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
-import { toast } from 'sonner'
-import { AI_LENGTHS, AI_TONES, aiCapabilities, type AiCapability, type AiOutput } from '@shopnex/api/schemas'
-import { SelectField, TextareaField, useZodForm } from '@/components/admin/form'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { orpc } from '@/lib/orpc'
-
-const label = (value: string) => value[0]!.toUpperCase() + value.slice(1)
-const options = (values: readonly string[]) => values.map((value) => ({ value, label: label(value) }))
-
-function useAiProviders(capability: AiCapability) {
-  const capabilities = useQuery({ ...orpc.admin.ai.capabilities.queryOptions(), staleTime: 60_000 })
-  return capabilities.data?.find((c) => c.capability === capability)?.providers ?? []
-}
-
-type Generated<C extends AiCapability> = { id: string; provider: { name: string }; output: AiOutput<C> }
-
-function AiDialog<C extends AiCapability>({
-  capability,
-  productId,
-  title,
-  description,
-  fields,
-  input,
-  preview,
-  onUse,
-}: {
-  capability: C
-  productId: string
-  title: string
-  description: string
-  /** The capability's options (a form the caller owns) */
-  fields?: ReactNode
-  /** The options, validated; null when they aren't valid */
-  input: () => Promise<object | null>
-  preview: (output: AiOutput<C>) => ReactNode
-  onUse: (output: AiOutput<C>) => void
-}) {
-  const providers = useAiProviders(capability)
-  const [open, setOpen] = useState(false)
-  const [providerId, setProviderId] = useState<string | null>(null)
-  const [result, setResult] = useState<Generated<C> | null>(null)
-  const run = useMutation(orpc.admin.ai.run.mutationOptions())
-  const feedback = useMutation(orpc.admin.ai.feedback.mutationOptions())
-
-  if (providers.length === 0) return null
-  const provider = providers.find((p) => p.id === providerId) ?? providers[0]!
-
-  const generate = async () => {
-    const values = await input()
-    if (!values) return
-    try {
-      const generated = await run.mutateAsync({
-        capability,
-        productId,
-        providerId: provider.id,
-        input: values,
-      } as Parameters<typeof run.mutateAsync>[0])
-      // The output matches the capability asked for (the API checks it against that capability's schema)
-      setResult(generated as unknown as Generated<C>)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not generate')
-    }
-  }
-
-  // Feedback is best effort: it never gets in the way of editing
-  const close = (used: boolean) => {
-    if (result) feedback.mutate({ id: result.id, feedback: used ? 'accepted' : 'rejected' })
-    setResult(null)
-    setOpen(false)
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close(false))}>
-      <DialogTrigger render={<Button type="button" variant="ghost" size="sm" />}>
-        <SparklesIcon />
-        Generate
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {result ? (
-          <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border p-3 text-sm">
-            {preview(result.output)}
-            <p className="text-xs text-muted-foreground">By {result.provider.name}. Review it before saving.</p>
-          </div>
-        ) : (
-          <FieldGroup>
-            {providers.length > 1 && (
-              <Field>
-                <FieldLabel>Provider</FieldLabel>
-                <Select
-                  items={providers.map((p) => ({ value: p.id, label: p.name }))}
-                  value={provider.id}
-                  onValueChange={(value) => setProviderId(value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
-            {fields}
-          </FieldGroup>
-        )}
-        <DialogFooter>
-          {result ? (
-            <>
-              <Button type="button" variant="ghost" onClick={generate} disabled={run.isPending}>
-                {run.isPending ? 'Generating…' : 'Try again'}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  onUse(result.output)
-                  close(true)
-                }}
-              >
-                Use this
-              </Button>
-            </>
-          ) : (
-            <Button type="button" onClick={generate} disabled={run.isPending}>
-              <SparklesIcon />
-              {run.isPending ? 'Generating…' : 'Generate'}
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
+// ✨ Generate for products: description, search listing, image alt text and organization. Each opens the shared dialog
+// (components/admin/ai-dialog); "Use" puts the suggestion into the product form as an unsaved change.
+import { aiCapabilities, AI_LENGTHS, AI_TONES } from '@shopnex/api/schemas'
+import { AiDialog, options } from '@/components/admin/ai-dialog'
+import { CheckboxField, SelectField, TextareaField, useZodForm } from '@/components/admin/form'
+import { Badge } from '@/components/ui/badge'
 
 const descriptionInput = aiCapabilities['product.description'].input
 
@@ -170,7 +20,7 @@ export function GenerateDescription({
   return (
     <AiDialog
       capability="product.description"
-      productId={productId}
+      subject={{ productId }}
       title="Generate a description"
       description="Written from the product's title, options, tags and current description."
       input={() => new Promise((resolve) => void form.handleSubmit(resolve, () => resolve(null))())}
@@ -191,7 +41,10 @@ export function GenerateDescription({
       }
       // Sanitized by Shopnex before it gets here
       preview={(output) => (
-        <div className="prose prose-sm" dangerouslySetInnerHTML={{ __html: output.descriptionHtml }} />
+        <div
+          className="[&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_strong]:font-semibold [&_em]:italic"
+          dangerouslySetInnerHTML={{ __html: output.descriptionHtml }}
+        />
       )}
       onUse={(output) => onUse(output.descriptionHtml)}
     />
@@ -211,7 +64,7 @@ export function GenerateSeo({
   return (
     <AiDialog
       capability="product.seo"
-      productId={productId}
+      subject={{ productId }}
       title="Generate a search listing"
       description="A page title and meta description for search engines."
       input={() => new Promise((resolve) => void form.handleSubmit(resolve, () => resolve(null))())}
@@ -229,6 +82,120 @@ export function GenerateSeo({
           <p className="font-medium text-primary">{output.title}</p>
           <p className="text-muted-foreground">{output.description}</p>
         </div>
+      )}
+      onUse={onUse}
+    />
+  )
+}
+
+const imageAltInput = aiCapabilities['product.image_alt'].input
+
+// Alt text for the images that have none yet; the product's other alt texts stay as they are
+export function GenerateImageAlt({
+  productId,
+  images,
+  onUse,
+}: {
+  productId: string
+  images: { url: string; alt: string | null }[]
+  onUse: (alts: { position: number; alt: string }[]) => void
+}) {
+  const form = useZodForm(imageAltInput, { defaultValues: { onlyMissing: true, instructions: '' } })
+  if (images.length === 0) return null
+  return (
+    <AiDialog
+      capability="product.image_alt"
+      subject={{ productId }}
+      trigger="Generate alt text"
+      title="Generate alt text"
+      description="Describes what the model sees in each image, for screen readers and image search. Needs a model that can see images."
+      input={() => new Promise((resolve) => void form.handleSubmit(resolve, () => resolve(null))())}
+      fields={
+        <>
+          <CheckboxField
+            control={form.control}
+            name="onlyMissing"
+            label="Only images without alt text"
+            description="Up to 10 images per run."
+          />
+          <TextareaField
+            control={form.control}
+            name="instructions"
+            label="Instructions"
+            description="Optional, e.g. “mention the colour of the fabric”"
+            rows={2}
+          />
+        </>
+      }
+      preview={(output) => (
+        <ul className="space-y-3">
+          {output.images.map(({ position, alt }) => (
+            <li key={position} className="flex items-start gap-3">
+              <img src={images[position]?.url} alt="" className="size-14 shrink-0 rounded-md border object-cover" />
+              <p>{alt}</p>
+            </li>
+          ))}
+          {output.images.length === 0 && <li className="text-muted-foreground">Nothing to describe.</li>}
+        </ul>
+      )}
+      onUse={(output) => onUse(output.images)}
+    />
+  )
+}
+
+const classifyInput = aiCapabilities['product.classify'].input
+
+// A product type, tags and collections, preferring what the shop already uses
+export function GenerateClassification({
+  productId,
+  onUse,
+}: {
+  productId: string
+  onUse: (suggestion: { productType: string; tags: string[]; collections: string[] }) => void
+}) {
+  const form = useZodForm(classifyInput, { defaultValues: { instructions: '' } })
+  return (
+    <AiDialog
+      capability="product.classify"
+      subject={{ productId }}
+      trigger="Suggest"
+      title="Suggest how to organize this"
+      description="A product type, tags and collections, based on what the shop already uses."
+      input={() => new Promise((resolve) => void form.handleSubmit(resolve, () => resolve(null))())}
+      fields={
+        <TextareaField
+          control={form.control}
+          name="instructions"
+          label="Instructions"
+          description="Optional, e.g. “this is a gift item”"
+          rows={2}
+        />
+      }
+      preview={(output) => (
+        <dl className="space-y-3">
+          <div>
+            <dt className="text-xs text-muted-foreground">Product type</dt>
+            <dd>{output.productType || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Tags (added to the current ones)</dt>
+            <dd className="flex flex-wrap gap-1.5">
+              {output.tags.length ? output.tags.map((tag) => <Badge key={tag}>{tag}</Badge>) : '—'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Collections (added right away)</dt>
+            <dd className="flex flex-wrap gap-1.5">
+              {output.collections.length
+                ? output.collections.map((handle) => (
+                    <Badge key={handle} variant="outline">
+                      {handle}
+                    </Badge>
+                  ))
+                : '—'}
+            </dd>
+          </div>
+        </dl>
       )}
       onUse={onUse}
     />

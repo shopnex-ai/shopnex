@@ -25,6 +25,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { client, orpc, type Outputs } from '@/lib/orpc'
+import { GeneratePage } from './ai-generate'
 
 type Page = Outputs['admin']['pages']['get']
 
@@ -135,6 +136,16 @@ function PageForm({ page }: { page: Page | null }) {
                   value={body.field.value}
                   onChange={body.field.onChange}
                   invalid={!!body.fieldState.error}
+                  actions={
+                    <GeneratePage
+                      pageId={page?.id}
+                      onUse={(draft) => {
+                        // A title already typed stays; the draft's is for a page that has none yet
+                        if (!form.getValues('title')) form.setValue('title', draft.title, { shouldDirty: true })
+                        form.setValue('bodyHtml', draft.bodyHtml, { shouldDirty: true })
+                      }}
+                    />
+                  }
                 />
               </Field>
             </FieldGroup>

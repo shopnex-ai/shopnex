@@ -264,6 +264,92 @@ describe('Built-in AI (Settings → AI)', () => {
   })
 })
 
+describe('AI app: image alt text, classification, collections and pages', () => {
+  let collectionId: string
+  const handle = `e2e-ai-${Date.now()}`
+
+  before(async () => {
+    ok(
+      await configure({
+        'product.image_alt': `${appUrl}/alt`,
+        'product.classify': `${appUrl}/classify`,
+        'collection.description': `${appUrl}/collection-description`,
+        'collection.seo': `${appUrl}/collection-seo`,
+        'page.content': `${appUrl}/page`,
+      }),
+    )
+    const collection = ok(
+      await call(
+        'POST',
+        '/admin/collections',
+        { title: 'E2E AI summer', slug: handle },
+        await fx.token(['write_products']),
+      ),
+    )
+    collectionId = collection.id
+  })
+
+  after(async () => {
+    if (collectionId) {
+      await db.delete(schema.aiGenerations).where(eq(schema.aiGenerations.subjectId, collectionId))
+      await db.delete(schema.collections).where(eq(schema.collections.id, collectionId))
+    }
+  })
+
+  test('product.image_alt keeps only positions the product has an image for', async () => {
+    // The product has no images, so there is nothing a model could have described
+    answer = () => ({ output: { images: [{ position: 0, alt: 'A linen shirt on a hanger' }] } })
+    const r = ok(await run({ capability: 'product.image_alt', input: { onlyMissing: false } }))
+    assert.equal(received.at(-1)!.capability, 'product.image_alt')
+    assert.deepEqual(r.output.images, [])
+  })
+
+  test('product.classify gets the shop catalog and can only name collections that exist', async () => {
+    answer = () => ({
+      output: {
+        productType: 'Shirt',
+        tags: ['linen', 'linen', ' summer '],
+        collections: [handle, 'made-up-collection'],
+      },
+    })
+    const r = ok(await run({ capability: 'product.classify' }))
+    assert.ok(received.at(-1)!.shop.catalog?.collections.some((c) => c.handle === handle))
+    assert.deepEqual(r.output, { productType: 'Shirt', tags: ['linen', 'summer'], collections: [handle] })
+  })
+
+  test('collection capabilities are about a collection; descriptions are sanitized', async () => {
+    const runCollection = (body: object) =>
+      call('POST', '/admin/ai/run', { collectionId, providerId: appId, ...body }, staff)
+
+    answer = () => ({ output: { descriptionHtml: '<p>Light things.</p><script>alert(1)</script>' } })
+    const r = ok(await runCollection({ capability: 'collection.description' }))
+    const request = received.at(-1)!
+    assert.equal(request.subject.type, 'collection')
+    assert.equal(request.subject.type === 'collection' && request.subject.collection.handle, handle)
+    assert.ok(!r.output.descriptionHtml.includes('<script'))
+    assert.equal((await generation(r.id)).subjectId, collectionId)
+
+    answer = () => ({ output: { title: 'Summer', description: 'Light things for summer.' } })
+    ok(await runCollection({ capability: 'collection.seo' }))
+    // A product id is not a collection; and a collection is needed
+    ok(await runCollection({ capability: 'collection.seo', collectionId: productId }), 404)
+    ok(await call('POST', '/admin/ai/run', { capability: 'collection.seo', providerId: appId }, staff), 400)
+  })
+
+  test('page.content is for staff only: an API token is refused', async () => {
+    answer = () => ({ output: { title: 'About us', bodyHtml: '<p>Hello</p>' } })
+    ok(
+      await call(
+        'POST',
+        '/admin/ai/run',
+        { capability: 'page.content', providerId: appId, input: { kind: 'about' } },
+        staff,
+      ),
+      403,
+    )
+  })
+})
+
 describe('AI app: removing capabilities', () => {
   test('configure replaces the set', async () => {
     ok(await configure({ 'product.seo': `${appUrl}/seo` }))

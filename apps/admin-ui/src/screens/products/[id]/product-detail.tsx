@@ -23,7 +23,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
-import { GenerateDescription, GenerateSeo } from './ai-generate'
+import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
@@ -105,7 +105,30 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
   const form = useZodForm(productForm, { defaultValues: toValues(product) })
   const description = useController({ control: form.control, name: 'descriptionHtml' })
   const update = useMutation(orpc.admin.products.update.mutationOptions())
+  const addToCollection = useMutation(orpc.admin.collections.addProduct.mutationOptions())
   const { isDirty, isSubmitting, dirtyFields } = form.formState
+
+  // The type and tags join the form as unsaved changes; collections are memberships, which save on their own
+  const applyClassification = async (suggestion: { productType: string; tags: string[]; collections: string[] }) => {
+    if (suggestion.productType) form.setValue('productType', suggestion.productType, { shouldDirty: true })
+    const tags = form.getValues('tags') ?? []
+    form.setValue('tags', [...new Set([...tags, ...suggestion.tags])], { shouldDirty: true })
+    const missing = suggestion.collections.filter((handle) => !product.collectionSlugs.includes(handle))
+    if (!missing.length) return
+    try {
+      const all = await queryClient.fetchQuery(orpc.admin.collections.list.queryOptions({ input: { limit: 100 } }))
+      for (const handle of missing) {
+        const found = all.find((c) => c.slug === handle)
+        if (found) await addToCollection.mutateAsync({ id: found.id, productId: product.id })
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: orpc.admin.products.get.queryKey({ input: { id: product.id } }) }),
+        queryClient.invalidateQueries({ queryKey: orpc.admin.collections.key() }),
+      ])
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not add to collections')
+    }
+  }
 
   const onSubmit = form.handleSubmit(async ({ descriptionHtml, ...values }) => {
     try {
@@ -205,6 +228,12 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
             <Card>
               <CardHeader>
                 <CardTitle>Organization</CardTitle>
+                <CardAction>
+                  <GenerateClassification
+                    productId={product.id}
+                    onUse={(suggestion) => void applyClassification(suggestion)}
+                  />
+                </CardAction>
               </CardHeader>
               <CardContent>
                 <FieldGroup>
