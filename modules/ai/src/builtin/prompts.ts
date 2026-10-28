@@ -61,7 +61,11 @@ const seoSchema = z.object({
   description: z.string().describe('Meta description, 140 to 160 characters'),
 })
 
-/** The request for one run: the output schema (and its name, for providers that want one) and the prompt */
+// Output cap per run, thinking included: what the copy needs with room for a little reasoning, so one click can't
+// run long or costly. Measured on gpt-5-nano at low reasoning: ~650 tokens for a medium description, ~850 for SEO.
+const MAX_TOKENS = { 'product.description': 4096, 'product.seo': 2048 } as const
+
+/** The request for one run: the output schema (and its name, for providers that want one), the prompt and the cap */
 export function prompt(request: AiRunRequest, settings: Settings) {
   const product = `\n\nProduct:\n${productFacts(request.subject.product)}`
   const shop = `Shop: ${request.shop.name}\n\n`
@@ -70,6 +74,7 @@ export function prompt(request: AiRunRequest, settings: Settings) {
       const { tone = 'neutral', length = 'medium', instructions } = request.input
       return {
         name: 'product_description',
+        maxTokens: MAX_TOKENS['product.description'],
         schema: descriptionSchema,
         text:
           `${shop}Write this product's description. Tone: ${tone}. Length: ${LENGTHS[length]}. Lead with what the ` +
@@ -82,6 +87,7 @@ export function prompt(request: AiRunRequest, settings: Settings) {
     case 'product.seo':
       return {
         name: 'product_seo',
+        maxTokens: MAX_TOKENS['product.seo'],
         schema: seoSchema,
         text:
           `${shop}Write this product's search engine listing: a page title of at most 60 characters and a meta ` +

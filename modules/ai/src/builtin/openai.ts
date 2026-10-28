@@ -34,17 +34,26 @@ function explain(error: unknown, model: string): never {
 }
 
 export async function run(apiKey: string, settings: Settings, request: AiRunRequest): Promise<AiRunResponse> {
-  const { name, schema, text } = prompt(request, settings)
-  let response
-  try {
-    response = await client(apiKey).responses.parse({
+  const { name, schema, text, maxTokens } = prompt(request, settings)
+  const ask = (reasoning: boolean) =>
+    client(apiKey).responses.parse({
       model: settings.model,
       instructions: SYSTEM,
       input: text,
-      max_output_tokens: 16000,
+      max_output_tokens: maxTokens,
       text: { format: zodTextFormat(schema, name) },
+      // Short copy needs little thinking: at the default, reasoning models (gpt-5…) spend ~6,000 tokens and half a
+      // minute before a 200-token description; at low, a few seconds
+      ...(reasoning && { reasoning: { effort: 'low' as const } }),
       // Nothing to keep on OpenAI's side: every run stands alone
       store: false,
+    })
+  let response
+  try {
+    response = await ask(true).catch((error: unknown) => {
+      // Models without reasoning (gpt-4.1, gpt-4o…) refuse the parameter: ask them without it
+      if (error instanceof OpenAI.BadRequestError && error.param?.startsWith('reasoning')) return ask(false)
+      throw error
     })
   } catch (error) {
     explain(error, settings.model)

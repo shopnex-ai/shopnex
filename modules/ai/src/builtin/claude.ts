@@ -32,12 +32,12 @@ function explain(error: unknown, model: string): never {
 }
 
 export async function run(apiKey: string, settings: Settings, request: AiRunRequest): Promise<AiRunResponse> {
-  const { schema, text } = prompt(request, settings)
+  const { schema, text, maxTokens } = prompt(request, settings)
   let response
   try {
     response = await client(apiKey).beta.messages.parse({
       model: settings.model,
-      max_tokens: 16000,
+      max_tokens: maxTokens,
       // Short marketing copy doesn't need deep thinking
       output_config: { effort: 'low', format: betaZodOutputFormat(schema) },
       system: SYSTEM,
