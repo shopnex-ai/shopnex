@@ -42,13 +42,25 @@ jobs:
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
+      - name: Image tags
+        id: tags
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Pre-releases (v1.0.0-rc.1) don't move the latest tag
+          latest=false
+          if [[ "$TAG" != *-* ]]; then latest=true; fi
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         with:
           context: .
           build-args: APP_VERSION=${{ github.ref_name }}
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.image.outputs.name }}:${{ github.ref_name }}
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ github.ref_name }}
+            ${{ steps.tags.outputs.latest == 'true' && format('{0}:latest', steps.image.outputs.name) || '' }}
 
       - uses: docker/build-push-action@v6
         with:
@@ -57,7 +69,9 @@ jobs:
           build-args: APP=stripe
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.image.outputs.name }}-stripe:${{ github.ref_name }}
+          tags: |
+            ${{ steps.image.outputs.name }}-stripe:${{ github.ref_name }}
+            ${{ steps.tags.outputs.latest == 'true' && format('{0}-stripe:latest', steps.image.outputs.name) || '' }}
 
       - name: Create GitHub release
         env:
@@ -68,6 +82,20 @@ jobs:
           flags="--generate-notes --verify-tag"
           if [[ "$TAG" == *-* ]]; then flags="$flags --prerelease"; fi
           gh release create "$TAG" $flags --title "$TAG"
+
+      - name: Attach images to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          IMAGE: ${{ steps.image.outputs.name }}
+        run: |
+          # Offline copies, load with: gunzip -c <file> | docker load
+          for ref in "$IMAGE:$TAG" "$IMAGE-stripe:$TAG"; do
+            docker pull --platform linux/amd64 "$ref"
+            file="$(basename "${ref%%:*}")-$TAG-linux-amd64.tar.gz"
+            docker save "$ref" | gzip > "$file"
+            gh release upload "$TAG" "$file"
+          done
 
       - name: Add image reference to release notes
         env:
@@ -80,6 +108,7 @@ jobs:
           {
             printf '\n\n## Docker image\n\n'
             printf 'Shopnex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
-            printf 'Stripe app: `docker pull %s:%s`\n' "$STRIPE_IMAGE" "$TAG"
+            printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
+            printf 'Offline `.tar.gz` copies of both images are attached below.\n'
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md
