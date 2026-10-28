@@ -36,6 +36,12 @@ fi
 
 export DEBIAN_FRONTEND=noninteractive
 
+# An older version of this installer ran Shopnex directly on the host (Node and Postgres). Its data lives in that
+# Postgres, not in a container, so installing over it would start an empty shop next to the real one.
+if [ -f /etc/systemd/system/shopnex.service ]; then
+  die "An older Shopnex install (running directly on this server, not in Docker) was found. Installing over it would start a new, empty shop. Keep using the old install, or migrate first: see https://docs.shopnex.ai/docs/self-hosting/install#moving-from-the-older-installer"
+fi
+
 # ── docker ───────────────────────────────────────────────────────────────────
 if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
   say "Installing Docker"
@@ -107,6 +113,7 @@ if curl -fsSL "https://raw.githubusercontent.com/$REPO/$SHOPNEX_VERSION/deploy/s
   $SUDO install -o root -g root -m 755 /tmp/shopnex-update.sh /usr/local/sbin/shopnex-update
   rm -f /tmp/shopnex-update.sh
   $SUDO mkdir -p "$SHOPNEX_DIR/update/request" "$SHOPNEX_DIR/update/status" "$SHOPNEX_DIR/backups"
+  $SUDO chmod 700 "$SHOPNEX_DIR/backups"
   $SUDO tee /etc/systemd/system/shopnex-update.service >/dev/null <<EOF
 [Unit]
 Description=Update Shopnex
