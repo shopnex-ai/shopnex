@@ -80,7 +80,9 @@ const pageSchema = z.object({
   title: z.string().describe('The page title, e.g. "Shipping & returns"'),
   bodyHtml: z
     .string()
-    .describe('The page as HTML using only <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong> and <em>. No <h1>.'),
+    .describe(
+      'The page as HTML using only <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong> and <em>. No <h1>, and do not repeat the title in the body: start with the first paragraph or section heading.',
+    ),
 })
 
 // Output cap per run, thinking included: what the copy needs with room for a little reasoning, so one click can't
@@ -232,7 +234,7 @@ export function prompt(request: AiRunRequest, settings: Settings) {
         'page_content',
         pageSchema,
         `${shop}Write the "${kind}" page for this shop's website. Tone: ${tone}. Length: ${LENGTHS[length]}. ` +
-          `Use headings to break it up. Policies, times, fees, addresses and contact details are not yours to make ` +
+          `Use headings to break it up, but never open the body with the page's title: the page shows its title on its own. Policies, times, fees, addresses and contact details are not yours to make ` +
           `up: use only the ones in the staff's instructions, and where a page needs one that wasn't given, write ` +
           `a clear placeholder in square brackets such as [return window in days] for the shop to fill in.` +
           voice(settings) +

@@ -85,7 +85,13 @@ function clean<C extends AiCapability>(request: AiRunRequest, output: AiOutput<C
     }
     case 'page.content': {
       const o = output as AiOutput<'page.content'>
-      return { ...o, bodyHtml: sanitizeHtml(o.bodyHtml) } as AiOutput<C>
+      // The page shows its title itself: a heading at the top that only repeats it goes
+      const bodyHtml = sanitizeHtml(o.bodyHtml)
+        .replace(/^\s*<h[1-3]>\s*([^<]*?)\s*<\/h[1-3]>\s*/i, (heading, text: string) =>
+          text.toLowerCase() === o.title.trim().toLowerCase() ? '' : heading,
+        )
+        .trim()
+      return { ...o, bodyHtml } as AiOutput<C>
     }
     case 'product.image_alt': {
       const o = output as AiOutput<'product.image_alt'>
