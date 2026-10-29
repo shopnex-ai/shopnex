@@ -59,6 +59,8 @@ export function CheckoutForm({
   const [pending, setPending] = useState(false)
   const [rates, setRates] = useState(options.shippingRates)
   const [ratesPending, setRatesPending] = useState(false)
+  // A quote for the address has come back (empty or not): no rates then means none for this address
+  const [quoted, setQuoted] = useState(false)
   const [rateId, setRateId] = useState(state.values?.shippingRateId || options.shippingRates[0]?.id || '')
   const formRef = useRef<HTMLFormElement>(null)
   const latestQuote = useRef(0)
@@ -104,6 +106,7 @@ export function CheckoutForm({
       })
       if (quote !== latestQuote.current || !next) return
       setRates(next)
+      setQuoted(true)
       // Keep the buyer's choice while it is still offered
       setRateId((current) => (next.some((r) => r.id === current) ? current : (next[0]?.id ?? '')))
     } catch {
@@ -210,7 +213,11 @@ export function CheckoutForm({
           <FieldLegend>Shipping method</FieldLegend>
           {rates.length === 0 && (
             <FieldDescription>
-              {ratesPending ? 'Getting shipping rates…' : 'Enter your address to see shipping methods.'}
+              {ratesPending
+                ? 'Getting shipping rates…'
+                : quoted
+                  ? "We can't ship to this address. Check it, or try another one."
+                  : 'Enter your address to see shipping methods.'}
             </FieldDescription>
           )}
           <Choices

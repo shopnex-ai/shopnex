@@ -89,8 +89,12 @@ export type ShopContext = {
   }
   /** Carrier apps: quote shipping rates at checkout */
   shipping: {
-    /** Registers (or updates) this app's carrier service for the shop */
-    configure(service: { name: string; ratesUrl: string; ready: boolean }): Promise<void>
+    /** Registers (or updates) this app's carrier service for the shop. Its `id` is in the rate ids on orders. */
+    configure(service: {
+      name: string
+      ratesUrl: string
+      ready: boolean
+    }): Promise<{ id: string; name: string; active: boolean; ready: boolean }>
   }
 }
 
@@ -200,7 +204,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
         configure: async (method) => void (await admin.post('/payments-app/configure', method)),
       },
       shipping: {
-        configure: async (service) => void (await admin.post('/carrier-services/configure', service)),
+        configure: (service) => admin.post('/carrier-services/configure', service),
       },
     }
   }
