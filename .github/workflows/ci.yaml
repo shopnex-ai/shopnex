@@ -42,6 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -53,6 +55,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm lint
+
+      # Only the files this PR changes: the codebase isn't fully formatted yet, so a repo-wide check would fail
+      - name: Format (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.base_ref }}
+        run: git diff --name-only --diff-filter=ACMR "origin/$BASE...HEAD" -z | xargs -0 --no-run-if-empty pnpm exec prettier --check --ignore-unknown
 
       - run: pnpm typecheck
 

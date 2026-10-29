@@ -1,0 +1,19 @@
+name: Dependency review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fails a PR that adds or updates a dependency with a known high or critical vulnerability
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

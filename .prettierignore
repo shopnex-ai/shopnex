@@ -12,3 +12,6 @@ next-env.d.ts
 *.tsbuildinfo
 templates/storefront/themes/*/assets/theme.*
 templates/storefront/public/shopnex
+
+# Vendored
+templates/storefront/themes/*/assets/vendor-*
