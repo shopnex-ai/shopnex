@@ -1,4 +1,4 @@
-import test, { describe, beforeEach } from 'node:test'
+import test, { describe, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 
 type FetchCall = {
@@ -33,6 +33,18 @@ let fetchCalls: FetchCall[] = []
 let fetchHandler: (
   call: FetchCall,
 ) => { status?: number; body?: unknown; ok?: boolean } | Promise<{ status?: number; body?: unknown; ok?: boolean }>
+
+const originalGlobals = {
+  document: globalThis.document,
+  localStorage: globalThis.localStorage,
+  fetch: globalThis.fetch,
+}
+
+function restoreGlobalMocks() {
+  globalThis.document = originalGlobals.document
+  globalThis.localStorage = originalGlobals.localStorage
+  globalThis.fetch = originalGlobals.fetch
+}
 
 function setupGlobalMocks() {
   metaStore = {
@@ -114,6 +126,10 @@ async function getFreshCartModule(cacheKey = String(Math.random())) {
 describe('Storefront SDK Cart Helpers', () => {
   beforeEach(() => {
     setupGlobalMocks()
+  })
+
+  afterEach(() => {
+    restoreGlobalMocks()
   })
 
   describe('reportCartError and $cartError', () => {
@@ -369,11 +385,56 @@ describe('Storefront SDK Cart Helpers', () => {
         ok: false,
       })
 
-      const { addToCart } = await getFreshCartModule()
+      const { $cart, $cartOpen, addToCart } = await getFreshCartModule()
 
       await assert.rejects(async () => {
         await addToCart('item_fail', 1)
       }, /Internal server error/)
+
+      assert.equal($cart.get(), null)
+      assert.equal($cartOpen.get(), false)
+    })
+
+    test('falls back to a status message when the error body is not JSON', async () => {
+      globalThis.fetch = (async () => new Response('<html>Bad gateway</html>', { status: 502 })) as typeof fetch
+
+      const { addToCart } = await getFreshCartModule()
+
+      await assert.rejects(async () => {
+        await addToCart('item_fail', 1)
+      }, /Cart request failed \(502\)/)
+    })
+
+    test('re-throws and keeps the cart closed when recovery after NOT_FOUND also fails', async () => {
+      const initialCart = mockCart({ id: 'stale_cart' })
+      fetchHandler = (call) => {
+        if (call.url.includes('/lines')) {
+          return { status: 404, body: { message: 'Cart not found', code: 'NOT_FOUND' }, ok: false }
+        }
+        return { status: 500, body: { message: 'Could not create cart' }, ok: false }
+      }
+
+      const { $cartOpen, $cart, addToCart } = await getFreshCartModule()
+      $cart.set(initialCart)
+
+      await assert.rejects(async () => {
+        await addToCart('item_fresh', 1)
+      }, /Could not create cart/)
+
+      assert.equal(fetchCalls.length, 2)
+      assert.equal($cartOpen.get(), false)
+    })
+
+    test('does not retry as a new cart when there was no existing cart', async () => {
+      fetchHandler = () => ({ status: 404, body: { message: 'Not found', code: 'NOT_FOUND' }, ok: false })
+
+      const { addToCart } = await getFreshCartModule()
+
+      await assert.rejects(async () => {
+        await addToCart('item_fail', 1)
+      }, /Not found/)
+
+      assert.equal(fetchCalls.length, 1)
     })
   })
 
@@ -512,11 +573,18 @@ describe('Storefront SDK Cart Helpers', () => {
   describe('Storage resilience (private mode)', () => {
     test('does not throw when localStorage setItem throws (quota/disabled)', async () => {
       storageThrows = true
-      const { addToCart } = await getFreshCartModule()
+      const createdCart = mockCart({ id: 'private_cart_1' })
+      fetchHandler = () => ({ status: 200, body: createdCart, ok: true })
+      const { $cart, $cartOpen, addToCart } = await getFreshCartModule()
 
       await assert.doesNotReject(async () => {
         await addToCart('item_private_mode', 1)
       })
+
+      // The cart still works for this page even though it can't be saved
+      assert.deepEqual($cart.get(), createdCart)
+      assert.equal($cartOpen.get(), true)
+      assert.equal(Object.keys(storageStore).length, 0)
     })
   })
 })
