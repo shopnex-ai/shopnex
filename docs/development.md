@@ -9,9 +9,9 @@ pnpm db:migrate
 pnpm dev                    # app :3000 + default storefront template :4321
 ```
 
-Open http://localhost:3000 — a fresh install redirects to `/admin/setup`: create the owner account (super admin + shop owner),
-name the shop and pick its currency. Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
-Shop name/currency and storefront keys can be changed later under Settings.
+Open http://localhost:3000 — a fresh install redirects to `/admin/setup`: create the owner account (super admin + shop owner) with an email and password.
+Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
+Shop name (`DEFAULT_SHOP_NAME`, default "My Shop"), currency (USD) and storefront keys are set under Settings.
 
 `pnpm dev` (scripts/dev.mjs) starts TanStack admin and a storefront together (`templates/storefront` unless
 `STOREFRONT` says otherwise), with prefixed logs; Ctrl+C stops both. The admin uses that storefront's address as the Storefront URL until you save one under Settings (`STOREFRONT_URL` does the same in production, single-shop installs only). The storefront gets `COMMERCE_PROVIDER=shopnex`

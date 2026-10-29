@@ -179,13 +179,11 @@ export const shopInput = createInsertSchema(shops, {
 
 export const MIN_PASSWORD = 8
 
-// First-run setup (/admin/setup): the owner account + the shop
+// First-run setup (/admin/setup): just the owner account. The shop keeps its defaults (DEFAULT_SHOP_NAME, USD) until
+// it is renamed in Settings.
 export const setupInput = z.object({
-  name: z.string().trim().min(1).max(100),
   email: z.email(),
   password: z.string().min(MIN_PASSWORD).max(128),
-  shopName: shopInput.shape.name,
-  currency: shopInput.shape.currency,
 })
 
 export {
