@@ -1,0 +1,18 @@
+{%- comment -%} The footer. Links come from Online store → Navigation ("footer"). {%- endcomment -%}
+{%- assign footer_text = settings.footer_text | strip -%}
+{%- if footer_text == blank -%}
+  {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+<footer class="ks-footer mt-auto">
+  <div class="container ks-footer-inner">
+    <span>{{ footer_text }}</span>
+    {%- if menu and menu.links.size > 0 %}
+      <ul class="ks-footer-links">
+        {%- for link in menu.links %}
+          <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+        {%- endfor %}
+      </ul>
+    {%- endif %}
+  </div>
+</footer>

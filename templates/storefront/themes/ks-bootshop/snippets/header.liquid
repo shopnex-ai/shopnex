@@ -1,0 +1,47 @@
+{%- comment -%}
+  The sticky header: shop name, the main menu (Online store → Navigation, "main-menu"; one level of
+  dropdowns), and the cart button. On small screens the menu collapses behind a toggler (Bootstrap collapse).
+{%- endcomment -%}
+{%- assign menu = linklists['main-menu'] -%}
+<header class="ks-header sticky-top border-bottom">
+  <nav class="container ks-navbar" aria-label="Main">
+    <a class="ks-logo" href="/">{{ shop.name }}</a>
+    <div class="collapse ks-menu" id="ks-menu">
+      <ul class="ks-menu-list">
+        {%- if menu and menu.links.size > 0 -%}
+          {%- for link in menu.links %}
+            <li class="ks-menu-item">
+              <a href="{{ link.url }}" class="ks-menu-link{% if link.active or link.child_active %} active{% endif %}">{{ link.title }}</a>
+              {%- if link.links.size > 0 %}
+                <ul class="ks-submenu">
+                  {%- for child in link.links %}
+                    <li><a href="{{ child.url }}" class="ks-submenu-link{% if child.active %} active{% endif %}">{{ child.title }}</a></li>
+                  {%- endfor %}
+                </ul>
+              {%- endif %}
+            </li>
+          {%- endfor %}
+        {%- else -%}
+          {%- comment %} No main menu yet {% endcomment %}
+          <li class="ks-menu-item"><a href="/" class="ks-menu-link{% if request.path == '/' %} active{% endif %}">Home</a></li>
+          <li class="ks-menu-item"><a href="/products" class="ks-menu-link{% if request.path == '/products' %} active{% endif %}">Shop</a></li>
+        {%- endif %}
+      </ul>
+    </div>
+    <button type="button" class="ks-icon-button ms-auto" data-cart-open aria-label="Open cart">
+      {% render 'icon-cart' %}
+      <span class="badge ks-cart-count" data-cart-count>0</span>
+    </button>
+    <button
+      type="button"
+      class="ks-icon-button ks-menu-toggle"
+      data-bs-toggle="collapse"
+      data-bs-target="#ks-menu"
+      aria-controls="ks-menu"
+      aria-expanded="false"
+      aria-label="Toggle menu"
+    >
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </nav>
+</header>

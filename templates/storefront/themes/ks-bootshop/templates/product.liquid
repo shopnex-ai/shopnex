@@ -1,0 +1,147 @@
+{%- comment -%}
+  Product page: gallery, title, price, option pickers and Add to cart. The chosen variant is kept in the URL
+  (?variant=id); its price, SKU and image follow it (src/product.ts, which reads the product's JSON below).
+{%- endcomment -%}
+{%- assign variant = product.selected_or_first_available_variant -%}
+{%- assign images = product.images -%}
+{%- if images.size == 0 and variant.image -%}
+  {%- assign images = variant.image | concat: images -%}
+{%- endif -%}
+{%- comment %} (`default` would turn the image into its URL: no .src or .alt) {% endcomment -%}
+{%- assign main_image = variant.image -%}
+{%- unless main_image -%}{%- assign main_image = images.first -%}{%- endunless -%}
+{%- assign excerpt = product.description | strip_html | strip -%}
+<section class="ks-section ks-py-md">
+  <div class="container">
+    <nav aria-label="Breadcrumb" class="small mb-4">
+      <a href="/">Home</a> <span class="text-body-secondary">/</span>
+      <a href="/products">Shop</a> <span class="text-body-secondary">/</span>
+      {{ product.title }}
+    </nav>
+
+    <div class="ks-product" data-product-form>
+      <script type="application/json" data-product-json>
+        {{ product | json | raw }}
+      </script>
+
+      <div class="ks-gallery">
+        <div class="ks-gallery-main">
+          {%- if main_image %}
+            <img data-main-image src="{{ main_image | image_url }}" alt="{{ main_image.alt | default: product.title }}">
+          {%- endif %}
+        </div>
+        {%- if images.size > 1 %}
+          <div class="ks-gallery-thumbs">
+            {%- for image in images %}
+              <button
+                type="button"
+                class="ks-thumb{% if image.src == main_image.src %} active{% endif %}"
+                data-thumb="{{ image | image_url }}"
+                aria-label="Show {{ image.alt | default: 'image' }}"
+              >
+                <img src="{{ image | image_url }}" alt="" loading="lazy">
+              </button>
+            {%- endfor %}
+          </div>
+        {%- endif %}
+      </div>
+
+      <div class="ks-product-info">
+        {%- if product.vendor != blank %}
+          <span class="ks-eyebrow">{{ product.vendor }}</span>
+        {%- endif %}
+        <h1 class="mb-3">{{ product.title }}</h1>
+        <p class="ks-product-price mb-3">
+          <span data-price>{{ variant.price | money }}</span>
+          <s class="ks-price-was{% unless variant.compare_at_price > variant.price %} d-none{% endunless %}" data-compare-at>
+            {%- if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money }}{% endif -%}
+          </s>
+        </p>
+
+        {%- for option in product.options_with_values %}
+          <fieldset class="ks-option">
+            <legend class="ks-option-name">{{ option.name }}</legend>
+            <div class="ks-option-values">
+              {%- for value in option.values %}
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary btn-sm ks-option-value"
+                  data-option="{{ option.name }}"
+                  data-value="{{ value.name }}"
+                  aria-pressed="{{ value.selected }}"
+                  {% unless value.available %}data-unavailable{% endunless %}
+                >
+                  {{- value.name -}}
+                </button>
+              {%- endfor %}
+            </div>
+          </fieldset>
+        {%- endfor %}
+
+        <button
+          type="button"
+          class="btn btn-primary btn-lg w-100 my-3"
+          data-add-to-cart="{{ variant.id }}"
+          {% unless variant.available %}disabled{% endunless %}
+        >
+          <span data-add-label>{% if variant.available %}Add to cart{% else %}Sold out{% endif %}</span>
+        </button>
+
+        <ul class="ks-specs list-unstyled small text-body-secondary">
+          <li data-spec-row="sku"{% if variant.sku == blank %} hidden{% endif %}>SKU: <span data-spec="sku">{{ variant.sku }}</span></li>
+          {%- if product.type != blank %}<li>Type: {{ product.type }}</li>{% endif %}
+        </ul>
+
+        {%- if product.description != blank %}
+          <div class="ks-rte mt-4">{{ product.description }}</div>
+        {%- endif %}
+        {%- if product.tags.size > 0 %}
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            {%- for tag in product.tags %}<span class="badge text-bg-light border">{{ tag }}</span>{% endfor %}
+          </div>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{%- if recommendations.products.size > 0 %}
+  <section class="ks-section ks-py-md ks-bg-light">
+    <div class="container">
+      {% render 'section-header', heading: 'You may also like' %}
+      <div class="ks-grid" style="--ks-columns: 4">
+        {%- for p in recommendations.products %}
+          {% render 'product-card', product: p %}
+        {%- endfor %}
+      </div>
+    </div>
+  </section>
+{%- endif %}
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": {{ product.title | json | raw }},
+    {%- if product.vendor != blank %}
+    "brand": { "@type": "Brand", "name": {{ product.vendor | json | raw }} },
+    {%- endif %}
+    "image": [
+      {%- for image in images -%}
+        {{ image | image_url | json | raw }}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ],
+    "description": {{ excerpt | json | raw }},
+    "offers": [
+      {%- for v in product.variants -%}
+        {
+          {%- if v.sku != blank %}"sku": {{ v.sku | json | raw }}, {% endif -%}
+          "@type": "Offer",
+          "price": {{ v.price | money_without_currency | json | raw }},
+          "priceCurrency": {{ v.price.currency | json | raw }},
+          "availability": "https://schema.org/{% if v.available %}InStock{% else %}OutOfStock{% endif %}"
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+</script>

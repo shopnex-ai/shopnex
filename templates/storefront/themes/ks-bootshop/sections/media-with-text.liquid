@@ -1,0 +1,26 @@
+{%- comment -%} Media with text: an image beside an eyebrow, heading, text and a button {%- endcomment -%}
+<section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+  <div class="container">
+    <div class="ks-media-text{% if section.settings.image_position == 'right' %} ks-media-text-reverse{% endif %}">
+      {%- if section.settings.image != blank %}
+        <div class="ks-media-text-image">
+          <img src="{{ section.settings.image }}" alt="" loading="lazy">
+        </div>
+      {%- endif %}
+      <div class="ks-media-text-body">
+        {%- if section.settings.eyebrow != blank %}
+          <span class="ks-eyebrow">{{ section.settings.eyebrow }}</span>
+        {%- endif %}
+        {%- if section.settings.heading != blank %}
+          <h2>{{ section.settings.heading }}</h2>
+        {%- endif %}
+        {%- if section.settings.text != blank %}
+          <p class="lead">{{ section.settings.text }}</p>
+        {%- endif %}
+        {%- if section.settings.button_label != blank and section.settings.button_link != blank %}
+          <a href="{{ section.settings.button_link }}" class="btn btn-primary">{{ section.settings.button_label }}</a>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</section>
