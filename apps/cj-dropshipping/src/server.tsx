@@ -73,6 +73,17 @@ function myProducts(data: unknown): MyProduct[] {
 }
 
 /**
+ * Paid orders reach the app through a subscription made with its own token. Uninstalling the app deletes it (and
+ * installing again makes a new token), so check it is there instead of remembering that it was made.
+ */
+async function ensureOrderWebhook(shop: ShopContext) {
+  const url = `${APP_URL}/shopnex/webhook`
+  const mine = await shop.admin.get<{ url: string; active: boolean }[]>('/webhooks')
+  if (mine.some((h) => h.url === url && h.active)) return
+  await shop.admin.post('/webhooks', { url, description: 'CJ Dropshipping', topics: ['order.paid'], active: true })
+}
+
+/**
  * Offers CJ's shipping prices at checkout (a Shopnex carrier service). It needs the shipping permission, so a shop
  * that installed the app before it existed gets an error here until the app is installed again.
  */
@@ -97,10 +108,12 @@ app.get('/', async (c) => {
   let products: MyProduct[] = []
   let productsError: string | null = null
   let shippingError: string | null = null
-  // Shops connected before shipping prices existed switch them on the first time they open the page
-  if (connected && !(await shop.data.get('carrier_service'))) {
-    await registerCarrier(shop).catch((error) => (shippingError = message(error)))
-  }
+  // Registering again is safe, and keeps the service (and its id, which orders are matched on) right after a
+  // new install; shops connected before shipping prices existed switch them on here too
+  if (connected) await registerCarrier(shop).catch((error) => (shippingError = message(error)))
+  // After an uninstall and a new install the subscription is gone: make it again, so paid orders still reach CJ
+  if (connected)
+    await ensureOrderWebhook(shop).catch((error) => console.warn('[cj] order subscription:', message(error)))
   if (connected) {
     try {
       const { cj } = await cjFor(shop)
@@ -145,19 +158,10 @@ app.post('/api/connect', async (c) => {
   } catch (error) {
     return c.json({ error: `CJ rejected this key: ${message(error)}` }, 400)
   }
-  // Paid orders reach the app through a subscription made with its own token
-  if (!(await shop.data.get('webhook'))) {
-    try {
-      const hook = await shop.admin.post<{ id: string }>('/webhooks', {
-        url: `${APP_URL}/shopnex/webhook`,
-        description: 'CJ Dropshipping',
-        topics: ['order.paid'],
-        active: true,
-      })
-      await shop.data.set('webhook', { id: hook.id })
-    } catch (error) {
-      return c.json({ error: `Saved, but couldn't subscribe to paid orders: ${message(error)}` }, 502)
-    }
+  try {
+    await ensureOrderWebhook(shop)
+  } catch (error) {
+    return c.json({ error: `Saved, but couldn't subscribe to paid orders: ${message(error)}` }, 502)
   }
   // From now on checkout asks CJ what shipping costs
   let warning = ''
