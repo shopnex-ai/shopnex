@@ -3,6 +3,10 @@ title: Docker & Render
 description: Deploy the single-image build.
 ---
 
+## Docker Compose
+
+To run Shopnex, its Stripe app and Postgres from prebuilt images, use `deploy/docker-compose.yml` (see [Dokploy & similar platforms](/docs/self-hosting/dokploy)). The `docker-compose.yml` at the repository root builds the same stack from source, for contributors.
+
 ## Docker
 
 The `Dockerfile` builds the admin and the default storefront into one Node 24 image with Caddy.

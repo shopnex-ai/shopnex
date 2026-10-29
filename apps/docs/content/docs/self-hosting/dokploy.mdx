@@ -3,82 +3,31 @@ title: Dokploy & similar platforms
 description: Deploy Shopnex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
 ---
 
-Platforms that run Docker Compose on your own server can deploy Shopnex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); set `SHOPNEX_VERSION` to a release tag before deploying.
+Platforms that run Docker Compose on your own server can deploy Shopnex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); pin `SHOPNEX_VERSION` to a release tag for production.
 
 ## The compose file
 
-For a quick setup, copy the production Compose file and set these variables:
+Use [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml) as is. It is the same file the installer and the in-app updater use. Download it with:
 
-```yaml
-services:
-  shopnex:
-    image: ghcr.io/shopnex-ai/shopnex:${SHOPNEX_VERSION}
-    pull_policy: always
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgres://shopnex:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/shopnex
-      APP_URL: ${APP_URL:?set APP_URL, e.g. https://shop.example.com}
-      BETTER_AUTH_URL: ${APP_URL}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
-      TENANCY_MODE: single
-      DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
-      STRIPE_APP_URL: ${STRIPE_APP_URL:?set STRIPE_APP_URL}
-    volumes:
-      - shopnex-data:/data
-    expose:
-      - "3000"
-
-  stripe:
-    image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION}
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      STRIPE_APP_URL: ${STRIPE_APP_URL}
-      DATA_DIR: /data
-    volumes:
-      - stripe-data:/data
-    expose:
-      - "4600"
-
-  db:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: shopnex
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: shopnex
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U shopnex"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-volumes:
-  shopnex-data:
-  stripe-data:
-  db-data:
+```sh
+curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/docker-compose.yml
 ```
 
-Set these required variables on the platform:
+Every variable has a local default, so `docker compose up -d` works without any setup. For a public deployment set these on the platform:
 
 | Variable | Description |
 | --- | --- |
-| `POSTGRES_PASSWORD` | Password for the bundled database. |
-| `APP_URL` | Public origin, e.g. `https://shop.example.com`. |
-| `STRIPE_APP_URL` | Public origin for the Stripe app, e.g. `https://stripe.example.com`. |
-| `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. |
+| `APP_URL` | Public origin, e.g. `https://shop.example.com`. Default `http://localhost:3000`. |
+| `STRIPE_APP_URL` | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
+| `POSTGRES_PASSWORD` | Password for the bundled database. Change it from the default. |
+| `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production. |
 
-`BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex-data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
+`BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
 ## Dokploy
 
 1. Create a **Compose** service in a project and choose the **Raw** provider.
-2. Paste the compose file and set `SHOPNEX_VERSION`, `POSTGRES_PASSWORD`, `APP_URL`, and `STRIPE_APP_URL` under **Environment**.
+2. Paste the compose file and set `APP_URL`, `STRIPE_APP_URL`, `POSTGRES_PASSWORD`, and `SHOPNEX_VERSION` under **Environment**.
 3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
 4. Click **Deploy**.
 

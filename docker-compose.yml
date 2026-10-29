@@ -1,8 +1,8 @@
 # Shopnex with its database and the Stripe app, each in its own container:
 #
-#   cp .env.example .env     # fill the values marked "required" below
-#   docker compose -f docker-compose.yml up --build
-# Production releases use deploy/docker-compose.yml with versioned GHCR images.
+#   APP_URL=http://localhost:3000 STRIPE_APP_URL=http://localhost:4600 docker compose up --build
+# (or put those two in a .env file). For contributors who build from source; to just run Shopnex use
+# deploy/docker-compose.yml, which pulls prebuilt GHCR images and needs no setup.
 #
 # The apps are separate containers on their own public URL (a subdomain each), because browsers and Stripe
 # reach them directly. Put a reverse proxy / platform routing in front of 3000 (Shopnex) and 4600 (Stripe).
