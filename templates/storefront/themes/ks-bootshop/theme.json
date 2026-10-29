@@ -1,0 +1,887 @@
+{
+  "id": "ks-bootshop",
+  "name": "KS BootShop",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "color_primary",
+      "label": "Primary color",
+      "type": "color",
+      "default": "#d63384",
+      "info": "Buttons, links and highlights"
+    },
+    {
+      "id": "color_body_bg",
+      "label": "Background color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "id": "color_body_color",
+      "label": "Text color",
+      "type": "color",
+      "default": "#212529"
+    },
+    {
+      "id": "font_headings",
+      "label": "Heading font",
+      "type": "select",
+      "options": [
+        {
+          "value": "system",
+          "label": "System font"
+        },
+        {
+          "value": "Inter",
+          "label": "Inter"
+        },
+        {
+          "value": "Roboto",
+          "label": "Roboto"
+        },
+        {
+          "value": "Open Sans",
+          "label": "Open Sans"
+        },
+        {
+          "value": "Lato",
+          "label": "Lato"
+        },
+        {
+          "value": "Poppins",
+          "label": "Poppins"
+        },
+        {
+          "value": "Montserrat",
+          "label": "Montserrat"
+        },
+        {
+          "value": "Playfair Display",
+          "label": "Playfair Display"
+        }
+      ],
+      "default": "system"
+    },
+    {
+      "id": "font_body",
+      "label": "Body font",
+      "type": "select",
+      "options": [
+        {
+          "value": "system",
+          "label": "System font"
+        },
+        {
+          "value": "Inter",
+          "label": "Inter"
+        },
+        {
+          "value": "Roboto",
+          "label": "Roboto"
+        },
+        {
+          "value": "Open Sans",
+          "label": "Open Sans"
+        },
+        {
+          "value": "Lato",
+          "label": "Lato"
+        },
+        {
+          "value": "Poppins",
+          "label": "Poppins"
+        },
+        {
+          "value": "Montserrat",
+          "label": "Montserrat"
+        },
+        {
+          "value": "Playfair Display",
+          "label": "Playfair Display"
+        }
+      ],
+      "default": "system"
+    },
+    {
+      "id": "border_radius",
+      "label": "Corner radius",
+      "type": "range",
+      "min": 0,
+      "max": 2,
+      "step": 0.25,
+      "default": 0.375,
+      "unit": "rem"
+    },
+    {
+      "id": "show_announcement",
+      "label": "Announcement bar",
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "id": "announcement_text",
+      "label": "Announcement text",
+      "type": "text",
+      "default": "Free shipping on orders over $50"
+    },
+    {
+      "id": "announcement_link",
+      "label": "Announcement link",
+      "type": "url"
+    },
+    {
+      "id": "footer_text",
+      "label": "Footer text",
+      "type": "text",
+      "info": "Defaults to © year and the shop name"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Added after the theme styles on every page",
+      "type": "code",
+      "language": "css"
+    },
+    {
+      "id": "head_html",
+      "label": "Head code",
+      "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "type": "code",
+      "language": "html"
+    }
+  ],
+  "sections": {
+    "hero-carousel": {
+      "name": "Hero carousel",
+      "settings": [
+        {
+          "id": "height",
+          "label": "Height",
+          "type": "select",
+          "options": [
+            {
+              "value": "40vh",
+              "label": "Small"
+            },
+            {
+              "value": "60vh",
+              "label": "Medium"
+            },
+            {
+              "value": "80vh",
+              "label": "Large"
+            }
+          ],
+          "default": "60vh"
+        },
+        {
+          "id": "autoplay",
+          "label": "Autoplay",
+          "type": "checkbox",
+          "default": true
+        },
+        {
+          "id": "image_1",
+          "label": "Slide 1: image",
+          "type": "image"
+        },
+        {
+          "id": "heading_1",
+          "label": "Slide 1: heading",
+          "type": "text",
+          "default": "Welcome to our store"
+        },
+        {
+          "id": "text_1",
+          "label": "Slide 1: text",
+          "type": "textarea"
+        },
+        {
+          "id": "button_label_1",
+          "label": "Slide 1: button label",
+          "type": "text",
+          "default": "Shop now"
+        },
+        {
+          "id": "button_link_1",
+          "label": "Slide 1: button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "image_2",
+          "label": "Slide 2: image",
+          "type": "image"
+        },
+        {
+          "id": "heading_2",
+          "label": "Slide 2: heading",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "text_2",
+          "label": "Slide 2: text",
+          "type": "textarea"
+        },
+        {
+          "id": "button_label_2",
+          "label": "Slide 2: button label",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "button_link_2",
+          "label": "Slide 2: button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "image_3",
+          "label": "Slide 3: image",
+          "type": "image"
+        },
+        {
+          "id": "heading_3",
+          "label": "Slide 3: heading",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "text_3",
+          "label": "Slide 3: text",
+          "type": "textarea"
+        },
+        {
+          "id": "button_label_3",
+          "label": "Slide 3: button label",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "button_link_3",
+          "label": "Slide 3: button link",
+          "type": "url",
+          "default": "/products"
+        }
+      ],
+      "limit": 1
+    },
+    "featured-products": {
+      "name": "Featured products",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Featured products"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea"
+        },
+        {
+          "id": "collection",
+          "label": "Collection",
+          "type": "collection",
+          "info": "Empty: the newest products"
+        },
+        {
+          "id": "limit",
+          "label": "Products shown",
+          "type": "range",
+          "min": 2,
+          "max": 12,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "id": "columns",
+          "label": "Columns on desktop",
+          "type": "range",
+          "min": 2,
+          "max": 5,
+          "step": 1,
+          "default": 4
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "featured-collections": {
+      "name": "Featured collections",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Shop by collection"
+        },
+        {
+          "id": "collection_1",
+          "label": "Collection 1",
+          "type": "collection"
+        },
+        {
+          "id": "collection_2",
+          "label": "Collection 2",
+          "type": "collection"
+        },
+        {
+          "id": "collection_3",
+          "label": "Collection 3",
+          "type": "collection"
+        },
+        {
+          "id": "collection_4",
+          "label": "Collection 4",
+          "type": "collection"
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "media-with-text": {
+      "name": "Media with text",
+      "settings": [
+        {
+          "id": "image",
+          "label": "Image",
+          "type": "image"
+        },
+        {
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "type": "text"
+        },
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Talk about your brand"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Share information about your brand with your customers."
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url",
+          "default": "/products"
+        },
+        {
+          "id": "image_position",
+          "label": "Image position",
+          "type": "select",
+          "options": [
+            {
+              "value": "left",
+              "label": "Left"
+            },
+            {
+              "value": "right",
+              "label": "Right"
+            }
+          ],
+          "default": "left"
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "richtext": {
+      "name": "Rich text",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Talk about your brand"
+        },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "info": "A blank line starts a new paragraph",
+          "default": "Share information about your store with your customers."
+        },
+        {
+          "id": "button_label",
+          "label": "Button label",
+          "type": "text"
+        },
+        {
+          "id": "button_link",
+          "label": "Button link",
+          "type": "url"
+        },
+        {
+          "id": "align",
+          "label": "Alignment",
+          "type": "select",
+          "options": [
+            {
+              "value": "text-start",
+              "label": "Left"
+            },
+            {
+              "value": "text-center",
+              "label": "Center"
+            }
+          ],
+          "default": "text-center"
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "testimonials": {
+      "name": "Testimonials",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "What customers say"
+        },
+        {
+          "id": "quote_1",
+          "label": "Quote 1",
+          "type": "textarea",
+          "default": "Great quality and fast delivery."
+        },
+        {
+          "id": "author_1",
+          "label": "Author 1",
+          "type": "text",
+          "default": "Alex"
+        },
+        {
+          "id": "quote_2",
+          "label": "Quote 2",
+          "type": "textarea",
+          "default": "Everything I ordered fit perfectly."
+        },
+        {
+          "id": "author_2",
+          "label": "Author 2",
+          "type": "text",
+          "default": "Sam"
+        },
+        {
+          "id": "quote_3",
+          "label": "Quote 3",
+          "type": "textarea",
+          "default": ""
+        },
+        {
+          "id": "author_3",
+          "label": "Author 3",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "faq": {
+      "name": "FAQ",
+      "settings": [
+        {
+          "id": "heading",
+          "label": "Heading",
+          "type": "text",
+          "default": "Frequently asked questions"
+        },
+        {
+          "id": "question_1",
+          "label": "Question 1",
+          "type": "text",
+          "default": "How long does shipping take?"
+        },
+        {
+          "id": "answer_1",
+          "label": "Answer 1",
+          "type": "textarea",
+          "default": "Orders usually arrive within 3–5 business days."
+        },
+        {
+          "id": "question_2",
+          "label": "Question 2",
+          "type": "text",
+          "default": "Can I return an item?"
+        },
+        {
+          "id": "answer_2",
+          "label": "Answer 2",
+          "type": "textarea",
+          "default": "Yes, within 30 days of delivery."
+        },
+        {
+          "id": "question_3",
+          "label": "Question 3",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "answer_3",
+          "label": "Answer 3",
+          "type": "textarea",
+          "default": ""
+        },
+        {
+          "id": "question_4",
+          "label": "Question 4",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "answer_4",
+          "label": "Answer 4",
+          "type": "textarea",
+          "default": ""
+        },
+        {
+          "id": "question_5",
+          "label": "Question 5",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "id": "answer_5",
+          "label": "Answer 5",
+          "type": "textarea",
+          "default": ""
+        },
+        {
+          "id": "background",
+          "label": "Background",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-bg-body",
+              "label": "Page"
+            },
+            {
+              "value": "ks-bg-light",
+              "label": "Light"
+            },
+            {
+              "value": "ks-bg-primary",
+              "label": "Primary"
+            },
+            {
+              "value": "ks-bg-dark",
+              "label": "Dark"
+            }
+          ],
+          "default": "ks-bg-body"
+        },
+        {
+          "id": "padding",
+          "label": "Spacing",
+          "type": "select",
+          "options": [
+            {
+              "value": "ks-py-sm",
+              "label": "Small"
+            },
+            {
+              "value": "ks-py-md",
+              "label": "Medium"
+            },
+            {
+              "value": "ks-py-lg",
+              "label": "Large"
+            }
+          ],
+          "default": "ks-py-md"
+        }
+      ]
+    },
+    "custom-html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "info": "Shown as is, scripts and styles included",
+          "type": "code",
+          "language": "html",
+          "default": "<p class=\"text-center\">Your HTML here</p>"
+        }
+      ]
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        {
+          "id": "hero",
+          "type": "hero-carousel",
+          "settings": {}
+        },
+        {
+          "id": "featured",
+          "type": "featured-products",
+          "settings": {}
+        },
+        {
+          "id": "collections",
+          "type": "featured-collections",
+          "settings": {}
+        },
+        {
+          "id": "about",
+          "type": "media-with-text",
+          "settings": {}
+        }
+      ]
+    }
+  },
+  "presets": {
+    "bootshop": {
+      "name": "BootShop",
+      "description": "Pink accent, system fonts",
+      "settings": {}
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Blue accent, Poppins headings",
+      "settings": {
+        "color_primary": "#0d6efd",
+        "font_headings": "Poppins",
+        "font_body": "Inter"
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "Green accent, Montserrat headings",
+      "settings": {
+        "color_primary": "#198754",
+        "font_headings": "Montserrat",
+        "font_body": "Open Sans"
+      }
+    }
+  }
+}
