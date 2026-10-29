@@ -194,7 +194,6 @@ main {
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
-.ks-sort { max-width: 220px; }
 .ks-rte img { max-width: 100%; height: auto; }
 .ks-rte > :last-child { margin-bottom: 0; }
 

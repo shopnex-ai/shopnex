@@ -17,14 +17,17 @@
     <div class="ks-toolbar">
       <span class="text-body-secondary">{{ collection.products.size }} {{ collection.products.size | pluralize: 'product', 'products' }}</span>
       {%- if collection.sort_options.size > 0 %}
-        <label class="ks-sort">
-          <span class="visually-hidden">Sort by</span>
-          <select class="form-select form-select-sm" data-sort aria-label="Sort by">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Sort by:
+            {%- for option in collection.sort_options %}{% if option.selected %} {{ option.name }}{% endif %}{% endfor %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
             {%- for option in collection.sort_options %}
-              <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.name }}</option>
+              <li><a class="dropdown-item{% if option.selected %} active{% endif %}" href="{{ option.url }}">{{ option.name }}</a></li>
             {%- endfor %}
-          </select>
-        </label>
+          </ul>
+        </div>
       {%- endif %}
     </div>
 

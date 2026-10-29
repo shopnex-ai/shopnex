@@ -21,5 +21,5 @@ with its own objects, so the templates, sections and snippets were rewritten; th
 - `assets/vendor-bootstrap.min.css` and `vendor-bootstrap.bundle.min.js`: Bootstrap 5.3 as shipped with the Shopify
   theme (custom spacing scale and breakpoints), so `assets/shopnex.css` restores the standard spacing utilities and
   holds the theme's own styles.
-- `src/*.ts` → `assets/theme.js` (built by `pnpm dev` / `pnpm build`): cart drawer, option pickers, sort select.
+- `src/*.ts` → `assets/theme.js` (built by `pnpm dev` / `pnpm build`): cart drawer and option pickers.
 - Not ported: blog, search, customer accounts, gift cards, password page, localization, product ratings.
