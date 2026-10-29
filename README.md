@@ -62,6 +62,9 @@ Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer r
 Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
 as described in [SECURITY.md](SECURITY.md).
 
+See [`@shopnex/app`](packages/app) for building apps with no database or OAuth code: authenticate,
+Admin API, per-shop data, signed requests (`@shopnex/app/store`), and admin-styled UI (`@shopnex/app/ui`).
+
 ## License
 
 [MIT](LICENSE)
