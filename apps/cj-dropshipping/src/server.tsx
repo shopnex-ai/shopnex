@@ -31,7 +31,7 @@ import {
 } from './import'
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
-import { icon, SettingsPage, type FlatRate, type MyProduct } from './settings'
+import { icon, SettingsPage, type MyProduct } from './settings'
 
 const env = (name: string) => {
   const value = process.env[name]
@@ -101,11 +101,6 @@ app.get('/', async (c) => {
   if (connected && !(await shop.data.get('carrier_service'))) {
     await registerCarrier(shop).catch((error) => (shippingError = message(error)))
   }
-  // The shop's own flat rates come before CJ's price at checkout and are preselected: tell the merchant
-  let flatRates: FlatRate[] = []
-  if (connected && !shippingError) {
-    flatRates = await shop.admin.get<FlatRate[]>('/carrier-services/shop-rates').catch(() => [])
-  }
   if (connected) {
     try {
       const { cj } = await cjFor(shop)
@@ -136,9 +131,6 @@ app.get('/', async (c) => {
       products={products}
       productsError={productsError}
       shippingError={shippingError}
-      flatRates={flatRates}
-      currency={shop.shop.currency}
-      shippingSettingsUrl={`${shop.instance}/admin/settings/shipping`}
       orders={tables.orders(shop)}
     />,
   )
