@@ -1,6 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
-import { carrierService } from '@shopnex/cart'
+import { carrierService, checkoutSettings } from '@shopnex/cart'
 import { carrierApp, shopManager } from '../../orpc'
 import { carrierServiceConfigureInput } from './schemas'
 
@@ -22,6 +22,19 @@ export const carrierServicesApp = {
     .route({ method: 'POST', path: '/admin/carrier-services/configure' })
     .input(carrierServiceConfigureInput)
     .handler(async ({ input, context }) => view(await carrierService.configure(context.shop.id, context.appId, input))),
+
+  // The shop's own flat rates that are on: checkout lists them before any carrier's rates and preselects the first,
+  // so an app that quotes live prices tells the merchant when they are in the way. Read only, and only these fields.
+  shopRates: carrierApp
+    .route({ method: 'GET', path: '/admin/carrier-services/shop-rates' })
+    .handler(async ({ context }) =>
+      (await checkoutSettings.listShippingRates(context.shop.id, { activeOnly: true })).map((r) => ({
+        id: r.id,
+        name: r.name,
+        priceCents: r.priceCents,
+        freeAboveCents: r.freeAboveCents,
+      })),
+    ),
 }
 
 // Settings → Shipping: the carrier services installed apps registered; staff rename or switch them off

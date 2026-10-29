@@ -19,6 +19,8 @@ import type { ForwardedOrder } from './db'
 
 export const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#ff6a00"/><text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="28" fill="#fff">CJ</text></svg>`
 
+export type FlatRate = { id: string; name: string; priceCents: number; freeAboveCents: number | null }
+
 export type MyProduct = {
   pid: string
   name: string
@@ -42,6 +44,11 @@ export type SettingsView = {
   productsError: string | null
   /** Why CJ's shipping prices aren't offered at checkout (null: they are) */
   shippingError: string | null
+  /** The shop's own flat shipping rates that are on: they come before CJ's price and are preselected */
+  flatRates: FlatRate[]
+  currency: string
+  /** Where the merchant switches them off */
+  shippingSettingsUrl: string
   orders: ForwardedOrder[]
 }
 
@@ -62,6 +69,9 @@ const styles = `
 .cj-action{padding:0 .75rem .75rem}
 .cj-action .sx-btn,.cj-action .sx-badge{width:100%;justify-content:center;text-align:center}
 `
+
+const formatCurrency = (cents: number, currency: string) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100)
 
 // CJ sends "11.63" or a range of its variants, "4.70-14.73"
 const money = (price: string) =>
@@ -95,7 +105,17 @@ document.addEventListener('shopnex:done', (event) => {
 
 const STATUS_TONE = { pending: 'warning', created: 'default', fulfilled: 'success', failed: 'critical' } as const
 
-export function SettingsPage({ connected, settings, products, productsError, shippingError, orders }: SettingsView) {
+export function SettingsPage({
+  connected,
+  settings,
+  products,
+  productsError,
+  shippingError,
+  flatRates,
+  currency,
+  shippingSettingsUrl,
+  orders,
+}: SettingsView) {
   return (
     <Page
       title="CJ Dropshipping"
@@ -156,11 +176,24 @@ export function SettingsPage({ connected, settings, products, productsError, shi
           <Card title="Shipping at checkout">
             {shippingError ? (
               <Banner tone="warning" title="Not on yet">
-                {shippingError} Uninstall the app and install it again to allow shipping prices.
+                {shippingError.replace(/[.\s]*$/, '.')} Uninstall the app and install it again to allow shipping prices.
               </Banner>
             ) : (
               <Banner tone="success" title="On">
                 Buyers see CJ&apos;s shipping price as &quot;Standard shipping&quot; once they enter an address.
+              </Banner>
+            )}
+            {flatRates.length > 0 && (
+              <Banner tone="warning" title="Your own shipping rate comes first">
+                Checkout lists your shipping rate{flatRates.length > 1 ? 's' : ''} (
+                {flatRates.map((r) => `${r.name}, ${formatCurrency(r.priceCents, currency)}`).join('; ')}) before
+                CJ&apos;s price and selects the first one, so buyers pay that instead of what CJ charges. Turn{' '}
+                {flatRates.length > 1 ? 'them' : 'it'} off to charge CJ&apos;s price.
+                <div>
+                  <Button href={shippingSettingsUrl} external variant="secondary">
+                    Open shipping settings
+                  </Button>
+                </div>
               </Banner>
             )}
             <Text tone="subdued">

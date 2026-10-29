@@ -103,6 +103,24 @@ describe('carrier service: configure', () => {
   })
 })
 
+describe('carrier service: the shop’s own rates', () => {
+  test('a carrier app can see which flat rates are on, and nothing else about shipping settings', async () => {
+    const rate = await fx.shippingRate(500)
+    const rates = ok(await call('GET', '/admin/carrier-services/shop-rates', undefined, auth))
+    const mine = rates.find((r: { id: string }) => r.id === rate.id)
+    assert.deepEqual(mine, { id: rate.id, name: rate.name, priceCents: 500, freeAboveCents: null })
+    // Switched off: no longer in the way
+    await db.update(schema.shippingRates).set({ active: false }).where(eq(schema.shippingRates.id, rate.id))
+    const after = ok(await call('GET', '/admin/carrier-services/shop-rates', undefined, auth))
+    assert.ok(!after.some((r: { id: string }) => r.id === rate.id))
+  })
+
+  test('tokens that are not a carrier app’s own can’t', async () => {
+    ok(await call('GET', '/admin/carrier-services/shop-rates', undefined, await fx.token(['write_shipping'])), 403)
+    ok(await call('GET', '/admin/carrier-services/shop-rates', undefined, await fx.token(['read_orders'])), 403)
+  })
+})
+
 describe('carrier service: quoting', () => {
   test('no address, no request: only the shop’s own rates', async () => {
     const cart = await fx.cart([{ merchandiseId: variant.id, quantity: 1 }])
