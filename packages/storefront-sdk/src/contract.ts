@@ -205,13 +205,17 @@ export const storefrontContract = {
         z.object({
           cartId: z.string(),
           /** For `cost`; defaults to the first rate */
-          shippingRateId: z.uuid().optional(),
-          /** For `cost.totalTaxAmount` (ISO 3166-1 alpha-2) */
+          shippingRateId: z.string().max(200).optional(),
+          /** For `cost.totalTaxAmount` (ISO 3166-1 alpha-2), and to ask the shop's carrier services for live rates */
           countryCode: z
             .string()
             .regex(/^[A-Z]{2}$/)
             .optional(),
           province: z.string().trim().max(100).optional(),
+          /** With countryCode: what carrier services use to quote shipping */
+          city: z.string().trim().max(100).optional(),
+          zip: z.string().trim().max(20).optional(),
+          address1: z.string().trim().max(200).optional(),
         }),
       )
       .errors(notFound)
@@ -226,7 +230,7 @@ export const storefrontContract = {
           phone: z.string().trim().max(40).optional(),
           shippingAddress: MailingAddressInput.optional(),
           /** From checkout.options; defaults to the first rate. No rates configured = no shipping charge */
-          shippingRateId: z.uuid().optional(),
+          shippingRateId: z.string().max(200).optional(),
           /** From checkout.options; defaults to the first method */
           paymentMethodId: z.uuid().optional(),
           note: z.string().trim().max(1000).optional(),

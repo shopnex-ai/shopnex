@@ -10,6 +10,8 @@ import { PaymentError, paymentService } from '@shopnex/payments'
 import { calculate, taxRateFor, taxService } from '@shopnex/pricing'
 import * as cartService from './cart'
 import type { CartView } from './cart'
+import * as carrierService from './carrier-services'
+import type { QuoteInput } from './carrier-services'
 import { listPaymentMethods, listShippingRates } from './checkout-settings'
 import { CartError } from './errors'
 
@@ -55,20 +57,75 @@ export function toMailingAddress(a: AddressFields): MailingAddress {
   }
 }
 
+/** Where the cart ships to, as far as the buyer has said. Carrier services need at least the country. */
+export type QuoteAddress = {
+  countryCode: string
+  province?: string | null
+  city?: string | null
+  zip?: string | null
+  address1?: string | null
+  address2?: string | null
+}
+
+// What a carrier service is told about the cart and where it goes
+function quoteInput(cart: CartView, address: QuoteAddress): QuoteInput {
+  return {
+    currency: cart.currency,
+    subtotalCents: cart.subtotalCents,
+    destination: {
+      countryCode: address.countryCode.toUpperCase(),
+      province: address.province ?? null,
+      city: address.city ?? null,
+      zip: address.zip ?? null,
+      address1: address.address1 ?? null,
+      address2: address.address2 ?? null,
+    },
+    items: cart.lines.map((l) => ({
+      sku: l.sku,
+      title: l.isDefaultVariant ? l.title : `${l.title} - ${l.variantTitle}`,
+      quantity: l.quantity,
+      priceCents: l.unitPriceCents,
+    })),
+  }
+}
+
 // What the buyer can choose for this subtotal: shipping rates (with free-shipping thresholds applied)
-// and payment methods. Hosted checkout and the Storefront API both use this.
-export async function options(shopId: string, subtotalCents: number) {
-  const [rates, methods] = await Promise.all([
+// and payment methods. Hosted checkout and the Storefront API both use this. With the cart and a destination
+// it also asks the shop's carrier services (apps) for live rates, which follow the shop's flat rates.
+export async function options(
+  shopId: string,
+  subtotalCents: number,
+  quote?: { cart: CartView; address?: QuoteAddress },
+) {
+  const [rates, methods, carrierServices, carrierRates] = await Promise.all([
     listShippingRates(shopId, { activeOnly: true }),
     listPaymentMethods(shopId, { activeOnly: true }),
+    carrierService.list(shopId, { usableOnly: true }),
+    quote?.address?.countryCode
+      ? carrierService.quote(shopId, quoteInput(quote.cart, quote.address))
+      : Promise.resolve([]),
   ])
   return {
-    shippingRates: rates.map((r) => ({
-      id: r.id,
-      title: r.name,
-      priceCents: orderService.shippingPrice(r, subtotalCents),
-      freeAboveCents: r.freeAboveCents,
-    })),
+    // Carrier services quote once the buyer's address is known: the checkout asks again as they type it
+    liveRates: carrierServices.length > 0,
+    shippingRates: [
+      ...rates.map((r) => ({
+        id: r.id,
+        title: r.name,
+        priceCents: orderService.shippingPrice(r, subtotalCents),
+        freeAboveCents: r.freeAboveCents,
+        description: null as string | null,
+        carrier: null as string | null,
+      })),
+      ...carrierRates.map((r) => ({
+        id: r.id,
+        title: r.title,
+        priceCents: r.priceCents,
+        freeAboveCents: null,
+        description: r.description,
+        carrier: r.carrier,
+      })),
+    ],
     paymentMethods: methods.map((m) => ({
       id: m.id,
       name: m.name,
@@ -105,9 +162,12 @@ export async function taxContext(shopId: string) {
 export async function estimate(
   shopId: string,
   cart: CartView,
-  input: { shippingRateId?: string; address?: { countryCode: string; province?: string | null } } = {},
+  input: { shippingRateId?: string; address?: QuoteAddress } = {},
 ) {
-  const [{ shippingRates }, tax] = await Promise.all([options(shopId, cart.subtotalCents), taxContext(shopId)])
+  const [{ shippingRates }, tax] = await Promise.all([
+    options(shopId, cart.subtotalCents, { cart, address: input.address }),
+    taxContext(shopId),
+  ])
   const rate = input.shippingRateId ? shippingRates.find((r) => r.id === input.shippingRateId) : shippingRates[0]
   if (input.shippingRateId && !rate) throw new CartError('INVALID_SHIPPING_RATE', 'Choose an available shipping method')
   const totals = calculate({
@@ -163,6 +223,21 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
 // Idempotent: completing an already-completed cart returns the same order instead of creating another.
 // A shop without shipping rates charges no shipping; a shop with payment methods requires one.
 async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
+  // A carrier's rate is asked for again here, outside the transaction (it calls another server): the price is
+  // the app's answer now, whatever the browser showed
+  let carrierRate: Awaited<ReturnType<typeof carrierService.resolve>> | null = null
+  if (input.shippingRateId && carrierService.isCarrierRateId(input.shippingRateId)) {
+    const found = await cartService.findByToken(shopId, token)
+    if (found && found.status !== 'completed') {
+      if (!input.shippingAddress)
+        throw new CartError('INVALID_SHIPPING_RATE', 'Enter your address to choose a shipping method')
+      carrierRate = await carrierService.resolve(
+        shopId,
+        input.shippingRateId,
+        quoteInput(await cartService.view(found), input.shippingAddress),
+      )
+    }
+  }
   return db.transaction(async (tx) => {
     const cart = await cartService.lockForCheckout(tx, shopId, token)
     if (!cart) throw new CartError('CART_NOT_FOUND', 'Cart not found or expired')
@@ -205,7 +280,11 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
       () => listShippingRates(shopId, { activeOnly: true }, tx),
       () => listPaymentMethods(shopId, { activeOnly: true }, tx),
     ])
-    const rate = input.shippingRateId ? rates.find((r) => r.id === input.shippingRateId) : rates[0]
+    const rate = carrierRate
+      ? { name: carrierRate.title, id: carrierRate.id, priceCents: carrierRate.priceCents, freeAboveCents: null }
+      : input.shippingRateId
+        ? rates.find((r) => r.id === input.shippingRateId)
+        : rates[0]
     if (input.shippingRateId && !rate)
       throw new CartError('INVALID_SHIPPING_RATE', 'Choose an available shipping method')
     const method = input.paymentMethodId ? methods.find((m) => m.id === input.paymentMethodId) : methods[0]

@@ -150,6 +150,9 @@ export const API_SCOPES = [
   // Payments apps: resolve / reject the payment and refund sessions sent to them
   'read_payment_sessions',
   'write_payment_sessions',
+  // Carrier services: apps that quote shipping rates at checkout
+  'read_shipping',
+  'write_shipping',
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 

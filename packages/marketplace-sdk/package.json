@@ -8,6 +8,7 @@
     "./contract": "./src/contract.ts",
     "./session-token": "./src/session-token.ts",
     "./payments": "./src/payments.ts",
+    "./shipping": "./src/shipping.ts",
     "./keys": "./src/keys.ts"
   },
   "scripts": {

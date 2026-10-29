@@ -277,8 +277,11 @@ export const MailingAddressInput = z.object({
 
 // Shopify CartDeliveryOption (one delivery group: rates apply to the whole cart)
 export const ShippingRate = z.object({
-  id: z.uuid(),
+  /** A flat rate's id, or carrier:{service}:{code} for a carrier service's live rate (only with an address) */
+  id: z.string().max(200),
   title: z.string(),
+  /** A carrier service's note, e.g. "2-5 days" */
+  description: z.string().nullable().optional(),
   /** For this cart: 0 when its subtotal reached the free-shipping threshold */
   price: Money,
 })
