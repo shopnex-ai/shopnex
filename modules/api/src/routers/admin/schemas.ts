@@ -448,6 +448,16 @@ export const emailInput = z.discriminatedUnion('provider', [
   z.object({ provider: z.literal('smtp'), smtp: smtpInput }),
 ])
 
+// Carrier services (Shopify carrierServiceCreate)
+export const carrierServiceConfigureInput = z.object({
+  /** Shown at checkout next to the rates when the service is first created, e.g. "CJ Dropshipping" (staff can rename it) */
+  name: z.string().trim().min(1).max(100),
+  /** Receives signed RatesRequests; must be on the app's own origin */
+  ratesUrl: z.url({ protocol: /^https?$/ }),
+  /** false hides it at checkout (e.g. until the merchant has connected the carrier) */
+  ready: z.boolean(),
+})
+
 // Payments apps (Shopify paymentsAppConfigure)
 export const paymentsAppConfigureInput = z.object({
   /** Shown at checkout when the method is first created, e.g. "Credit card" (staff can rename it) */

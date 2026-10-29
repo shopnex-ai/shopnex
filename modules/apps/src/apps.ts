@@ -472,6 +472,10 @@ export async function uninstall(shopId: string, installationId: string) {
     await tx
       .delete(schema.paymentMethods)
       .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, installation.appId)))
+    // So does a carrier app's service: its rates stop being offered at checkout
+    await tx
+      .delete(schema.carrierServices)
+      .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, installation.appId)))
     const [updated] = await tx
       .update(schema.appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })

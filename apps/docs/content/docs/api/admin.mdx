@@ -12,12 +12,13 @@ curl https://shop.example.com/api/v1/admin/shop \
 
 ## Scopes
 
-| Scope                                | Access                          |
-| ------------------------------------ | ------------------------------- |
-| `read_products` / `write_products`   | products, variants, collections |
-| `read_orders` / `write_orders`       | orders                          |
-| `read_customers` / `write_customers` | customers                       |
-| `read_discounts` / `write_discounts` | discounts                       |
+| Scope                                | Access                                                                |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| `read_products` / `write_products`   | products, variants, collections                                       |
+| `read_orders` / `write_orders`       | orders                                                                |
+| `read_customers` / `write_customers` | customers                                                             |
+| `read_discounts` / `write_discounts` | discounts                                                             |
+| `write_shipping`                     | register a [carrier service](/docs/apps/carrier-services) (apps only) |
 
 Write includes read. `GET /admin/shop` works with any token.
 

@@ -11,7 +11,8 @@ ALTER TABLE "fulfillments" ADD COLUMN "updated_at" timestamp DEFAULT now() NOT N
 ALTER TABLE "fulfillment_items" ADD CONSTRAINT "fulfillment_items_fulfillment_id_fulfillments_id_fk" FOREIGN KEY ("fulfillment_id") REFERENCES "public"."fulfillments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "fulfillment_items" ADD CONSTRAINT "fulfillment_items_order_item_id_order_items_id_fk" FOREIGN KEY ("order_item_id") REFERENCES "public"."order_items"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "fulfillment_items_fulfillment_idx" ON "fulfillment_items" USING btree ("fulfillment_id");--> statement-breakpoint
-CREATE INDEX "fulfillment_items_order_item_idx" ON "fulfillment_items" USING btree ("order_item_id");--> statement-breakpoint
+CREATE INDEX "fulfillment_items_order_item_idx" ON "fulfillment_items" USING btree ("order_item_id");
+--> statement-breakpoint
 -- Until now a fulfillment shipped every item of its order: record that as its line items
 INSERT INTO "fulfillment_items" ("fulfillment_id", "order_item_id", "quantity")
 SELECT f."id", i."id", i."quantity"
