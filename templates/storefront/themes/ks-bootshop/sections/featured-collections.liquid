@@ -1,0 +1,31 @@
+{%- comment -%} Featured collections: up to four collection tiles with the collection's image {%- endcomment -%}
+{%- assign picked = '' | split: ',' -%}
+{%- for i in (1..4) -%}
+  {%- assign key = 'collection_' | append: i -%}
+  {%- if section.settings[key] != blank -%}
+    {%- assign picked = picked | push: section.settings[key] -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- comment %} Nothing picked yet: the shop's first collections {% endcomment -%}
+{%- if picked.size == 0 -%}
+  {%- assign picked = collections | slice: 0, 4 -%}
+{%- endif -%}
+{%- if picked.size > 0 -%}
+  <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+    <div class="container">
+      {% render 'section-header', heading: section.settings.heading %}
+      <div class="ks-grid" style="--ks-columns: {{ picked.size | at_most: 4 }}">
+        {%- for c in picked %}
+          <a href="{{ c.url }}" class="ks-tile">
+            <span class="ks-tile-media">
+              {%- if c.image %}
+                <img src="{{ c.image | image_url }}" alt="" loading="lazy">
+              {%- endif %}
+            </span>
+            <span class="ks-tile-title">{{ c.title }}</span>
+          </a>
+        {%- endfor %}
+      </div>
+    </div>
+  </section>
+{%- endif -%}

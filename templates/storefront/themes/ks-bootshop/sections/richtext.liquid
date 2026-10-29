@@ -1,0 +1,19 @@
+{%- comment -%} Rich text: a heading and plain-text paragraphs (a blank line starts a new one), optional button {%- endcomment -%}
+{%- assign paragraphs = section.settings.text | strip | newline_to_br | split: '<br />
+<br />' -%}
+<section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+  <div class="container ks-narrow {{ section.settings.align }}">
+    {%- if section.settings.heading != blank %}
+      <h2 class="mb-3">{{ section.settings.heading }}</h2>
+    {%- endif %}
+    {%- for paragraph in paragraphs %}
+      {%- assign lines = paragraph | replace: '<br />', '' | strip %}
+      {%- if lines != blank %}
+        <p class="lead">{{ lines }}</p>
+      {%- endif %}
+    {%- endfor %}
+    {%- if section.settings.button_label != blank and section.settings.button_link != blank %}
+      <a href="{{ section.settings.button_link }}" class="btn btn-primary mt-2">{{ section.settings.button_label }}</a>
+    {%- endif %}
+  </div>
+</section>

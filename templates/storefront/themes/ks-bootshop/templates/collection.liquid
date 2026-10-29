@@ -1,0 +1,51 @@
+{%- comment -%} /products and /collections/{handle}: header, sort options, product grid and paging {%- endcomment -%}
+{%- assign description = collection.description | strip_html | strip -%}
+<section class="ks-section ks-py-md border-bottom ks-bg-light">
+  <div class="container">
+    <nav aria-label="Breadcrumb" class="small mb-2">
+      <a href="/">Home</a> <span class="text-body-secondary">/</span>
+      {% if collection.handle == 'all' %}All products{% else %}{{ collection.title }}{% endif %}
+    </nav>
+    <h1 class="mb-0">{% if collection.handle == 'all' %}All products{% else %}{{ collection.title }}{% endif %}</h1>
+    {%- if description != blank %}
+      <p class="lead mt-2 mb-0 ks-narrow-left">{{ description }}</p>
+    {%- endif %}
+  </div>
+</section>
+<section class="ks-section ks-py-md">
+  <div class="container">
+    <div class="ks-toolbar">
+      <span class="text-body-secondary">{{ collection.products.size }} {{ collection.products.size | pluralize: 'product', 'products' }}</span>
+      {%- if collection.sort_options.size > 0 %}
+        <label class="ks-sort">
+          <span class="visually-hidden">Sort by</span>
+          <select class="form-select form-select-sm" data-sort aria-label="Sort by">
+            {%- for option in collection.sort_options %}
+              <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.name }}</option>
+            {%- endfor %}
+          </select>
+        </label>
+      {%- endif %}
+    </div>
+
+    {%- if collection.products.size == 0 %}
+      <div class="text-center py-5">
+        <p class="lead">No products found.</p>
+        {%- if collection.handle != 'all' %}<a href="/products" class="btn btn-primary">See all products</a>{% endif %}
+      </div>
+    {%- else %}
+      <div class="ks-grid" style="--ks-columns: 4">
+        {%- for product in collection.products %}
+          {% render 'product-card', product: product %}
+        {%- endfor %}
+      </div>
+    {%- endif %}
+
+    {%- if paginate.next or paginate.first %}
+      <nav class="d-flex justify-content-center gap-3 mt-5" aria-label="Pagination">
+        {%- if paginate.first %}<a class="btn btn-outline-primary" href="{{ paginate.first.url }}">First page</a>{% endif %}
+        {%- if paginate.next %}<a class="btn btn-primary" href="{{ paginate.next.url }}">Next page</a>{% endif %}
+      </nav>
+    {%- endif %}
+  </div>
+</section>
