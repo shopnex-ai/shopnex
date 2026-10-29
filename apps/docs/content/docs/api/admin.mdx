@@ -12,13 +12,32 @@ curl https://shop.example.com/api/v1/admin/shop \
 
 ## Scopes
 
-| Scope | Access |
-| --- | --- |
-| `read_products` / `write_products` | products, variants, collections |
-| `read_orders` / `write_orders` | orders |
-| `read_customers` / `write_customers` | customers |
-| `read_discounts` / `write_discounts` | discounts |
+| Scope                                | Access                          |
+| ------------------------------------ | ------------------------------- |
+| `read_products` / `write_products`   | products, variants, collections |
+| `read_orders` / `write_orders`       | orders                          |
+| `read_customers` / `write_customers` | customers                       |
+| `read_discounts` / `write_discounts` | discounts                       |
 
 Write includes read. `GET /admin/shop` works with any token.
 
 Never reachable with a token: shop settings, staff, storefront keys, API tokens, and shipping, payment and tax settings. Routes opt in with `scoped('read_orders')` or `adminOrToken` in `modules/api/src/orpc.ts`; `admin` and `shopManager` stay session-only.
+
+## Fulfillments
+
+An order ships in as many parts as you like (Shopify's fulfillments). Each fulfillment holds some of the order's items and has its own tracking.
+
+```sh
+# Ship 2 of an item, with tracking. Omit `items` to ship everything that is left.
+curl -X POST https://shop.example.com/api/v1/admin/orders/{id}/fulfill \
+  -H "Authorization: Bearer sk_…" -H "Content-Type: application/json" \
+  -d '{ "items": [{ "orderItemId": "…", "quantity": 2 }], "trackingNumber": "1Z999", "trackingCompany": "UPS" }'
+```
+
+- The order is `partially_fulfilled` until every item has shipped, then `fulfilled`. Each order item shows `fulfilledQuantity` and `fulfillableQuantity`.
+- `notifyCustomer: false` skips the shipping confirmation email for that shipment.
+- `PATCH /admin/orders/{id}/fulfillments/{fulfillmentId}` updates the tracking and `shipmentStatus` (`confirmed`, `in_transit`, `out_for_delivery`, `delivered`, `failure`).
+- `POST /admin/orders/{id}/fulfillments/{fulfillmentId}/cancel` takes a shipment back: its items are unfulfilled again.
+- An order with any shipped item can't be cancelled.
+
+All of these need `write_orders`. Apps are told through the `fulfillment.created` and `fulfillment.updated` [webhooks](/docs/api/webhooks).

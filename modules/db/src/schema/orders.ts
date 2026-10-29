@@ -167,9 +167,14 @@ export const orderTransactions = pgTable(
   (t) => [index('order_transactions_order_idx').on(t.orderId)],
 )
 
-// Shopify Fulfillment (all items of the order for now; per-line quantities come with partial fulfillment)
+// Shopify Fulfillment: one shipment of some of an order's items (`fulfillment_items`), with its own tracking.
+// An order can have several; cancelling one puts its items back to unfulfilled.
 export const FULFILLMENT_RECORD_STATUSES = ['success', 'cancelled'] as const
 export type FulfillmentRecordStatus = (typeof FULFILLMENT_RECORD_STATUSES)[number]
+
+// Shopify FulfillmentEventStatus (where the shipment is, as the carrier reports it)
+export const SHIPMENT_STATUSES = ['confirmed', 'in_transit', 'out_for_delivery', 'delivered', 'failure'] as const
+export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number]
 
 export const fulfillments = pgTable(
   'fulfillments',
@@ -182,9 +187,32 @@ export const fulfillments = pgTable(
     trackingCompany: text('tracking_company'),
     trackingNumber: text('tracking_number'),
     trackingUrl: text('tracking_url'),
+    // Null until a carrier (or the merchant) reports where the shipment is
+    shipmentStatus: text('shipment_status').$type<ShipmentStatus>(),
+    deliveredAt: timestamp('delivered_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   (t) => [index('fulfillments_order_idx').on(t.orderId)],
+)
+
+// Shopify FulfillmentLineItem: how many of an order line this fulfillment ships
+export const fulfillmentItems = pgTable(
+  'fulfillment_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    fulfillmentId: uuid('fulfillment_id')
+      .notNull()
+      .references(() => fulfillments.id, { onDelete: 'cascade' }),
+    orderItemId: uuid('order_item_id')
+      .notNull()
+      .references(() => orderItems.id, { onDelete: 'cascade' }),
+    quantity: integer('quantity').notNull(),
+  },
+  (t) => [
+    index('fulfillment_items_fulfillment_idx').on(t.fulfillmentId),
+    index('fulfillment_items_order_item_idx').on(t.orderItemId),
+  ],
 )
 
 export type Order = typeof orders.$inferSelect
@@ -192,3 +220,4 @@ export type OrderItem = typeof orderItems.$inferSelect
 export type OrderShippingLine = typeof orderShippingLines.$inferSelect
 export type OrderTransaction = typeof orderTransactions.$inferSelect
 export type Fulfillment = typeof fulfillments.$inferSelect
+export type FulfillmentItem = typeof fulfillmentItems.$inferSelect

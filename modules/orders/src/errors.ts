@@ -9,6 +9,9 @@ export type OrderErrorCode =
   | 'ORDER_NOT_FOUND'
   | 'ORDER_CANCELLED'
   | 'INVALID_STATUS_TRANSITION'
+  | 'FULFILLMENT_NOT_FOUND'
+  // a fulfillment names an item that isn't on the order, or more of it than is left to ship
+  | 'INVALID_FULFILLMENT_ITEMS'
   // Unknown, inactive, used up, already used by this customer, or the subtotal is below its minimum
   | 'DISCOUNT_NOT_APPLICABLE'
 

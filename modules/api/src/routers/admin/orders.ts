@@ -4,7 +4,7 @@ import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES, orderService } from '@shopnex
 import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
-import { cancelOrderInput, fulfillOrderInput } from './schemas'
+import { cancelOrderInput, fulfillmentUpdateInput, fulfillOrderInput } from './schemas'
 
 const id = z.object({ id: z.uuid() })
 
@@ -46,16 +46,24 @@ const importedOrder = z.object({
   paymentMethodName: z.string().max(200).nullable().optional(),
   note: z.string().max(10_000).nullable().optional(),
   createdAt: z.coerce.date(),
-  items: z.array(z.object({
-    title: z.string().min(1).max(500),
-    variantTitle: z.string().max(500).nullable().optional(),
-    sku: z.string().max(200).nullable().optional(),
-    vendor: z.string().max(200).nullable().optional(),
-    imageUrl: z.url({ protocol: /^https?$/ }).nullable().optional(),
-    unitPriceCents: z.number().int().nonnegative(),
-    quantity: z.number().int().min(1).max(9999),
-    discountCents: z.number().int().nonnegative(),
-  })).min(1).max(500),
+  items: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(500),
+        variantTitle: z.string().max(500).nullable().optional(),
+        sku: z.string().max(200).nullable().optional(),
+        vendor: z.string().max(200).nullable().optional(),
+        imageUrl: z
+          .url({ protocol: /^https?$/ })
+          .nullable()
+          .optional(),
+        unitPriceCents: z.number().int().nonnegative(),
+        quantity: z.number().int().min(1).max(9999),
+        discountCents: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(500),
 })
 
 export const orders = {
@@ -124,10 +132,25 @@ export const orders = {
     .input(id)
     .handler(({ input, context }) => orderService.markAsPaid(context.shop.id, input.id)),
 
+  // Ships some or all of the items as one fulfillment with its own tracking; call again for the rest
   fulfill: write
     .route({ method: 'POST', path: '/admin/orders/{id}/fulfill' })
     .input(id.extend(fulfillOrderInput.shape))
-    .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, tracking)),
+    .handler(({ input: { id, ...fulfillment }, context }) => orderService.fulfill(context.shop.id, id, fulfillment)),
+
+  // Takes a shipment back: its items are unfulfilled again
+  cancelFulfillment: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/fulfillments/{fulfillmentId}/cancel' })
+    .input(id.extend({ fulfillmentId: z.uuid() }))
+    .handler(({ input, context }) => orderService.cancelFulfillment(context.shop.id, input.id, input.fulfillmentId)),
+
+  // Tracking and shipment status (in transit, delivered…)
+  updateFulfillment: write
+    .route({ method: 'PATCH', path: '/admin/orders/{id}/fulfillments/{fulfillmentId}' })
+    .input(id.extend({ fulfillmentId: z.uuid() }).extend(fulfillmentUpdateInput.shape))
+    .handler(({ input: { id, fulfillmentId, ...patch }, context }) =>
+      orderService.updateFulfillment(context.shop.id, id, fulfillmentId, patch),
+    ),
 
   cancel: write
     .route({ method: 'POST', path: '/admin/orders/{id}/cancel' })

@@ -9,6 +9,9 @@ export const WEBHOOK_TOPICS = [
   'order.paid',
   'order.fulfilled',
   'order.cancelled',
+  // One shipment: created, then updated (tracking, shipment status, cancelled)
+  'fulfillment.created',
+  'fulfillment.updated',
   'product.created',
   'product.updated',
   'customer.created',

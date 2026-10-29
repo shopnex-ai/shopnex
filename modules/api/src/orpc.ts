@@ -39,7 +39,7 @@ const domainErrors = base.middleware(async ({ next }) => {
   } catch (error) {
     if (error instanceof OrderError) {
       const status =
-        error.code === 'ORDER_NOT_FOUND'
+        error.code === 'ORDER_NOT_FOUND' || error.code === 'FULFILLMENT_NOT_FOUND'
           ? 'NOT_FOUND'
           : error.code === 'ORDER_CANCELLED' || error.code === 'INVALID_STATUS_TRANSITION'
             ? 'CONFLICT'

@@ -156,7 +156,8 @@ function orderScope(order: OrderView) {
 }
 
 function scopeOf(shop: Shop, order: OrderView) {
-  const fulfillment = order.fulfillments.at(-1)
+  // The latest shipment still standing: a cancelled one has no tracking worth telling the customer
+  const fulfillment = order.fulfillments.filter((f) => f.status !== 'cancelled').at(-1)
   return {
     shop: shopScope(shop),
     order: orderScope(order),
@@ -470,7 +471,10 @@ function sampleOrder(shop: Shop): OrderView {
         trackingCompany: 'UPS',
         trackingNumber: '1Z999AA10123456784',
         trackingUrl: null,
+        shipmentStatus: null,
+        deliveredAt: null,
         createdAt: now,
+        updatedAt: now,
       },
     ],
     customer: null,
