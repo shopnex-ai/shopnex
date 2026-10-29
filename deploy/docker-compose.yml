@@ -1,6 +1,9 @@
 # Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up -d`, then open http://localhost:3000.
 # Every variable has a local default. For a public deployment set APP_URL, STRIPE_APP_URL and POSTGRES_PASSWORD
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
+# Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj CJ_DROPSHIPPING_APP_URL=http://localhost:4700
+# docker compose up. Each app has a public URL (browsers) and an internal one (the containers talk over the compose
+# network), so a localhost URL works.
 name: shopnex
 
 services:
@@ -37,6 +40,10 @@ services:
       TENANCY_MODE: single
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      STRIPE_APP_INTERNAL_URL: http://stripe:4600
+      # Empty: no CJ app (Shopnex skips an app without a URL). Set it and enable the cj profile to turn it on
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-}
+      CJ_DROPSHIPPING_APP_INTERNAL_URL: http://cj-dropshipping:4700
 
   stripe:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}
@@ -48,9 +55,26 @@ services:
       - stripe_data:/data
     environment:
       STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      DATA_DIR: /data
+
+  cj-dropshipping:
+    profiles: [cj]
+    image: ghcr.io/shopnex-ai/shopnex-cj-dropshipping:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - '4700:4700'
+    volumes:
+      - cj_dropshipping_data:/data
+    environment:
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      PORT: 4700
       DATA_DIR: /data
 
 volumes:
   db:
   shopnex_data:
   stripe_data:
+  cj_dropshipping_data:

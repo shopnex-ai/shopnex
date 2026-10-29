@@ -23,6 +23,7 @@ import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@s
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './errors'
 import { instanceSigner, ownKey } from './keys'
+import { serverUrl } from './internal-url'
 import { instanceUrl } from './marketplace'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
@@ -655,7 +656,7 @@ const BUNDLED_APPS = [
 type BundledApp = (typeof BUNDLED_APPS)[number]
 
 async function syncBundledApp(bundled: BundledApp, url: string) {
-  const res = await fetch(`${url}/.well-known/shopnex-app.json`, {
+  const res = await fetch(`${serverUrl(url)}/.well-known/shopnex-app.json`, {
     redirect: 'error',
     signal: AbortSignal.timeout(5000),
   })

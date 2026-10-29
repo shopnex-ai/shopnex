@@ -42,8 +42,24 @@ jobs:
         include:
           - { image: shopnex, suffix: '', file: Dockerfile, arch: amd64, runner: ubuntu-latest }
           - { image: shopnex, suffix: '', file: Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, arch: amd64, runner: ubuntu-latest }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, arch: arm64, runner: ubuntu-24.04-arm }
+          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: amd64, runner: ubuntu-latest }
+          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: arm64, runner: ubuntu-24.04-arm }
+          - {
+              image: cj-dropshipping,
+              suffix: -cj-dropshipping,
+              file: Dockerfile.app,
+              app: cj-dropshipping,
+              arch: amd64,
+              runner: ubuntu-latest,
+            }
+          - {
+              image: cj-dropshipping,
+              suffix: -cj-dropshipping,
+              file: Dockerfile.app,
+              app: cj-dropshipping,
+              arch: arm64,
+              runner: ubuntu-24.04-arm,
+            }
     steps:
       - uses: actions/checkout@v7
 
@@ -67,7 +83,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.file }}
-          build-args: ${{ matrix.image == 'shopnex' && format('APP_VERSION={0}', github.ref_name) || 'APP=stripe' }}
+          build-args: ${{ matrix.image == 'shopnex' && format('APP_VERSION={0}', github.ref_name) || format('APP={0}', matrix.app) }}
           platforms: linux/${{ matrix.arch }}
           # Attestations would add extra "unknown" platforms to the merged tag
           provenance: false
@@ -96,6 +112,7 @@ jobs:
         include:
           - { image: shopnex, suffix: '' }
           - { image: stripe, suffix: -stripe }
+          - { image: cj-dropshipping, suffix: -cj-dropshipping }
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -171,12 +188,14 @@ jobs:
           TAG: ${{ github.ref_name }}
           IMAGE: ${{ steps.image.outputs.name }}
           STRIPE_IMAGE: ${{ steps.image.outputs.name }}-stripe
+          CJ_IMAGE: ${{ steps.image.outputs.name }}-cj-dropshipping
         run: |
           gh release view "$TAG" --json body --jq .body > release-notes.md
           {
             printf '\n\n## Docker image\n\n'
             printf 'Shopnex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
             printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
+            printf 'CJ Dropshipping app (optional): `docker pull %s:%s`\n\n' "$CJ_IMAGE" "$TAG"
             printf 'Images are published for linux/amd64 and linux/arm64. Offline `.tar.gz` copies of both (amd64) are attached below.\n'
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md

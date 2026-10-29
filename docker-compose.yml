@@ -35,6 +35,10 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       # Registers the Stripe app (Settings → Payments → Install): where to find it
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required: public origin of the Stripe app}'
+      STRIPE_APP_INTERNAL_URL: http://stripe:4600
+      # Optional CJ Dropshipping app: set this and run with COMPOSE_PROFILES=cj
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-}
+      CJ_DROPSHIPPING_APP_INTERNAL_URL: http://cj-dropshipping:4700
 
   stripe:
     build:
@@ -47,9 +51,27 @@ services:
       - stripe_data:/data # the app's identity and its shops' settings: keep it
     environment:
       STRIPE_APP_URL: '${STRIPE_APP_URL:?required}'
+      SHOPNEX_INTERNAL_URL: http://admin:3000
+      DATA_DIR: /data
+
+  cj-dropshipping:
+    profiles: [cj]
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args: { APP: cj-dropshipping }
+    ports:
+      - '4700:4700'
+    volumes:
+      - cj_dropshipping_data:/data
+    environment:
+      CJ_DROPSHIPPING_APP_URL: '${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}'
+      SHOPNEX_INTERNAL_URL: http://admin:3000
+      PORT: 4700
       DATA_DIR: /data
 
 volumes:
   db:
   data:
   stripe_data:
+  cj_dropshipping_data:

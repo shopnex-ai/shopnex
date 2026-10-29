@@ -10,7 +10,7 @@ function startBackgroundServices() {
       { startPaymentsWorker },
       { startEmailWorker },
       { isMultiTenant },
-      { appService, instanceSignature, marketplaceService },
+      { appService, instanceSignature, marketplaceService, serverUrl },
     ] = await Promise.all([
       import('@shopnex/webhooks/worker'),
       import('@shopnex/payments/worker'),
@@ -18,7 +18,7 @@ function startBackgroundServices() {
       import('@shopnex/tenancy'),
       import('@shopnex/apps'),
     ])
-    startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature })
+    startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature, resolveUrl: serverUrl })
     startPaymentsWorker()
     startEmailWorker()
     marketplaceService.startMarketplaceSync()

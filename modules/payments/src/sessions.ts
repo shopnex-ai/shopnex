@@ -11,7 +11,7 @@ import {
   type PaymentSessionRequest,
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
-import { instanceSigner, instanceUrl } from '@shopnex/apps'
+import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { notify } from '@shopnex/email'
 import { orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
@@ -42,7 +42,7 @@ async function installed(conn: Conn, shopId: string, appId: string) {
 // Signed with this instance's key; the app checks it against our published keys (`instance` in the body)
 async function post(url: string, id: string, payload: PaymentSessionRequest | RefundSessionRequest) {
   const body = JSON.stringify(payload)
-  const res = await fetch(url, {
+  const res = await fetch(serverUrl(url), {
     method: 'POST',
     headers: await signPaymentsRequest(await instanceSigner(), id, body),
     body,

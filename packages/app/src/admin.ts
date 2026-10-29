@@ -22,8 +22,9 @@ export type AdminClient = {
   delete<T = unknown>(path: string): Promise<T>
 }
 
-export function createAdminClient(instance: string, token: () => Promise<string>): AdminClient {
-  const base = `${instance}/api/v1/admin`
+/** `reachAt` is where requests go when the instance's public address can't be reached from here */
+export function createAdminClient(instance: string, token: () => Promise<string>, reachAt = instance): AdminClient {
+  const base = `${reachAt}/api/v1/admin`
   const doFetch = async (path: string, init: RequestInit = {}) => {
     const headers = new Headers(init.headers)
     headers.set('authorization', `Bearer ${await token()}`)
