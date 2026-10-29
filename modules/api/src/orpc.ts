@@ -61,7 +61,9 @@ const domainErrors = base.middleware(async ({ next }) => {
           ? 'NOT_FOUND'
           : error.code === 'CART_COMPLETED'
             ? 'CONFLICT'
-            : 'BAD_REQUEST'
+            : error.code === 'NOT_A_CARRIER_APP'
+              ? 'FORBIDDEN'
+              : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
     if (error instanceof CatalogError) {
@@ -270,6 +272,13 @@ export const scoped = (scope: ApiScope) =>
 export const paymentsApp = scoped('write_payment_sessions').use(({ context, next }) => {
   const appId = context.token?.appId
   if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a payments app's own token can do this" })
+  return next({ context: { appId } })
+})
+
+// Carrier services: an installed app's token with the shipping scope (staff manage them from the admin instead)
+export const carrierApp = scoped('write_shipping').use(({ context, next }) => {
+  const appId = context.token?.appId
+  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a carrier app's own token can do this" })
   return next({ context: { appId } })
 })
 

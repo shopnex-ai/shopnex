@@ -32,6 +32,7 @@ import {
   type PaymentSessionRequest,
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
+import { verifyRatesRequest as verifyRates, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { verifySessionToken } from '@shopnex/marketplace-sdk/session-token'
 import {
   createAdminClient,
@@ -46,6 +47,7 @@ import { clientScript } from './client'
 
 export { ShopnexError, type AdminClient, type AppData } from './admin'
 export type { PaymentSessionRequest, RefundSessionRequest } from '@shopnex/marketplace-sdk/payments'
+export type { Rate, RatesRequest, RatesResponse } from '@shopnex/marketplace-sdk/shipping'
 
 export type ShopnexAppOptions = {
   /** Default: SHOPNEX_CLIENT_ID */
@@ -84,6 +86,11 @@ export type ShopContext = {
       refundSessionUrl?: string
       ready: boolean
     }): Promise<void>
+  }
+  /** Carrier apps: quote shipping rates at checkout */
+  shipping: {
+    /** Registers (or updates) this app's carrier service for the shop */
+    configure(service: { name: string; ratesUrl: string; ready: boolean }): Promise<void>
   }
 }
 
@@ -192,6 +199,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
         reject: async (id, reason) => void (await admin.post(session(id, 'reject'), { reason })),
         configure: async (method) => void (await admin.post('/payments-app/configure', method)),
       },
+      shipping: {
+        configure: async (service) => void (await admin.post('/carrier-services/configure', service)),
+      },
     }
   }
 
@@ -259,6 +269,18 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
+   * Carrier apps: a rates request from Shopnex, checked against the instance's keys, with its shop. Answer it with
+   * `{ rates: [{ code, name, priceCents, description? }] }`. Throws a 401 HTTPException when the signature doesn't
+   * check out.
+   */
+  async function verifyRatesRequest(c: Context | Request): Promise<{ request: RatesRequest; shop: ShopContext }> {
+    const request = c instanceof Request ? c : c.req.raw
+    const verified = await verifyRates(request.headers, await request.text(), { keys })
+    if (!verified) throw new HTTPException(401, { message: 'Invalid signature' })
+    return { request: verified, shop: await forShop(verified.instance, verified.shopId) }
+  }
+
+  /**
    * A webhook delivery from Shopnex (subscriptions the app made with its token), checked against the instance's
    * keys: no endpoint secret to keep. Throws a 401 HTTPException when the signature doesn't check out.
    */
@@ -299,7 +321,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
     c.json({ clientId, publicKey: await publicKeyOf(await privateKey) }, 200, { 'cache-control': 'no-store' }),
   )
 
-  return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyWebhook }
+  return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyRatesRequest, verifyWebhook }
 }
 
 export type ShopnexApp = ReturnType<typeof createShopnexApp>

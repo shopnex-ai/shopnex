@@ -13,6 +13,10 @@ import {
   shippingRates as adminShippingRates,
   taxRates as adminTaxRates,
 } from './routers/admin/checkout-settings'
+import {
+  carrierServices as adminCarrierServices,
+  carrierServicesApp as adminCarrierServicesApp,
+} from './routers/admin/carrier-services'
 import { collections as adminCollections } from './routers/admin/collections'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { discounts as adminDiscounts } from './routers/admin/discounts'
@@ -70,6 +74,8 @@ export const router = {
     email: tagged('Admin · Email').router(adminEmail),
     notifications: tagged('Admin · Email').router(adminNotifications),
     shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
+    carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
+    carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),
     paymentMethods: tagged('Admin · Payments').router(adminPaymentMethods),
     paymentApps: tagged('Admin · Payments').router(adminPaymentApps),
     paymentsApp: tagged('Admin · Payments apps').router(adminPaymentsApp),
