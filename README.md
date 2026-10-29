@@ -35,10 +35,11 @@ Requires [Docker](https://docs.docker.com/get-docker/).
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/docker-compose.yml
-docker compose up -d
+docker compose up
 ```
 
-Open http://localhost:3000 and follow the setup wizard to create the owner account and your shop.
+Open http://localhost:3000 once the logs settle and follow the setup wizard to create the owner account.
+Ctrl+C stops it; add `-d` (`docker compose up -d`) to keep it running in the background.
 Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
 
 No `.env` needed. For a public server, set `APP_URL`, `STRIPE_APP_URL` and `POSTGRES_PASSWORD`, and pin
