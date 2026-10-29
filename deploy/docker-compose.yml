@@ -1,4 +1,4 @@
-# Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up -d`, then open http://localhost:3000.
+# Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up`, then open http://localhost:3000.
 # Every variable has a local default. For a public deployment set APP_URL, STRIPE_APP_URL and POSTGRES_PASSWORD
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 name: shopnex
