@@ -221,26 +221,31 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
 
       // Spread the order discount over the lines; the last line takes the rounding remainder
       let left = discountCents
-      await tx.insert(schema.orderItems).values(
-        o.lines.map((l, i) => {
-          const share =
-            i === o.lines.length - 1 ? left : Math.round((discountCents * l.v.priceCents * l.quantity) / subtotalCents)
-          left -= share
-          return {
-            orderId,
-            productId: l.v.productId,
-            variantId: l.v.variantId,
-            title: l.v.productTitle,
-            variantTitle: l.v.optionsKey === '' ? null : l.v.variantTitle,
-            sku: l.v.sku,
-            vendor: l.v.vendor || null,
-            imageUrl: l.v.imageUrl,
-            unitPriceCents: l.v.priceCents,
-            quantity: l.quantity,
-            discountCents: share,
-          }
-        }),
-      )
+      const itemRows = await tx
+        .insert(schema.orderItems)
+        .values(
+          o.lines.map((l, i) => {
+            const share =
+              i === o.lines.length - 1
+                ? left
+                : Math.round((discountCents * l.v.priceCents * l.quantity) / subtotalCents)
+            left -= share
+            return {
+              orderId,
+              productId: l.v.productId,
+              variantId: l.v.variantId,
+              title: l.v.productTitle,
+              variantTitle: l.v.optionsKey === '' ? null : l.v.variantTitle,
+              sku: l.v.sku,
+              vendor: l.v.vendor || null,
+              imageUrl: l.v.imageUrl,
+              unitPriceCents: l.v.priceCents,
+              quantity: l.quantity,
+              discountCents: share,
+            }
+          }),
+        )
+        .returning({ id: schema.orderItems.id, quantity: schema.orderItems.quantity })
       await tx
         .insert(schema.orderShippingLines)
         .values({ orderId, title: SHIPPING.title, code: SHIPPING.code, priceCents: shippingCents })
@@ -256,12 +261,20 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
         })
       }
       if (o.outcome === 'fulfilled') {
-        await tx.insert(schema.fulfillments).values({
-          orderId,
-          trackingCompany: 'DHL',
-          trackingNumber: `DEMO${String(orderNumber).padStart(8, '0')}`,
-          createdAt: minutesAgo(o.ago - 1440),
-        })
+        const [fulfillment] = await tx
+          .insert(schema.fulfillments)
+          .values({
+            orderId,
+            trackingCompany: 'DHL',
+            trackingNumber: `DEMO${String(orderNumber).padStart(8, '0')}`,
+            createdAt: minutesAgo(o.ago - 1440),
+            updatedAt: minutesAgo(o.ago - 1440),
+          })
+          .returning({ id: schema.fulfillments.id })
+        // Fulfilled orders shipped everything in one go
+        await tx
+          .insert(schema.fulfillmentItems)
+          .values(itemRows.map((i) => ({ fulfillmentId: fulfillment!.id, orderItemId: i.id, quantity: i.quantity })))
       }
     }
 

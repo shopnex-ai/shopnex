@@ -15,6 +15,7 @@ const found = <T>(row: T | null) => {
 // An app may only subscribe to data it can read: order.* needs read_orders, and so on
 const TOPIC_SCOPE: Record<string, ApiScope> = {
   order: 'read_orders',
+  fulfillment: 'read_orders',
   product: 'read_products',
   customer: 'read_customers',
 }

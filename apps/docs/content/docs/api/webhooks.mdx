@@ -7,12 +7,14 @@ In **Settings → Webhooks** (owners and admins) add a URL, pick events, send a 
 
 ## Topics
 
-`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `fulfillment.created`, `fulfillment.updated`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+
+`order.fulfilled` means the whole order has shipped. Each shipment of a part of it sends `fulfillment.created`; changing its tracking or shipment status, or cancelling it, sends `fulfillment.updated`. Both need the `read_orders` scope.
 
 ## Payload
 
 ```json
-{ "type": "order.created", "timestamp": "…", "shopId": "…", "data": { } }
+{ "type": "order.created", "timestamp": "…", "shopId": "…", "data": {} }
 ```
 
 `data` is the resource as the admin API returns it, snapshotted when the event happened.

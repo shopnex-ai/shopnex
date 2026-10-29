@@ -21,6 +21,7 @@ import {
   shops,
   storefrontKeys,
   CHANNEL_TYPES,
+  SHIPMENT_STATUSES,
   WEBHOOK_TOPICS,
   webhookEndpoints,
   API_SCOPES,
@@ -266,10 +267,29 @@ export const cancelOrderInput = z.object({
   restock: z.boolean(),
 })
 
-export const fulfillOrderInput = z.object({
+const trackingFields = {
   trackingCompany: z.string().trim().max(100).optional(),
   trackingNumber: z.string().trim().max(100).optional(),
   trackingUrl: z.union([z.url({ protocol: /^https?$/ }).max(500), z.literal('')]).optional(),
+}
+
+// One shipment: some of the order's items with their own tracking (Shopify fulfillmentCreate)
+export const fulfillOrderInput = z.object({
+  ...trackingFields,
+  /** What this shipment holds (order item ids and quantities). Omitted: everything not shipped yet. */
+  items: z
+    .array(z.object({ orderItemId: z.uuid(), quantity: z.number().int().min(1).max(99_999) }))
+    .min(1)
+    .max(200)
+    .optional(),
+  /** Email the customer a shipping confirmation (default true) */
+  notifyCustomer: z.boolean().optional(),
+})
+
+// Tracking and where the shipment is (Shopify fulfillmentTrackingInfoUpdate / fulfillmentEventCreate)
+export const fulfillmentUpdateInput = z.object({
+  ...trackingFields,
+  shipmentStatus: z.enum(SHIPMENT_STATUSES).optional(),
 })
 
 // Settings → Webhooks
@@ -279,6 +299,7 @@ export const webhookEndpointInput = createInsertSchema(webhookEndpoints, {
   topics: () => z.array(z.enum(WEBHOOK_TOPICS)).min(1, 'Pick at least one event'),
 }).pick({ url: true, description: true, topics: true, active: true })
 
+export { SHIPMENT_STATUSES, type ShipmentStatus } from '@shopnex/db/schema'
 export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/db/schema'
 
 // Admin → Apps (registry, super admins). Redirect URLs must be absolute; https except on localhost.

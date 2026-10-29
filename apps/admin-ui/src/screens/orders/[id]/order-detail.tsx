@@ -6,9 +6,8 @@ import { ImageIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { Fragment, useState } from 'react'
 import { toast } from 'sonner'
-import { CANCEL_REASONS, fulfillOrderInput, type CancelReason } from '@shopnex/api/schemas'
+import { CANCEL_REASONS, type CancelReason } from '@shopnex/api/schemas'
 import { AddressLines } from '@/components/admin/address'
-import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { OrderStatusBadges } from '@/components/admin/order-status'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
@@ -28,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { FulfillButton, FulfillmentsCard } from './fulfillments'
 
 type Order = Outputs['admin']['orders']['get']
 
@@ -132,6 +132,11 @@ export function OrderDetail({ id }: { id: string }) {
                       <div className="text-xs text-muted-foreground">
                         {[item.variantTitle, item.sku && `SKU ${item.sku}`].filter(Boolean).join(' · ')}
                       </div>
+                      {item.fulfilledQuantity > 0 && item.fulfillableQuantity > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          {item.fulfilledQuantity} of {item.quantity} shipped
+                        </div>
+                      )}
                     </div>
                     <div className="text-sm tabular-nums text-muted-foreground">
                       {money(item.unitPriceCents)} × {item.quantity}
@@ -219,33 +224,7 @@ export function OrderDetail({ id }: { id: string }) {
             </CardContent>
           </Card>
 
-          {o.fulfillments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Fulfillment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {o.fulfillments.map((f) => (
-                  <div key={f.id}>
-                    <div>Fulfilled {formatDate(f.createdAt)}</div>
-                    {(f.trackingNumber || f.trackingCompany) && (
-                      <div className="text-muted-foreground">
-                        {[f.trackingCompany, f.trackingNumber].filter(Boolean).join(' · ')}
-                        {f.trackingUrl && (
-                          <>
-                            {' · '}
-                            <a href={f.trackingUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                              Track
-                            </a>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <FulfillmentsCard order={o} />
         </div>
 
         <div className="space-y-6">
@@ -270,7 +249,9 @@ export function OrderDetail({ id }: { id: string }) {
             <CardHeader>
               <CardTitle>Sales channel</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm">{channels.data?.find((c) => c.id === o.channelId)?.name ?? '—'}</CardContent>
+            <CardContent className="text-sm">
+              {channels.data?.find((c) => c.id === o.channelId)?.name ?? '—'}
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>
@@ -334,60 +315,6 @@ function OrderActions({ order }: { order: Order }) {
       )}
       {canFulfill && <FulfillButton order={order} />}
     </>
-  )
-}
-
-function FulfillButton({ order }: { order: Order }) {
-  const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
-  const form = useZodForm(fulfillOrderInput, {
-    defaultValues: { trackingCompany: '', trackingNumber: '', trackingUrl: '' },
-  })
-  const fulfill = useMutation(orpc.admin.orders.fulfill.mutationOptions())
-
-  const onSubmit = form.handleSubmit(async (values) => {
-    try {
-      await fulfill.mutateAsync({ id: order.id, ...values })
-      await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.key() })
-      toast.success('Order fulfilled')
-      setOpen(false)
-    } catch (error) {
-      setServerError(form, error)
-    }
-  })
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>Fulfill items</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Fulfill {orderName(order.orderNumber)}</DialogTitle>
-          <DialogDescription>
-            Marks every item as shipped.
-            {order.financialStatus === 'pending' ? ' The order is not paid yet.' : ''} Tracking is optional.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} noValidate>
-          <FieldGroup>
-            <TextField control={form.control} name="trackingNumber" label="Tracking number" autoComplete="off" />
-            <TextField
-              control={form.control}
-              name="trackingCompany"
-              label="Shipping carrier"
-              placeholder="DHL, UPS…"
-              autoComplete="off"
-            />
-            <TextField control={form.control} name="trackingUrl" label="Tracking URL" type="url" autoComplete="off" />
-            <FormError form={form} />
-            <Field orientation="horizontal" className="justify-end">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Fulfilling…' : 'Fulfill items'}
-              </Button>
-            </Field>
-          </FieldGroup>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }
 
