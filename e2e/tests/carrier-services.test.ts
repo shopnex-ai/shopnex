@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
@@ -146,6 +146,56 @@ describe('carrier service: quoting', () => {
       ratesAnswer = answer
       assert.equal(carrierRates(await options(cart.id)).length, 0)
     }
+  })
+})
+
+// A shop whose shipping comes from carrier apps charges for it: nothing offered means no order, not free shipping.
+// The shop's own flat rates are switched off for these tests and switched back on afterwards.
+describe('carrier service: nothing to ship with', () => {
+  let switchedOff: string[] = []
+  before(async () => {
+    const rates = await db
+      .select({ id: schema.shippingRates.id })
+      .from(schema.shippingRates)
+      .where(and(eq(schema.shippingRates.shopId, SHOP), eq(schema.shippingRates.active, true)))
+    switchedOff = rates.map((r) => r.id)
+    if (switchedOff.length) {
+      await db.update(schema.shippingRates).set({ active: false }).where(inArray(schema.shippingRates.id, switchedOff))
+    }
+  })
+  after(async () => {
+    if (switchedOff.length) {
+      await db.update(schema.shippingRates).set({ active: true }).where(inArray(schema.shippingRates.id, switchedOff))
+    }
+  })
+
+  const complete = (cartId: string, shippingRateId?: string) =>
+    call('POST', `/storefront/carts/${cartId}/complete`, {
+      email: fx.email,
+      shippingRateId,
+      shippingAddress: { lastName: 'Tester', ...address },
+    })
+
+  test('no rate offered for the address: the order is refused, not shipped free', async () => {
+    const cart = await fx.cart([{ merchandiseId: variant.id, quantity: 1 }])
+    ratesAnswer = () => ({ status: 200, body: { rates: [] } })
+    assert.equal(carrierRates(await options(cart.id)).length, 0)
+    const refused = ok(await complete(cart.id), 400)
+    assert.match(refused.message, /can't ship to this address/i)
+  })
+
+  test('no rate chosen although the app offers some: refused too, until one is picked', async () => {
+    const cart = await fx.cart([{ merchandiseId: variant.id, quantity: 1 }])
+    ratesAnswer = () => quote(9)
+    ok(await complete(cart.id), 400)
+    const [rate] = carrierRates(await options(cart.id))
+    const placed = ok(await complete(cart.id, rate!.id))
+    fx.order(placed.orderId)
+    const [line] = await db
+      .select()
+      .from(schema.orderShippingLines)
+      .where(eq(schema.orderShippingLines.orderId, placed.orderId))
+    assert.equal(line!.priceCents, 900)
   })
 })
 

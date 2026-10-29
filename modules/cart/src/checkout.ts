@@ -287,6 +287,11 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
         : rates[0]
     if (input.shippingRateId && !rate)
       throw new CartError('INVALID_SHIPPING_RATE', 'Choose an available shipping method')
+    // Shipping that comes from carrier apps is charged for: with no method chosen, or none offered for this address,
+    // the order would ship for free
+    if (!rate && (await carrierService.list(shopId, { usableOnly: true }, tx)).length > 0) {
+      throw new CartError('INVALID_SHIPPING_RATE', "We can't ship to this address: no shipping method is available")
+    }
     const method = input.paymentMethodId ? methods.find((m) => m.id === input.paymentMethodId) : methods[0]
     if (input.paymentMethodId && !method)
       throw new CartError('INVALID_PAYMENT_METHOD', 'Choose an available payment method')
