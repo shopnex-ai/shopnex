@@ -1,0 +1,49 @@
+---
+title: Carrier services
+description: Quote live shipping rates at checkout from an app.
+---
+
+A carrier service is an app that prices shipping at checkout, from a carrier's live rates instead of the shop's flat ones. It works like [Shopify's CarrierService](https://shopify.dev/docs/api/admin-rest/latest/resources/carrierservice): the app registers once, then answers rate requests.
+
+## Flow
+
+1. The app registers its service for the shop. Its token needs the `write_shipping` scope.
+2. Once the buyer's address is known, Shopnex sends the app a signed rates request. The app answers with the rates it offers.
+3. The buyer picks one. When the order is placed, Shopnex asks again and uses the price the app gives at that moment, so a price from the browser is never trusted.
+
+The shop's flat rates (Settings → Shipping) always show first, followed by each carrier's live rates. A carrier that is slow (over 5 seconds), fails or answers with invalid rates is skipped: checkout still works with the other methods.
+
+## Register
+
+```ts
+await shop.shipping.configure({
+  name: 'CJ Dropshipping', // shown at checkout; staff can rename it
+  ratesUrl: `${APP_URL}/shipping/rates`, // must be on the app's own origin
+  ready: true, // false hides it, e.g. until the merchant has connected the carrier
+})
+```
+
+This calls `POST /api/v1/admin/carrier-services/configure`. There is one service per app and shop; configuring again updates it. Uninstalling the app removes it. Staff can switch a service off in the admin.
+
+## Answer rate requests
+
+```tsx
+app.post('/shipping/rates', async (c) => {
+  const { request, shop } = await shopnex.verifyRatesRequest(c)
+  // request.destination: { countryCode, province, city, zip, address1, address2 } (unknown fields are null)
+  // request.items: [{ sku, title, quantity, priceCents }], request.subtotalCents, request.currency
+  return c.json({
+    rates: [{ code: 'standard', name: 'Standard (5-10 days)', priceCents: 499, description: 'Tracked' }],
+  })
+})
+```
+
+- `code` is stable within your app (up to 100 characters): the buyer's choice is matched on it when the order is placed. Use the same code for the same method every time.
+- `priceCents` is a whole number of cents in the shop's currency (`request.currency`). `description` is optional.
+- Up to 20 rates per answer; duplicate codes and invalid rates are dropped.
+
+Requests are signed with the instance's key, the same way as [payments requests](/docs/apps/sdk): `verifyRatesRequest` checks the signature against the instance's published keys and returns the request and its shop.
+
+## Storefront API
+
+`GET /storefront/carts/{cartId}/checkout-options` takes `countryCode` (and optionally `province`, `city`, `zip`, `address1`). With a country, `shippingRates` also lists the carriers' live rates. A live rate's `id` looks like `carrier:{service}:{code}` and goes into `shippingRateId` when completing the checkout, like any other rate id. Live rates have no price until there is an address, so a headless checkout asks again when the buyer fills it in.

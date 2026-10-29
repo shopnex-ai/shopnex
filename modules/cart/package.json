@@ -9,9 +9,11 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",

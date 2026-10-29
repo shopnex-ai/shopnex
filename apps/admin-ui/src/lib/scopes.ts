@@ -4,6 +4,7 @@ export const SCOPE_RESOURCES = [
   { key: 'orders', label: 'Orders', hint: 'Orders, payments and fulfillments' },
   { key: 'customers', label: 'Customers', hint: 'Customer names, emails and phones' },
   { key: 'discounts', label: 'Discounts', hint: 'Discount codes and their usage' },
+  { key: 'shipping', label: 'Shipping', hint: 'Quote shipping rates at checkout (carrier services)' },
   { key: 'payment_sessions', label: 'Payment sessions', hint: 'Take payments and refunds (payments apps)' },
 ] as const
 
