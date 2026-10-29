@@ -4,7 +4,7 @@
 // means no rates from that app: the shop's flat rates and the other apps still show.
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq } from 'drizzle-orm'
-import { instanceSigner, instanceUrl } from '@shopnex/apps'
+import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './errors'
@@ -107,7 +107,7 @@ export type CarrierRate = {
 // Signed with this instance's key; the app checks it against our published keys (`instance` in the body)
 async function post(url: string, request: RatesRequest) {
   const body = JSON.stringify(request)
-  const res = await fetch(url, {
+  const res = await fetch(serverUrl(url), {
     method: 'POST',
     headers: await signRatesRequest(await instanceSigner(), request.id, body),
     body,

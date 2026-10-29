@@ -1,7 +1,7 @@
 # Shopnex with its database and the Stripe app, each in its own container:
 #
-#   APP_URL=http://localhost:3000 STRIPE_APP_URL=http://localhost:4600 docker compose up --build
-# (or put those two in a .env file). For contributors who build from source; to just run Shopnex use
+#   docker compose up --build            # add --profile cj for the CJ Dropshipping app
+# For contributors who build from source; to just run Shopnex use
 # deploy/docker-compose.yml, which pulls prebuilt GHCR images and needs no setup.
 #
 # The apps are separate containers on their own public URL (a subdomain each), because browsers and Stripe
@@ -31,10 +31,10 @@ services:
       - data:/data
     environment:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/shopnex
-      APP_URL: '${APP_URL:?required: public origin of Shopnex}'
+      APP_URL: '${APP_URL:-http://localhost:3000}'
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
-      # Registers the Stripe app (Settings → Payments → Install): where to find it
-      STRIPE_APP_URL: '${STRIPE_APP_URL:?required: public origin of the Stripe app}'
+      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      SHOPNEX_BUNDLED_APPS: docker
 
   stripe:
     build:
@@ -46,10 +46,28 @@ services:
     volumes:
       - stripe_data:/data # the app's identity and its shops' settings: keep it
     environment:
-      STRIPE_APP_URL: '${STRIPE_APP_URL:?required}'
+      STRIPE_APP_URL: '${STRIPE_APP_URL:-http://localhost:4600}'
+      SHOPNEX_INTERNAL_URL: http://admin:3000
+      DATA_DIR: /data
+
+  cj-dropshipping:
+    profiles: [cj]
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args: { APP: cj-dropshipping }
+    ports:
+      - '4700:4700'
+    volumes:
+      - cj_dropshipping_data:/data
+    environment:
+      CJ_DROPSHIPPING_APP_URL: '${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}'
+      SHOPNEX_INTERNAL_URL: http://admin:3000
+      PORT: 4700
       DATA_DIR: /data
 
 volumes:
   db:
   data:
   stripe_data:
+  cj_dropshipping_data:

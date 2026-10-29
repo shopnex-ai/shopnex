@@ -27,6 +27,8 @@ export type WorkerOptions = {
    * instance's published keys without storing the endpoint secret. Given by the server (@shopnex/apps).
    */
   instanceSignature?: (message: string) => Promise<{ signature: string; kid: string; instance: string }>
+  /** The URL to request for an endpoint URL (e.g. an app's internal address under Docker). Given by the server. */
+  resolveUrl?: (url: string) => string
 }
 
 // Claims due deliveries by pushing their next attempt past the lease. "Due" uses the DB clock, the same
@@ -69,7 +71,7 @@ async function send(delivery: WebhookDelivery, endpoint: WebhookEndpoint, opts: 
       headers['shopnex-instance'] = signed.instance
       headers['shopnex-key-id'] = signed.kid
     }
-    const res = await fetch(url, {
+    const res = await fetch(opts.resolveUrl ? opts.resolveUrl(url.href) : url, {
       method: 'POST',
       headers,
       body: delivery.body,

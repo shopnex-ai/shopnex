@@ -33,13 +33,8 @@ import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
 import { icon, SettingsPage, type MyProduct } from './settings'
 
-const env = (name: string) => {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing ${name} (see .env.example)`)
-  return value
-}
 // Public origin Shopnex and the admin (iframe) reach this app at
-const APP_URL = env('CJ_DROPSHIPPING_APP_URL').replace(/\/$/, '')
+const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 
@@ -47,7 +42,12 @@ const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const store = await openLocalStore()
 const tables = openTables(store.db)
-const shopnex = createShopnexApp({ clientId: 'app_cj_dropshipping', appKey: store.appKey, data: store.dataFor })
+const shopnex = createShopnexApp({
+  clientId: 'app_cj_dropshipping',
+  appUrl: APP_URL,
+  appKey: store.appKey,
+  data: store.dataFor,
+})
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
