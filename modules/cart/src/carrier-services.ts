@@ -20,11 +20,6 @@ const MAX_RESPONSE_BYTES = 256 * 1024
 const PREFIX = 'carrier:'
 export const isCarrierRateId = (id: string) => id.startsWith(PREFIX)
 const rateId = (serviceId: string, code: string) => `${PREFIX}${serviceId}:${code}`
-function parseRateId(id: string) {
-  const rest = id.slice(PREFIX.length)
-  const colon = rest.indexOf(':')
-  return colon > 0 ? { serviceId: rest.slice(0, colon), code: rest.slice(colon + 1) } : null
-}
 
 export type ConfigureInput = {
   /** Shown at checkout next to the rates, e.g. "CJ Dropshipping" (staff can rename it) */
@@ -170,19 +165,4 @@ export async function quote(shopId: string, input: QuoteInput): Promise<CarrierR
   const services = await list(shopId, { usableOnly: true })
   const rates = (await Promise.all(services.map((s) => quoteService(s, shopId, input)))).flat()
   return rates.sort((a, b) => a.priceCents - b.priceCents)
-}
-
-/**
- * Re-quotes the one carrier rate the buyer chose, at the moment the order is placed: the price comes from the
- * app, never from the browser. Throws INVALID_SHIPPING_RATE when the service is gone or no longer offers it.
- */
-export async function resolve(shopId: string, id: string, input: QuoteInput): Promise<CarrierRate> {
-  const parsed = parseRateId(id)
-  const invalid = () => new CartError('INVALID_SHIPPING_RATE', 'Choose an available shipping method')
-  if (!parsed) throw invalid()
-  const service = (await list(shopId, { usableOnly: true })).find((s) => s.id === parsed.serviceId)
-  if (!service || !input.destination.countryCode) throw invalid()
-  const rate = (await quoteService(service, shopId, input)).find((r) => r.id === id)
-  if (!rate) throw invalid()
-  return rate
 }

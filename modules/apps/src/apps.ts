@@ -8,7 +8,7 @@
 //   client_credentials  shop_id of a live installation → 1-hour access token (background work)
 // Codes are only stored as SHA-256 hashes.
 import { createHash, randomBytes } from 'node:crypto'
-import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
 import {
@@ -414,6 +414,31 @@ export async function listAppStore(shopId: string) {
   return rows.map((r) => ({ ...publicApp(r.app), installed: r.installationId !== null }))
 }
 
+/**
+ * Bundled apps (see BUNDLED_APPS) this shop hasn't installed yet, to install from Admin → Apps. Payments apps are
+ * left out: they are installed from Settings → Payments, which also sets up their payment method.
+ */
+export async function listAvailableBundledApps(shopId: string) {
+  const bundled = BUNDLED_APPS.filter((b) => !b.scopes.includes('write_payment_sessions')).map((b) => b.clientId)
+  if (bundled.length === 0) return []
+  const rows = await db
+    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .from(schema.apps)
+    .leftJoin(
+      schema.appInstallations,
+      and(
+        eq(schema.appInstallations.appId, schema.apps.id),
+        eq(schema.appInstallations.shopId, shopId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+    .where(
+      and(eq(schema.apps.source, 'custom'), isNull(schema.apps.delistedAt), inArray(schema.apps.clientId, bundled)),
+    )
+    .orderBy(asc(schema.apps.name))
+  return rows.filter((r) => r.installationId === null).map((r) => publicApp(r.app))
+}
+
 // --- installations (shop owners/admins) ---
 
 const installedApps = (shopId: string) =>
@@ -616,6 +641,14 @@ const BUNDLED_APPS = [
     name: 'Stripe',
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
+  },
+  {
+    clientId: 'app_cj_dropshipping',
+    urlEnv: 'CJ_DROPSHIPPING_APP_URL',
+    name: 'CJ Dropshipping',
+    description: 'Import CJ Dropshipping products and send paid orders to CJ.',
+    // write_shipping: quote CJ's shipping prices at checkout (a carrier service)
+    scopes: ['write_products', 'write_orders', 'write_shipping'] as ApiScope[],
   },
 ]
 

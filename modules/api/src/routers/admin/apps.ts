@@ -38,6 +38,15 @@ export const apps = {
       }),
     })),
 
+  // Bundled apps (e.g. CJ Dropshipping) this shop can install; Install goes to the consent screen
+  available: shopManager.route({ method: 'GET', path: '/admin/apps/available' }).handler(async ({ context }) => {
+    const [instanceUrl, apps] = await Promise.all([
+      marketplaceService.instanceUrl(),
+      appService.listAvailableBundledApps(context.shop.id),
+    ])
+    return { instanceUrl, apps }
+  }),
+
   // App Store: marketplace apps this shop can install. Install = open the app's URL with
   // ?shop_id=…&instance=…; the app starts OAuth from there.
   store: shopManager.route({ method: 'GET', path: '/admin/app-store' }).handler(async ({ context }) => {
