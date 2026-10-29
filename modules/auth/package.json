@@ -16,7 +16,7 @@
   "dependencies": {
     "@shopnex/db": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
-    "better-auth": "^1.7.12",
+    "better-auth": "^1.7.13",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
