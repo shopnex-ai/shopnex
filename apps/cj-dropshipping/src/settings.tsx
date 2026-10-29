@@ -156,7 +156,7 @@ export function SettingsPage({ connected, settings, products, productsError, shi
           <Card title="Shipping at checkout">
             {shippingError ? (
               <Banner tone="warning" title="Not on yet">
-                {shippingError} Uninstall the app and install it again to allow shipping prices.
+                {shippingError.replace(/[.\s]*$/, '.')} Uninstall the app and install it again to allow shipping prices.
               </Banner>
             ) : (
               <Banner tone="success" title="On">
