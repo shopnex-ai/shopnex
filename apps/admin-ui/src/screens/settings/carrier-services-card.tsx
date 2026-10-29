@@ -31,7 +31,8 @@ export function CarrierServicesCard() {
       <CardHeader>
         <CardTitle>Carrier services</CardTitle>
         <CardDescription>
-          Apps that quote live shipping rates once the buyer has entered an address. They show after your own rates.
+          Apps that quote live shipping rates once the buyer has entered an address. When one prices a cart, its rates
+          are offered instead of your own; otherwise your rates apply.
         </CardDescription>
       </CardHeader>
       <CardContent>
