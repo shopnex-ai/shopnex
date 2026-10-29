@@ -246,6 +246,28 @@ importers:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
+  apps/cj-dropshipping:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.13)
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../../packages/app
+      '@shopnex/cj-sdk':
+        specifier: workspace:*
+        version: link:../../packages/cj-sdk
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.13
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   apps/docs:
     dependencies:
       '@orpc/openapi':
