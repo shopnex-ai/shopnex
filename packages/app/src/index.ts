@@ -69,6 +69,8 @@ export type ShopnexAppOptions = {
    * with one self-hosted Shopnex, not for marketplace apps serving many instances. Default: SHOPNEX_INTERNAL_URL
    */
   instanceInternalUrl?: string
+  /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so Shopnex needs no setting */
+  appUrl?: string
 }
 
 /** One shop the app is installed on, with an Admin API client for it */
@@ -334,7 +336,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   )
   // Who this app is, for an instance that knows only its URL (bundled apps: Shopnex reads this at startup)
   routes.get('/.well-known/shopnex-app.json', async (c) =>
-    c.json({ clientId, publicKey: await publicKeyOf(await privateKey) }, 200, { 'cache-control': 'no-store' }),
+    c.json({ clientId, publicKey: await publicKeyOf(await privateKey), appUrl: options.appUrl }, 200, {
+      'cache-control': 'no-store',
+    }),
   )
 
   return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyRatesRequest, verifyWebhook }

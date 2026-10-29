@@ -22,7 +22,7 @@ Every variable has a local default, so `docker compose up -d` works without any 
 | `POSTGRES_PASSWORD` | Password for the bundled database. Change it from the default.                                        |
 | `SHOPNEX_VERSION`   | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production.                |
 
-**Optional apps.** The CJ Dropshipping app is off by default. To turn it on set `COMPOSE_PROFILES=cj` and `CJ_DROPSHIPPING_APP_URL` (its public origin, e.g. `https://cj.example.com`; `http://localhost:4700` locally), then route that domain to port `4700` of the `cj-dropshipping` service.
+**Optional apps.** The CJ Dropshipping app is off by default. Enable it with `COMPOSE_PROFILES=cj` (or `docker compose --profile cj up`); Shopnex finds it on the Compose network. For a public domain set `CJ_DROPSHIPPING_APP_URL` (e.g. `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. The same applies to `STRIPE_APP_URL` and the `stripe` service.
 
 `BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
