@@ -225,6 +225,13 @@
       "when": 1793104821377,
       "tag": "0031_sales_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793246318394,
+      "tag": "0032_carrier_services",
+      "breakpoints": true
     }
   ]
 }

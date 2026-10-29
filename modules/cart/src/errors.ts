@@ -9,6 +9,9 @@ export type CartErrorCode =
   // checkout: unknown/inactive shipping rate or payment method, or none chosen when the shop requires one
   | 'INVALID_SHIPPING_RATE'
   | 'INVALID_PAYMENT_METHOD'
+  // a carrier service: not an installed app, or a rates URL outside the app's origin
+  | 'NOT_A_CARRIER_APP'
+  | 'INVALID_RATES_URL'
 
 export type CartErrorData = {
   variantIds?: string[]

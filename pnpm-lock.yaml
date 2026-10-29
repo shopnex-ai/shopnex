@@ -503,6 +503,9 @@ importers:
 
   modules/cart:
     dependencies:
+      '@shopnex/apps':
+        specifier: workspace:*
+        version: link:../apps
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
@@ -512,6 +515,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/marketplace-sdk':
+        specifier: workspace:*
+        version: link:../../packages/marketplace-sdk
       '@shopnex/orders':
         specifier: workspace:*
         version: link:../orders
