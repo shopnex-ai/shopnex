@@ -1,7 +1,8 @@
 name: Demo image
 
-# Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:latest) for the demo.
-# The Dokploy app uses Provider "Docker" with that image. If DOKPLOY_URL, DOKPLOY_APP_ID and
+# Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo.
+# :latest is reserved for releases (multi-arch, see release.yaml).
+# The Dokploy app uses Provider "Docker" with :edge. If DOKPLOY_URL, DOKPLOY_APP_ID and
 # the DOKPLOY_API_KEY secret are set, a redeploy is triggered after the push; otherwise it only pushes.
 # Unlike a full env sync, this never touches the app's environment in Dokploy.
 
@@ -45,7 +46,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:edge
             ${{ steps.image.outputs.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
