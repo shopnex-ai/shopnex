@@ -24,6 +24,7 @@ import {
 import { Field, FieldGroup } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { client, orpc, type Outputs } from '@/lib/orpc'
+import { GenerateCollectionDescription, GenerateCollectionSeo, htmlToPlainText } from './ai-generate'
 
 type Collection = Outputs['admin']['collections']['list'][number]
 
@@ -32,6 +33,8 @@ export function CollectionList() {
   const { data, error, isPending } = useQuery(orpc.admin.collections.list.queryOptions({ input: { limit: 100 } }))
 
   const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  // The edit dialog lives here, not in a table cell: a cell can remount (and would close it)
+  const [editingId, setEditing] = useState<string | null>(null)
   const col = columnHelper<Collection>()
   const columns = [
     col.accessor('title', {
@@ -56,10 +59,15 @@ export function CollectionList() {
     }),
     col.display({
       id: 'actions',
-      cell: ({ row: { original: c } }) => <CollectionDialog collection={c} />,
+      cell: ({ row: { original: c } }) => (
+        <Button variant="ghost" size="sm" onClick={() => setEditing(c.id)}>
+          Edit
+        </Button>
+      ),
       meta: { className: 'text-right' },
     }),
   ]
+  const editing = data?.find((c) => c.id === editingId)
 
   return (
     <div className="space-y-4">
@@ -91,18 +99,42 @@ export function CollectionList() {
           />
         </CardContent>
       </Card>
+      {editing && <CollectionDialog key={editing.id} collection={editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }
 
-const empty = { title: '', slug: undefined, description: null }
+const empty = {
+  title: '',
+  slug: undefined,
+  description: null,
+  descriptionHtml: null,
+  seo: { title: null, description: null },
+}
 
 // Create when `collection` is omitted, otherwise edit (or delete) it
-function CollectionDialog({ collection }: { collection?: Collection }) {
+function CollectionDialog({
+  collection,
+  onClose,
+}: {
+  collection?: Collection
+  /** Set when the dialog is opened from outside (always open): called when it closes */
+  onClose?: () => void
+}) {
   const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
+  const [openState, setOpenState] = useState(false)
+  const open = onClose ? true : openState
+  const setOpen = (next: boolean) => (onClose ? !next && onClose() : setOpenState(next))
   const toValues = () =>
-    collection ? { title: collection.title, slug: collection.slug, description: collection.description } : empty
+    collection
+      ? {
+          title: collection.title,
+          slug: collection.slug,
+          description: collection.description,
+          descriptionHtml: collection.descriptionHtml,
+          seo: { title: collection.seoTitle, description: collection.seoDescription },
+        }
+      : empty
   const form = useZodForm(collectionInput, { defaultValues: toValues() })
   const create = useMutation(orpc.admin.collections.create.mutationOptions())
   const update = useMutation(orpc.admin.collections.update.mutationOptions())
@@ -140,16 +172,12 @@ function CollectionDialog({ collection }: { collection?: Collection }) {
         if (next) form.reset(toValues())
       }}
     >
-      <DialogTrigger render={<Button variant={collection ? 'ghost' : 'default'} size="sm" />}>
-        {collection ? (
-          'Edit'
-        ) : (
-          <>
-            <PlusIcon />
-            Create collection
-          </>
-        )}
-      </DialogTrigger>
+      {!collection && (
+        <DialogTrigger render={<Button size="sm" />}>
+          <PlusIcon />
+          Create collection
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[90svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{collection ? 'Edit collection' : 'Create collection'}</DialogTitle>
@@ -167,7 +195,38 @@ function CollectionDialog({ collection }: { collection?: Collection }) {
               placeholder="summer-linen"
               description={collection ? undefined : 'Leave empty to generate it from the title.'}
             />
+            {collection && (
+              <div className="-mb-3 flex justify-end">
+                <GenerateCollectionDescription
+                  collectionId={collection.id}
+                  onUse={(html) => {
+                    form.setValue('descriptionHtml', html, { shouldDirty: true })
+                    form.setValue('description', htmlToPlainText(html), { shouldDirty: true })
+                  }}
+                />
+              </div>
+            )}
             <TextareaField control={form.control} name="description" label="Description (optional)" nullable />
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Search engine listing</p>
+              {collection && (
+                <GenerateCollectionSeo
+                  collectionId={collection.id}
+                  onUse={(seo) => {
+                    form.setValue('seo.title', seo.title, { shouldDirty: true })
+                    form.setValue('seo.description', seo.description, { shouldDirty: true })
+                  }}
+                />
+              )}
+            </div>
+            <TextField
+              control={form.control}
+              name="seo.title"
+              label="Page title"
+              nullable
+              placeholder={collection?.title}
+            />
+            <TextareaField control={form.control} name="seo.description" label="Meta description" nullable />
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-between">
               {collection ? (

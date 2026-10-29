@@ -1,4 +1,5 @@
 import { ORPCError, implement, os } from '@orpc/server'
+import { AiError } from '@shopnex/ai'
 import { AppError, appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
 import { ChannelError } from '@shopnex/channels'
@@ -124,6 +125,17 @@ const domainErrors = base.middleware(async ({ next }) => {
                 : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
+    if (error instanceof AiError) {
+      const status =
+        error.code === 'SUBJECT_NOT_FOUND' || error.code === 'GENERATION_NOT_FOUND'
+          ? 'NOT_FOUND'
+          : error.code === 'NOT_AN_AI_APP'
+            ? 'FORBIDDEN'
+            : error.code === 'PROVIDER_FAILED'
+              ? 'BAD_GATEWAY'
+              : 'BAD_REQUEST'
+      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+    }
     if (error instanceof StaffError) {
       const status = error.code === 'ALREADY_MEMBER' ? 'CONFLICT' : error.code
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
@@ -233,8 +245,14 @@ export const admin = authed.use(async ({ context, next }) => {
   return next({ context: { shop: tenant.shop, role: tenant.role, superAdmin: tenant.superAdmin } })
 })
 
-// Who is calling an admin API procedure: staff (token null) or an API token (role null)
-type ApiCaller = { shop: Shop; token: ApiToken | null; role: ShopRole | null; superAdmin: boolean }
+// Who is calling an admin API procedure: staff (token null) or an API token (role and userId null)
+type ApiCaller = {
+  shop: Shop
+  token: ApiToken | null
+  role: ShopRole | null
+  superAdmin: boolean
+  userId: string | null
+}
 
 const BEARER = /^Bearer\s+(\S+)$/i
 
@@ -247,12 +265,18 @@ export const adminOrToken = pub.use(async ({ context, next }) => {
   if (bearer) {
     const resolved = (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer))
     if (!resolved) throw new ORPCError('UNAUTHORIZED', { message: 'Invalid or revoked API token' })
-    caller = { shop: resolved.shop, token: resolved.token, role: null, superAdmin: false }
+    caller = { shop: resolved.shop, token: resolved.token, role: null, superAdmin: false, userId: null }
   } else {
     const session = await auth.api.getSession({ headers: context.headers })
     if (!session) throw new ORPCError('UNAUTHORIZED')
     const tenant = await staffTenant(session)
-    caller = { shop: tenant.shop, token: null, role: tenant.role, superAdmin: tenant.superAdmin }
+    caller = {
+      shop: tenant.shop,
+      token: null,
+      role: tenant.role,
+      superAdmin: tenant.superAdmin,
+      userId: session.user.id,
+    }
   }
   return next({ context: caller })
 })
@@ -270,6 +294,13 @@ export const scoped = (scope: ApiScope) =>
 export const paymentsApp = scoped('write_payment_sessions').use(({ context, next }) => {
   const appId = context.token?.appId
   if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a payments app's own token can do this" })
+  return next({ context: { appId } })
+})
+
+// AI apps: an installed app's token with the AI capability scope (staff never register capabilities)
+export const aiApp = scoped('write_ai_capabilities').use(({ context, next }) => {
+  const appId = context.token?.appId
+  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an AI app's own token can do this" })
   return next({ context: { appId } })
 })
 

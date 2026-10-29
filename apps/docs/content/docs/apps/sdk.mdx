@@ -1,5 +1,5 @@
 ---
-title: "@shopnex/app SDK"
+title: '@shopnex/app SDK'
 description: An app in a few routes and no database.
 ---
 
@@ -22,7 +22,9 @@ app.get('/', async (c) => {
   return c.html(
     <Page title="My App">
       <Card>
-        <Button action="/api/refresh" reload>Refresh</Button>
+        <Button action="/api/refresh" reload>
+          Refresh
+        </Button>
       </Card>
     </Page>,
   )
@@ -31,9 +33,10 @@ app.get('/', async (c) => {
 
 ## API
 
-- `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) to `{ shop, userId, admin, data, payments }`. Sets `frame-ancestors`.
+- `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) to `{ shop, userId, admin, data, payments, ai }`. Sets `frame-ancestors`.
 - `forShop(instance, shopId)`: for background work.
-- `verifyPaymentsRequest(c, 'payment' | 'refund')` and `verifyWebhook(c)`: checked against the instance's published keys.
+- `verifyPaymentsRequest(c, 'payment' | 'refund')`, `verifyAiRequest(c)` and `verifyWebhook(c)`: checked against the instance's published keys.
+- `ai.configure({ 'product.description': url, … })`: the AI capabilities the app provides for the shop (see [AI](/docs/apps/ai)).
 - `data.get/set/delete` and `data.getSecret/setSecret`: secrets are AES-GCM encrypted with a key derived from the app key, unreadable in Shopnex's database.
 
 ## UI components

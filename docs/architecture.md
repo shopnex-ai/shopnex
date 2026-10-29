@@ -36,6 +36,7 @@
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker
+- /ai # AI capabilities: built-in providers (Claude, OpenAI; Settings → AI), apps that provide capabilities, running one, generations → uses apps, catalog
 
 Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
@@ -87,3 +88,25 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 - Super admin (platform role `superadmin`, Better Auth admin plugin): can act in every shop without membership, manage users (`/api/auth/admin/*`, `authClient.admin.*`). The account created by the setup wizard is one; to create or promote another (or recover access):
   `pnpm create-super-admin --email you@example.com [--password ...]` (random password printed if omitted)
 - Switching single → multi needs no data migration: add rows to `shop_domains` and set `TENANCY_MODE=multi`
+
+## AI capabilities
+
+Built in, like email providers: Settings → AI picks Claude or OpenAI with the shop's own key (contract:
+`@shopnex/marketplace-sdk/ai`, docs: `apps/docs/content/docs/apps/ai.mdx`). Apps can provide capabilities too; built-in
+AI answers first when it's on. Core owns permissions, the commerce context and what gets saved either way.
+
+```text
+Admin ✨ Generate → POST /admin/ai/run → modules/ai ─┬→ built-in provider (modules/ai/src/builtin, shop's key)
+                    (read_products)                  └→ signed AiRunRequest → an app that provides the capability
+                    loads the product, checks the answer against the schema, sanitizes it, records the generation
+```
+
+- Built-in providers run in the Shopnex process: settings in `ai_settings`, the key encrypted with
+  `@shopnex/db/secrets`, the SDKs imported on first use (Shopnex starts without them), one attempt under a minute
+
+- Capabilities (`product.description`, `product.seo`, `product.image_alt`, `product.classify`, `collection.description`, `collection.seo`, `page.content`) are a typed, versioned registry with zod input/output schemas;
+  additive changes only, a breaking change is a new name
+- Apps register what they provide per shop with `POST /admin/ai-app/configure` (scope `write_ai_capabilities`,
+  URLs on the app's origin) → `ai_providers`. Uninstalling removes them
+- `POST /admin/ai/run` returns a suggestion and never writes: the admin puts it in the form as an unsaved change
+- Every run is an `ai_generations` row (input, output, usage, status, staff feedback) for audit and quality

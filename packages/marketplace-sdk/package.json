@@ -8,7 +8,8 @@
     "./contract": "./src/contract.ts",
     "./session-token": "./src/session-token.ts",
     "./payments": "./src/payments.ts",
-    "./keys": "./src/keys.ts"
+    "./keys": "./src/keys.ts",
+    "./ai": "./src/ai.ts"
   },
   "scripts": {
     "test": "tsx --test \"tests/**/*.test.ts\"",

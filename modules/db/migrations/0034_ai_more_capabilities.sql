@@ -1,0 +1,1 @@
+ALTER TABLE "ai_generations" ALTER COLUMN "subject_id" DROP NOT NULL;
