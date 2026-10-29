@@ -15,12 +15,12 @@ curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/doc
 
 Every variable has a local default, so `docker compose up -d` works without any setup. For a public deployment set these on the platform:
 
-| Variable | Description |
-| --- | --- |
-| `APP_URL` | Public origin, e.g. `https://shop.example.com`. Default `http://localhost:3000`. |
-| `STRIPE_APP_URL` | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
-| `POSTGRES_PASSWORD` | Password for the bundled database. Change it from the default. |
-| `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production. |
+| Variable            | Description                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| `APP_URL`           | Public origin, e.g. `https://shop.example.com`. Default `http://localhost:3000`.                      |
+| `STRIPE_APP_URL`    | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
+| `POSTGRES_PASSWORD` | Password for the bundled database. Change it from the default.                                        |
+| `SHOPNEX_VERSION`   | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production.                |
 
 `BETTER_AUTH_SECRET` is optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
@@ -40,7 +40,8 @@ Any platform that accepts a compose file works the same way: Coolify (a Docker C
 The container already includes Caddy, which routes the admin and API to the admin app and everything else to the storefront, so the platform only needs to forward one port.
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
+  first.
 </Callout>
 
 ## Servers with little memory
