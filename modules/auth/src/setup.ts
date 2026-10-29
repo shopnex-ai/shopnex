@@ -3,17 +3,14 @@
 // Like WordPress/Ghost, whoever reaches a fresh install first can claim it — finish setup right after deploying.
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shopnex/tenancy'
+import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop } from '@shopnex/tenancy'
 import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
 import { withSignUpAllowed } from './sign-up-policy'
 
 export type SetupInput = {
-  name: string
   email: string
   password: string
-  shopName: string
-  currency: string
 }
 
 export class SetupError extends Error {
@@ -43,10 +40,11 @@ export async function completeSetup(input: SetupInput) {
     if (await isSetupComplete()) throw new SetupError('Setup is already complete — sign in instead')
 
     await ensureDefaultShop()
-    await updateShop(DEFAULT_SHOP_ID, { name: input.shopName, currency: input.currency })
 
+    // No name field on the setup form: use the part of the email before the @ (editable in the profile)
+    const name = input.email.split('@')[0]!.slice(0, 100)
     const { user } = await withSignUpAllowed(() =>
-      auth.api.signUpEmail({ body: { name: input.name, email: input.email, password: input.password } }),
+      auth.api.signUpEmail({ body: { name, email: input.email, password: input.password } }),
     )
     await db.update(schema.user).set({ role: SUPER_ADMIN_ROLE }).where(eq(schema.user.id, user.id))
     // First member of the shop, so owner
