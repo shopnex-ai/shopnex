@@ -11,7 +11,9 @@ A carrier service is an app that prices shipping at checkout, from a carrier's l
 2. Once the buyer's address is known, Shopnex sends the app a signed rates request. The app answers with the rates it offers.
 3. The buyer picks one. When the order is placed, Shopnex asks again and uses the price the app gives at that moment, so a price from the browser is never trusted.
 
-The shop's flat rates (Settings → Shipping) always show first, followed by each carrier's live rates. A carrier that is slow (over 5 seconds), fails or answers with invalid rates is skipped: checkout still works with the other methods.
+When a carrier prices the cart, **only its rates are offered**: they replace the shop's flat rates (Settings → Shipping), and the first one is preselected. When no carrier can (no address yet, a cart or destination it doesn't price, or it is slow, over 5 seconds, fails or answers with invalid rates), the shop's flat rates are offered as before. A shop with no flat rates and no carrier rate for an address can't place an order there: checkout says it can't ship to that address.
+
+The same rule applies when the order is placed: a flat rate is not a choice while a carrier prices the cart, and no choice means the carrier's first rate.
 
 ## Register
 
