@@ -6,7 +6,9 @@
 #
 # The apps are separate containers on their own public URL (a subdomain each), because browsers and Stripe
 # reach them directly. Put a reverse proxy / platform routing in front of 3000 (Shopnex) and 4600 (Stripe).
-name: shopnex
+# Not "shopnex": deploy/docker-compose.yml uses that project name, and both would share the `db` volume while using
+# different Postgres users, so whichever you ran second could not connect ("role shopnex does not exist").
+name: shopnex-dev
 
 services:
   db:
