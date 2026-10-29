@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/server.tsx",
     "start": "tsx --env-file-if-exists=../../.env src/server.tsx",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

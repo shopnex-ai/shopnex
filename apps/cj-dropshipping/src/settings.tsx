@@ -40,6 +40,8 @@ export type SettingsView = {
   products: MyProduct[]
   /** Why My Products couldn't be loaded */
   productsError: string | null
+  /** Why CJ's shipping prices aren't offered at checkout (null: they are) */
+  shippingError: string | null
   orders: ForwardedOrder[]
 }
 
@@ -93,7 +95,7 @@ document.addEventListener('shopnex:done', (event) => {
 
 const STATUS_TONE = { pending: 'warning', created: 'default', fulfilled: 'success', failed: 'critical' } as const
 
-export function SettingsPage({ connected, settings, products, productsError, orders }: SettingsView) {
+export function SettingsPage({ connected, settings, products, productsError, shippingError, orders }: SettingsView) {
   return (
     <Page
       title="CJ Dropshipping"
@@ -149,6 +151,23 @@ export function SettingsPage({ connected, settings, products, productsError, ord
                 <Button>Save</Button>
               </div>
             </Form>
+          </Card>
+
+          <Card title="Shipping at checkout">
+            {shippingError ? (
+              <Banner tone="warning" title="Not on yet">
+                {shippingError} Uninstall the app and install it again to allow shipping prices.
+              </Banner>
+            ) : (
+              <Banner tone="success" title="On">
+                Buyers see CJ&apos;s shipping price as &quot;Standard shipping&quot; once they enter an address.
+              </Banner>
+            )}
+            <Text tone="subdued">
+              This works for carts made only of CJ products, in a shop that sells in USD, to countries CJ ships to.
+              Otherwise buyers get your own shipping rates, and if you have none, checkout says it can&apos;t ship to
+              that address.
+            </Text>
           </Card>
 
           <Card

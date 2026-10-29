@@ -647,7 +647,8 @@ const BUNDLED_APPS = [
     urlEnv: 'CJ_DROPSHIPPING_APP_URL',
     name: 'CJ Dropshipping',
     description: 'Import CJ Dropshipping products and send paid orders to CJ.',
-    scopes: ['write_products', 'write_orders'] as ApiScope[],
+    // write_shipping: quote CJ's shipping prices at checkout (a carrier service)
+    scopes: ['write_products', 'write_orders', 'write_shipping'] as ApiScope[],
   },
 ]
 

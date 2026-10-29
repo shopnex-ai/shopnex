@@ -8,6 +8,7 @@
 //   POST /api/link                  Tie a product already in the shop to CJ, so its orders go to CJ
 //   POST /api/orders/:id/retry      Send a failed order to CJ again
 //   POST /shopnex/webhook           Shopnex: order.paid → CJ order
+//   POST /shipping/rates            Shopnex: what CJ shipping costs for this cart and address (carrier service)
 //   (every 15 minutes)              CJ tracking numbers → Shopnex fulfillments
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
@@ -29,6 +30,7 @@ import {
   shopSkus,
 } from './import'
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
+import { quoteRates } from './shipping'
 import { icon, SettingsPage, type MyProduct } from './settings'
 
 const env = (name: string) => {
@@ -70,6 +72,19 @@ function myProducts(data: unknown): MyProduct[] {
   })
 }
 
+/**
+ * Offers CJ's shipping prices at checkout (a Shopnex carrier service). It needs the shipping permission, so a shop
+ * that installed the app before it existed gets an error here until the app is installed again.
+ */
+async function registerCarrier(shop: ShopContext) {
+  const service = await shop.shipping.configure({
+    name: 'CJ Dropshipping',
+    ratesUrl: `${APP_URL}/shipping/rates`,
+    ready: true,
+  })
+  await shop.data.set('carrier_service', { id: service.id })
+}
+
 const app = new Hono()
 app.route('/', shopnex.routes)
 app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }))
@@ -81,6 +96,11 @@ app.get('/', async (c) => {
   const connected = await isConnected(shop)
   let products: MyProduct[] = []
   let productsError: string | null = null
+  let shippingError: string | null = null
+  // Shops connected before shipping prices existed switch them on the first time they open the page
+  if (connected && !(await shop.data.get('carrier_service'))) {
+    await registerCarrier(shop).catch((error) => (shippingError = message(error)))
+  }
   if (connected) {
     try {
       const { cj } = await cjFor(shop)
@@ -110,6 +130,7 @@ app.get('/', async (c) => {
       settings={await settingsOf(shop)}
       products={products}
       productsError={productsError}
+      shippingError={shippingError}
       orders={tables.orders(shop)}
     />,
   )
@@ -138,7 +159,14 @@ app.post('/api/connect', async (c) => {
       return c.json({ error: `Saved, but couldn't subscribe to paid orders: ${message(error)}` }, 502)
     }
   }
-  return c.json({ message: 'CJ is connected' })
+  // From now on checkout asks CJ what shipping costs
+  let warning = ''
+  try {
+    await registerCarrier(shop)
+  } catch (error) {
+    warning = ` (shipping prices are not on yet: ${message(error)})`
+  }
+  return c.json({ message: `CJ is connected${warning}` })
 })
 
 app.post('/api/settings', async (c) => {
@@ -205,6 +233,18 @@ app.post('/shopnex/webhook', async (c) => {
   const { event, shop } = await shopnex.verifyWebhook<PaidOrder>(c)
   if (event.type === 'order.paid') void forwardOrder(shop, tables, event.data)
   return c.body(null, 204)
+})
+
+// Shopnex asks what shipping costs once the buyer's address is known (see shipping.ts). A failure is no rates, not
+// an error: checkout carries on with the shop's other methods, or says it can't ship there.
+app.post('/shipping/rates', async (c) => {
+  const { request, shop } = await shopnex.verifyRatesRequest(c)
+  try {
+    return c.json({ rates: await quoteRates(shop, tables, request) })
+  } catch (error) {
+    console.error(`[cj] shipping prices for ${request.destination.countryCode}:`, message(error))
+    return c.json({ rates: [] })
+  }
 })
 
 app.onError((error, c) => {

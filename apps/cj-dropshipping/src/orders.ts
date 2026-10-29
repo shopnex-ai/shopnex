@@ -2,6 +2,7 @@
 import type { ShopContext } from '@shopnex/app'
 import { cjFor, settingsOf } from './cj'
 import type { Tables } from './db'
+import { priceOf } from './shipping'
 
 // The parts of the order webhook payload (the admin API's order) this app reads
 export type PaidOrder = {
@@ -21,6 +22,16 @@ export type PaidOrder = {
     phone: string | null
   } | null
   items: { sku: string | null; quantity: number }[]
+  /** What the buyer chose at checkout; a CJ rate's code is carrier:{our service id}:{CJ's method name} */
+  shippingLines?: { code: string | null; title: string }[]
+}
+
+/** The CJ shipping method the buyer was quoted at checkout, or null (a flat rate, or another app's carrier) */
+async function quotedMethod(shop: ShopContext, order: PaidOrder) {
+  const service = await shop.data.get<{ id: string }>('carrier_service')
+  const code = order.shippingLines?.[0]?.code
+  const prefix = service && `carrier:${service.id}:`
+  return code && prefix && code.startsWith(prefix) ? code.slice(prefix.length) : null
 }
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
@@ -40,14 +51,17 @@ export async function forwardOrder(shop: ShopContext, tables: Tables, order: Pai
     const { cj } = await cjFor(shop)
     const settings = await settingsOf(shop)
 
-    // Cheapest method CJ offers from China to the destination
     const freight = await cj.logistics.calculateFreight({
       startCountryCode: 'CN',
       endCountryCode: to.countryCode,
       zip: to.zip ?? undefined,
       products: lines,
     })
-    const method = freight.data?.reduce((best, o) => (o.logisticPrice < best.logisticPrice ? o : best))
+    // The method the buyer was quoted, if CJ still offers it; otherwise the cheapest CJ bills for
+    const quoted = await quotedMethod(shop, order)
+    const method =
+      freight.data?.find((o) => o.logisticName === quoted) ??
+      freight.data?.reduce((best, o) => (priceOf(o) < priceOf(best) ? o : best))
     if (!method) throw new Error(freight.error ?? `CJ has no shipping method to ${to.countryCode}`)
 
     const created = await cj.orders.createOrder({
