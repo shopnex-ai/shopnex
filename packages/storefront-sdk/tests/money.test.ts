@@ -98,6 +98,30 @@ describe('Storefront SDK Money Helpers', () => {
     })
   })
 
+  describe('formatMoney and moneyAmount agree', () => {
+    test('formatMoney contains the same digits as moneyAmount for each currency precision', () => {
+      for (const currencyCode of ['USD', 'JPY', 'BHD']) {
+        for (const amountMinor of [0, 1, 99, 1999, 123456]) {
+          const money = { amountMinor, currencyCode }
+          const digitsOnly = (value: string) => value.replace(/[^\d]/g, '')
+          assert.equal(digitsOnly(formatMoney(money)), digitsOnly(moneyAmount(money)), `${currencyCode} ${amountMinor}`)
+        }
+      }
+    })
+  })
+
+  describe('currency codes', () => {
+    test('accepts lowercase currency codes', () => {
+      assert.equal(formatMoney({ amountMinor: 1999, currencyCode: 'usd' }), '$19.99')
+      assert.equal(moneyAmount({ amountMinor: 1999, currencyCode: 'usd' }), '19.99')
+    })
+
+    test('throws a RangeError for a malformed currency code', () => {
+      assert.throws(() => formatMoney({ amountMinor: 100, currencyCode: 'NOT-A-CURRENCY' }), RangeError)
+      assert.throws(() => moneyAmount({ amountMinor: 100, currencyCode: '' }), RangeError)
+    })
+  })
+
   describe('Edge cases and caching', () => {
     test('maintains consistent output across repeated calls with cached formatters', () => {
       const money = { amountMinor: 2499, currencyCode: 'USD' }
