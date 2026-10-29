@@ -9,8 +9,8 @@ permissions:
   packages: write
 
 jobs:
-  release:
-    name: Check and publish GitHub release
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -30,7 +30,106 @@ jobs:
 
       - run: pnpm build
 
+  # Each image is built natively per architecture (no emulation) and pushed by digest;
+  # the merge job then publishes one tag that points at both.
+  images:
+    name: Image ${{ matrix.image }} (${{ matrix.arch }})
+    needs: check
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { image: shopnex, suffix: '', file: Dockerfile, arch: amd64, runner: ubuntu-latest }
+          - { image: shopnex, suffix: '', file: Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
+          - { image: stripe, suffix: -stripe, file: Dockerfile.app, arch: amd64, runner: ubuntu-latest }
+          - { image: stripe, suffix: -stripe, file: Dockerfile.app, arch: arm64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Image name
+        id: image
+        env:
+          SUFFIX: ${{ matrix.suffix }}
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}${SUFFIX}" >> "$GITHUB_OUTPUT"
+
       - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          build-args: ${{ matrix.image == 'shopnex' && format('APP_VERSION={0}', github.ref_name) || 'APP=stripe' }}
+          platforms: linux/${{ matrix.arch }}
+          # Attestations would add extra "unknown" platforms to the merged tag
+          provenance: false
+          outputs: type=image,name=${{ steps.image.outputs.name }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Publish ${{ matrix.image }} tags
+    needs: images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { image: shopnex, suffix: '' }
+          - { image: stripe, suffix: -stripe }
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create multi-arch tags
+        env:
+          TAG: ${{ github.ref_name }}
+          SUFFIX: ${{ matrix.suffix }}
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}${SUFFIX}"
+          tags=(-t "$image:$TAG")
+          # Pre-releases (v1.0.0-rc.1) don't move the latest tag
+          if [[ "$TAG" != *-* ]]; then tags+=(-t "$image:latest"); fi
+          docker buildx imagetools create "${tags[@]}" $(printf "$image@sha256:%s " *)
+          docker buildx imagetools inspect "$image:$TAG"
+
+  release:
+    name: Publish GitHub release
+    needs: merge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
       - uses: docker/login-action@v4
         with:
@@ -41,37 +140,6 @@ jobs:
       - name: Image name
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-
-      - name: Image tags
-        id: tags
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          # Pre-releases (v1.0.0-rc.1) don't move the latest tag
-          latest=false
-          if [[ "$TAG" != *-* ]]; then latest=true; fi
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          build-args: APP_VERSION=${{ github.ref_name }}
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ steps.image.outputs.name }}:${{ github.ref_name }}
-            ${{ steps.tags.outputs.latest == 'true' && format('{0}:latest', steps.image.outputs.name) || '' }}
-
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: Dockerfile.app
-          build-args: APP=stripe
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ steps.image.outputs.name }}-stripe:${{ github.ref_name }}
-            ${{ steps.tags.outputs.latest == 'true' && format('{0}-stripe:latest', steps.image.outputs.name) || '' }}
 
       - name: Create GitHub release
         env:
@@ -89,7 +157,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           IMAGE: ${{ steps.image.outputs.name }}
         run: |
-          # Offline copies, load with: gunzip -c <file> | docker load
+          # Offline copies (linux/amd64), load with: gunzip -c <file> | docker load
           for ref in "$IMAGE:$TAG" "$IMAGE-stripe:$TAG"; do
             docker pull --platform linux/amd64 "$ref"
             file="$(basename "${ref%%:*}")-$TAG-linux-amd64.tar.gz"
@@ -109,6 +177,6 @@ jobs:
             printf '\n\n## Docker image\n\n'
             printf 'Shopnex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
             printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
-            printf 'Offline `.tar.gz` copies of both images are attached below.\n'
+            printf 'Images are published for linux/amd64 and linux/arm64. Offline `.tar.gz` copies of both (amd64) are attached below.\n'
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md
