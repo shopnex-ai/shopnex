@@ -395,33 +395,20 @@ async function install(
   return installation!
 }
 
-// --- App Store (marketplace apps synced to this instance) ---
+// --- Catalog (every app a shop can install, whatever its source) ---
 
-// Installable marketplace apps, with whether this shop already has each
-export async function listAppStore(shopId: string) {
-  const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
-    .from(schema.apps)
-    .leftJoin(
-      schema.appInstallations,
-      and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
-      ),
-    )
-    .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
-    .orderBy(asc(schema.apps.name))
-  return rows.map((r) => ({ ...publicApp(r.app), installed: r.installationId !== null }))
-}
+export type AppOrigin = 'bundled' | 'marketplace' | 'custom'
 
 /**
- * Bundled apps (see BUNDLED_APPS) this shop hasn't installed yet, to install from Admin → Apps. Payments apps are
- * left out: they are installed from Settings → Payments, which also sets up their payment method.
+ * One list for everything installable from Admin → Apps: apps that ship with this install (BUNDLED_APPS),
+ * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
+ * Payments apps are left out: they are installed from Settings → Payments, which also sets up their payment method.
  */
-export async function listAvailableBundledApps(shopId: string) {
-  const bundled = BUNDLED_APPS.filter((b) => !b.scopes.includes('write_payment_sessions')).map((b) => b.clientId)
-  if (bundled.length === 0) return []
+export async function listCatalog(shopId: string) {
+  const bundled = new Set(BUNDLED_APPS.map((b) => b.clientId))
+  const payments = new Set(
+    BUNDLED_APPS.filter((b) => b.scopes.includes('write_payment_sessions')).map((b) => b.clientId),
+  )
   const rows = await db
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
@@ -433,11 +420,15 @@ export async function listAvailableBundledApps(shopId: string) {
         isNull(schema.appInstallations.uninstalledAt),
       ),
     )
-    .where(
-      and(eq(schema.apps.source, 'custom'), isNull(schema.apps.delistedAt), inArray(schema.apps.clientId, bundled)),
-    )
+    .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows.filter((r) => r.installationId === null).map((r) => publicApp(r.app))
+  return rows
+    .filter((r) => !payments.has(r.app.clientId))
+    .map((r) => {
+      const origin: AppOrigin =
+        r.app.source === 'marketplace' ? 'marketplace' : bundled.has(r.app.clientId) ? 'bundled' : 'custom'
+      return { ...publicApp(r.app), origin, installationId: r.installationId, installed: r.installationId !== null }
+    })
 }
 
 // --- installations (shop owners/admins) ---

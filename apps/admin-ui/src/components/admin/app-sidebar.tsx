@@ -33,11 +33,14 @@ import {
   WebhookIcon,
   type LucideIcon,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, type ToOptions } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
 import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
+import { AppIcon } from '@/screens/apps/installed-apps-card'
+import { orpc } from '@/lib/orpc'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -60,6 +63,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -68,6 +74,7 @@ type NavItem = {
   label: string
   icon: LucideIcon
   /** Only this exact path is active */ exact?: boolean
+  /** Hidden from everyone else */ superAdminOnly?: boolean
 }
 
 // Add screens here as they're built
@@ -85,7 +92,7 @@ const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/online-store/themes', label: 'Online store', icon: StoreIcon },
       { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
       { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
-      { href: '/admin/apps', label: 'Apps', icon: BlocksIcon },
+      { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },
 ]
@@ -122,6 +129,7 @@ const settingsNav: { label: string; items: NavItem[] }[] = [
     label: 'Developers',
     items: [
       { href: '/admin/settings/channels', label: 'Sales channels', icon: Share2Icon },
+      { href: '/admin/settings/marketplace', label: 'Marketplace', icon: BlocksIcon, superAdminOnly: true },
       { href: '/admin/settings/storefront-keys', label: 'Storefront keys', icon: KeyRoundIcon },
       { href: '/admin/settings/api-tokens', label: 'API tokens', icon: CodeIcon },
       { href: '/admin/settings/webhooks', label: 'Webhooks', icon: WebhookIcon },
@@ -129,7 +137,11 @@ const settingsNav: { label: string; items: NavItem[] }[] = [
   },
 ]
 
-export type SidebarShop = { name: string; superAdmin: boolean }
+export type SidebarShop = {
+  name: string
+  superAdmin: boolean
+  /** Sees installed apps under Apps */ canManageApps: boolean
+}
 export type SidebarUser = {
   name: string
   email: string
@@ -153,7 +165,7 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
       <SidebarHeader>{inSettings ? <SettingsHeader /> : <ShopIdentity shop={shop} />}</SidebarHeader>
       <SidebarContent>
         {(inSettings ? settingsNav : nav).map((group) => (
-          <NavGroup key={group.label} {...group} />
+          <NavGroup key={group.label} {...group} canManageApps={shop.canManageApps} superAdmin={shop.superAdmin} />
         ))}
         <SidebarGroup className="mt-auto">
           <SidebarMenu>
@@ -230,27 +242,65 @@ function SettingsHeader() {
   )
 }
 
-function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
+function NavGroup({
+  label,
+  items,
+  canManageApps,
+  superAdmin,
+}: {
+  label: string
+  items: NavItem[]
+  canManageApps: boolean
+  superAdmin: boolean
+}) {
   const pathname = useLocation({ select: (location) => location.pathname })
   const { isMobile, setOpenMobile } = useSidebar()
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map(({ href, label, icon: Icon, exact }) => (
-          <SidebarMenuItem key={href}>
-            <SidebarMenuButton
-              render={<Link to={href} onClick={() => isMobile && setOpenMobile(false)} />}
-              isActive={exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)}
-              tooltip={label}
-            >
-              <Icon />
-              <span>{label}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
+        {items
+          .filter((item) => !item.superAdminOnly || superAdmin)
+          .map(({ href, label, icon: Icon, exact }) => (
+            <SidebarMenuItem key={href}>
+              <SidebarMenuButton
+                render={<Link to={href} onClick={() => isMobile && setOpenMobile(false)} />}
+                isActive={exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)}
+                tooltip={label}
+              >
+                <Icon />
+                <span>{label}</span>
+              </SidebarMenuButton>
+              {canManageApps && href === '/admin/apps' && <InstalledApps />}
+            </SidebarMenuItem>
+          ))}
       </SidebarMenu>
     </SidebarGroup>
+  )
+}
+
+// Installed apps, one click from the sidebar. Installing or uninstalling refreshes the list (apps query key).
+function InstalledApps() {
+  const pathname = useLocation({ select: (location) => location.pathname })
+  const { isMobile, setOpenMobile } = useSidebar()
+  const { data } = useQuery(orpc.admin.apps.list.queryOptions())
+  if (!data?.length) return null
+  return (
+    <SidebarMenuSub>
+      {data.map((i) => (
+        <SidebarMenuSubItem key={i.id}>
+          <SidebarMenuSubButton
+            render={
+              <Link to="/admin/apps/$id" params={{ id: i.id }} onClick={() => isMobile && setOpenMobile(false)} />
+            }
+            isActive={pathname === `/admin/apps/${i.id}`}
+          >
+            <AppIcon url={i.app.iconUrl} className="size-4 rounded-sm" />
+            <span>{i.app.name}</span>
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      ))}
+    </SidebarMenuSub>
   )
 }
 
