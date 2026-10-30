@@ -397,15 +397,12 @@ async function install(
 
 // --- Catalog (every app a shop can install, whatever its source) ---
 
-export type AppOrigin = 'bundled' | 'marketplace' | 'custom'
-
 /**
  * One list for everything installable from Admin → Apps: apps that ship with this install (BUNDLED_APPS),
  * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
  * Payments apps are left out: they are installed from Settings → Payments, which also sets up their payment method.
  */
 export async function listCatalog(shopId: string) {
-  const bundled = new Set(BUNDLED_APPS.map((b) => b.clientId))
   const payments = new Set(
     BUNDLED_APPS.filter((b) => b.scopes.includes('write_payment_sessions')).map((b) => b.clientId),
   )
@@ -424,11 +421,12 @@ export async function listCatalog(shopId: string) {
     .orderBy(asc(schema.apps.name))
   return rows
     .filter((r) => !payments.has(r.app.clientId))
-    .map((r) => {
-      const origin: AppOrigin =
-        r.app.source === 'marketplace' ? 'marketplace' : bundled.has(r.app.clientId) ? 'bundled' : 'custom'
-      return { ...publicApp(r.app), origin, installationId: r.installationId, installed: r.installationId !== null }
-    })
+    .map((r) => ({
+      ...publicApp(r.app),
+      origin: r.app.source,
+      installationId: r.installationId,
+      installed: r.installationId !== null,
+    }))
 }
 
 // --- installations (shop owners/admins) ---
@@ -678,7 +676,7 @@ async function syncBundledApp(bundled: BundledApp, url: string | undefined) {
   if (!appUrl) throw new Error(`${reach} announced no usable public URL (https, or http on localhost)`)
   if (!url) rememberInternalUrl(appUrl, bundled.internalUrl)
   const values = {
-    source: 'custom' as const,
+    source: 'bundled' as const,
     name: bundled.name,
     description: bundled.description,
     iconUrl: `${appUrl}/icon.svg`,
