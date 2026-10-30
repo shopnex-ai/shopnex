@@ -15,11 +15,7 @@ function SettingsLayout() {
   const canManage = tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin'
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      {canManage ? (
-        <Outlet />
-      ) : (
-        <NoAccess message="Only shop owners and admins can change settings." />
-      )}
+      {canManage ? <Outlet /> : <NoAccess message="Only shop owners and admins can change settings." />}
     </div>
   )
 }
