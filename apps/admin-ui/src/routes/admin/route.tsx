@@ -6,7 +6,9 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/admin/app-sidebar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
+import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { adminContextQuery } from '@/lib/admin-context'
+import { CreateShopForm } from '@/screens/signup/create-shop-form'
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: async ({ location, context }) => {
@@ -18,6 +20,11 @@ export const Route = createFileRoute('/admin')({
     if (location.pathname === '/admin/login') {
       if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
       if (access.session) throw redirect({ to: '/admin' })
+      return { access }
+    }
+    if (location.pathname === '/admin/signup') {
+      if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
+      if (!access.openSignup || access.session) throw redirect({ to: access.session ? '/admin' : '/admin/login' })
       return { access }
     }
     if (location.pathname.startsWith('/admin/invite/')) {
@@ -37,12 +44,27 @@ export const Route = createFileRoute('/admin')({
 function AdminLayout() {
   const { access } = Route.useRouteContext()
   const pathname = useLocation({ select: (location) => location.pathname })
-  if (pathname === '/admin/setup' || pathname === '/admin/login' || pathname.startsWith('/admin/invite/'))
+  if (
+    pathname === '/admin/setup' ||
+    pathname === '/admin/login' ||
+    pathname === '/admin/signup' ||
+    pathname.startsWith('/admin/invite/')
+  )
     return <Outlet />
   const { session, tenant } = access
   // No session: beforeLoad is redirecting. The context is stale for a moment while navigating
   // from /admin/login, so render nothing instead of flashing a message.
   if (!session) return null
+  if (!tenant && access.openSignup) {
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-md">
+          <ShopnexBrand />
+          <CreateShopForm />
+        </div>
+      </div>
+    )
+  }
   if (!tenant) {
     return (
       <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
@@ -56,6 +78,7 @@ function AdminLayout() {
       <NavigationProgress />
       <AppSidebar
         shop={{
+          id: tenant.shop.id,
           name: tenant.shop.name,
           superAdmin: tenant.superAdmin,
           canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',

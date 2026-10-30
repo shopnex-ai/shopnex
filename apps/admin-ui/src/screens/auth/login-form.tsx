@@ -1,6 +1,6 @@
 'use client'
 
-import { useNavigate, useRouter } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { authClient } from '@shopnex/auth/client'
@@ -20,11 +20,13 @@ export function LoginForm({
   error,
   next,
   defaults,
+  openSignup,
 }: {
   providers: SocialProvider[]
   error?: string
   next?: string
   defaults?: { email: string; password: string } | null
+  openSignup?: boolean
 }) {
   const destination = safeNext(next)
   const navigate = useNavigate()
@@ -97,7 +99,15 @@ export function LoginForm({
             </Field>
             <SocialButtons providers={providers} mode="login" callbackURL={destination} />
             <Field>
-              <FieldDescription className="text-center">New here? Ask a shop owner to invite you.</FieldDescription>
+              <FieldDescription className="text-center">
+                {openSignup ? (
+                  <>
+                    New here? <Link to="/admin/signup">Start your store</Link>
+                  </>
+                ) : (
+                  'New here? Ask a shop owner to invite you.'
+                )}
+              </FieldDescription>
             </Field>
           </FieldGroup>
         </form>

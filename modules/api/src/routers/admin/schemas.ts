@@ -139,6 +139,9 @@ export const channelInput = z.object({
   autoPublish: z.boolean().optional(),
 })
 
+// Settings → Domains. Normalised (scheme, path, case) and validated by the tenancy module.
+export const domainInput = z.object({ domain: z.string().trim().min(1).max(300) })
+
 // Where a product or collection is published: the full list (channels left out are unpublished). A date in the
 // future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
 export const publicationsInput = z.object({
@@ -185,6 +188,11 @@ export const setupInput = z.object({
   email: z.email(),
   password: z.string().min(MIN_PASSWORD).max(128),
 })
+
+// Self-serve signup (/admin/signup, OPEN_SIGNUP=true) and "create your shop" for accounts without one
+export const shopNameInput = z.string().trim().min(2, 'Enter a shop name').max(60)
+export const signupInput = setupInput.extend({ shopName: shopNameInput })
+export const createShopInput = z.object({ shopName: shopNameInput })
 
 export {
   CANCEL_REASONS,

@@ -42,7 +42,8 @@ Out-of-process only, no third-party code in the core.
 
 - theme editor
 - email templates
-- domains page (add domain, verify DNS) — replaces manual `shop_domains` rows; multi-shop as a super admin toggle
+- ✅ domains page (add domain, verify with a DNS TXT record) — replaces manual `shop_domains` rows
+- multi-shop as a super admin toggle
 - onboarding checklist on the dashboard
 
 ### 5. Trust

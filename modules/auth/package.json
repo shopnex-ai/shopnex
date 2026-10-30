@@ -7,7 +7,8 @@
     "./client": "./src/client.ts",
     "./providers": "./src/providers.ts",
     "./roles": "./src/roles.ts",
-    "./setup": "./src/setup.ts"
+    "./setup": "./src/setup.ts",
+    "./signup": "./src/signup.ts"
   },
   "scripts": {
     "typecheck": "tsc",

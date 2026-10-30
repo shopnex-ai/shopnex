@@ -22,6 +22,7 @@ import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/rout
 import { Route as AdminProductsRouteRouteImport } from './routes/admin/products/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
+import { Route as AdminSignupRouteImport } from './routes/admin/signup'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
@@ -38,6 +39,7 @@ import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
+import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
 import { Route as AdminSettingsMarketplaceRouteImport } from './routes/admin/settings/marketplace'
@@ -121,6 +123,11 @@ const AdminSetupRoute = AdminSetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminSignupRoute = AdminSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -202,6 +209,11 @@ const AdminSettingsApiTokensRoute = AdminSettingsApiTokensRouteImport.update({
 const AdminSettingsChannelsRoute = AdminSettingsChannelsRouteImport.update({
   id: '/channels',
   path: '/channels',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
+const AdminSettingsDomainsRoute = AdminSettingsDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
 const AdminSettingsEmailRoute = AdminSettingsEmailRouteImport.update({
@@ -311,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -329,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
@@ -358,6 +372,7 @@ export interface FileRoutesByTo {
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -376,6 +391,7 @@ export interface FileRoutesByTo {
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
@@ -407,6 +423,7 @@ export interface FileRoutesById {
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -425,6 +442,7 @@ export interface FileRoutesById {
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
@@ -457,6 +475,7 @@ export interface FileRouteTypes {
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -475,6 +494,7 @@ export interface FileRouteTypes {
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/marketplace'
@@ -504,6 +524,7 @@ export interface FileRouteTypes {
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -522,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/marketplace'
@@ -552,6 +574,7 @@ export interface FileRouteTypes {
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -570,6 +593,7 @@ export interface FileRouteTypes {
     | '/admin/products/$id'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
     | '/admin/settings/marketplace'
@@ -688,6 +712,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSetupRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/signup': {
+      id: '/admin/signup'
+      path: '/signup'
+      fullPath: '/admin/signup'
+      preLoaderRoute: typeof AdminSignupRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/staff'
@@ -798,6 +829,13 @@ declare module '@tanstack/react-router' {
       path: '/channels'
       fullPath: '/admin/settings/channels'
       preLoaderRoute: typeof AdminSettingsChannelsRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/domains': {
+      id: '/admin/settings/domains'
+      path: '/domains'
+      fullPath: '/admin/settings/domains'
+      preLoaderRoute: typeof AdminSettingsDomainsRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/email': {
@@ -1066,6 +1104,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsNotificationsRouteRoute: typeof AdminSettingsNotificationsRouteRouteWithChildren
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
+  AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
   AdminSettingsMarketplaceRoute: typeof AdminSettingsMarketplaceRoute
@@ -1083,6 +1122,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
     AdminSettingsNotificationsRouteRouteWithChildren,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
+  AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
   AdminSettingsMarketplaceRoute: AdminSettingsMarketplaceRoute,
@@ -1109,6 +1149,7 @@ interface AdminRouteRouteChildren {
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSetupRoute: typeof AdminSetupRoute
+  AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInviteIdRoute: typeof AdminInviteIdRoute
@@ -1126,6 +1167,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSetupRoute: AdminSetupRoute,
+  AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInviteIdRoute: AdminInviteIdRoute,

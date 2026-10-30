@@ -11,6 +11,7 @@
     "@shopnex/app": "workspace:*",
     "@shopnex/apps": "workspace:*",
     "@shopnex/cart": "workspace:*",
+    "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",

@@ -4,6 +4,7 @@ import {
   BlocksIcon,
   CodeIcon,
   CreditCardIcon,
+  GlobeIcon,
   HardDriveIcon,
   HouseIcon,
   KeyRoundIcon,
@@ -59,6 +60,7 @@ export const settingsNav: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/admin/settings/general', label: 'General', icon: StoreIcon },
       { href: '/admin/settings/staff', label: 'Staff', icon: UserCogIcon },
+      { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
     ],
   },
   {

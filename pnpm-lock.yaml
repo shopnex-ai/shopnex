@@ -136,6 +136,9 @@ importers:
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../../modules/cart
+      '@shopnex/catalog':
+        specifier: workspace:*
+        version: link:../../modules/catalog
       '@shopnex/email':
         specifier: workspace:*
         version: link:../../modules/email
@@ -365,6 +368,9 @@ importers:
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../modules/cart
+      '@shopnex/catalog':
+        specifier: workspace:*
+        version: link:../modules/catalog
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../modules/channels
@@ -810,6 +816,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/theme:
     dependencies:

@@ -81,9 +81,10 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 | Admin      | default shop               | session's active shop, else the user's first shop |
 | New users  | invited from Admin → Staff | invited, or create their own shop                 |
 
-- Accounts are invitation-only: the setup wizard creates the first one, everyone else needs a pending invitation (`modules/auth/src/sign-up-policy.ts`, covers email and OAuth). Invite links are copied from Admin → Staff and expire after 7 days
+- Accounts are invitation-only unless `OPEN_SIGNUP=true` (multi mode only): then `/admin/signup` creates an account plus its own shop (owner, a shipping rate, a manual payment method, sample products; the Online Store channel and first theme appear on first use), and an account without a shop (e.g. OAuth sign-up) is asked to create one. Provisioning lives in `modules/tenancy/src/provisioning.ts`. Otherwise: the setup wizard creates the first one, everyone else needs a pending invitation (`modules/auth/src/sign-up-policy.ts`, covers email and OAuth). Invite links are copied from Admin → Staff and expire after 7 days
 - Shops are Better Auth organizations (`shops`, `shop_members`, `shop_invitations`) — `authClient.organization.*` for switching, invites, roles
 - API: `storefront` / `admin` middlewares in `modules/api/src/orpc.ts` put `context.shop` on every procedure
 - Super admin (platform role `superadmin`, Better Auth admin plugin): can act in every shop without membership, manage users (`/api/auth/admin/*`, `authClient.admin.*`). The account created by the setup wizard is one; to create or promote another (or recover access):
   `pnpm create-super-admin --email you@example.com [--password ...]` (random password printed if omitted)
-- Switching single → multi needs no data migration: add rows to `shop_domains` and set `TENANCY_MODE=multi`
+- Switching single → multi needs no data migration: add each shop's domains in Admin → Settings → Domains and set `TENANCY_MODE=multi`
+- Domains are claimed, then verified with a DNS TXT record (`_shopnex-challenge.<domain>`); only verified domains resolve to a shop. Domains inserted into `shop_domains` by hand need `verified_at` set

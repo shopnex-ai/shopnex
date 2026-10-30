@@ -1,4 +1,4 @@
-export { DEFAULT_SHOP_ID, TENANCY_MODE, isMultiTenant, type TenancyMode } from './config'
+export { DEFAULT_SHOP_ID, TENANCY_MODE, isMultiTenant, isOpenSignup, type TenancyMode } from './config'
 export {
   PUBLISHABLE_KEY_HEADER,
   resolveAdminShop,
@@ -22,7 +22,19 @@ export {
   revokeTokenById,
 } from './api-tokens'
 export { API_SCOPES, type ApiScope, type ApiToken } from '@shopnex/db/schema'
-export { addMember, ensureDefaultShop, getShopById, updateShop, withStorefrontUrl } from './shops'
+export {
+  addMember,
+  ensureDefaultShop,
+  getFirstMembership,
+  getShopById,
+  listSwitchableShops,
+  setActiveShop,
+  updateShop,
+  withStorefrontUrl,
+} from './shops'
 export { getOpenInvitation, userExists } from './invitations'
+export { createShop } from './provisioning'
 export * as staffService from './staff'
 export { StaffError, type StaffErrorCode } from './staff'
+export * as domainService from './domains'
+export { DomainError, challengeHost, type DomainErrorCode } from './domains'
