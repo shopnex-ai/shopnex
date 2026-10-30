@@ -83,6 +83,7 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
 
   const { markupPercent } = await settingsOf(shop)
   const stock = await cj.products.getProductInventoryByPid(pid)
+  if (stock.error) console.warn(`[cj] no stock for ${pid}, variants imported without a stock count:`, stock.error)
   const inventory = new Map<string, number>()
   for (const v of stock.data?.variantInventories ?? []) {
     inventory.set(
@@ -100,7 +101,8 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
     return {
       sku: v.variantSku,
       priceCents: Math.round((v.variantSellPrice ?? product.sellPrice) * (1 + markupPercent / 100) * 100),
-      inventoryQuantity: inventory.get(v.vid) ?? 0,
+      // No figure from CJ means unknown (left untracked), not sold out
+      inventoryQuantity: inventory.get(v.vid),
       imageUrl: v.variantImage && httpUrl(v.variantImage) ? v.variantImage : undefined,
       options: { Variant: value },
       value,
