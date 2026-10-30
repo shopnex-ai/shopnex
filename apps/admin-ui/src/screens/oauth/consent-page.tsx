@@ -66,7 +66,8 @@ export function ConsentPage() {
 
 function Shell({ title, description, children }: { title: string; description: string; children?: React.ReactNode }) {
   return (
-    <div className="flex min-h-svh w-full flex-col items-center justify-center p-6 md:p-10">
+    // Rendered inside the admin layout: fill what is left under the header (h-12) and the content padding
+    <div className="flex min-h-[calc(100svh-5rem)] w-full flex-col items-center justify-center py-6 md:min-h-[calc(100svh-6rem)]">
       <ShopnexBrand />
       <Card className="w-full max-w-md">
         <CardHeader>
