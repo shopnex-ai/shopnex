@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldGroup } from '@/components/ui/field'
+import { useOpenOnNew } from '@/hooks/use-open-on-new'
 import { orpc } from '@/lib/orpc'
 
 // The essentials; images, description, variants and stock are edited on the product page
@@ -33,6 +34,7 @@ export function NewProductButton({ currency }: { currency: string }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  useOpenOnNew(() => setOpen(true))
   const form = useZodForm(newProduct, { defaultValues: { title: '', status: 'active', priceCents: undefined } })
   const create = useMutation(orpc.admin.products.create.mutationOptions())
 

@@ -33,6 +33,7 @@ import {
 import { Field, FieldGroup } from '@/components/ui/field'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
+import { useOpenOnNew } from '@/hooks/use-open-on-new'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { client } from '@/lib/orpc'
 import { ImportDiscountsDialog } from './import-discounts'
@@ -157,6 +158,8 @@ const empty = {
 function DiscountDialog({ discount, currency }: { discount?: Discount; currency: string }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  // Only the create dialog; the empty form needs no reset on open
+  useOpenOnNew(() => setOpen(true), !discount)
   const toValues = () =>
     discount
       ? {
