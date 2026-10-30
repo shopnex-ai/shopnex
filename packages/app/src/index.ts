@@ -63,6 +63,14 @@ export type ShopnexAppOptions = {
   data?: (instance: string, shopId: string) => AppData
   /** Instances allowed over plain http (default: localhost only) */
   allowHttp?: JwksResolverOptions['allowHttp']
+  /**
+   * Where to send requests to the Shopnex instance when its public address isn't reachable from here (Docker:
+   * http://shopnex:3000). Only the request goes there; the instance keeps its public identity. For apps bundled
+   * with one self-hosted Shopnex, not for marketplace apps serving many instances. Default: SHOPNEX_INTERNAL_URL
+   */
+  instanceInternalUrl?: string
+  /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so Shopnex needs no setting */
+  appUrl?: string
 }
 
 /** One shop the app is installed on, with an Admin API client for it */
@@ -118,10 +126,16 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   if (!clientId) throw new Error('@shopnex/app: set SHOPNEX_CLIENT_ID (or pass clientId)')
   if (!appKey) throw new Error('@shopnex/app: set SHOPNEX_APP_KEY (or pass appKey)')
   const marketplaceUrl = (options.marketplaceUrl ?? env('SHOPNEX_MARKETPLACE_URL'))?.replace(/\/$/, '')
+  const internalUrl = (options.instanceInternalUrl ?? env('SHOPNEX_INTERNAL_URL'))?.trim().replace(/\/$/, '')
+  // Requests to the instance go to its internal address when one is set
+  const reach = (url: string) => (internalUrl ? internalUrl + url.slice(new URL(url).origin.length) : url)
 
   const privateKey = importPrivateKey(appKey)
   const dataKey = deriveDataKey(appKey)
-  const keys = createJwksResolver({ allowHttp: options.allowHttp })
+  const keys = createJwksResolver({
+    allowHttp: options.allowHttp,
+    fetch: (input, init) => fetch(typeof input === 'string' ? reach(input) : input, init),
+  })
 
   // --- access tokens, cached per (instance, shop) until a minute before they expire ---
 
@@ -130,7 +144,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   const verified = new Map<string, number>()
 
   async function requestToken(instance: string, grant: Record<string, string>): Promise<Token> {
-    const res = await fetch(`${instance}/api/v1/oauth/token`, {
+    const res = await fetch(reach(`${instance}/api/v1/oauth/token`), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -190,7 +204,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   function shopContext(instance: string, shopId: string, first: Token): ShopContext {
-    const admin = createAdminClient(instance, async () => (await token(instance, shopId)).accessToken)
+    const admin = createAdminClient(instance, async () => (await token(instance, shopId)).accessToken, reach(instance))
     const session = (id: string, action: string) => `/payment-sessions/${encodeURIComponent(id)}/${action}`
     return {
       instance,
@@ -322,7 +336,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   )
   // Who this app is, for an instance that knows only its URL (bundled apps: Shopnex reads this at startup)
   routes.get('/.well-known/shopnex-app.json', async (c) =>
-    c.json({ clientId, publicKey: await publicKeyOf(await privateKey) }, 200, { 'cache-control': 'no-store' }),
+    c.json({ clientId, publicKey: await publicKeyOf(await privateKey), appUrl: options.appUrl }, 200, {
+      'cache-control': 'no-store',
+    }),
   )
 
   return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyRatesRequest, verifyWebhook }

@@ -28,8 +28,8 @@ commands.
 3. Tag the merge commit and push. Use the version `pnpm bump` printed:
 
    ```sh
-   git tag v0.9.2
-   git push origin v0.9.2
+   git tag v0.10.0
+   git push origin v0.10.0
    ```
 
 4. Watch the run in the **Actions** tab, then review the release under
@@ -44,7 +44,8 @@ commands.
 - Stable releases also move the `latest` GHCR tag, and `docker save` archives of
   both images are attached to the release as assets.
 - Every release tag, including pre-releases, gets matching versioned GHCR tags
-  for Shopnex and the Stripe app. Both images are published for `linux/amd64`.
+  for Shopnex and the Stripe app. Both images are multi-arch (`linux/amd64` and `linux/arm64`), built natively
+  on each architecture and merged into one tag.
 - Fix a bad release by deleting the GitHub Release and tag
   (`git push origin :refs/tags/v0.8.0`), fixing, and tagging again.
 - The workflow does not publish to npm. If the `@shopnex/*` packages should be

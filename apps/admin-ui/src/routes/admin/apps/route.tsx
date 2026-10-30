@@ -1,20 +1,33 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
 import { NoAccess } from '@/components/admin/no-access'
 import { PageHeader } from '@/components/admin/page-header'
-import { AvailableAppsCard } from '@/screens/apps/available-apps-card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { AppCatalogCard } from '@/screens/apps/app-catalog-card'
 import { AppRegistryCard } from '@/screens/apps/app-registry-card'
-import { AppStoreCard } from '@/screens/apps/app-store-card'
-import { InstalledAppsCard } from '@/screens/apps/installed-apps-card'
-import { MarketplaceCard } from '@/screens/apps/marketplace-card'
-import { getMarketplaceInstanceUrl } from '@/screens/apps/functions'
 
-const DEFAULT_MARKETPLACE_URL = import.meta.env.MARKETPLACE_URL ?? 'https://apps.shopnex.com'
+export const Route = createFileRoute('/admin/apps')({
+  // Show the skeleton right away; the router waits 1s by default before showing a pending component
+  pendingMs: 0,
+  pendingComponent: AppsPending,
+  component: AppsPage,
+})
 
-export const Route = createFileRoute('/admin/apps')({ loader: () => getMarketplaceInstanceUrl(), component: AppsPage })
+function AppsPending() {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        title="Apps"
+        description="Apps add features to your shop and work with its data through the Admin API."
+      />
+      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-56 w-full" />
+    </div>
+  )
+}
+
 function AppsPage() {
   const pathname = useLocation({ select: (location) => location.pathname })
   const tenant = Route.useRouteContext().access.tenant
-  const instanceUrl = Route.useLoaderData()
   if (pathname !== '/admin/apps') return <Outlet />
   if (!tenant) return null
   const canManage = tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin'
@@ -26,15 +39,8 @@ function AppsPage() {
       />
       {canManage ? (
         <>
-          <InstalledAppsCard />
-          <AvailableAppsCard shopId={tenant.shop.id} />
-          <AppStoreCard shopId={tenant.shop.id} superAdmin={tenant.superAdmin} />
-          {tenant.superAdmin && (
-            <>
-              <MarketplaceCard defaultMarketplaceUrl={DEFAULT_MARKETPLACE_URL} defaultPublicUrl={instanceUrl} />
-              <AppRegistryCard />
-            </>
-          )}
+          <AppCatalogCard shopId={tenant.shop.id} superAdmin={tenant.superAdmin} />
+          {tenant.superAdmin && <AppRegistryCard />}
         </>
       ) : (
         <NoAccess message="Only shop owners and admins can manage apps." />

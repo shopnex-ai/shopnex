@@ -24,21 +24,30 @@ export function downloadCsv(csv: string, filename: string) {
 export function parseCsv(text: string, noun = 'data'): CsvRow[] {
   const source = text.startsWith(BOM) ? text.slice(1) : text
   const firstLine = source.split(/\r?\n/, 1)[0] ?? ''
-  const delimiter = [',', ';', '\t'].reduce((best, candidate) =>
-    firstLine.split(candidate).length > firstLine.split(best).length ? candidate : best, ',')
+  const delimiter = [',', ';', '\t'].reduce(
+    (best, candidate) => (firstLine.split(candidate).length > firstLine.split(best).length ? candidate : best),
+    ',',
+  )
   const rows: string[][] = []
-  let row: string[] = [], field = '', quoted = false
+  let row: string[] = [],
+    field = '',
+    quoted = false
   for (let i = 0; i < source.length; i++) {
     const ch = source[i]!
     if (quoted) {
-      if (ch === '"' && source[i + 1] === '"') { field += '"'; i++ }
-      else if (ch === '"') quoted = false
+      if (ch === '"' && source[i + 1] === '"') {
+        field += '"'
+        i++
+      } else if (ch === '"') quoted = false
       else field += ch
     } else if (ch === '"') quoted = true
-    else if (ch === delimiter) { row.push(field); field = '' }
-    else if (ch === '\n' || ch === '\r') {
+    else if (ch === delimiter) {
+      row.push(field)
+      field = ''
+    } else if (ch === '\n' || ch === '\r') {
       if (ch === '\r' && source[i + 1] === '\n') i++
-      row.push(field); field = ''
+      row.push(field)
+      field = ''
       if (row.some((value) => value.trim())) rows.push(row)
       row = []
     } else field += ch
@@ -47,27 +56,40 @@ export function parseCsv(text: string, noun = 'data'): CsvRow[] {
   if (row.some((value) => value.trim())) rows.push(row)
   if (rows.length < 2) throw new Error(`This CSV has no ${noun} rows.`)
   const headers = rows[0]!.map((header) => header.trim())
-  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, i) => [header, values[i]?.trim() ?? ''])))
+  return rows
+    .slice(1)
+    .map((values) => Object.fromEntries(headers.map((header, i) => [header, values[i]?.trim() ?? ''])))
 }
 
 /** Fails with a readable message when the CSV is missing columns the importer needs. */
 export function requireColumns(rows: CsvRow[], columns: string[], format: string) {
   const headers = Object.keys(rows[0] ?? {})
   const missing = columns.filter((column) => !headers.includes(column))
-  if (missing.length) throw new Error(`This doesn't look like a ${format} CSV. Missing column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`)
+  if (missing.length)
+    throw new Error(
+      `This doesn't look like a ${format} CSV. Missing column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`,
+    )
 }
 
 /** Runs `task` over `items` with limited concurrency, reporting progress. Order of results matches `items`. */
-export async function mapPool<T, R>(items: T[], size: number, task: (item: T, index: number) => Promise<R>, onProgress?: (done: number) => void) {
+export async function mapPool<T, R>(
+  items: T[],
+  size: number,
+  task: (item: T, index: number) => Promise<R>,
+  onProgress?: (done: number) => void,
+) {
   const results = new Array<R>(items.length)
-  let next = 0, done = 0
-  await Promise.all(Array.from({ length: Math.min(size, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next++
-      results[index] = await task(items[index]!, index)
-      onProgress?.(++done)
-    }
-  }))
+  let next = 0,
+    done = 0
+  await Promise.all(
+    Array.from({ length: Math.min(size, items.length) }, async () => {
+      while (next < items.length) {
+        const index = next++
+        results[index] = await task(items[index]!, index)
+        onProgress?.(++done)
+      }
+    }),
+  )
   return results
 }
 

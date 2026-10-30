@@ -52,7 +52,10 @@ function plainTextToHtml(text: string | null) {
   if (!text) return ''
   return text
     .split(/\n{2,}/)
-    .map((paragraph) => `<p>${paragraph.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`)
+    .map(
+      (paragraph) =>
+        `<p>${paragraph.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>`,
+    )
     .join('')
 }
 

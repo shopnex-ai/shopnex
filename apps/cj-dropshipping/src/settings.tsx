@@ -37,9 +37,6 @@ export type MyProduct = {
 export type SettingsView = {
   connected: boolean
   settings: CjSettings
-  products: MyProduct[]
-  /** Why My Products couldn't be loaded */
-  productsError: string | null
   /** Why CJ's shipping prices aren't offered at checkout (null: they are) */
   shippingError: string | null
   orders: ForwardedOrder[]
@@ -61,6 +58,8 @@ const styles = `
 .cj-price{font-weight:600}
 .cj-action{padding:0 .75rem .75rem}
 .cj-action .sx-btn,.cj-action .sx-badge{width:100%;justify-content:center;text-align:center}
+.cj-skel{aspect-ratio:3/4;border-radius:var(--radius);background:var(--muted);animation:cj-pulse 1.5s ease-in-out infinite}
+@keyframes cj-pulse{50%{opacity:.5}}
 `
 
 // CJ sends "11.63" or a range of its variants, "4.70-14.73"
@@ -93,9 +92,105 @@ document.addEventListener('shopnex:done', (event) => {
 })
 `
 
+// My Products comes from CJ, which allows one call a second, so the page opens first and the list is filled in
+// from /api/products (an HTML fragment) once the admin's session is ready
+const loadProducts = `
+const box = document.getElementById('cj-products')
+async function load() {
+  while (!window.shopnex) await new Promise((resolve) => setTimeout(resolve, 50))
+  try {
+    const res = await window.shopnex.authenticatedFetch('/api/products')
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? 'Could not load My Products')
+    box.innerHTML = await res.text()
+  } catch (error) {
+    box.innerHTML = ''
+    const p = document.createElement('p')
+    p.className = 'sx-error'
+    p.textContent = error?.message ?? String(error)
+    box.append(p)
+  }
+}
+if (box) load()
+`
+
+/** The My Products cards, rendered on their own for /api/products */
+export function ProductList({ products, productsError }: { products: MyProduct[]; productsError: string | null }) {
+  return (
+    <>
+      {productsError && <Banner tone="critical">{productsError}</Banner>}
+      <Stack gap={3}>
+        <div class="cj-grid">
+          {products.map((p) => {
+            const off = p.available === false
+            const details = (
+              <>
+                {p.image ? (
+                  <img
+                    class={`cj-img${off ? ' cj-off' : ''}`}
+                    src={p.image}
+                    alt=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                  />
+                ) : (
+                  <div class="cj-img" />
+                )}
+                <div class="cj-body">
+                  <p class="cj-name" title={p.name}>
+                    {p.name}
+                  </p>
+                  <div class="cj-meta">
+                    {p.price && <span class="cj-price">{money(p.price)}</span>}
+                    {p.sku && <Code>{p.sku}</Code>}
+                  </div>
+                </div>
+              </>
+            )
+            const card = (action: unknown) => (
+              <div class="cj-card">
+                {details}
+                <div class="cj-action">{action}</div>
+              </div>
+            )
+            // CJ took it off sale: nothing to import
+            if (off) return card(<Badge tone="warning">Off sale</Badge>)
+            // Already in the catalog: don't import it twice. Once linked, its orders go to CJ.
+            if (p.inShop && p.linked) return card(<Badge tone="success">In your shop</Badge>)
+            if (p.inShop) {
+              return (
+                <div class="cj-card">
+                  <Form action="/api/link" success="Linked to CJ">
+                    <input type="hidden" name="pid" value={p.pid} />
+                    {details}
+                    <div class="cj-action">
+                      <Button variant="secondary">Link to CJ</Button>
+                    </div>
+                  </Form>
+                </div>
+              )
+            }
+            return (
+              <div class="cj-card">
+                <Form action="/api/import" success="Imported as a draft">
+                  <input type="hidden" name="pid" value={p.pid} />
+                  {details}
+                  <div class="cj-action">
+                    <Button variant="secondary">Import</Button>
+                  </div>
+                </Form>
+              </div>
+            )
+          })}
+        </div>
+        {!productsError && products.length === 0 && <Text tone="subdued">Nothing in My Products yet.</Text>}
+      </Stack>
+    </>
+  )
+}
+
 const STATUS_TONE = { pending: 'warning', created: 'default', fulfilled: 'success', failed: 'critical' } as const
 
-export function SettingsPage({ connected, settings, products, productsError, shippingError, orders }: SettingsView) {
+export function SettingsPage({ connected, settings, shippingError, orders }: SettingsView) {
   return (
     <Page
       title="CJ Dropshipping"
@@ -104,6 +199,7 @@ export function SettingsPage({ connected, settings, products, productsError, shi
     >
       <style>{raw(styles)}</style>
       <script type="module">{raw(script)}</script>
+      {connected && <script type="module">{raw(loadProducts)}</script>}
       {!connected && (
         <Banner tone="warning" title="Not connected">
           Add your CJ API key below.
@@ -174,73 +270,13 @@ export function SettingsPage({ connected, settings, products, productsError, shi
             title="Import from My Products"
             description="Products you added to My Products in CJ. They arrive as drafts, so you can review them before they go live."
           >
-            {productsError && <Banner tone="critical">{productsError}</Banner>}
-            <Stack gap={3}>
+            <div id="cj-products">
               <div class="cj-grid">
-                {products.map((p) => {
-                  const off = p.available === false
-                  const details = (
-                    <>
-                      {p.image ? (
-                        <img
-                          class={`cj-img${off ? ' cj-off' : ''}`}
-                          src={p.image}
-                          alt=""
-                          loading="lazy"
-                          referrerpolicy="no-referrer"
-                        />
-                      ) : (
-                        <div class="cj-img" />
-                      )}
-                      <div class="cj-body">
-                        <p class="cj-name" title={p.name}>
-                          {p.name}
-                        </p>
-                        <div class="cj-meta">
-                          {p.price && <span class="cj-price">{money(p.price)}</span>}
-                          {p.sku && <Code>{p.sku}</Code>}
-                        </div>
-                      </div>
-                    </>
-                  )
-                  const card = (action: unknown) => (
-                    <div class="cj-card">
-                      {details}
-                      <div class="cj-action">{action}</div>
-                    </div>
-                  )
-                  // CJ took it off sale: nothing to import
-                  if (off) return card(<Badge tone="warning">Off sale</Badge>)
-                  // Already in the catalog: don't import it twice. Once linked, its orders go to CJ.
-                  if (p.inShop && p.linked) return card(<Badge tone="success">In your shop</Badge>)
-                  if (p.inShop) {
-                    return (
-                      <div class="cj-card">
-                        <Form action="/api/link" success="Linked to CJ">
-                          <input type="hidden" name="pid" value={p.pid} />
-                          {details}
-                          <div class="cj-action">
-                            <Button variant="secondary">Link to CJ</Button>
-                          </div>
-                        </Form>
-                      </div>
-                    )
-                  }
-                  return (
-                    <div class="cj-card">
-                      <Form action="/api/import" success="Imported as a draft">
-                        <input type="hidden" name="pid" value={p.pid} />
-                        {details}
-                        <div class="cj-action">
-                          <Button variant="secondary">Import</Button>
-                        </div>
-                      </Form>
-                    </div>
-                  )
-                })}
+                {[0, 1, 2, 3].map(() => (
+                  <div class="cj-skel" />
+                ))}
               </div>
-              {!productsError && products.length === 0 && <Text tone="subdued">Nothing in My Products yet.</Text>}
-            </Stack>
+            </div>
             <Form action="/api/import" success="Imported as a draft">
               <TextField label="Or a CJ product ID" name="pid" placeholder="1444929719182168064" />
               <div>

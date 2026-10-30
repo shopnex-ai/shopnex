@@ -23,6 +23,7 @@ import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@s
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './errors'
 import { instanceSigner, ownKey } from './keys'
+import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl } from './marketplace'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
@@ -394,33 +395,20 @@ async function install(
   return installation!
 }
 
-// --- App Store (marketplace apps synced to this instance) ---
+// --- Catalog (every app a shop can install, whatever its source) ---
 
-// Installable marketplace apps, with whether this shop already has each
-export async function listAppStore(shopId: string) {
-  const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
-    .from(schema.apps)
-    .leftJoin(
-      schema.appInstallations,
-      and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
-      ),
-    )
-    .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
-    .orderBy(asc(schema.apps.name))
-  return rows.map((r) => ({ ...publicApp(r.app), installed: r.installationId !== null }))
-}
+export type AppOrigin = 'bundled' | 'marketplace' | 'custom'
 
 /**
- * Bundled apps (see BUNDLED_APPS) this shop hasn't installed yet, to install from Admin → Apps. Payments apps are
- * left out: they are installed from Settings → Payments, which also sets up their payment method.
+ * One list for everything installable from Admin → Apps: apps that ship with this install (BUNDLED_APPS),
+ * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
+ * Payments apps are left out: they are installed from Settings → Payments, which also sets up their payment method.
  */
-export async function listAvailableBundledApps(shopId: string) {
-  const bundled = BUNDLED_APPS.filter((b) => !b.scopes.includes('write_payment_sessions')).map((b) => b.clientId)
-  if (bundled.length === 0) return []
+export async function listCatalog(shopId: string) {
+  const bundled = new Set(BUNDLED_APPS.map((b) => b.clientId))
+  const payments = new Set(
+    BUNDLED_APPS.filter((b) => b.scopes.includes('write_payment_sessions')).map((b) => b.clientId),
+  )
   const rows = await db
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
@@ -432,11 +420,15 @@ export async function listAvailableBundledApps(shopId: string) {
         isNull(schema.appInstallations.uninstalledAt),
       ),
     )
-    .where(
-      and(eq(schema.apps.source, 'custom'), isNull(schema.apps.delistedAt), inArray(schema.apps.clientId, bundled)),
-    )
+    .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows.filter((r) => r.installationId === null).map((r) => publicApp(r.app))
+  return rows
+    .filter((r) => !payments.has(r.app.clientId))
+    .map((r) => {
+      const origin: AppOrigin =
+        r.app.source === 'marketplace' ? 'marketplace' : bundled.has(r.app.clientId) ? 'bundled' : 'custom'
+      return { ...publicApp(r.app), origin, installationId: r.installationId, installed: r.installationId !== null }
+    })
 }
 
 // --- installations (shop owners/admins) ---
@@ -631,13 +623,15 @@ export async function deleteAppData(token: ApiToken, key: string) {
 /**
  * First-party apps that ship with Shopnex and run next to it (e.g. apps/stripe). Each is registered as a
  * custom, managed app with a fixed client id, so staff only click Install. Shopnex learns its public key from
- * the app itself (GET {url}/.well-known/shopnex-app.json), so the only setting is the app's URL; without it the
- * app is left alone. The URL is operator config, which is why the key is trusted.
+ * the app itself (GET {url}/.well-known/shopnex-app.json). The address is operator config, which is why the key is
+ * trusted: either <NAME>_APP_URL, or, with SHOPNEX_BUNDLED_APPS=docker (the Compose files), the app's default
+ * internal address on the Compose network, where the app announces its own public URL. Otherwise it is left alone.
  */
 const BUNDLED_APPS = [
   {
     clientId: 'app_stripe',
     urlEnv: 'STRIPE_APP_URL',
+    internalUrl: 'http://stripe:4600',
     name: 'Stripe',
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
@@ -645,6 +639,7 @@ const BUNDLED_APPS = [
   {
     clientId: 'app_cj_dropshipping',
     urlEnv: 'CJ_DROPSHIPPING_APP_URL',
+    internalUrl: 'http://cj-dropshipping:4700',
     name: 'CJ Dropshipping',
     description: 'Import CJ Dropshipping products and send paid orders to CJ.',
     // write_shipping: quote CJ's shipping prices at checkout (a carrier service)
@@ -654,23 +649,40 @@ const BUNDLED_APPS = [
 
 type BundledApp = (typeof BUNDLED_APPS)[number]
 
-async function syncBundledApp(bundled: BundledApp, url: string) {
-  const res = await fetch(`${url}/.well-known/shopnex-app.json`, {
+// An announced public URL is shown to staff and opened in their browser: https, or plain http on this machine only
+function publicOrigin(value: unknown) {
+  if (typeof value !== 'string') return null
+  try {
+    const url = new URL(value)
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    return url.protocol === 'https:' || (url.protocol === 'http:' && local) ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+/** `url` is the operator's <NAME>_APP_URL; without it the app is at its internal address and announces its own */
+async function syncBundledApp(bundled: BundledApp, url: string | undefined) {
+  const reach = url ?? bundled.internalUrl
+  const res = await fetch(`${serverUrl(reach)}/.well-known/shopnex-app.json`, {
     redirect: 'error',
     signal: AbortSignal.timeout(5000),
   })
-  if (!res.ok) throw new Error(`${url} answered ${res.status}`)
-  const identity = (await res.json()) as { clientId?: string; publicKey?: string }
+  if (!res.ok) throw new Error(`${reach} answered ${res.status}`)
+  const identity = (await res.json()) as { clientId?: string; publicKey?: string; appUrl?: string }
   if (identity.clientId !== bundled.clientId || typeof identity.publicKey !== 'string') {
-    throw new Error(`${url} is not the ${bundled.name} app`)
+    throw new Error(`${reach} is not the ${bundled.name} app`)
   }
   await importPublicKey(identity.publicKey) // throws unless it's an Ed25519 key
+  const appUrl = url ?? publicOrigin(identity.appUrl)
+  if (!appUrl) throw new Error(`${reach} announced no usable public URL (https, or http on localhost)`)
+  if (!url) rememberInternalUrl(appUrl, bundled.internalUrl)
   const values = {
     source: 'custom' as const,
     name: bundled.name,
     description: bundled.description,
-    iconUrl: `${url}/icon.svg`,
-    appUrl: url,
+    iconUrl: `${appUrl}/icon.svg`,
+    appUrl,
     redirectUrls: [],
     scopes: normalizeScopes(bundled.scopes),
     publicKey: identity.publicKey,
@@ -683,21 +695,23 @@ async function syncBundledApp(bundled: BundledApp, url: string) {
 }
 
 /**
- * Registers the configured bundled apps. The app may start after Shopnex, so a failure is retried with a growing
- * delay; once registered it is checked again now and then, which picks up a replaced key (the app's data folder
- * was recreated: it is a new app and merchants reconnect).
+ * Registers the bundled apps that are configured or, under Docker, found. The app may start after Shopnex (or not
+ * at all: an optional app), so a failure is retried with a growing delay; once registered it is checked again now
+ * and then, which picks up a replaced key (the app's data folder was recreated: it is a new app and merchants
+ * reconnect). An app that is not configured and not answering is not an error, so it is retried quietly.
  */
 export function registerBundledApps() {
+  const docker = process.env.SHOPNEX_BUNDLED_APPS === 'docker'
   for (const bundled of BUNDLED_APPS) {
-    const url = process.env[bundled.urlEnv]?.trim().replace(/\/$/, '')
-    if (!url) continue
+    const url = process.env[bundled.urlEnv]?.trim().replace(/\/$/, '') || undefined
+    if (!url && !docker) continue
     const attempt = async (failures: number) => {
       let next = 10 * 60_000
       try {
         await syncBundledApp(bundled, url)
         failures = 0
       } catch (error) {
-        if (failures === 0)
+        if (failures === 0 && url)
           console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
         next = Math.min(5000 * 2 ** failures, 60_000)
         failures++

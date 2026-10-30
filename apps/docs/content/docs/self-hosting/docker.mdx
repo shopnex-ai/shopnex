@@ -3,6 +3,10 @@ title: Docker & Render
 description: Deploy the single-image build.
 ---
 
+## Docker Compose
+
+To run Shopnex, its Stripe app and Postgres from prebuilt images, use `deploy/docker-compose.yml` (see [Dokploy & similar platforms](/docs/self-hosting/dokploy)). The `docker-compose.yml` at the repository root builds the same stack from source, for contributors.
+
 ## Docker
 
 The `Dockerfile` builds the admin and the default storefront into one Node 24 image with Caddy.
@@ -31,7 +35,8 @@ If any process exits, the container exits so your platform restarts it.
 `render.yaml` is a Render Blueprint: a Docker web service on the `v2` branch with a managed Postgres database, a generated `BETTER_AUTH_SECRET`, and `TENANCY_MODE=single`. `APP_URL` falls back to `RENDER_EXTERNAL_URL`. The health check is `/admin/login`.
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
+  first.
 </Callout>
 
 ## Storefronts on their own domain

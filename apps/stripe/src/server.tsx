@@ -14,20 +14,15 @@ import { ShopnexError, createShopnexApp, type RefundSessionRequest, type ShopCon
 import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
 
-const env = (name: string) => {
-  const value = process.env[name]
-  if (!value) throw new Error(`Missing ${name} (see .env.example)`)
-  return value
-}
 // Public origin Shopnex, the admin (iframe) and Stripe reach this app at
-const APP_URL = env('STRIPE_APP_URL').replace(/\/$/, '')
+const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 
 // The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). Shopnex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const store = await openLocalStore()
-const shopnex = createShopnexApp({ clientId: 'app_stripe', appKey: store.appKey, data: store.dataFor })
+const shopnex = createShopnexApp({ clientId: 'app_stripe', appUrl: APP_URL, appKey: store.appKey, data: store.dataFor })
 
 // --- the shop's Stripe connection (app data) ---
 

@@ -31,6 +31,22 @@ a typed API and webhooks, and extend it with out-of-process apps. No code or CLI
 
 ## Quick start
 
+Requires [Docker](https://docs.docker.com/get-docker/).
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/docker-compose.yml
+docker compose up
+```
+
+Open http://localhost:3000 once the logs settle and follow the setup wizard to create the owner account.
+Ctrl+C stops it; add `-d` (`docker compose up -d`) to keep it running in the background.
+Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
+
+No `.env` needed. For a public server, set `APP_URL`, `STRIPE_APP_URL` and `POSTGRES_PASSWORD`, and pin
+`SHOPNEX_VERSION` to a release tag; see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
+
+## Development
+
 Requires Node (see `.node-version`), [pnpm](https://pnpm.io) and PostgreSQL.
 
 ```sh
@@ -39,9 +55,6 @@ cp .env.example .env        # set the database URL and app secret
 pnpm db:migrate
 pnpm dev                    # admin on :3000, storefront on :4321
 ```
-
-Open http://localhost:3000 and follow the setup wizard to create the owner account and your shop.
-Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
 
 ## Documentation
 

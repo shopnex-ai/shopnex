@@ -106,7 +106,13 @@ export function DiscountList({ currency }: { currency: string }) {
       <PageHeader
         title="Discounts"
         description="Codes buyers enter at checkout. One code per order."
-        actions={<div className="flex gap-2"><ImportDiscountsDialog currency={currency} /><ExportDiscountsDialog /><DiscountDialog currency={currency} /></div>}
+        actions={
+          <div className="flex gap-2">
+            <ImportDiscountsDialog currency={currency} />
+            <ExportDiscountsDialog />
+            <DiscountDialog currency={currency} />
+          </div>
+        }
       />
       <Card>
         <CardContent>
@@ -117,15 +123,17 @@ export function DiscountList({ currency }: { currency: string }) {
             isPending={isPending}
             error={error}
             empty="No discounts yet."
-            selectionActions={(ids, clearSelection) => <DeleteSelectedButton
-              ids={ids}
-              entity={ids.length === 1 ? 'discount' : 'discounts'}
-              remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
-              onDeleted={async () => {
-                clearSelection()
-                await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
-              }}
-            />}
+            selectionActions={(ids, clearSelection) => (
+              <DeleteSelectedButton
+                ids={ids}
+                entity={ids.length === 1 ? 'discount' : 'discounts'}
+                remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
+                onDeleted={async () => {
+                  clearSelection()
+                  await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
+                }}
+              />
+            )}
           />
         </CardContent>
       </Card>
