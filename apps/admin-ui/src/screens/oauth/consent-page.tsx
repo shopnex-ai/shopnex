@@ -66,8 +66,8 @@ export function ConsentPage() {
 
 function Shell({ title, description, children }: { title: string; description: string; children?: React.ReactNode }) {
   return (
-    // Rendered inside the admin layout: fill what is left under the header (h-12) and the content padding
-    <div className="flex min-h-[calc(100svh-5rem)] w-full flex-col items-center justify-center py-6 md:min-h-[calc(100svh-6rem)]">
+    // Inside the admin layout, which already pads the content: no fixed height to fit, so it can't overflow
+    <div className="mx-auto flex w-full max-w-md flex-col items-center py-4 md:py-8">
       <ShopnexBrand />
       <Card className="w-full max-w-md">
         <CardHeader>
