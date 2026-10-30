@@ -2,6 +2,7 @@
 // admin (window.shopnex is the app bridge) and wires the declarative attributes the components render:
 //   <form data-shopnex-action="/api/settings">   JSON body → authenticatedFetch
 //   <button data-shopnex-action="/api/refresh">  POST → authenticatedFetch
+//   <button data-shopnex-copy="text">         copies the text to the clipboard (see CopyableCode)
 //   data-reload        reload the page on success (with a fresh session token)
 //   data-success="…"   toast on success (default: the response's `message`)
 // The response may carry { message, redirect }. Errors show in the form's [data-shopnex-error] and as a toast.
@@ -61,5 +62,25 @@ document.addEventListener('click', (event) => {
   if (!button) return
   event.preventDefault()
   run(button, { method: button.dataset.method ?? 'POST' })
+})
+
+document.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-shopnex-copy]')
+  if (!button) return
+  const value = button.dataset.shopnexCopy
+  try {
+    await navigator.clipboard.writeText(value)
+  } catch {
+    // Clipboard API refused (no permission, or an insecure origin): fall back to selecting a temporary field
+    const field = document.createElement('textarea')
+    field.value = value
+    document.body.append(field)
+    field.select()
+    document.execCommand('copy')
+    field.remove()
+  }
+  const label = button.dataset.label ??= button.textContent
+  button.textContent = 'Copied'
+  setTimeout(() => (button.textContent = label), 1500)
 })
 `
