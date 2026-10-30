@@ -5,6 +5,7 @@ import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
 import { ContentError } from '@shopnex/content'
+import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
 import { FilesError } from '@shopnex/files'
 import { OrderError } from '@shopnex/orders'
@@ -156,7 +157,7 @@ type ErrorData<C extends keyof StorefrontErrorMap> = StorefrontErrorMap[C] exten
   ? [data: z.input<StorefrontErrorMap[C]['data']>]
   : []
 
-const defined = <C extends keyof StorefrontErrorMap>(code: C, message: string, ...[data]: ErrorData<C>) => {
+export const defined = <C extends keyof StorefrontErrorMap>(code: C, message: string, ...[data]: ErrorData<C>) => {
   const config: { status?: number } = storefrontErrorMap[code]
   return new ORPCError(code, { defined: true, status: config.status, message, data })
 }
@@ -190,6 +191,21 @@ const storefrontErrors = base.middleware(async ({ next }) => {
         case 'INVALID_PAYMENT_METHOD':
           throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
       }
+    }
+    if (error instanceof AccountError) {
+      switch (error.code) {
+        case 'INVALID_CODE':
+          throw defined('INVALID_CODE', error.message)
+        case 'TOO_MANY_REQUESTS':
+          throw defined('TOO_MANY_REQUESTS', error.message)
+        case 'INVALID_EMAIL':
+          throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
+      }
+    }
+    if (error instanceof EmailError && (error.code === 'EMAIL_OFF' || error.code === 'EMAIL_FAILED')) {
+      // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available
+      if (error.code === 'EMAIL_FAILED') console.error('[customers] sign-in code email:', error.message)
+      throw defined('CUSTOMER_LOGIN_UNAVAILABLE', 'Sign-in is not available right now')
     }
     if (error instanceof OrderError) {
       if (error.code === 'OUT_OF_STOCK' && error.data.variantId) {

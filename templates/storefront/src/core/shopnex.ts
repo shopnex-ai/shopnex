@@ -12,6 +12,10 @@ const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined
 
 export const shopnex = createStorefrontClient({ baseUrl, publishableKey })
 
+/** A client acting for a signed-in customer (their token from the account cookie, see core/account) */
+export const shopnexFor = (customerToken: string | undefined) =>
+  createStorefrontClient({ baseUrl, publishableKey, customerToken })
+
 /** What the browser needs to call the Storefront API (both are public) */
 export const browserConfig = {
   baseUrl: env('SHOPNEX_PUBLIC_URL') || baseUrl,
