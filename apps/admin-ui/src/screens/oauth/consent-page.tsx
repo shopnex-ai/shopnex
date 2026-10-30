@@ -1,9 +1,7 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useLoaderData, useRouter } from '@tanstack/react-router'
+import { useLoaderData } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
-import { orpc } from '@/lib/orpc'
 import { SCOPE_RESOURCES, accessOf } from '@/lib/scopes'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,22 +10,14 @@ import { approveConsent, denyConsent } from './functions'
 export function ConsentPage() {
   const data = useLoaderData({ from: '/admin/oauth/authorize' })
   const [pending, setPending] = useState(false)
-  const router = useRouter()
-  const queryClient = useQueryClient()
   if ('error' in data && data.error) return <Shell title="Can't install this app" description={data.error} />
   if (!('app' in data)) return null
   const go = async (approve: boolean) => {
     setPending(true)
     try {
       const url = approve ? await approveConsent({ data: data.request }) : await denyConsent({ data: data.request })
-      if (url.startsWith('/')) {
-        // Back inside the admin: no page reload, but the sidebar's installed apps must pick up the change
-        await queryClient.invalidateQueries({ queryKey: orpc.admin.apps.key() })
-        await router.navigate({ href: url })
-      } else {
-        window.location.assign(url) // the app's site: leaves the admin
-      }
-      // Stay "pending" on success: the page is about to go away, and re-enabling the buttons now would flash them
+      window.location.assign(url)
+      // Stay pending on success: the page is about to go away, and re-enabling the buttons now would flash them
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Something went wrong')
       setPending(false)
