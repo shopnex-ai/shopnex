@@ -4,7 +4,14 @@
 // Sorting/filtering happen on the server, so the table only uses core features.
 import { Link, useNavigate, useRouter, type ToOptions } from '@tanstack/react-router'
 import type { MouseEvent, ReactNode } from 'react'
-import { createColumnHelper, rowSelectionFeature, tableFeatures, useTable, type ColumnDef, type RowData } from '@tanstack/react-table'
+import {
+  createColumnHelper,
+  rowSelectionFeature,
+  tableFeatures,
+  useTable,
+  type ColumnDef,
+  type RowData,
+} from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -73,15 +80,24 @@ export function DataTable<TData extends RowData>({
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
                 <TableHead className="w-10">
-                  <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center" onClick={(event) => {
-                    event.stopPropagation()
-                    if ((event.target as HTMLElement).tagName !== 'INPUT') table.toggleAllPageRowsSelected()
-                  }}>
-                    <input type="checkbox" aria-label="Select all rows on this page" checked={table.getIsAllPageRowsSelected()}
+                  <div
+                    className="-m-2 flex min-h-10 cursor-pointer items-center justify-center"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      if ((event.target as HTMLElement).tagName !== 'INPUT') table.toggleAllPageRowsSelected()
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      aria-label="Select all rows on this page"
+                      checked={table.getIsAllPageRowsSelected()}
                       ref={(element) => {
-                        if (element) element.indeterminate = table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
+                        if (element)
+                          element.indeterminate = table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
                       }}
-                      onChange={table.getToggleAllPageRowsSelectedHandler()} className="size-4 cursor-pointer accent-primary" />
+                      onChange={table.getToggleAllPageRowsSelectedHandler()}
+                      className="size-4 cursor-pointer accent-primary"
+                    />
                   </div>
                 </TableHead>
                 {selectedIds.length > 0 ? (
@@ -91,11 +107,13 @@ export function DataTable<TData extends RowData>({
                       {selectionActions?.(selectedIds, () => table.resetRowSelection(true))}
                     </div>
                   </TableHead>
-                ) : group.headers.map((header) => (
-                  <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
+                ) : (
+                  group.headers.map((header) => (
+                    <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    </TableHead>
+                  ))
+                )}
               </TableRow>
             ))}
           </TableHeader>
@@ -129,15 +147,23 @@ export function DataTable<TData extends RowData>({
                   onClick={rowLink ? onRowClick(rowLink(row.original)) : undefined}
                   className={rowLink ? 'cursor-pointer' : undefined}
                 >
-                    <TableCell className="w-10 cursor-pointer" onClick={(event) => {
+                  <TableCell
+                    className="w-10 cursor-pointer"
+                    onClick={(event) => {
                       event.stopPropagation()
                       if ((event.target as HTMLElement).tagName !== 'INPUT') row.toggleSelected()
-                    }}>
-                      <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center">
-                        <input type="checkbox" aria-label={`Select row ${row.id}`} checked={row.getIsSelected()}
-                          onChange={row.getToggleSelectedHandler()} className="size-4 cursor-pointer accent-primary" />
-                      </div>
-                    </TableCell>
+                    }}
+                  >
+                    <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select row ${row.id}`}
+                        checked={row.getIsSelected()}
+                        onChange={row.getToggleSelectedHandler()}
+                        className="size-4 cursor-pointer accent-primary"
+                      />
+                    </div>
+                  </TableCell>
                   {row.getAllCells().map((cell, i) => (
                     <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                       {i === 0 && rowLink ? (

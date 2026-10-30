@@ -88,7 +88,9 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSectionId, ready])
 
-  const src = token ? `${storefrontUrl.replace(/\/$/, '')}${path}?${THEME_PREVIEW_PARAM}=${encodeURIComponent(token)}` : null
+  const src = token
+    ? `${storefrontUrl.replace(/\/$/, '')}${path}?${THEME_PREVIEW_PARAM}=${encodeURIComponent(token)}`
+    : null
 
   return (
     <div className="flex h-full flex-col">
