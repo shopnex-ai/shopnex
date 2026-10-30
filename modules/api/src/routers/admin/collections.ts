@@ -15,26 +15,33 @@ const write = scoped('write_products')
 const readPublications = scoped('read_publications')
 const writePublications = scoped('write_publications')
 
+type CollectionRow = NonNullable<Awaited<ReturnType<typeof collectionService.getById>>>
+
+// A collection with its product count and the channels it is published on
+async function withExtras(shopId: string, rows: CollectionRow[]) {
+  const ids = rows.map((r) => r.id)
+  const counts = await collectionService.productCounts(shopId, ids)
+  const publications = await publicationService.listFor(shopId, 'collection', ids)
+  return rows.map((r) => ({
+    ...r,
+    productCount: counts.get(r.id) ?? 0,
+    publications: publications.get(r.id) ?? [],
+  }))
+}
+
 export const collections = {
   list: read
     .route({ method: 'GET', path: '/admin/collections' })
     .input(pagination)
+    .handler(async ({ input, context }) => withExtras(context.shop.id, await collectionService.list(context.shop.id, input))),
+
+  get: read
+    .route({ method: 'GET', path: '/admin/collections/{id}' })
+    .input(id)
     .handler(async ({ input, context }) => {
-      const rows = await collectionService.list(context.shop.id, input)
-      const counts = await collectionService.productCounts(
-        context.shop.id,
-        rows.map((r) => r.id),
-      )
-      const publications = await publicationService.listFor(
-        context.shop.id,
-        'collection',
-        rows.map((r) => r.id),
-      )
-      return rows.map((r) => ({
-        ...r,
-        productCount: counts.get(r.id) ?? 0,
-        publications: publications.get(r.id) ?? [],
-      }))
+      const row = await collectionService.getById(context.shop.id, input.id)
+      if (!row) throw new ORPCError('NOT_FOUND')
+      return (await withExtras(context.shop.id, [row]))[0]!
     }),
 
   publications: readPublications
