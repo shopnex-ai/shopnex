@@ -6,6 +6,7 @@ import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
+import { checkoutBranding } from './branding'
 
 const tokenValidator = (token: string) => token
 
@@ -16,6 +17,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
     if (!found) return null
     const shop = await getShopById(found.shopId)
     if (!shop) return null
+    const branding = await checkoutBranding(found.shopId, shop.storefrontUrl)
     if (found.status === 'completed' && found.orderId) {
       const [order, payment] = await Promise.all([
         orderService.getById(found.shopId, found.orderId),
@@ -27,6 +29,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
             token,
             shopName: shop.name,
             storefrontUrl: shop.storefrontUrl,
+            branding,
             order,
             // Payments app orders: the latest attempt (null for manual methods)
             payment: payment && { status: payment.status, error: payment.errorMessage },
@@ -44,6 +47,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
       kind: 'checkout' as const,
       shopName: shop.name,
       storefrontUrl: shop.storefrontUrl,
+      branding,
       cart,
       options,
       tax,

@@ -101,6 +101,21 @@ export const ThemePreset = z.object({
   pages: z.record(Id, ThemePage).optional(),
 })
 
+/**
+ * Which of the theme's settings brand the hosted checkout (it isn't rendered by the theme): each names a
+ * setting id. Colors take `color` settings, fonts `select` ones (the option value is a Google Fonts family,
+ * or "System"/"system"), `logo` an `image` one. Left out, checkout keeps Shopnex's own look for that part.
+ */
+export const ThemeCheckoutBranding = z.object({
+  background: Id.optional(),
+  text: Id.optional(),
+  /** Buttons and links */
+  accent: Id.optional(),
+  headingFont: Id.optional(),
+  bodyFont: Id.optional(),
+  logo: Id.optional(),
+})
+
 export const ThemeDefinition = z.object({
   /** Documents are stored per theme id: keep it stable across versions */
   id: Id,
@@ -113,12 +128,17 @@ export const ThemeDefinition = z.object({
     z.object({
       name: z.string().min(1).max(100),
       /** Where the editor's preview shows this page (e.g. "/collections/all"); "/" for "home" when left out */
-      path: z.string().regex(/^\/[^?#]*$/, 'A path like /collections/all').optional(),
+      path: z
+        .string()
+        .regex(/^\/[^?#]*$/, 'A path like /collections/all')
+        .optional(),
       sections: z.array(ThemeSection),
     }),
   ),
   /** Styles the merchant can start from, in display order. The theme's own defaults are always offered too. */
   presets: z.record(Id, ThemePreset).default({}),
+  /** How the hosted checkout picks up the theme's look; without it checkout isn't themed */
+  checkout: ThemeCheckoutBranding.optional(),
 })
 
 /** What a storefront with several themes serves at THEME_DEFINITION_PATH. The first one is its default. */
@@ -163,6 +183,7 @@ export type ThemeSettingField = z.infer<typeof ThemeSettingField>
 export type ThemeSettingFieldInput = z.input<typeof ThemeSettingField>
 export type ThemeSectionDefinition = z.infer<typeof ThemeSectionDefinition>
 export type ThemePreset = z.infer<typeof ThemePreset>
+export type ThemeCheckoutBranding = z.infer<typeof ThemeCheckoutBranding>
 export type ThemeDefinition = z.infer<typeof ThemeDefinition>
 /** What theme authors write (defaults not yet applied) */
 export type ThemeDefinitionInput = z.input<typeof ThemeDefinition>
