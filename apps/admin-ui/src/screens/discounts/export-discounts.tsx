@@ -13,8 +13,15 @@ export function ExportDiscountsDialog() {
     return { csv: discountsCsv(source, discounts), count: discounts.length }
   }
 
-  return <ExportDialog title="Export discounts" noun="discounts" filename={`shopnex-discounts-${source}`} build={build}
-    description="Download your discount codes as a CSV formatted for another commerce platform.">
-    <FormatSelect label="Export format" value={source} options={formats} onChange={setSource} />
-  </ExportDialog>
+  return (
+    <ExportDialog
+      title="Export discounts"
+      noun="discounts"
+      filename={`shopnex-discounts-${source}`}
+      build={build}
+      description="Download your discount codes as a CSV formatted for another commerce platform."
+    >
+      <FormatSelect label="Export format" value={source} options={formats} onChange={setSource} />
+    </ExportDialog>
+  )
 }

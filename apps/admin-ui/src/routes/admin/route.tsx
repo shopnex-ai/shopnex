@@ -53,7 +53,11 @@ function AdminLayout() {
     <SidebarProvider defaultOpen>
       <NavigationProgress />
       <AppSidebar
-        shop={{ name: tenant.shop.name, superAdmin: tenant.superAdmin }}
+        shop={{
+          name: tenant.shop.name,
+          superAdmin: tenant.superAdmin,
+          canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',
+        }}
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
       />
       <SidebarInset>

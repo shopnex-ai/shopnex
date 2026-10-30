@@ -2,6 +2,7 @@
 // its data in DATA_DIR (SQLite): the shop's CJ key is stored there, encrypted with this app's key.
 //
 //   GET  /                          Embedded settings page (session token)
+//   GET  /api/products              My Products cards (HTML), loaded by the settings page after it opens
 //   POST /api/connect               Save the CJ API key, subscribe to paid orders
 //   POST /api/settings              Markup and auto-pay
 //   POST /api/import                CJ product → draft Shopnex product (already in the shop: link it instead)
@@ -31,7 +32,7 @@ import {
 } from './import'
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
-import { icon, SettingsPage, type MyProduct } from './settings'
+import { icon, ProductList, SettingsPage, type MyProduct } from './settings'
 
 // Public origin Shopnex and the admin (iframe) reach this app at
 const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
@@ -105,8 +106,6 @@ app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml',
 app.get('/', async (c) => {
   const shop = await shopnex.authenticate(c)
   const connected = await isConnected(shop)
-  let products: MyProduct[] = []
-  let productsError: string | null = null
   let shippingError: string | null = null
   // Registering again is safe, and keeps the service (and its id, which orders are matched on) right after a
   // new install; shops connected before shipping prices existed switch them on here too
@@ -114,39 +113,44 @@ app.get('/', async (c) => {
   // After an uninstall and a new install the subscription is gone: make it again, so paid orders still reach CJ
   if (connected)
     await ensureOrderWebhook(shop).catch((error) => console.warn('[cj] order subscription:', message(error)))
-  if (connected) {
-    try {
-      const { cj } = await cjFor(shop)
-      const result = await cj.products.getMyProducts()
-      if (result.error) productsError = result.error
-      else {
-        const known = tables.availability(shop)
-        const skus = await shopSkus(shop).catch(() => null)
-        const linked = tables.linkedSkus(shop)
-        products = myProducts(result.data).map((p) => ({
-          ...p,
-          available: known.get(p.pid)?.available ?? null,
-          inShop: inShop(skus, p.sku, linked.get(p.pid)),
-          linked: linked.has(p.pid),
-        }))
-        // Unknown or stale ones are checked in the background; their answers show on the next load
-        const unchecked = products.filter((p) => needsCheck(known, p.pid)).map((p) => p.pid)
-        if (unchecked.length > 0) void checkAvailability(shop, tables, unchecked)
-      }
-    } catch (error) {
-      productsError = message(error)
-    }
-  }
   return c.html(
     <SettingsPage
       connected={connected}
       settings={await settingsOf(shop)}
-      products={products}
-      productsError={productsError}
       shippingError={shippingError}
       orders={tables.orders(shop)}
     />,
   )
+})
+
+// My Products, as HTML for the settings page to drop in. CJ allows one call a second, so this is not part of the
+// page load: the page opens first and asks for the list
+app.get('/api/products', async (c) => {
+  const shop = await shopnex.authenticate(c)
+  let products: MyProduct[] = []
+  let productsError: string | null = null
+  try {
+    const { cj } = await cjFor(shop)
+    const result = await cj.products.getMyProducts()
+    if (result.error) productsError = result.error
+    else {
+      const known = tables.availability(shop)
+      const skus = await shopSkus(shop).catch(() => null)
+      const linked = tables.linkedSkus(shop)
+      products = myProducts(result.data).map((p) => ({
+        ...p,
+        available: known.get(p.pid)?.available ?? null,
+        inShop: inShop(skus, p.sku, linked.get(p.pid)),
+        linked: linked.has(p.pid),
+      }))
+      // Unknown or stale ones are checked in the background; their answers show on the next load
+      const unchecked = products.filter((p) => needsCheck(known, p.pid)).map((p) => p.pid)
+      if (unchecked.length > 0) void checkAvailability(shop, tables, unchecked)
+    }
+  } catch (error) {
+    productsError = message(error)
+  }
+  return c.html(<ProductList products={products} productsError={productsError} />)
 })
 
 app.post('/api/connect', async (c) => {
