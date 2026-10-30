@@ -27,6 +27,18 @@ export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
 # Storefront URL in Settings (Themes, editor preview) uses that one.
 export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"
 
+# drizzle-kit swallows the real connection error, so a bad host or password looks like a crashing
+# migration. Connect first and print what pg says (never the URL, it holds the password).
+pnpm --silent --filter @shopnex/db exec node -e '
+const { Client } = require("pg");
+const client = new Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
+client.connect().then(() => client.end()).catch((err) => {
+  console.error("Cannot connect to the database: " + (err.message || err.code || err));
+  console.error("Check DATABASE_URL (host, port, user, password, sslmode) and that the database is reachable from this container.");
+  process.exit(1);
+});
+'
+
 # Migrations are idempotent, so running them on every start also covers updates.
 pnpm db:migrate
 
