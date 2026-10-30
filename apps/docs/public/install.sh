@@ -5,13 +5,14 @@
 #   curl -fsSL https://shopnex.ai/install.sh | SHOPNEX_DOMAIN=shop.example.com sh
 #
 # Installs Docker if it is missing, then runs the released Shopnex images (admin, storefront, Stripe app and
-# Postgres) with Docker Compose in /opt/shopnex. With SHOPNEX_DOMAIN set, Caddy serves HTTPS for the shop on that
-# domain and for the Stripe app on stripe.<domain> (point both DNS records at this server first).
+# Postgres) with Docker Compose in /opt/shopnex. With SHOPNEX_DOMAIN set, the app's built-in Caddy serves HTTPS for
+# the shop on that domain and for the Stripe app on stripe.<domain> (point both DNS records at this server first).
 # Safe to re-run: it keeps your database and .env, and moves to the newest release.
 #
 # Options (environment variables):
 #   SHOPNEX_DOMAIN         public domain. Default: this server's IP on :80, Stripe app on :4600
-#   SHOPNEX_STRIPE_DOMAIN  domain for the Stripe app                          Default: stripe.<SHOPNEX_DOMAIN>
+#   SHOPNEX_STRIPE_DOMAIN  domain for the Stripe app (a custom one runs a separate Caddy container)
+#                                                                              Default: stripe.<SHOPNEX_DOMAIN>
 #   SHOPNEX_VERSION        release tag to install, e.g. v1.2.3                 Default: the latest release
 #   SHOPNEX_DIR            install directory                                   Default: /opt/shopnex
 set -eu
@@ -99,6 +100,7 @@ if [ ! -f "$ENV_FILE" ]; then
   env_set BETTER_AUTH_SECRET "$(openssl rand -hex 32)"
 fi
 env_set SHOPNEX_VERSION "$SHOPNEX_VERSION"
+env_set DOMAIN "$SHOPNEX_DOMAIN"
 env_set APP_URL "$APP_URL"
 env_set STRIPE_APP_URL "$STRIPE_APP_URL"
 env_set SHOPNEX_DOMAIN "$SHOPNEX_DOMAIN"
@@ -142,31 +144,12 @@ else
 fi
 
 # ── web server ───────────────────────────────────────────────────────────────
-# Caddy runs as a container in front of the app. The app itself stays on 127.0.0.1.
-if [ -n "$SHOPNEX_DOMAIN" ]; then
-  $SUDO tee "$SHOPNEX_DIR/Caddyfile" >/dev/null <<EOF
-$SHOPNEX_DOMAIN {
-	reverse_proxy shopnex:3000
-}
-
-$SHOPNEX_STRIPE_DOMAIN {
-	reverse_proxy stripe:4600
-}
-EOF
-  CADDY_PORTS="- '80:80'
-      - '443:443'"
-  STRIPE_BLOCK="  stripe:
-    ports: !reset []
-"
-else
-  $SUDO tee "$SHOPNEX_DIR/Caddyfile" >/dev/null <<EOF
-:80 {
-	reverse_proxy shopnex:3000
-}
-EOF
-  CADDY_PORTS="- '80:80'"
-  STRIPE_BLOCK=""
-fi
+# Releases that know DOMAIN run Caddy inside the app container (HTTPS for the shop and stripe.<domain>). Older
+# releases, and a custom Stripe domain, still get a separate Caddy container in front of the app.
+# TODO: drop the container variant once no supported release needs it.
+BUILTIN_TLS=""
+if $SUDO grep -q 'DOMAIN: ' "$SHOPNEX_DIR/docker-compose.yml"; then BUILTIN_TLS=1; fi
+if [ -n "$SHOPNEX_DOMAIN" ] && [ "$SHOPNEX_STRIPE_DOMAIN" != "stripe.$SHOPNEX_DOMAIN" ]; then BUILTIN_TLS=""; fi
 
 UPDATER_BLOCK=""
 if [ -n "$UPDATER" ]; then
@@ -179,7 +162,58 @@ if [ -n "$UPDATER" ]; then
 "
 fi
 
-$SUDO tee "$SHOPNEX_DIR/docker-compose.override.yml" >/dev/null <<EOF
+if [ -n "$BUILTIN_TLS" ]; then
+  if [ -n "$SHOPNEX_DOMAIN" ]; then
+    # The app container terminates HTTPS itself; the Stripe app sits behind it. Nothing listens on :3000 here.
+    APP_PORTS="    ports: !override
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+"
+    STRIPE_BLOCK="  stripe:
+    ports: !reset []
+"
+  else
+    # No domain: plain HTTP on :80 straight to the app
+    APP_PORTS="    ports: !override
+      - '80:3000'
+      - '127.0.0.1:3000:3000'
+"
+    STRIPE_BLOCK=""
+  fi
+  $SUDO tee "$SHOPNEX_DIR/docker-compose.override.yml" >/dev/null <<EOF
+# Written by install.sh; re-running the installer replaces it.
+services:
+  shopnex:
+${APP_PORTS}${UPDATER_BLOCK}${STRIPE_BLOCK}
+EOF
+else
+  if [ -n "$SHOPNEX_DOMAIN" ]; then
+    $SUDO tee "$SHOPNEX_DIR/Caddyfile" >/dev/null <<EOF
+$SHOPNEX_DOMAIN {
+	reverse_proxy shopnex:3000
+}
+
+$SHOPNEX_STRIPE_DOMAIN {
+	reverse_proxy stripe:4600
+}
+EOF
+    CADDY_PORTS="- '80:80'
+      - '443:443'"
+    STRIPE_BLOCK="  stripe:
+    ports: !reset []
+"
+  else
+    $SUDO tee "$SHOPNEX_DIR/Caddyfile" >/dev/null <<EOF
+:80 {
+	reverse_proxy shopnex:3000
+}
+EOF
+    CADDY_PORTS="- '80:80'"
+    STRIPE_BLOCK=""
+  fi
+
+  $SUDO tee "$SHOPNEX_DIR/docker-compose.override.yml" >/dev/null <<EOF
 # Written by install.sh; re-running the installer replaces it.
 services:
   shopnex:
@@ -200,6 +234,7 @@ volumes:
   caddy_data:
   caddy_config:
 EOF
+fi
 
 # ── start ────────────────────────────────────────────────────────────────────
 say "Downloading and starting Shopnex"
@@ -209,7 +244,16 @@ $SUDO docker compose up -d --remove-orphans
 
 say "Waiting for Shopnex to answer"
 tries=0
-until curl -fsS -o /dev/null http://127.0.0.1:3000/admin/login 2>/dev/null; do
+# With built-in HTTPS nothing listens on :3000 on the host, so ask the admin app inside the container directly
+# (this also works before the certificate is issued).
+healthy() {
+  if [ -n "$BUILTIN_TLS" ] && [ -n "$SHOPNEX_DOMAIN" ]; then
+    $SUDO docker compose exec -T shopnex node -e 'fetch("http://127.0.0.1:3001/admin/login").then(r=>process.exit(r.ok?0:1),()=>process.exit(1))' >/dev/null 2>&1
+  else
+    curl -fsS -o /dev/null http://127.0.0.1:3000/admin/login 2>/dev/null
+  fi
+}
+until healthy; do
   tries=$((tries + 1))
   [ "$tries" -lt 60 ] || die "Shopnex did not start. See the logs: cd $SHOPNEX_DIR && docker compose logs shopnex"
   sleep 2
