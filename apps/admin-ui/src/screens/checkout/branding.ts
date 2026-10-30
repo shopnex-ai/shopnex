@@ -76,6 +76,8 @@ export async function checkoutBranding(shopId: string, storefrontUrl: string | n
 
     const style: Record<string, string> = {}
     if (background) {
+      // Native controls (radios, checkboxes, autofill) follow color-scheme, not our variables
+      style['colorScheme'] = luminance(background) > 0.4 ? 'light' : 'dark'
       style['--background'] = background
       style['--card'] = background
       style['--popover'] = background
