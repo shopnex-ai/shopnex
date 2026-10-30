@@ -2,43 +2,23 @@
 
 import {
   ArrowLeftIcon,
-  BellIcon,
-  BlocksIcon,
   BookOpenIcon,
   CheckIcon,
   ChevronsUpDownIcon,
-  CodeIcon,
-  CreditCardIcon,
   ExternalLinkIcon,
-  LayersIcon,
-  GlobeIcon,
-  HardDriveIcon,
-  HouseIcon,
-  KeyRoundIcon,
   LogOutIcon,
-  MailIcon,
-  MenuIcon,
-  NotebookTextIcon,
   MonitorIcon,
   MoonIcon,
-  PackageIcon,
-  PercentIcon,
   SettingsIcon,
-  Share2Icon,
   StoreIcon,
-  ShoppingCartIcon,
   SunIcon,
-  TicketPercentIcon,
-  TruckIcon,
-  UserCogIcon,
-  UsersIcon,
-  WebhookIcon,
-  type LucideIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useLocation, type ToOptions } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
+import { GlobalSearch } from '@/components/admin/global-search'
+import { nav, settingsNav, type NavItem } from '@/components/admin/nav'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
 import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
@@ -73,75 +53,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
-type NavItem = {
-  href: NonNullable<ToOptions['to']>
-  label: string
-  icon: LucideIcon
-  /** Only this exact path is active */ exact?: boolean
-  /** Hidden from everyone else */ superAdminOnly?: boolean
-}
-
-// Add screens here as they're built
-const nav: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'Store',
-    items: [
-      { href: '/admin', label: 'Home', icon: HouseIcon, exact: true },
-      { href: '/admin/orders', label: 'Orders', icon: ShoppingCartIcon },
-      { href: '/admin/products', label: 'Products', icon: PackageIcon },
-      { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
-      { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
-      { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
-      // Theme library and editor; Pages and Navigation are their own entries
-      { href: '/admin/online-store/themes', label: 'Online store', icon: StoreIcon },
-      { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
-      { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
-      { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
-    ],
-  },
-]
-
-// Under /admin/settings the sidebar shows these instead of the main nav, one page each
-const settingsNav: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'Shop',
-    items: [
-      { href: '/admin/settings/general', label: 'General', icon: StoreIcon },
-      { href: '/admin/settings/staff', label: 'Staff', icon: UserCogIcon },
-      { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
-    ],
-  },
-  {
-    label: 'Checkout',
-    items: [
-      { href: '/admin/settings/payments', label: 'Payments', icon: CreditCardIcon },
-      { href: '/admin/settings/shipping', label: 'Shipping', icon: TruckIcon },
-      { href: '/admin/settings/taxes', label: 'Taxes', icon: PercentIcon },
-    ],
-  },
-  {
-    label: 'Files',
-    items: [{ href: '/admin/settings/storage', label: 'Storage', icon: HardDriveIcon }],
-  },
-  {
-    label: 'Email',
-    items: [
-      { href: '/admin/settings/email', label: 'Sending', icon: MailIcon },
-      { href: '/admin/settings/notifications', label: 'Notifications', icon: BellIcon },
-    ],
-  },
-  {
-    label: 'Developers',
-    items: [
-      { href: '/admin/settings/channels', label: 'Sales channels', icon: Share2Icon },
-      { href: '/admin/settings/marketplace', label: 'Marketplace', icon: BlocksIcon, superAdminOnly: true },
-      { href: '/admin/settings/storefront-keys', label: 'Storefront keys', icon: KeyRoundIcon },
-      { href: '/admin/settings/api-tokens', label: 'API tokens', icon: CodeIcon },
-      { href: '/admin/settings/webhooks', label: 'Webhooks', icon: WebhookIcon },
-    ],
-  },
-]
-
 export type SidebarShop = {
   id: string
   name: string
@@ -170,6 +81,11 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
     <Sidebar collapsible="icon">
       <SidebarHeader>{inSettings ? <SettingsHeader /> : <ShopIdentity shop={shop} />}</SidebarHeader>
       <SidebarContent>
+        <SidebarGroup className="pb-0">
+          <SidebarMenu>
+            <GlobalSearch superAdmin={shop.superAdmin} canManageApps={shop.canManageApps} />
+          </SidebarMenu>
+        </SidebarGroup>
         {(inSettings ? settingsNav : nav).map((group) => (
           <NavGroup key={group.label} {...group} canManageApps={shop.canManageApps} superAdmin={shop.superAdmin} />
         ))}
