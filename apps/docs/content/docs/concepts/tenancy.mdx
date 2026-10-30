@@ -5,12 +5,13 @@ description: Single-shop and multi-shop modes.
 
 Shopnex is always multi-tenant underneath: every tenant table has a `shop_id`. `TENANCY_MODE` only changes how the shop is resolved.
 
-|  | `single` (default) | `multi` |
-| --- | --- | --- |
-| Storefront | default shop | shop from request host (`shop_domains`) |
-| Admin | default shop | session's active shop, else the user's first shop |
-| New users | invited from Admin → Staff | invited, or create their own shop |
+|            | `single` (default)         | `multi`                                           |
+| ---------- | -------------------------- | ------------------------------------------------- |
+| Storefront | default shop               | shop from request host (`shop_domains`)           |
+| Admin      | default shop               | session's active shop, else the user's first shop |
+| New users  | invited from Admin → Staff | invited, or create their own shop                 |
 
 - Shops are Better Auth organizations (`shops`, `shop_members`, `shop_invitations`).
-- Switching from single to multi needs no data migration: add rows to `shop_domains` and set `TENANCY_MODE=multi`.
+- Switching from single to multi needs no data migration: add each shop's domains under Settings → Domains and set `TENANCY_MODE=multi`.
+- A domain is claimed first, then verified by adding a DNS TXT record (`_shopnex-challenge.<domain>`) with the token shown in the admin. Only verified domains resolve to a shop. A domain inserted into `shop_domains` by hand needs `verified_at` set before it resolves.
 - In multi mode, outbound webhooks to private or loopback addresses are blocked (SSRF protection). Single mode allows them, e.g. n8n on localhost.

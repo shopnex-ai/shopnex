@@ -11,6 +11,7 @@ import {
   uuid,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { apps } from './apps'
 import { user } from './auth'
 
@@ -70,16 +71,22 @@ export const shopInvitations = pgTable('shop_invitations', {
 })
 
 // Storefront host → shop (multi mode). e.g. acme.shopnex.com, shop.acme.com
+// Only verified domains resolve: the shop proves it controls the host with a DNS TXT record holding the token.
 export const shopDomains = pgTable('shop_domains', {
   id: text('id').primaryKey(),
   shopId: text('shop_id')
     .notNull()
     .references(() => shops.id, { onDelete: 'cascade' }),
   domain: text('domain').notNull().unique(),
+  verificationToken: text('verification_token')
+    .notNull()
+    .default(sql`gen_random_uuid()::text`),
+  verifiedAt: timestamp('verified_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
 export type Shop = typeof shops.$inferSelect
+export type ShopDomain = typeof shopDomains.$inferSelect
 
 // Roles staff can be given (invitation or role change). 'owner' exists but isn't handed out.
 export const STAFF_ROLES = ['admin', 'member'] as const
