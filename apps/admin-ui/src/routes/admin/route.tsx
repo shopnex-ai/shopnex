@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router'
+import { ExternalLinkIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
@@ -65,6 +67,17 @@ function AdminLayout() {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />
           <span className="text-sm text-muted-foreground">{tenant.shop.name}</span>
+          {tenant.shop.storefrontUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
+            >
+              View store
+              <ExternalLinkIcon />
+            </Button>
+          )}
         </header>
         <div className="flex-1 p-4 md:p-6">
           <Outlet />
