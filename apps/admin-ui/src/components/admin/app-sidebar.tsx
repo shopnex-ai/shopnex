@@ -5,6 +5,7 @@ import {
   BellIcon,
   BlocksIcon,
   BookOpenIcon,
+  CheckIcon,
   ChevronsUpDownIcon,
   CodeIcon,
   CreditCardIcon,
@@ -37,11 +38,13 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation, type ToOptions } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
+import { toast } from 'sonner'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
 import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
 import { AppIcon } from '@/screens/apps/installed-apps-card'
 import { orpc } from '@/lib/orpc'
+import { getSwitchableShops, switchShop } from '@/lib/session.functions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -140,6 +143,7 @@ const settingsNav: { label: string; items: NavItem[] }[] = [
 ]
 
 export type SidebarShop = {
+  id: string
   name: string
   superAdmin: boolean
   /** Sees installed apps under Apps */ canManageApps: boolean
@@ -202,20 +206,69 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
   )
 }
 
-// Multi-tenant mode: becomes a shop switcher (authClient.organization.setActive)
+// Single mode (or one shop): just the name. Multi mode with several shops: a switcher. The page reloads after a
+// switch so nothing cached for the previous shop survives.
 function ShopIdentity({ shop }: { shop: SidebarShop }) {
+  const { isMobile } = useSidebar()
+  const { data: shops = [] } = useQuery({ queryKey: ['switchable-shops'], queryFn: () => getSwitchableShops() })
+  const switchable = shops.length > 1 || (shop.superAdmin && shops.length > 0)
+
+  const identity = (
+    <>
+      <ShopnexBadge />
+      <div className="grid flex-1 text-left leading-tight">
+        <span className="truncate font-semibold">{shop.name}</span>
+        <span className="truncate text-xs text-muted-foreground">
+          {shop.superAdmin ? 'Super admin' : 'Shopnex Admin'}
+        </span>
+      </div>
+    </>
+  )
+
+  async function onSwitch(shopId: string) {
+    const { ok } = await switchShop({ data: shopId })
+    if (ok) window.location.assign('/admin')
+    else toast.error('Could not switch shops')
+  }
+
+  if (!switchable) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" render={<Link to="/admin" />} tooltip={shop.name}>
+            {identity}
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton size="lg" render={<Link to="/admin" />} tooltip={shop.name}>
-          <ShopnexBadge />
-          <div className="grid flex-1 text-left leading-tight">
-            <span className="truncate font-semibold">{shop.name}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {shop.superAdmin ? 'Super admin' : 'Shopnex Admin'}
-            </span>
-          </div>
-        </SidebarMenuButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}>
+            {identity}
+            <ChevronsUpDownIcon className="ml-auto" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side={isMobile ? 'bottom' : 'right'}
+            align="start"
+            sideOffset={4}
+            className="max-h-80 min-w-56 overflow-y-auto"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Shops</DropdownMenuLabel>
+              {shops.map((s) => (
+                <DropdownMenuItem key={s.id} onClick={() => s.id !== shop.id && void onSwitch(s.id)}>
+                  <StoreIcon />
+                  <span className="truncate">{s.name}</span>
+                  {s.id === shop.id && <CheckIcon className="ml-auto" />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
   )

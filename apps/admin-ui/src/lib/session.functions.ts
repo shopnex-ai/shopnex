@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { isSetupComplete } from '@shopnex/auth/setup'
 import { auth, enabledSocialProviders, isSuperAdmin } from '@shopnex/auth'
-import { resolveAdminShop } from '@shopnex/tenancy'
+import { listSwitchableShops, resolveAdminShop, setActiveShop } from '@shopnex/tenancy'
 
 export const getSocialProviders = createServerFn({ method: 'GET' }).handler(() => enabledSocialProviders)
 
@@ -27,3 +27,23 @@ export const getAdminContext = createServerFn({ method: 'GET' }).handler(async (
 })
 
 export const getSetupStatus = createServerFn({ method: 'GET' }).handler(async () => isSetupComplete())
+
+// Shops the sidebar's switcher offers (empty in single mode, or without a session)
+export const getSwitchableShops = createServerFn({ method: 'GET' }).handler(async () => {
+  const session = await auth.api.getSession({ headers: getRequest().headers })
+  return session ? listSwitchableShops(session.user.id, isSuperAdmin(session.user)) : []
+})
+
+export const switchShop = createServerFn({ method: 'POST' })
+  .validator((shopId: string) => shopId)
+  .handler(async ({ data: shopId }) => {
+    const session = await auth.api.getSession({ headers: getRequest().headers })
+    if (!session) return { ok: false }
+    const ok = await setActiveShop({
+      sessionId: session.session.id,
+      userId: session.user.id,
+      superAdmin: isSuperAdmin(session.user),
+      shopId,
+    })
+    return { ok }
+  })
