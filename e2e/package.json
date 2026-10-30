@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "test": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test:browser": "node --env-file-if-exists=../.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "@shopnex/app": "workspace:*",
@@ -21,6 +22,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

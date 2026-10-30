@@ -44,3 +44,14 @@ Out-of-process only, no third-party code in the core.
 - email templates
 - domains page (add domain, verify DNS) — replaces manual `shop_domains` rows; multi-shop as a super admin toggle
 - onboarding checklist on the dashboard
+
+### 5. Trust
+
+Tests merchants can see, not only run. Details in [e2e-plan](./e2e-plan.md).
+
+- ✅ API-level e2e suite in CI (auth, staff, tenancy, pricing, payment apps, carrier services, channels, email)
+- browser e2e (Playwright): fresh install, storefront checkout, admin flows; traces and video on failure
+- checkout against Stripe test mode with real webhooks (declines, 3DS, duplicate and late deliveries)
+- failure scenarios: last-item race, refunds, rounding, staff permissions in the UI
+- upgrade test: previous release → current build keeps all data
+- public test report, CI badge, "What we test" page, nightly run on `main`
