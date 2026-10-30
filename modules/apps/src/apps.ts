@@ -400,12 +400,8 @@ async function install(
 /**
  * One list for everything installable from Admin → Apps: apps that ship with this install (BUNDLED_APPS),
  * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
- * Payments apps are left out: they are installed from Settings → Payments, which also sets up their payment method.
  */
 export async function listCatalog(shopId: string) {
-  const payments = new Set(
-    BUNDLED_APPS.filter((b) => b.scopes.includes('write_payment_sessions')).map((b) => b.clientId),
-  )
   const rows = await db
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
@@ -419,14 +415,12 @@ export async function listCatalog(shopId: string) {
     )
     .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows
-    .filter((r) => !payments.has(r.app.clientId))
-    .map((r) => ({
-      ...publicApp(r.app),
-      origin: r.app.source,
-      installationId: r.installationId,
-      installed: r.installationId !== null,
-    }))
+  return rows.map((r) => ({
+    ...publicApp(r.app),
+    origin: r.app.source,
+    installationId: r.installationId,
+    installed: r.installationId !== null,
+  }))
 }
 
 // --- installations (shop owners/admins) ---
