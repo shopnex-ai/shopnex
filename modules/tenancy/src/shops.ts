@@ -93,3 +93,34 @@ export async function addMember(shopId: string, userId: string) {
     .values({ id: randomUUID(), organizationId: shopId, userId, role: existing === 0 ? 'owner' : 'member' })
     .onConflictDoNothing()
 }
+
+const SWITCHER_LIMIT = 100
+
+// The shops the admin's shop switcher offers: the user's own, or every shop for a super admin.
+// Empty in single mode (there is one shop, nothing to switch).
+export async function listSwitchableShops(userId: string, superAdmin: boolean) {
+  if (!isMultiTenant) return []
+  const columns = { id: schema.shops.id, name: schema.shops.name }
+  if (superAdmin) return db.select(columns).from(schema.shops).orderBy(asc(schema.shops.name)).limit(SWITCHER_LIMIT)
+  return db
+    .select(columns)
+    .from(schema.shops)
+    .innerJoin(schema.shopMembers, eq(schema.shopMembers.organizationId, schema.shops.id))
+    .where(eq(schema.shopMembers.userId, userId))
+    .orderBy(asc(schema.shops.name))
+    .limit(SWITCHER_LIMIT)
+}
+
+// Makes `shopId` the session's active shop. False when the user may not act in it (not a member, and not a
+// super admin) or it doesn't exist. Written to the session directly, since Better Auth's setActive requires
+// membership and super admins act in shops they aren't members of.
+export async function setActiveShop(input: { sessionId: string; userId: string; superAdmin: boolean; shopId: string }) {
+  if (!isMultiTenant) return false
+  const allowed = input.superAdmin ? await getShopById(input.shopId) : await getMembership(input.shopId, input.userId)
+  if (!allowed) return false
+  await db
+    .update(schema.session)
+    .set({ activeOrganizationId: input.shopId })
+    .where(and(eq(schema.session.id, input.sessionId), eq(schema.session.userId, input.userId)))
+  return true
+}

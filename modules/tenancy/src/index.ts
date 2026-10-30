@@ -22,7 +22,16 @@ export {
   revokeTokenById,
 } from './api-tokens'
 export { API_SCOPES, type ApiScope, type ApiToken } from '@shopnex/db/schema'
-export { addMember, ensureDefaultShop, getFirstMembership, getShopById, updateShop, withStorefrontUrl } from './shops'
+export {
+  addMember,
+  ensureDefaultShop,
+  getFirstMembership,
+  getShopById,
+  listSwitchableShops,
+  setActiveShop,
+  updateShop,
+  withStorefrontUrl,
+} from './shops'
 export { getOpenInvitation, userExists } from './invitations'
 export { createShop } from './provisioning'
 export * as staffService from './staff'

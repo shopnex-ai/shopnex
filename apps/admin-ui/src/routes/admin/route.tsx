@@ -78,6 +78,7 @@ function AdminLayout() {
       <NavigationProgress />
       <AppSidebar
         shop={{
+          id: tenant.shop.id,
           name: tenant.shop.name,
           superAdmin: tenant.superAdmin,
           canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',
