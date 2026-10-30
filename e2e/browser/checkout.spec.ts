@@ -34,6 +34,9 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
+  // The order was placed through the browser, so Fixtures doesn't know it yet
+  const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
+  for (const { id } of placed) fx.order(id)
   await fx.cleanup()
 })
 

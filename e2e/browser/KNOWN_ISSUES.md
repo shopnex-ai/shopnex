@@ -1,23 +1,27 @@
 # Known issues found by the browser tests
 
-Found while writing phase 1 of the [e2e plan](../../docs/e2e-plan.md). The affected tests are marked `test.fixme`
-with the issue number; enable them once the issue is fixed. Not worked around in the tests on purpose.
+Found while writing phase 1 of the [e2e plan](../../docs/e2e-plan.md). Issues 1 and 2 are fixed in #113; once it is
+merged, replace `test.fixme` with `test` in `admin.spec.ts` and `checkout.spec.ts`. Issue 3 is not fixed yet.
 
-## 1. Admin login can lose the typed email
+## 1. Admin login: pressing Login before the page is interactive (fixed in #113)
 
 `browser/admin.spec.ts` › wrong password is rejected, right one reaches the dashboard.
 
-- Observed: after filling Email and Password and pressing Login, the Email field is empty (browser says "Please fill out
-  this field") while Password is still filled. Failed in 2 of 5 runs; the first run passed.
-- Suspected cause (unconfirmed): the form is server-rendered and input typed before the page finishes loading is reset.
-- Expect: whatever a person types into the login form is kept.
+- Cause: before hydration the form had no handler, so Login submitted it natively as a GET. The password ended up in the
+  URL (`/admin/login?email=…&password=…`) and the page reloaded with an empty form.
+- Fix: the Login button stays disabled until the page is interactive.
 
-## 2. Hosted checkout rejects a fully filled form
+## 2. Hosted checkout wipes what was typed before hydration (fixed in #113)
 
 `browser/checkout.spec.ts` › a shopper checks out and the owner sees the order in the admin.
 
-- Observed: Email, country, last name, address, city, postal code and state filled, shipping and payment method chosen,
-  "Place order" shows "Check the highlighted fields." and no field is marked. 3 of 3 runs.
-- Possibly the same cause as issue 1 (a field cleared while the form refreshes to quote shipping); not confirmed.
-- Expect: a filled form places the order, or the error names the field.
-- Also check: the form refreshing while the buyer types (shipping methods appear after the address is entered).
+- Cause: the country list was built with `Intl.DisplayNames` on server and browser, which differ, so hydration failed
+  and React rebuilt the form, clearing the email. Placing the order then failed with "Enter a valid email" (the field was
+  above the visible part of the page, so it looked as if no field was marked).
+- Fix: the server builds the list once and sends it with the checkout data.
+
+## 3. A failed order placement shows raw SQL to the buyer (open)
+
+- Observed: when `insert into "orders" …` failed (order number collision after a test run left an order behind), the
+  checkout page printed the whole failed query, with column names, under the Place order button.
+- Expect: a generic "Could not place the order" message to the buyer; details only in the server log.
