@@ -1,11 +1,13 @@
 # One public port in front of both apps. Admin, API and hosted checkout go to the admin app;
 # everything else (/, /products, /collections, /pages, theme assets…) is the storefront.
+# SITE_ADDRESS and AUTO_HTTPS_OPT come from start.sh: with DOMAIN set Caddy serves that host and gets
+# a certificate on its own; otherwise it listens on plain HTTP on PUBLIC_PORT.
 {
 	admin off
-	auto_https off
+	{$AUTO_HTTPS_OPT}
 }
 
-:{$PUBLIC_PORT} {
+{$SITE_ADDRESS} {
 	@admin path /admin /admin/* /_serverFn/* /api/* /checkout/* /assets/* /fonts/* /favicon.svg
 	handle @admin {
 		reverse_proxy localhost:{$ADMIN_PORT}
