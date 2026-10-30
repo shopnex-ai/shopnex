@@ -1,6 +1,6 @@
 {
   "name": "@shopnex/app",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Build Shopnex apps with no database and no OAuth code: authenticate, Admin API, per-shop data, signed requests, and admin-styled UI components",
   "type": "module",
   "exports": {
