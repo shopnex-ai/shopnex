@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, count, eq } from 'drizzle-orm'
+import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, isMultiTenant } from './config'
 
@@ -60,7 +60,7 @@ export async function getShopByDomain(domain: string) {
     .select({ shop: schema.shops })
     .from(schema.shopDomains)
     .innerJoin(schema.shops, eq(schema.shops.id, schema.shopDomains.shopId))
-    .where(eq(schema.shopDomains.domain, domain.toLowerCase()))
+    .where(and(eq(schema.shopDomains.domain, domain.toLowerCase()), isNotNull(schema.shopDomains.verifiedAt)))
   return withStorefrontUrl(row?.shop ?? null)
 }
 

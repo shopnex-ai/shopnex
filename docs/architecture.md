@@ -86,4 +86,5 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 - API: `storefront` / `admin` middlewares in `modules/api/src/orpc.ts` put `context.shop` on every procedure
 - Super admin (platform role `superadmin`, Better Auth admin plugin): can act in every shop without membership, manage users (`/api/auth/admin/*`, `authClient.admin.*`). The account created by the setup wizard is one; to create or promote another (or recover access):
   `pnpm create-super-admin --email you@example.com [--password ...]` (random password printed if omitted)
-- Switching single → multi needs no data migration: add rows to `shop_domains` and set `TENANCY_MODE=multi`
+- Switching single → multi needs no data migration: add each shop's domains in Admin → Settings → Domains and set `TENANCY_MODE=multi`
+- Domains are claimed, then verified with a DNS TXT record (`_shopnex-challenge.<domain>`); only verified domains resolve to a shop. Domains inserted into `shop_domains` by hand need `verified_at` set
