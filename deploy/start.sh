@@ -23,6 +23,17 @@ export BETTER_AUTH_SECRET
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
 
+# DOMAIN turns on Caddy's automatic HTTPS (ports 80 and 443 must reach this container). Certificates
+# are kept on the /data volume so restarts don't request new ones.
+if [ -n "$DOMAIN" ]; then
+  export SITE_ADDRESS="$DOMAIN" AUTO_HTTPS_OPT=""
+  export XDG_DATA_HOME="${DATA_DIR:-/data}/caddy"
+  export APP_URL="${APP_URL:-https://$DOMAIN}"
+  export BETTER_AUTH_URL="${BETTER_AUTH_URL:-$APP_URL}"
+else
+  export SITE_ADDRESS=":$PUBLIC_PORT" AUTO_HTTPS_OPT="auto_https off"
+fi
+
 # Caddy serves the bundled storefront on the app's own origin, so a single shop that hasn't saved a
 # Storefront URL in Settings (Themes, editor preview) uses that one.
 export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"
