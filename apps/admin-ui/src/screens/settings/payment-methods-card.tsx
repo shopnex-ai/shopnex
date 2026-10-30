@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { paymentMethodInput } from '@shopnex/api/schemas'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
+import { DialogDeleteButton } from '@/components/admin/dialog-delete-button'
 import { CheckboxField, FormError, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -194,13 +195,7 @@ function MethodDialog({ method }: { method?: Method }) {
             <CheckboxField control={form.control} name="active" label="Offer at checkout" />
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-between">
-              {method && !appMethod ? (
-                <Button type="button" variant="ghost" onClick={onDelete} disabled={remove.isPending}>
-                  Delete
-                </Button>
-              ) : (
-                <span />
-              )}
+              {method && !appMethod ? <DialogDeleteButton onDelete={onDelete} pending={remove.isPending} /> : <span />}
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : method ? 'Save' : 'Add method'}
               </Button>
