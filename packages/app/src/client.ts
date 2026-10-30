@@ -79,8 +79,9 @@ document.addEventListener('click', async (event) => {
     document.execCommand('copy')
     field.remove()
   }
-  const label = button.dataset.label ??= button.textContent
-  button.textContent = 'Copied'
-  setTimeout(() => (button.textContent = label), 1500)
+  const hint = button.querySelector('.sx-cmd-hint') ?? button
+  const label = hint.dataset.label ??= hint.textContent
+  hint.textContent = 'Copied'
+  setTimeout(() => (hint.textContent = label), 1500)
 })
 `

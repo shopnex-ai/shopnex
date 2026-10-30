@@ -48,9 +48,12 @@ white-space:nowrap;transition:opacity .15s,background .15s}
 .sx-btn-secondary{background:var(--card);color:var(--fg);border-color:var(--border)}.sx-btn-secondary:hover{background:var(--muted)}
 .sx-btn-plain{background:transparent;color:var(--fg)}.sx-btn-plain:hover{background:var(--muted)}
 .sx-btn-critical{background:var(--critical);color:#fff}.sx-btn-critical:hover{opacity:.9}
-.sx-cmd{display:flex;gap:.5rem;align-items:flex-start;margin-top:.5rem}
-.sx-cmd code{flex:1;min-width:0;padding:.4rem .6rem;border-radius:var(--radius)}
-.sx-copy{height:1.75rem;padding:0 .6rem;font-size:.8rem;flex:none}
+.sx-cmd{display:flex;gap:.75rem;align-items:center;justify-content:space-between;width:100%;margin-top:.5rem;
+padding:.5rem .75rem;text-align:left;font:inherit;color:inherit;background:var(--muted);border:1px solid var(--border);
+border-radius:var(--radius);cursor:pointer;transition:border-color .15s}
+.sx-cmd:hover{border-color:var(--fg)}
+.sx-cmd code{background:none;padding:0;min-width:0}
+.sx-cmd-hint{flex:none;font-size:.75rem;opacity:.6}
 .sx-field{display:flex;flex-direction:column;gap:.375rem}.sx-field label{font-weight:500}
 .sx-input{height:2.25rem;width:100%;padding:0 .75rem;font:inherit;color:inherit;background:transparent;
 border:1px solid var(--border);border-radius:var(--radius)}
@@ -339,14 +342,11 @@ export function Code({ children }: PropsWithChildren) {
   return <code class="sx-code">{children}</code>
 }
 
-/** A command or value on its own row, with a button that copies it (the label reads "Copied" for a moment) */
+/** A command or value that copies itself when clicked (the hint reads "Copied" for a moment) */
 export function CopyableCode({ value }: { value: string }) {
   return (
-    <span class="sx-cmd">
+    <button type="button" class="sx-cmd" data-shopnex-copy={value} title="Click to copy">
       <code class="sx-code">{value}</code>
-      <button type="button" class="sx-btn sx-btn-secondary sx-copy" data-shopnex-copy={value}>
-        Copy
-      </button>
-    </span>
+    </button>
   )
 }
