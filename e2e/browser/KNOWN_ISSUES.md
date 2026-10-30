@@ -1,7 +1,7 @@
 # Known issues found by the browser tests
 
 Found while writing phase 1 of the [e2e plan](../../docs/e2e-plan.md). Issues 1 and 2 were fixed in #113 and the tests
-that found them are enabled. Issue 3 is not fixed yet.
+that found them are enabled. Issue 3 is fixed in #115.
 
 ## 1. Admin login: pressing Login before the page is interactive (fixed in #113)
 
@@ -20,8 +20,9 @@ that found them are enabled. Issue 3 is not fixed yet.
   above the visible part of the page, so it looked as if no field was marked).
 - Fix: the server builds the list once and sends it with the checkout data.
 
-## 3. A failed order placement shows raw SQL to the buyer (open)
+## 3. A failed order placement shows raw SQL to the buyer (fixed in #115)
 
 - Observed: when `insert into "orders" …` failed (order number collision after a test run left an order behind), the
   checkout page printed the whole failed query, with column names, under the Place order button.
 - Expect: a generic "Could not place the order" message to the buyer; details only in the server log.
+- Fix: unexpected errors at checkout are logged on the server and the buyer gets a generic message.
