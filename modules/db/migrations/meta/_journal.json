@@ -239,6 +239,13 @@
       "when": 1793337273628,
       "tag": "0033_bundled_apps_source",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793356886522,
+      "tag": "0034_domain_verification",
+      "breakpoints": true
     }
   ]
 }

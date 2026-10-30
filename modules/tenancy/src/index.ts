@@ -26,3 +26,5 @@ export { addMember, ensureDefaultShop, getShopById, updateShop, withStorefrontUr
 export { getOpenInvitation, userExists } from './invitations'
 export * as staffService from './staff'
 export { StaffError, type StaffErrorCode } from './staff'
+export * as domainService from './domains'
+export { DomainError, challengeHost, type DomainErrorCode } from './domains'

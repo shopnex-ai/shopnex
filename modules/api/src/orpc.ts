@@ -14,6 +14,7 @@ import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from 
 import type { z } from 'zod'
 import type { Shop } from '@shopnex/db/schema'
 import {
+  DomainError,
   StaffError,
   hasScope,
   resolveAdminShop,
@@ -124,6 +125,11 @@ const domainErrors = base.middleware(async ({ next }) => {
               : error.code === 'PROVIDER_UNAVAILABLE'
                 ? 'BAD_GATEWAY'
                 : 'BAD_REQUEST'
+      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+    }
+    if (error instanceof DomainError) {
+      const status =
+        error.code === 'DOMAIN_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'DOMAIN_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
     if (error instanceof StaffError) {
