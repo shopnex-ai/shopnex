@@ -1,6 +1,6 @@
 # Shopnex admin, API, hosted checkout and storefront in one image, behind Caddy on a single port.
 # Used by the one-click deploys (Render, DigitalOcean…).
-FROM node:24-slim
+FROM node:25-slim
 RUN corepack enable
 COPY --from=caddy:2 /usr/bin/caddy /usr/local/bin/caddy
 WORKDIR /app
