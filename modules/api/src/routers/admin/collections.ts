@@ -33,7 +33,9 @@ export const collections = {
   list: read
     .route({ method: 'GET', path: '/admin/collections' })
     .input(pagination)
-    .handler(async ({ input, context }) => withExtras(context.shop.id, await collectionService.list(context.shop.id, input))),
+    .handler(async ({ input, context }) =>
+      withExtras(context.shop.id, await collectionService.list(context.shop.id, input)),
+    ),
 
   get: read
     .route({ method: 'GET', path: '/admin/collections/{id}' })

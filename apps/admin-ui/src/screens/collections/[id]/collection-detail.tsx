@@ -29,7 +29,11 @@ type Collection = Outputs['admin']['collections']['get']
 
 const back = { to: '/admin/collections', label: 'Collections' } as const
 
-const toValues = (c: Pick<Collection, 'title' | 'slug' | 'description'>) => ({ title: c.title, slug: c.slug, description: c.description })
+const toValues = (c: Pick<Collection, 'title' | 'slug' | 'description'>) => ({
+  title: c.title,
+  slug: c.slug,
+  description: c.description,
+})
 
 export function CollectionDetail({ id }: { id: string }) {
   const collection = useQuery(orpc.admin.collections.get.queryOptions({ input: { id } }))
