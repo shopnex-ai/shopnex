@@ -2,7 +2,7 @@
   "name": "shopnex-storefront",
   "private": true,
   "type": "module",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "The Shopnex storefront: renders the shop's chosen theme. Themes are Liquid templates in themes/.",
   "license": "MIT",
   "scripts": {
