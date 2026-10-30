@@ -102,6 +102,13 @@
       "language": "html"
     }
   ],
+  "checkout": {
+    "background": "paper_color",
+    "text": "ink_color",
+    "accent": "accent_color",
+    "headingFont": "heading_font",
+    "bodyFont": "body_font"
+  },
   "sections": {
     "house-hero": {
       "name": "Hero",

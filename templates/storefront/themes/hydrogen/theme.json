@@ -114,6 +114,13 @@
       "language": "html"
     }
   ],
+  "checkout": {
+    "background": "contrast_color",
+    "text": "primary_color",
+    "accent": "primary_color",
+    "headingFont": "heading_font",
+    "bodyFont": "body_font"
+  },
   "sections": {
     "image-banner": {
       "name": "Image banner",

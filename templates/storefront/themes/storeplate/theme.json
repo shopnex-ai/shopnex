@@ -125,6 +125,14 @@
       "language": "css"
     }
   ],
+  "checkout": {
+    "background": "color_body",
+    "text": "color_text_dark",
+    "accent": "color_primary",
+    "headingFont": "font",
+    "bodyFont": "font",
+    "logo": "logo"
+  },
   "sections": {
     "hero_slider": {
       "name": "Hero slider",

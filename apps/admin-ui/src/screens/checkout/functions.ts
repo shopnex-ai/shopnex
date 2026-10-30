@@ -6,6 +6,8 @@ import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
+import { countryOptions } from '@/lib/countries'
+import { checkoutBranding } from './branding'
 
 const tokenValidator = (token: string) => token
 
@@ -16,6 +18,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
     if (!found) return null
     const shop = await getShopById(found.shopId)
     if (!shop) return null
+    const branding = await checkoutBranding(found.shopId, shop.storefrontUrl)
     if (found.status === 'completed' && found.orderId) {
       const [order, payment] = await Promise.all([
         orderService.getById(found.shopId, found.orderId),
@@ -27,6 +30,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
             token,
             shopName: shop.name,
             storefrontUrl: shop.storefrontUrl,
+            branding,
             order,
             // Payments app orders: the latest attempt (null for manual methods)
             payment: payment && { status: payment.status, error: payment.errorMessage },
@@ -44,10 +48,14 @@ export const getCheckout = createServerFn({ method: 'GET' })
       kind: 'checkout' as const,
       shopName: shop.name,
       storefrontUrl: shop.storefrontUrl,
+      branding,
       cart,
       options,
       tax,
       defaultCountry,
+      // Built here, once: Intl names and their order differ between this server and the browser, and a
+      // list the browser computes itself fails hydration, which throws away what the buyer already typed
+      countries: countryOptions,
     }
   })
 
@@ -73,6 +81,13 @@ export const quoteRates = createServerFn({ method: 'POST' })
     })
     return shippingRates
   })
+
+// Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:
+// the raw error can carry SQL and internal details
+const unexpected = (action: string, error: unknown) => {
+  console.error(`[checkout] ${action}:`, error)
+  return `Could not ${action}. Please try again.`
+}
 
 const optional = (max: number) =>
   z
@@ -137,7 +152,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
       ))
     } catch (error) {
       if (error instanceof OrderError || error instanceof CartError) return { error: error.message, values }
-      throw error
+      return { error: unexpected('place the order', error), values }
     }
     // Payments app: pay on the provider's page, which sends the buyer back to the confirmation
     return { redirectTo: paymentUrl ?? `/checkout/${data.token}` }
@@ -160,7 +175,7 @@ export const payNow = createServerFn({ method: 'POST' })
       return { redirectTo: session.redirectUrl! }
     } catch (error) {
       if (error instanceof PaymentError) return { error: error.message }
-      throw error
+      return { error: unexpected('start the payment', error) }
     }
   })
 
@@ -185,7 +200,7 @@ export const applyDiscountCode = createServerFn({ method: 'POST' })
       }
     } catch (error) {
       if (error instanceof CartError) return { error: error.message }
-      throw error
+      return { error: unexpected('apply this code', error) }
     }
     return {}
   })

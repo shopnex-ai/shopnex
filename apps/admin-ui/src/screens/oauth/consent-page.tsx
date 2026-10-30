@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLoaderData } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { SCOPE_RESOURCES, accessOf } from '@/lib/scopes'
 import { Button } from '@/components/ui/button'
@@ -16,7 +17,9 @@ export function ConsentPage() {
     try {
       const url = approve ? await approveConsent({ data: data.request }) : await denyConsent({ data: data.request })
       window.location.assign(url)
-    } finally {
+      // Stay pending on success: the page is about to go away, and re-enabling the buttons now would flash them
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Something went wrong')
       setPending(false)
     }
   }
@@ -66,7 +69,8 @@ export function ConsentPage() {
 
 function Shell({ title, description, children }: { title: string; description: string; children?: React.ReactNode }) {
   return (
-    <div className="flex min-h-svh w-full flex-col items-center justify-center p-6 md:p-10">
+    // Inside the admin layout, which already pads the content: no fixed height to fit, so it can't overflow
+    <div className="mx-auto flex w-full max-w-md flex-col items-center py-4 md:py-8">
       <ShopnexBrand />
       <Card className="w-full max-w-md">
         <CardHeader>

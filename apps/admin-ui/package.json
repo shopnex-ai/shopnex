@@ -35,6 +35,7 @@
     "@shopnex/pricing": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
+    "@shopnex/theme": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.104.5",
