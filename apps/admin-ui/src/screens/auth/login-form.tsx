@@ -30,6 +30,10 @@ export function LoginForm({
   const navigate = useNavigate()
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  // Until the page is interactive a click on Login would submit the form natively: a GET that puts the
+  // password in the URL and reloads the page, losing what was typed
+  const [ready, setReady] = useState(false)
+  useEffect(() => setReady(true), [])
 
   // OAuth failures come back as /admin/login?error=...
   useEffect(() => {
@@ -87,7 +91,7 @@ export function LoginForm({
               />
             </Field>
             <Field>
-              <Button type="submit" disabled={pending}>
+              <Button type="submit" disabled={pending || !ready}>
                 {pending ? 'Logging in…' : 'Login'}
               </Button>
             </Field>
