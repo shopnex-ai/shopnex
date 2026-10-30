@@ -95,7 +95,6 @@ fi
 
 if [ ! -f "$ENV_FILE" ]; then
   $SUDO sh -c "umask 077 && : > '$ENV_FILE'"
-  env_set POSTGRES_PASSWORD "$(openssl rand -hex 16)"
   env_set BETTER_AUTH_SECRET "$(openssl rand -hex 32)"
 fi
 env_set SHOPNEX_VERSION "$SHOPNEX_VERSION"
