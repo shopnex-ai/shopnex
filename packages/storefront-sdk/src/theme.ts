@@ -128,7 +128,10 @@ export const ThemeDefinition = z.object({
     z.object({
       name: z.string().min(1).max(100),
       /** Where the editor's preview shows this page (e.g. "/collections/all"); "/" for "home" when left out */
-      path: z.string().regex(/^\/[^?#]*$/, 'A path like /collections/all').optional(),
+      path: z
+        .string()
+        .regex(/^\/[^?#]*$/, 'A path like /collections/all')
+        .optional(),
       sections: z.array(ThemeSection),
     }),
   ),
