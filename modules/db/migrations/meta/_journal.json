@@ -232,6 +232,13 @@
       "when": 1793246318394,
       "tag": "0032_carrier_services",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793337273628,
+      "tag": "0033_bundled_apps_source",
+      "breakpoints": true
     }
   ]
 }
