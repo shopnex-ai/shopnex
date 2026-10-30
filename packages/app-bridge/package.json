@@ -1,6 +1,6 @@
 {
   "name": "@shopnex/app-bridge",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Talk to the Shopnex admin from an embedded app: session tokens, toasts, top-level redirects",
   "type": "module",
   "exports": {
