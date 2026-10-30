@@ -3,6 +3,7 @@
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # HTTPS: set DOMAIN=shop.example.com (DNS pointing at this host, ports 80 and 443 open) and Caddy inside the shopnex
 # container gets a Let's Encrypt certificate by itself; APP_URL defaults to https://$DOMAIN.
+# The Stripe and CJ apps are served at https://stripe.$DOMAIN and https://cj.$DOMAIN: point those DNS records at this host too.
 # Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`. Shopnex finds the apps on the
 # compose network and each app announces its own public URL, so only a custom domain needs setting: STRIPE_APP_URL /
 # CJ_DROPSHIPPING_APP_URL (on the app service).
@@ -57,7 +58,7 @@ services:
     volumes:
       - stripe_data:/data
     environment:
-      STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      STRIPE_APP_URL: ${STRIPE_APP_URL:-${DOMAIN:+https://stripe.}${DOMAIN:-http://localhost:4600}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       DATA_DIR: /data
 
@@ -71,7 +72,7 @@ services:
     volumes:
       - cj_dropshipping_data:/data
     environment:
-      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-${DOMAIN:+https://cj.}${DOMAIN:-http://localhost:4700}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4700
       DATA_DIR: /data
