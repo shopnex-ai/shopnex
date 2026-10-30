@@ -7,6 +7,7 @@
     "./worker": "./src/worker.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

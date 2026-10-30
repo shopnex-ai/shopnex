@@ -60,7 +60,7 @@ async function post(url: string, id: string, payload: PaymentSessionRequest | Re
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-const isHttpUrl = (value: unknown): value is string => {
+export const isHttpUrl = (value: unknown): value is string => {
   try {
     return typeof value === 'string' && /^https?:$/.test(new URL(value).protocol)
   } catch {

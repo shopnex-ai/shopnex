@@ -15,7 +15,7 @@ export type ConfigureInput = {
   ready: boolean
 }
 
-const origin = (url: string) => {
+export const origin = (url: string) => {
   try {
     const u = new URL(url)
     return u.protocol === 'https:' || u.protocol === 'http:' ? u.origin : null
