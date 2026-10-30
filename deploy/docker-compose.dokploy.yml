@@ -2,7 +2,7 @@
 # routes domains to containers over the Docker network. Published host ports (3000, 4600, 4700) collide with the
 # proxy or with other apps on the server and fail the first deploy. Add domains in the platform instead:
 # shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700. Keep the rest in sync with docker-compose.yml.
-# Set APP_URL, STRIPE_APP_URL and POSTGRES_PASSWORD, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
+# Set APP_URL and STRIPE_APP_URL, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj, plus CJ_DROPSHIPPING_APP_URL for its domain.
 name: shopnex
 
@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: shopnex
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopnex}
+      POSTGRES_PASSWORD: shopnex
       POSTGRES_DB: shopnex
     volumes:
       - db:/var/lib/postgresql/data
@@ -31,7 +31,7 @@ services:
     volumes:
       - shopnex_data:/data
     environment:
-      DATABASE_URL: postgres://shopnex:${POSTGRES_PASSWORD:-shopnex}@db:5432/shopnex
+      DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       APP_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}

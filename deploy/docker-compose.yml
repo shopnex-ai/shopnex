@@ -1,5 +1,5 @@
 # Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up`, then open http://localhost:3000.
-# Every variable has a local default. For a public deployment set APP_URL, STRIPE_APP_URL and POSTGRES_PASSWORD
+# Every variable has a local default. For a public deployment set APP_URL and STRIPE_APP_URL
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # HTTPS: set DOMAIN=shop.example.com (DNS pointing at this host, ports 80 and 443 open) and Caddy inside the shopnex
 # container gets a Let's Encrypt certificate by itself; APP_URL defaults to https://$DOMAIN.
@@ -15,7 +15,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: shopnex
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopnex}
+      # The database is only reachable on the compose network, so a fixed credential is enough
+      POSTGRES_PASSWORD: shopnex
       POSTGRES_DB: shopnex
     volumes:
       - db:/var/lib/postgresql/data
@@ -39,7 +40,7 @@ services:
     volumes:
       - shopnex_data:/data
     environment:
-      DATABASE_URL: postgres://shopnex:${POSTGRES_PASSWORD:-shopnex}@db:5432/shopnex
+      DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       DOMAIN: ${DOMAIN:-}
       APP_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
       BETTER_AUTH_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
