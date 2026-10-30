@@ -12,14 +12,14 @@
     "preview": "pnpm dlx serve out -l 3400"
   },
   "dependencies": {
-    "@orpc/openapi": "^1.15.7",
-    "@orpc/zod": "^1.15.7",
+    "@orpc/openapi": "^1.16.1",
+    "@orpc/zod": "^1.16.1",
     "@shopnex/api": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
-    "fumadocs-core": "16.17.7",
-    "fumadocs-mdx": "15.4.9",
-    "fumadocs-ui": "16.17.7",
-    "next": "16.4.2",
+    "fumadocs-core": "16.17.8",
+    "fumadocs-mdx": "15.4.10",
+    "fumadocs-ui": "16.17.8",
+    "next": "16.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -27,9 +27,9 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/mdx": "2.0.14",
     "@types/node": "catalog:",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "postcss": "^8.5.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.32",
     "tailwindcss": "catalog:",
     "tsx": "^4.23.15"
   }
