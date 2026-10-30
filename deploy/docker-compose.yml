@@ -1,6 +1,9 @@
 # Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up`, then open http://localhost:3000.
 # Every variable has a local default. For a public deployment set APP_URL and STRIPE_APP_URL
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
+# HTTPS: set DOMAIN=shop.example.com (DNS pointing at this host, ports 80 and 443 open) and Caddy inside the shopnex
+# container gets a Let's Encrypt certificate by itself; APP_URL defaults to https://$DOMAIN.
+# The Stripe and CJ apps are served at https://stripe.$DOMAIN and https://cj.$DOMAIN: point those DNS records at this host too.
 # Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`. Shopnex finds the apps on the
 # compose network and each app announces its own public URL, so only a custom domain needs setting: STRIPE_APP_URL /
 # CJ_DROPSHIPPING_APP_URL (on the app service).
@@ -31,12 +34,16 @@ services:
       db: { condition: service_healthy }
     ports:
       - '3000:3000'
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+      - '${HTTPS_PORT:-443}:443/udp'
     volumes:
       - shopnex_data:/data
     environment:
       DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
-      APP_URL: ${APP_URL:-http://localhost:3000}
-      BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
+      DOMAIN: ${DOMAIN:-}
+      APP_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
+      BETTER_AUTH_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       TENANCY_MODE: single
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
@@ -52,7 +59,7 @@ services:
     volumes:
       - stripe_data:/data
     environment:
-      STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      STRIPE_APP_URL: ${STRIPE_APP_URL:-${DOMAIN:+https://stripe.}${DOMAIN:-http://localhost:4600}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       DATA_DIR: /data
 
@@ -66,7 +73,7 @@ services:
     volumes:
       - cj_dropshipping_data:/data
     environment:
-      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-${DOMAIN:+https://cj.}${DOMAIN:-http://localhost:4700}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4700
       DATA_DIR: /data

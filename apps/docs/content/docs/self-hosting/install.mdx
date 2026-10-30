@@ -21,7 +21,7 @@ Point two DNS records at the server: `shop.example.com` for the shop and `stripe
 
 <code>{`curl -fsSL ${SITE_URL}/install.sh | SHOPNEX_DOMAIN=shop.example.com sh`}</code>
 
-To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`.
+HTTPS comes from the Caddy inside the Shopnex container, so there is no separate proxy to manage. To use a different name for the Stripe app, also set `SHOPNEX_STRIPE_DOMAIN`; that runs a separate Caddy container instead.
 
 ## Options
 

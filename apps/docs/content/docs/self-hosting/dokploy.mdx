@@ -15,11 +15,11 @@ curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/doc
 
 Every variable has a local default, so `docker compose up` works without any setup (add `-d` to run it in the background). For a public deployment set these on the platform:
 
-| Variable            | Description                                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------------- |
-| `APP_URL`           | Public origin, e.g. `https://shop.example.com`. Default `http://localhost:3000`.                      |
-| `STRIPE_APP_URL`    | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
-| `SHOPNEX_VERSION`   | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production.                |
+| Variable          | Description                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `APP_URL`         | Public origin, e.g. `https://shop.example.com`. Default `http://localhost:3000`.                      |
+| `STRIPE_APP_URL`  | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
+| `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production.                |
 
 **Optional apps.** The CJ Dropshipping app is off by default. Enable it with `COMPOSE_PROFILES=cj` (or `docker compose --profile cj up`); Shopnex finds it on the Compose network. For a public domain set `CJ_DROPSHIPPING_APP_URL` (e.g. `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. The same applies to `STRIPE_APP_URL` and the `stripe` service.
 
@@ -27,8 +27,10 @@ Every variable has a local default, so `docker compose up` works without any set
 
 ## Dokploy
 
+Use [`deploy/docker-compose.dokploy.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.dokploy.yml), the same stack without published host `ports:`. Dokploy's proxy reaches the containers over the Docker network, and a published port such as `3000` can collide with it or with another app and fail the first deploy.
+
 1. Create a **Compose** service in a project and choose the **Raw** provider.
-2. Paste the compose file and set `APP_URL`, `STRIPE_APP_URL`, and `SHOPNEX_VERSION` under **Environment**.
+2. Paste the Dokploy compose file and set `APP_URL`, `STRIPE_APP_URL`, and `SHOPNEX_VERSION` under **Environment**.
 3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
 4. Click **Deploy**.
 

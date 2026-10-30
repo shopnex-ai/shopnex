@@ -42,8 +42,8 @@ Open http://localhost:3000 once the logs settle and follow the setup wizard to c
 Ctrl+C stops it; add `-d` (`docker compose up -d`) to keep it running in the background.
 Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
 
-No `.env` needed. For a public server, set `APP_URL` and `STRIPE_APP_URL`, and pin
-`SHOPNEX_VERSION` to a release tag; see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
+No `.env` needed. For a public server, set `DOMAIN` (HTTPS for the shop, plus `stripe.` and `cj.` subdomains for the
+apps, all pointing at the server) and pin `SHOPNEX_VERSION` to a release tag; see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
 
 ## Development
 

@@ -1,0 +1,71 @@
+# Same stack as docker-compose.yml, without host `ports:`, for Dokploy, Coolify and other platforms whose proxy
+# routes domains to containers over the Docker network. Published host ports (3000, 4600, 4700) collide with the
+# proxy or with other apps on the server and fail the first deploy. Add domains in the platform instead:
+# shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700. Keep the rest in sync with docker-compose.yml.
+# Set APP_URL and STRIPE_APP_URL, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
+# Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj, plus CJ_DROPSHIPPING_APP_URL for its domain.
+name: shopnex
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shopnex
+      POSTGRES_PASSWORD: shopnex
+      POSTGRES_DB: shopnex
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shopnex']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  shopnex:
+    image: ghcr.io/shopnex-ai/shopnex:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    volumes:
+      - shopnex_data:/data
+    environment:
+      DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      TENANCY_MODE: single
+      DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
+      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      SHOPNEX_BUNDLED_APPS: docker
+
+  stripe:
+    image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    volumes:
+      - stripe_data:/data
+    environment:
+      STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      DATA_DIR: /data
+
+  cj-dropshipping:
+    profiles: [cj]
+    image: ghcr.io/shopnex-ai/shopnex-cj-dropshipping:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    volumes:
+      - cj_dropshipping_data:/data
+    environment:
+      CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      PORT: 4700
+      DATA_DIR: /data
+
+volumes:
+  db:
+  shopnex_data:
+  stripe_data:
+  cj_dropshipping_data:

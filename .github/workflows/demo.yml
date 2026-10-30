@@ -1,6 +1,7 @@
 name: Demo image
 
-# Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo.
+# Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo, plus the
+# Stripe and CJ Dropshipping app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge).
 # :latest is reserved for releases (multi-arch, see release.yaml).
 # The Dokploy app uses Provider "Docker" with :edge. If DOKPLOY_URL, DOKPLOY_APP_ID and
 # the DOKPLOY_API_KEY secret are set, a redeploy is triggered after the push; otherwise it only pushes.
@@ -50,6 +51,32 @@ jobs:
             ${{ steps.image.outputs.name }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.app
+          build-args: APP=stripe
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}-stripe:edge
+            ${{ steps.image.outputs.name }}-stripe:${{ github.sha }}
+          cache-from: type=gha,scope=stripe
+          cache-to: type=gha,mode=max,scope=stripe
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.app
+          build-args: APP=cj-dropshipping
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}-cj-dropshipping:edge
+            ${{ steps.image.outputs.name }}-cj-dropshipping:${{ github.sha }}
+          cache-from: type=gha,scope=cj-dropshipping
+          cache-to: type=gha,mode=max,scope=cj-dropshipping
 
       - name: Deploy on Dokploy
         env:
