@@ -40,8 +40,7 @@ test.afterAll(async () => {
   await fx.cleanup()
 })
 
-// Known issue 2 (browser/KNOWN_ISSUES.md): a fully filled checkout form is rejected
-test.fixme('a shopper checks out and the owner sees the order in the admin', async ({ page }) => {
+test('a shopper checks out and the owner sees the order in the admin', async ({ page }) => {
   // Storefront: product → cart drawer → hosted checkout
   await page.goto(`${STOREFRONT_URL}/products/${slug}`)
   await page.getByRole('button', { name: /add to cart/i }).click()

@@ -1,7 +1,7 @@
 # Known issues found by the browser tests
 
-Found while writing phase 1 of the [e2e plan](../../docs/e2e-plan.md). Issues 1 and 2 are fixed in #113; once it is
-merged, replace `test.fixme` with `test` in `admin.spec.ts` and `checkout.spec.ts`. Issue 3 is not fixed yet.
+Found while writing phase 1 of the [e2e plan](../../docs/e2e-plan.md). Issues 1 and 2 were fixed in #113 and the tests
+that found them are enabled. Issue 3 is not fixed yet.
 
 ## 1. Admin login: pressing Login before the page is interactive (fixed in #113)
 

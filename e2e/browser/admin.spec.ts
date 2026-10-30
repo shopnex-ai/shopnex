@@ -15,8 +15,7 @@ test.afterAll(async () => {
   await fx.cleanup()
 })
 
-// Known issue 1 (browser/KNOWN_ISSUES.md): the typed email can be lost
-test.fixme('wrong password is rejected, right one reaches the dashboard', async ({ page }) => {
+test('wrong password is rejected, right one reaches the dashboard', async ({ page }) => {
   await page.goto('/admin/login')
   await page.getByLabel('Email').fill(owner.email)
   await page.getByLabel('Password').fill('not-the-password')
