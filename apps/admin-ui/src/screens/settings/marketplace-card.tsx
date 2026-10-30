@@ -36,7 +36,7 @@ export function MarketplaceCard({
       <CardHeader>
         <CardTitle>Marketplace</CardTitle>
         <CardDescription>
-          Connects this Shopnex install to the app marketplace: its apps appear in the App Store for every shop, and
+          Connects this Shopnex install to the app marketplace: its apps appear under Discover apps for every shop, and
           installs are reported so apps can trust them.
         </CardDescription>
       </CardHeader>
@@ -171,8 +171,8 @@ function DisconnectButton() {
         <DialogHeader>
           <DialogTitle>Disconnect from the marketplace?</DialogTitle>
           <DialogDescription>
-            The App Store goes away for every shop. Installed marketplace apps keep their access until uninstalled, but
-            the marketplace stops vouching for them, so some apps may stop working.
+            Marketplace apps disappear from Discover for every shop. Installed marketplace apps keep their access until
+            uninstalled, but the marketplace stops vouching for them, so some apps may stop working.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
