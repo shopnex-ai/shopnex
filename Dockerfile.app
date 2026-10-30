@@ -6,7 +6,7 @@
 #
 # The app reads <NAME>_APP_URL (its public origin; give Shopnex the same) and keeps its identity key and data in
 # /data: mount a volume there, or it is a new app after every recreate.
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 RUN corepack enable
 WORKDIR /app
 ARG APP
@@ -16,7 +16,7 @@ COPY . .
 RUN pnpm install --frozen-lockfile --filter . --filter "{./apps/${APP}}..." \
   && node scripts/bundle-app.mjs "apps/${APP}"
 
-FROM node:22-alpine
+FROM node:25-alpine
 ARG APP
 WORKDIR /app
 COPY --from=build /app/apps/${APP}/dist/server.mjs ./server.mjs
