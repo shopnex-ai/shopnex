@@ -25,8 +25,9 @@ The image generates `BETTER_AUTH_SECRET` into `/data` if you don't set one, so k
 On start, `deploy/start.sh`:
 
 1. requires `DATABASE_URL`, generates `BETTER_AUTH_SECRET` if unset, and defaults `BETTER_AUTH_URL` to `APP_URL`;
-2. runs `pnpm db:migrate`;
-3. starts the admin (port 3001), the storefront (port 4321) and Caddy on `$PORT` (default 3000).
+2. checks that the database is reachable and exits with the connection error if not;
+3. runs `pnpm db:migrate`;
+4. starts the admin (port 3001), the storefront (port 4321) and Caddy on `$PORT` (default 3000).
 
 If any process exits, the container exits so your platform restarts it.
 
