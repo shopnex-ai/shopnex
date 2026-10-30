@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { countryOptions } from '@/lib/countries'
 import { formatMoney } from '@/lib/money'
 import { placeOrder, quoteRates, type CheckoutFields, type PlaceOrderState } from './functions'
 
@@ -44,6 +43,7 @@ export function CheckoutForm({
   tax,
   options,
   defaultCountry,
+  countries,
 }: {
   token: string
   currency: string
@@ -54,6 +54,7 @@ export function CheckoutForm({
   tax: TaxContextView
   options: CheckoutOptionsView
   defaultCountry: string
+  countries: { value: string; label: string }[]
 }) {
   const [state, setState] = useState<PlaceOrderState>({})
   const [pending, setPending] = useState(false)
@@ -181,7 +182,7 @@ export function CheckoutForm({
               }}
               className="h-9 w-full rounded-md border bg-background px-2.5 text-sm"
             >
-              {countryOptions.map((c) => (
+              {countries.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>

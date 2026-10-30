@@ -51,6 +51,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
               tax={tax}
               options={options}
               defaultCountry={data.defaultCountry}
+              countries={data.countries}
             />
           )}
         </section>

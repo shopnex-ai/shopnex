@@ -6,6 +6,7 @@ import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
+import { countryOptions } from '@/lib/countries'
 import { checkoutBranding } from './branding'
 
 const tokenValidator = (token: string) => token
@@ -52,6 +53,9 @@ export const getCheckout = createServerFn({ method: 'GET' })
       options,
       tax,
       defaultCountry,
+      // Built here, once: Intl names and their order differ between this server and the browser, and a
+      // list the browser computes itself fails hydration, which throws away what the buyer already typed
+      countries: countryOptions,
     }
   })
 

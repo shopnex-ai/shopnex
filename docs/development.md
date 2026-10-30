@@ -60,6 +60,7 @@ Register these callback URLs with the provider:
 ```sh
 pnpm dev     # the tests call the running app (APP_URL, default http://localhost:3000)
 pnpm e2e     # e2e/tests/*.test.ts, node:test via tsx
+pnpm --filter @shopnex/e2e test:browser   # e2e/browser/*.spec.ts, Playwright (needs `playwright install chromium` once)
 ```
 
 They run against the dev database, using the Storefront API over HTTP and services for staff-only setup.
