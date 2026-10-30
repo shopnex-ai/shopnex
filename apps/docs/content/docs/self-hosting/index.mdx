@@ -1,57 +1,84 @@
 ---
 title: Self-hosting
-description: Deploy Shopnex in one click or on your own server.
+description: Get your own Shopnex shop online in a few clicks. No coding needed.
 ---
 
 import { SITE_URL } from '@/lib/site'
 
-Shopnex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port. Pick the way you want to run it.
+Self-hosting means your shop runs on a server you own, so you keep your data and pay no platform fees. You only pay the hosting provider, usually around $5 to $30 a month. You need a server with at least 2 GB of memory.
 
-## One-click deploy
+## How it works
 
-Each of these creates the app and a Postgres database for you.
-
-<Cards>
-  <Card title="Render" href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
-    App plus managed Postgres, HTTPS included.
-  </Card>
-  <Card title="DigitalOcean" href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
-    App Platform with a managed database.
-  </Card>
-  <Card title="Railway" href="/docs/self-hosting/railway">
-    App, Postgres and a volume from one template.
-  </Card>
-  <Card title="AWS" href={`${SITE_URL}/download`}>
-    A server with a fixed IP, launched from CloudFormation.
-  </Card>
-</Cards>
+1. **Pick a provider** below and click its button.
+2. **Sign in or create an account** with that provider and confirm the deploy. It builds your shop and database for you.
+3. **Open your shop's address** in a browser. The setup wizard creates your shop and your admin account.
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+  Complete the setup wizard at `/admin/setup` right after you deploy. Until you do, anyone who finds the address could claim your shop.
 </Callout>
 
-## Your own server
+## Deploy in one click
+
+Easiest first. Each of these creates the app and its database for you, with no server to manage.
 
 <Cards>
-  <Card title="Install script" href="/docs/self-hosting/docker">
-    <code>{`curl -fsSL ${SITE_URL}/install.sh | sh`}</code> on a fresh Linux server, or run the Docker image yourself.
+  <Card title="DigitalOcean" href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+    App Platform with a managed database. Good for trying Shopnex; add a managed database before going live.
   </Card>
+  <Card title="Render" href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+    App plus managed database, HTTPS included.
+  </Card>
+</Cards>
+
+## Deploy with a few guided steps
+
+<Cards>
+  <Card title="Railway" href="/docs/self-hosting/railway">
+    Follow a short checklist to set up the app, database and storage. A one-click template is coming.
+  </Card>
+</Cards>
+
+## Already have a server?
+
+Do you rent a server from Hetzner, Vultr, Linode, Google Cloud or similar? Copy one line, paste it into the server, and Shopnex installs itself.
+
+<Cards>
+  <Card title="Install with one command" href="/docs/self-hosting/docker">
+    <code>{`curl -fsSL ${SITE_URL}/install.sh | sh`}</code> on a fresh Ubuntu or Debian server. Safe to re-run to update.
+  </Card>
+  <Card title="Step-by-step for each provider" href={`${SITE_URL}/download`}>
+    Where to paste the script on DigitalOcean, Hetzner, Vultr and others.
+  </Card>
+</Cards>
+
+## Use a hosting tool like Dokploy or Coolify
+
+Already run a self-hosted platform? Deploy Shopnex from a single Docker Compose file.
+
+<Cards>
   <Card title="Dokploy, Coolify, Portainer" href="/docs/self-hosting/dokploy">
-    One Docker Compose file: the prebuilt image plus Postgres.
+    The prebuilt image plus a database. Nothing is built on your server.
   </Card>
 </Cards>
 
-## After you deploy
+## After your shop is live
+
+**Use your own domain.** Point your domain's DNS at the server, then re-run the installer with it. HTTPS is set up automatically.
+
+<code>{`curl -fsSL ${SITE_URL}/install.sh | SHOPNEX_DOMAIN=shop.example.com sh`}</code>
 
 <Cards>
-  <Card title="Configuration" href="/docs/self-hosting/configuration">Environment variables.</Card>
-  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">Optional OAuth providers.</Card>
-  <Card title="End-to-end tests" href="/docs/self-hosting/testing">Run the e2e suite.</Card>
+  <Card title="Settings and environment variables" href="/docs/self-hosting/configuration">
+    Change how your shop is configured.
+  </Card>
+  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">
+    Optional: let people log in with their existing accounts.
+  </Card>
 </Cards>
 
-## How the image is wired
+## For developers
 
 - **Admin, API and checkout** (`/admin`, `/api/*`, `/checkout/*`, plus admin assets) go to the admin app.
 - **Everything else** (`/`, `/products`, `/collections`, `/pages`, theme assets) goes to the storefront.
 
-Every option above runs this same image, so a platform only needs to forward one port and give the app a Postgres `DATABASE_URL`.
+Every option above runs this same image, fronted by Caddy on a single port. A platform only needs to forward that port and give the app a Postgres `DATABASE_URL`. To run the end-to-end suite, see [End-to-end tests](/docs/self-hosting/testing).
