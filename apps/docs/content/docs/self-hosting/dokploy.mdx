@@ -28,8 +28,10 @@ Every variable has a local default, so `docker compose up` works without any set
 
 ## Dokploy
 
+Use [`deploy/docker-compose.dokploy.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.dokploy.yml), the same stack without published host `ports:`. Dokploy's proxy reaches the containers over the Docker network, and a published port such as `3000` can collide with it or with another app and fail the first deploy.
+
 1. Create a **Compose** service in a project and choose the **Raw** provider.
-2. Paste the compose file and set `APP_URL`, `STRIPE_APP_URL`, `POSTGRES_PASSWORD`, and `SHOPNEX_VERSION` under **Environment**.
+2. Paste the Dokploy compose file and set `APP_URL`, `STRIPE_APP_URL`, `POSTGRES_PASSWORD`, and `SHOPNEX_VERSION` under **Environment**.
 3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
 4. Click **Deploy**.
 
