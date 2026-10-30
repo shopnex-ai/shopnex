@@ -150,6 +150,13 @@
       "language": "html"
     }
   ],
+  "checkout": {
+    "background": "color_body_bg",
+    "text": "color_body_color",
+    "accent": "color_primary",
+    "headingFont": "font_headings",
+    "bodyFont": "font_body"
+  },
   "sections": {
     "hero-carousel": {
       "name": "Hero carousel",

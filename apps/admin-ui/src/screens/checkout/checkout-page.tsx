@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import type { getCheckout } from './functions'
+import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
 import { DiscountCodeForm } from './discount-code-form'
 import { OffsitePayment } from './offsite-payment'
@@ -20,6 +21,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
         token={data.token}
         shopName={data.shopName}
         storefrontUrl={data.storefrontUrl}
+        branding={data.branding}
         order={data.order}
         payment={data.payment}
       />
@@ -29,7 +31,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
   const unavailable = cart.lines.some((l) => !l.available)
 
   return (
-    <Shell shopName={data.shopName} storefrontUrl={data.storefrontUrl}>
+    <Shell shopName={data.shopName} storefrontUrl={data.storefrontUrl} branding={data.branding}>
       <div className="grid gap-10 md:grid-cols-[1fr_380px] md:items-start">
         <section className="order-2 md:order-1">
           {cart.lines.length === 0 ? (
@@ -94,12 +96,14 @@ function Confirmation({
   token,
   shopName,
   storefrontUrl,
+  branding,
   order,
   payment,
 }: {
   token: string
   shopName: string
   storefrontUrl: string | null
+  branding: CheckoutBranding | null
   order: Order
   payment: Confirmed['payment']
 }) {
@@ -109,7 +113,7 @@ function Confirmation({
   const offsite = (order.paymentGateway ?? 'manual') !== 'manual'
   const firstName = order.shippingAddress?.firstName
   return (
-    <Shell shopName={shopName} storefrontUrl={storefrontUrl}>
+    <Shell shopName={shopName} storefrontUrl={storefrontUrl} branding={branding}>
       <div className="mx-auto max-w-xl space-y-6">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">Order {orderName(order.orderNumber)}</p>
@@ -210,23 +214,33 @@ function Confirmation({
 function Shell({
   shopName,
   storefrontUrl,
+  branding,
   children,
 }: {
   shopName: string
   storefrontUrl: string | null
+  branding: CheckoutBranding | null
   children: ReactNode
 }) {
+  const name = branding?.logoUrl ? (
+    <img src={branding.logoUrl} alt={shopName} className="h-8 w-auto max-w-48 object-contain" />
+  ) : (
+    <span className="text-lg font-semibold">{shopName}</span>
+  )
   return (
-    <div className="min-h-svh">
+    // The theme's colors win over light/dark mode: set inline, they sit closer than the .dark variables
+    <div
+      className="min-h-svh bg-background text-foreground"
+      style={branding?.style}
+      data-themed={branding ? '' : undefined}
+    >
+      {branding?.fontsHref && <link rel="stylesheet" href={branding.fontsHref} />}
+      {branding?.headingFont && (
+        <style>{`[data-themed] :is(h1,h2,h3){font-family:'${branding.headingFont}',system-ui,sans-serif}`}</style>
+      )}
       <header className="border-b">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
-          {storefrontUrl ? (
-            <a href={storefrontUrl} className="text-lg font-semibold">
-              {shopName}
-            </a>
-          ) : (
-            <span className="text-lg font-semibold">{shopName}</span>
-          )}
+          {storefrontUrl ? <a href={storefrontUrl}>{name}</a> : name}
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</main>

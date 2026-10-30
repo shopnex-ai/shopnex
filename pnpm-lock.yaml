@@ -154,6 +154,9 @@ importers:
       '@shopnex/tenancy':
         specifier: workspace:*
         version: link:../../modules/tenancy
+      '@shopnex/theme':
+        specifier: workspace:*
+        version: link:../../modules/theme
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../../modules/webhooks
