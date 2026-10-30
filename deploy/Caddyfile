@@ -16,3 +16,6 @@
 		reverse_proxy localhost:{$STOREFRONT_PORT}
 	}
 }
+
+# Empty unless DOMAIN is set (start.sh points it at Caddyfile.apps).
+import {$APPS_CADDYFILE}
