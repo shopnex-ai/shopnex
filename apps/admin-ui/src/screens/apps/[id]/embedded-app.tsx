@@ -1,12 +1,12 @@
 'use client'
 
 // Hosts an app in an iframe and answers its @shopnex/app-bridge messages (protocol: packages/app-bridge).
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
 import { client } from '@/lib/orpc'
-import { AppIcon } from '../installed-apps-card'
+import { AppIcon, UninstallButton } from '../installed-apps-card'
 
 type Props = { installationId: string; src: string; name: string; iconUrl: string | null }
 // AdminMessage without the envelope (Omit on the union would collapse it)
@@ -15,6 +15,7 @@ type Reply = { type: 'session-token'; token: string } | { type: 'error'; message
 export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const appOrigin = new URL(src).origin
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function onMessage(event: MessageEvent) {
@@ -71,6 +72,12 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
         <span className="text-muted-foreground">/</span>
         <AppIcon url={iconUrl} className="size-5 rounded" />
         <span className="font-medium">{name}</span>
+        <div className="ml-auto">
+          <UninstallButton
+            installation={{ id: installationId, app: { name } }}
+            onUninstalled={() => void navigate({ to: '/admin/apps' })}
+          />
+        </div>
       </div>
       <iframe
         ref={frame}

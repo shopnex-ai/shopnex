@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { NoAccess } from '@/components/admin/no-access'
+import { Skeleton } from '@/components/ui/skeleton'
 import { EmbeddedApp } from '@/screens/apps/[id]/embedded-app'
 import { getEmbeddedApp } from '@/screens/apps/functions'
 
@@ -10,6 +11,8 @@ export const Route = createFileRoute('/admin/apps/$id')({
     if (!tenant.superAdmin && tenant.role !== 'owner' && tenant.role !== 'admin') return { forbidden: true as const }
     return getEmbeddedApp({ data: { id: params.id, shopId: tenant.shop.id, userId: session.user.id } })
   },
+  pendingMs: 0,
+  pendingComponent: () => <Skeleton className="h-[calc(100svh-8rem)] w-full" />,
   component: EmbeddedAppPage,
 })
 function EmbeddedAppPage() {

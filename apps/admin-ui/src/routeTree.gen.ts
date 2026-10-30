@@ -40,6 +40,7 @@ import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/setti
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
+import { Route as AdminSettingsMarketplaceRouteImport } from './routes/admin/settings/marketplace'
 import { Route as AdminSettingsNotificationsRouteRouteImport } from './routes/admin/settings/notifications/route'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/admin/settings/payments'
 import { Route as AdminSettingsShippingRouteImport } from './routes/admin/settings/shipping'
@@ -213,6 +214,12 @@ const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsMarketplaceRoute =
+  AdminSettingsMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AdminSettingsRouteRoute,
+  } as any)
 const AdminSettingsNotificationsRouteRoute =
   AdminSettingsNotificationsRouteRouteImport.update({
     id: '/notifications',
@@ -324,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -370,6 +378,7 @@ export interface FileRoutesByTo {
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -418,6 +427,7 @@ export interface FileRoutesById {
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -467,6 +477,7 @@ export interface FileRouteTypes {
     | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -513,6 +524,7 @@ export interface FileRouteTypes {
     | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -560,6 +572,7 @@ export interface FileRouteTypes {
     | '/admin/settings/channels'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -799,6 +812,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/admin/settings/general'
       preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/marketplace': {
+      id: '/admin/settings/marketplace'
+      path: '/marketplace'
+      fullPath: '/admin/settings/marketplace'
+      preLoaderRoute: typeof AdminSettingsMarketplaceRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/notifications': {
@@ -1048,6 +1068,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
+  AdminSettingsMarketplaceRoute: typeof AdminSettingsMarketplaceRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
   AdminSettingsShippingRoute: typeof AdminSettingsShippingRoute
   AdminSettingsStaffRoute: typeof AdminSettingsStaffRoute
@@ -1064,6 +1085,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
+  AdminSettingsMarketplaceRoute: AdminSettingsMarketplaceRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
   AdminSettingsShippingRoute: AdminSettingsShippingRoute,
   AdminSettingsStaffRoute: AdminSettingsStaffRoute,
