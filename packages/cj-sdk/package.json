@@ -1,6 +1,6 @@
 {
   "name": "@shopnex/cj-sdk",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "description": "Typed client for the CJ Dropshipping API: products, variants, inventory, orders, disputes",
   "type": "module",
   "exports": {
