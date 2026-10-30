@@ -13,9 +13,21 @@ import {
 } from './products/products'
 import { calculateFreight, getTrackingInfo } from './logistics/logistics'
 import { getSettings } from './settings/settings-api'
+import {
+  getBrands,
+  getCategoryAttributes,
+  getCategoryCertifications,
+  getChildCategories,
+  getListingShopInfo,
+  getShops,
+  publishAsync,
+  queryPublishStatus,
+  republish,
+} from './listing/listing'
 
 import type { CreateOrderPayload, QueryOrderParams } from './orders/order-types.ts'
 import type { FreightCalculateParams } from './logistics/logistics-types.ts'
+import type { PublishParams } from './listing/listing-types.ts'
 import type { MyProductsParams, ProductListV2Params, ShopProductsParams } from './products/product-types.ts'
 
 export type CjSdk = ReturnType<typeof cjSdk>
@@ -49,6 +61,22 @@ export function cjSdk({ accessToken }: { accessToken: string }) {
     logistics: {
       calculateFreight: (params: FreightCalculateParams) => calculateFreight(accessToken, params),
       getTrackingInfo: (trackNumbers: string[]) => getTrackingInfo(accessToken, trackNumbers),
+    },
+    // Stores the merchant linked in CJ (TikTok Shop, ...), and listing products on them
+    shops: {
+      list: () => getShops(accessToken),
+    },
+    listing: {
+      getShopInfo: (shopId: string) => getListingShopInfo(accessToken, shopId),
+      getChildCategories: (params: Parameters<typeof getChildCategories>[1]) => getChildCategories(accessToken, params),
+      getCategoryAttributes: (params: Parameters<typeof getCategoryAttributes>[1]) =>
+        getCategoryAttributes(accessToken, params),
+      getCategoryCertifications: (params: Parameters<typeof getCategoryCertifications>[1]) =>
+        getCategoryCertifications(accessToken, params),
+      getBrands: (params: Parameters<typeof getBrands>[1]) => getBrands(accessToken, params),
+      publish: (params: PublishParams) => publishAsync(accessToken, params),
+      queryStatus: (listedId: string) => queryPublishStatus(accessToken, listedId),
+      republish: (shopId: string, listedId: string) => republish(accessToken, shopId, listedId),
     },
     // settings: {
     //     getSettings: () => getSettings({ accessToken }),

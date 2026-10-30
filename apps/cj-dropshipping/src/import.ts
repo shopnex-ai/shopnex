@@ -60,7 +60,7 @@ export const needsCheck = (known: ReturnType<Tables['availability']>, pid: strin
 }
 
 /** CJ sends a JSON array of URLs, a single URL, or a comma-separated list, depending on the endpoint */
-const imagesOf = (raw: string | undefined) => {
+export const imagesOf = (raw: string | undefined) => {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
