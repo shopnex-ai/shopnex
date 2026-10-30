@@ -111,6 +111,8 @@ export async function getProductDetails(queryParams: {
   }
 }
 
+// The stock endpoints reply {success: true, code: 200} without `result`, so only an explicit `result: false` is a
+// failure here (the client already throws on any code other than 200).
 export async function getProductStockByVid({
   accessToken,
   vid,
@@ -131,7 +133,7 @@ export async function getProductStockByVid({
       params: { vid },
     })
 
-    if (!response.data.result) {
+    if (response.data.result === false) {
       return {
         error: response.data.message || 'Failed to fetch stock information',
       }
@@ -158,7 +160,7 @@ export async function getProductStockBySku(sku: string, accessToken: string): Pr
       params: { sku },
     })
 
-    if (!response.data.result) {
+    if (response.data.result === false) {
       return {
         error: response.data.message || 'Failed to fetch stock information',
       }
@@ -216,7 +218,7 @@ export async function getProductInventoryByPid(
       params: { pid },
     })
 
-    if (!response.data.result) {
+    if (response.data.result === false) {
       return {
         error: response.data.message || 'Failed to fetch stock information',
       }
