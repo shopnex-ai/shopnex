@@ -23,6 +23,10 @@ export BETTER_AUTH_SECRET
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
 
+# Caddy serves the bundled storefront on the app's own origin, so a single shop that hasn't saved a
+# Storefront URL in Settings (Themes, editor preview) uses that one.
+export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"
+
 # Migrations are idempotent, so running them on every start also covers updates.
 pnpm db:migrate
 
