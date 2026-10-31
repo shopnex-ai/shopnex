@@ -3,8 +3,6 @@ import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanst
 import { ThemeProvider } from 'next-themes'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { analyticsScript } from '@/lib/analytics'
-import { getAnalyticsConfig } from '@/lib/session.functions'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import '../styles.css'
@@ -14,8 +12,7 @@ export interface RouterContext {
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  loader: () => getAnalyticsConfig(),
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -23,7 +20,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: 'darkreader-lock', content: 'true' },
     ],
     links: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
-    scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [],
   }),
   component: RootComponent,
 })

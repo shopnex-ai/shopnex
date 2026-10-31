@@ -8,6 +8,8 @@ import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { adminContextQuery } from '@/lib/admin-context'
+import { analyticsScript } from '@/lib/analytics'
+import { getAnalyticsConfig } from '@/lib/session.functions'
 import { CreateShopForm } from '@/screens/signup/create-shop-form'
 
 export const Route = createFileRoute('/admin')({
@@ -38,6 +40,9 @@ export const Route = createFileRoute('/admin')({
     }
     return { access }
   },
+  // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
+  loader: () => getAnalyticsConfig(),
+  head: ({ loaderData }) => ({ scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [] }),
   component: AdminLayout,
 })
 
