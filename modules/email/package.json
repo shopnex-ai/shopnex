@@ -16,7 +16,7 @@
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",
     "liquidjs": "10.30.0",
-    "nodemailer": "10.0.16"
+    "nodemailer": "10.2.1"
   },
   "devDependencies": {
     "@types/node": "catalog:"
