@@ -29,7 +29,7 @@ import {
   type ThemeSection,
   type ThemeSettings,
 } from '@shopnex/storefront-sdk'
-import { catalogHref, sortOptions } from './catalog'
+import { catalogHref, sortOptions, type CatalogFilters } from './catalog'
 import {
   CollectionDrop,
   Lazy,
@@ -179,6 +179,9 @@ export type ThemePage =
       pageInfo: PageInfo
       /** Slug of the sort option in use (see core/catalog), null for the default */
       sort: string | null
+      /** The search terms on /search ('' when none were entered), null on other listings */
+      search: string | null
+      filters: CatalogFilters
     }
   | { template: 'product'; product: Product }
   | { template: 'page'; page: Page }
@@ -193,6 +196,9 @@ function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<str
       const paged = url.searchParams.has('after')
       const drop = new CollectionDrop(collection, loader, {
         products: page.products,
+        filters: page.filters.groups,
+        active_filters: page.filters.active,
+        clear_filters_url: page.filters.clearUrl,
         sort_by: page.sort ?? '',
         sort_options: sortOptions.map((o) => ({
           name: o.title,
@@ -209,10 +215,21 @@ function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<str
         /** Back to the first page (paging is forward-only) */
         first: paged ? { url: catalogHref(url, { after: null }) } : null,
       }
+      // Shopify's `search` object, on /search
+      const search = {
+        performed: page.search !== null,
+        terms: page.search ?? '',
+        url: '/search',
+      }
       return [
-        { collection: drop, paginate },
+        { collection: drop, paginate, search },
         {
-          title: collection?.title ?? 'All products',
+          title:
+            page.search !== null
+              ? page.search
+                ? `Search: ${page.search}`
+                : 'Search'
+              : (collection?.title ?? 'All products'),
           description: collection ? (collection.seo.description ?? collection.description) || null : null,
           image: collection?.image?.url ?? null,
         },

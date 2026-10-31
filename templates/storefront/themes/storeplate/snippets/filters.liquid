@@ -1,0 +1,69 @@
+{%- comment -%}
+  Search, selected filters and filters of a catalog page (/products, /collections/{handle}, /search). Plain links
+  and forms, so it works without scripts.
+
+    collection   the collection template's collection (filters, active_filters, clear_filters_url)
+    search       the search object (on /search: performed, terms)
+{%- endcomment -%}
+{%- assign offering = true -%}
+{%- if search.performed and search.terms == blank -%}{%- assign offering = false -%}{%- endif -%}
+{%- if search.performed %}
+  <form action="/search" method="get" role="search" class="mb-6 flex max-w-xl gap-2">
+    <input
+      type="search"
+      name="q"
+      value="{{ search.terms }}"
+      placeholder="Search products"
+      aria-label="Search products"
+      class="form-input w-full rounded-md border-border"
+      autofocus
+    />
+    <button type="submit" class="btn btn-primary">Search</button>
+  </form>
+{%- endif %}
+{%- if offering %}
+  {%- if collection.active_filters.size > 0 %}
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      {%- for filter in collection.active_filters %}
+        <a href="{{ filter.url }}" class="rounded-full border border-border px-3 py-1 text-sm hover:text-text-dark">
+          {{- filter.label }} <span aria-hidden="true">✕</span><span class="sr-only">Remove</span>
+        </a>
+      {%- endfor %}
+      <a href="{{ collection.clear_filters_url }}" class="text-sm underline">Clear all</a>
+    </div>
+  {%- endif %}
+  {%- if collection.filters.size > 0 %}
+    <details class="mb-6 rounded-md border border-border" {% if collection.active_filters.size > 0 %}open{% endif %}>
+      <summary class="cursor-pointer list-none px-4 py-2 font-medium">Filters</summary>
+      <div class="grid gap-6 border-t border-border p-4 sm:grid-cols-2 lg:grid-cols-4">
+        {%- for group in collection.filters %}
+          <div>
+            <h3 class="h6 mb-2">{{ group.label }}</h3>
+            {%- if group.type == 'price_range' %}
+              <form action="{{ request.path }}" method="get" class="flex flex-wrap items-center gap-2">
+                {%- for field in group.hidden %}
+                  <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
+                {%- endfor %}
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="form-input w-24 rounded-md border-border py-1" />
+                <span aria-hidden="true">–</span>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="form-input w-24 rounded-md border-border py-1" />
+                <button type="submit" class="btn btn-outline-primary py-1">Apply</button>
+              </form>
+            {%- else %}
+              <ul class="max-h-48 space-y-1 overflow-y-auto">
+                {%- for value in group.values %}
+                  <li>
+                    <a href="{{ value.url }}" class="flex justify-between gap-2 {% if value.active %}font-semibold text-text-dark{% else %}text-text-light{% endif %} hover:text-text-dark">
+                      <span>{% if value.active %}✓ {% endif %}{{ value.label }}</span>
+                      {%- if value.count %}<span>{{ value.count }}</span>{% endif %}
+                    </a>
+                  </li>
+                {%- endfor %}
+              </ul>
+            {%- endif %}
+          </div>
+        {%- endfor %}
+      </div>
+    </details>
+  {%- endif %}
+{%- endif %}
