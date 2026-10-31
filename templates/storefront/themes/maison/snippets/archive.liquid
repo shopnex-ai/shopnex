@@ -45,6 +45,7 @@
   </aside>
 
   <section class="flex min-w-0 flex-[999_1_520px] flex-col gap-6">
+    {%- if collection %}{% render 'filters', collection: collection, search: search %}{% endif %}
     <div class="flex flex-wrap items-center gap-x-[18px] gap-y-3 border-b border-line pb-3.5">
       <span class="eti text-muted" style="font-size:11px">
         {{- products.size }} {{ products.size | pluralize: 'piece', 'pieces' }}
@@ -82,8 +83,10 @@
 
     {%- if products.size == 0 %}
       <div class="py-[72px] text-center text-muted">
-        <div class="font-sf mb-3 text-[22px]">Nothing in the archive yet</div>
-        {%- if active != 'all' %}
+        <div class="font-sf mb-3 text-[22px]">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}Nothing in the archive yet{% endif %}</div>
+        {%- if collection.clear_filters_url %}
+          <a href="{{ collection.clear_filters_url }}" class="link-rule text-acc">Clear filters</a>
+        {%- elsif active != 'all' %}
           <a href="/products" class="link-rule text-acc">See all products</a>
         {%- endif %}
       </div>

@@ -54,6 +54,10 @@
 
     <div class="flex w-full items-center justify-end gap-4 lg:w-auto lg:gap-1">
       <a href="{{ routes.account_url }}" class="text-sm underline-offset-4 hover:underline">Account</a>
+      <a href="/search" class="flex h-8 w-8 items-center justify-center">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <span class="sr-only">Search</span>
+      </a>
       <button type="button" data-cart-open class="relative flex h-8 w-8 cursor-pointer items-center justify-center">
         {% render 'icon', name: 'bag', class: 'icon' %}
         <span class="sr-only">Cart</span>

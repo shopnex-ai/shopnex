@@ -55,6 +55,12 @@
     </div>
 
     <div class="flex items-center gap-x-6">
+      <a href="/search" class="text-text-dark" aria-label="Search">
+        <svg class="block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+      </a>
       {%- comment %} A React island (src/islands/CartButton.tsx); the cart is only known in the browser {% endcomment %}
       <a href="{{ routes.account_url }}" class="text-sm text-text-dark transition hover:opacity-70">Account</a>
       <div data-island="CartButton" class="flex min-w-5 items-center"></div>

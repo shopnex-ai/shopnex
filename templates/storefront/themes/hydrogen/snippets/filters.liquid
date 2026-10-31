@@ -1,0 +1,67 @@
+{%- comment -%}
+  Search, selected filters and filters of a catalog page (/products, /collections/{handle}, /search). Plain links
+  and forms, so it works without scripts.
+
+    collection   the collection template's collection (filters, active_filters, clear_filters_url)
+    search       the search object (on /search: performed, terms)
+{%- endcomment -%}
+{%- assign offering = true -%}
+{%- if search.performed and search.terms == blank -%}{%- assign offering = false -%}{%- endif -%}
+{%- if search.performed %}
+  <form action="/search" method="get" role="search" class="flex w-full max-w-xl gap-4">
+    <input
+      type="search"
+      name="q"
+      value="{{ search.terms }}"
+      placeholder="Search"
+      aria-label="Search products"
+      class="min-w-0 flex-1 border-0 border-b border-current bg-transparent px-0 py-2 text-copy focus:ring-0 focus:outline-none"
+      autofocus
+    />
+    <button type="submit" class="font-bold">Search</button>
+  </form>
+{%- endif %}
+{%- if offering %}
+  {%- if collection.active_filters.size > 0 %}
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-copy">
+      {%- for filter in collection.active_filters %}
+        <a href="{{ filter.url }}" class="font-bold underline">{{ filter.label }} ✕</a>
+      {%- endfor %}
+      <a href="{{ collection.clear_filters_url }}" class="opacity-70">Clear all</a>
+    </div>
+  {%- endif %}
+  {%- if collection.filters.size > 0 %}
+    <details {% if collection.active_filters.size > 0 %}open{% endif %}>
+      <summary class="cursor-pointer list-none font-bold text-copy">Filters</summary>
+      <div class="grid gap-6 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+        {%- for group in collection.filters %}
+          <div class="text-copy">
+            <div class="mb-2 font-bold">{{ group.label }}</div>
+            {%- if group.type == 'price_range' %}
+              <form action="{{ request.path }}" method="get" class="flex flex-wrap items-center gap-2">
+                {%- for field in group.hidden %}
+                  <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
+                {%- endfor %}
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="w-24 border-0 border-b border-current bg-transparent px-0 py-1 focus:ring-0 focus:outline-none" />
+                <span aria-hidden="true">–</span>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="w-24 border-0 border-b border-current bg-transparent px-0 py-1 focus:ring-0 focus:outline-none" />
+                <button type="submit" class="font-bold underline">Apply</button>
+              </form>
+            {%- else %}
+              <ul class="m-0 flex max-h-48 list-none flex-col gap-1 overflow-y-auto p-0">
+                {%- for value in group.values %}
+                  <li>
+                    <a href="{{ value.url }}" class="flex justify-between gap-2 {% if value.active %}font-bold underline{% endif %}">
+                      <span>{{ value.label }}</span>
+                      {%- if value.count %}<span class="opacity-60">{{ value.count }}</span>{% endif %}
+                    </a>
+                  </li>
+                {%- endfor %}
+              </ul>
+            {%- endif %}
+          </div>
+        {%- endfor %}
+      </div>
+    </details>
+  {%- endif %}
+{%- endif %}
