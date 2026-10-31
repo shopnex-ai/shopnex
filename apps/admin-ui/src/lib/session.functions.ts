@@ -13,6 +13,13 @@ export const getDemoLogin = createServerFn({ method: 'GET' }).handler(() => {
   return DEMO_MODE === 'true' && DEMO_EMAIL && DEMO_PASSWORD ? { email: DEMO_EMAIL, password: DEMO_PASSWORD } : null
 })
 
+// Hosted deployments only: POSTHOG_KEY is set on app.shopnex.ai / the demo and nowhere else, so a self-hosted or cloned
+// install gets null and loads no analytics. See lib/analytics.ts.
+export const getAnalyticsConfig = createServerFn({ method: 'GET' }).handler(() => {
+  const { POSTHOG_KEY, POSTHOG_HOST } = process.env
+  return POSTHOG_KEY ? { key: POSTHOG_KEY, host: POSTHOG_HOST || 'https://eu.i.posthog.com' } : null
+})
+
 export const getAdminContext = createServerFn({ method: 'GET' }).handler(async () => {
   const setupComplete = await isSetupComplete()
   const openSignup = isOpenSignup
