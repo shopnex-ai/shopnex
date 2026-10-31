@@ -3,7 +3,7 @@
 // who ordered before get their orders back. The session token is opaque to the storefront, which keeps it in a
 // cookie and sends it back with each request.
 import { and, eq } from 'drizzle-orm'
-import { auth, withOtpSender, withSignUpAllowed } from '@shopnex/auth'
+import { auth, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
 import { db, schema } from '@shopnex/db'
 import { sendLoginCode } from '@shopnex/email'
 import type { Customer } from '@shopnex/db/schema'
@@ -118,7 +118,9 @@ export async function verifyLoginCode(shopId: string, rawEmail: string, code: st
   let result: Awaited<ReturnType<typeof auth.api.signInEmailOTP>>
   try {
     // Sign-up is invitation-only for staff (sign-up-policy); a customer's first sign-in is the exception
-    result = await withSignUpAllowed(() => auth.api.signInEmailOTP({ body: { email, otp: code.trim() } }))
+    result = await withOtpSignIn(() =>
+      withSignUpAllowed(() => auth.api.signInEmailOTP({ body: { email, otp: code.trim() } })),
+    )
   } catch {
     throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
   }

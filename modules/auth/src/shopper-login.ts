@@ -16,4 +16,17 @@ const senders = new AsyncLocalStorage<OtpSender>()
 /** Runs `fn` with `send` delivering the sign-in codes Better Auth generates inside it */
 export const withOtpSender = <T>(send: OtpSender, fn: () => Promise<T>) => senders.run(send, fn)
 
+/** Runs `fn` (checking a code and signing in) as customer sign-in; sending a code is not part of it */
+export const withOtpSignIn = <T>(fn: () => Promise<T>) =>
+  senders.run(async () => {
+    throw new Error('A code is not sent while signing in')
+  }, fn)
+
 export const currentOtpSender = () => senders.getStore()
+
+/**
+ * Better Auth's emailOTP endpoints (/email-otp/*, /sign-in/email-otp) are reachable over HTTP too. A customer
+ * who used one would get a regular Better Auth session cookie (which in multi mode can even create a shop), so
+ * they only work for calls our own server code makes inside withOtpSender / withOtpSignIn.
+ */
+export const isOtpPath = (path: string) => path.startsWith('/email-otp/') || path === '/sign-in/email-otp'

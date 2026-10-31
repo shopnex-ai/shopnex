@@ -43,6 +43,9 @@ async function placeOrder(email: string) {
   return order
 }
 
+const mailsTo = (email: string) =>
+  sink.messages.filter((m) => m.toLowerCase().includes(`to: ${email}`) || m.includes(`<${email}>`))
+
 // The code in the subject of the newest message to `email`
 async function codeSentTo(email: string) {
   for (let i = 0; i < 50; i++) {
@@ -175,10 +178,9 @@ describe('customer accounts', () => {
 
     test("a staff member's account is left alone: no code, and their password still works", async () => {
       const staff = await fx.account('member')
-      const before = sink.messages.length
       ok(await requestCode(staff.email))
       await new Promise((resolve) => setTimeout(resolve, 300))
-      assert.equal(sink.messages.length, before, 'no email is sent')
+      assert.equal(mailsTo(staff.email).length, 0, 'no email is sent')
       assert.equal((await signIn(staff.email, '123456')).status, 400)
       const login = await authCall('/sign-in/email', { email: staff.email, password: PASSWORD })
       assert.equal(login.status, 200, 'the password was not wiped')
@@ -186,12 +188,25 @@ describe('customer accounts', () => {
 
     test("Better Auth's own sign-in endpoints can't be used to send mail or create accounts", async () => {
       const email = fx.shopper('direct')
-      const before = sink.messages.length
       await authCall('/email-otp/send-verification-otp', { email, type: 'sign-in' })
       await new Promise((resolve) => setTimeout(resolve, 300))
-      assert.equal(sink.messages.length, before)
+      assert.equal(mailsTo(email).length, 0)
       const direct = await authCall('/sign-in/email-otp', { email, otp: '123456' })
       assert.notEqual(direct.status, 200)
+    })
+
+    test('an existing customer cannot turn a code into a Better Auth session cookie', async () => {
+      const email = fx.shopper('cookie')
+      ok(await requestCode(email))
+      ok(await signIn(email, await codeSentTo(email))) // the account now exists
+      ok(await requestCode(email))
+      const code = await codeSentTo(email)
+      // Straight to Better Auth, skipping the storefront: a cookie here would reach the admin's own session APIs
+      const direct = await authCall('/sign-in/email-otp', { email, otp: code })
+      assert.notEqual(direct.status, 200, JSON.stringify(direct.body))
+      assert.equal(direct.cookie, undefined, 'no session cookie')
+      // The code was not used up by the refused attempt
+      ok(await signIn(email, code))
     })
 
     test('asking for codes over and over is limited', async () => {

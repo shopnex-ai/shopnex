@@ -6,9 +6,9 @@ import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/ac
 import { db, schema } from '@shopnex/db'
 import { isMultiTenant } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
-import { APIError } from 'better-auth/api'
+import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed } from './sign-up-policy'
-import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender } from './shopper-login'
+import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 
 // A provider is enabled only when both its credentials are set.
@@ -50,6 +50,12 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword: { enabled: true },
+  hooks: {
+    // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
+    before: createAuthMiddleware(async (ctx) => {
+      if (isOtpPath(ctx.path) && !currentOtpSender()) throw new APIError('FORBIDDEN', { message: 'Not available' })
+    }),
+  },
   socialProviders,
   databaseHooks: {
     user: {
@@ -103,4 +109,4 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
-export { withOtpSender, LOGIN_CODE_TTL_S } from './shopper-login'
+export { withOtpSender, withOtpSignIn, LOGIN_CODE_TTL_S } from './shopper-login'
