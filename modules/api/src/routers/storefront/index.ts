@@ -185,6 +185,26 @@ async function paginate<T>(
   return { nodes, pageInfo: { hasNextPage, endCursor: nodes.length ? encodeCursor(offset + nodes.length) : null } }
 }
 
+function productFilters(input: {
+  query?: string
+  vendor?: string[]
+  productType?: string[]
+  tag?: string[]
+  minPrice?: number
+  maxPrice?: number
+  available?: boolean
+}) {
+  return {
+    search: input.query,
+    vendors: input.vendor,
+    productTypes: input.productType,
+    tags: input.tag,
+    minPriceCents: input.minPrice,
+    maxPriceCents: input.maxPrice,
+    available: input.available,
+  }
+}
+
 // Storefronts only ever see active products that are published on their channel
 async function activeProduct(
   row: Awaited<ReturnType<typeof productService.getById>>,
@@ -235,11 +255,35 @@ export const storefrontRouter = storefront.router({
             reverse: input.reverse,
             status: 'active',
             channelId: context.channelId,
+            ...productFilters(input),
           }),
         ),
       )
       const nodes = await withLiveCollections(page.nodes, context.shop.id, context.channelId)
       return { ...page, nodes: nodes.map((p) => toProduct(p, context.shop.currency)) }
+    }),
+    facets: storefront.products.facets.handler(async ({ input, context }) => {
+      const none = { vendors: [], productTypes: [], tags: [], price: null }
+      if (
+        input.collection &&
+        !(await collectionService.liveSlugs(context.shop.id, context.channelId, [input.collection])).size
+      ) {
+        return none
+      }
+      const facets = await productService.facets(context.shop.id, {
+        collection: input.collection,
+        search: input.query,
+        status: 'active',
+        channelId: context.channelId,
+      })
+      const { currency } = context.shop
+      return {
+        ...facets,
+        price: facets.price && {
+          min: money(facets.price.minCents, currency),
+          max: money(facets.price.maxCents, currency),
+        },
+      }
     }),
     get: storefront.products.get.handler(async ({ input, context }) =>
       activeProduct(await productService.getById(context.shop.id, input.id), context.shop.currency, context.channelId),

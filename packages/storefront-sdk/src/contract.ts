@@ -10,6 +10,7 @@ import {
   CheckoutOptions,
   Collection,
   MailingAddressInput,
+  Money,
   ConnectionArgs,
   Menu,
   Page,
@@ -31,6 +32,30 @@ export const storefrontErrorMap = {
   EMPTY_CART: { status: 400 },
 }
 
+// Narrow a product listing. Values within one filter match any; different filters all apply.
+const ProductFilterArgs = {
+  /** Words in the title, vendor, product type, tags or a variant's SKU (case-insensitive substring) */
+  query: z.string().trim().max(200).optional(),
+  vendor: z.array(z.string()).max(50).optional(),
+  productType: z.array(z.string()).max(50).optional(),
+  tag: z.array(z.string()).max(50).optional(),
+  /** A variant priced within this range, in minor units of the shop's currency (cents for USD) */
+  minPrice: z.coerce.number().int().min(0).optional(),
+  maxPrice: z.coerce.number().int().min(0).optional(),
+  /** Only products with a variant that can be bought */
+  available: z.stringbool().or(z.boolean()).optional(),
+}
+
+const FacetValue = z.object({ value: z.string(), count: z.number().int() })
+
+const ProductFacets = z.object({
+  vendors: z.array(FacetValue),
+  productTypes: z.array(FacetValue),
+  tags: z.array(FacetValue),
+  /** Lowest and highest variant price; null when nothing matches */
+  price: z.object({ min: Money, max: Money }).nullable(),
+})
+
 const { NOT_FOUND, EMPTY_CART, ...cartOnlyErrors } = storefrontErrorMap
 const notFound = { NOT_FOUND }
 const cartErrors = { NOT_FOUND, ...cartOnlyErrors }
@@ -50,9 +75,15 @@ export const storefrontContract = {
           /** Default: MANUAL with a collection, else newest first. Explicit keys sort ascending unless `reverse`. */
           sortKey: ProductSortKey.optional(),
           reverse: z.stringbool().or(z.boolean()).default(false),
+          ...ProductFilterArgs,
         }),
       )
       .output(connection(Product)),
+    /** The values a filter UI can offer for the same `collection` / `query` (what `list` would search) */
+    facets: oc
+      .route({ method: 'GET', path: '/storefront/products/facets' })
+      .input(z.object({ collection: z.string().optional(), query: ProductFilterArgs.query }))
+      .output(ProductFacets),
     get: oc
       .route({ method: 'GET', path: '/storefront/products/{id}' })
       .input(z.object({ id: z.uuid() }))

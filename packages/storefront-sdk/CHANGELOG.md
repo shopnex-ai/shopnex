@@ -2,6 +2,12 @@
 
 ## Unreleased (additive)
 
+- `products.list` filters (`GET /storefront/products`): `query` (title, vendor, product type, tags or a variant's
+  SKU, case-insensitive substring), `vendor[]`, `productType[]`, `tag[]` (any of the values), `minPrice` /
+  `maxPrice` (minor units; some variant within the range) and `available` (some variant can be bought).
+  Filters combine with `collection` and `sortKey`.
+- `products.facets` (`GET /storefront/products/facets`): the vendors, product types and tags (with product
+  counts) and the price range of the products matching `collection` / `query`, for building filter UIs.
 - `@shopnex/storefront-sdk/cart` (browser; small: no zod/oRPC, only nanostores): the buyer's cart for theme
   scripts. `$cart`, `$cartReady`, `$cartOpen`, `$cartError` stores, `loadCart`, `addToCart`, `setLineQuantity`,
   `reportCartError`; the cart id stays in localStorage. Reads the Storefront API's URL and publishable key from
