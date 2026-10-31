@@ -988,8 +988,8 @@ importers:
         specifier: ^5.6.0
         version: 5.7.0(react@19.3.1)
       swiper:
-        specifier: ^12.2.0
-        version: 12.2.0
+        specifier: ^14.3.0
+        version: 14.3.0
       tailwind-bootstrap-grid:
         specifier: ^7.0.0
         version: 7.0.0(tailwindcss@4.3.3)
@@ -6943,8 +6943,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  swiper@12.2.0:
-    resolution: {integrity: sha512-K8uXsBZU6ME97Ia3xbBge8IRCnR1lOmIILzvY/jGVic7dSTQ530s3uO8RvXbPUtkkXLWIwmZLRPbtDxRWVAFdg==}
+  swiper@14.3.0:
+    resolution: {integrity: sha512-qw0Xv1+sylM8KCQxWxV2iYAK2G6XjFGPZ/8F1baEsY8DK4A3sTnLx6jUJ0G71rDbVQ05JHMWkcWmJ5NvlxZO0w==}
     engines: {node: '>= 4.7.0'}
 
   synckit@0.11.13:
@@ -13764,7 +13764,7 @@ snapshots:
       picocolors: 1.1.1
       sax: 1.6.1
 
-  swiper@12.2.0: {}
+  swiper@14.3.0: {}
 
   synckit@0.11.13:
     dependencies:
