@@ -19,11 +19,7 @@ import {
   verifyClientAssertion,
   verifyJwt,
 } from '@shopnex/marketplace-sdk/keys'
-import {
-  APP_INSTALLED_PATH,
-  signLifecycleRequest,
-  type AppInstalledRequest,
-} from '@shopnex/marketplace-sdk/lifecycle'
+import { APP_INSTALLED_PATH, signLifecycleRequest, type AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
 import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@shopnex/marketplace-sdk/session-token'
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './errors'
@@ -190,41 +186,43 @@ export async function exchangeCode(input: {
   redirectUri: string
 }) {
   const app = await authenticateClient(input.clientId, input.clientAssertion)
-  return db.transaction(async (tx) => {
-    const [code] = await tx
-      .select()
-      .from(schema.appAuthorizationCodes)
-      .where(
-        and(
-          eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
-          eq(schema.appAuthorizationCodes.appId, app.id),
-        ),
-      )
-      .for('update')
-    if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
-      throw new AppError(
-        'invalid_grant',
-        'Authorization code is invalid, expired, already used, or for another redirect_uri',
-      )
-    }
-    await tx
-      .update(schema.appAuthorizationCodes)
-      .set({ usedAt: new Date() })
-      .where(eq(schema.appAuthorizationCodes.id, code.id))
+  return db
+    .transaction(async (tx) => {
+      const [code] = await tx
+        .select()
+        .from(schema.appAuthorizationCodes)
+        .where(
+          and(
+            eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
+            eq(schema.appAuthorizationCodes.appId, app.id),
+          ),
+        )
+        .for('update')
+      if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
+        throw new AppError(
+          'invalid_grant',
+          'Authorization code is invalid, expired, already used, or for another redirect_uri',
+        )
+      }
+      await tx
+        .update(schema.appAuthorizationCodes)
+        .set({ usedAt: new Date() })
+        .where(eq(schema.appAuthorizationCodes.id, code.id))
 
-    const { token, ...secret } = mintToken()
-    const installation = await install(tx, {
-      app,
-      shopId: code.shopId,
-      userId: code.userId,
-      scopes: code.scopes,
-      secret,
+      const { token, ...secret } = mintToken()
+      const installation = await install(tx, {
+        app,
+        shopId: code.shopId,
+        userId: code.userId,
+        scopes: code.scopes,
+        secret,
+      })
+      return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id, app }
     })
-    return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id, app }
-  }).then(({ app, ...result }) => {
-    notifyInstalled(app, result.installationId, result.shopId)
-    return result
-  })
+    .then(({ app, ...result }) => {
+      notifyInstalled(app, result.installationId, result.shopId)
+      return result
+    })
 }
 
 // The live installation of an app on a shop, with its (unrevoked) token
