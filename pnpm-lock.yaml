@@ -958,8 +958,8 @@ importers:
         specifier: 11.1.9
         version: 11.1.9(astro@7.4.1(@types/node@22.20.5)(aws4fetch@1.0.20)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       '@nanostores/react':
-        specifier: ^1.1.0
-        version: 1.1.0(nanostores@1.5.5)(react@19.3.1)
+        specifier: ^2.0.1
+        version: 2.0.1(nanostores@1.5.5)(react@19.3.1)
       '@shopnex/storefront-sdk':
         specifier: workspace:*
         version: link:../../packages/storefront-sdk
@@ -2456,9 +2456,9 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@nanostores/react@1.1.0':
-    resolution: {integrity: sha512-MbH35fjhcf7LAubYX5vhOChYUfTLzNLqH/mBGLVsHkcvjy0F8crO1WQwdmQ2xKbAmtpalDa2zBt3Hlg5kqr8iw==}
-    engines: {node: ^20.0.0 || >=22.0.0}
+  '@nanostores/react@2.0.1':
+    resolution: {integrity: sha512-txbZTd+7/hnO7FhtF8Pmr+cu0ThdCuCnOyEEh0DsEM2Hp9PfOa5EY4uj3wpZpypSzp5BuqDgf2AxVAKoUIWOFQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || >=26.0.0}
     peerDependencies:
       nanostores: ^1.2.0
       react: '>=18.0.0'
@@ -8865,7 +8865,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@nanostores/react@1.1.0(nanostores@1.5.5)(react@19.3.1)':
+  '@nanostores/react@2.0.1(nanostores@1.5.5)(react@19.3.1)':
     dependencies:
       nanostores: 1.5.5
       react: 19.3.1
