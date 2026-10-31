@@ -9,6 +9,7 @@
     "./session-token": "./src/session-token.ts",
     "./payments": "./src/payments.ts",
     "./shipping": "./src/shipping.ts",
+    "./lifecycle": "./src/lifecycle.ts",
     "./keys": "./src/keys.ts"
   },
   "scripts": {
