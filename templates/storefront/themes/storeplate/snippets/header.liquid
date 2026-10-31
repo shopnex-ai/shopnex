@@ -56,6 +56,7 @@
 
     <div class="flex items-center gap-x-6">
       {%- comment %} A React island (src/islands/CartButton.tsx); the cart is only known in the browser {% endcomment %}
+      <a href="{{ routes.account_url }}" class="text-sm text-text-dark transition hover:opacity-70">Account</a>
       <div data-island="CartButton" class="flex min-w-5 items-center"></div>
       <button
         type="button"

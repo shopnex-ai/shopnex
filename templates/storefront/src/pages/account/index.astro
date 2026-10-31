@@ -1,0 +1,41 @@
+---
+import { safe } from '@shopnex/storefront-sdk'
+import { messageFor, session } from '../../core/account'
+import { accountPage } from '../../core/account-pages'
+import { loadTheme, render } from '../../core/theme'
+
+const { cookies, url } = Astro
+const { client, customer: current } = await session(cookies)
+if (!current) return Astro.redirect('/account/login?next=/account')
+let customer = current
+
+let notice: string | null = null
+let error: string | null = null
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData()
+  const name = String(form.get('name') ?? '').trim()
+  const phone = String(form.get('phone') ?? '').trim()
+  const [failed, updated] = await safe(client.customer.update({ ...(name && { name }), phone: phone || null }))
+  if (failed) error = messageFor(failed)
+  else {
+    customer = updated
+    notice = 'Your details were saved.'
+  }
+}
+
+const after = url.searchParams.get('after') ?? undefined
+const orders = await client.customer.orders({ first: 10, after })
+const html = accountPage({
+  customer,
+  orders: orders.nodes,
+  nextCursor: orders.pageInfo.hasNextPage ? orders.pageInfo.endCursor : null,
+  notice,
+  error,
+})
+return render(await loadTheme(url), url, {
+  template: 'account',
+  title: 'Your account',
+  html,
+  status: error ? 400 : 200,
+})
+---

@@ -127,6 +127,12 @@ ${TOTALS}
 ${ADDRESS}
 `
 
+const LOGIN_CODE = `<h1 style="font-size:22px;margin:0 0 8px;">Your sign-in code</h1>
+<p style="margin:0 0 24px;">Enter this code to sign in to {{ shop.name }}. It expires in {{ expires_in_minutes }} minutes.</p>
+<div style="${BOX}text-align:center;font-size:32px;font-weight:700;letter-spacing:8px;">{{ code }}</div>
+<p style="margin:0;${MUTED}font-size:13px;">If you didn't ask for this code, you can ignore this email.</p>
+`
+
 export const DEFAULTS: Record<Notification, { subject: string; body: string }> = {
   order_confirmation: { subject: 'Order {{ order.name }} confirmed', body: ORDER_CONFIRMATION },
   shipping_confirmation: { subject: 'Order {{ order.name }} is on its way', body: SHIPPING_CONFIRMATION },
@@ -135,6 +141,7 @@ export const DEFAULTS: Record<Notification, { subject: string; body: string }> =
     subject: '[{{ shop.name }}] New order {{ order.name }} ({{ order.total_price | money }})',
     body: STAFF_ORDER,
   },
+  login_code: { subject: '{{ code }} is your {{ shop.name }} sign-in code', body: LOGIN_CODE },
   // Its "subject" is never sent: the layout only wraps the other notifications
   layout: { subject: '', body: LAYOUT },
 }

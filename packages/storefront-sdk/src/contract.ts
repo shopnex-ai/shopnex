@@ -9,6 +9,8 @@ import {
   CartLineUpdateInput,
   CheckoutOptions,
   Collection,
+  Customer,
+  CustomerOrder,
   MailingAddressInput,
   ConnectionArgs,
   Menu,
@@ -29,9 +31,23 @@ export const storefrontErrorMap = {
   MERCHANDISE_NOT_FOUND: { status: 404, data: z.object({ merchandiseIds: z.array(z.uuid()) }) },
   OUT_OF_STOCK: { status: 400, data: z.object({ merchandiseId: z.uuid(), available: z.number().int() }) },
   EMPTY_CART: { status: 400 },
+  /** No customer token, or it expired: sign in again */
+  UNAUTHORIZED: { status: 401 },
+  INVALID_CODE: { status: 400 },
+  TOO_MANY_REQUESTS: { status: 429 },
+  /** The shop doesn't send email (or turned the sign-in code off), so customers can't sign in */
+  CUSTOMER_LOGIN_UNAVAILABLE: { status: 503 },
 }
 
-const { NOT_FOUND, EMPTY_CART, ...cartOnlyErrors } = storefrontErrorMap
+const {
+  NOT_FOUND,
+  UNAUTHORIZED,
+  INVALID_CODE,
+  TOO_MANY_REQUESTS,
+  CUSTOMER_LOGIN_UNAVAILABLE,
+  EMPTY_CART,
+  ...cartOnlyErrors
+} = storefrontErrorMap
 const notFound = { NOT_FOUND }
 const cartErrors = { NOT_FOUND, ...cartOnlyErrors }
 
@@ -194,6 +210,47 @@ export const storefrontContract = {
           preview: z.boolean(),
         }),
       ),
+  }),
+
+  // Customer accounts: sign in with a code emailed to the customer. Shopify's Customer Account API is a separate
+  // OAuth API; here it is part of this one. Send the token from `signIn` in the x-shopnex-customer-token header.
+  customer: oc.tag('Storefront · Customer').router({
+    /** Emails a sign-in code. The answer is the same whether or not the address has an account. */
+    requestCode: oc
+      .route({ method: 'POST', path: '/storefront/customer/code' })
+      .input(z.object({ email: z.email().max(254) }))
+      .errors({ TOO_MANY_REQUESTS, CUSTOMER_LOGIN_UNAVAILABLE })
+      .output(z.object({ success: z.literal(true) })),
+    /** Checks the code. A first sign-in creates the account; earlier guest orders with this email join it. */
+    signIn: oc
+      .route({ method: 'POST', path: '/storefront/customer/sign-in' })
+      .input(z.object({ email: z.email().max(254), code: z.string().trim().min(4).max(12) }))
+      .errors({ INVALID_CODE })
+      .output(z.object({ token: z.string(), customer: Customer })),
+    signOut: oc
+      .route({ method: 'POST', path: '/storefront/customer/sign-out' })
+      .output(z.object({ success: z.literal(true) })),
+    get: oc.route({ method: 'GET', path: '/storefront/customer' }).errors({ UNAUTHORIZED }).output(Customer),
+    update: oc
+      .route({ method: 'PATCH', path: '/storefront/customer' })
+      .input(
+        z.object({
+          name: z.string().trim().min(1).max(200).optional(),
+          phone: z.string().trim().max(40).nullable().optional(),
+        }),
+      )
+      .errors({ UNAUTHORIZED })
+      .output(Customer),
+    orders: oc
+      .route({ method: 'GET', path: '/storefront/customer/orders' })
+      .input(ConnectionArgs)
+      .errors({ UNAUTHORIZED })
+      .output(connection(CustomerOrder)),
+    order: oc
+      .route({ method: 'GET', path: '/storefront/customer/orders/{id}' })
+      .input(z.object({ id: z.uuid() }))
+      .errors({ UNAUTHORIZED, NOT_FOUND })
+      .output(CustomerOrder),
   }),
 
   // ≠ Shopify: Storefront API can't place orders (hosted checkout only). Ours can, for headless checkouts.

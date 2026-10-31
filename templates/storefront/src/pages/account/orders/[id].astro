@@ -1,0 +1,24 @@
+---
+import { isDefinedError, safe } from '@shopnex/storefront-sdk'
+import { session } from '../../../core/account'
+import { orderPage } from '../../../core/account-pages'
+import { loadTheme, render } from '../../../core/theme'
+
+const { cookies, url } = Astro
+const { client, customer } = await session(cookies)
+if (!customer) return Astro.redirect(`/account/login?next=${encodeURIComponent(url.pathname)}`)
+
+const [error, order] = await safe(client.customer.order({ id: Astro.params.id! }))
+if (error) {
+  // Not found, or someone else's order, or not even an id
+  if (isDefinedError(error) || (error as { code?: string }).code === 'BAD_REQUEST') {
+    return render(await loadTheme(url), url, { template: '404' })
+  }
+  throw error
+}
+return render(await loadTheme(url), url, {
+  template: 'account',
+  title: `Order #${order.orderNumber}`,
+  html: orderPage(order),
+})
+---

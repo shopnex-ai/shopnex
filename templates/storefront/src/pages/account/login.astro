@@ -1,0 +1,46 @@
+---
+import { isDefinedError, safe } from '@shopnex/storefront-sdk'
+import { messageFor, safeNext, session, startSession } from '../../core/account'
+import { loginCodeForm, loginEmailForm } from '../../core/account-pages'
+import { loadTheme, render } from '../../core/theme'
+import { shopnex, shopnexFor } from '../../core/shopnex'
+
+const { cookies, url } = Astro
+const next = safeNext(url.searchParams.get('next'))
+const page = async (title: string, html: string, status = 200) =>
+  render(await loadTheme(url), url, { template: 'account', title, html, status })
+
+if (Astro.request.method !== 'POST') {
+  if ((await session(cookies)).customer) return Astro.redirect(next)
+  return page('Sign in', loginEmailForm({ next }))
+}
+
+// The same page handles both steps: ask for the code, then check it
+const form = await Astro.request.formData()
+const field = (name: string) => String(form.get(name) ?? '').trim()
+const email = field('email')
+const target = safeNext(field('next'))
+
+if (field('step') === 'code') {
+  const [error, signedIn] = await safe(
+    shopnexFor(undefined).customer.signIn({ email, code: field('code').replace(/\s+/g, '') }),
+  )
+  if (error) {
+    const invalid = isDefinedError(error) && error.code === 'INVALID_CODE'
+    return page(
+      'Check your email',
+      loginCodeForm({ email, next: target, error: messageFor(error) }),
+      invalid ? 400 : 503,
+    )
+  }
+  startSession(cookies, url, signedIn.token)
+  return Astro.redirect(target)
+}
+
+const [error] = await safe(shopnex.customer.requestCode({ email }))
+if (error) {
+  // A malformed address is a validation error from the API; the rest are the defined ones
+  return page('Sign in', loginEmailForm({ email, next: target, error: messageFor(error) }), 400)
+}
+return page('Check your email', loginCodeForm({ email, next: target }))
+---

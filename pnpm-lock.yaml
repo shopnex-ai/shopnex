@@ -625,9 +625,15 @@ importers:
 
   modules/customers:
     dependencies:
+      '@shopnex/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/email':
+        specifier: workspace:*
+        version: link:../email
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks

@@ -1,8 +1,8 @@
 // /robots.txt: everything is open to search engines (theme assets too: Google renders pages with them) except
-// themes' sources and sorted copies of catalog pages (the same products in another order); points to the sitemap
+// themes' sources and sorted copies of catalog pages (the same products in another order) and customer accounts; points to the sitemap
 import type { APIRoute } from 'astro'
 
-const RULES = ['User-agent: *', 'Disallow: /shopnex/themes/', 'Disallow: /*?*sort=']
+const RULES = ['User-agent: *', 'Disallow: /shopnex/themes/', 'Disallow: /*?*sort=', 'Disallow: /account']
 
 export const GET: APIRoute = ({ url }) =>
   new Response([...RULES, '', `Sitemap: ${url.origin}/sitemap.xml`, ''].join('\n'), {
