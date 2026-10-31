@@ -275,6 +275,69 @@ export const MailingAddressInput = z.object({
   phone: z.string().trim().max(40).optional(),
 })
 
+// ── customer accounts ─────────────────────────────────────────────────────────
+
+export const Customer = z.object({
+  id: z.uuid(),
+  email: z.string(),
+  name: z.string().nullable(),
+  phone: z.string().nullable(),
+})
+
+/** An address as placed on an order (a snapshot) */
+export const OrderAddress = z.object({
+  name: z.string(),
+  company: z.string().nullable(),
+  address1: z.string(),
+  address2: z.string().nullable(),
+  city: z.string(),
+  province: z.string().nullable(),
+  /** ISO 3166-1 alpha-2 */
+  countryCode: z.string(),
+  zip: z.string().nullable(),
+  phone: z.string().nullable(),
+})
+
+export const OrderLine = z.object({
+  title: z.string(),
+  variantTitle: z.string().nullable(),
+  quantity: z.number().int(),
+  image: Image.nullable(),
+  /** Per unit */
+  price: Money,
+  /** After this line's share of discounts */
+  totalPrice: Money,
+})
+
+export const OrderFulfillment = z.object({
+  trackingCompany: z.string().nullable(),
+  trackingNumber: z.string().nullable(),
+  trackingUrl: z.string().nullable(),
+  createdAt: z.string(),
+})
+
+/** One of the signed-in customer's orders (Shopify: Order, customer account view) */
+export const CustomerOrder = z.object({
+  id: z.uuid(),
+  /** Shown as "#1001" */
+  orderNumber: z.number().int(),
+  createdAt: z.string(),
+  cancelledAt: z.string().nullable(),
+  financialStatus: z.string(),
+  fulfillmentStatus: z.string(),
+  subtotalPrice: Money,
+  shippingPrice: Money,
+  totalDiscounts: Money,
+  totalTax: Money,
+  totalPrice: Money,
+  paymentMethod: z.string().nullable(),
+  /** How to pay, for a manual method that is still unpaid */
+  paymentInstructions: z.string().nullable(),
+  lines: z.array(OrderLine),
+  fulfillments: z.array(OrderFulfillment),
+  shippingAddress: OrderAddress.nullable(),
+})
+
 // Shopify CartDeliveryOption (one delivery group: rates apply to the whole cart)
 export const ShippingRate = z.object({
   /** A flat rate's id, or carrier:{service}:{code} for a carrier service's live rate (only with an address) */
@@ -326,6 +389,9 @@ export type PageInfo = z.infer<typeof PageInfo>
 export type Connection<T> = { nodes: T[]; pageInfo: PageInfo }
 export type ConnectionArgs = z.input<typeof ConnectionArgs>
 export type Shop = z.infer<typeof Shop>
+export type Customer = z.infer<typeof Customer>
+export type CustomerOrder = z.infer<typeof CustomerOrder>
+export type OrderAddress = z.infer<typeof OrderAddress>
 export type SelectedOption = z.infer<typeof SelectedOption>
 export type ProductOptionValue = z.infer<typeof ProductOptionValue>
 export type ProductOption = z.infer<typeof ProductOption>

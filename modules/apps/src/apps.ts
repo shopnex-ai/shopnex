@@ -7,7 +7,7 @@
 //   token_exchange      session token from the embedded admin page → 1-hour access token
 //   client_credentials  shop_id of a live installation → 1-hour access token (background work)
 // Codes are only stored as SHA-256 hashes.
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
@@ -19,6 +19,7 @@ import {
   verifyClientAssertion,
   verifyJwt,
 } from '@shopnex/marketplace-sdk/keys'
+import { APP_INSTALLED_PATH, signLifecycleRequest, type AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
 import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@shopnex/marketplace-sdk/session-token'
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './errors'
@@ -185,38 +186,43 @@ export async function exchangeCode(input: {
   redirectUri: string
 }) {
   const app = await authenticateClient(input.clientId, input.clientAssertion)
-  return db.transaction(async (tx) => {
-    const [code] = await tx
-      .select()
-      .from(schema.appAuthorizationCodes)
-      .where(
-        and(
-          eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
-          eq(schema.appAuthorizationCodes.appId, app.id),
-        ),
-      )
-      .for('update')
-    if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
-      throw new AppError(
-        'invalid_grant',
-        'Authorization code is invalid, expired, already used, or for another redirect_uri',
-      )
-    }
-    await tx
-      .update(schema.appAuthorizationCodes)
-      .set({ usedAt: new Date() })
-      .where(eq(schema.appAuthorizationCodes.id, code.id))
+  return db
+    .transaction(async (tx) => {
+      const [code] = await tx
+        .select()
+        .from(schema.appAuthorizationCodes)
+        .where(
+          and(
+            eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
+            eq(schema.appAuthorizationCodes.appId, app.id),
+          ),
+        )
+        .for('update')
+      if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
+        throw new AppError(
+          'invalid_grant',
+          'Authorization code is invalid, expired, already used, or for another redirect_uri',
+        )
+      }
+      await tx
+        .update(schema.appAuthorizationCodes)
+        .set({ usedAt: new Date() })
+        .where(eq(schema.appAuthorizationCodes.id, code.id))
 
-    const { token, ...secret } = mintToken()
-    const installation = await install(tx, {
-      app,
-      shopId: code.shopId,
-      userId: code.userId,
-      scopes: code.scopes,
-      secret,
+      const { token, ...secret } = mintToken()
+      const installation = await install(tx, {
+        app,
+        shopId: code.shopId,
+        userId: code.userId,
+        scopes: code.scopes,
+        secret,
+      })
+      return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id, app }
     })
-    return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id }
-  })
+    .then(({ app, ...result }) => {
+      notifyInstalled(app, result.installationId, result.shopId)
+      return result
+    })
 }
 
 // The live installation of an app on a shop, with its (unrevoked) token
@@ -322,12 +328,49 @@ export async function resolveAccessToken(
  * tokens with the token exchange / client credentials grants, so no token leaves this function.
  */
 export async function installManaged(input: { appId: string; shopId: string; userId: string; scopes: ApiScope[] }) {
-  return db.transaction(async (tx) => {
+  const { installation, app } = await db.transaction(async (tx) => {
     const [app] = await tx.select().from(schema.apps).where(eq(schema.apps.id, input.appId))
     if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
     const { token: _, ...secret } = mintToken()
-    return install(tx, { app, shopId: input.shopId, userId: input.userId, scopes: input.scopes, secret })
+    const installation = await install(tx, {
+      app,
+      shopId: input.shopId,
+      userId: input.userId,
+      scopes: input.scopes,
+      secret,
+    })
+    return { installation, app }
   })
+  notifyInstalled(app, installation.id, installation.shopId)
+  return installation
+}
+
+/**
+ * Tells the app it was installed (see @shopnex/marketplace-sdk/lifecycle), so it can set the shop up before
+ * anyone opens it. Called after the install commits, never awaited: best effort, an app that misses it sets up
+ * when it's first opened.
+ */
+function notifyInstalled(app: App, installationId: string, shopId: string) {
+  void (async () => {
+    const id = randomUUID()
+    const payload: AppInstalledRequest = {
+      kind: 'installed',
+      id,
+      instance: await instanceUrl(),
+      shopId,
+      installationId,
+    }
+    const body = JSON.stringify(payload)
+    const res = await fetch(serverUrl(app.appUrl.replace(/\/$/, '')) + APP_INSTALLED_PATH, {
+      method: 'POST',
+      headers: await signLifecycleRequest(await instanceSigner(), id, body),
+      body,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(10_000),
+    })
+    // 404: an app that doesn't listen for it
+    if (!res.ok && res.status !== 404) throw new Error(`${res.status} ${res.statusText}`)
+  })().catch((error) => console.error(`[apps] app.installed for ${app.clientId}:`, error))
 }
 
 async function install(

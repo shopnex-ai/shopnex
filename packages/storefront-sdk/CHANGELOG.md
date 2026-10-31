@@ -2,6 +2,13 @@
 
 ## Unreleased (additive)
 
+- Customer accounts (`customer.*`, `/storefront/customer/…`): `requestCode` emails a sign-in code, `signIn` checks it and
+  returns a `token` (a first sign-in creates the account; guest orders with the same email join it), `signOut`,
+  `get`, `update`, `orders` (cursor-paged) and `order` (the signed-in customer's own orders, with items, totals,
+  tracking and address). Send the token in the `x-shopnex-customer-token` header (`CUSTOMER_TOKEN_HEADER`), or
+  pass `customerToken` to `createStorefrontClient`. New typed errors: `UNAUTHORIZED`, `INVALID_CODE`,
+  `TOO_MANY_REQUESTS`, `CUSTOMER_LOGIN_UNAVAILABLE` (the shop sends no email). New schemas: `Customer`,
+  `CustomerOrder`, `OrderLine`, `OrderFulfillment`, `OrderAddress`. ≠ Shopify: no separate Customer Account API or OAuth.
 - `products.list` filters (`GET /storefront/products`): `query` (title, vendor, product type, tags or a variant's
   SKU, case-insensitive substring), `vendor[]`, `productType[]`, `tag[]` (any of the values), `minPrice` /
   `maxPrice` (minor units; some variant within the range) and `available` (some variant can be bought).

@@ -2,7 +2,7 @@ import { createORPCClient } from '@orpc/client'
 import type { ContractRouterClient } from '@orpc/contract'
 import type { JsonifiedClient } from '@orpc/openapi-client'
 import { OpenAPILink } from '@orpc/openapi-client/fetch'
-import { API_BASE_PATH, PUBLISHABLE_KEY_HEADER } from './constants'
+import { API_BASE_PATH, CUSTOMER_TOKEN_HEADER, PUBLISHABLE_KEY_HEADER } from './constants'
 import { storefrontContract, type StorefrontContract } from './contract'
 
 export type StorefrontClientOptions = {
@@ -10,6 +10,8 @@ export type StorefrontClientOptions = {
   baseUrl: string
   /** pk_… key from the admin. Optional in single-tenant mode or on a shop's own domain. */
   publishableKey?: string
+  /** The signed-in customer's token (from `customer.signIn`); a function when it changes between requests */
+  customerToken?: string | null | (() => string | null | undefined)
   fetch?: typeof fetch
 }
 
@@ -20,7 +22,13 @@ export type StorefrontClient = JsonifiedClient<ContractRouterClient<StorefrontCo
 export function createStorefrontClient(options: StorefrontClientOptions): StorefrontClient {
   const link = new OpenAPILink(storefrontContract, {
     url: `${options.baseUrl.replace(/\/$/, '')}${API_BASE_PATH}`,
-    headers: () => (options.publishableKey ? { [PUBLISHABLE_KEY_HEADER]: options.publishableKey } : {}),
+    headers: () => {
+      const token = typeof options.customerToken === 'function' ? options.customerToken() : options.customerToken
+      return {
+        ...(options.publishableKey && { [PUBLISHABLE_KEY_HEADER]: options.publishableKey }),
+        ...(token && { [CUSTOMER_TOKEN_HEADER]: token }),
+      }
+    },
     fetch: options.fetch,
   })
   return createORPCClient(link)

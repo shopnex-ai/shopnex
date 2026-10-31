@@ -19,6 +19,7 @@ const jsonLd = (data: object) =>
 export function canonicalUrl(page: ThemePage, url: URL): string | null {
   switch (page.template) {
     case '404':
+    case 'account':
       return null
     case 'product':
       return `${url.origin}/products/${encodeURIComponent(page.product.handle)}`
@@ -60,7 +61,10 @@ function productData(product: Product, canonical: string, origin: string) {
 export function seoTags(page: ThemePage, url: URL, shop: Shop | null, preview: boolean): string[] {
   const canonical = canonicalUrl(page, url)
   const tags: (string | false | null)[] = [
-    (preview || page.template === '404' || (page.template === 'collection' && page.search !== null)) &&
+    (preview ||
+      page.template === '404' ||
+      page.template === 'account' ||
+      (page.template === 'collection' && page.search !== null)) &&
       `<meta name="robots" content="noindex">`,
     canonical && `<link rel="canonical" href="${attr(canonical)}">`,
     canonical && `<meta property="og:url" content="${attr(canonical)}">`,

@@ -9,10 +9,26 @@ import {
   type Collection as CollectionRow,
   type ProductWithDetails,
 } from '@shopnex/catalog'
-import type { Cart, Collection, Image, MenuItem, Money, Page, Product, ProductVariant } from '@shopnex/storefront-sdk'
+import type {
+  Cart,
+  Collection,
+  Customer,
+  CustomerOrder,
+  Image,
+  MenuItem,
+  Money,
+  OrderAddress,
+  Page,
+  Product,
+  ProductVariant,
+} from '@shopnex/storefront-sdk'
 import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem } from '@shopnex/content'
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
-import { storefront } from '../../orpc'
+import { accountService } from '@shopnex/customers'
+import type { Customer as CustomerRow } from '@shopnex/db/schema'
+import { orderService } from '@shopnex/orders'
+import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
+import { defined, storefront } from '../../orpc'
 
 // ── mapping: internal rows → public contract shapes (only what the contract exposes) ──
 
@@ -155,6 +171,70 @@ function toCart(c: CartView): Cart {
     createdAt: c.createdAt.toISOString(),
     updatedAt: c.updatedAt.toISOString(),
   }
+}
+
+// ── customer accounts ──
+
+const toCustomer = (c: CustomerRow): Customer => ({ id: c.id, email: c.email, name: c.name, phone: c.phone })
+
+type OrderRow = NonNullable<Awaited<ReturnType<typeof orderService.getById>>>
+
+function toOrderAddress(a: OrderRow['shippingAddress']): OrderAddress | null {
+  return (
+    a && {
+      name: [a.firstName, a.lastName].filter(Boolean).join(' '),
+      company: a.company,
+      address1: a.address1,
+      address2: a.address2,
+      city: a.city,
+      province: a.province,
+      countryCode: a.countryCode,
+      zip: a.zip,
+      phone: a.phone,
+    }
+  )
+}
+
+function toCustomerOrder(o: OrderRow): CustomerOrder {
+  const m = (cents: number) => money(cents, o.currency)
+  return {
+    id: o.id,
+    orderNumber: o.orderNumber,
+    createdAt: o.createdAt.toISOString(),
+    cancelledAt: o.cancelledAt?.toISOString() ?? null,
+    financialStatus: o.financialStatus,
+    fulfillmentStatus: o.fulfillmentStatus,
+    subtotalPrice: m(o.subtotalCents),
+    shippingPrice: m(o.shippingCents),
+    totalDiscounts: m(o.discountCents),
+    totalTax: m(o.taxCents),
+    totalPrice: m(o.totalCents),
+    paymentMethod: o.paymentMethodName,
+    // Only while there is still something to pay
+    paymentInstructions: o.financialStatus === 'pending' && !o.cancelledAt ? o.paymentInstructions : null,
+    lines: o.items.map((i) => ({
+      title: i.title,
+      variantTitle: i.variantTitle,
+      quantity: i.quantity,
+      image: i.imageUrl ? image({ url: i.imageUrl }) : null,
+      price: m(i.unitPriceCents),
+      totalPrice: m(i.unitPriceCents * i.quantity - i.discountCents),
+    })),
+    fulfillments: o.fulfillments.map((f) => ({
+      trackingCompany: f.trackingCompany,
+      trackingNumber: f.trackingNumber,
+      trackingUrl: f.trackingUrl,
+      createdAt: f.createdAt.toISOString(),
+    })),
+    shippingAddress: toOrderAddress(o.shippingAddress),
+  }
+}
+
+/** The signed-in customer of this shop (from the customer token header), else UNAUTHORIZED */
+async function signedIn(context: { headers: Headers; shop: { id: string } }) {
+  const customer = await accountService.fromToken(context.shop.id, context.headers.get(CUSTOMER_TOKEN_HEADER))
+  if (!customer) throw defined('UNAUTHORIZED', 'Sign in to continue')
+  return customer
 }
 
 // ── cursor pagination ──
@@ -416,6 +496,42 @@ export const storefrontRouter = storefront.router({
     discountCodesUpdate: storefront.cart.discountCodesUpdate.handler(async ({ input, context }) =>
       toCart(await cartService.setDiscountCode(context.shop.id, input.cartId, input.discountCodes[0] ?? null)),
     ),
+  },
+  customer: {
+    requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
+      await accountService.requestLoginCode(context.shop.id, input.email)
+      return { success: true as const }
+    }),
+    signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
+      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code)
+      return { token, customer: toCustomer(customer) }
+    }),
+    signOut: storefront.customer.signOut.handler(async ({ context }) => {
+      const token = context.headers.get(CUSTOMER_TOKEN_HEADER)
+      if (token) await accountService.signOut(token)
+      return { success: true as const }
+    }),
+    get: storefront.customer.get.handler(async ({ context }) => toCustomer(await signedIn(context))),
+    update: storefront.customer.update.handler(async ({ input, context }) => {
+      const customer = await signedIn(context)
+      const updated = await accountService.updateProfile(context.shop.id, customer.id, input)
+      return toCustomer(updated ?? customer)
+    }),
+    orders: storefront.customer.orders.handler(async ({ input, context }) => {
+      const customer = await signedIn(context)
+      return paginate(input, async (limit, offset) => {
+        const { items } = await orderService.list(context.shop.id, { customerId: customer.id, limit, offset })
+        const full = await Promise.all(items.map((o) => orderService.getById(context.shop.id, o.id)))
+        return full.flatMap((o) => (o ? [toCustomerOrder(o)] : []))
+      })
+    }),
+    order: storefront.customer.order.handler(async ({ input, context }) => {
+      const customer = await signedIn(context)
+      const order = await orderService.getById(context.shop.id, input.id)
+      // Someone else's order looks like a missing one
+      if (!order || order.customerId !== customer.id) throw defined('NOT_FOUND', 'Order not found')
+      return toCustomerOrder(order)
+    }),
   },
   checkout: {
     options: storefront.checkout.options.handler(async ({ input, context }) => {

@@ -54,6 +54,12 @@ export const NOTIFICATION_INFO: NotificationInfo[] = [
     audience: 'staff',
   },
   {
+    notification: 'login_code',
+    title: 'Customer sign-in code',
+    description: 'Sent when a customer asks to sign in to their account on the storefront. Keep {{ code }} in it.',
+    audience: 'customer',
+  },
+  {
     notification: 'layout',
     title: 'Email layout',
     description: 'The header and footer around every email. The email itself goes where {{ content_for_layout }} is.',
@@ -155,9 +161,15 @@ function orderScope(order: OrderView) {
   }
 }
 
+/** How long a sign-in code works (also what the email tells the customer); see @shopnex/auth */
+export const LOGIN_CODE_MINUTES = 10
+
 function scopeOf(shop: Shop, order: OrderView) {
   const fulfillment = order.fulfillments.at(-1)
   return {
+    // Only login_code uses these; previews show a made-up code
+    code: '482913',
+    expires_in_minutes: LOGIN_CODE_MINUTES,
     shop: shopScope(shop),
     order: orderScope(order),
     fulfillment: fulfillment && {
@@ -309,6 +321,28 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
   } catch (error) {
     console.error(`[email] queueing ${event} for shop ${shopId}:`, error)
   }
+}
+
+/**
+ * Emails a customer their sign-in code right away. Not queued: the code would sit in the outbox (visible to
+ * staff) and a retry hours later is useless. Throws EMAIL_OFF when the shop doesn't send email.
+ */
+export async function sendLoginCode(shopId: string, to: string, code: string) {
+  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  if (!shop) throw new EmailError('EMAIL_FAILED', 'Shop not found')
+  const templates = await templateRows(db, shopId, ['login_code', 'layout'])
+  if (templates.get('login_code')?.enabled === false)
+    throw new EmailError('EMAIL_OFF', 'Customer sign-in is turned off')
+  const scope = { shop: shopScope(shop), code, expires_in_minutes: LOGIN_CODE_MINUTES }
+  const email = await renderEmail(
+    'login_code',
+    sourceOf('login_code', templates.get('login_code')),
+    sourceOf('layout', templates.get('layout')).body,
+    scope,
+    { fallback: true },
+  )
+  const { sent } = await send(shopId, { to, subject: email.subject, html: email.html })
+  if (!sent) throw new EmailError('EMAIL_OFF', 'This shop does not send email, so customers cannot sign in')
 }
 
 // --- Settings → Notifications ---
