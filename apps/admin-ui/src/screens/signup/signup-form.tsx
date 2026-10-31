@@ -3,6 +3,8 @@
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { MIN_PASSWORD, signupInput } from '@shopnex/api/schemas'
 import { authClient } from '@shopnex/auth/client'
+import type { SocialProvider } from '@shopnex/auth/providers'
+import { SocialButtons } from '@/components/auth/social-buttons'
 import { FormError, TextField, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +12,7 @@ import { Field, FieldGroup } from '@/components/ui/field'
 import { clearAdminContext } from '@/lib/admin-context'
 import { runSignup } from './actions'
 
-export function SignupForm() {
+export function SignupForm({ providers }: { providers: SocialProvider[] }) {
   const navigate = useNavigate()
   const router = useRouter()
   const form = useZodForm(signupInput, { defaultValues: { shopName: '', email: '', password: '' } })
@@ -53,6 +55,7 @@ export function SignupForm() {
                 {form.formState.isSubmitting ? 'Creating your store…' : 'Create store'}
               </Button>
             </Field>
+            <SocialButtons providers={providers} mode="sign-up" />
           </FieldGroup>
         </form>
       </CardContent>
