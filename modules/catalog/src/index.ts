@@ -1,7 +1,15 @@
 export * as productService from './products'
 export * as collectionService from './collections'
 export * as variantService from './variants'
-export type { ImageInput, ListOptions, ProductInput, ProductSortKey, ProductWithDetails } from './products'
+export type {
+  Facets,
+  FilterOptions,
+  ImageInput,
+  ListOptions,
+  ProductInput,
+  ProductSortKey,
+  ProductWithDetails,
+} from './products'
 export type { CollectionInput } from './collections'
 export type {
   OptionDetail,
