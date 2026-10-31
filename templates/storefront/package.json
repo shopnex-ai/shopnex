@@ -18,7 +18,7 @@
     "@shopnex/storefront-sdk": "workspace:*",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.20",
-    "astro": "^7.3.5",
+    "astro": "^7.4.2",
     "liquidjs": "10.30.0",
     "nanostores": "^1.3.0",
     "react": "^19.2.7",
@@ -31,8 +31,8 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@tailwindcss/cli": "4.3.3",
-    "@types/react": "19.2.17",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "esbuild": "0.28.2",
     "typescript": "5.9.3"
   }
