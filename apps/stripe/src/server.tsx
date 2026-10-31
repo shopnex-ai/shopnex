@@ -22,7 +22,14 @@ const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 // The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). Shopnex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const store = await openLocalStore()
-const shopnex = createShopnexApp({ clientId: 'app_stripe', appUrl: APP_URL, appKey: store.appKey, data: store.dataFor })
+const shopnex = createShopnexApp({
+  clientId: 'app_stripe',
+  appUrl: APP_URL,
+  appKey: store.appKey,
+  data: store.dataFor,
+  // Installed from the discovery page or Settings → Payments: list "Credit card" (Setup needed) right away
+  onInstalled: async (shop) => void (await configure(shop, (await view(shop)).ready)),
+})
 
 // --- the shop's Stripe connection (app data) ---
 
