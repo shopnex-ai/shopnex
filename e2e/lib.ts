@@ -119,6 +119,7 @@ export class Fixtures {
   private tokens: string[] = []
   private users: string[] = []
   private shops: string[] = []
+  private shoppers: string[] = []
   private seq = 0
   private readonly run = randomBytes(4).toString('hex')
 
@@ -190,6 +191,13 @@ export class Fixtures {
     const r = await authCall('/sign-up/email', { name: 'E2E staff', email, password: PASSWORD })
     if (r.status === 200) this.users.push(r.body.user.id)
     return r
+  }
+
+  /** A customer who signs in with a code: their login and customer record are removed with the rest */
+  shopper(label = 'shopper') {
+    const email = this.mail(label)
+    this.shoppers.push(email)
+    return email
   }
 
   mail(label: string) {
@@ -297,7 +305,8 @@ export class Fixtures {
     if (this.paymentMethods.length) {
       await db.delete(schema.paymentMethods).where(inArray(schema.paymentMethods.id, this.paymentMethods))
     }
-    await db.delete(schema.customers).where(eq(schema.customers.email, this.email))
+    await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
+    if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))
     if (this.discounts.length) await db.delete(schema.discounts).where(inArray(schema.discounts.id, this.discounts))
     if (this.taxRates.length) await db.delete(schema.taxRates).where(inArray(schema.taxRates.id, this.taxRates))
     if (this.shippingRates.length) {

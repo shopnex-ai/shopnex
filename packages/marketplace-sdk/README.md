@@ -63,6 +63,8 @@ if (!installed) throw new Error('The marketplace has no record of this install')
   `signPaymentsRequest` for instances.
 - `@shopnex/marketplace-sdk/shipping`: carrier-service rate request types, `verifyRatesRequest` for apps and
   `signRatesRequest` for instances.
+- `@shopnex/marketplace-sdk/lifecycle`: the `app.installed` request Shopnex sends an app right after it's installed on a
+  shop, `verifyLifecycleRequest` for apps and `signLifecycleRequest` for instances.
 - `@shopnex/marketplace-sdk/keys`: Ed25519 key pairs (`generateKeyPair`), JWTs, client assertions and
   `createJwksResolver`.
 

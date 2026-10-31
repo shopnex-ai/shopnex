@@ -17,7 +17,8 @@ Rule: if a merchant has to touch code, the CLI or `.env` to do something, it's a
 - ✅ themes: theme library (Online store → Themes: current theme, change theme, copies with draft/publish), one storefront with several themes (Storeplate first)
 - storefront: product search and filters (needs `query`/vendor/tag/price filters on `products.list`)
 - ✅ storefront: hosted checkout (contact, shipping address, shipping + payment method) and order confirmation with payment instructions
-- storefront: customer login / sign up; order emails (needs SMTP settings)
+- ✅ storefront: customer accounts: sign in with an emailed code, order history and details (`/account`)
+- ✅ order emails: confirmation, shipping, cancellation (needs SMTP settings in Settings → Email)
 
 ### 2. Run and update
 

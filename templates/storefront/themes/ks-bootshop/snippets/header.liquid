@@ -28,7 +28,8 @@
         {%- endif %}
       </ul>
     </div>
-    <button type="button" class="ks-icon-button ms-auto" data-cart-open aria-label="Open cart">
+    <a href="{{ routes.account_url }}" class="ks-menu-link ms-auto me-2">Account</a>
+    <button type="button" class="ks-icon-button" data-cart-open aria-label="Open cart">
       {% render 'icon-cart' %}
       <span class="badge ks-cart-count" data-cart-count>0</span>
     </button>

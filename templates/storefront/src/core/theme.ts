@@ -183,6 +183,11 @@ export type ThemePage =
   | { template: 'product'; product: Product }
   | { template: 'page'; page: Page }
   | { template: '404' }
+  /**
+   * A page the storefront builds itself (customer account), shown in the theme's layout. `html` is trusted
+   * markup from core/account-pages; themes don't have to provide a template for it.
+   */
+  | { template: 'account'; title: string; html: string; status?: number }
 
 type PageMeta = { title: string | null; description: string | null; image: string | null }
 
@@ -253,6 +258,8 @@ function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<str
           image: null,
         },
       ]
+    case 'account':
+      return [{}, { title: page.title, description: null, image: null }]
     default:
       return [{}, { title: null, description: null, image: null }]
   }
@@ -322,6 +329,13 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     settings: settingsObject(theme.definition.settings, loaded.settings, loader),
     collections: collectionsObject(loader),
     linklists: new LinklistsDrop(loader),
+    // Where the storefront's own pages live, for links in themes ({{ routes.account_url }})
+    routes: {
+      root_url: '/',
+      account_url: '/account',
+      account_login_url: '/account/login',
+      account_logout_url: '/account/logout',
+    },
     request: { path: url.pathname, origin: url.origin, page_type: page.template, design_mode: loaded.preview },
     template: { name: page.template },
     theme: { id: theme.id, name: theme.definition.name, version: theme.definition.version ?? null },
@@ -331,12 +345,17 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
 
   const scope = { ...objects, page_title: meta.title, page_description: meta.description, page_image: meta.image }
   const context = new Context(scope, liquid.options, { globals })
-  const content = await liquid.renderFile(`templates/${page.template}`, context)
+  const content =
+    page.template === 'account' ? page.html : await liquid.renderFile(`templates/${page.template}`, context)
   context.push({ content_for_layout: new SafeHtml(content) })
   const html = await liquid.renderFile('layout/theme', context)
 
   return new Response(html, {
-    status: page.template === '404' ? 404 : 200,
-    headers: { 'content-type': 'text/html; charset=utf-8' },
+    status: page.template === '404' ? 404 : page.template === 'account' ? (page.status ?? 200) : 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      // Someone's own orders: never stored by a shared cache
+      ...(page.template === 'account' && { 'cache-control': 'private, no-store' }),
+    },
   })
 }

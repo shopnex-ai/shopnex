@@ -70,6 +70,9 @@ app.get('/', async (c) => {
 - `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) → `{ shop, userId,
 admin, data, payments }`; sets `frame-ancestors`. `forShop(instance, shopId)` for background work
 - `verifyPaymentsRequest(c, 'payment' | 'refund')`, `verifyWebhook(c)`: checked against the instance's published keys
+- `onInstalled(shop, request)` option: Shopnex POSTs a signed `app.installed` to `{appUrl}/shopnex/installed` right after an
+  install (best effort, may repeat), so the app can set the shop up before anyone opens it (the Stripe app registers its
+  payment method there)
 - `data.get/set/delete`, `data.getSecret/setSecret` (AES-GCM with a key derived from the app key, unreadable in Shopnex's database)
 - `@shopnex/app/ui`: `Page`, `Card`, `Stack`, `Inline`, `Text`, `Badge`, `Banner`, `Stat`, `Button`, `Form`, `TextField`,
   `Select`, `Checkbox`, `Code` (hono/jsx, admin styles, light/dark). `<Form action>` / `<Button action>` call the app's
