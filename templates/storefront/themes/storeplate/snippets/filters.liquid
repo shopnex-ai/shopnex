@@ -44,10 +44,10 @@
                 {%- for field in group.hidden %}
                   <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
                 {%- endfor %}
-                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="form-input w-24 rounded-md border-border py-1" />
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="form-input min-w-0 flex-1 basis-20 rounded-md border-border py-1" />
                 <span aria-hidden="true">–</span>
-                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="form-input w-24 rounded-md border-border py-1" />
-                <button type="submit" class="btn btn-outline-primary py-1">Apply</button>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="form-input min-w-0 flex-1 basis-20 rounded-md border-border py-1" />
+                <button type="submit" class="btn btn-outline-primary w-full py-1">Apply</button>
               </form>
             {%- else %}
               <ul class="max-h-48 space-y-1 overflow-y-auto">

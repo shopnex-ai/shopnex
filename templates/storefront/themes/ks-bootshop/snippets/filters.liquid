@@ -25,9 +25,9 @@
   {%- if collection.filters.size > 0 %}
     <details class="border rounded mb-4" {% if collection.active_filters.size > 0 %}open{% endif %}>
       <summary class="px-3 py-2 fw-semibold" style="cursor: pointer">Filters</summary>
-      <div class="row g-4 border-top p-3">
+      <div class="border-top p-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1.5rem">
         {%- for group in collection.filters %}
-          <div class="col-12 col-sm-6 col-lg-3">
+          <div>
             <div class="fw-semibold mb-2">{{ group.label }}</div>
             {%- if group.type == 'price_range' %}
               <form action="{{ request.path }}" method="get" class="d-flex flex-wrap align-items-center gap-2">
