@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db, schema, type Conn } from '@shopnex/db'
 import { RESERVED_SLUGS } from './subdomains'
 
 const DEFAULT_CURRENCY = 'USD'
@@ -27,9 +27,29 @@ async function uniqueSlug(conn: Pick<typeof db, 'select'>, name: string) {
 }
 
 /**
+ * The storefront header's menu, so a new shop has working navigation from the first visit. Both links need no
+ * content (the front page and the catalog), so the menu is valid before there is a product or collection.
+ * Never replaces an existing menu: a merchant who deleted or rebuilt theirs keeps it that way.
+ */
+export async function seedDefaultMenu(conn: Conn, shopId: string) {
+  await conn
+    .insert(schema.menus)
+    .values({
+      shopId,
+      handle: 'main-menu',
+      title: 'Main menu',
+      items: [
+        { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
+        { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
+      ],
+    })
+    .onConflictDoNothing()
+}
+
+/**
  * A new shop for `ownerId`, ready to take an order: the owner membership plus the checkout defaults a shop
- * can't sell without (one shipping rate, one manual payment method). The Online Store channel and the first
- * theme are created on first use, so they aren't touched here.
+ * can't sell without (one shipping rate, one manual payment method) and a main menu. The Online Store channel
+ * and the first theme are created on first use, so they aren't touched here.
  */
 export async function createShop(input: { ownerId: string; name: string; currency?: string }) {
   const name = input.name.trim()
@@ -51,6 +71,7 @@ export async function createShop(input: { ownerId: string; name: string; currenc
       name: 'Cash on delivery',
       instructions: 'Pay the courier when your order arrives.',
     })
+    await seedDefaultMenu(tx, id)
     return shop!
   })
 }
