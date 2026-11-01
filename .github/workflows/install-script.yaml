@@ -1,0 +1,67 @@
+name: Install script
+
+# Runs the documented install command on a clean runner against the images the Demo image workflow just pushed:
+# SHOPNEX_VERSION is the commit SHA, which pins both the images and the compose file to that build. Run it by hand
+# (optionally with a release tag as the version) to test a release. HTTPS is not covered: it needs a public domain.
+on:
+  workflow_run:
+    workflows: [Demo image]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag or commit SHA to install (empty = latest release)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: Install on a clean server
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SHOPNEX_VERSION: ${{ github.event.workflow_run.head_sha || inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Install (piped, as users run it)
+        run: cat apps/docs/public/install.sh | sudo --preserve-env=SHOPNEX_VERSION sh
+
+      - name: Wait for the admin
+        run: |
+          for i in $(seq 90); do
+            curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
+            sleep 2
+          done
+          echo "Shopnex did not answer in 3 minutes" >&2
+          exit 1
+
+      - name: Setup page is served and the config is private
+        run: |
+          curl -fsS -o /dev/null http://localhost:3000/admin/setup
+          sudo test "$(sudo stat -c %a /opt/shopnex/.env)" = 600
+          sudo grep -qE '^BETTER_AUTH_SECRET=.{64}$' /opt/shopnex/.env
+          sudo grep -q '^SHOPNEX_VERSION=.' /opt/shopnex/.env
+
+      - name: Re-running keeps the secret
+        run: |
+          secret() { sudo sed -n 's/^BETTER_AUTH_SECRET=//p' /opt/shopnex/.env; }
+          before=$(secret)
+          cat apps/docs/public/install.sh | sudo --preserve-env=SHOPNEX_VERSION sh
+          [ "$before" = "$(secret)" ] || { echo "BETTER_AUTH_SECRET changed on re-run" >&2; exit 1; }
+          for i in $(seq 90); do
+            curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
+            sleep 2
+          done
+          echo "Shopnex did not come back after the re-run" >&2
+          exit 1
+
+      - name: Logs
+        if: failure()
+        run: cd /opt/shopnex && sudo docker compose ps -a && sudo docker compose logs --tail 100
