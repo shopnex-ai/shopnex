@@ -24,6 +24,8 @@ pnpm e2e              # needs `pnpm dev` running; uses the dev database
 ```
 
 - Keep PRs focused: one change per PR, with a description of what and why.
+- For a change you can see (admin, storefront, checkout), paste a screenshot into the PR description. The first one
+  is shown under the PR's entry in the release notes.
 - Add or update an e2e test in `e2e/tests` for behavior changes in the API or checkout.
 - Schema changes need a migration: `pnpm db:generate`, then commit the generated files.
 - Domain modules (`catalog`, `customers`, `orders`, …) hold business logic only: no HTTP, oRPC or Hono imports.
