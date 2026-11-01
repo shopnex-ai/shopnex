@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@astrojs/node": "11.1.9",
-    "@nanostores/react": "^1.1.0",
+    "@nanostores/react": "^2.0.1",
     "@shopnex/storefront-sdk": "workspace:*",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.20",
