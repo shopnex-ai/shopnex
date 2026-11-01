@@ -54,6 +54,14 @@ jobs:
           }
           sudo grep -q '^SHOPNEX_VERSION=.' /opt/shopnex/.env || { echo "SHOPNEX_VERSION is missing from .env" >&2; exit 1; }
 
+      - name: Storefront, Stripe app and containers are up
+        run: |
+          up() { for i in $(seq 45); do curl -fsS -o /dev/null "$1" && return 0; sleep 2; done; echo "Not answering: $1" >&2; return 1; }
+          up http://localhost:3000/              # storefront, served beside the admin on the same port
+          up http://localhost:4600/shopnex/app.js # Stripe app
+          bad=$(cd /opt/shopnex && sudo docker compose ps -a --format '{{.Service}} {{.State}}' | grep -vE ' running$' || true)
+          [ -z "$bad" ] || { echo "Containers not running:" >&2; echo "$bad" >&2; exit 1; }
+
       - name: Re-running keeps the secret
         run: |
           secret() { sudo sed -n 's/^BETTER_AUTH_SECRET=//p' /opt/shopnex/.env; }
