@@ -31,11 +31,11 @@ async function settingsRow(shopId: string) {
   return row ?? null
 }
 
-// Never returns the key, only that one is saved (there always is one while it's on)
+// Never returns the key, only that one is saved (there always is one, on or off)
 export async function getSettings(shopId: string) {
   const row = await settingsRow(shopId)
   return {
-    settings: row && { provider: row.provider, model: row.model, brandVoice: row.brandVoice },
+    settings: row && { provider: row.provider, model: row.model, brandVoice: row.brandVoice, enabled: row.enabled },
     providers: Object.entries(PROVIDERS).map(([id, p]) => ({ id: id as AiBuiltinProvider, ...p })),
   }
 }
@@ -66,6 +66,8 @@ export async function save(shopId: string, input: SettingsInput) {
     model,
     brandVoice: input.brandVoice ?? current?.brandVoice ?? '',
     apiKey: encryptSecret(apiKey),
+    // Saving turns it on, also after it was turned off
+    enabled: true,
   }
   await db
     .insert(schema.aiSettings)
@@ -74,16 +76,19 @@ export async function save(shopId: string, input: SettingsInput) {
   return getSettings(shopId)
 }
 
-/** Built-in AI off: the key is deleted */
+/** Built-in AI off: it stops answering, the saved key stays for when it's turned back on */
 export async function turnOff(shopId: string) {
-  await db.delete(schema.aiSettings).where(eq(schema.aiSettings.shopId, shopId))
+  await db
+    .update(schema.aiSettings)
+    .set({ enabled: false, updatedAt: new Date() })
+    .where(eq(schema.aiSettings.shopId, shopId))
   return getSettings(shopId)
 }
 
 /** The shop's built-in provider, ready to run; null when it's off */
 export async function active(shopId: string) {
   const row = await settingsRow(shopId)
-  if (!row) return null
+  if (!row?.enabled) return null
   const settings: Settings = { provider: row.provider, model: row.model, brandVoice: row.brandVoice }
   return {
     name: PROVIDERS[row.provider].name,

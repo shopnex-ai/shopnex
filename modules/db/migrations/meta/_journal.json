@@ -253,6 +253,13 @@
       "when": 1793513501577,
       "tag": "0035_ai_capabilities",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793514776465,
+      "tag": "0036_quiet_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

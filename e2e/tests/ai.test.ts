@@ -257,10 +257,14 @@ describe('Built-in AI (Settings → AI)', () => {
     assert.equal(ok(await run({ capability: 'product.seo' })).provider.id, appId)
   })
 
-  test('turning it off deletes the key', async () => {
-    assert.equal(ok(await settings('DELETE')).settings, null)
-    const [left] = await db.select().from(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP))
-    assert.equal(left, undefined)
+  test('turning it off keeps the key but stops answering', async () => {
+    const off = ok(await call('POST', '/admin/ai/settings/off', undefined, admin))
+    assert.equal(off.settings.enabled, false)
+    const [kept] = await db.select().from(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP))
+    assert.ok(kept?.apiKey)
+    const all = ok(await call('GET', '/admin/ai/capabilities', undefined, staff))
+    const seo = all.find((c: { capability: string }) => c.capability === 'product.seo')
+    assert.ok(!seo.providers.some((p: { id: string }) => p.id === 'builtin'))
   })
 })
 
