@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { beforeEach, describe, test } from 'node:test'
 import Stripe from 'stripe'
 import { ShopnexError, type ShopContext } from '@shopnex/app'
-import { webhookRoutes } from '../src/webhook'
+import { WEBHOOK_EVENTS, ensureWebhookEvents, webhookRoutes } from '../src/webhook'
 
 const INSTANCE = 'https://shop.example.com'
 const SHOP_ID = 'shop_1'
@@ -231,9 +231,34 @@ describe('duplicate and out-of-order deliveries', () => {
     assert.deepEqual(state(), { status: 'resolved', externalId: 'pi_1', reason: 'Checkout expired without payment' })
   })
 
-  test('a session Shopnex no longer has (404) is acknowledged', async () => {
+  test('a PAID event for a session Shopnex does not have fails loudly so Stripe retries (never dropped)', async () => {
     sessions.clear()
-    assert.equal((await deliver(paid())).status, 204)
+    assert.equal((await deliver(paid())).status, 500)
+    assert.equal(
+      (await deliver(event('checkout.session.async_payment_succeeded', { payment_status: 'paid' }))).status,
+      500,
+    )
+  })
+
+  test('…and succeeds once the session is there (the retry)', async () => {
+    const e = paid()
+    sessions.clear()
+    assert.equal((await deliver(e)).status, 500)
+    sessions.set('ps_1', { status: 'pending' })
+    assert.equal((await deliver(e)).status, 204)
+    assert.equal(state().status, 'resolved')
+  })
+
+  test('an unpaid completion, expiry, failure or decline for a missing session is acknowledged', async () => {
+    sessions.clear()
+    for (const e of [
+      event('checkout.session.completed', { payment_status: 'unpaid' }),
+      event('checkout.session.expired', {}),
+      event('checkout.session.async_payment_failed', {}),
+      declined('Your card was declined.'),
+    ]) {
+      assert.equal((await deliver(e)).status, 204)
+    }
   })
 })
 
@@ -362,5 +387,50 @@ describe('Shopnex unavailable', () => {
     shopnexDown = false
     assert.equal((await deliver(e)).status, 204)
     assert.equal(state().status, 'resolved')
+  })
+})
+
+describe('webhook endpoint events', () => {
+  // A Stripe client with one stored endpoint
+  function fakeStripe(enabled: string[]) {
+    const updates: string[][] = []
+    const client = {
+      webhookEndpoints: {
+        retrieve: async () => ({ enabled_events: enabled }),
+        update: async (_id: string, params: { enabled_events: string[] }) => void updates.push(params.enabled_events),
+      },
+    } as unknown as Stripe
+    return { client, updates }
+  }
+
+  test('an endpoint from an older version gets the missing events and keeps the merchant’s own', async () => {
+    const old = [
+      'checkout.session.completed',
+      'checkout.session.async_payment_succeeded',
+      'checkout.session.async_payment_failed',
+      'checkout.session.expired',
+      'invoice.paid',
+    ]
+    const { client, updates } = fakeStripe(old)
+    assert.equal(await ensureWebhookEvents(client, 'we_1'), true)
+    assert.equal(updates.length, 1)
+    for (const e of [...WEBHOOK_EVENTS, 'invoice.paid']) assert.ok(updates[0]!.includes(e), e)
+    assert.equal(new Set(updates[0]).size, updates[0]!.length, 'no duplicates')
+  })
+
+  test('an up-to-date endpoint is left alone', async () => {
+    const { client, updates } = fakeStripe([...WEBHOOK_EVENTS])
+    assert.equal(await ensureWebhookEvents(client, 'we_1'), false)
+    assert.deepEqual(updates, [])
+  })
+
+  test('an endpoint that listens to everything is left alone', async () => {
+    const { client, updates } = fakeStripe(['*'])
+    assert.equal(await ensureWebhookEvents(client, 'we_1'), false)
+    assert.deepEqual(updates, [])
+  })
+
+  test('the app subscribes to the decline event', () => {
+    assert.ok(WEBHOOK_EVENTS.includes('payment_intent.payment_failed'))
   })
 })

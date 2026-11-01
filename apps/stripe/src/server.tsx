@@ -13,7 +13,7 @@ import Stripe from 'stripe'
 import { createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
 import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
-import { webhookRoutes } from './webhook'
+import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
 // Public origin Shopnex, the admin (iframe) and Stripe reach this app at
 const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(/\/$/, '')
@@ -88,8 +88,22 @@ app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml',
 
 // --- settings (embedded page) ---
 
+// Opening the settings also brings an endpoint created by an older version up to date (best effort)
+async function refreshWebhook(shop: ShopContext) {
+  const [connection, key] = await Promise.all([settings(shop).connection(), settings(shop).secretKey()])
+  if (!connection?.webhookEndpointId || !key) return
+  try {
+    if (await ensureWebhookEvents(new Stripe(key), connection.webhookEndpointId)) {
+      console.log(`[stripe] added the missing events to the webhook endpoint of ${shop.instance} ${shop.shopId}`)
+    }
+  } catch (error) {
+    console.warn(`[stripe] couldn't update the webhook events of ${shop.instance} ${shop.shopId}:`, message(error))
+  }
+}
+
 app.get('/', async (c) => {
   const shop = await shopnex.authenticate(c)
+  await refreshWebhook(shop)
   return c.html(<SettingsPage {...await view(shop)} />)
 })
 
@@ -143,13 +157,7 @@ app.post('/api/settings', async (c) => {
       ).webhookEndpoints.create({
         url: webhookUrl(shop),
         description: `Shopnex (${shop.instance})`,
-        enabled_events: [
-          'checkout.session.completed',
-          'checkout.session.async_payment_succeeded',
-          'checkout.session.async_payment_failed',
-          'checkout.session.expired',
-          'payment_intent.payment_failed',
-        ],
+        enabled_events: [...WEBHOOK_EVENTS],
       })
       await shop.data.setSecret('stripe_webhook_secret', endpoint.secret!)
       await shop.data.set('stripe', { ...connection, webhookEndpointId: endpoint.id })
@@ -158,6 +166,7 @@ app.post('/api/settings', async (c) => {
     }
   }
 
+  await refreshWebhook(shop)
   const { ready } = await view(shop)
   try {
     await configure(shop, ready)

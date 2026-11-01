@@ -9,6 +9,30 @@ export type WebhookDeps = {
   secrets(shop: ShopContext): Promise<{ secretKey: string | null; webhookSecret: string | null }>
 }
 
+/** The events the app needs Stripe to send */
+export const WEBHOOK_EVENTS = [
+  'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+  'checkout.session.async_payment_failed',
+  'checkout.session.expired',
+  'payment_intent.payment_failed',
+] as const
+
+/**
+ * Endpoints this app created earlier don't list events added since (e.g. payment_intent.payment_failed): adds
+ * the missing ones, keeping whatever else the merchant enabled. Returns true when it changed the endpoint.
+ */
+export async function ensureWebhookEvents(stripe: Stripe, endpointId: string) {
+  const endpoint = await stripe.webhookEndpoints.retrieve(endpointId)
+  const enabled = endpoint.enabled_events as string[]
+  // '*' already receives everything
+  if (enabled.includes('*') || WEBHOOK_EVENTS.every((e) => enabled.includes(e))) return false
+  await stripe.webhookEndpoints.update(endpointId, {
+    enabled_events: [...new Set([...enabled, ...WEBHOOK_EVENTS])] as Stripe.WebhookEndpointUpdateParams.EnabledEvent[],
+  })
+  return true
+}
+
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 // The URL names the shop (?instance=…&shop=…); its own webhook secret proves the event is Stripe's
@@ -48,13 +72,19 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
     const paymentIntent =
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
 
+    // Events that say the money arrived: a session Shopnex can't find for one of these is a payment nobody sees
+    let paidEvent = false
     try {
       switch (event.type) {
         case 'checkout.session.completed':
           // Delayed methods (bank debits…) complete unpaid and settle later
-          if (session.payment_status === 'paid') await shop.payments.resolve(id, paymentIntent)
+          if (session.payment_status === 'paid') {
+            paidEvent = true
+            await shop.payments.resolve(id, paymentIntent)
+          }
           break
         case 'checkout.session.async_payment_succeeded':
+          paidEvent = true
           await shop.payments.resolve(id, paymentIntent)
           break
         case 'checkout.session.async_payment_failed':
@@ -72,7 +102,15 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
           break
       }
     } catch (error) {
-      // Already settled the other way (409) or gone (404): nothing to retry. Anything else: Stripe retries.
+      // A payment for a session Shopnex doesn't have: the buyer was charged and no order will show it. Fail loudly
+      // (Stripe retries for days and flags the endpoint in the merchant's Dashboard) instead of dropping it.
+      if (paidEvent && error instanceof ShopnexError && error.status === 404) {
+        console.error(
+          `[stripe] PAID but no Shopnex session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): refund or fix by hand`,
+        )
+        return c.text('Payment received for an unknown Shopnex session', 500)
+      }
+      // Already settled the other way (409) or a decline/expiry for a session that is gone (404): nothing to retry
       if (error instanceof ShopnexError && (error.status === 409 || error.status === 404)) {
         console.warn(`[stripe] ${event.type} for session ${id}:`, error.message)
         return c.body(null, 204)
