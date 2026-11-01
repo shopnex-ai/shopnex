@@ -8,7 +8,10 @@
 //   3. When the provider confirms (or declines), the app calls
 //      POST /api/v1/admin/payment-sessions/{id}/resolve  { externalId? }
 //      POST /api/v1/admin/payment-sessions/{id}/reject   { reason }
-//      Both are idempotent. The amount is Shopnex's, never the app's.
+//      Both are idempotent. The amount is Shopnex's, never the app's. A resolve is accepted even after a reject
+//      (the provider took the money, so the order is paid).
+//      POST /api/v1/admin/payment-sessions/{id}/attempt-failed  { reason }
+//      One attempt failed (card declined) but the buyer can retry: only records the reason, the session stays open.
 //   4. Refunds: Shopnex POSTs a RefundSessionRequest to `refundSessionUrl` (answer 2xx right away), and the app
 //      resolves / rejects the session the same way once the provider has refunded.
 //
