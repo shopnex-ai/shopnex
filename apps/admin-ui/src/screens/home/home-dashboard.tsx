@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { GettingStarted } from './getting-started'
 
 type Overview = Outputs['admin']['analytics']['overview']
 type Day = Overview['series'][number]
@@ -36,7 +37,7 @@ const METRICS: Record<Metric, { label: string; current: (d: Day) => number; prev
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-export function HomeDashboard({ currency }: { currency: string }) {
+export function HomeDashboard({ currency, shopId }: { currency: string; shopId: string }) {
   const { filter, setFilter } = useListParams()
   const days = RANGES.find((r) => String(r.days) === filter('range'))?.days ?? 30
   const [metric, setMetric] = useState<Metric>('sales')
@@ -66,6 +67,8 @@ export function HomeDashboard({ currency }: { currency: string }) {
           </div>
         }
       />
+
+      <GettingStarted shopId={shopId} />
 
       {error ? (
         <p className="text-sm text-destructive">Couldn’t load analytics: {error.message}</p>

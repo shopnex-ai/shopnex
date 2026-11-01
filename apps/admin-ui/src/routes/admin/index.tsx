@@ -7,7 +7,7 @@ function HomePage() {
   const { access } = Route.useRouteContext()
   return (
     <div className="mx-auto max-w-5xl">
-      <HomeDashboard currency={access.tenant?.shop.currency ?? 'USD'} />
+      <HomeDashboard currency={access.tenant?.shop.currency ?? 'USD'} shopId={access.tenant?.shop.id ?? 'default'} />
     </div>
   )
 }

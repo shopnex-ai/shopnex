@@ -26,7 +26,7 @@ export function SetupForm() {
     const signIn = await authClient.signIn.email({ email: values.email, password: values.password })
     // The account exists either way; worst case they sign in by hand
     clearAdminContext(router)
-    await navigate({ to: signIn.error ? '/admin/login' : '/admin', replace: true })
+    await navigate({ to: signIn.error ? '/admin/login' : '/admin/welcome', replace: true })
     await router.invalidate()
   })
 
@@ -34,9 +34,7 @@ export function SetupForm() {
     <Card>
       <CardHeader>
         <CardTitle>Welcome to Shopnex</CardTitle>
-        <CardDescription>
-          Create the owner account. You can name your shop and set its currency later in Settings.
-        </CardDescription>
+        <CardDescription>Create the owner account. Next you'll name your shop and pick its currency.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>

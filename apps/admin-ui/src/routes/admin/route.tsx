@@ -53,6 +53,7 @@ function AdminLayout() {
     pathname === '/admin/setup' ||
     pathname === '/admin/login' ||
     pathname === '/admin/signup' ||
+    pathname === '/admin/welcome' ||
     pathname.startsWith('/admin/invite/')
   )
     return <Outlet />
