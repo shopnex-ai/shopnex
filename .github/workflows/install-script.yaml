@@ -52,6 +52,7 @@ jobs:
             sudo sed -n 's/^BETTER_AUTH_SECRET=//p' /opt/shopnex/.env | awk '{ print length($0) " characters" }' >&2
             exit 1
           }
+          sudo grep -qE '^SHOPNEX_SECRET=.{64}$' /opt/shopnex/.env || { echo "SHOPNEX_SECRET is not 64 characters" >&2; exit 1; }
           sudo grep -q '^SHOPNEX_VERSION=.' /opt/shopnex/.env || { echo "SHOPNEX_VERSION is missing from .env" >&2; exit 1; }
 
       - name: Storefront, Stripe app and containers are up
@@ -64,10 +65,10 @@ jobs:
 
       - name: Re-running keeps the secret
         run: |
-          secret() { sudo sed -n 's/^BETTER_AUTH_SECRET=//p' /opt/shopnex/.env; }
+          secret() { sudo sed -n -e 's/^BETTER_AUTH_SECRET=//p' -e 's/^SHOPNEX_SECRET=//p' /opt/shopnex/.env; }
           before=$(secret)
           cat apps/docs/public/install.sh | sudo --preserve-env=SHOPNEX_VERSION sh
-          [ "$before" = "$(secret)" ] || { echo "BETTER_AUTH_SECRET changed on re-run" >&2; exit 1; }
+          [ "$before" = "$(secret)" ] || { echo "A secret changed on re-run" >&2; exit 1; }
           for i in $(seq 90); do
             curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
             sleep 2
