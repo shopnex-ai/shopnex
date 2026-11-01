@@ -333,14 +333,13 @@ export async function get(shopId: string, appId: string, id: string) {
 
 /**
  * The provider took the money (payment) or gave it back (refund). Idempotent. An expired session still
- * resolves: the buyer paid just as Shopnex gave up waiting, and that money is real (a cancelled order then
- * shows as paid, for staff to refund).
+ * resolves, and so does a rejected one (a late or racing provider event): the money is real, so the order is
+ * marked paid (a cancelled order then shows as paid, for staff to refund) rather than losing the payment.
  */
 export async function resolve(shopId: string, appId: string, id: string, input: { externalId?: string }) {
   return db.transaction(async (tx) => {
     const session = await lockSession(tx, shopId, appId, id)
     if (session.status === 'resolved') return session
-    if (session.status === 'rejected') throw new PaymentError('SESSION_CLOSED', 'This session was rejected')
     const [order] = await tx.select().from(schema.orders).where(eq(schema.orders.id, session.orderId)).for('update')
     const now = new Date()
     let transactionId = session.transactionId
@@ -407,6 +406,23 @@ export async function reject(shopId: string, appId: string, id: string, input: {
     const [updated] = await tx
       .update(schema.paymentSessions)
       .set({ status: 'rejected', errorMessage: input.reason, updatedAt: new Date() })
+      .where(eq(schema.paymentSessions.id, id))
+      .returning()
+    return updated!
+  })
+}
+
+/**
+ * A payment attempt failed at the provider (card declined…) but the buyer can still try again on the same page,
+ * so the session stays open. Keeps the reason on the session. Idempotent; a closed session is left alone.
+ */
+export async function attemptFailed(shopId: string, appId: string, id: string, input: { reason: string }) {
+  return db.transaction(async (tx) => {
+    const session = await lockSession(tx, shopId, appId, id)
+    if (session.status !== 'pending' || session.kind !== 'payment') return session
+    const [updated] = await tx
+      .update(schema.paymentSessions)
+      .set({ errorMessage: input.reason, updatedAt: new Date() })
       .where(eq(schema.paymentSessions.id, id))
       .returning()
     return updated!

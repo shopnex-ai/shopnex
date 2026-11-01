@@ -10,9 +10,10 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import Stripe from 'stripe'
-import { ShopnexError, createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
+import { createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
 import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
+import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
 // Public origin Shopnex, the admin (iframe) and Stripe reach this app at
 const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(/\/$/, '')
@@ -87,8 +88,22 @@ app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml',
 
 // --- settings (embedded page) ---
 
+// Opening the settings also brings an endpoint created by an older version up to date (best effort)
+async function refreshWebhook(shop: ShopContext) {
+  const [connection, key] = await Promise.all([settings(shop).connection(), settings(shop).secretKey()])
+  if (!connection?.webhookEndpointId || !key) return
+  try {
+    if (await ensureWebhookEvents(new Stripe(key), connection.webhookEndpointId)) {
+      console.log(`[stripe] added the missing events to the webhook endpoint of ${shop.instance} ${shop.shopId}`)
+    }
+  } catch (error) {
+    console.warn(`[stripe] couldn't update the webhook events of ${shop.instance} ${shop.shopId}:`, message(error))
+  }
+}
+
 app.get('/', async (c) => {
   const shop = await shopnex.authenticate(c)
+  await refreshWebhook(shop)
   return c.html(<SettingsPage {...await view(shop)} />)
 })
 
@@ -142,12 +157,7 @@ app.post('/api/settings', async (c) => {
       ).webhookEndpoints.create({
         url: webhookUrl(shop),
         description: `Shopnex (${shop.instance})`,
-        enabled_events: [
-          'checkout.session.completed',
-          'checkout.session.async_payment_succeeded',
-          'checkout.session.async_payment_failed',
-          'checkout.session.expired',
-        ],
+        enabled_events: [...WEBHOOK_EVENTS],
       })
       await shop.data.setSecret('stripe_webhook_secret', endpoint.secret!)
       await shop.data.set('stripe', { ...connection, webhookEndpointId: endpoint.id })
@@ -156,6 +166,7 @@ app.post('/api/settings', async (c) => {
     }
   }
 
+  await refreshWebhook(shop)
   const { ready } = await view(shop)
   try {
     await configure(shop, ready)
@@ -253,63 +264,16 @@ async function refund(shop: ShopContext, request: RefundSessionRequest) {
 
 // --- Stripe → app ---
 
-// The URL names the shop (?instance=…&shop=…); its own webhook secret proves the event is Stripe's
-app.post('/stripe/webhook', async (c) => {
-  const { instance, shop: shopId } = c.req.query()
-  const signature = c.req.header('stripe-signature')
-  if (!instance || !shopId || !signature) return c.text('Unknown shop', 400)
-  let shop: ShopContext
-  try {
-    shop = await shopnex.forShop(instance, shopId)
-  } catch (error) {
-    console.warn(`[stripe] webhook for ${instance} ${shopId}:`, message(error))
-    return c.text('Unknown shop', 400)
-  }
-  const [secretKey, webhookSecret] = await Promise.all([settings(shop).secretKey(), settings(shop).webhookSecret()])
-  if (!secretKey || !webhookSecret) return c.text('Unknown shop', 400)
-  const body = await c.req.text()
-  let event: Stripe.Event
-  try {
-    event = await new Stripe(secretKey).webhooks.constructEventAsync(body, signature, webhookSecret)
-  } catch {
-    return c.text('Invalid signature', 400)
-  }
-  if (!event.type.startsWith('checkout.session.')) return c.body(null, 204)
-  const session = event.data.object as Stripe.Checkout.Session
-  const id = session.metadata?.shopnex_session_id
-  // Not one of ours (the same Stripe account may serve other systems or shops)
-  if (!id || session.metadata?.shopnex_instance !== shop.instance || session.metadata?.shopnex_shop_id !== shopId) {
-    return c.body(null, 204)
-  }
-  const paymentIntent = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
-
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed':
-        // Delayed methods (bank debits…) complete unpaid and settle later
-        if (session.payment_status === 'paid') await shop.payments.resolve(id, paymentIntent)
-        break
-      case 'checkout.session.async_payment_succeeded':
-        await shop.payments.resolve(id, paymentIntent)
-        break
-      case 'checkout.session.async_payment_failed':
-        await shop.payments.reject(id, 'The payment failed')
-        break
-      case 'checkout.session.expired':
-        await shop.payments.reject(id, 'Checkout expired without payment')
-        break
-    }
-  } catch (error) {
-    // Already settled the other way (409) or gone (404): nothing to retry. Anything else: Stripe retries.
-    if (error instanceof ShopnexError && (error.status === 409 || error.status === 404)) {
-      console.warn(`[stripe] ${event.type} for session ${id}:`, error.message)
-      return c.body(null, 204)
-    }
-    console.error(`[stripe] ${event.type} for session ${id}:`, message(error))
-    return c.text('Shopnex unavailable', 503)
-  }
-  return c.body(null, 204)
-})
+app.route(
+  '/',
+  webhookRoutes({
+    forShop: shopnex.forShop,
+    secrets: async (shop) => ({
+      secretKey: await settings(shop).secretKey(),
+      webhookSecret: await settings(shop).webhookSecret(),
+    }),
+  }),
+)
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) return error.getResponse()

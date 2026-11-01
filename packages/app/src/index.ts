@@ -107,6 +107,8 @@ export type ShopContext = {
   payments: {
     resolve(sessionId: string, externalId?: string): Promise<void>
     reject(sessionId: string, reason: string): Promise<void>
+    /** One attempt failed (card declined) but the buyer can retry on the same page: records why, keeps the session open */
+    attemptFailed(sessionId: string, reason: string): Promise<void>
     /** Registers (or updates) this app's payment method for the shop */
     configure(method: {
       name: string
@@ -244,6 +246,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       payments: {
         resolve: async (id, externalId) => void (await admin.post(session(id, 'resolve'), { externalId })),
         reject: async (id, reason) => void (await admin.post(session(id, 'reject'), { reason })),
+        attemptFailed: async (id, reason) => void (await admin.post(session(id, 'attempt-failed'), { reason })),
         configure: async (method) => void (await admin.post('/payments-app/configure', method)),
       },
       ai: {
