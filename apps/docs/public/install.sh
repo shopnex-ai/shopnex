@@ -40,8 +40,9 @@ else
   IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | cut -d' ' -f1)"
   APP_URL="http://$IP:3000"; STRIPE_URL="http://$IP:4600"
 fi
-(umask 077; printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nBETTER_AUTH_SECRET=%s\n' \
-  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SECRET" > .env)
+# chmod first: a umask does not apply under a default ACL, and `>` keeps the mode of an existing file
+touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nBETTER_AUTH_SECRET=%s\n' \
+  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SECRET" > .env
 
 docker compose pull -q
 docker compose up -d --remove-orphans
