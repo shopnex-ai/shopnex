@@ -15,9 +15,9 @@
     "demo:reset": "tsx scripts/demo-reset.ts"
   },
   "dependencies": {
-    "@orpc/openapi": "^1.15.7",
+    "@orpc/openapi": "^1.16.1",
     "@orpc/server": "catalog:",
-    "@orpc/zod": "^1.15.7",
+    "@orpc/zod": "^1.16.1",
     "@shopnex/apps": "workspace:*",
     "@shopnex/auth": "workspace:*",
     "@shopnex/cart": "workspace:*",
