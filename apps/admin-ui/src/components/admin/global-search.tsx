@@ -87,7 +87,11 @@ export function GlobalSearch({ superAdmin, canManageApps }: { superAdmin: boolea
   // Pages, settings and actions appear once you type; the box starts empty
   const pages = search ? visible(nav.flatMap((g) => g.items)).filter((i) => matches(i.label, search)) : []
   // Settings pages would crowd the empty state; they show once there is a query
-  const settings = search ? visible(settingsNav.flatMap((g) => g.items)).filter((i) => matches(i.label, search)) : []
+  const settings = search
+    ? visible(settingsNav.flatMap((g) => g.items).filter((i): i is NavItem => !i.external)).filter((i) =>
+        matches(i.label, search),
+      )
+    : []
   const general = [
     {
       label: 'API reference',
