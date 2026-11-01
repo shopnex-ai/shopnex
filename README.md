@@ -8,9 +8,9 @@
 
 <h1 align="center">Shopnex</h1>
 
-<p align="center">
-  <img src="docs/images/dashboard.png" alt="Shopnex admin dashboard with sales analytics" width="900">
-</p>
+<p align="center"><b>Self-hosted Shopify alternative. Run <code>docker compose up</code>, open the setup wizard, start selling.</b></p>
+
+<p align="center"><a href="https://demo.shopnex.ai/admin/login?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
 <p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
@@ -20,14 +20,39 @@
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
 </p>
 
-Open-source, self-hosted e-commerce. Run your own shop with an admin, a themeable storefront, hosted checkout,
-a typed API and webhooks, and extend it with out-of-process apps. No code or CLI needed for day-to-day selling.
+<p align="center">
+  <img src="docs/images/dashboard.png" alt="Shopnex admin dashboard with sales analytics" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/images/storefront.png" alt="Shopnex storefront product page with variants and add to cart" width="900">
+</p>
+
+<!-- TODO: add a ~15s GIF: docker compose up -> setup wizard -> first order, e.g. docs/images/quickstart.gif -->
+
+Run your own shop with an admin, a themeable storefront, hosted checkout, a typed API and webhooks, and extend it with
+out-of-process apps. No code or CLI needed for day-to-day selling.
 
 - **Admin**: products, collections, orders, discounts, shipping, taxes, staff and settings in the browser
-- **Storefront**: a bundled Astro storefront with Liquid themes, or bring your own through the Storefront API (aligned with Shopify's)
+- **Storefront**: a bundled Astro storefront with Liquid themes (Shopify-style object names, but themes are ported to Shopnex's format, not drop-in), or bring your own through the typed REST Storefront API (Shopify-style naming, not GraphQL)
 - **Hosted checkout**: shipping rates, payment methods, discount codes, order confirmation
 - **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
 - **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
+
+## Why Shopnex
+
+- **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
+- **You own your data.** Everything lives in your PostgreSQL database on your server.
+- **Built for merchants, not just developers.** Day-to-day selling happens in the browser admin; `.env` holds infrastructure only.
+- **One command to run.** `docker compose up` starts the admin, storefront and migrations.
+- **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to Shopnex's format rather than drop-in, so check the bundled ones for the structure.
+- **Agency friendly.** Run many shops from one install with `TENANCY_MODE`.
+- **Extend without forking.** Apps run out of process through scoped API tokens and signed webhooks.
+
+## Status
+
+Shopnex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for what's done and what's next, and the
+[releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
 
 ## Quick start
 
@@ -69,6 +94,11 @@ Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer r
 | [Webhooks](docs/webhooks.md)             | Topics, signatures, delivery and retries                                    |
 | [Roadmap](docs/roadmap.md)               | What's done and what's next                                                 |
 | [Releasing](RELEASING.md)                | How to cut a release                                                        |
+
+## Community
+
+Chat with the team and other users on [Discord](https://discord.gg/xQ8xKV6MdF), or post questions and ideas in
+[GitHub Discussions](https://github.com/shopnex-ai/shopnex/discussions).
 
 ## Contributing
 

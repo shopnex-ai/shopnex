@@ -67,6 +67,33 @@ client.connect().then(() => client.end()).catch((err) => {
 # Migrations are idempotent, so running them on every start also covers updates.
 pnpm db:migrate
 
+# Once the admin and the storefront answer, print where to open the shop so it doesn't scroll away in the startup
+# logs. `disown` keeps this helper out of `wait -n` below: it exits on purpose, and that must not stop the container.
+announce_ready() {
+  node -e '
+    const urls = [`http://127.0.0.1:${process.env.ADMIN_PORT}/admin/login`, `http://127.0.0.1:${process.env.STOREFRONT_PORT}/`];
+    const up = (url) => fetch(url, { redirect: "manual" }).then((res) => res.status < 500, () => false);
+    (async () => {
+      for (let i = 0; i < 180; i++) {
+        if ((await Promise.all(urls.map(up))).every(Boolean)) process.exit(0);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      process.exit(1);
+    })();
+  ' || return 0
+  local url="${APP_URL:-http://localhost:$PUBLIC_PORT}" b="" c="" d="" g="" r=""
+  url="${url%/}"
+  if [ -z "$NO_COLOR" ]; then b=$'\e[1m' c=$'\e[36m' d=$'\e[2m' g=$'\e[32m' r=$'\e[0m'; fi
+  printf '\n%s\n' "${d}────────────────────────────────────────────────────────────${r}"
+  printf '  %s✔ Shopnex is ready%s\n\n' "${g}${b}" "$r"
+  printf '  %sShop %s  %s%s%s\n' "$b" "$r" "$c" "$url" "$r"
+  printf '  %sAdmin%s  %s%s/admin%s  %s(first run opens the setup wizard)%s\n' "$b" "$r" "$c" "$url" "$r" "$d" "$r"
+  printf '\n  %sCreate the owner account right away: anyone who reaches a fresh install can claim it.%s\n' "$d" "$r"
+  printf '%s\n\n' "${d}────────────────────────────────────────────────────────────${r}"
+}
+announce_ready &
+disown
+
 (cd apps/admin-ui && PORT=$ADMIN_PORT node server.mjs) &
 (cd templates/storefront && HOST=127.0.0.1 PORT=$STOREFRONT_PORT \
   SHOPNEX_URL="http://localhost:$ADMIN_PORT" SHOPNEX_PUBLIC_URL="$APP_URL" node dist/server/entry.mjs) &
