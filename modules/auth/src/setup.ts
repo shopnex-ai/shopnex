@@ -3,7 +3,7 @@
 // Like WordPress/Ghost, whoever reaches a fresh install first can claim it — finish setup right after deploying.
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop } from '@shopnex/tenancy'
+import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, seedDefaultMenu } from '@shopnex/tenancy'
 import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
 import { withSignUpAllowed } from './sign-up-policy'
@@ -40,6 +40,8 @@ export async function completeSetup(input: SetupInput) {
     if (await isSetupComplete()) throw new SetupError('Setup is already complete — sign in instead')
 
     await ensureDefaultShop()
+    // Only on a fresh install, so it never brings back a menu the merchant deleted
+    await seedDefaultMenu(db, DEFAULT_SHOP_ID)
 
     // No name field on the setup form: use the part of the email before the @ (editable in the profile)
     const name = input.email.split('@')[0]!.slice(0, 100)
