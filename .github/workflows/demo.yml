@@ -10,9 +10,13 @@ name: Demo image
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'apps/docs/**'
+    # Everything except docs, plus the install script (it lives under apps/docs/public): the Install script
+    # workflow tests it against the images this one pushes. A later pattern re-includes what an earlier ! removed.
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!apps/docs/**'
+      - apps/docs/public/install.sh
   workflow_dispatch:
 
 concurrency:
