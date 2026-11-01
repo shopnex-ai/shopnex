@@ -24,6 +24,7 @@ import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as AdminSignupRouteImport } from './routes/admin/signup'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
+import { Route as AdminWelcomeRouteImport } from './routes/admin/welcome'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
 import { Route as AdminAppsIdRouteImport } from './routes/admin/apps/$id'
@@ -132,6 +133,11 @@ const AdminSignupRoute = AdminSignupRouteImport.update({
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
@@ -331,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/admin/': typeof AdminIndexRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/admin': typeof AdminIndexRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
   '/admin/': typeof AdminIndexRoute
@@ -486,6 +495,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
     | '/admin/'
@@ -536,6 +546,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
     | '/admin'
@@ -587,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
     | '/admin/'
@@ -736,6 +748,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/admin/staff'
       preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/welcome': {
+      id: '/admin/welcome'
+      path: '/welcome'
+      fullPath: '/admin/welcome'
+      preLoaderRoute: typeof AdminWelcomeRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/api/$': {
@@ -1172,6 +1191,7 @@ interface AdminRouteRouteChildren {
   AdminSetupRoute: typeof AdminSetupRoute
   AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInviteIdRoute: typeof AdminInviteIdRoute
   AdminOauthAuthorizeRoute: typeof AdminOauthAuthorizeRoute
@@ -1190,6 +1210,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminSetupRoute: AdminSetupRoute,
   AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminWelcomeRoute: AdminWelcomeRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInviteIdRoute: AdminInviteIdRoute,
   AdminOauthAuthorizeRoute: AdminOauthAuthorizeRoute,
