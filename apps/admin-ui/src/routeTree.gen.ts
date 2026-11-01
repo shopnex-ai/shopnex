@@ -13,7 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAppsRouteRouteImport } from './routes/admin/apps/route'
-import { Route as AdminCollectionsRouteImport } from './routes/admin/collections'
+import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collections/route'
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminDiscountsRouteImport } from './routes/admin/discounts'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -22,10 +22,13 @@ import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/rout
 import { Route as AdminProductsRouteRouteImport } from './routes/admin/products/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
+import { Route as AdminSignupRouteImport } from './routes/admin/signup'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
 import { Route as AdminAppsIdRouteImport } from './routes/admin/apps/$id'
+import { Route as AdminCollectionsIdRouteImport } from './routes/admin/collections/$id'
+import { Route as AdminCollectionsNewRouteImport } from './routes/admin/collections/new'
 import { Route as AdminCustomersIdRouteImport } from './routes/admin/customers/$id'
 import { Route as AdminInviteIdRouteImport } from './routes/admin/invite/$id'
 import { Route as AdminOauthAuthorizeRouteImport } from './routes/admin/oauth/authorize'
@@ -37,8 +40,10 @@ import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
+import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
+import { Route as AdminSettingsMarketplaceRouteImport } from './routes/admin/settings/marketplace'
 import { Route as AdminSettingsNotificationsRouteRouteImport } from './routes/admin/settings/notifications/route'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/admin/settings/payments'
 import { Route as AdminSettingsShippingRouteImport } from './routes/admin/settings/shipping'
@@ -74,7 +79,7 @@ const AdminAppsRouteRoute = AdminAppsRouteRouteImport.update({
   path: '/apps',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminCollectionsRoute = AdminCollectionsRouteImport.update({
+const AdminCollectionsRouteRoute = AdminCollectionsRouteRouteImport.update({
   id: '/collections',
   path: '/collections',
   getParentRoute: () => AdminRouteRoute,
@@ -119,6 +124,11 @@ const AdminSetupRoute = AdminSetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminSignupRoute = AdminSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -138,6 +148,16 @@ const AdminAppsIdRoute = AdminAppsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AdminAppsRouteRoute,
+} as any)
+const AdminCollectionsIdRoute = AdminCollectionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminCollectionsRouteRoute,
+} as any)
+const AdminCollectionsNewRoute = AdminCollectionsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminCollectionsRouteRoute,
 } as any)
 const AdminCustomersIdRoute = AdminCustomersIdRouteImport.update({
   id: '/$id',
@@ -197,6 +217,11 @@ const AdminSettingsChannelsRoute = AdminSettingsChannelsRouteImport.update({
   path: '/channels',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsDomainsRoute = AdminSettingsDomainsRouteImport.update({
+  id: '/domains',
+  path: '/domains',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsEmailRoute = AdminSettingsEmailRouteImport.update({
   id: '/email',
   path: '/email',
@@ -207,6 +232,12 @@ const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsMarketplaceRoute =
+  AdminSettingsMarketplaceRouteImport.update({
+    id: '/marketplace',
+    path: '/marketplace',
+    getParentRoute: () => AdminSettingsRouteRoute,
+  } as any)
 const AdminSettingsNotificationsRouteRoute =
   AdminSettingsNotificationsRouteRouteImport.update({
     id: '/notifications',
@@ -289,15 +320,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/admin/apps': typeof AdminAppsRouteRouteWithChildren
+  '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/online-store': typeof AdminOnlineStoreRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/admin/collections': typeof AdminCollectionsRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -307,6 +339,8 @@ export interface FileRoutesByFullPath {
   '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
+  '/admin/collections/$id': typeof AdminCollectionsIdRoute
+  '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
@@ -315,8 +349,10 @@ export interface FileRoutesByFullPath {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -334,15 +370,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/apps': typeof AdminAppsRouteRouteWithChildren
+  '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/online-store': typeof AdminOnlineStoreRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/admin/collections': typeof AdminCollectionsRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -352,6 +389,8 @@ export interface FileRoutesByTo {
   '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
+  '/admin/collections/$id': typeof AdminCollectionsIdRoute
+  '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
@@ -360,8 +399,10 @@ export interface FileRoutesByTo {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -381,15 +422,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/admin/apps': typeof AdminAppsRouteRouteWithChildren
+  '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
   '/admin/online-store': typeof AdminOnlineStoreRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
-  '/admin/collections': typeof AdminCollectionsRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/setup': typeof AdminSetupRoute
+  '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -399,6 +441,8 @@ export interface FileRoutesById {
   '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
+  '/admin/collections/$id': typeof AdminCollectionsIdRoute
+  '/admin/collections/new': typeof AdminCollectionsNewRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
@@ -407,8 +451,10 @@ export interface FileRoutesById {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/admin/settings/staff': typeof AdminSettingsStaffRoute
@@ -429,15 +475,16 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/apps'
+    | '/admin/collections'
     | '/admin/customers'
     | '/admin/online-store'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
-    | '/admin/collections'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -447,6 +494,8 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
+    | '/admin/collections/$id'
+    | '/admin/collections/new'
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
@@ -455,8 +504,10 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -474,15 +525,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin/apps'
+    | '/admin/collections'
     | '/admin/customers'
     | '/admin/online-store'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
-    | '/admin/collections'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -492,6 +544,8 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
+    | '/admin/collections/$id'
+    | '/admin/collections/new'
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
@@ -500,8 +554,10 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -520,15 +576,16 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/apps'
+    | '/admin/collections'
     | '/admin/customers'
     | '/admin/online-store'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
-    | '/admin/collections'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/setup'
+    | '/admin/signup'
     | '/admin/staff'
     | '/api/$'
     | '/checkout/$token'
@@ -538,6 +595,8 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
+    | '/admin/collections/$id'
+    | '/admin/collections/new'
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
@@ -546,8 +605,10 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
     | '/admin/settings/staff'
@@ -604,7 +665,7 @@ declare module '@tanstack/react-router' {
       id: '/admin/collections'
       path: '/collections'
       fullPath: '/admin/collections'
-      preLoaderRoute: typeof AdminCollectionsRouteImport
+      preLoaderRoute: typeof AdminCollectionsRouteRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/customers': {
@@ -663,6 +724,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSetupRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/signup': {
+      id: '/admin/signup'
+      path: '/signup'
+      fullPath: '/admin/signup'
+      preLoaderRoute: typeof AdminSignupRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/staff'
@@ -690,6 +758,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/apps/$id'
       preLoaderRoute: typeof AdminAppsIdRouteImport
       parentRoute: typeof AdminAppsRouteRoute
+    }
+    '/admin/collections/$id': {
+      id: '/admin/collections/$id'
+      path: '/$id'
+      fullPath: '/admin/collections/$id'
+      preLoaderRoute: typeof AdminCollectionsIdRouteImport
+      parentRoute: typeof AdminCollectionsRouteRoute
+    }
+    '/admin/collections/new': {
+      id: '/admin/collections/new'
+      path: '/new'
+      fullPath: '/admin/collections/new'
+      preLoaderRoute: typeof AdminCollectionsNewRouteImport
+      parentRoute: typeof AdminCollectionsRouteRoute
     }
     '/admin/customers/$id': {
       id: '/admin/customers/$id'
@@ -768,6 +850,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsChannelsRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
+    '/admin/settings/domains': {
+      id: '/admin/settings/domains'
+      path: '/domains'
+      fullPath: '/admin/settings/domains'
+      preLoaderRoute: typeof AdminSettingsDomainsRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
     '/admin/settings/email': {
       id: '/admin/settings/email'
       path: '/email'
@@ -780,6 +869,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/admin/settings/general'
       preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/marketplace': {
+      id: '/admin/settings/marketplace'
+      path: '/marketplace'
+      fullPath: '/admin/settings/marketplace'
+      preLoaderRoute: typeof AdminSettingsMarketplaceRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/notifications': {
@@ -894,6 +990,21 @@ const AdminAppsRouteRouteChildren: AdminAppsRouteRouteChildren = {
 const AdminAppsRouteRouteWithChildren = AdminAppsRouteRoute._addFileChildren(
   AdminAppsRouteRouteChildren,
 )
+
+interface AdminCollectionsRouteRouteChildren {
+  AdminCollectionsIdRoute: typeof AdminCollectionsIdRoute
+  AdminCollectionsNewRoute: typeof AdminCollectionsNewRoute
+}
+
+const AdminCollectionsRouteRouteChildren: AdminCollectionsRouteRouteChildren = {
+  AdminCollectionsIdRoute: AdminCollectionsIdRoute,
+  AdminCollectionsNewRoute: AdminCollectionsNewRoute,
+}
+
+const AdminCollectionsRouteRouteWithChildren =
+  AdminCollectionsRouteRoute._addFileChildren(
+    AdminCollectionsRouteRouteChildren,
+  )
 
 interface AdminCustomersRouteRouteChildren {
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
@@ -1013,8 +1124,10 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsAiRoute: typeof AdminSettingsAiRoute
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
+  AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
+  AdminSettingsMarketplaceRoute: typeof AdminSettingsMarketplaceRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
   AdminSettingsShippingRoute: typeof AdminSettingsShippingRoute
   AdminSettingsStaffRoute: typeof AdminSettingsStaffRoute
@@ -1030,8 +1143,10 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsAiRoute: AdminSettingsAiRoute,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
+  AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
+  AdminSettingsMarketplaceRoute: AdminSettingsMarketplaceRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
   AdminSettingsShippingRoute: AdminSettingsShippingRoute,
   AdminSettingsStaffRoute: AdminSettingsStaffRoute,
@@ -1046,15 +1161,16 @@ const AdminSettingsRouteRouteWithChildren =
 
 interface AdminRouteRouteChildren {
   AdminAppsRouteRoute: typeof AdminAppsRouteRouteWithChildren
+  AdminCollectionsRouteRoute: typeof AdminCollectionsRouteRouteWithChildren
   AdminCustomersRouteRoute: typeof AdminCustomersRouteRouteWithChildren
   AdminOnlineStoreRouteRoute: typeof AdminOnlineStoreRouteRouteWithChildren
   AdminOrdersRouteRoute: typeof AdminOrdersRouteRouteWithChildren
   AdminProductsRouteRoute: typeof AdminProductsRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
-  AdminCollectionsRoute: typeof AdminCollectionsRoute
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSetupRoute: typeof AdminSetupRoute
+  AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInviteIdRoute: typeof AdminInviteIdRoute
@@ -1063,15 +1179,16 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAppsRouteRoute: AdminAppsRouteRouteWithChildren,
+  AdminCollectionsRouteRoute: AdminCollectionsRouteRouteWithChildren,
   AdminCustomersRouteRoute: AdminCustomersRouteRouteWithChildren,
   AdminOnlineStoreRouteRoute: AdminOnlineStoreRouteRouteWithChildren,
   AdminOrdersRouteRoute: AdminOrdersRouteRouteWithChildren,
   AdminProductsRouteRoute: AdminProductsRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
-  AdminCollectionsRoute: AdminCollectionsRoute,
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSetupRoute: AdminSetupRoute,
+  AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInviteIdRoute: AdminInviteIdRoute,

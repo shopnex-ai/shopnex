@@ -13,7 +13,7 @@ export type UpdateStatus = {
   latest: string | null
   updateAvailable: boolean
   releaseUrl: string | null
-  /** The host updater from install.sh is wired in, so this server can update itself on request */
+  /** A host updater is wired in, so this server can update itself on request */
   canUpdate: boolean
 }
 
@@ -65,7 +65,7 @@ function isNewer(latest: string, current: string): boolean {
   return false
 }
 
-// Set only when install.sh mounted the updater's request and status folders into this container
+// Set only when a host updater mounted the updater's request and status folders into this container
 const updaterDir = () => process.env.SHOPNEX_UPDATER_DIR || null
 
 // Super admins only: updating is a server-level decision, and the answer is the same for every shop.

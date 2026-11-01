@@ -7,8 +7,9 @@ import { user } from './auth'
 import { apiTokens, shops, type ApiScope } from './tenancy'
 
 // custom: registered here by a super admin (private apps). marketplace: synced from the connected marketplace,
-// read-only here (the vendor edits it there).
-export const APP_SOURCES = ['custom', 'marketplace'] as const
+// read-only here (the vendor edits it there). bundled: ships with this install and registers itself at startup,
+// so it is not edited or deleted here either.
+export const APP_SOURCES = ['custom', 'marketplace', 'bundled'] as const
 export type AppSource = (typeof APP_SOURCES)[number]
 
 export const apps = pgTable('apps', {

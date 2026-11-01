@@ -19,6 +19,7 @@ import type {
   ThemeSettingField,
   ThemeSettings,
 } from '@shopnex/storefront-sdk'
+import type { CatalogFilters } from './catalog'
 import { menuItemHref, safeUrl } from './links'
 import { orNull, shopnex } from './shopnex'
 
@@ -366,6 +367,12 @@ export class ProductDrop extends Drop {
 export interface CatalogFields {
   /** This page's products */
   products: Product[]
+  /** Filters to offer: lists of `values` (label, count, active, url that toggles it) and the price range */
+  filters: CatalogFilters['groups']
+  /** The selected filters, each with the url that removes it */
+  active_filters: CatalogFilters['active']
+  /** The listing without its filters, null when none is selected */
+  clear_filters_url: string | null
   /** Slug of the sort option in use, '' for the default */
   sort_by: string
   sort_options: { name: string; value: string; url: string; selected: boolean }[]
@@ -414,6 +421,15 @@ export class CollectionDrop extends Drop {
       this.#loader.products(this.#collection?.handle).then((products) => products.map((p) => new ProductDrop(p))),
     )
     return this.#products
+  }
+  get filters() {
+    return this.#catalog?.filters ?? []
+  }
+  get active_filters() {
+    return this.#catalog?.active_filters ?? []
+  }
+  get clear_filters_url() {
+    return this.#catalog?.clear_filters_url ?? null
   }
   get sort_by() {
     return this.#catalog?.sort_by ?? null

@@ -1,12 +1,14 @@
 import { betterAuth, type BetterAuthOptions } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { admin, organization } from 'better-auth/plugins'
+import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 import { db, schema } from '@shopnex/db'
 import { isMultiTenant } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
+import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed } from './sign-up-policy'
+import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 
 // A provider is enabled only when both its credentials are set.
@@ -48,6 +50,12 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword: { enabled: true },
+  hooks: {
+    // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
+    before: createAuthMiddleware(async (ctx) => {
+      if (isOtpPath(ctx.path) && !currentOtpSender()) throw new APIError('FORBIDDEN', { message: 'Not available' })
+    }),
+  },
   socialProviders,
   databaseHooks: {
     user: {
@@ -56,6 +64,22 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    // Customer sessions travel as `Authorization: Bearer <token>` (the storefront keeps the token in its own
+    // cookie); staff keep using cookies
+    bearer(),
+    // Customer sign-in: a code by email. Codes are stored hashed. Only server code that supplies a sender
+    // (shopper-login.ts) can trigger one, so the plugin's public endpoints can't send mail or sign anyone up.
+    emailOTP({
+      otpLength: LOGIN_CODE_LENGTH,
+      expiresIn: LOGIN_CODE_TTL_S,
+      allowedAttempts: LOGIN_CODE_ATTEMPTS,
+      storeOTP: 'hashed',
+      async sendVerificationOTP({ email, otp, type }) {
+        const send = currentOtpSender()
+        if (type !== 'sign-in' || !send) throw new APIError('FORBIDDEN', { message: 'Not available' })
+        await send(email, otp)
+      },
+    }),
     // Platform role on the user: 'superadmin' can access every shop (plus ban/impersonate users)
     admin({
       ac,
@@ -85,3 +109,4 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
+export { withOtpSender, withOtpSignIn, LOGIN_CODE_TTL_S } from './shopper-login'

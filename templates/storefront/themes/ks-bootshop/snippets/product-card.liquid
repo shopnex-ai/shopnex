@@ -1,0 +1,31 @@
+{%- comment -%}
+  A product in a grid: image, title, price, and "Add to cart" (adds the only variant, or links to the product
+  to pick options). {% render 'product-card', product: product %}
+{%- endcomment -%}
+<article class="ks-card">
+  <a href="{{ product.url }}" class="ks-card-media">
+    {%- if product.featured_image %}
+      <img
+        src="{{ product.featured_image | image_url }}"
+        alt="{{ product.featured_image.alt | default: product.title }}"
+        loading="lazy"
+      >
+    {%- endif %}
+    {%- if product.available == false %}
+      <span class="badge ks-badge ks-badge-soldout">Sold out</span>
+    {%- elsif product.compare_at_price_max > product.price_min %}
+      <span class="badge ks-badge">Sale</span>
+    {%- endif %}
+  </a>
+  <div class="ks-card-body">
+    <h3 class="ks-card-title"><a href="{{ product.url }}">{{ product.title }}</a></h3>
+    {% render 'price', product: product %}
+    {%- if product.available == false %}
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" disabled>Sold out</button>
+    {%- elsif product.variants.size == 1 %}
+      <button type="button" class="btn btn-primary btn-sm mt-2" data-add-to-cart="{{ product.variants.first.id }}">Add to cart</button>
+    {%- else %}
+      <a href="{{ product.url }}" class="btn btn-outline-primary btn-sm mt-2">Choose options</a>
+    {%- endif %}
+  </div>
+</article>

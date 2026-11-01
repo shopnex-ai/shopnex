@@ -1,0 +1,16 @@
+{%- comment -%} Featured products: a heading and a grid of products from one collection (or the newest) {%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.limit -%}
+{%- if products.size > 0 -%}
+  <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+    <div class="container">
+      {% render 'section-header', heading: section.settings.heading, text: section.settings.text %}
+      <div class="ks-grid" style="--ks-columns: {{ section.settings.columns }}">
+        {%- for product in products %}
+          {% render 'product-card', product: product %}
+        {%- endfor %}
+      </div>
+      <p class="text-center mt-4 mb-0"><a href="{{ source.url }}" class="btn btn-outline-primary">View all</a></p>
+    </div>
+  </section>
+{%- endif -%}

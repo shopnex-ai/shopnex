@@ -1,7 +1,14 @@
 export * as emailService from './email'
 export * as notificationService from './notifications'
 export type { EmailMessage, SmtpInput, TestStep } from './email'
-export { notify, type OrderEvent, type OrderView, type TemplateInput } from './notifications'
+export {
+  LOGIN_CODE_MINUTES,
+  notify,
+  sendLoginCode,
+  type OrderEvent,
+  type OrderView,
+  type TemplateInput,
+} from './notifications'
 export { startEmailWorker } from './worker'
 export { EmailError, type EmailErrorCode } from './errors'
 export { checkLiquid, type LiquidProblem } from './liquid'

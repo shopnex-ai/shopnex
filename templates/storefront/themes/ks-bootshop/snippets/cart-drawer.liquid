@@ -1,0 +1,23 @@
+{%- comment -%}
+  The cart drawer and the toast for cart errors, on every page; filled in by src/cart.ts. Anything with
+  data-add-to-cart="{variant id}" adds that variant, and data-cart-open opens the drawer.
+{%- endcomment -%}
+<div class="ks-drawer-backdrop" data-cart-modal>
+  <aside class="ks-drawer" role="dialog" aria-modal="true" aria-label="Your cart">
+    <div class="ks-drawer-header">
+      <h2 class="h5 m-0">Your cart</h2>
+      <button type="button" class="btn-close" data-cart-close aria-label="Close"></button>
+    </div>
+    <div class="ks-drawer-body" data-cart-lines></div>
+    <div class="ks-drawer-footer" data-cart-summary hidden>
+      <div data-cart-discounts></div>
+      <div class="d-flex justify-content-between fw-bold mb-1">
+        <span>Total</span>
+        <span data-cart-total></span>
+      </div>
+      <p class="small text-body-secondary mb-3">Shipping and taxes are calculated at checkout.</p>
+      <a class="btn btn-primary w-100" data-cart-checkout>Checkout</a>
+    </div>
+  </aside>
+</div>
+<div class="ks-toast" data-toast role="status" hidden></div>

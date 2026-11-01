@@ -203,7 +203,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   })
 
   const create = useMutation({
-    mutationFn: (path: string) => client.admin.themes.saveFile({ id, path, source: '' }).then(({ rev }) => ({ path, rev })),
+    mutationFn: (path: string) =>
+      client.admin.themes.saveFile({ id, path, source: '' }).then(({ rev }) => ({ path, rev })),
     onSuccess: ({ path, rev }) => {
       afterChange(path, { source: '', rev })
       setSelected(path)

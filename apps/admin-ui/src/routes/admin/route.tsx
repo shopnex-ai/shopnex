@@ -1,10 +1,16 @@
 import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router'
+import { ExternalLinkIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
+import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { adminContextQuery } from '@/lib/admin-context'
+import { analyticsScript } from '@/lib/analytics'
+import { getAnalyticsConfig } from '@/lib/session.functions'
+import { CreateShopForm } from '@/screens/signup/create-shop-form'
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: async ({ location, context }) => {
@@ -18,6 +24,11 @@ export const Route = createFileRoute('/admin')({
       if (access.session) throw redirect({ to: '/admin' })
       return { access }
     }
+    if (location.pathname === '/admin/signup') {
+      if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
+      if (!access.openSignup || access.session) throw redirect({ to: access.session ? '/admin' : '/admin/login' })
+      return { access }
+    }
     if (location.pathname.startsWith('/admin/invite/')) {
       if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
       return { access }
@@ -29,18 +40,36 @@ export const Route = createFileRoute('/admin')({
     }
     return { access }
   },
+  // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
+  loader: () => getAnalyticsConfig(),
+  head: ({ loaderData }) => ({ scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [] }),
   component: AdminLayout,
 })
 
 function AdminLayout() {
   const { access } = Route.useRouteContext()
   const pathname = useLocation({ select: (location) => location.pathname })
-  if (pathname === '/admin/setup' || pathname === '/admin/login' || pathname.startsWith('/admin/invite/'))
+  if (
+    pathname === '/admin/setup' ||
+    pathname === '/admin/login' ||
+    pathname === '/admin/signup' ||
+    pathname.startsWith('/admin/invite/')
+  )
     return <Outlet />
   const { session, tenant } = access
   // No session: beforeLoad is redirecting. The context is stale for a moment while navigating
   // from /admin/login, so render nothing instead of flashing a message.
   if (!session) return null
+  if (!tenant && access.openSignup) {
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-md">
+          <ShopnexBrand />
+          <CreateShopForm />
+        </div>
+      </div>
+    )
+  }
   if (!tenant) {
     return (
       <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
@@ -53,7 +82,12 @@ function AdminLayout() {
     <SidebarProvider defaultOpen>
       <NavigationProgress />
       <AppSidebar
-        shop={{ name: tenant.shop.name, superAdmin: tenant.superAdmin }}
+        shop={{
+          id: tenant.shop.id,
+          name: tenant.shop.name,
+          superAdmin: tenant.superAdmin,
+          canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',
+        }}
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
       />
       <SidebarInset>
@@ -61,6 +95,17 @@ function AdminLayout() {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />
           <span className="text-sm text-muted-foreground">{tenant.shop.name}</span>
+          {tenant.shop.storefrontUrl && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
+            >
+              View store
+              <ExternalLinkIcon />
+            </Button>
+          )}
         </header>
         <div className="flex-1 p-4 md:p-6">
           <Outlet />

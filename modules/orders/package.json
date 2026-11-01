@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -17,5 +18,9 @@
     "@shopnex/pricing": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

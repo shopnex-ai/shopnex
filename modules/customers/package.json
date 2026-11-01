@@ -9,7 +9,9 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@shopnex/auth": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:"
   }

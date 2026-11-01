@@ -141,6 +141,9 @@ export const channelInput = z.object({
   autoPublish: z.boolean().optional(),
 })
 
+// Settings → Domains. Normalised (scheme, path, case) and validated by the tenancy module.
+export const domainInput = z.object({ domain: z.string().trim().min(1).max(300) })
+
 // Where a product or collection is published: the full list (channels left out are unpublished). A date in the
 // future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
 export const publicationsInput = z.object({
@@ -181,14 +184,17 @@ export const shopInput = createInsertSchema(shops, {
 
 export const MIN_PASSWORD = 8
 
-// First-run setup (/admin/setup): the owner account + the shop
+// First-run setup (/admin/setup): just the owner account. The shop keeps its defaults (DEFAULT_SHOP_NAME, USD) until
+// it is renamed in Settings.
 export const setupInput = z.object({
-  name: z.string().trim().min(1).max(100),
   email: z.email(),
   password: z.string().min(MIN_PASSWORD).max(128),
-  shopName: shopInput.shape.name,
-  currency: shopInput.shape.currency,
 })
+
+// Self-serve signup (/admin/signup, OPEN_SIGNUP=true) and "create your shop" for accounts without one
+export const shopNameInput = z.string().trim().min(2, 'Enter a shop name').max(60)
+export const signupInput = setupInput.extend({ shopName: shopNameInput })
+export const createShopInput = z.object({ shopName: shopNameInput })
 
 export {
   CANCEL_REASONS,
@@ -428,6 +434,16 @@ export const emailInput = z.discriminatedUnion('provider', [
   z.object({ provider: z.literal('off') }),
   z.object({ provider: z.literal('smtp'), smtp: smtpInput }),
 ])
+
+// Carrier services (Shopify carrierServiceCreate)
+export const carrierServiceConfigureInput = z.object({
+  /** Shown at checkout next to the rates when the service is first created, e.g. "CJ Dropshipping" (staff can rename it) */
+  name: z.string().trim().min(1).max(100),
+  /** Receives signed RatesRequests; must be on the app's own origin */
+  ratesUrl: z.url({ protocol: /^https?$/ }),
+  /** false hides it at checkout (e.g. until the merchant has connected the carrier) */
+  ready: z.boolean(),
+})
 
 // Payments apps (Shopify paymentsAppConfigure)
 export const paymentsAppConfigureInput = z.object({

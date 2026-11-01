@@ -1,0 +1,82 @@
+{%- comment -%}
+  Every KS BootShop page: head (Bootstrap, the theme stylesheet, the merchant's colors and fonts), announcement
+  bar, header, footer and cart drawer.
+{%- endcomment -%}
+{%- capture font_families -%}
+  {%- if settings.font_headings != 'system' -%}
+    &family={{ settings.font_headings | replace: ' ', '+' }}:wght@400;500;700
+  {%- endif -%}
+  {%- if settings.font_body != 'system' and settings.font_body != settings.font_headings -%}
+    &family={{ settings.font_body | replace: ' ', '+' }}:ital,wght@0,400;0,500;0,700;1,400
+  {%- endif -%}
+{%- endcapture -%}
+{%- comment -%}
+  Color settings are validated hex values, so they're safe in CSS. Unchanged settings keep the defaults in
+  shopnex.css.
+{%- endcomment -%}
+{%- capture theme_style -%}
+  --bs-primary:{{ settings.color_primary }};
+  --bs-body-bg:{{ settings.color_body_bg }};
+  --bs-body-color:{{ settings.color_body_color }};
+  --bs-border-radius:{{ settings.border_radius }}rem;
+  {%- if settings.font_headings != 'system' -%}
+    --ks-font-headings:'{{ settings.font_headings }}', system-ui, sans-serif;
+  {%- endif -%}
+  {%- if settings.font_body != 'system' -%}
+    --bs-body-font-family:'{{ settings.font_body }}', system-ui, sans-serif;
+  {%- endif -%}
+{%- endcapture -%}
+{%- if page_title != blank and request.page_type == 'index' -%}
+  {%- assign title = page_title -%}
+{%- elsif page_title != blank -%}
+  {%- assign title = page_title | append: ' – ' | append: shop.name -%}
+{%- else -%}
+  {%- assign title = shop.name -%}
+{%- endif -%}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="{{ settings.color_primary }}">
+    <title>{{ title }}</title>
+    {%- if page_description != blank %}
+    <meta name="description" content="{{ page_description }}">
+    {%- endif %}
+    <meta property="og:site_name" content="{{ shop.name }}">
+    <meta property="og:title" content="{{ title }}">
+    {%- if page_description != blank %}
+    <meta property="og:description" content="{{ page_description }}">
+    {%- endif %}
+    {%- if page_image != blank %}
+    <meta property="og:image" content="{{ page_image }}">
+    {%- endif %}
+    <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}">
+    {%- if font_families != blank %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap{{ font_families | strip | replace: ' ', '' }}">
+    {%- endif %}
+    {{ 'vendor-bootstrap.min.css' | asset_url | stylesheet_tag }}
+    {{ 'shopnex.css' | asset_url | stylesheet_tag }}
+    <style>:root{ {{- theme_style -}} }</style>
+    {%- if settings.custom_css != blank %}
+    {%- comment %} Code settings are output as is (only staff can edit them); `</style` can't end the tag early {% endcomment %}
+    <style>{{ settings.custom_css | replace: '</style', '<\/style' | raw }}</style>
+    {%- endif %}
+    {{ content_for_header }}
+    {{ settings.head_html }}
+  </head>
+  <body class="ks-page-{{ request.page_type }}">
+    <a class="visually-hidden-focusable" href="#main">Skip to content</a>
+    {% render 'announcement-bar' %}
+    {% render 'header' %}
+    <main id="main">
+      {{ content_for_layout }}
+    </main>
+    {% render 'footer' %}
+    {% render 'cart-drawer' %}
+    <script src="{{ 'vendor-bootstrap.bundle.min.js' | asset_url }}" defer></script>
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>

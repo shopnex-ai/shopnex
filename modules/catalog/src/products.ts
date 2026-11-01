@@ -1,6 +1,24 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
-import { and, asc, count as sqlCount, desc, eq, ilike, inArray, type SQL } from 'drizzle-orm'
+import {
+  and,
+  arrayOverlaps,
+  asc,
+  count as sqlCount,
+  desc,
+  eq,
+  exists,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  min,
+  max,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { publicationService, type PublicationInput } from '@shopnex/channels'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
@@ -91,8 +109,17 @@ export type ListOptions = {
   reverse?: boolean
   /** Storefronts pass 'active' */
   status?: ProductStatus
-  /** Title contains (case-insensitive) */
+  /** Matches (case-insensitive, substring) the title, vendor, product type, a tag or a variant SKU */
   search?: string
+  /** Any of these vendors / product types / tags */
+  vendors?: string[]
+  productTypes?: string[]
+  tags?: string[]
+  /** Some variant is priced within [minPriceCents, maxPriceCents] */
+  minPriceCents?: number
+  maxPriceCents?: number
+  /** Some variant can be bought: its stock isn't tracked, or is above zero */
+  available?: boolean
   /** Only products published on this channel now. Storefronts pass their channel (with status 'active'). */
   channelId?: string
 }
@@ -117,14 +144,62 @@ function ordering(opts: ListOptions): SQL[] {
   return [dir(key, reverse), dir(products.id, reverse)]
 }
 
+export type FilterOptions = Pick<
+  ListOptions,
+  | 'status'
+  | 'collection'
+  | 'search'
+  | 'channelId'
+  | 'vendors'
+  | 'productTypes'
+  | 'tags'
+  | 'minPriceCents'
+  | 'maxPriceCents'
+  | 'available'
+>
+
+const likeAny = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
+
+// A variant of the product that satisfies `conditions`
+const someVariant = (...conditions: (SQL | undefined)[]) =>
+  exists(
+    db
+      .select({ one: sql`1` })
+      .from(schema.productVariants)
+      .where(and(eq(schema.productVariants.productId, schema.products.id), ...conditions)),
+  )
+
 // The collection filter needs the collection join (see list / count)
-function filters(shopId: string, opts: Pick<ListOptions, 'status' | 'collection' | 'search' | 'channelId'>) {
+function filters(shopId: string, opts: FilterOptions) {
+  const { products, productVariants } = schema
+  const term = opts.search?.trim()
+  const priced = opts.minPriceCents !== undefined || opts.maxPriceCents !== undefined
   return and(
-    eq(schema.products.shopId, shopId),
-    opts.status ? eq(schema.products.status, opts.status) : undefined,
+    eq(products.shopId, shopId),
+    opts.status ? eq(products.status, opts.status) : undefined,
     opts.collection ? eq(schema.collections.slug, opts.collection) : undefined,
-    opts.channelId ? publicationService.liveOn('product', opts.channelId, schema.products.id) : undefined,
-    opts.search ? ilike(schema.products.title, `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`) : undefined,
+    opts.channelId ? publicationService.liveOn('product', opts.channelId, products.id) : undefined,
+    term
+      ? or(
+          ilike(products.title, likeAny(term)),
+          ilike(products.vendor, likeAny(term)),
+          ilike(products.productType, likeAny(term)),
+          sql`array_to_string(${products.tags}, ' ') ilike ${likeAny(term)}`,
+          someVariant(ilike(productVariants.sku, likeAny(term))),
+        )
+      : undefined,
+    opts.vendors?.length ? inArray(products.vendor, opts.vendors) : undefined,
+    opts.productTypes?.length ? inArray(products.productType, opts.productTypes) : undefined,
+    opts.tags?.length ? arrayOverlaps(products.tags, opts.tags) : undefined,
+    priced
+      ? someVariant(
+          opts.minPriceCents !== undefined ? gte(productVariants.priceCents, opts.minPriceCents) : undefined,
+          opts.maxPriceCents !== undefined ? lte(productVariants.priceCents, opts.maxPriceCents) : undefined,
+        )
+      : undefined,
+    opts.available
+      ? someVariant(or(isNull(productVariants.inventoryQuantity), sql`${productVariants.inventoryQuantity} > 0`))
+      : undefined,
   )
 }
 
@@ -152,11 +227,7 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
 }
 
 // Total for the same filters as `list` (admin pagination)
-export async function count(
-  shopId: string,
-  opts: Pick<ListOptions, 'status' | 'collection' | 'search' | 'channelId'>,
-  conn: Conn = db,
-) {
+export async function count(shopId: string, opts: FilterOptions, conn: Conn = db) {
   const query = conn.select({ total: sqlCount() }).from(schema.products)
   const [row] = await (opts.collection
     ? query
@@ -165,6 +236,60 @@ export async function count(
         .where(filters(shopId, opts))
     : query.where(filters(shopId, opts)))
   return row?.total ?? 0
+}
+
+export type Facets = {
+  vendors: { value: string; count: number }[]
+  productTypes: { value: string; count: number }[]
+  tags: { value: string; count: number }[]
+  /** Variant prices across the matching products; null when there are none */
+  price: { minCents: number; maxCents: number } | null
+}
+
+// Products scanned for facet counts; a shop beyond this still gets filters, with counts for the first products
+const FACET_SCAN_LIMIT = 5000
+
+const tally = (values: string[]) => {
+  const counts = new Map<string, number>()
+  for (const value of values) if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+  return [...counts]
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+}
+
+// What a filter UI can offer for the products matching `opts` (its own selections included, so a facet
+// keeps listing the values the shopper hasn't picked)
+export async function facets(shopId: string, opts: FilterOptions, conn: Conn = db): Promise<Facets> {
+  const { products, productVariants } = schema
+  const where = filters(shopId, opts)
+  const base = conn
+    .select({ id: products.id, vendor: products.vendor, productType: products.productType, tags: products.tags })
+    .from(products)
+  const rows = await (
+    opts.collection
+      ? base
+          .innerJoin(schema.productCollections, eq(schema.productCollections.productId, products.id))
+          .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+          .where(where)
+      : base.where(where)
+  ).limit(FACET_SCAN_LIMIT)
+  const [range] = rows.length
+    ? await conn
+        .select({ lo: min(productVariants.priceCents), hi: max(productVariants.priceCents) })
+        .from(productVariants)
+        .where(
+          inArray(
+            productVariants.productId,
+            rows.map((r) => r.id),
+          ),
+        )
+    : []
+  return {
+    vendors: tally(rows.map((r) => r.vendor)),
+    productTypes: tally(rows.map((r) => r.productType)),
+    tags: tally(rows.flatMap((r) => r.tags)),
+    price: range?.lo != null && range.hi != null ? { minCents: range.lo, maxCents: range.hi } : null,
+  }
 }
 
 export async function getById(shopId: string, id: string, conn: Conn = db) {

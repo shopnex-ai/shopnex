@@ -8,16 +8,46 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same PR replaces the older run; runs on main always finish
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
+  # Docs-only pull requests skip the app image and e2e jobs. The skipped jobs still satisfy the required checks.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          code=true
+          if [ "$EVENT" = pull_request ]; then
+            other=$(git diff --name-only "origin/$BASE...HEAD" | grep -vE '\.(md|mdx)$|^docs/|^apps/docs/' || true)
+            [ -z "$other" ] && code=false
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
   check:
     name: Lint, typecheck, build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -26,20 +56,31 @@ jobs:
 
       - run: pnpm lint
 
+      # Only the files this PR changes: the codebase isn't fully formatted yet, so a repo-wide check would fail
+      - name: Format (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.base_ref }}
+        run: git diff --name-only --diff-filter=ACMR "origin/$BASE...HEAD" -z | xargs -0 --no-run-if-empty pnpm exec prettier --check --ignore-unknown
+
       - run: pnpm typecheck
+
+      - run: pnpm test
 
       - run: pnpm build
 
   app-image:
     name: App image (${{ matrix.app }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         app: [stripe]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
 
@@ -47,6 +88,8 @@ jobs:
 
   e2e:
     name: End-to-end tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -70,11 +113,11 @@ jobs:
       DEMO_OWNER_EMAIL: owner@example.com
       DEMO_OWNER_PASSWORD: ci-owner-Passw0rd!
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -98,6 +141,21 @@ jobs:
           npx --yes wait-on@8 -t 60000 http-get://localhost:3000/api/v1/storefront/shop http://localhost:4321/
 
       - run: pnpm e2e
+
+      - name: Browser tests
+        run: |
+          pnpm --dir e2e exec playwright install --with-deps chromium
+          pnpm --dir e2e test:browser
+
+      - name: Browser test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
 
       - name: Server logs
         if: failure()

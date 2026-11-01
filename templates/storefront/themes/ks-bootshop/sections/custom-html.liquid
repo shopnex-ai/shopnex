@@ -1,0 +1,7 @@
+{%- comment -%}
+  The merchant's own HTML, output as is (a `code` setting: only staff can edit it); the wrapper only keeps
+  the page spacing
+{%- endcomment -%}
+{%- if section.settings.html != blank -%}
+  <section class="ks-section ks-py-md"><div class="container">{{ section.settings.html }}</div></section>
+{%- endif -%}

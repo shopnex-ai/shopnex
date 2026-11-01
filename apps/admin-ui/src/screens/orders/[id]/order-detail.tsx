@@ -270,7 +270,9 @@ export function OrderDetail({ id }: { id: string }) {
             <CardHeader>
               <CardTitle>Sales channel</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm">{channels.data?.find((c) => c.id === o.channelId)?.name ?? '—'}</CardContent>
+            <CardContent className="text-sm">
+              {channels.data?.find((c) => c.id === o.channelId)?.name ?? '—'}
+            </CardContent>
           </Card>
           <Card>
             <CardHeader>

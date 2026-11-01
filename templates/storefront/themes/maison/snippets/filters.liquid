@@ -1,0 +1,68 @@
+{%- comment -%}
+  Search, selected filters and filters of a catalog page (/products, /collections/{handle}, /search). Plain links
+  and forms, so it works without scripts.
+
+    collection   the collection template's collection (filters, active_filters, clear_filters_url)
+    search       the search object (on /search: performed, terms)
+{%- endcomment -%}
+{%- assign offering = true -%}
+{%- if search.performed and search.terms == blank -%}{%- assign offering = false -%}{%- endif -%}
+{%- if search.performed %}
+  <form action="/search" method="get" role="search" class="mb-6 flex max-w-xl gap-2">
+    <input
+      type="search"
+      name="q"
+      value="{{ search.terms }}"
+      placeholder="Search the archive"
+      aria-label="Search the archive"
+      class="min-w-0 flex-1 rounded-[2px] border border-rule bg-transparent px-3 py-2 text-[14px] text-ink outline-none"
+      autofocus
+    />
+    <button type="submit" class="btn-keeper px-5 py-2">Search</button>
+  </form>
+{%- endif %}
+{%- if offering %}
+  {%- if collection.active_filters.size > 0 %}
+    <div class="eti flex flex-wrap items-center gap-x-4 gap-y-2" style="font-size:11px">
+      {%- for filter in collection.active_filters %}
+        <a href="{{ filter.url }}" class="border-b border-acc text-acc" title="Remove">{{ filter.label }} ✕</a>
+      {%- endfor %}
+      <a href="{{ collection.clear_filters_url }}" class="text-muted transition hover:text-acc">Clear all</a>
+    </div>
+  {%- endif %}
+  {%- if collection.filters.size > 0 %}
+    <details class="border-b border-line pb-3.5" {% if collection.active_filters.size > 0 %}open{% endif %}>
+      <summary class="eti cursor-pointer list-none text-muted transition hover:text-acc" style="font-size:11px">Filters</summary>
+      <div class="grid gap-x-8 gap-y-6 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+        {%- for group in collection.filters %}
+          <div>
+            <div class="eti mb-2 text-faint" style="font-size:10px">{{ group.label }}</div>
+            {%- if group.type == 'price_range' %}
+              <form action="{{ request.path }}" method="get" class="flex flex-wrap items-center gap-2">
+                {%- for field in group.hidden %}
+                  <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
+                {%- endfor %}
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
+                <span aria-hidden="true">–</span>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
+                <button type="submit" class="btn-keeper px-3 py-1">Apply</button>
+              </form>
+            {%- else %}
+              <ul class="flex max-h-48 flex-col gap-[9px] overflow-y-auto">
+                {%- for value in group.values %}
+                  <li>
+                    <a href="{{ value.url }}" class="flex items-baseline gap-2.5 text-[13.5px] transition hover:text-acc {% if value.active %}text-acc{% else %}text-ink{% endif %}">
+                      {%- if value.active %}<span class="font-mono text-[11px] text-acc">✕</span>{% else %}<span class="font-mono text-[11px] text-faint">·</span>{% endif %}
+                      {{ value.label }}
+                      {%- if value.count %}<span class="font-mono text-[11px] text-faint">{{ value.count }}</span>{% endif %}
+                    </a>
+                  </li>
+                {%- endfor %}
+              </ul>
+            {%- endif %}
+          </div>
+        {%- endfor %}
+      </div>
+    </details>
+  {%- endif %}
+{%- endif %}

@@ -1,0 +1,20 @@
+{%- comment -%} Testimonials: up to three quotes; empty ones are skipped {%- endcomment -%}
+<section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+  <div class="container">
+    {% render 'section-header', heading: section.settings.heading %}
+    <div class="ks-grid" style="--ks-columns: 3">
+      {%- for i in (1..3) %}
+        {%- assign quote_key = 'quote_' | append: i -%}
+        {%- assign author_key = 'author_' | append: i -%}
+        {%- if section.settings[quote_key] != blank %}
+          <figure class="ks-quote">
+            <blockquote>{{ section.settings[quote_key] }}</blockquote>
+            {%- if section.settings[author_key] != blank %}
+              <figcaption>{{ section.settings[author_key] }}</figcaption>
+            {%- endif %}
+          </figure>
+        {%- endif %}
+      {%- endfor %}
+    </div>
+  </div>
+</section>

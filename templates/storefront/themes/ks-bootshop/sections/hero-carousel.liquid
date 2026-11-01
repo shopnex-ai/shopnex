@@ -1,0 +1,76 @@
+{%- comment -%}
+  Hero carousel: up to three slides (image, heading, text, button). Slides without an image or a heading are
+  skipped. A single slide shows no controls. Bootstrap's carousel.
+{%- endcomment -%}
+{%- assign slides = '' | split: ',' -%}
+{%- for i in (1..3) -%}
+  {%- assign image_key = 'image_' | append: i -%}
+  {%- assign heading_key = 'heading_' | append: i -%}
+  {%- if section.settings[image_key] != blank or section.settings[heading_key] != blank -%}
+    {%- assign slides = slides | push: i -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- if slides.size > 0 -%}
+  <div
+    id="ks-hero-{{ section.id }}"
+    class="carousel slide ks-hero"
+    style="--ks-hero-height: {{ section.settings.height }}"
+    {% if section.settings.autoplay and slides.size > 1 %}data-bs-ride="carousel"{% endif %}
+  >
+    {%- if slides.size > 1 %}
+      <div class="carousel-indicators">
+        {%- for i in slides %}
+          <button
+            type="button"
+            data-bs-target="#ks-hero-{{ section.id }}"
+            data-bs-slide-to="{{ forloop.index0 }}"
+            aria-label="Slide {{ forloop.index }}"
+            {% if forloop.first %}class="active" aria-current="true"{% endif %}
+          ></button>
+        {%- endfor %}
+      </div>
+    {%- endif %}
+    <div class="carousel-inner">
+      {%- for i in slides %}
+        {%- assign image_key = 'image_' | append: i -%}
+        {%- assign heading_key = 'heading_' | append: i -%}
+        {%- assign text_key = 'text_' | append: i -%}
+        {%- assign label_key = 'button_label_' | append: i -%}
+        {%- assign link_key = 'button_link_' | append: i -%}
+        <div class="carousel-item{% if forloop.first %} active{% endif %}">
+          <div class="ks-hero-slide">
+            {%- if section.settings[image_key] != blank %}
+              <img src="{{ section.settings[image_key] }}" alt="" class="ks-hero-image"{% unless forloop.first %} loading="lazy"{% endunless %}>
+            {%- endif %}
+            <div class="ks-hero-overlay"></div>
+            <div class="container">
+              <div class="ks-hero-content">
+              {%- if forloop.first %}
+                <h1 class="display-4">{{ section.settings[heading_key] }}</h1>
+              {%- else %}
+                <h2 class="display-4">{{ section.settings[heading_key] }}</h2>
+              {%- endif %}
+              {%- if section.settings[text_key] != blank %}
+                <p class="lead">{{ section.settings[text_key] }}</p>
+              {%- endif %}
+              {%- if section.settings[label_key] != blank and section.settings[link_key] != blank %}
+                <a href="{{ section.settings[link_key] }}" class="btn btn-primary btn-lg">{{ section.settings[label_key] }}</a>
+              {%- endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {%- endfor %}
+    </div>
+    {%- if slides.size > 1 %}
+      <button class="carousel-control-prev" type="button" data-bs-target="#ks-hero-{{ section.id }}" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#ks-hero-{{ section.id }}" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    {%- endif %}
+  </div>
+{%- endif -%}

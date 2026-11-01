@@ -33,6 +33,7 @@ import {
 import { Field, FieldGroup } from '@/components/ui/field'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
+import { useOpenOnNew } from '@/hooks/use-open-on-new'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { client } from '@/lib/orpc'
 import { ImportDiscountsDialog } from './import-discounts'
@@ -106,7 +107,13 @@ export function DiscountList({ currency }: { currency: string }) {
       <PageHeader
         title="Discounts"
         description="Codes buyers enter at checkout. One code per order."
-        actions={<div className="flex gap-2"><ImportDiscountsDialog currency={currency} /><ExportDiscountsDialog /><DiscountDialog currency={currency} /></div>}
+        actions={
+          <div className="flex gap-2">
+            <ImportDiscountsDialog currency={currency} />
+            <ExportDiscountsDialog />
+            <DiscountDialog currency={currency} />
+          </div>
+        }
       />
       <Card>
         <CardContent>
@@ -117,15 +124,17 @@ export function DiscountList({ currency }: { currency: string }) {
             isPending={isPending}
             error={error}
             empty="No discounts yet."
-            selectionActions={(ids, clearSelection) => <DeleteSelectedButton
-              ids={ids}
-              entity={ids.length === 1 ? 'discount' : 'discounts'}
-              remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
-              onDeleted={async () => {
-                clearSelection()
-                await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
-              }}
-            />}
+            selectionActions={(ids, clearSelection) => (
+              <DeleteSelectedButton
+                ids={ids}
+                entity={ids.length === 1 ? 'discount' : 'discounts'}
+                remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
+                onDeleted={async () => {
+                  clearSelection()
+                  await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
+                }}
+              />
+            )}
           />
         </CardContent>
       </Card>
@@ -149,6 +158,8 @@ const empty = {
 function DiscountDialog({ discount, currency }: { discount?: Discount; currency: string }) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
+  // Only the create dialog; the empty form needs no reset on open
+  useOpenOnNew(() => setOpen(true), !discount)
   const toValues = () =>
     discount
       ? {

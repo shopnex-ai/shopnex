@@ -17,7 +17,7 @@ pnpm --dir templates/storefront build # themes' assets, then the server (node di
 - Every request asks Shopnex which theme is live (`storefront.theme.current`) and renders that theme's template
   for the route with the merchant's settings, inside its layout. In the theme editor's preview, it renders the
   draft instead.
-- Routes (`src/pages`) load the data and are the same for every theme: `/`, `/products`, `/collections/{handle}`,
+- Routes (`src/pages`) load the data and are the same for every theme: `/`, `/products`, `/collections/{handle}`, `/search`,
   `/products/{handle}`, `/pages/{handle}`, and the 404 page.
 - The cart runs in the browser against the Storefront API (`@shopnex/storefront-sdk/cart`); checkout is
   Shopnex's hosted page.
@@ -63,8 +63,8 @@ Names follow Shopify's Liquid, so Shopify theme developers feel at home (`src/co
 - Everywhere: `shop`, `settings` (the theme's), `collections` (by handle too, and `collections.all`),
   `linklists['main-menu'].links`, `request` (`path`, `page_type`, `design_mode` in the editor), `template`,
   `page_title`, `page_description`, `page_image`. A template can `{% assign page_title = … %}` for the layout.
-- `product` (and `recommendations.products`), `collection` (with `sort_options` and `paginate` on catalog
-  pages), `page`, in their templates. `section` (`id`, `type`, `settings`) in sections; `{% sections 'home' %}`
+- `product` (and `recommendations.products`), `collection` (with `sort_options`, `filters`, `active_filters`,
+  `clear_filters_url` and `paginate` on catalog pages; `search` (`performed`, `terms`) on `/search`), `page`, in their templates. `section` (`id`, `type`, `settings`) in sections; `{% sections 'home' %}`
   renders a page's sections in the merchant's order.
 - Settings arrive ready to use: `collection` settings are the collection, `url` and `image` settings only safe
   URLs, `code` settings output as is.

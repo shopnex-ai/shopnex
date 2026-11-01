@@ -1,6 +1,17 @@
 // How a shop sends email (Settings → Email): any SMTP server. Off by default; messages are then only logged.
 import { sql } from 'drizzle-orm'
-import { boolean, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { orders } from './orders'
 import { shops } from './tenancy'
 
@@ -40,6 +51,7 @@ export const NOTIFICATIONS = [
   'shipping_confirmation',
   'order_cancelled',
   'staff_order',
+  'login_code',
   'layout',
 ] as const
 export type Notification = (typeof NOTIFICATIONS)[number]

@@ -1,0 +1,10 @@
+{%- comment -%} The strip above the header (theme settings: Announcement bar) {%- endcomment -%}
+{%- if settings.show_announcement and settings.announcement_text != blank -%}
+  <div class="ks-announcement text-center small py-2 px-3">
+    {%- if settings.announcement_link != blank -%}
+      <a href="{{ settings.announcement_link }}">{{ settings.announcement_text }}</a>
+    {%- else -%}
+      {{ settings.announcement_text }}
+    {%- endif -%}
+  </div>
+{%- endif -%}

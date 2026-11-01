@@ -6,6 +6,7 @@ import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
 import { ContentError } from '@shopnex/content'
+import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
 import { FilesError } from '@shopnex/files'
 import { OrderError } from '@shopnex/orders'
@@ -15,6 +16,7 @@ import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from 
 import type { z } from 'zod'
 import type { Shop } from '@shopnex/db/schema'
 import {
+  DomainError,
   StaffError,
   hasScope,
   resolveAdminShop,
@@ -62,7 +64,9 @@ const domainErrors = base.middleware(async ({ next }) => {
           ? 'NOT_FOUND'
           : error.code === 'CART_COMPLETED'
             ? 'CONFLICT'
-            : 'BAD_REQUEST'
+            : error.code === 'NOT_A_CARRIER_APP'
+              ? 'FORBIDDEN'
+              : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
     if (error instanceof CatalogError) {
@@ -136,6 +140,11 @@ const domainErrors = base.middleware(async ({ next }) => {
               : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
+    if (error instanceof DomainError) {
+      const status =
+        error.code === 'DOMAIN_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'DOMAIN_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
+      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+    }
     if (error instanceof StaffError) {
       const status = error.code === 'ALREADY_MEMBER' ? 'CONFLICT' : error.code
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
@@ -160,7 +169,7 @@ type ErrorData<C extends keyof StorefrontErrorMap> = StorefrontErrorMap[C] exten
   ? [data: z.input<StorefrontErrorMap[C]['data']>]
   : []
 
-const defined = <C extends keyof StorefrontErrorMap>(code: C, message: string, ...[data]: ErrorData<C>) => {
+export const defined = <C extends keyof StorefrontErrorMap>(code: C, message: string, ...[data]: ErrorData<C>) => {
   const config: { status?: number } = storefrontErrorMap[code]
   return new ORPCError(code, { defined: true, status: config.status, message, data })
 }
@@ -194,6 +203,21 @@ const storefrontErrors = base.middleware(async ({ next }) => {
         case 'INVALID_PAYMENT_METHOD':
           throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
       }
+    }
+    if (error instanceof AccountError) {
+      switch (error.code) {
+        case 'INVALID_CODE':
+          throw defined('INVALID_CODE', error.message)
+        case 'TOO_MANY_REQUESTS':
+          throw defined('TOO_MANY_REQUESTS', error.message)
+        case 'INVALID_EMAIL':
+          throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
+      }
+    }
+    if (error instanceof EmailError && (error.code === 'EMAIL_OFF' || error.code === 'EMAIL_FAILED')) {
+      // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available
+      if (error.code === 'EMAIL_FAILED') console.error('[customers] sign-in code email:', error.message)
+      throw defined('CUSTOMER_LOGIN_UNAVAILABLE', 'Sign-in is not available right now')
     }
     if (error instanceof OrderError) {
       if (error.code === 'OUT_OF_STOCK' && error.data.variantId) {
@@ -301,6 +325,13 @@ export const paymentsApp = scoped('write_payment_sessions').use(({ context, next
 export const aiApp = scoped('write_ai_capabilities').use(({ context, next }) => {
   const appId = context.token?.appId
   if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an AI app's own token can do this" })
+  return next({ context: { appId } })
+})
+
+// Carrier services: an installed app's token with the shipping scope (staff manage them from the admin instead)
+export const carrierApp = scoped('write_shipping').use(({ context, next }) => {
+  const appId = context.token?.appId
+  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a carrier app's own token can do this" })
   return next({ context: { appId } })
 })
 

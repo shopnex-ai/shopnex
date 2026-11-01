@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, type ComponentProps, type FormEvent } from 'react'
+import { Fragment, useRef, useState, type ComponentProps, type FormEvent } from 'react'
 import { calculate, taxRateFor, type PricingDiscount, type PricingTaxRate } from '@shopnex/pricing/calculate'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,12 +14,22 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { countryOptions } from '@/lib/countries'
 import { formatMoney } from '@/lib/money'
-import { placeOrder, type CheckoutFields, type PlaceOrderState } from './functions'
+import { placeOrder, quoteRates, type CheckoutFields, type PlaceOrderState } from './functions'
+
+export type ShippingRateView = {
+  id: string
+  title: string
+  priceCents: number
+  freeAboveCents: number | null
+  /** A carrier service's note, e.g. "2-5 days" */
+  description?: string | null
+}
 
 export type CheckoutOptionsView = {
-  shippingRates: { id: string; title: string; priceCents: number; freeAboveCents: number | null }[]
+  /** The shop has carrier services: its live rates are asked for once the address is known */
+  liveRates: boolean
+  shippingRates: ShippingRateView[]
   paymentMethods: { id: string; name: string; additionalDetails: string | null; offsite: boolean }[]
 }
 
@@ -33,6 +43,7 @@ export function CheckoutForm({
   tax,
   options,
   defaultCountry,
+  countries,
 }: {
   token: string
   currency: string
@@ -43,10 +54,17 @@ export function CheckoutForm({
   tax: TaxContextView
   options: CheckoutOptionsView
   defaultCountry: string
+  countries: { value: string; label: string }[]
 }) {
   const [state, setState] = useState<PlaceOrderState>({})
   const [pending, setPending] = useState(false)
+  const [rates, setRates] = useState(options.shippingRates)
+  const [ratesPending, setRatesPending] = useState(false)
+  // A quote for the address has come back (empty or not): no rates then means none for this address
+  const [quoted, setQuoted] = useState(false)
   const [rateId, setRateId] = useState(state.values?.shippingRateId || options.shippingRates[0]?.id || '')
+  const formRef = useRef<HTMLFormElement>(null)
+  const latestQuote = useRef(0)
   const [methodId, setMethodId] = useState(state.values?.paymentMethodId || options.paymentMethods[0]?.id || '')
   // Tax follows the address as it's typed
   const [country, setCountry] = useState(state.values?.countryCode || defaultCountry)
@@ -56,12 +74,48 @@ export function CheckoutForm({
   // Same math the server uses when the order is placed
   const totals = calculate({
     lines: lineTotals,
-    shippingCents: options.shippingRates.find((r) => r.id === rateId)?.priceCents ?? 0,
+    shippingCents: rates.find((r) => r.id === rateId)?.priceCents ?? 0,
     discount,
     taxRate: taxRateFor(tax.taxRates, { countryCode: country, province }),
     taxesIncluded: tax.taxesIncluded,
     taxShipping: tax.taxShipping,
   })
+
+  // Carrier services quote for the address, so ask again when it changes (flat rates come back unchanged).
+  // Only the newest answer counts: the buyer may keep typing.
+  async function refreshRates() {
+    const form = formRef.current
+    if (!options.liveRates || !form) return
+    const data = new FormData(form)
+    const text = (name: string) => String(data.get(name) ?? '').trim() || undefined
+    const countryCode = text('countryCode')
+    if (!countryCode || !text('address1') || !text('city')) return
+    const quote = ++latestQuote.current
+    setRatesPending(true)
+    try {
+      const next = await quoteRates({
+        data: {
+          token,
+          address: {
+            countryCode,
+            province: text('province'),
+            city: text('city'),
+            zip: text('zip'),
+            address1: text('address1'),
+          },
+        },
+      })
+      if (quote !== latestQuote.current || !next) return
+      setRates(next)
+      setQuoted(true)
+      // Keep the buyer's choice while it is still offered
+      setRateId((current) => (next.some((r) => r.id === current) ? current : (next[0]?.id ?? '')))
+    } catch {
+      // The shipping methods already shown stay: the order is checked again when it is placed
+    } finally {
+      if (quote === latestQuote.current) setRatesPending(false)
+    }
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -97,7 +151,16 @@ export function CheckoutForm({
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-8">
+    <form
+      ref={formRef}
+      onSubmit={onSubmit}
+      onBlurCapture={(e) => {
+        if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
+          void refreshRates()
+      }}
+      noValidate
+      className="space-y-8"
+    >
       <FieldSet>
         <FieldLegend>Contact</FieldLegend>
         <FieldGroup>{field('email', 'Email', { type: 'email', autoComplete: 'email', required: true })}</FieldGroup>
@@ -113,10 +176,13 @@ export function CheckoutForm({
               name="countryCode"
               autoComplete="country"
               defaultValue={state.values?.countryCode || defaultCountry}
-              onChange={(e) => setCountry(e.target.value)}
+              onChange={(e) => {
+                setCountry(e.target.value)
+                void refreshRates()
+              }}
               className="h-9 w-full rounded-md border bg-background px-2.5 text-sm"
             >
-              {countryOptions.map((c) => (
+              {countries.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
                 </option>
@@ -143,21 +209,30 @@ export function CheckoutForm({
         </FieldGroup>
       </FieldSet>
 
-      {options.shippingRates.length > 0 && (
+      {(rates.length > 0 || options.liveRates) && (
         <FieldSet>
           <FieldLegend>Shipping method</FieldLegend>
+          {rates.length === 0 && (
+            <FieldDescription>
+              {ratesPending
+                ? 'Getting shipping rates…'
+                : quoted
+                  ? "We can't ship to this address. Check it, or try another one."
+                  : 'Enter your address to see shipping methods.'}
+            </FieldDescription>
+          )}
           <Choices
             name="shippingRateId"
             value={rateId}
             onChange={setRateId}
-            choices={options.shippingRates.map((r) => ({
+            choices={rates.map((r) => ({
               id: r.id,
               label: r.title,
               aside: r.priceCents === 0 ? 'Free' : money(r.priceCents),
               hint:
                 r.freeAboveCents != null && r.priceCents > 0
                   ? `Free on orders from ${money(r.freeAboveCents)}`
-                  : undefined,
+                  : (r.description ?? undefined),
             }))}
           />
         </FieldSet>

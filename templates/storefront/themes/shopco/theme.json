@@ -175,6 +175,13 @@
       "language": "html"
     }
   ],
+  "checkout": {
+    "background": "background_color",
+    "text": "text_color",
+    "accent": "accent_color",
+    "headingFont": "heading_font",
+    "bodyFont": "body_font"
+  },
   "sections": {
     "hero": {
       "name": "Hero",

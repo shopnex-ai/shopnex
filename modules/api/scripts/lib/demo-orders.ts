@@ -47,6 +47,18 @@ export async function deleteDemoOrders(shopId: string) {
   return ids.length
 }
 
+// Removes every order of the shop (not just the sample ones) and restarts numbering at #1001, so the seeded
+// history is the only thing the analytics see. Customers stay, except the sample ones.
+export async function deleteAllOrders(shopId: string) {
+  const removed = await db
+    .delete(schema.orders)
+    .where(eq(schema.orders.shopId, shopId))
+    .returning({ id: schema.orders.id })
+  await deleteDemoOrders(shopId)
+  await db.update(schema.shops).set({ nextOrderNumber: 1001 }).where(eq(schema.shops.id, shopId))
+  return removed.length
+}
+
 export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: number } = {}) {
   const [existing] = await db
     .select({ id: schema.customers.id })

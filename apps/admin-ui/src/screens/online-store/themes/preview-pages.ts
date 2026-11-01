@@ -13,12 +13,18 @@ export function previewPageOptions(definition: ThemeDefinition | null, catalog: 
   return [
     ...Object.entries(pages).map(([value, page]) => ({
       value,
-      label: value === 'home' ? 'Home page'
-        : value === 'collection' ? 'Collection'
-          : value === 'product' ? 'Product'
-            : value === 'page' ? 'Content page'
-              : value === '404' ? '404 page'
-                : page.name,
+      label:
+        value === 'home'
+          ? 'Home page'
+          : value === 'collection'
+            ? 'Collection'
+            : value === 'product'
+              ? 'Product'
+              : value === 'page'
+                ? 'Content page'
+                : value === '404'
+                  ? '404 page'
+                  : page.name,
     })),
     ...(!pages.collection ? [{ value: 'collection', label: 'Collection' }] : []),
     ...(!pages.product ? [{ value: 'product', label: 'Product' }] : []),
@@ -31,7 +37,9 @@ export function previewPagePath(page: string, definition: ThemeDefinition | null
   if (page === '404') return '/shopnex/theme-editor-404-preview'
   if (page === 'product') return catalog.products[0] ? `/products/${catalog.products[0].handle}` : '/products'
   if (page === 'collection') {
-    return catalog.collections[0] ? `/collections/${catalog.collections[0].handle}` : definition?.pages[page]?.path ?? '/products'
+    return catalog.collections[0]
+      ? `/collections/${catalog.collections[0].handle}`
+      : (definition?.pages[page]?.path ?? '/products')
   }
   if (page === 'page') return catalog.pages[0] ? `/pages/${catalog.pages[0].handle}` : '/'
 

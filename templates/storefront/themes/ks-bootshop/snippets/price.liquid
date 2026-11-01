@@ -1,0 +1,12 @@
+{%- comment -%}
+  A product's price ("From" when variants differ) and its compare-at price, struck through.
+  {% render 'price', product: product %}
+{%- endcomment -%}
+<span class="ks-price">
+  <span class="ks-price-now{% if product.compare_at_price_max > product.price_min %} ks-price-sale{% endif %}">
+    {%- if product.price_varies %}From {% endif %}{{ product.price_min | money -}}
+  </span>
+  {%- if product.compare_at_price_max > product.price_min %}
+    <s class="ks-price-was">{{ product.compare_at_price_max | money }}</s>
+  {%- endif %}
+</span>

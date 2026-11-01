@@ -1,4 +1,12 @@
 {%- comment -%} /products and /collections/{handle}: collections on the side, sort options, the grid, next page {%- endcomment -%}
+{%- assign heading = collection.title -%}
+{%- if search.performed -%}
+  {%- if search.terms == blank -%}
+    {%- assign heading = 'Search' -%}
+  {%- else -%}
+    {%- assign heading = 'Search results for “' | append: search.terms | append: '”' -%}
+  {%- endif -%}
+{%- endif -%}
 {%- assign description = collection.description | strip_html | strip -%}
 {%- assign current_sort = collection.sort_options.first -%}
 {%- for option in collection.sort_options -%}
@@ -34,7 +42,7 @@
       <div class="col-12 lg:col-9">
         <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 class="h2">{{ collection.title }}</h1>
+            <h1 class="h2">{{ heading }}</h1>
             {%- if description != blank %}
               <p class="mt-2 max-w-2xl text-text-light">{{ description }}</p>
             {%- endif %}
@@ -61,11 +69,17 @@
           </details>
         </div>
 
+        {% render 'filters', collection: collection, search: search %}
+
         {%- if collection.products.size == 0 %}
           <div class="mx-auto pt-5 text-center">
             <img class="mx-auto mb-6" src="{{ 'no-search-found.png' | asset_url }}" alt="" width="211" height="184" />
-            <h2 class="h3 mb-4">No products here yet</h2>
-            <a href="/products" class="btn btn-outline-primary">See all products</a>
+            <h2 class="h3 mb-4">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}No products here yet{% endif %}</h2>
+            {%- if collection.clear_filters_url %}
+              <a href="{{ collection.clear_filters_url }}" class="btn btn-outline-primary">Clear filters</a>
+            {%- else %}
+              <a href="/products" class="btn btn-outline-primary">See all products</a>
+            {%- endif %}
           </div>
         {%- else %}
           <div class="grid gap-4 sm:grid-cols-2 md:grid-cols-3">

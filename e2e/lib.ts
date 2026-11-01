@@ -115,9 +115,11 @@ export class Fixtures {
   private discounts: string[] = []
   private taxRates: string[] = []
   private shippingRates: string[] = []
+  private paymentMethods: string[] = []
   private tokens: string[] = []
   private users: string[] = []
   private shops: string[] = []
+  private shoppers: string[] = []
   private seq = 0
   private readonly run = randomBytes(4).toString('hex')
 
@@ -191,6 +193,13 @@ export class Fixtures {
     return r
   }
 
+  /** A customer who signs in with a code: their login and customer record are removed with the rest */
+  shopper(label = 'shopper') {
+    const email = this.mail(label)
+    this.shoppers.push(email)
+    return email
+  }
+
   mail(label: string) {
     return `e2e-${label}-${++this.seq}-${this.run}@example.com`
   }
@@ -255,6 +264,17 @@ export class Fixtures {
     return rate
   }
 
+  async paymentMethod(name = 'E2E bank transfer') {
+    const method = await checkoutSettings.createPaymentMethod(SHOP, {
+      name,
+      additionalDetails: null,
+      instructions: 'Transfer the total to IBAN E2E-0000',
+      active: true,
+    })
+    this.paymentMethods.push(method.id)
+    return method
+  }
+
   async cart(lines: { merchandiseId: string; quantity: number }[], discountCode?: string) {
     let cart = ok(await call('POST', '/storefront/carts', { lines }))
     this.carts.push(cart.id)
@@ -282,7 +302,11 @@ export class Fixtures {
     }
     if (this.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.token, this.carts))
     if (this.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, this.orders))
-    await db.delete(schema.customers).where(eq(schema.customers.email, this.email))
+    if (this.paymentMethods.length) {
+      await db.delete(schema.paymentMethods).where(inArray(schema.paymentMethods.id, this.paymentMethods))
+    }
+    await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
+    if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))
     if (this.discounts.length) await db.delete(schema.discounts).where(inArray(schema.discounts.id, this.discounts))
     if (this.taxRates.length) await db.delete(schema.taxRates).where(inArray(schema.taxRates.id, this.taxRates))
     if (this.shippingRates.length) {

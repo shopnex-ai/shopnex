@@ -1,0 +1,9 @@
+# The bundled apps on their own subdomains of DOMAIN, proxied over the compose network. Imported by the
+# Caddyfile only when DOMAIN is set. An app that isn't running (the cj profile is off by default) answers 502.
+stripe.{$DOMAIN} {
+	reverse_proxy stripe:4600
+}
+
+cj.{$DOMAIN} {
+	reverse_proxy cj-dropshipping:4700
+}

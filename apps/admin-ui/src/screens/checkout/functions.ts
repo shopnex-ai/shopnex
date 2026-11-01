@@ -6,6 +6,8 @@ import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
+import { countryOptions } from '@/lib/countries'
+import { checkoutBranding } from './branding'
 
 const tokenValidator = (token: string) => token
 
@@ -16,6 +18,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
     if (!found) return null
     const shop = await getShopById(found.shopId)
     if (!shop) return null
+    const branding = await checkoutBranding(found.shopId, shop.storefrontUrl)
     if (found.status === 'completed' && found.orderId) {
       const [order, payment] = await Promise.all([
         orderService.getById(found.shopId, found.orderId),
@@ -27,6 +30,7 @@ export const getCheckout = createServerFn({ method: 'GET' })
             token,
             shopName: shop.name,
             storefrontUrl: shop.storefrontUrl,
+            branding,
             order,
             // Payments app orders: the latest attempt (null for manual methods)
             payment: payment && { status: payment.status, error: payment.errorMessage },
@@ -44,12 +48,46 @@ export const getCheckout = createServerFn({ method: 'GET' })
       kind: 'checkout' as const,
       shopName: shop.name,
       storefrontUrl: shop.storefrontUrl,
+      branding,
       cart,
       options,
       tax,
       defaultCountry,
+      // Built here, once: Intl names and their order differ between this server and the browser, and a
+      // list the browser computes itself fails hydration, which throws away what the buyer already typed
+      countries: countryOptions,
     }
   })
+
+export type RatesAddress = {
+  countryCode: string
+  province?: string
+  city?: string
+  zip?: string
+  address1?: string
+}
+
+/** The shipping methods for the address typed so far: the shop's flat rates plus its carrier services' live rates */
+export const quoteRates = createServerFn({ method: 'POST' })
+  .validator((input: { token: string; address: RatesAddress }) => input)
+  .handler(async ({ data }) => {
+    const found = await cartService.findByToken(null, data.token)
+    if (!found || found.status === 'completed') return null
+    if (!/^[A-Z]{2}$/.test(data.address.countryCode)) return null
+    const cart = await cartService.view(found)
+    const { shippingRates } = await checkoutService.options(found.shopId, cart.subtotalCents, {
+      cart,
+      address: data.address,
+    })
+    return shippingRates
+  })
+
+// Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:
+// the raw error can carry SQL and internal details
+const unexpected = (action: string, error: unknown) => {
+  console.error(`[checkout] ${action}:`, error)
+  return `Could not ${action}. Please try again.`
+}
 
 const optional = (max: number) =>
   z
@@ -69,7 +107,8 @@ const buyer = z.object({
   countryCode: z.string().regex(/^[A-Z]{2}$/, 'Choose a country'),
   zip: optional(20),
   phone: optional(40),
-  shippingRateId: z.uuid().optional(),
+  // A flat rate's id, or carrier:{service}:{code} for a carrier service's live rate
+  shippingRateId: z.string().max(200).optional(),
   paymentMethodId: z.uuid('Choose a payment method'),
   note: optional(1000),
 })
@@ -113,7 +152,7 @@ export const placeOrder = createServerFn({ method: 'POST' })
       ))
     } catch (error) {
       if (error instanceof OrderError || error instanceof CartError) return { error: error.message, values }
-      throw error
+      return { error: unexpected('place the order', error), values }
     }
     // Payments app: pay on the provider's page, which sends the buyer back to the confirmation
     return { redirectTo: paymentUrl ?? `/checkout/${data.token}` }
@@ -136,7 +175,7 @@ export const payNow = createServerFn({ method: 'POST' })
       return { redirectTo: session.redirectUrl! }
     } catch (error) {
       if (error instanceof PaymentError) return { error: error.message }
-      throw error
+      return { error: unexpected('start the payment', error) }
     }
   })
 
@@ -161,7 +200,7 @@ export const applyDiscountCode = createServerFn({ method: 'POST' })
       }
     } catch (error) {
       if (error instanceof CartError) return { error: error.message }
-      throw error
+      return { error: unexpected('apply this code', error) }
     }
     return {}
   })

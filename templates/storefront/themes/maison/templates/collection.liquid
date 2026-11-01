@@ -2,14 +2,22 @@
 {%- if collection.handle == 'all' -%}
   {%- assign page_title = 'The archive' -%}
 {%- endif -%}
+{%- assign heading = collection.title -%}
+{%- if search.performed -%}
+  {%- if search.terms == blank -%}
+    {%- assign heading = 'Search' -%}
+  {%- else -%}
+    {%- assign heading = 'Search results for “' | append: search.terms | append: '”' -%}
+  {%- endif -%}
+{%- endif -%}
 {%- assign description = collection.description | strip_html | strip -%}
 <main class="mx-auto max-w-[1240px] px-2 sm:px-6">
   <section class="flex flex-col border-b border-line pt-7 pb-4 sm:pt-12 sm:pb-8">
     <div class="eti mb-[18px] text-acc" style="letter-spacing:0.18em">
-      {%- if collection.handle == 'all' %}All products{% else %}Collection{% endif -%}
+      {%- if search.performed %}Search{% elsif collection.handle == 'all' %}All products{% else %}Collection{% endif -%}
     </div>
     <h1 class="font-sf m-0 text-[clamp(30px,4.4vw,46px)] leading-[1.1] tracking-[-0.01em]">
-      {%- if collection.handle == 'all' %}The archive{% else %}{{ collection.title }}{% endif -%}
+      {%- if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}The archive{% else %}{{ collection.title }}{% endif -%}
     </h1>
     {%- if description != blank %}
       <p class="m-0 mt-5 max-w-[62ch] text-[14.5px] leading-[1.7] text-soft">{{ description }}</p>
@@ -20,6 +28,7 @@
     active: collection.handle,
     view: 'grid',
     collection: collection,
+    search: search,
     paginate: paginate
   %}
 </main>

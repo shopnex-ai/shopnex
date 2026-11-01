@@ -8,3 +8,7 @@ export const isMultiTenant = TENANCY_MODE === 'multi'
 
 // Fixed id so the migration and runtime agree on the default shop
 export const DEFAULT_SHOP_ID = 'default'
+
+// Self-serve demo/SaaS: anyone can create an account and their own shop. Only meaningful in multi mode;
+// otherwise accounts stay invitation-only.
+export const isOpenSignup = isMultiTenant && process.env.OPEN_SIGNUP === 'true'

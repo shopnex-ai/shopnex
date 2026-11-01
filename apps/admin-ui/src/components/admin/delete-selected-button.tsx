@@ -2,7 +2,15 @@ import { useState } from 'react'
 import { Trash2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 
 export function DeleteSelectedButton({
   ids,
@@ -30,17 +38,33 @@ export function DeleteSelectedButton({
       setOpen(false)
     }
   }
-  return <Dialog open={open} onOpenChange={(next) => { if (!busy) setOpen(next) }}>
-    <DialogTrigger render={<Button size="sm" variant="destructive" disabled={ids.length === 0} />}><Trash2Icon />Delete selected</DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Delete {ids.length} {entity}?</DialogTitle>
-        <DialogDescription>This permanently deletes the selected {entity}. This cannot be undone.</DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button>
-        <Button variant="destructive" disabled={busy} onClick={() => void deleteRows()}>{busy ? 'Deleting…' : `Delete ${ids.length}`}</Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!busy) setOpen(next)
+      }}
+    >
+      <DialogTrigger render={<Button size="sm" variant="destructive" disabled={ids.length === 0} />}>
+        <Trash2Icon />
+        Delete selected
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Delete {ids.length} {entity}?
+          </DialogTitle>
+          <DialogDescription>This permanently deletes the selected {entity}. This cannot be undone.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="destructive" disabled={busy} onClick={() => void deleteRows()}>
+            {busy ? 'Deleting…' : `Delete ${ids.length}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }

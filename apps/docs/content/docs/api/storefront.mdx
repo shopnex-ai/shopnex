@@ -41,6 +41,28 @@ await shopnex.checkout.complete({
 - Orders follow Shopify's model: `financialStatus`, `fulfillmentStatus`, `cancelledAt`, shipping lines, transactions, fulfillments.
 - Or redirect to `cart.checkoutUrl` for the hosted checkout.
 
+## Customer accounts
+
+Shoppers sign in with a one-time code emailed through the shop's SMTP settings (Settings → Email), so the shop must send email. There are no passwords. The first sign-in creates the account, and guest orders placed with the same email appear in it.
+
+```ts
+await shopnex.customer.requestCode({ email }) // emails a 6-digit code, valid for 10 minutes
+const { token, customer } = await shopnex.customer.signIn({ email, code })
+
+// Keep the token server side (the bundled storefront uses an httpOnly cookie) and send it back
+const me = createStorefrontClient({ baseUrl, publishableKey, customerToken: token })
+const orders = await me.customer.orders({ first: 10 })
+const order = await me.customer.order({ id: orders.nodes[0].id })
+await me.customer.signOut()
+```
+
+- Without the SDK, send the token in the `x-shopnex-customer-token` header.
+- A customer only ever sees their own orders (someone else's order id is `NOT_FOUND`). A token only ever resolves to the customer record of the shop it is used in, and reaches nothing in the admin API.
+- Codes are limited per address and per shop (`TOO_MANY_REQUESTS`), and each code allows 5 attempts and works once.
+- An address that belongs to a staff account gets no code: staff sign in to the admin. Use another address to try the storefront login.
+- The email is the "Customer sign-in code" notification (Settings → Notifications). Without email set up, `requestCode` fails with `CUSTOMER_LOGIN_UNAVAILABLE`.
+- The bundled storefront has the pages: `/account/login`, `/account` (orders, details) and `/account/orders/{id}`, shown in the live theme's layout. Themes link to them with `{{ routes.account_url }}`.
+
 ## Errors
 
-Typed in the contract, e.g. `OUT_OF_STOCK { merchandiseId, available }`, `MERCHANDISE_NOT_FOUND`, `LINE_NOT_FOUND`, `CART_COMPLETED`.
+Typed in the contract, e.g. `OUT_OF_STOCK { merchandiseId, available }`, `MERCHANDISE_NOT_FOUND`, `LINE_NOT_FOUND`, `CART_COMPLETED`, and for customer accounts `UNAUTHORIZED`, `INVALID_CODE`, `TOO_MANY_REQUESTS` and `CUSTOMER_LOGIN_UNAVAILABLE`.

@@ -18,9 +18,10 @@ async function loadPreviewCatalog(storefrontUrl: string | null): Promise<Preview
   if (!storefrontUrl) return { products: [], collections: [], pages: [] }
   try {
     const response = await fetch(new URL('/shopnex/preview-pages.json', storefrontUrl), {
-      cache: 'no-store', signal: AbortSignal.timeout(5000),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5000),
     })
-    if (response.ok) return await response.json() as PreviewCatalog
+    if (response.ok) return (await response.json()) as PreviewCatalog
   } catch {
     // The editor can still preview standard storefront routes without catalog data.
   }

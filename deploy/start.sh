@@ -23,6 +23,33 @@ export BETTER_AUTH_SECRET
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
 
+# DOMAIN turns on Caddy's automatic HTTPS (ports 80 and 443 must reach this container). Certificates
+# are kept on the /data volume so restarts don't request new ones.
+if [ -n "$DOMAIN" ]; then
+  export SITE_ADDRESS="$DOMAIN" AUTO_HTTPS_OPT="" APPS_CADDYFILE=Caddyfile.apps
+  export XDG_DATA_HOME="${DATA_DIR:-/data}/caddy"
+  export APP_URL="${APP_URL:-https://$DOMAIN}"
+  export BETTER_AUTH_URL="${BETTER_AUTH_URL:-$APP_URL}"
+else
+  export SITE_ADDRESS=":$PUBLIC_PORT" AUTO_HTTPS_OPT="auto_https off" APPS_CADDYFILE="no-apps-*.caddy"
+fi
+
+# Caddy serves the bundled storefront on the app's own origin, so a single shop that hasn't saved a
+# Storefront URL in Settings (Themes, editor preview) uses that one.
+export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"
+
+# drizzle-kit swallows the real connection error, so a bad host or password looks like a crashing
+# migration. Connect first and print what pg says (never the URL, it holds the password).
+pnpm --silent --filter @shopnex/db exec node -e '
+const { Client } = require("pg");
+const client = new Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
+client.connect().then(() => client.end()).catch((err) => {
+  console.error("Cannot connect to the database: " + (err.message || err.code || err));
+  console.error("Check DATABASE_URL (host, port, user, password, sslmode) and that the database is reachable from this container.");
+  process.exit(1);
+});
+'
+
 # Migrations are idempotent, so running them on every start also covers updates.
 pnpm db:migrate
 

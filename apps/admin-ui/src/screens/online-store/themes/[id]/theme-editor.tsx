@@ -61,7 +61,14 @@ const stable = (value: unknown): string =>
 
 const newSectionId = () => `s${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`
 
-export function ThemeEditor({ definition, previewCatalog, storefrontUrl, theme, initialDraft, initialPublished }: Props) {
+export function ThemeEditor({
+  definition,
+  previewCatalog,
+  storefrontUrl,
+  theme,
+  initialDraft,
+  initialPublished,
+}: Props) {
   const id = theme.id
   const [live, setLive] = useState(theme.live)
   const [draft, setDraft] = useState(initialDraft)

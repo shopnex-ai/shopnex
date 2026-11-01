@@ -13,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { DropdownMenuLabel } from '@/components/ui/dropdown-menu'
+import { DropdownMenuGroup, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { getUpdateProgress, getUpdateStatus, requestUpdate } from '@/lib/updates.functions'
 
@@ -100,7 +100,11 @@ export function UpdateMenuItem({ enabled }: { enabled: boolean }) {
 export function VersionLabel({ enabled }: { enabled: boolean }) {
   const data = useUpdateStatus(enabled)
   if (!data) return null
-  return <DropdownMenuLabel className="text-xs">Version {data.current ?? 'dev'}</DropdownMenuLabel>
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel className="text-xs">Version {data.current ?? 'dev'}</DropdownMenuLabel>
+    </DropdownMenuGroup>
+  )
 }
 
 function UpdateMethod({ title, children }: { title: string; children: React.ReactNode }) {

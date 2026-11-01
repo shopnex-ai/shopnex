@@ -14,6 +14,10 @@ import {
   shippingRates as adminShippingRates,
   taxRates as adminTaxRates,
 } from './routers/admin/checkout-settings'
+import {
+  carrierServices as adminCarrierServices,
+  carrierServicesApp as adminCarrierServicesApp,
+} from './routers/admin/carrier-services'
 import { collections as adminCollections } from './routers/admin/collections'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { discounts as adminDiscounts } from './routers/admin/discounts'
@@ -33,6 +37,7 @@ import { shop as adminShop } from './routers/admin/shop'
 import { staff as adminStaff } from './routers/admin/staff'
 import { storage as adminStorage } from './routers/admin/storage'
 import { channels as adminChannels } from './routers/admin/channels'
+import { domains as adminDomains } from './routers/admin/domains'
 import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
 import { themes as adminThemes } from './routers/admin/themes'
 import { webhooks as adminWebhooks } from './routers/admin/webhooks'
@@ -65,12 +70,15 @@ export const router = {
     pages: tagged('Admin · Pages').router(adminPages),
     files: tagged('Admin · Files').router(adminFiles),
     channels: tagged('Admin · Channels').router(adminChannels),
+    domains: tagged('Admin · Domains').router(adminDomains),
     storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
     staff: tagged('Admin · Staff').router(adminStaff),
     storage: tagged('Admin · Storage').router(adminStorage),
     email: tagged('Admin · Email').router(adminEmail),
     notifications: tagged('Admin · Email').router(adminNotifications),
     shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
+    carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
+    carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),
     paymentMethods: tagged('Admin · Payments').router(adminPaymentMethods),
     paymentApps: tagged('Admin · Payments').router(adminPaymentApps),
     paymentsApp: tagged('Admin · Payments apps').router(adminPaymentsApp),

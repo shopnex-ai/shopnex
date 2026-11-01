@@ -231,6 +231,7 @@ describe('order notifications', () => {
       (
         [
           'layout',
+          'login_code',
           'order_cancelled',
           'order_confirmation',
           'shipping_confirmation',

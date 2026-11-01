@@ -1,9 +1,10 @@
 // Accounts are created only by: the setup wizard, someone with a pending shop invitation, or server code
-// that opts in (create-super-admin). Enforced in a Better Auth hook, so it covers email and OAuth sign-up.
+// that opts in (create-super-admin). With OPEN_SIGNUP=true (multi mode) anyone may sign up and create a shop. Enforced in a Better Auth hook, so it covers email and OAuth sign-up.
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { APIError } from 'better-auth/api'
 import { db, schema } from '@shopnex/db'
+import { isOpenSignup } from '@shopnex/tenancy'
 
 const trusted = new AsyncLocalStorage<true>()
 
@@ -13,7 +14,7 @@ export function withSignUpAllowed<T>(fn: () => Promise<T>) {
 }
 
 export async function assertSignUpAllowed(email: string) {
-  if (trusted.getStore()) return
+  if (trusted.getStore() || isOpenSignup) return
   const [invitation] = await db
     .select({ id: schema.shopInvitations.id })
     .from(schema.shopInvitations)

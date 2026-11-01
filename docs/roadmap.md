@@ -17,7 +17,8 @@ Rule: if a merchant has to touch code, the CLI or `.env` to do something, it's a
 - ✅ themes: theme library (Online store → Themes: current theme, change theme, copies with draft/publish), one storefront with several themes (Storeplate first)
 - storefront: product search and filters (needs `query`/vendor/tag/price filters on `products.list`)
 - ✅ storefront: hosted checkout (contact, shipping address, shipping + payment method) and order confirmation with payment instructions
-- storefront: customer login / sign up; order emails (needs SMTP settings)
+- ✅ storefront: customer accounts: sign in with an emailed code, order history and details (`/account`)
+- ✅ order emails: confirmation, shipping, cancellation (needs SMTP settings in Settings → Email)
 
 ### 2. Run and update
 
@@ -42,5 +43,17 @@ Out-of-process only, no third-party code in the core.
 
 - theme editor
 - email templates
-- domains page (add domain, verify DNS) — replaces manual `shop_domains` rows; multi-shop as a super admin toggle
+- ✅ domains page (add domain, verify with a DNS TXT record) — replaces manual `shop_domains` rows
+- multi-shop as a super admin toggle
 - onboarding checklist on the dashboard
+
+### 5. Trust
+
+Tests merchants can see, not only run. Details in [e2e-plan](./e2e-plan.md).
+
+- ✅ API-level e2e suite in CI (auth, staff, tenancy, pricing, payment apps, carrier services, channels, email)
+- browser e2e (Playwright): fresh install, storefront checkout, admin flows; traces and video on failure
+- checkout against Stripe test mode with real webhooks (declines, 3DS, duplicate and late deliveries)
+- failure scenarios: last-item race, refunds, rounding, staff permissions in the UI
+- upgrade test: previous release → current build keeps all data
+- public test report, CI badge, "What we test" page, nightly run on `main`

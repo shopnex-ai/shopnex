@@ -15,7 +15,10 @@ Each of these creates the app and a Postgres database for you.
   <Card title="Render" href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
     App plus managed Postgres, HTTPS included.
   </Card>
-  <Card title="DigitalOcean" href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+  <Card
+    title="DigitalOcean"
+    href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2"
+  >
     App Platform with a managed database.
   </Card>
   <Card title="Railway" href="/docs/self-hosting/railway">
@@ -27,14 +30,16 @@ Each of these creates the app and a Postgres database for you.
 </Cards>
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
+  first.
 </Callout>
 
 ## Your own server
 
 <Cards>
   <Card title="Install script" href="/docs/self-hosting/docker">
-    <code>{`curl -fsSL ${SITE_URL}/install.sh | sh`}</code> on a fresh Linux server, or run the Docker image yourself.
+    <code>{`curl -fsSL ${SITE_URL}/install.sh | sudo sh`}</code> on a fresh Linux server, or run the Docker image
+    yourself.
   </Card>
   <Card title="Dokploy, Coolify, Portainer" href="/docs/self-hosting/dokploy">
     One Docker Compose file: the prebuilt image plus Postgres.
@@ -44,9 +49,15 @@ Each of these creates the app and a Postgres database for you.
 ## After you deploy
 
 <Cards>
-  <Card title="Configuration" href="/docs/self-hosting/configuration">Environment variables.</Card>
-  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">Optional OAuth providers.</Card>
-  <Card title="End-to-end tests" href="/docs/self-hosting/testing">Run the e2e suite.</Card>
+  <Card title="Configuration" href="/docs/self-hosting/configuration">
+    Environment variables.
+  </Card>
+  <Card title="Google & GitHub sign-in" href="/docs/self-hosting/oauth">
+    Optional OAuth providers.
+  </Card>
+  <Card title="End-to-end tests" href="/docs/self-hosting/testing">
+    Run the e2e suite.
+  </Card>
 </Cards>
 
 ## How the image is wired

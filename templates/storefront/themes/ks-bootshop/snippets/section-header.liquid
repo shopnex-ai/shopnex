@@ -1,0 +1,7 @@
+{%- comment -%} A section's heading and intro text. {% render 'section-header', heading: …, text: …, align: 'text-center' %} {%- endcomment -%}
+{%- if heading != blank or text != blank -%}
+  <div class="ks-section-header {{ align | default: 'text-center' }}">
+    {%- if heading != blank %}<h2 class="mb-2">{{ heading }}</h2>{% endif %}
+    {%- if text != blank %}<p class="lead mb-0">{{ text }}</p>{% endif %}
+  </div>
+{%- endif -%}

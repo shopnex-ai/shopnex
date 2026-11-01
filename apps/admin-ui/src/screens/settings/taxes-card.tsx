@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { shopInput, taxRateInput } from '@shopnex/api/schemas'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
+import { DialogDeleteButton } from '@/components/admin/dialog-delete-button'
 import {
   CheckboxField,
   FormError,
@@ -217,13 +218,7 @@ function RateDialog({ rate }: { rate?: Rate }) {
             />
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-between">
-              {rate ? (
-                <Button type="button" variant="ghost" onClick={onDelete} disabled={remove.isPending}>
-                  Delete
-                </Button>
-              ) : (
-                <span />
-              )}
+              {rate ? <DialogDeleteButton onDelete={onDelete} pending={remove.isPending} /> : <span />}
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : rate ? 'Save' : 'Add rate'}
               </Button>

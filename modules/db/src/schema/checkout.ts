@@ -64,5 +64,29 @@ export const paymentMethods = pgTable(
   ],
 )
 
+// Apps that quote shipping rates at checkout (Shopify CarrierService). One per app and shop; uninstalling the
+// app removes it. Staff switch it off with `active`; the app with `ready`.
+export const carrierServices = pgTable(
+  'carrier_services',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    appId: uuid('app_id')
+      .notNull()
+      .references(() => apps.id, { onDelete: 'cascade' }),
+    // Shown at checkout next to the rates it quotes, e.g. "CJ Dropshipping"
+    name: text('name').notNull(),
+    ratesUrl: text('rates_url').notNull(),
+    active: boolean('active').notNull().default(true),
+    ready: boolean('ready').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('carrier_services_shop_app_idx').on(t.shopId, t.appId)],
+)
+
 export type ShippingRate = typeof shippingRates.$inferSelect
+export type CarrierService = typeof carrierServices.$inferSelect
 export type PaymentMethod = typeof paymentMethods.$inferSelect

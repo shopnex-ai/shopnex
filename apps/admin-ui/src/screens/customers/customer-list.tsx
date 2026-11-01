@@ -49,7 +49,16 @@ export function CustomerList() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Customers" actions={<div className="flex gap-2"><ImportCustomersDialog /><ExportCustomersDialog /><NewCustomerButton /></div>} />
+      <PageHeader
+        title="Customers"
+        actions={
+          <div className="flex gap-2">
+            <ImportCustomersDialog />
+            <ExportCustomersDialog />
+            <NewCustomerButton />
+          </div>
+        }
+      />
       <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />
       <DataTable
         columns={columns}
@@ -60,15 +69,17 @@ export function CustomerList() {
         error={error}
         empty={search ? `No customers match “${search}”.` : 'No customers yet.'}
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
-        selectionActions={(ids, clearSelection) => <DeleteSelectedButton
-          ids={ids}
-          entity={ids.length === 1 ? 'customer' : 'customers'}
-          remove={(selected) => client.admin.customers.deleteMany({ ids: selected })}
-          onDeleted={async () => {
-            clearSelection()
-            await queryClient.invalidateQueries({ queryKey: orpc.admin.customers.key() })
-          }}
-        />}
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'customer' : 'customers'}
+            remove={(selected) => client.admin.customers.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.customers.key() })
+            }}
+          />
+        )}
       />
     </div>
   )

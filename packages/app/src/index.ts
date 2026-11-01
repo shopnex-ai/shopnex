@@ -33,6 +33,12 @@ import {
   type PaymentSessionRequest,
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
+import {
+  APP_INSTALLED_PATH,
+  verifyLifecycleRequest as verifyLifecycle,
+  type AppInstalledRequest,
+} from '@shopnex/marketplace-sdk/lifecycle'
+import { verifyRatesRequest as verifyRates, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { verifySessionToken } from '@shopnex/marketplace-sdk/session-token'
 import {
   createAdminClient,
@@ -55,6 +61,8 @@ export type {
   AiRunRequest,
   AiRunResponse,
 } from '@shopnex/marketplace-sdk/ai'
+export type { AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
+export type { Rate, RatesRequest, RatesResponse } from '@shopnex/marketplace-sdk/shipping'
 
 export type ShopnexAppOptions = {
   /** Default: SHOPNEX_CLIENT_ID */
@@ -70,6 +78,20 @@ export type ShopnexAppOptions = {
   data?: (instance: string, shopId: string) => AppData
   /** Instances allowed over plain http (default: localhost only) */
   allowHttp?: JwksResolverOptions['allowHttp']
+  /**
+   * Where to send requests to the Shopnex instance when its public address isn't reachable from here (Docker:
+   * http://shopnex:3000). Only the request goes there; the instance keeps its public identity. For apps bundled
+   * with one self-hosted Shopnex, not for marketplace apps serving many instances. Default: SHOPNEX_INTERNAL_URL
+   */
+  instanceInternalUrl?: string
+  /**
+   * Runs right after the app is installed on a shop (Shopnex POSTs a signed app.installed to /shopnex/installed),
+   * with an Admin API client for it: set the shop up here, e.g. register a payment method. Best effort and it may
+   * repeat, so keep it idempotent; an app that misses it should still set up when first opened.
+   */
+  onInstalled?: (shop: ShopContext, request: AppInstalledRequest) => Promise<void> | void
+  /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so Shopnex needs no setting */
+  appUrl?: string
 }
 
 /** One shop the app is installed on, with an Admin API client for it */
@@ -102,6 +124,15 @@ export type ShopContext = {
      */
     configure(capabilities: Partial<Record<AiCapability, string>>): Promise<void>
   }
+  /** Carrier apps: quote shipping rates at checkout */
+  shipping: {
+    /** Registers (or updates) this app's carrier service for the shop. Its `id` is in the rate ids on orders. */
+    configure(service: {
+      name: string
+      ratesUrl: string
+      ready: boolean
+    }): Promise<{ id: string; name: string; active: boolean; ready: boolean }>
+  }
 }
 
 export type Shop = { id: string; name: string; currency: string; [key: string]: unknown }
@@ -124,10 +155,16 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   if (!clientId) throw new Error('@shopnex/app: set SHOPNEX_CLIENT_ID (or pass clientId)')
   if (!appKey) throw new Error('@shopnex/app: set SHOPNEX_APP_KEY (or pass appKey)')
   const marketplaceUrl = (options.marketplaceUrl ?? env('SHOPNEX_MARKETPLACE_URL'))?.replace(/\/$/, '')
+  const internalUrl = (options.instanceInternalUrl ?? env('SHOPNEX_INTERNAL_URL'))?.trim().replace(/\/$/, '')
+  // Requests to the instance go to its internal address when one is set
+  const reach = (url: string) => (internalUrl ? internalUrl + url.slice(new URL(url).origin.length) : url)
 
   const privateKey = importPrivateKey(appKey)
   const dataKey = deriveDataKey(appKey)
-  const keys = createJwksResolver({ allowHttp: options.allowHttp })
+  const keys = createJwksResolver({
+    allowHttp: options.allowHttp,
+    fetch: (input, init) => fetch(typeof input === 'string' ? reach(input) : input, init),
+  })
 
   // --- access tokens, cached per (instance, shop) until a minute before they expire ---
 
@@ -136,7 +173,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   const verified = new Map<string, number>()
 
   async function requestToken(instance: string, grant: Record<string, string>): Promise<Token> {
-    const res = await fetch(`${instance}/api/v1/oauth/token`, {
+    const res = await fetch(reach(`${instance}/api/v1/oauth/token`), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -196,7 +233,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   function shopContext(instance: string, shopId: string, first: Token): ShopContext {
-    const admin = createAdminClient(instance, async () => (await token(instance, shopId)).accessToken)
+    const admin = createAdminClient(instance, async () => (await token(instance, shopId)).accessToken, reach(instance))
     const session = (id: string, action: string) => `/payment-sessions/${encodeURIComponent(id)}/${action}`
     return {
       instance,
@@ -211,6 +248,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       },
       ai: {
         configure: async (capabilities) => void (await admin.post('/ai-app/configure', { capabilities })),
+      },
+      shipping: {
+        configure: (service) => admin.post('/carrier-services/configure', service),
       },
     }
   }
@@ -291,6 +331,18 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
+   * Carrier apps: a rates request from Shopnex, checked against the instance's keys, with its shop. Answer it with
+   * `{ rates: [{ code, name, priceCents, description? }] }`. Throws a 401 HTTPException when the signature doesn't
+   * check out.
+   */
+  async function verifyRatesRequest(c: Context | Request): Promise<{ request: RatesRequest; shop: ShopContext }> {
+    const request = c instanceof Request ? c : c.req.raw
+    const verified = await verifyRates(request.headers, await request.text(), { keys })
+    if (!verified) throw new HTTPException(401, { message: 'Invalid signature' })
+    return { request: verified, shop: await forShop(verified.instance, verified.shopId) }
+  }
+
+  /**
    * A webhook delivery from Shopnex (subscriptions the app made with its token), checked against the instance's
    * keys: no endpoint secret to keep. Throws a 401 HTTPException when the signature doesn't check out.
    */
@@ -326,12 +378,32 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   routes.get('/shopnex/app.js', (c) =>
     c.body(clientScript, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
   )
+  if (options.onInstalled) {
+    routes.post(APP_INSTALLED_PATH, async (c) => {
+      const body = await c.req.text()
+      const request = await verifyLifecycle(c.req.raw.headers, body, { keys })
+      if (!request) throw new HTTPException(401, { message: 'Invalid signature' })
+      await options.onInstalled!(await forShop(request.instance, request.shopId), request)
+      return c.body(null, 204)
+    })
+  }
   // Who this app is, for an instance that knows only its URL (bundled apps: Shopnex reads this at startup)
   routes.get('/.well-known/shopnex-app.json', async (c) =>
-    c.json({ clientId, publicKey: await publicKeyOf(await privateKey) }, 200, { 'cache-control': 'no-store' }),
+    c.json({ clientId, publicKey: await publicKeyOf(await privateKey), appUrl: options.appUrl }, 200, {
+      'cache-control': 'no-store',
+    }),
   )
 
-  return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyAiRequest, verifyWebhook }
+  return {
+    clientId,
+    routes,
+    authenticate,
+    forShop,
+    verifyPaymentsRequest,
+    verifyAiRequest,
+    verifyRatesRequest,
+    verifyWebhook,
+  }
 }
 
 export type ShopnexApp = ReturnType<typeof createShopnexApp>

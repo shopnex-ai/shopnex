@@ -7,6 +7,7 @@ import { useController, type Control, type FieldPath, type FieldValues } from 'r
 import { toast } from 'sonner'
 import { WEBHOOK_TOPICS, webhookEndpointInput, type WebhookTopic } from '@shopnex/api/schemas'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
+import { DialogDeleteButton } from '@/components/admin/dialog-delete-button'
 import { CheckboxField, FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -190,19 +191,7 @@ function EndpointDialog({ endpoint }: { endpoint?: Endpoint }) {
             )}
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-between">
-              {endpoint ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-destructive"
-                  onClick={onDelete}
-                  disabled={remove.isPending}
-                >
-                  Delete
-                </Button>
-              ) : (
-                <span />
-              )}
+              {endpoint ? <DialogDeleteButton onDelete={onDelete} pending={remove.isPending} /> : <span />}
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : endpoint ? 'Save' : 'Add webhook'}
               </Button>

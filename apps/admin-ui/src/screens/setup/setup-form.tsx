@@ -3,19 +3,18 @@
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { MIN_PASSWORD, setupInput } from '@shopnex/api/schemas'
 import { authClient } from '@shopnex/auth/client'
-import { FormError, SelectField, TextField, useZodForm } from '@/components/admin/form'
+import { FormError, TextField, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Field, FieldGroup, FieldSeparator } from '@/components/ui/field'
+import { Field, FieldGroup } from '@/components/ui/field'
 import { clearAdminContext } from '@/lib/admin-context'
-import { currencyOptions } from '@/lib/currency'
 import { runSetup } from './actions'
 
 export function SetupForm() {
   const navigate = useNavigate()
   const router = useRouter()
   const form = useZodForm(setupInput, {
-    defaultValues: { name: '', email: '', password: '', shopName: '', currency: 'USD' },
+    defaultValues: { email: '', password: '' },
   })
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -36,23 +35,13 @@ export function SetupForm() {
       <CardHeader>
         <CardTitle>Welcome to Shopnex</CardTitle>
         <CardDescription>
-          Create the owner account and name your shop. You can change the shop later in Settings.
+          Create the owner account. You can name your shop and set its currency later in Settings.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
           <FieldGroup>
-            <TextField control={form.control} name="shopName" label="Shop name" placeholder="Acme Goods" />
-            <SelectField
-              control={form.control}
-              name="currency"
-              label="Currency"
-              description="All prices in your shop use this currency."
-              options={currencyOptions}
-            />
-            <FieldSeparator>Owner account</FieldSeparator>
-            <TextField control={form.control} name="name" label="Your name" autoComplete="name" />
-            <TextField control={form.control} name="email" label="Email" type="email" autoComplete="email" />
+            <TextField control={form.control} name="email" label="Email" type="email" autoComplete="email" autoFocus />
             <TextField
               control={form.control}
               name="password"
@@ -64,7 +53,7 @@ export function SetupForm() {
             <FormError form={form} />
             <Field>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Setting up…' : 'Create shop'}
+                {form.formState.isSubmitting ? 'Setting up…' : 'Create account'}
               </Button>
             </Field>
           </FieldGroup>

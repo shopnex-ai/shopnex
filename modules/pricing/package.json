@@ -7,10 +7,15 @@
     "./calculate": "./src/calculate.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
     "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

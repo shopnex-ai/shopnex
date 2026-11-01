@@ -10,5 +10,5 @@ RUN pnpm install --frozen-lockfile && pnpm build && pnpm --dir templates/storefr
 ARG APP_VERSION=
 ENV NODE_ENV=production PORT=3000 APP_VERSION=$APP_VERSION
 VOLUME /data
-EXPOSE 3000
+EXPOSE 3000 80 443
 CMD ["deploy/start.sh"]

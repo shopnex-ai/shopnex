@@ -1,9 +1,10 @@
 // Adds backdated sample orders and customers to a shop so the dashboard analytics show realistic numbers.
-//   pnpm demo:orders [--shop <id>] [--days 90] [--replace]
+//   pnpm demo:orders [--shop <id>] [--days 90] [--replace | --wipe]
 // --replace removes the earlier sample data (customers on @demo.shopnex.test and their orders) first.
+// --wipe deletes ALL of the shop's orders first (real ones too) and restarts numbering at #1001.
 import { db } from '@shopnex/db'
 import { DEFAULT_SHOP_ID } from '@shopnex/tenancy'
-import { deleteDemoOrders, seedDemoOrders } from './lib/demo-orders'
+import { deleteAllOrders, deleteDemoOrders, seedDemoOrders } from './lib/demo-orders'
 
 const arg = (name: string) => {
   const i = process.argv.indexOf(`--${name}`)
@@ -11,7 +12,9 @@ const arg = (name: string) => {
 }
 
 const shopId = arg('shop') ?? DEFAULT_SHOP_ID
-if (process.argv.includes('--replace')) {
+if (process.argv.includes('--wipe')) {
+  console.log(`Deleted ${await deleteAllOrders(shopId)} existing orders.`)
+} else if (process.argv.includes('--replace')) {
   const removed = await deleteDemoOrders(shopId)
   console.log(`Removed ${removed} sample customers and their orders.`)
 }

@@ -7,8 +7,8 @@
 //   token_exchange      session token from the embedded admin page → 1-hour access token
 //   client_credentials  shop_id of a live installation → 1-hour access token (background work)
 // Codes are only stored as SHA-256 hashes.
-import { createHash, randomBytes } from 'node:crypto'
-import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
 import {
@@ -19,10 +19,12 @@ import {
   verifyClientAssertion,
   verifyJwt,
 } from '@shopnex/marketplace-sdk/keys'
+import { APP_INSTALLED_PATH, signLifecycleRequest, type AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
 import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@shopnex/marketplace-sdk/session-token'
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './errors'
 import { instanceSigner, ownKey } from './keys'
+import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl } from './marketplace'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
@@ -184,38 +186,43 @@ export async function exchangeCode(input: {
   redirectUri: string
 }) {
   const app = await authenticateClient(input.clientId, input.clientAssertion)
-  return db.transaction(async (tx) => {
-    const [code] = await tx
-      .select()
-      .from(schema.appAuthorizationCodes)
-      .where(
-        and(
-          eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
-          eq(schema.appAuthorizationCodes.appId, app.id),
-        ),
-      )
-      .for('update')
-    if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
-      throw new AppError(
-        'invalid_grant',
-        'Authorization code is invalid, expired, already used, or for another redirect_uri',
-      )
-    }
-    await tx
-      .update(schema.appAuthorizationCodes)
-      .set({ usedAt: new Date() })
-      .where(eq(schema.appAuthorizationCodes.id, code.id))
+  return db
+    .transaction(async (tx) => {
+      const [code] = await tx
+        .select()
+        .from(schema.appAuthorizationCodes)
+        .where(
+          and(
+            eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
+            eq(schema.appAuthorizationCodes.appId, app.id),
+          ),
+        )
+        .for('update')
+      if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
+        throw new AppError(
+          'invalid_grant',
+          'Authorization code is invalid, expired, already used, or for another redirect_uri',
+        )
+      }
+      await tx
+        .update(schema.appAuthorizationCodes)
+        .set({ usedAt: new Date() })
+        .where(eq(schema.appAuthorizationCodes.id, code.id))
 
-    const { token, ...secret } = mintToken()
-    const installation = await install(tx, {
-      app,
-      shopId: code.shopId,
-      userId: code.userId,
-      scopes: code.scopes,
-      secret,
+      const { token, ...secret } = mintToken()
+      const installation = await install(tx, {
+        app,
+        shopId: code.shopId,
+        userId: code.userId,
+        scopes: code.scopes,
+        secret,
+      })
+      return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id, app }
     })
-    return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id }
-  })
+    .then(({ app, ...result }) => {
+      notifyInstalled(app, result.installationId, result.shopId)
+      return result
+    })
 }
 
 // The live installation of an app on a shop, with its (unrevoked) token
@@ -321,12 +328,49 @@ export async function resolveAccessToken(
  * tokens with the token exchange / client credentials grants, so no token leaves this function.
  */
 export async function installManaged(input: { appId: string; shopId: string; userId: string; scopes: ApiScope[] }) {
-  return db.transaction(async (tx) => {
+  const { installation, app } = await db.transaction(async (tx) => {
     const [app] = await tx.select().from(schema.apps).where(eq(schema.apps.id, input.appId))
     if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
     const { token: _, ...secret } = mintToken()
-    return install(tx, { app, shopId: input.shopId, userId: input.userId, scopes: input.scopes, secret })
+    const installation = await install(tx, {
+      app,
+      shopId: input.shopId,
+      userId: input.userId,
+      scopes: input.scopes,
+      secret,
+    })
+    return { installation, app }
   })
+  notifyInstalled(app, installation.id, installation.shopId)
+  return installation
+}
+
+/**
+ * Tells the app it was installed (see @shopnex/marketplace-sdk/lifecycle), so it can set the shop up before
+ * anyone opens it. Called after the install commits, never awaited: best effort, an app that misses it sets up
+ * when it's first opened.
+ */
+function notifyInstalled(app: App, installationId: string, shopId: string) {
+  void (async () => {
+    const id = randomUUID()
+    const payload: AppInstalledRequest = {
+      kind: 'installed',
+      id,
+      instance: await instanceUrl(),
+      shopId,
+      installationId,
+    }
+    const body = JSON.stringify(payload)
+    const res = await fetch(serverUrl(app.appUrl.replace(/\/$/, '')) + APP_INSTALLED_PATH, {
+      method: 'POST',
+      headers: await signLifecycleRequest(await instanceSigner(), id, body),
+      body,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(10_000),
+    })
+    // 404: an app that doesn't listen for it
+    if (!res.ok && res.status !== 404) throw new Error(`${res.status} ${res.statusText}`)
+  })().catch((error) => console.error(`[apps] app.installed for ${app.clientId}:`, error))
 }
 
 async function install(
@@ -394,10 +438,13 @@ async function install(
   return installation!
 }
 
-// --- App Store (marketplace apps synced to this instance) ---
+// --- Catalog (every app a shop can install, whatever its source) ---
 
-// Installable marketplace apps, with whether this shop already has each
-export async function listAppStore(shopId: string) {
+/**
+ * One list for everything installable from Admin → Apps: apps that ship with this install (BUNDLED_APPS),
+ * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
+ */
+export async function listCatalog(shopId: string) {
   const rows = await db
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
@@ -409,9 +456,14 @@ export async function listAppStore(shopId: string) {
         isNull(schema.appInstallations.uninstalledAt),
       ),
     )
-    .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
+    .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows.map((r) => ({ ...publicApp(r.app), installed: r.installationId !== null }))
+  return rows.map((r) => ({
+    ...publicApp(r.app),
+    origin: r.app.source,
+    installationId: r.installationId,
+    installed: r.installationId !== null,
+  }))
 }
 
 // --- installations (shop owners/admins) ---
@@ -476,6 +528,10 @@ export async function uninstall(shopId: string, installationId: string) {
     await tx
       .delete(schema.aiProviders)
       .where(and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, installation.appId)))
+    // So does a carrier app's service: its rates stop being offered at checkout
+    await tx
+      .delete(schema.carrierServices)
+      .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, installation.appId)))
     const [updated] = await tx
       .update(schema.appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })
@@ -606,38 +662,66 @@ export async function deleteAppData(token: ApiToken, key: string) {
 /**
  * First-party apps that ship with Shopnex and run next to it (e.g. apps/stripe). Each is registered as a
  * custom, managed app with a fixed client id, so staff only click Install. Shopnex learns its public key from
- * the app itself (GET {url}/.well-known/shopnex-app.json), so the only setting is the app's URL; without it the
- * app is left alone. The URL is operator config, which is why the key is trusted.
+ * the app itself (GET {url}/.well-known/shopnex-app.json). The address is operator config, which is why the key is
+ * trusted: either <NAME>_APP_URL, or, with SHOPNEX_BUNDLED_APPS=docker (the Compose files), the app's default
+ * internal address on the Compose network, where the app announces its own public URL. Otherwise it is left alone.
  */
 const BUNDLED_APPS = [
   {
     clientId: 'app_stripe',
     urlEnv: 'STRIPE_APP_URL',
+    internalUrl: 'http://stripe:4600',
     name: 'Stripe',
     description: 'Accept card payments, Apple Pay and Google Pay with Stripe Checkout.',
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
+  },
+  {
+    clientId: 'app_cj_dropshipping',
+    urlEnv: 'CJ_DROPSHIPPING_APP_URL',
+    internalUrl: 'http://cj-dropshipping:4700',
+    name: 'CJ Dropshipping',
+    description: 'Import CJ Dropshipping products and send paid orders to CJ.',
+    // write_shipping: quote CJ's shipping prices at checkout (a carrier service)
+    scopes: ['write_products', 'write_orders', 'write_shipping'] as ApiScope[],
   },
 ]
 
 type BundledApp = (typeof BUNDLED_APPS)[number]
 
-async function syncBundledApp(bundled: BundledApp, url: string) {
-  const res = await fetch(`${url}/.well-known/shopnex-app.json`, {
+// An announced public URL is shown to staff and opened in their browser: https, or plain http on this machine only
+function publicOrigin(value: unknown) {
+  if (typeof value !== 'string') return null
+  try {
+    const url = new URL(value)
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    return url.protocol === 'https:' || (url.protocol === 'http:' && local) ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+/** `url` is the operator's <NAME>_APP_URL; without it the app is at its internal address and announces its own */
+async function syncBundledApp(bundled: BundledApp, url: string | undefined) {
+  const reach = url ?? bundled.internalUrl
+  const res = await fetch(`${serverUrl(reach)}/.well-known/shopnex-app.json`, {
     redirect: 'error',
     signal: AbortSignal.timeout(5000),
   })
-  if (!res.ok) throw new Error(`${url} answered ${res.status}`)
-  const identity = (await res.json()) as { clientId?: string; publicKey?: string }
+  if (!res.ok) throw new Error(`${reach} answered ${res.status}`)
+  const identity = (await res.json()) as { clientId?: string; publicKey?: string; appUrl?: string }
   if (identity.clientId !== bundled.clientId || typeof identity.publicKey !== 'string') {
-    throw new Error(`${url} is not the ${bundled.name} app`)
+    throw new Error(`${reach} is not the ${bundled.name} app`)
   }
   await importPublicKey(identity.publicKey) // throws unless it's an Ed25519 key
+  const appUrl = url ?? publicOrigin(identity.appUrl)
+  if (!appUrl) throw new Error(`${reach} announced no usable public URL (https, or http on localhost)`)
+  if (!url) rememberInternalUrl(appUrl, bundled.internalUrl)
   const values = {
-    source: 'custom' as const,
+    source: 'bundled' as const,
     name: bundled.name,
     description: bundled.description,
-    iconUrl: `${url}/icon.svg`,
-    appUrl: url,
+    iconUrl: `${appUrl}/icon.svg`,
+    appUrl,
     redirectUrls: [],
     scopes: normalizeScopes(bundled.scopes),
     publicKey: identity.publicKey,
@@ -650,21 +734,23 @@ async function syncBundledApp(bundled: BundledApp, url: string) {
 }
 
 /**
- * Registers the configured bundled apps. The app may start after Shopnex, so a failure is retried with a growing
- * delay; once registered it is checked again now and then, which picks up a replaced key (the app's data folder
- * was recreated: it is a new app and merchants reconnect).
+ * Registers the bundled apps that are configured or, under Docker, found. The app may start after Shopnex (or not
+ * at all: an optional app), so a failure is retried with a growing delay; once registered it is checked again now
+ * and then, which picks up a replaced key (the app's data folder was recreated: it is a new app and merchants
+ * reconnect). An app that is not configured and not answering is not an error, so it is retried quietly.
  */
 export function registerBundledApps() {
+  const docker = process.env.SHOPNEX_BUNDLED_APPS === 'docker'
   for (const bundled of BUNDLED_APPS) {
-    const url = process.env[bundled.urlEnv]?.trim().replace(/\/$/, '')
-    if (!url) continue
+    const url = process.env[bundled.urlEnv]?.trim().replace(/\/$/, '') || undefined
+    if (!url && !docker) continue
     const attempt = async (failures: number) => {
       let next = 10 * 60_000
       try {
         await syncBundledApp(bundled, url)
         failures = 0
       } catch (error) {
-        if (failures === 0)
+        if (failures === 0 && url)
           console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
         next = Math.min(5000 * 2 ** failures, 60_000)
         failures++

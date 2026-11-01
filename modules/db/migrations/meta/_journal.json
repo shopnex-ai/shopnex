@@ -229,22 +229,29 @@
     {
       "idx": 32,
       "version": "7",
-      "when": 1793161642151,
-      "tag": "0032_ai_capabilities",
+      "when": 1793246318394,
+      "tag": "0032_carrier_services",
       "breakpoints": true
     },
     {
       "idx": 33,
       "version": "7",
-      "when": 1793165996230,
-      "tag": "0033_ai_settings",
+      "when": 1793337273628,
+      "tag": "0033_bundled_apps_source",
       "breakpoints": true
     },
     {
       "idx": 34,
       "version": "7",
-      "when": 1793173539596,
-      "tag": "0034_ai_more_capabilities",
+      "when": 1793356886522,
+      "tag": "0034_domain_verification",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793513501577,
+      "tag": "0035_ai_capabilities",
       "breakpoints": true
     }
   ]

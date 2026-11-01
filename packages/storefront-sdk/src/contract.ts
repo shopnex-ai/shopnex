@@ -9,7 +9,10 @@ import {
   CartLineUpdateInput,
   CheckoutOptions,
   Collection,
+  Customer,
+  CustomerOrder,
   MailingAddressInput,
+  Money,
   ConnectionArgs,
   Menu,
   Page,
@@ -29,9 +32,47 @@ export const storefrontErrorMap = {
   MERCHANDISE_NOT_FOUND: { status: 404, data: z.object({ merchandiseIds: z.array(z.uuid()) }) },
   OUT_OF_STOCK: { status: 400, data: z.object({ merchandiseId: z.uuid(), available: z.number().int() }) },
   EMPTY_CART: { status: 400 },
+  /** No customer token, or it expired: sign in again */
+  UNAUTHORIZED: { status: 401 },
+  INVALID_CODE: { status: 400 },
+  TOO_MANY_REQUESTS: { status: 429 },
+  /** The shop doesn't send email (or turned the sign-in code off), so customers can't sign in */
+  CUSTOMER_LOGIN_UNAVAILABLE: { status: 503 },
 }
 
-const { NOT_FOUND, EMPTY_CART, ...cartOnlyErrors } = storefrontErrorMap
+// Narrow a product listing. Values within one filter match any; different filters all apply.
+const ProductFilterArgs = {
+  /** Words in the title, vendor, product type, tags or a variant's SKU (case-insensitive substring) */
+  query: z.string().trim().max(200).optional(),
+  vendor: z.array(z.string()).max(50).optional(),
+  productType: z.array(z.string()).max(50).optional(),
+  tag: z.array(z.string()).max(50).optional(),
+  /** A variant priced within this range, in minor units of the shop's currency (cents for USD) */
+  minPrice: z.coerce.number().int().min(0).optional(),
+  maxPrice: z.coerce.number().int().min(0).optional(),
+  /** Only products with a variant that can be bought */
+  available: z.stringbool().or(z.boolean()).optional(),
+}
+
+const FacetValue = z.object({ value: z.string(), count: z.number().int() })
+
+const ProductFacets = z.object({
+  vendors: z.array(FacetValue),
+  productTypes: z.array(FacetValue),
+  tags: z.array(FacetValue),
+  /** Lowest and highest variant price; null when nothing matches */
+  price: z.object({ min: Money, max: Money }).nullable(),
+})
+
+const {
+  NOT_FOUND,
+  UNAUTHORIZED,
+  INVALID_CODE,
+  TOO_MANY_REQUESTS,
+  CUSTOMER_LOGIN_UNAVAILABLE,
+  EMPTY_CART,
+  ...cartOnlyErrors
+} = storefrontErrorMap
 const notFound = { NOT_FOUND }
 const cartErrors = { NOT_FOUND, ...cartOnlyErrors }
 
@@ -50,9 +91,15 @@ export const storefrontContract = {
           /** Default: MANUAL with a collection, else newest first. Explicit keys sort ascending unless `reverse`. */
           sortKey: ProductSortKey.optional(),
           reverse: z.stringbool().or(z.boolean()).default(false),
+          ...ProductFilterArgs,
         }),
       )
       .output(connection(Product)),
+    /** The values a filter UI can offer for the same `collection` / `query` (what `list` would search) */
+    facets: oc
+      .route({ method: 'GET', path: '/storefront/products/facets' })
+      .input(z.object({ collection: z.string().optional(), query: ProductFilterArgs.query }))
+      .output(ProductFacets),
     get: oc
       .route({ method: 'GET', path: '/storefront/products/{id}' })
       .input(z.object({ id: z.uuid() }))
@@ -196,6 +243,47 @@ export const storefrontContract = {
       ),
   }),
 
+  // Customer accounts: sign in with a code emailed to the customer. Shopify's Customer Account API is a separate
+  // OAuth API; here it is part of this one. Send the token from `signIn` in the x-shopnex-customer-token header.
+  customer: oc.tag('Storefront · Customer').router({
+    /** Emails a sign-in code. The answer is the same whether or not the address has an account. */
+    requestCode: oc
+      .route({ method: 'POST', path: '/storefront/customer/code' })
+      .input(z.object({ email: z.email().max(254) }))
+      .errors({ TOO_MANY_REQUESTS, CUSTOMER_LOGIN_UNAVAILABLE })
+      .output(z.object({ success: z.literal(true) })),
+    /** Checks the code. A first sign-in creates the account; earlier guest orders with this email join it. */
+    signIn: oc
+      .route({ method: 'POST', path: '/storefront/customer/sign-in' })
+      .input(z.object({ email: z.email().max(254), code: z.string().trim().min(4).max(12) }))
+      .errors({ INVALID_CODE })
+      .output(z.object({ token: z.string(), customer: Customer })),
+    signOut: oc
+      .route({ method: 'POST', path: '/storefront/customer/sign-out' })
+      .output(z.object({ success: z.literal(true) })),
+    get: oc.route({ method: 'GET', path: '/storefront/customer' }).errors({ UNAUTHORIZED }).output(Customer),
+    update: oc
+      .route({ method: 'PATCH', path: '/storefront/customer' })
+      .input(
+        z.object({
+          name: z.string().trim().min(1).max(200).optional(),
+          phone: z.string().trim().max(40).nullable().optional(),
+        }),
+      )
+      .errors({ UNAUTHORIZED })
+      .output(Customer),
+    orders: oc
+      .route({ method: 'GET', path: '/storefront/customer/orders' })
+      .input(ConnectionArgs)
+      .errors({ UNAUTHORIZED })
+      .output(connection(CustomerOrder)),
+    order: oc
+      .route({ method: 'GET', path: '/storefront/customer/orders/{id}' })
+      .input(z.object({ id: z.uuid() }))
+      .errors({ UNAUTHORIZED, NOT_FOUND })
+      .output(CustomerOrder),
+  }),
+
   // ≠ Shopify: Storefront API can't place orders (hosted checkout only). Ours can, for headless checkouts.
   checkout: oc.tag('Storefront · Checkout').router({
     /** Shipping rates (priced for this cart), payment methods, and the cost for a rate + address */
@@ -205,13 +293,17 @@ export const storefrontContract = {
         z.object({
           cartId: z.string(),
           /** For `cost`; defaults to the first rate */
-          shippingRateId: z.uuid().optional(),
-          /** For `cost.totalTaxAmount` (ISO 3166-1 alpha-2) */
+          shippingRateId: z.string().max(200).optional(),
+          /** For `cost.totalTaxAmount` (ISO 3166-1 alpha-2), and to ask the shop's carrier services for live rates */
           countryCode: z
             .string()
             .regex(/^[A-Z]{2}$/)
             .optional(),
           province: z.string().trim().max(100).optional(),
+          /** With countryCode: what carrier services use to quote shipping */
+          city: z.string().trim().max(100).optional(),
+          zip: z.string().trim().max(20).optional(),
+          address1: z.string().trim().max(200).optional(),
         }),
       )
       .errors(notFound)
@@ -226,7 +318,7 @@ export const storefrontContract = {
           phone: z.string().trim().max(40).optional(),
           shippingAddress: MailingAddressInput.optional(),
           /** From checkout.options; defaults to the first rate. No rates configured = no shipping charge */
-          shippingRateId: z.uuid().optional(),
+          shippingRateId: z.string().max(200).optional(),
           /** From checkout.options; defaults to the first method */
           paymentMethodId: z.uuid().optional(),
           note: z.string().trim().max(1000).optional(),

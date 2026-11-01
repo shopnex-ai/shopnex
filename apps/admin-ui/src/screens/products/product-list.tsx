@@ -51,7 +51,9 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
               <ImageIcon className="size-4 text-muted-foreground" />
             )}
           </div>
-          <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>{p.title}</span>
+          <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>
+            {p.title}
+          </span>
         </div>
       ),
       meta: { className: 'w-96 max-w-96' },
@@ -68,7 +70,9 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
       id: 'channels',
       header: 'Sales channels',
       cell: ({ row }) =>
-        publishedOn(row.original.publications, channels) ?? <span className="text-muted-foreground">Not published</span>,
+        publishedOn(row.original.publications, channels) ?? (
+          <span className="text-muted-foreground">Not published</span>
+        ),
     }),
     col.display({ id: 'inventory', header: 'Inventory', cell: ({ row }) => inventory(row.original) }),
     col.display({
@@ -117,15 +121,17 @@ export function ProductList({ currency }: { currency: string }) {
         error={error}
         empty={search ? `No products match “${search}”.` : 'No products yet. Create one to start selling.'}
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
-        selectionActions={(ids, clearSelection) => <DeleteSelectedButton
-          ids={ids}
-          entity={ids.length === 1 ? 'product' : 'products'}
-          remove={(selected) => client.admin.products.deleteMany({ ids: selected })}
-          onDeleted={async () => {
-            clearSelection()
-            await queryClient.invalidateQueries({ queryKey: orpc.admin.products.key() })
-          }}
-        />}
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'product' : 'products'}
+            remove={(selected) => client.admin.products.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.products.key() })
+            }}
+          />
+        )}
       />
     </div>
   )
