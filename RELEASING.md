@@ -40,6 +40,9 @@ commands.
 
 ## Notes
 
+- The release workflow puts the first image from each pull request's description under its entry in the
+  generated notes (`scripts/release-notes-images.mjs`). PRs without an image just list their title, and a failure
+  there never fails the release. Ask contributors for a screenshot on visible changes (see `CONTRIBUTING.md`).
 - Tags with a suffix (e.g. `v0.8.0-rc.1`) are published as pre-releases.
 - Stable releases also move the `latest` GHCR tag, and `docker save` archives of
   both images are attached to the release as assets.
