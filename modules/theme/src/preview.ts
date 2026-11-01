@@ -1,9 +1,10 @@
 // Preview tokens let the theme editor's iframe show the draft: the storefront page gets the token in its
 // URL and passes it to `storefront.theme.get`, which returns that library copy's draft instead of what the
 // live theme published (so unpublished copies can be previewed too).
-// Format: base64url(JSON payload) "." base64url(HMAC-SHA256). Signed with BETTER_AUTH_SECRET under its own
+// Format: base64url(JSON payload) "." base64url(HMAC-SHA256). Signed with SHOPNEX_SECRET under its own
 // label, so a preview token is never valid as anything else.
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { shopnexSecret } from '@shopnex/db/secrets'
 
 const TTL_SECONDS = 60 * 60
 const LABEL = 'shopnex:theme-preview:v1'
@@ -12,9 +13,7 @@ const LABEL = 'shopnex:theme-preview:v1'
 type Payload = { shop: string; copy: string; exp: number }
 
 function key() {
-  const secret = process.env.BETTER_AUTH_SECRET
-  if (!secret) throw new Error('BETTER_AUTH_SECRET is not set')
-  return createHmac('sha256', secret).update(LABEL).digest()
+  return createHmac('sha256', shopnexSecret()).update(LABEL).digest()
 }
 
 const sign = (body: string) => createHmac('sha256', key()).update(body).digest('base64url')

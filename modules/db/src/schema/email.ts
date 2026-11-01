@@ -35,7 +35,7 @@ export const emailSettings = pgTable('email_settings', {
     .primaryKey()
     .references(() => shops.id, { onDelete: 'cascade' }),
   config: jsonb('config').$type<SmtpConfig>().notNull(),
-  // AES-256-GCM, keyed from BETTER_AUTH_SECRET (see @shopnex/db/secrets); null without a login
+  // AES-256-GCM, keyed from SHOPNEX_SECRET (see @shopnex/db/secrets); null without a login
   password: text('password'),
   // Off keeps the setup, so switching back on doesn't mean typing it again
   active: boolean('active').notNull().default(false),

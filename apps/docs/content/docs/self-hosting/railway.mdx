@@ -4,7 +4,8 @@ description: Deploy Shopnex on Railway with Postgres and a persistent volume.
 ---
 
 <Callout title="Template pending">
-  The one-click Railway template is not published yet. Until it is, follow the manual steps below; they produce the same setup.
+  The one-click Railway template is not published yet. Until it is, follow the manual steps below; they produce the same
+  setup.
 </Callout>
 
 Railway runs the prebuilt image, so nothing is built on your account.
@@ -15,12 +16,13 @@ Railway runs the prebuilt image, so nothing is built on your account.
 2. Add a service from the Docker image `ghcr.io/shopnex-ai/shopnex:latest`.
 3. Under the service's **Variables**, set:
 
-   | Variable | Value |
-   | --- | --- |
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-   | `APP_URL` | `https://${{RAILWAY_PUBLIC_DOMAIN}}` |
-   | `TENANCY_MODE` | `single` |
-   | `BETTER_AUTH_SECRET` | `${{secret(64)}}` |
+   | Variable             | Value                                |
+   | -------------------- | ------------------------------------ |
+   | `DATABASE_URL`       | `${{Postgres.DATABASE_URL}}`         |
+   | `APP_URL`            | `https://${{RAILWAY_PUBLIC_DOMAIN}}` |
+   | `TENANCY_MODE`       | `single`                             |
+   | `BETTER_AUTH_SECRET` | `${{secret(64)}}`                    |
+   | `SHOPNEX_SECRET`     | `${{secret(64)}}`                    |
 
 4. Add a **volume** to the service mounted at `/data`.
 5. Under **Settings → Networking**, generate a public domain. Set the service port to `3000` if Railway doesn't detect it.
@@ -29,5 +31,6 @@ Railway runs the prebuilt image, so nothing is built on your account.
 On start the image runs the database migrations, so updates are a redeploy. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
 <Callout type="warn">
-  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+  Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
+  first.
 </Callout>

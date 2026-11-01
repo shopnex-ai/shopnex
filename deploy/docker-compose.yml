@@ -45,6 +45,7 @@ services:
       APP_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
       BETTER_AUTH_URL: ${APP_URL:-${DOMAIN:+https://}${DOMAIN:-http://localhost:3000}}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      SHOPNEX_SECRET: ${SHOPNEX_SECRET:-}
       TENANCY_MODE: single
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network

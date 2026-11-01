@@ -35,7 +35,7 @@ export const storageBackends = pgTable(
       .notNull()
       .references(() => shops.id, { onDelete: 'cascade' }),
     config: jsonb('config').$type<S3Config>().notNull(),
-    // AES-256-GCM, keyed from BETTER_AUTH_SECRET (see @shopnex/files secrets)
+    // AES-256-GCM, keyed from SHOPNEX_SECRET (see @shopnex/files secrets)
     secretAccessKey: text('secret_access_key').notNull(),
     // No active row = new uploads go to the server's disk
     active: boolean('active').notNull().default(false),
