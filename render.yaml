@@ -11,6 +11,8 @@ services:
         fromDatabase: { name: shopnex-db, property: connectionString }
       - key: BETTER_AUTH_SECRET
         generateValue: true
+      - key: SHOPNEX_SECRET
+        generateValue: true
       - key: TENANCY_MODE
         value: single
       - key: DEFAULT_SHOP_NAME

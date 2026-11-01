@@ -43,7 +43,7 @@ export const aiSettings = pgTable('ai_settings', {
   brandVoice: text('brand_voice').notNull().default(''),
   // Turning it off keeps the key; it only stops being used
   enabled: boolean('enabled').notNull().default(true),
-  // AES-256-GCM, keyed from BETTER_AUTH_SECRET (see @shopnex/db/secrets)
+  // AES-256-GCM, keyed from SHOPNEX_SECRET (see @shopnex/db/secrets)
   apiKey: text('api_key').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

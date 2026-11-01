@@ -1,13 +1,18 @@
 // Secrets stored in the database (storage and email credentials): AES-256-GCM with a key derived from
-// BETTER_AUTH_SECRET under its own label. Format: v1.{iv}.{tag}.{ciphertext}, base64url.
+// SHOPNEX_SECRET under its own label. Format: v1.{iv}.{tag}.{ciphertext}, base64url.
 import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto'
 
 const LABEL = 'shopnex:stored-secret:v1'
 
+/** The instance secret for everything Shopnex encrypts or signs itself */
+export function shopnexSecret() {
+  const secret = process.env.SHOPNEX_SECRET
+  if (!secret) throw new Error('SHOPNEX_SECRET is not set')
+  return secret
+}
+
 function key() {
-  const secret = process.env.BETTER_AUTH_SECRET
-  if (!secret) throw new Error('BETTER_AUTH_SECRET is not set')
-  return createHmac('sha256', secret).update(LABEL).digest()
+  return createHmac('sha256', shopnexSecret()).update(LABEL).digest()
 }
 
 export function encryptSecret(plain: string) {

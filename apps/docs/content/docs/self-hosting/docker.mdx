@@ -20,11 +20,11 @@ docker run -p 3000:3000 \
   shopnex
 ```
 
-The image generates `BETTER_AUTH_SECRET` into `/data` if you don't set one, so keep that volume.
+The image generates `SHOPNEX_SECRET` into `/data` if you don't set one, so keep that volume.
 
 On start, `deploy/start.sh`:
 
-1. requires `DATABASE_URL`, generates `BETTER_AUTH_SECRET` if unset, and defaults `BETTER_AUTH_URL` to `APP_URL`;
+1. requires `DATABASE_URL`, generates `SHOPNEX_SECRET` if unset, and defaults `BETTER_AUTH_URL` to `APP_URL`;
 2. checks that the database is reachable and exits with the connection error if not;
 3. runs `pnpm db:migrate`;
 4. starts the admin (port 3001), the storefront (port 4321) and Caddy on `$PORT` (default 3000).

@@ -34,6 +34,8 @@ old() { sed -n "s/^$1=//p" .env 2>/dev/null | head -n 1; }
 DOMAIN="${SHOPNEX_DOMAIN:-$(old DOMAIN)}"
 SECRET="$(old BETTER_AUTH_SECRET)"
 [ -n "$SECRET" ] || SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+SNX_SECRET="$(old SHOPNEX_SECRET)"
+[ -n "$SNX_SECRET" ] || SNX_SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 if [ -n "$DOMAIN" ]; then
   APP_URL="https://$DOMAIN"; STRIPE_URL="https://stripe.$DOMAIN"
 else
@@ -41,8 +43,8 @@ else
   APP_URL="http://$IP:3000"; STRIPE_URL="http://$IP:4600"
 fi
 # chmod first: a umask does not apply under a default ACL, and `>` keeps the mode of an existing file
-touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nBETTER_AUTH_SECRET=%s\n' \
-  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SECRET" > .env
+touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nBETTER_AUTH_SECRET=%s\nSHOPNEX_SECRET=%s\n' \
+  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SECRET" "$SNX_SECRET" > .env
 
 docker compose pull -q
 docker compose up -d --remove-orphans

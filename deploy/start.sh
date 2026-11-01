@@ -7,18 +7,22 @@ set -e
 export APP_URL="${APP_URL:-$RENDER_EXTERNAL_URL}"
 export BETTER_AUTH_URL="${BETTER_AUTH_URL:-$APP_URL}"
 
-# No secret given: generate one once and keep it on the /data volume, so restarts keep sessions
-# and the provider keys encrypted with it. Without a volume it is regenerated on every start.
-if [ -z "$BETTER_AUTH_SECRET" ]; then
-  SECRET_FILE="${DATA_DIR:-/data}/better-auth-secret"
-  if [ ! -s "$SECRET_FILE" ]; then
-    mkdir -p "$(dirname "$SECRET_FILE")"
-    (umask 077 && head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$SECRET_FILE")
-    echo "BETTER_AUTH_SECRET not set: generated one at $SECRET_FILE. Mount a volume on $(dirname "$SECRET_FILE") or set BETTER_AUTH_SECRET to keep it across redeploys." >&2
+# Two independent secrets: BETTER_AUTH_SECRET signs sessions (Better Auth), SHOPNEX_SECRET encrypts the
+# provider keys saved in the admin and signs preview links. One not given is generated once and kept on
+# the /data volume, so restarts keep sessions and stored keys. Without a volume it is regenerated on every start.
+ensure_secret() {
+  local name="$1" file="$2" path="${DATA_DIR:-/data}/$2"
+  if [ -z "${!name}" ]; then
+    if [ ! -s "$path" ]; then
+      mkdir -p "$(dirname "$path")"
+      (umask 077 && head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$path")
+      echo "$name not set: generated one at $path. Mount a volume on $(dirname "$path") or set $name to keep it across redeploys." >&2
+    fi
+    export "$name=$(cat "$path")"
   fi
-  BETTER_AUTH_SECRET="$(cat "$SECRET_FILE")"
-fi
-export BETTER_AUTH_SECRET
+}
+ensure_secret BETTER_AUTH_SECRET better-auth-secret
+ensure_secret SHOPNEX_SECRET shopnex-secret
 : "${DATABASE_URL:?set DATABASE_URL}"
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321

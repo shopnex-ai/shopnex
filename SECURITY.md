@@ -21,13 +21,13 @@ server or admin account, and findings on instances you do not own.
 
 ## Supported versions
 
-| Version | Supported |
-| ------- | --------- |
-| 0.8.x and newer | Yes |
-| Older than 0.8 | No |
+| Version         | Supported |
+| --------------- | --------- |
+| 0.8.x and newer | Yes       |
+| Older than 0.8  | No        |
 
 Security fixes are released for 0.8 and newer, with the latest release first. Upgrade to a supported version and keep
-`BETTER_AUTH_SECRET` private and unique per deployment.
+`BETTER_AUTH_SECRET` and `SHOPNEX_SECRET` private and unique per deployment.
 
 ## Notes for operators
 
