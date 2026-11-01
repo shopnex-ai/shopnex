@@ -38,6 +38,16 @@ else
   export SITE_ADDRESS=":$PUBLIC_PORT" AUTO_HTTPS_OPT="auto_https off" APPS_CADDYFILE="no-apps-*.caddy"
 fi
 
+# Multi-tenant shops live at <slug>.ROOT_DOMAIN: serve the wildcard next to the admin host. A wildcard certificate
+# needs the DNS-01 challenge, so its `tls { dns … }` block goes in a file named by SITE_TLS_FILE (Caddy built with
+# your DNS provider's plugin). Behind a CDN that terminates TLS (Cloudflare…), leave it unset.
+if [ -n "$DOMAIN" ] && [ "$TENANCY_MODE" = "multi" ] && [ -n "$ROOT_DOMAIN" ]; then
+  root="${ROOT_DOMAIN#*://}"
+  root="${root%%[:/]*}"
+  export SITE_ADDRESS="$DOMAIN, *.$root"
+fi
+export SITE_TLS_FILE="${SITE_TLS_FILE:-no-tls-*.caddy}"
+
 # Caddy serves the bundled storefront on the app's own origin, so a single shop that hasn't saved a
 # Storefront URL in Settings (Themes, editor preview) uses that one.
 export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"

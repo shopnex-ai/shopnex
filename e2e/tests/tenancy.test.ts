@@ -1,7 +1,7 @@
 // Shop isolation end to end: what a token or a publishable key reaches depends on its shop and nothing else.
 // The server runs in single mode (one default shop), so a second shop is created in the database; tokens and
 // keys of that shop are resolved by the same code that separates shops in multi mode. Host-based resolution
-// (TENANCY_MODE=multi) needs its own server and isn't covered here.
+// (TENANCY_MODE=multi) is in multi-host.test.ts.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'

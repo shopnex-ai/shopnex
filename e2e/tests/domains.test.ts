@@ -2,7 +2,7 @@
 // them, and that a domain belongs to one shop. DNS isn't available here, so verification is expected to fail
 // until the row is marked verified directly. The server runs in single mode (the admin always acts in the default
 // shop), so a second shop is driven through the service rather than the API; host-based resolution itself needs
-// TENANCY_MODE=multi (see tenancy.test.ts).
+// TENANCY_MODE=multi (see multi-host.test.ts).
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, like } from 'drizzle-orm'
