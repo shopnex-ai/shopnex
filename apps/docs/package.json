@@ -16,9 +16,9 @@
     "@orpc/zod": "^1.16.1",
     "@shopnex/api": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
-    "fumadocs-core": "16.17.8",
+    "fumadocs-core": "16.17.9",
     "fumadocs-mdx": "15.4.10",
-    "fumadocs-ui": "16.17.8",
+    "fumadocs-ui": "16.17.9",
     "next": "16.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
