@@ -458,7 +458,10 @@ export async function listCatalog(shopId: string) {
     )
     .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows.map((r) => ({
+  const offered = rows.filter(
+    (r) => r.app.source !== 'bundled' || r.installationId !== null || reachableBundled.has(r.app.clientId),
+  )
+  return offered.map((r) => ({
     ...publicApp(r.app),
     origin: r.app.source,
     installationId: r.installationId,
@@ -688,6 +691,9 @@ const BUNDLED_APPS = [
 
 type BundledApp = (typeof BUNDLED_APPS)[number]
 
+// Bundled apps that answered at their last check. An optional app that isn't running isn't offered in the catalog.
+const reachableBundled = new Set<string>()
+
 // An announced public URL is shown to staff and opened in their browser: https, or plain http on this machine only
 function publicOrigin(value: unknown) {
   if (typeof value !== 'string') return null
@@ -748,10 +754,12 @@ export function registerBundledApps() {
       let next = 10 * 60_000
       try {
         await syncBundledApp(bundled, url)
+        reachableBundled.add(bundled.clientId)
         failures = 0
       } catch (error) {
         if (failures === 0 && url)
           console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
+        reachableBundled.delete(bundled.clientId)
         next = Math.min(5000 * 2 ** failures, 60_000)
         failures++
       }
