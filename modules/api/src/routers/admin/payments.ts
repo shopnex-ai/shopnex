@@ -45,6 +45,14 @@ export const paymentSessions = {
       view(await paymentService.resolve(context.shop.id, context.appId, input.id, { externalId: input.externalId })),
     ),
 
+  // One attempt failed (card declined…) but the buyer can retry on the same page: the session stays open.
+  attemptFailed: paymentsApp
+    .route({ method: 'POST', path: '/admin/payment-sessions/{id}/attempt-failed' })
+    .input(id.extend({ reason: z.string().trim().min(1).max(500) }))
+    .handler(async ({ input, context }) =>
+      view(await paymentService.attemptFailed(context.shop.id, context.appId, input.id, { reason: input.reason })),
+    ),
+
   // Declined or failed at the provider. Idempotent; the buyer can try again.
   reject: paymentsApp
     .route({ method: 'POST', path: '/admin/payment-sessions/{id}/reject' })

@@ -165,6 +165,69 @@ describe('payments app: payment sessions', () => {
     ok(await call('POST', `/admin/payment-sessions/${id}/reject`, { reason: 'late' }, auth), 409)
   })
 
+  test('a rejected session still resolves when the provider took the money anyway', async () => {
+    const placed = await checkout()
+    const { id } = sessionOf(placed.orderId)
+    ok(await call('POST', `/admin/payment-sessions/${id}/reject`, { reason: 'Checkout expired' }, auth))
+    assert.equal((await order(placed.orderId)).financialStatus, 'pending')
+    const resolved = ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_late' }, auth))
+    assert.equal(resolved.status, 'resolved')
+    assert.equal((await order(placed.orderId)).financialStatus, 'paid')
+    // …once: the same event again doesn't record a second sale
+    ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_late' }, auth))
+    const sales = await db
+      .select()
+      .from(schema.orderTransactions)
+      .where(eq(schema.orderTransactions.orderId, placed.orderId))
+    assert.equal(sales.length, 1)
+  })
+
+  test('attempt-failed records why a card was declined and keeps the session open', async () => {
+    const placed = await checkout()
+    const { id } = sessionOf(placed.orderId)
+    const body = { reason: 'Your card was declined.' }
+    const noted = ok(await call('POST', `/admin/payment-sessions/${id}/attempt-failed`, body, auth))
+    assert.equal(noted.status, 'pending')
+    assert.equal(noted.errorMessage, 'Your card was declined.')
+    ok(await call('POST', `/admin/payment-sessions/${id}/attempt-failed`, body, auth))
+    assert.equal((await order(placed.orderId)).financialStatus, 'pending')
+    // The buyer retries and pays on the same session
+    const resolved = ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_retry' }, auth))
+    assert.equal(resolved.status, 'resolved')
+    assert.equal(resolved.errorMessage, null)
+    assert.equal((await order(placed.orderId)).financialStatus, 'paid')
+  })
+
+  test('attempt-failed never changes a paid or rejected session, and needs the scope', async () => {
+    const paidOrder = await checkout()
+    const paidId = sessionOf(paidOrder.orderId).id
+    ok(await call('POST', `/admin/payment-sessions/${paidId}/resolve`, { externalId: 'pi_paid' }, auth))
+    const afterPaid = ok(
+      await call('POST', `/admin/payment-sessions/${paidId}/attempt-failed`, { reason: 'late' }, auth),
+    )
+    assert.equal(afterPaid.status, 'resolved')
+    assert.equal(afterPaid.errorMessage, null)
+
+    const rejectedOrder = await checkout()
+    const rejectedId = sessionOf(rejectedOrder.orderId).id
+    ok(await call('POST', `/admin/payment-sessions/${rejectedId}/reject`, { reason: 'Checkout expired' }, auth))
+    const afterReject = ok(
+      await call('POST', `/admin/payment-sessions/${rejectedId}/attempt-failed`, { reason: 'late' }, auth),
+    )
+    assert.equal(afterReject.status, 'rejected')
+    assert.equal(afterReject.errorMessage, 'Checkout expired')
+
+    ok(
+      await call(
+        'POST',
+        `/admin/payment-sessions/${rejectedId}/attempt-failed`,
+        { reason: 'x' },
+        await fx.token(['write_orders']),
+      ),
+      403,
+    )
+  })
+
   test('a token without the payment session scope is refused', async () => {
     const placed = await checkout()
     const { id } = sessionOf(placed.orderId)
