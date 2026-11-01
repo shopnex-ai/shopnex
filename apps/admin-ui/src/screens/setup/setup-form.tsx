@@ -34,9 +34,7 @@ export function SetupForm() {
     <Card>
       <CardHeader>
         <CardTitle>Welcome to Shopnex</CardTitle>
-        <CardDescription>
-          Create the owner account. Next you'll name your shop and set up payments and shipping.
-        </CardDescription>
+        <CardDescription>Create the owner account. Next you'll name your shop and pick its currency.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
