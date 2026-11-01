@@ -12,7 +12,8 @@ Rule: if a merchant has to touch code, the CLI or `.env` to do something, it's a
 - ✅ shipping: flat rates with optional free-shipping threshold (one zone: every address)
 - ✅ admin: create products; orders (#1001 numbers, Unpaid/Unfulfilled/Cancelled views, mark as paid, fulfill with tracking, cancel with restock); settings (shop, storefront URL, shipping, payments, storefront keys)
 - ✅ admin: staff (invite by link, roles admin/staff, remove); open sign-up closed
-- admin: discounts, shipping, taxes, rest of the pages from v1
+- ✅ admin: discounts (codes, import/export), taxes (Settings → Taxes), shipping (Settings → Shipping); applied at checkout
+- admin: rest of the pages from v1
 - default storefront: the bundled Astro storefront (`templates/storefront`) runs alongside the app out of the box — no separate setup or publishable key needed
 - ✅ themes: theme library (Online store → Themes: current theme, change theme, copies with draft/publish), one storefront with several themes (Storeplate first)
 - storefront: product search and filters (needs `query`/vendor/tag/price filters on `products.list`)
