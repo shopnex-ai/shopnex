@@ -36,7 +36,9 @@ export function AiCard() {
         </CardDescription>
         {data && (
           <CardAction>
-            <Badge variant={data.settings ? 'default' : 'secondary'}>{data.settings ? 'On' : 'Off'}</Badge>
+            <Badge variant={data.settings?.enabled ? 'default' : 'secondary'}>
+              {data.settings?.enabled ? 'On' : 'Off'}
+            </Badge>
           </CardAction>
         )}
       </CardHeader>
@@ -83,7 +85,7 @@ function AiForm({ data }: { data: Data }) {
 
   const off = async () => {
     try {
-      await saved(await turnOff.mutateAsync({}), 'AI is off and the key is deleted')
+      await saved(await turnOff.mutateAsync({}), 'AI is off. Your key is kept')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not turn AI off')
     }
@@ -125,13 +127,17 @@ function AiForm({ data }: { data: Data }) {
         />
         <FormError form={form} />
         <Field orientation="horizontal" className="justify-end">
-          {data.settings && (
+          {data.settings?.enabled && (
             <Button type="button" variant="ghost" disabled={turnOff.isPending} onClick={() => void off()}>
               Turn off
             </Button>
           )}
           <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? 'Checking the key…' : 'Save'}
+            {form.formState.isSubmitting
+              ? 'Checking the key…'
+              : data.settings && !data.settings.enabled
+                ? 'Turn on'
+                : 'Save'}
           </Button>
         </Field>
       </FieldGroup>

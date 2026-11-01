@@ -2,7 +2,7 @@
 // AI, with the shop's own key) or from installed apps that register what they provide. Staff ask Shopnex, Shopnex
 // sends only the data the capability needs and returns the answer as a suggestion. Every run is kept as a
 // generation: what was asked, what came back, and whether staff used it.
-import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { apps } from './apps'
 import { shops } from './tenancy'
@@ -41,6 +41,8 @@ export const aiSettings = pgTable('ai_settings', {
   model: text('model').notNull(),
   // How the shop sounds, applied to everything written for it
   brandVoice: text('brand_voice').notNull().default(''),
+  // Turning it off keeps the key; it only stops being used
+  enabled: boolean('enabled').notNull().default(true),
   // AES-256-GCM, keyed from BETTER_AUTH_SECRET (see @shopnex/db/secrets)
   apiKey: text('api_key').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

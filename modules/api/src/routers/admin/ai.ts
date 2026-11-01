@@ -71,6 +71,6 @@ export const aiSettings = {
       }),
     ),
   turnOff: shopManager
-    .route({ method: 'DELETE', path: '/admin/ai/settings' })
+    .route({ method: 'POST', path: '/admin/ai/settings/off' })
     .handler(({ context }) => aiSettingsService.turnOff(context.shop.id)),
 }
