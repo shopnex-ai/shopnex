@@ -45,6 +45,13 @@ describe('createShop', () => {
       methods.map((m) => [m.provider, m.active, m.ready]),
       [['manual', true, true]],
     )
+
+    // The storefront header has links from the first visit, with no product or collection needed
+    const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, shop.id))
+    assert.deepEqual(
+      menus.map((m) => [m.handle, m.items.map((i) => i.type)]),
+      [['main-menu', ['frontpage', 'catalog']]],
+    )
   })
 
   test('same name twice gets a different slug', async () => {
