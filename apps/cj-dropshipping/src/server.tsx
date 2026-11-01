@@ -7,10 +7,13 @@
 //   POST /api/settings              Markup and auto-pay
 //   POST /api/import                CJ product → draft Shopnex product (already in the shop: link it instead)
 //   POST /api/link                  Tie a product already in the shop to CJ, so its orders go to CJ
+//   GET  /api/tiktok[/categories|/form]  TikTok Shop listing steps (HTML), loaded by the settings page
+//   POST /api/tiktok/list           List a CJ product on a TikTok store linked in CJ
 //   POST /api/orders/:id/retry      Send a failed order to CJ again
 //   POST /shopnex/webhook           Shopnex: order.paid → CJ order
 //   POST /shipping/rates            Shopnex: what CJ shipping costs for this cart and address (carrier service)
 //   (every 15 minutes)              CJ tracking numbers → Shopnex fulfillments
+//   (every minute)                  Open TikTok listings → their result (listed, or why not)
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -32,7 +35,8 @@ import {
 } from './import'
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
-import { icon, ProductList, SettingsPage, type MyProduct } from './settings'
+import { CategoryStep, icon, ListingForm, ProductList, SettingsPage, TikTokPanel, type MyProduct } from './settings'
+import { listProduct, loadForm, refreshListings, STORE_OK, tiktokStores } from './tiktok'
 
 // Public origin Shopnex and the admin (iframe) reach this app at
 const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
@@ -227,6 +231,93 @@ app.post('/api/link', async (c) => {
   }
 })
 
+// --- TikTok Shop (through the store the merchant linked in CJ) ---
+
+// The first step: the linked stores, My Products, and the listings so far
+app.get('/api/tiktok', async (c) => {
+  const shop = await shopnex.authenticate(c)
+  await refreshListings(shop, tables).catch((error) => console.warn('[cj] listings:', message(error)))
+  let stores: Awaited<ReturnType<typeof tiktokStores>> = []
+  let storesError: string | null = null
+  let products: { pid: string; name: string }[] = []
+  let productsError: string | null = null
+  try {
+    stores = await tiktokStores(shop)
+  } catch (error) {
+    storesError = message(error)
+  }
+  if (stores.some((s) => s.status === STORE_OK)) {
+    try {
+      const { cj } = await cjFor(shop)
+      const result = await cj.products.getMyProducts()
+      if (result.error) productsError = result.error
+      else products = myProducts(result.data).map(({ pid, name }) => ({ pid, name }))
+    } catch (error) {
+      productsError = message(error)
+    }
+  }
+  return c.html(
+    <TikTokPanel
+      stores={stores}
+      storesError={storesError}
+      products={products}
+      productsError={productsError}
+      listings={tables.listings(shop)}
+    />,
+  )
+})
+
+// One level of TikTok's categories. `path` is the ids walked so far, `names` their names (see CategoryStep).
+app.get('/api/tiktok/categories', async (c) => {
+  const shop = await shopnex.authenticate(c)
+  const { shop: cjShopId, pid, parent = '0' } = c.req.query()
+  if (!cjShopId || !pid) return c.json({ error: 'Choose a store and a product' }, 400)
+  const path = c.req.query('path')?.split(',').filter(Boolean) ?? ['0']
+  const names = c.req.query('names')?.split('|').filter(Boolean) ?? []
+  try {
+    const { cj } = await cjFor(shop)
+    const result = await cj.listing.getChildCategories({ shopId: cjShopId, parentCategoryId: parent, cjProductId: pid })
+    if (!result.data) return c.json({ error: result.error ?? 'Could not read TikTok categories' }, 502)
+    return c.html(<CategoryStep shop={cjShopId} pid={pid} path={path} names={names} categories={result.data} />)
+  } catch (error) {
+    return c.json({ error: message(error) }, 502)
+  }
+})
+
+app.get('/api/tiktok/form', async (c) => {
+  const shop = await shopnex.authenticate(c)
+  const { shop: cjShopId, pid, category, name = '' } = c.req.query()
+  if (!cjShopId || !pid || !category) return c.json({ error: 'Choose a store, a product and a category' }, 400)
+  try {
+    const form = await loadForm(shop, { cjShopId, pid, categoryId: category })
+    return c.html(
+      <ListingForm
+        shop={cjShopId}
+        pid={pid}
+        categoryId={category}
+        categoryName={name}
+        markupPercent={(await settingsOf(shop)).markupPercent}
+        {...form}
+      />,
+    )
+  } catch (error) {
+    return c.json({ error: message(error) }, 502)
+  }
+})
+
+app.post('/api/tiktok/list', async (c) => {
+  const shop = await shopnex.authenticate(c)
+  const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>
+  try {
+    const title = await foregroundTask(async () =>
+      listProduct(shop, tables, (await settingsOf(shop)).markupPercent, body),
+    )
+    return c.json({ message: `Sent "${title}" to TikTok. Its status shows here once TikTok has answered.` })
+  } catch (error) {
+    return c.json({ error: message(error) }, 422)
+  }
+})
+
 app.post('/api/orders/:id/retry', async (c) => {
   const shop = await shopnex.authenticate(c)
   const order = await shop.admin.get<PaidOrder>(`/orders/${c.req.param('id')}`)
@@ -276,5 +367,19 @@ async function pollTracking() {
   }
 }
 setInterval(() => void pollTracking(), 15 * 60_000).unref()
+
+async function pollListings() {
+  for (const { instance, shop_id } of tables.shopsListing()) {
+    let shop: ShopContext
+    try {
+      shop = await shopnex.forShop(instance, shop_id)
+    } catch (error) {
+      console.warn(`[cj] listings for ${instance} ${shop_id}:`, message(error))
+      continue
+    }
+    await refreshListings(shop, tables).catch((error) => console.error('[cj] listings:', message(error)))
+  }
+}
+setInterval(() => void pollListings(), 60_000).unref()
 
 serve({ fetch: app.fetch, port: PORT }, () => console.log(`CJ Dropshipping app on ${APP_URL} (port ${PORT})`))

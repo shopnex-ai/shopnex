@@ -1,6 +1,6 @@
 import axios, { type AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 
-import { handleCJError } from './error-handler'
+import { getCJErrorMessage, handleCJError } from './error-handler'
 
 export const cjApiClient: AxiosInstance = axios.create({
   baseURL: 'https://developers.cjdropshipping.com/api2.0/v1/',
@@ -17,6 +17,13 @@ const MIN_GAP_MS = 1500
 const nextFreeAt = new Map<string, number>()
 const RATE_LIMITED = 1600200
 type Retried = { _retried?: boolean }
+
+// A reply with a code we have no text for and no message says nothing: show what CJ sent instead
+function withDetail(body: { code: number; message?: string } | undefined, status: number) {
+  const data = body ?? ({} as { code: number; message?: string })
+  if (data.message || getCJErrorMessage(data.code) !== `Unknown error: ${data.code}`) return data
+  return { ...data, message: `HTTP ${status}, ${JSON.stringify(body ?? null).slice(0, 300)}` }
+}
 
 cjApiClient.interceptors.request.use(async (config) => {
   const lane = String(config.headers.get('CJ-Access-Token') ?? 'anonymous')
@@ -41,8 +48,9 @@ cjApiClient.interceptors.response.use(
       ;(response.config as Retried)._retried = true
       return cjApiClient.request(response.config)
     }
-    if (response.data.code !== 200) {
-      handleCJError(response.data)
+    // Some replies (the shop list) say success with code 0, so the flag counts as well as the code
+    if (response.data.code !== 200 && response.data.success !== true) {
+      handleCJError(withDetail(response.data, response.status))
     }
     return response
   },
@@ -54,7 +62,7 @@ cjApiClient.interceptors.response.use(
     }
     if (error.response) {
       // Handle CJ API errors
-      handleCJError(error.response.data as { code: number; message?: string })
+      handleCJError(withDetail(error.response.data as { code: number; message?: string }, error.response.status))
     } else if (error.request) {
       throw new Error('Network error: No response from CJ API')
     } else {

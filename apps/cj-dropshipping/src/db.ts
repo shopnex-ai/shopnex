@@ -15,6 +15,23 @@ export type ForwardedOrder = {
   createdAt: string
 }
 
+export type ListingStatus = 'PRODUCT_STAY' | 'PRODUCT_CENTRE' | 'PRODUCT_SUCCESS' | 'PRODUCT_FAIL' | 'PRODUCT_CANCEL'
+
+/** A CJ product sent to a store the merchant linked in CJ (TikTok Shop) */
+export type Listing = {
+  listedId: string
+  cjShopId: string
+  cjShopName: string
+  pid: string
+  title: string
+  status: ListingStatus
+  url: string | null
+  error: string | null
+  createdAt: string
+}
+
+export const isOpenListing = (status: ListingStatus) => status === 'PRODUCT_STAY' || status === 'PRODUCT_CENTRE'
+
 export function openTables(db: DatabaseSync) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS cj_variants (
@@ -31,6 +48,12 @@ export function openTables(db: DatabaseSync) {
       cj_order_id TEXT, status TEXT NOT NULL, error TEXT, tracking_number TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (instance, shop_id, order_id)
+    );
+    CREATE TABLE IF NOT EXISTS cj_listings (
+      instance TEXT NOT NULL, shop_id TEXT NOT NULL, listed_id TEXT NOT NULL, cj_shop_id TEXT NOT NULL,
+      cj_shop_name TEXT NOT NULL, pid TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL, url TEXT, error TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (instance, shop_id, listed_id)
     );
   `)
   const saveVariant = db.prepare('INSERT OR REPLACE INTO cj_variants VALUES (?, ?, ?, ?, ?)')
@@ -57,6 +80,21 @@ export function openTables(db: DatabaseSync) {
     "SELECT order_id, cj_order_id FROM cj_orders WHERE instance = ? AND shop_id = ? AND status = 'created'",
   )
   const shops = db.prepare("SELECT DISTINCT instance, shop_id FROM cj_orders WHERE status = 'created'")
+  const addListing = db.prepare(
+    "INSERT OR REPLACE INTO cj_listings (instance, shop_id, listed_id, cj_shop_id, cj_shop_name, pid, title, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'PRODUCT_STAY')",
+  )
+  const setListing = db.prepare(
+    'UPDATE cj_listings SET status = ?, url = ?, error = ? WHERE instance = ? AND shop_id = ? AND listed_id = ?',
+  )
+  const listings = db.prepare(
+    'SELECT listed_id, cj_shop_id, cj_shop_name, pid, title, status, url, error, created_at FROM cj_listings WHERE instance = ? AND shop_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ?',
+  )
+  const openListings = db.prepare(
+    "SELECT listed_id FROM cj_listings WHERE instance = ? AND shop_id = ? AND status IN ('PRODUCT_STAY', 'PRODUCT_CENTRE')",
+  )
+  const shopsListing = db.prepare(
+    "SELECT DISTINCT instance, shop_id FROM cj_listings WHERE status IN ('PRODUCT_STAY', 'PRODUCT_CENTRE')",
+  )
 
   return {
     saveVariant: (s: ShopContext, sku: string, pid: string, vid: string) =>
@@ -114,6 +152,33 @@ export function openTables(db: DatabaseSync) {
       })),
     awaitingTracking: (s: ShopContext) => open.all(s.instance, s.shopId) as { order_id: string; cj_order_id: string }[],
     shopsAwaitingTracking: () => shops.all() as { instance: string; shop_id: string }[],
+    addListing: (
+      s: ShopContext,
+      listedId: string,
+      store: { id: string; name: string },
+      product: { pid: string; title: string },
+    ) => void addListing.run(s.instance, s.shopId, listedId, store.id, store.name, product.pid, product.title),
+    setListing: (
+      s: ShopContext,
+      listedId: string,
+      status: ListingStatus,
+      fields: { url?: string | null; error?: string | null } = {},
+    ) => void setListing.run(status, fields.url ?? null, fields.error ?? null, s.instance, s.shopId, listedId),
+    listings: (s: ShopContext, limit = 10): Listing[] =>
+      (listings.all(s.instance, s.shopId, limit) as Record<string, any>[]).map((r) => ({
+        listedId: r.listed_id,
+        cjShopId: r.cj_shop_id,
+        cjShopName: r.cj_shop_name,
+        pid: r.pid,
+        title: r.title,
+        status: r.status,
+        url: r.url,
+        error: r.error,
+        createdAt: r.created_at,
+      })),
+    openListingIds: (s: ShopContext) =>
+      (openListings.all(s.instance, s.shopId) as { listed_id: string }[]).map((r) => r.listed_id),
+    shopsListing: () => shopsListing.all() as { instance: string; shop_id: string }[],
   }
 }
 
