@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { RESERVED_SLUGS } from './subdomains'
 
 const DEFAULT_CURRENCY = 'USD'
 
@@ -12,11 +13,13 @@ const baseSlug = (name: string) =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 40) || 'shop'
 
-// "acme", then "acme-4f2a"… until it's free (the unique index still decides if two signups race)
+// "acme", then "acme-4f2a"… until it's free; a name the platform keeps ("admin") is never free as is
+// (the unique index still decides if two signups race)
 async function uniqueSlug(conn: Pick<typeof db, 'select'>, name: string) {
   const base = baseSlug(name)
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = attempt === 0 ? base : `${base}-${randomUUID().slice(0, 4)}`
+    if (attempt === 0 && RESERVED_SLUGS.has(slug)) continue
     const [taken] = await conn.select({ id: schema.shops.id }).from(schema.shops).where(eq(schema.shops.slug, slug))
     if (!taken) return slug
   }

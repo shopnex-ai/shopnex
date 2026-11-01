@@ -1,6 +1,6 @@
 import { channelService } from '@shopnex/channels'
 import type { Shop } from '@shopnex/db/schema'
-import { isMultiTenant } from './config'
+import { ROOT_DOMAIN, isMultiTenant } from './config'
 import { getShopByStorefrontKey } from './keys'
 import {
   ensureDefaultShop,
@@ -9,7 +9,9 @@ import {
   getMembership,
   getShopByDomain,
   getShopById,
+  getShopBySlug,
 } from './shops'
+import { subdomainSlug } from './subdomains'
 
 export type ShopRole = 'owner' | 'admin' | 'member'
 
@@ -27,14 +29,13 @@ export const PUBLISHABLE_KEY_HEADER = 'x-shopnex-key'
 
 // channelId: what the storefront sees is what's published on this channel
 export type StorefrontResolution =
-  | { ok: true; shop: Shop; channelId: string }
-  | { ok: false; reason: 'invalid_key' | 'shop_not_found' }
+  { ok: true; shop: Shop; channelId: string } | { ok: false; reason: 'invalid_key' | 'shop_not_found' }
 
 // Storefront, in order:
 //   1. x-shopnex-key header → that key's shop and channel (external storefronts; an invalid key is an error,
 //      never a fallback)
 //   2. single mode → default shop
-//   3. multi mode  → shop mapped to the request host
+//   3. multi mode  → <slug>.ROOT_DOMAIN, else the shop mapped to the request host (verified domains)
 // Without a key the channel is the shop's Online Store.
 export async function resolveStorefrontShop(headers: Headers): Promise<StorefrontResolution> {
   const key = headers.get(PUBLISHABLE_KEY_HEADER)
@@ -46,7 +47,9 @@ export async function resolveStorefrontShop(headers: Headers): Promise<Storefron
     const shop = await ensureDefaultShop()
     return { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
   }
-  const shop = await getShopByDomain(hostOf(headers))
+  const host = hostOf(headers)
+  const slug = ROOT_DOMAIN ? subdomainSlug(host, ROOT_DOMAIN) : null
+  const shop = slug ? await getShopBySlug(slug) : await getShopByDomain(host)
   return shop
     ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
     : { ok: false, reason: 'shop_not_found' }

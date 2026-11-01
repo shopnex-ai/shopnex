@@ -44,7 +44,7 @@ import {
 } from './drops'
 import { RENDER, createLiquid, type RenderData } from './liquid'
 import { seoTags } from './seo'
-import { browserConfig, shopnex } from './shopnex'
+import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
 
@@ -291,7 +291,7 @@ const adminOrigin = new URL(browserConfig.baseUrl).origin
 function contentForHeader(preview: boolean, seo: string[] = []) {
   const attr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
   return [
-    `<meta name="shopnex-url" content="${attr(browserConfig.baseUrl)}">`,
+    `<meta name="shopnex-url" content="${attr(browserBaseUrl())}">`,
     browserConfig.publishableKey && `<meta name="shopnex-key" content="${attr(browserConfig.publishableKey)}">`,
     // In the theme editor's preview iframe: reload after a save, highlight the picked section
     preview && `<meta name="shopnex-admin-origin" content="${attr(adminOrigin)}">`,

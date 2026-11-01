@@ -1,14 +1,20 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { DEFAULT_SHOP_ID, isMultiTenant } from './config'
+import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
+import { isSubdomainSlug, subdomainUrl } from './subdomains'
 
 // Zero setup: a single shop that hasn't saved a Storefront URL uses STOREFRONT_URL (`pnpm dev` sets it to the
-// bundled storefront). Multi-tenant shops each need their own, so nothing is guessed there.
+// bundled storefront). Multi-tenant shops each need their own: without a saved one a shop gets its
+// <slug>.ROOT_DOMAIN address (when ROOT_DOMAIN is set), otherwise nothing is guessed.
 export function withStorefrontUrl<T extends schema.Shop | null>(shop: T): T {
+  if (!shop || shop.storefrontUrl) return shop
+  if (isMultiTenant) {
+    if (!ROOT_DOMAIN || !isSubdomainSlug(shop.slug)) return shop
+    return { ...shop, storefrontUrl: subdomainUrl(shop.slug, ROOT_DOMAIN) }
+  }
   const fallback = process.env.STOREFRONT_URL?.trim().replace(/\/$/, '')
-  if (!shop || shop.storefrontUrl || isMultiTenant || !fallback) return shop
-  return { ...shop, storefrontUrl: fallback }
+  return fallback ? { ...shop, storefrontUrl: fallback } : shop
 }
 
 let defaultShopCreated: Promise<void> | undefined
@@ -52,6 +58,11 @@ export async function getShopById(id: string) {
 
 export async function getFirstShop() {
   const [shop] = await db.select().from(schema.shops).orderBy(asc(schema.shops.createdAt)).limit(1)
+  return withStorefrontUrl(shop ?? null)
+}
+
+export async function getShopBySlug(slug: string) {
+  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.slug, slug))
   return withStorefrontUrl(shop ?? null)
 }
 

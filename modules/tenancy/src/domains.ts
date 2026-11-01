@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto'
 import { Resolver, resolveTxt } from 'node:dns/promises'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { ROOT_DOMAIN } from './config'
+import { isUnderRoot } from './subdomains'
 
 export type DomainErrorCode = 'INVALID_DOMAIN' | 'DOMAIN_TAKEN' | 'DOMAIN_NOT_FOUND'
 
@@ -62,6 +64,9 @@ export async function listDomains(shopId: string) {
 
 export async function addDomain(shopId: string, input: string) {
   const domain = normalizeDomain(input)
+  if (ROOT_DOMAIN && isUnderRoot(domain, ROOT_DOMAIN)) {
+    throw new DomainError('INVALID_DOMAIN', `Addresses under ${ROOT_DOMAIN.host} are assigned to shops automatically`)
+  }
   if (domain === appHost()) throw new DomainError('DOMAIN_TAKEN', 'This is the address of the admin itself')
 
   return db.transaction(async (tx) => {
