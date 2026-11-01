@@ -29,10 +29,14 @@ type Collection = Outputs['admin']['collections']['get']
 
 const back = { to: '/admin/collections', label: 'Collections' } as const
 
-const toValues = (c: Pick<Collection, 'title' | 'slug' | 'description'>) => ({
+const toValues = (
+  c: Pick<Collection, 'title' | 'slug' | 'description' | 'descriptionHtml' | 'seoTitle' | 'seoDescription'>,
+) => ({
   title: c.title,
   slug: c.slug,
   description: c.description,
+  descriptionHtml: c.descriptionHtml,
+  seo: { title: c.seoTitle, description: c.seoDescription },
 })
 
 export function CollectionDetail({ id }: { id: string }) {
@@ -108,7 +112,7 @@ function CollectionEditor({ collection }: { collection: Collection }) {
         <FormError form={form} />
         <Card>
           <CardContent>
-            <CollectionFields control={form.control} />
+            <CollectionFields control={form.control} setValue={form.setValue} collectionId={collection.id} />
           </CardContent>
         </Card>
       </form>

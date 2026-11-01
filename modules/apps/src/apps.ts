@@ -524,6 +524,10 @@ export async function uninstall(shopId: string, installationId: string) {
     await tx
       .delete(schema.paymentMethods)
       .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, installation.appId)))
+    // So do an AI app's capabilities (its generations stay in the shop's history)
+    await tx
+      .delete(schema.aiProviders)
+      .where(and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, installation.appId)))
     // So does a carrier app's service: its rates stop being offered at checkout
     await tx
       .delete(schema.carrierServices)

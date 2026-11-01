@@ -157,6 +157,9 @@ export const API_SCOPES = [
   // Payments apps: resolve / reject the payment and refund sessions sent to them
   'read_payment_sessions',
   'write_payment_sessions',
+  // AI apps: register the AI capabilities they provide (product descriptions, SEO…)
+  'read_ai_capabilities',
+  'write_ai_capabilities',
   // Carrier services: apps that quote shipping rates at checkout
   'read_shipping',
   'write_shipping',

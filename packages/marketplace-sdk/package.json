@@ -10,7 +10,8 @@
     "./payments": "./src/payments.ts",
     "./shipping": "./src/shipping.ts",
     "./lifecycle": "./src/lifecycle.ts",
-    "./keys": "./src/keys.ts"
+    "./keys": "./src/keys.ts",
+    "./ai": "./src/ai.ts"
   },
   "scripts": {
     "test": "tsx --test \"tests/**/*.test.ts\"",

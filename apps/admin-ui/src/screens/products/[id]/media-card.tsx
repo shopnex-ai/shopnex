@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { client, orpc } from '@/lib/orpc'
+import { GenerateImageAlt } from './ai-generate'
 import type { Product } from './product-detail'
 
 const ACCEPT = 'image/jpeg,image/png,image/gif,image/webp,image/avif'
@@ -76,7 +77,24 @@ export function MediaCard({ product }: { product: Product }) {
     >
       <CardHeader>
         <CardTitle>Media</CardTitle>
-        <CardAction>
+        <CardAction className="flex gap-2">
+          <GenerateImageAlt
+            productId={product.id}
+            images={product.images}
+            onUse={async (alts) => {
+              // Saved right away like the other media changes; images that weren't described keep their alt text
+              const images = currentImages().map((image, position) => ({
+                ...image,
+                alt: alts.find((a) => a.position === position)?.alt ?? image.alt,
+              }))
+              try {
+                await saveImages(images)
+                toast.success(alts.length === 1 ? 'Alt text saved' : `Alt text saved for ${alts.length} images`)
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Could not save alt text')
+              }
+            }}
+          />
           <Button
             type="button"
             variant="outline"

@@ -27,6 +27,7 @@ import {
   verify,
   type JwksResolverOptions,
 } from '@shopnex/marketplace-sdk/keys'
+import { verifyAiRequest as verifyAi, type AiCapability, type AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import {
   verifyPaymentsRequest as verifyPayments,
   type PaymentSessionRequest,
@@ -52,6 +53,14 @@ import { clientScript } from './client'
 
 export { ShopnexError, type AdminClient, type AppData } from './admin'
 export type { PaymentSessionRequest, RefundSessionRequest } from '@shopnex/marketplace-sdk/payments'
+export type {
+  AiCapability,
+  AiInput,
+  AiOutput,
+  AiProduct,
+  AiRunRequest,
+  AiRunResponse,
+} from '@shopnex/marketplace-sdk/ai'
 export type { AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
 export type { Rate, RatesRequest, RatesResponse } from '@shopnex/marketplace-sdk/shipping'
 
@@ -106,6 +115,14 @@ export type ShopContext = {
       refundSessionUrl?: string
       ready: boolean
     }): Promise<void>
+  }
+  /** AI apps: what the app provides for this shop */
+  ai: {
+    /**
+     * Replaces the capabilities this app provides here: capability → URL on the app's origin that receives its
+     * signed AiRunRequests. Pass {} to provide nothing (e.g. until the merchant has entered a provider key).
+     */
+    configure(capabilities: Partial<Record<AiCapability, string>>): Promise<void>
   }
   /** Carrier apps: quote shipping rates at checkout */
   shipping: {
@@ -229,6 +246,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
         reject: async (id, reason) => void (await admin.post(session(id, 'reject'), { reason })),
         configure: async (method) => void (await admin.post('/payments-app/configure', method)),
       },
+      ai: {
+        configure: async (capabilities) => void (await admin.post('/ai-app/configure', { capabilities })),
+      },
       shipping: {
         configure: (service) => admin.post('/carrier-services/configure', service),
       },
@@ -299,6 +319,18 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
+   * AI apps: a capability run from Shopnex, checked against the instance's keys, with its shop. Answer with
+   * AiRunResponse { output, usage? } for `request.capability`. Throws a 401 HTTPException when the signature
+   * doesn't check out.
+   */
+  async function verifyAiRequest(c: Context | Request): Promise<{ request: AiRunRequest; shop: ShopContext }> {
+    const request = c instanceof Request ? c : c.req.raw
+    const verified = await verifyAi(request.headers, await request.text(), { keys })
+    if (!verified) throw new HTTPException(401, { message: 'Invalid signature' })
+    return { request: verified, shop: await forShop(verified.instance, verified.shopId) }
+  }
+
+  /**
    * Carrier apps: a rates request from Shopnex, checked against the instance's keys, with its shop. Answer it with
    * `{ rates: [{ code, name, priceCents, description? }] }`. Throws a 401 HTTPException when the signature doesn't
    * check out.
@@ -362,7 +394,16 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
     }),
   )
 
-  return { clientId, routes, authenticate, forShop, verifyPaymentsRequest, verifyRatesRequest, verifyWebhook }
+  return {
+    clientId,
+    routes,
+    authenticate,
+    forShop,
+    verifyPaymentsRequest,
+    verifyAiRequest,
+    verifyRatesRequest,
+    verifyWebhook,
+  }
 }
 
 export type ShopnexApp = ReturnType<typeof createShopnexApp>

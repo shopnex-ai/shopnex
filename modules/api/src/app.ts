@@ -18,6 +18,8 @@ const BASE = '/api'
 // Log unexpected errors server-side (expected ones like 401/404 are skipped); clients only see a generic 500
 const logError = (error: unknown) => {
   if (error instanceof ORPCError && error.status < 500) return
+  // The client went away (a closed dialog cancels its in-flight queries): nothing to fix
+  if (error instanceof DOMException && error.name === 'AbortError') return
   console.error('[orpc]', error)
 }
 

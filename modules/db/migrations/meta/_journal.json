@@ -246,6 +246,13 @@
       "when": 1793356886522,
       "tag": "0034_domain_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793513501577,
+      "tag": "0035_ai_capabilities",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,11 @@ export const SCOPE_RESOURCES = [
   { key: 'discounts', label: 'Discounts', hint: 'Discount codes and their usage' },
   { key: 'shipping', label: 'Shipping', hint: 'Quote shipping rates at checkout (carrier services)' },
   { key: 'payment_sessions', label: 'Payment sessions', hint: 'Take payments and refunds (payments apps)' },
+  {
+    key: 'ai_capabilities',
+    label: 'AI capabilities',
+    hint: 'Provide AI suggestions, e.g. product descriptions (AI apps)',
+  },
 ] as const
 
 export type Access = 'none' | 'read' | 'write'

@@ -38,7 +38,7 @@ export function NewCollection() {
       <form onSubmit={onSubmit} noValidate className="space-y-6">
         <Card>
           <CardContent className="space-y-4">
-            <CollectionFields control={form.control} isNew />
+            <CollectionFields control={form.control} setValue={form.setValue} isNew />
             <FormError form={form} />
           </CardContent>
         </Card>

@@ -16,6 +16,7 @@ import {
   PercentIcon,
   Share2Icon,
   ShoppingCartIcon,
+  SparklesIcon,
   StoreIcon,
   TicketPercentIcon,
   TruckIcon,
@@ -60,6 +61,7 @@ export const settingsNav: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/admin/settings/general', label: 'General', icon: StoreIcon },
       { href: '/admin/settings/staff', label: 'Staff', icon: UserCogIcon },
+      { href: '/admin/settings/ai', label: 'AI', icon: SparklesIcon },
       { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
     ],
   },
