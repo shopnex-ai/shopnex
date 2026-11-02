@@ -22,5 +22,5 @@
   "eslint.workingDirectories": [{ "mode": "auto" }],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact", "astro"],
   "js/ts.tsdk.path": "node_modules/typescript/lib",
-  "cSpell.words": ["Shopnex"]
+  "cSpell.words": ["ShopNex"]
 }

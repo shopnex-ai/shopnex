@@ -1,4 +1,4 @@
-// Unit tests for session tokens: an EdDSA JWT signed by a Shopnex instance and verified by an embedded app.
+// Unit tests for session tokens: an EdDSA JWT signed by a ShopNex instance and verified by an embedded app.
 // Covers the happy path (sign → verify round trip) and the main failure modes (expired, tampered,
 // wrong key, wrong typ, wrong audience) plus decoding of malformed input.
 import assert from 'node:assert/strict'

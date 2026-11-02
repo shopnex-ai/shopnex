@@ -77,7 +77,7 @@ export function WebhooksCard() {
       <CardHeader>
         <CardTitle>Webhooks</CardTitle>
         <CardDescription>
-          Shopnex POSTs a signed JSON payload to your URL when orders, products or customers change — connect Zapier,
+          ShopNex POSTs a signed JSON payload to your URL when orders, products or customers change — connect Zapier,
           n8n, Make or your own app. Failed deliveries are retried for about a day.
         </CardDescription>
         <CardAction>

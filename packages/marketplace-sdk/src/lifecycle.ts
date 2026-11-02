@@ -1,4 +1,4 @@
-// App lifecycle events: Shopnex tells an app about changes to its installation, so it can set a shop up without
+// App lifecycle events: ShopNex tells an app about changes to its installation, so it can set a shop up without
 // waiting for someone to open it (a payments app registers its payment method, for one).
 //
 //   POST {appUrl}/shopnex/installed   a signed AppInstalledRequest, right after the app is installed on a shop
@@ -14,7 +14,7 @@ export type AppInstalledRequest = {
   kind: 'installed'
   /** Unique per delivery */
   id: string
-  /** The Shopnex instance's public origin: its keys sign this request, its Admin API is where the app acts */
+  /** The ShopNex instance's public origin: its keys sign this request, its Admin API is where the app acts */
   instance: string
   shopId: string
   installationId: string

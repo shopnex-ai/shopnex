@@ -1,4 +1,4 @@
-// Paid Shopnex order → CJ order, and CJ's tracking → Shopnex fulfillment.
+// Paid ShopNex order → CJ order, and CJ's tracking → ShopNex fulfillment.
 import type { ShopContext } from '@shopnex/app'
 import { cjFor, settingsOf } from './cj'
 import type { Tables } from './db'

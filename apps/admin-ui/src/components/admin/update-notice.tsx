@@ -48,7 +48,7 @@ export function UpdateMenuItem({ enabled }: { enabled: boolean }) {
             <div className="mb-1 flex size-10 items-center justify-center rounded-full bg-green-500/15 text-green-600 dark:text-green-400">
               <DownloadIcon className="size-5" />
             </div>
-            <DialogTitle className="text-lg">A new version of Shopnex is available</DialogTitle>
+            <DialogTitle className="text-lg">A new version of ShopNex is available</DialogTitle>
             <DialogDescription className="flex items-center gap-2 pt-1">
               <code className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs">{data.current}</code>
               <ArrowRightIcon className="size-3.5" />
@@ -71,7 +71,7 @@ export function UpdateMenuItem({ enabled }: { enabled: boolean }) {
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium">Then update the way you installed Shopnex</p>
+                <p className="text-sm font-medium">Then update the way you installed ShopNex</p>
                 <UpdateMethod title="Install script">Run the install command again on your server.</UpdateMethod>
                 <UpdateMethod title="Docker Compose, Dokploy, Coolify">
                   Set the version, then pull and restart the stack.
@@ -121,7 +121,7 @@ const STEP_LABELS: Record<string, string> = {
   backup: 'Backing up the database',
   download: 'Downloading the new version',
   pull: 'Pulling the new images',
-  restart: 'Restarting Shopnex',
+  restart: 'Restarting ShopNex',
 }
 
 // Asks the host updater to do the update, then follows its progress. The app restarts near the end, so

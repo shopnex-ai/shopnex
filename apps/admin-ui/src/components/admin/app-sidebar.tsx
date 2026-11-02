@@ -122,7 +122,7 @@ function ShopIdentity({ shop }: { shop: SidebarShop }) {
       <div className="grid flex-1 text-left leading-tight">
         <span className="truncate font-semibold">{shop.name}</span>
         <span className="truncate text-xs text-muted-foreground">
-          {shop.superAdmin ? 'Super admin' : 'Shopnex Admin'}
+          {shop.superAdmin ? 'Super admin' : 'ShopNex Admin'}
         </span>
       </div>
     </>

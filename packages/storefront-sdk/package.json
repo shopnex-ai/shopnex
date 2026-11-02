@@ -1,7 +1,7 @@
 {
   "name": "@shopnex/storefront-sdk",
   "version": "1.0.0",
-  "description": "Shopnex Storefront API contract + typed client for any storefront (Next, Astro, …)",
+  "description": "ShopNex Storefront API contract + typed client for any storefront (Next, Astro, …)",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

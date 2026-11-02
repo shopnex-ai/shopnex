@@ -68,7 +68,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
       ) : !current ? (
         <Card>
           <CardContent className="text-sm text-muted-foreground">
-            No theme yet. It’s added when Shopnex can reach your storefront.
+            No theme yet. It’s added when ShopNex can reach your storefront.
           </CardContent>
         </Card>
       ) : (

@@ -1,10 +1,10 @@
-# Shopnex storefront
+# ShopNex storefront
 
-The storefront that ships with Shopnex: one Astro app that renders whichever theme the shop uses. Merchants pick
+The storefront that ships with ShopNex: one Astro app that renders whichever theme the shop uses. Merchants pick
 and customize themes in the admin (Online store → Themes); nothing here needs editing to run a shop.
 
 ```bash
-pnpm dev                      # from the repo root: Shopnex on :3000 + this storefront on :4321
+pnpm dev                      # from the repo root: ShopNex on :3000 + this storefront on :4321
 pnpm --dir templates/storefront dev   # on its own (copy .env.example to .env)
 pnpm --dir templates/storefront build # themes' assets, then the server (node dist/server/entry.mjs, from this folder)
 ```
@@ -14,19 +14,19 @@ pnpm --dir templates/storefront build # themes' assets, then the server (node di
 - Themes are **Liquid templates** (LiquidJS, Shopify's template language), not code: the server never runs a
   theme's JavaScript, so a theme can come from anyone. Templates are HTML-escaped by default, read files only
   from their own folder, and are time- and memory-limited (`src/core/liquid.ts`).
-- Every request asks Shopnex which theme is live (`storefront.theme.current`) and renders that theme's template
+- Every request asks ShopNex which theme is live (`storefront.theme.current`) and renders that theme's template
   for the route with the merchant's settings, inside its layout. In the theme editor's preview, it renders the
   draft instead.
 - Routes (`src/pages`) load the data and are the same for every theme: `/`, `/products`, `/collections/{handle}`, `/search`,
   `/products/{handle}`, `/pages/{handle}`, and the 404 page.
 - The cart runs in the browser against the Storefront API (`@shopnex/storefront-sdk/cart`); checkout is
-  Shopnex's hosted page.
+  ShopNex's hosted page.
 - `/shopnex/theme.json` lists the themes' definitions, so the admin can offer them and edit their settings.
 
 ```
 src/
   core/      theme loading and rendering (theme.ts), the Liquid engine (liquid.ts), the objects templates see
-             (drops.ts), Shopnex client, catalog, links
+             (drops.ts), ShopNex client, catalog, links
   pages/     routes (data → the active theme's template), theme assets, /shopnex/theme.json
   runtime/   the storefront's own browser script (the editor preview connector)
 scripts/     themes.mjs builds themes' CSS and scripts; dev.mjs runs it in watch mode beside astro dev
@@ -89,4 +89,4 @@ The Shopco theme's design is based on the SHOP.CO e-commerce website kit from th
 TODO-creator-name (TODO-figma-community-link), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); its
 markup and code are new. Product photos and brand logos from the kit aren't included.
 The Hydrogen theme is a port of [hydrogen-theme](https://github.com/montalvomiguelo/hydrogen-theme) by Miguel
-Montalvo (MIT), itself a port of Shopify Hydrogen's default template, from Shopify OS 2.0 to Shopnex's Liquid.
+Montalvo (MIT), itself a port of Shopify Hydrogen's default template, from Shopify OS 2.0 to ShopNex's Liquid.

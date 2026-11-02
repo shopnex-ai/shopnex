@@ -83,7 +83,7 @@ export async function sendTest(shopId: string, id: string, tokenId?: string) {
       shopId,
       endpointId: id,
       topic: WEBHOOK_TEST_TOPIC,
-      body: envelope(shopId, WEBHOOK_TEST_TOPIC, { message: 'Test webhook from Shopnex', endpointId: id }),
+      body: envelope(shopId, WEBHOOK_TEST_TOPIC, { message: 'Test webhook from ShopNex', endpointId: id }),
     })
     .returning()
   return delivery!

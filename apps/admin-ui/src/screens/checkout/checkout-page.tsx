@@ -110,7 +110,7 @@ function Confirmation({
 }) {
   const money = (cents: number) => formatMoney(cents, order.currency)
   const awaitingPayment = order.financialStatus === 'pending' && !order.cancelledAt
-  // Paid through a payments app (card…) rather than outside Shopnex
+  // Paid through a payments app (card…) rather than outside ShopNex
   const offsite = (order.paymentGateway ?? 'manual') !== 'manual'
   const firstName = order.shippingAddress?.firstName
   return (

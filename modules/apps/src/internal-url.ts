@@ -1,17 +1,17 @@
 // Apps are reached by browsers at their public URL (STRIPE_APP_URL). Under Docker that address is often not
-// reachable from the Shopnex container itself (localhost is the container), so the operator can name the address
+// reachable from the ShopNex container itself (localhost is the container), so the operator can name the address
 // the server uses instead: <NAME>_APP_INTERNAL_URL next to <NAME>_APP_URL, e.g. http://stripe:4600.
 // Only operator config is ever consulted, never anything an app or a merchant supplies.
 
 // Bundled apps found at their default internal address (no env): public origin → internal origin
 const discovered = new Map<string, string>()
 
-/** Records where Shopnex reaches the app whose public URL is `publicUrl` */
+/** Records where ShopNex reaches the app whose public URL is `publicUrl` */
 export function rememberInternalUrl(publicUrl: string, internalUrl: string) {
   discovered.set(new URL(publicUrl).origin, new URL(internalUrl).origin)
 }
 
-/** The URL Shopnex's server should request for an app URL: swaps the origin when an internal one is known */
+/** The URL ShopNex's server should request for an app URL: swaps the origin when an internal one is known */
 export function serverUrl(url: string): string {
   let target: URL
   try {

@@ -1,4 +1,4 @@
-// The themes' definitions for the Shopnex theme editor (a ThemeManifest; see core/theme)
+// The themes' definitions for the ShopNex theme editor (a ThemeManifest; see core/theme)
 import type { APIRoute } from 'astro'
 import type { ThemeManifest } from '@shopnex/storefront-sdk'
 import { themes } from '../../core/theme'

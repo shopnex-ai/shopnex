@@ -2,7 +2,7 @@
   "name": "@shopnex/docs",
   "private": true,
   "type": "module",
-  "description": "Shopnex documentation site (Fumadocs on Next.js)",
+  "description": "ShopNex documentation site (Fumadocs on Next.js)",
   "scripts": {
     "dev": "next dev --port 3400",
     "build": "pnpm openapi && next build",

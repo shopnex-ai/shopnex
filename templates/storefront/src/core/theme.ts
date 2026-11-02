@@ -8,10 +8,10 @@
 //   snippets/              for {% render %}
 //   assets/                served at /shopnex/assets/{theme}/…; `{{ 'theme.css' | asset_url }}`
 //
-// themes/index.json lists the themes; the first is the default. Each request asks Shopnex which theme is live
+// themes/index.json lists the themes; the first is the default. Each request asks ShopNex which theme is live
 // (`storefront.theme.current`) and renders its template for the route with the merchant's settings; in the
 // theme editor's preview (?shopnex_preview=token) the draft instead. Falls back to the default theme (with its
-// defaults) when the live theme isn't one of ours or Shopnex can't be reached. Files the merchant edited
+// defaults) when the live theme isn't one of ours or ShopNex can't be reached. Files the merchant edited
 // (Edit code) replace the theme's own: they're loaded with `storefront.theme.files` when their version changes.
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -134,7 +134,7 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
   try {
     current = await shopnex.theme.current({ previewToken })
   } catch (error) {
-    // The store keeps working on the default theme if Shopnex is unreachable
+    // The store keeps working on the default theme if ShopNex is unreachable
     console.error('[theme] could not load the shop’s theme:', error)
   }
   const all = themes()

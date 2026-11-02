@@ -1,4 +1,4 @@
-/* KS BootShop for Shopnex: the theme's own styles, loaded after vendor-bootstrap.min.css (Bootstrap 5.3 built from
+/* KS BootShop for ShopNex: the theme's own styles, loaded after vendor-bootstrap.min.css (Bootstrap 5.3 built from
    src/bootstrap.scss). layout/theme.liquid overrides the --bs-* colors and the heading font with the merchant's
    settings, so they change without a rebuild. */
 

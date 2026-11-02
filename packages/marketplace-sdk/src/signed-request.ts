@@ -1,4 +1,4 @@
-// Requests a Shopnex instance sends to an app (payment sessions, AI capability runs), signed like Standard
+// Requests a ShopNex instance sends to an app (payment sessions, AI capability runs), signed like Standard
 // Webhooks with an asymmetric key (webhook-id / webhook-timestamp / webhook-signature: v1a,…): the instance
 // signs with its own Ed25519 key; the app checks it against the keys the instance named in the body's `instance`
 // publishes (createJwksResolver). Nothing per install is shared. WebCrypto only.

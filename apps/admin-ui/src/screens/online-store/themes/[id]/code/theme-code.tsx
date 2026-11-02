@@ -1,7 +1,7 @@
 'use client'
 
 // Edit code (Shopify-style): the theme's Liquid files on the left, the file in the middle, the storefront on
-// the right. The originals come from the storefront; Shopnex keeps the copy's edited files. Edits autosave to
+// the right. The originals come from the storefront; ShopNex keeps the copy's edited files. Edits autosave to
 // a draft (the preview shows it) and Publish writes the draft to the copy: on the live theme buyers see it then.
 // Unsaved edits are kept per file while switching between them.
 import { ORPCError } from '@orpc/client'
@@ -68,7 +68,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   const id = theme.id
   const files = useQuery({ ...orpc.admin.themes.files.queryOptions({ input: { id } }), retry: false })
   const original = files.data?.original
-  // What Shopnex has saved (the draft over the published files), kept up to date by this page's saves
+  // What ShopNex has saved (the draft over the published files), kept up to date by this page's saves
   const [edited, setEdited] = useState<Record<string, string> | null>(null)
   // The paths whose saved version isn't published yet, and the draft's rev this page last saw
   const [changed, setChanged] = useState<Set<string>>(new Set())

@@ -17,7 +17,7 @@ spec:
         - { key: APP_URL, scope: RUN_TIME, value: '${APP_URL}' }
         - { key: TENANCY_MODE, scope: RUN_TIME, value: single }
   databases:
-    # Dev database: fine to try Shopnex, not for a live shop (no backups). `production: true` needs an existing
+    # Dev database: fine to try ShopNex, not for a live shop (no backups). `production: true` needs an existing
     # managed cluster (`cluster_name`), so it can't be created from a one-click template. Before going live, create a
     # managed Postgres cluster in DigitalOcean and point DATABASE_URL at it.
     - name: db

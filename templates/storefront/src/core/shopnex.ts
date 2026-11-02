@@ -11,7 +11,7 @@ const env = (name: 'SHOPNEX_URL' | 'SHOPNEX_PUBLIC_URL' | 'SHOPNEX_PUBLISHABLE_K
 const baseUrl = env('SHOPNEX_URL') ?? 'http://localhost:3000'
 const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined
 
-// Multi-tenant Shopnex (TENANCY_MODE=multi) tells shops apart by the host a buyer used. The clients below are
+// Multi-tenant ShopNex (TENANCY_MODE=multi) tells shops apart by the host a buyer used. The clients below are
 // shared by every request, so the middleware (src/middleware.ts) records the host in `requestContext` and each
 // API call passes it on as x-forwarded-host; the browser then calls the storefront's own origin.
 const multiTenant = process.env.TENANCY_MODE === 'multi'
@@ -40,11 +40,11 @@ export const browserConfig = {
 
 /**
  * Where this page's scripts call the Storefront API. Multi-tenant: the page's own origin (the proxy sends
- * /api/* to Shopnex, and the host tells it which shop). Otherwise the configured origin.
+ * /api/* to ShopNex, and the host tells it which shop). Otherwise the configured origin.
  */
 export const browserBaseUrl = () => (multiTenant && requestContext.getStore()?.origin) || browserConfig.baseUrl
 
-/** The result, or null when Shopnex answers NOT_FOUND (unknown handle). Other errors are thrown. */
+/** The result, or null when ShopNex answers NOT_FOUND (unknown handle). Other errors are thrown. */
 export async function orNull<T>(request: Promise<T>): Promise<T | null> {
   const [error, data] = await safe(request)
   if (!error) return data

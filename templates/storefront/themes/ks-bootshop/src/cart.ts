@@ -1,5 +1,5 @@
 // The cart drawer and the toast for cart errors (snippets/cart-drawer.liquid). The cart itself is
-// @shopnex/storefront-sdk/cart (Storefront API); checkout is Shopnex's hosted page. Anything with
+// @shopnex/storefront-sdk/cart (Storefront API); checkout is ShopNex's hosted page. Anything with
 // data-add-to-cart="{variant id}" adds that variant, and data-cart-open opens the drawer.
 import {
   $cart,

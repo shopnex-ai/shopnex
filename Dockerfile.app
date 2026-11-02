@@ -4,7 +4,7 @@
 #   docker build -f Dockerfile.app --build-arg APP=stripe -t shopnex-app-stripe .
 #   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -v stripe_data:/data shopnex-app-stripe
 #
-# The app reads <NAME>_APP_URL (its public origin; give Shopnex the same) and keeps its identity key and data in
+# The app reads <NAME>_APP_URL (its public origin; give ShopNex the same) and keeps its identity key and data in
 # /data: mount a volume there, or it is a new app after every recreate.
 FROM node:22-alpine AS build
 RUN corepack enable

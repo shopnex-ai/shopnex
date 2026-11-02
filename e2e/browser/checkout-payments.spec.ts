@@ -147,7 +147,7 @@ test('a declined card keeps the order open; the buyer comes back, retries on the
 }) => {
   const session = await placeOrder(page)
 
-  // Declined at the provider: Shopnex hears why, the session stays open
+  // Declined at the provider: ShopNex hears why, the session stays open
   await decline(session.id)
   const [open] = await db.select().from(schema.paymentSessions).where(eq(schema.paymentSessions.id, session.id))
   expect(open!.status).toBe('pending')

@@ -1,5 +1,5 @@
 // AI capabilities end to end. Apps, against a fake app served by this test: the app registers its capabilities (app
-// token) → staff (here: an API token) run one → Shopnex sends the product to the app, signed → checks and sanitizes
+// token) → staff (here: an API token) run one → ShopNex sends the product to the app, signed → checks and sanitizes
 // the answer → keeps the generation. Built-in AI (Settings → AI): the key is checked with the real provider (a
 // made-up key it refuses, which costs nothing), and it answers before apps. Uses its own app and product, and puts
 // back the shop's own AI settings at the end.

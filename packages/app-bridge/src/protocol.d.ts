@@ -1,4 +1,4 @@
-// postMessage protocol between an embedded app (iframe) and the Shopnex admin (parent).
+// postMessage protocol between an embedded app (iframe) and the ShopNex admin (parent).
 // The admin implements the other side in apps/admin-ui/src/screens/apps/[id]/embedded-app.tsx.
 
 export type AppRequest =

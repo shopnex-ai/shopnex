@@ -1,4 +1,4 @@
-// Storeplate's cart drawer. Checkout is Shopnex's hosted page (cart.checkoutUrl).
+// Storeplate's cart drawer. Checkout is ShopNex's hosted page (cart.checkoutUrl).
 // `placeholder`: the theme's image for lines without one (an asset URL, from the layout)
 import { useStore } from '@nanostores/react'
 import { useEffect, useState } from 'react'

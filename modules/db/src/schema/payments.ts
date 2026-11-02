@@ -1,6 +1,6 @@
-// Payment and refund sessions for payments apps (Shopify Payments Apps API). Shopnex creates a session for an
+// Payment and refund sessions for payments apps (Shopify Payments Apps API). ShopNex creates a session for an
 // amount it decides, sends it to the app, and the app resolves or rejects it through the Admin API. Only
-// Shopnex changes the order: an app can say "paid" for a session, never for an arbitrary order or amount.
+// ShopNex changes the order: an app can say "paid" for a session, never for an arbitrary order or amount.
 import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { apps } from './apps'
 import { paymentMethods } from './checkout'
@@ -10,7 +10,7 @@ import { shops } from './tenancy'
 export const PAYMENT_SESSION_KINDS = ['payment', 'refund'] as const
 export type PaymentSessionKind = (typeof PAYMENT_SESSION_KINDS)[number]
 
-// pending → resolved | rejected | expired (Shopnex gives up waiting after expiresAt)
+// pending → resolved | rejected | expired (ShopNex gives up waiting after expiresAt)
 export const PAYMENT_SESSION_STATUSES = ['pending', 'resolved', 'rejected', 'expired'] as const
 export type PaymentSessionStatus = (typeof PAYMENT_SESSION_STATUSES)[number]
 

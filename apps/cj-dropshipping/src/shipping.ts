@@ -1,4 +1,4 @@
-// CJ's shipping prices at checkout, as a Shopnex carrier service. When the buyer has entered an address Shopnex
+// CJ's shipping prices at checkout, as a ShopNex carrier service. When the buyer has entered an address ShopNex
 // asks what shipping costs for the cart; the app asks CJ's freight calculator and answers with one method,
 // "Standard shipping": the best balance of price and speed among what CJ offers. The CJ method behind it is the
 // rate's code, so the order is later sent to CJ with the method the buyer was quoted.
@@ -42,7 +42,7 @@ export function pickStandard(options: FreightOption[]): FreightOption | null {
   })
 }
 
-/** The Shopnex rate for a CJ method: the buyer never sees CJ's channel name, only the price and delivery time */
+/** The ShopNex rate for a CJ method: the buyer never sees CJ's channel name, only the price and delivery time */
 export function toRate(option: FreightOption): Rate {
   return {
     code: option.logisticName,
@@ -52,7 +52,7 @@ export function toRate(option: FreightOption): Rate {
   }
 }
 
-// CJ allows one call a second and Shopnex asks again when the order is placed: remember answers for a while
+// CJ allows one call a second and ShopNex asks again when the order is placed: remember answers for a while
 const TTL_MS = 15 * 60_000
 const cache = new Map<string, { at: number; rates: Rate[] }>()
 const inFlight = new Map<string, Promise<Rate[]>>()

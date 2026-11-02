@@ -1,4 +1,4 @@
-// Formatting Shopnex money (dependency-free, for servers and theme scripts alike)
+// Formatting ShopNex money (dependency-free, for servers and theme scripts alike)
 import type { Money } from './schemas'
 
 const formats = new Map<string, Intl.NumberFormat>()
@@ -12,7 +12,7 @@ function format(currencyCode: string) {
   return f
 }
 
-/** "$19.99" from Shopnex money (integer minor units: cents for USD, yen for JPY) */
+/** "$19.99" from ShopNex money (integer minor units: cents for USD, yen for JPY) */
 export function formatMoney(money: Money) {
   const f = format(money.currencyCode)
   const digits = f.resolvedOptions().maximumFractionDigits ?? 2

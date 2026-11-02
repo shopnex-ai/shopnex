@@ -29,7 +29,7 @@ export type CreateOrderInput = {
   billingAddress?: MailingAddress
   // Delivery method chosen at checkout; free when the subtotal reaches freeAboveCents
   shipping?: { title: string; code: string | null; priceCents: number; freeAboveCents: number | null }
-  // Payment method chosen at checkout (manual methods: paid outside Shopnex, marked as paid by staff)
+  // Payment method chosen at checkout (manual methods: paid outside ShopNex, marked as paid by staff)
   payment?: { gateway: string; name: string; instructions: string | null }
   // Case-insensitive. An unusable code fails the order (the buyer was shown the discounted total).
   discountCode?: string
@@ -497,7 +497,7 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
 
 export type CancelInput = { reason: CancelReason; restock: boolean }
 
-// Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside Shopnex,
+// Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside ShopNex,
 // recorded as a refund transaction). Paid through a payments app: the refund transaction stays pending and the
 // order paid until the app confirms it (@shopnex/payments sends it a refund session).
 // Fulfilled orders can't be cancelled (returns come later).

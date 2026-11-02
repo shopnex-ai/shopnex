@@ -1,4 +1,4 @@
-// The settings page, embedded in the Shopnex admin
+// The settings page, embedded in the ShopNex admin
 import { raw } from 'hono/html'
 import {
   Badge,

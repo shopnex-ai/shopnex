@@ -1,6 +1,6 @@
-// Settings → AI: the provider built into Shopnex (Claude or OpenAI), called with the shop's own API key. Saving
+// Settings → AI: the provider built into ShopNex (Claude or OpenAI), called with the shop's own API key. Saving
 // checks the key can use the model first, so a broken setup never saves. The provider SDKs are only loaded when a
-// shop uses one: Shopnex starts (and checks out) the same without them.
+// shop uses one: ShopNex starts (and checks out) the same without them.
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import type { AiBuiltinProvider } from '@shopnex/db/schema'

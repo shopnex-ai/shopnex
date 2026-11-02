@@ -24,7 +24,7 @@ export const shippingRates = pgTable(
   (t) => [index('shipping_rates_shop_idx').on(t.shopId, t.position)],
 )
 
-// 'manual': paid outside Shopnex (bank transfer, cash on delivery…) and marked as paid by staff.
+// 'manual': paid outside ShopNex (bank transfer, cash on delivery…) and marked as paid by staff.
 // 'app': a payments app (Stripe…) takes the payment; it registers the method itself (Shopify paymentsAppConfigure)
 // and resolves payment sessions through the Admin API.
 export const PAYMENT_PROVIDERS = ['manual', 'app'] as const

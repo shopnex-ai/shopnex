@@ -33,7 +33,7 @@ export function SetupForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to Shopnex</CardTitle>
+        <CardTitle>Welcome to ShopNex</CardTitle>
         <CardDescription>Create the owner account. Next you'll name your shop and pick its currency.</CardDescription>
       </CardHeader>
       <CardContent>

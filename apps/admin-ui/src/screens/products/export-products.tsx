@@ -314,7 +314,7 @@ export function ExportProductsDialog() {
       noun="products"
       filename={`shopnex-products-${source}`}
       build={build}
-      description="Download your Shopnex catalog as a CSV formatted for another commerce platform."
+      description="Download your ShopNex catalog as a CSV formatted for another commerce platform."
     >
       <FormatSelect label="Export format" value={source} options={formats} onChange={setSource} />
     </ExportDialog>
