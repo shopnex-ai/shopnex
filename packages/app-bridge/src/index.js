@@ -10,9 +10,9 @@
 export function createAppBridge(options = {}) {
   const param = new URLSearchParams(window.location.search).get('instance')
   const instance = options.instance ?? param
-  if (!instance) throw new Error('createAppBridge: no instance (open the app from the Shopnex admin)')
+  if (!instance) throw new Error('createAppBridge: no instance (open the app from the ShopNex admin)')
   const origin = new URL(instance).origin
-  if (window.parent === window) throw new Error('createAppBridge: not embedded in the Shopnex admin')
+  if (window.parent === window) throw new Error('createAppBridge: not embedded in the ShopNex admin')
   const timeoutMs = options.timeoutMs ?? 10_000
 
   /** @type {Map<string, (message: AdminMessage) => void>} */
@@ -35,7 +35,7 @@ export function createAppBridge(options = {}) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         waiting.delete(id)
-        reject(new Error(`Shopnex admin didn't answer "${body.type}"`))
+        reject(new Error(`ShopNex admin didn't answer "${body.type}"`))
       }, timeoutMs)
       waiting.set(id, (message) => {
         clearTimeout(timer)

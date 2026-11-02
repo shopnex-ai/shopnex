@@ -1,6 +1,6 @@
 import { cn } from 'cn'
 
-// The Shopnex mark (from the original Shopnex logo). Drawn in currentColor, so it follows the text color.
+// The ShopNex mark (from the original ShopNex logo). Drawn in currentColor, so it follows the text color.
 export function ShopnexLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 500 500" className={className} fill="none" stroke="currentColor" strokeWidth={30} aria-hidden>
@@ -30,7 +30,7 @@ export function ShopnexBrand() {
   return (
     <div className="mb-6 flex flex-col items-center gap-3 text-lg font-semibold">
       <ShopnexBadge size="lg" />
-      Shopnex
+      ShopNex
     </div>
   )
 }

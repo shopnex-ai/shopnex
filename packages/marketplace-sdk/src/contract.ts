@@ -1,4 +1,4 @@
-// Marketplace API v1 contract. The marketplace service implements it; Shopnex instances and apps
+// Marketplace API v1 contract. The marketplace service implements it; ShopNex instances and apps
 // consume it. Additive changes only: new procedures/fields/optional inputs; never rename or remove.
 //
 // Who calls what:
@@ -7,7 +7,7 @@
 import { oc, type InferContractRouterInputs, type InferContractRouterOutputs } from '@orpc/contract'
 import { z } from 'zod'
 
-// Must match the Shopnex Admin API scopes (API_SCOPES in @shopnex/db), except the payment session and AI
+// Must match the ShopNex Admin API scopes (API_SCOPES in @shopnex/db), except the payment session and AI
 // capability scopes: payments and AI apps are custom or bundled apps until marketplace listings are reviewed
 export const SCOPES = [
   'read_products',
@@ -50,7 +50,7 @@ export const CatalogApp = z.object({
 })
 export type CatalogApp = z.infer<typeof CatalogApp>
 
-// Same rule as Shopnex theme ids (ThemeDefinition.id)
+// Same rule as ShopNex theme ids (ThemeDefinition.id)
 export const ThemeId = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/, 'Lowercase letters, digits, - and _')
 
 /**
@@ -98,7 +98,7 @@ export const marketplaceErrorMap = {
 export const marketplaceContract = {
   instances: oc.tag('Instances').router({
     /**
-     * Connects a Shopnex instance. The instance first publishes `challenge` at
+     * Connects a ShopNex instance. The instance first publishes `challenge` at
      * GET {url}/api/v1/marketplace/challenge; the marketplace fetches it to prove the URL is really this
      * instance, then returns the instance key (shown once).
      */
@@ -144,7 +144,7 @@ export const marketplaceContract = {
 
     /**
      * For apps: is my app installed on this shop of this instance (as the instance reported)? Call it after
-     * the token exchange before trusting a new install, since anyone can run a Shopnex instance.
+     * the token exchange before trusting a new install, since anyone can run a ShopNex instance.
      */
     verify: oc
       .route({ method: 'POST', path: '/installations/verify' })

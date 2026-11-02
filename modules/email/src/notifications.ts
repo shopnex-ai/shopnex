@@ -1,4 +1,4 @@
-// Notifications: the emails Shopnex sends by itself when an order changes, rendered from the shop's Liquid
+// Notifications: the emails ShopNex sends by itself when an order changes, rendered from the shop's Liquid
 // (Settings → Notifications, built-in defaults until edited). `notify` runs inside the transaction that made the
 // change and queues rendered emails in the outbox (email_deliveries); the worker sends them.
 import { withStorefrontUrl } from '@shopnex/tenancy'

@@ -32,7 +32,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Classic Cotton Tee',
         description: 'A soft, everyday t-shirt in heavyweight cotton.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'T-shirt',
         tags: ['basics', 'bestseller'],
         images: images('cotton-tee'),
@@ -41,7 +41,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Everyday Hoodie',
         description: 'Brushed fleece hoodie with a relaxed fit.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Hoodie',
         tags: ['basics', 'winter', 'bestseller'],
         images: images('everyday-hoodie'),
@@ -83,7 +83,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Canvas Tote Bag',
         description: 'Sturdy canvas tote with an inside pocket.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Bag',
         tags: ['basics', 'bestseller'],
         images: images('canvas-tote'),
@@ -142,7 +142,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Ceramic Mug',
         description: 'Hand-glazed 350 ml stoneware mug.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Mug',
         tags: ['basics', 'bestseller'],
         images: images('ceramic-mug'),
@@ -151,7 +151,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Soy Candle',
         description: 'Slow-burning soy wax candle, cedar and amber.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Candle',
         tags: ['gift'],
         images: images('soy-candle'),
@@ -177,7 +177,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Ceramic Planter',
         description: 'Unglazed terracotta planter with a drainage saucer.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Planter',
         images: images('ceramic-planter'),
         ...simple(3400),
@@ -191,7 +191,7 @@ const catalog: { collection: string; description: string; products: ProductInput
       {
         title: 'Hardcover Notebook',
         description: 'A5 notebook with 192 pages of 100 gsm dotted paper.',
-        vendor: 'Shopnex',
+        vendor: 'ShopNex',
         productType: 'Notebook',
         tags: ['basics', 'bestseller'],
         images: images('hardcover-notebook'),

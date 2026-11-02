@@ -2,9 +2,23 @@
 
 Releases are cut by pushing a version tag. The `Release` workflow
 (`.github/workflows/release.yaml`) runs lint, typecheck and build, publishes
-the main Shopnex and Stripe app Docker images to GHCR with the same version
+the main ShopNex and Stripe app Docker images to GHCR with the same version
 tag, then publishes a GitHub Release with generated notes and both image pull
 commands.
+
+## Cadence
+
+Ship a stable release every one to two weeks, on a fixed weekday (Tuesday or Wednesday), not on a weekend.
+
+- **Batch the changes.** Everything merged to `main` since the last tag goes out together as one `minor` release,
+  so the notes read as "what's new" instead of one small change. Don't cut a release per merged PR: everyone
+  watching the repo for releases gets a notification for each one.
+- **Hotfixes ship right away.** A security fix, or a bug that breaks installs or data, goes out as a `patch`
+  release as soon as it is on `main`. Everything else waits for the next scheduled release.
+- **Try risky changes first.** Tag a release candidate (`v0.14.0-rc.1`, see Notes) and run it before tagging the
+  stable version.
+- **`main` stays usable in between.** Production installs pin `SHOPNEX_VERSION` to a release tag; only people
+  who want the latest changes follow `main` or `latest`.
 
 ## Steps
 
@@ -47,7 +61,7 @@ commands.
 - Stable releases also move the `latest` GHCR tag, and `docker save` archives of
   both images are attached to the release as assets.
 - Every release tag, including pre-releases, gets matching versioned GHCR tags
-  for Shopnex and the Stripe app. Both images are multi-arch (`linux/amd64` and `linux/arm64`), built natively
+  for ShopNex and the Stripe app. Both images are multi-arch (`linux/amd64` and `linux/arm64`), built natively
   on each architecture and merged into one tag.
 - Fix a bad release by deleting the GitHub Release and tag
   (`git push origin :refs/tags/v0.8.0`), fixing, and tagging again.

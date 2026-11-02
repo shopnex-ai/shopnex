@@ -3,7 +3,7 @@
 //   const store = await openLocalStore()                       // DATA_DIR, default ./.data
 //   const shopnex = createShopnexApp({ clientId: 'app_x', appKey: store.appKey, data: store.dataFor })
 //
-// `dataFor` is `shop.data` (settings, encrypted secrets) on SQLite instead of Shopnex; `store.db` is the same
+// `dataFor` is `shop.data` (settings, encrypted secrets) on SQLite instead of ShopNex; `store.db` is the same
 // database for the app's own tables. Back up the folder; lose it and the app is a new app (merchants reconnect).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'

@@ -16,7 +16,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Shopnex Admin' },
+      { title: 'ShopNex Admin' },
       { name: 'darkreader-lock', content: 'true' },
     ],
     links: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],

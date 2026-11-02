@@ -1,4 +1,4 @@
-// Stripe → app: turns signed Checkout events into resolve / reject calls on Shopnex payment sessions.
+// Stripe → app: turns signed Checkout events into resolve / reject calls on ShopNex payment sessions.
 // Kept apart from server.tsx (which starts the server on import) so it can be tested with signed fake events.
 import { Hono } from 'hono'
 import Stripe from 'stripe'
@@ -72,7 +72,7 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
     const paymentIntent =
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
 
-    // Events that say the money arrived: a session Shopnex can't find for one of these is a payment nobody sees
+    // Events that say the money arrived: a session ShopNex can't find for one of these is a payment nobody sees
     let paidEvent = false
     try {
       switch (event.type) {
@@ -102,13 +102,13 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
           break
       }
     } catch (error) {
-      // A payment for a session Shopnex doesn't have: the buyer was charged and no order will show it. Fail loudly
+      // A payment for a session ShopNex doesn't have: the buyer was charged and no order will show it. Fail loudly
       // (Stripe retries for days and flags the endpoint in the merchant's Dashboard) instead of dropping it.
       if (paidEvent && error instanceof ShopnexError && error.status === 404) {
         console.error(
-          `[stripe] PAID but no Shopnex session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): refund or fix by hand`,
+          `[stripe] PAID but no ShopNex session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): refund or fix by hand`,
         )
-        return c.text('Payment received for an unknown Shopnex session', 500)
+        return c.text('Payment received for an unknown ShopNex session', 500)
       }
       // Already settled the other way (409) or a decline/expiry for a session that is gone (404): nothing to retry
       if (error instanceof ShopnexError && (error.status === 409 || error.status === 404)) {
@@ -116,7 +116,7 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
         return c.body(null, 204)
       }
       console.error(`[stripe] ${event.type} for session ${id}:`, message(error))
-      return c.text('Shopnex unavailable', 503)
+      return c.text('ShopNex unavailable', 503)
     }
     return c.body(null, 204)
   })

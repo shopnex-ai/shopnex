@@ -2,7 +2,7 @@
   "name": "shopnex-app-starter",
   "private": true,
   "type": "module",
-  "description": "Minimal embedded Shopnex app on @shopnex/app: no database, no OAuth code; Admin API, app data, webhooks, admin-styled UI",
+  "description": "Minimal embedded ShopNex app on @shopnex/app: no database, no OAuth code; Admin API, app data, webhooks, admin-styled UI",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/server.tsx",
     "start": "tsx --env-file-if-exists=.env src/server.tsx",

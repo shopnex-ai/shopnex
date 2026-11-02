@@ -1,7 +1,7 @@
 # @shopnex/marketplace-sdk
 
-The contract and typed client for the Shopnex App Marketplace API, plus the keys, session tokens and signed requests that
-apps and Shopnex instances exchange.
+The contract and typed client for the ShopNex App Marketplace API, plus the keys, session tokens and signed requests that
+apps and ShopNex instances exchange.
 Most apps use this through [`@shopnex/app`](https://github.com/shopnex-ai/shopnex/tree/main/packages/app); use
 this package directly to check tokens and requests yourself, or when working on an instance or the marketplace.
 
@@ -32,7 +32,7 @@ if (!claims) throw new Error('Invalid session token')
 // claims.iss is the instance origin, claims.shop_id the shop, claims.sub the staff user
 ```
 
-Marketplace apps: anyone can run a Shopnex instance, so confirm a new install with the marketplace before trusting
+Marketplace apps: anyone can run a ShopNex instance, so confirm a new install with the marketplace before trusting
 it (custom apps skip this):
 
 ```ts
@@ -63,7 +63,7 @@ if (!installed) throw new Error('The marketplace has no record of this install')
   `signPaymentsRequest` for instances.
 - `@shopnex/marketplace-sdk/shipping`: carrier-service rate request types, `verifyRatesRequest` for apps and
   `signRatesRequest` for instances.
-- `@shopnex/marketplace-sdk/lifecycle`: the `app.installed` request Shopnex sends an app right after it's installed on a
+- `@shopnex/marketplace-sdk/lifecycle`: the `app.installed` request ShopNex sends an app right after it's installed on a
   shop, `verifyLifecycleRequest` for apps and `signLifecycleRequest` for instances.
 - `@shopnex/marketplace-sdk/keys`: Ed25519 key pairs (`generateKeyPair`), JWTs, client assertions and
   `createJwksResolver`.

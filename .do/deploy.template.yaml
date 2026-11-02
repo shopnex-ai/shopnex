@@ -1,11 +1,11 @@
-# DigitalOcean App Platform: https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2
+# DigitalOcean App Platform: https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/main
 spec:
   name: shopnex
   services:
     - name: web
       git:
         repo_clone_url: https://github.com/shopnex-ai/shopnex.git
-        branch: v2
+        branch: main
       dockerfile_path: Dockerfile
       http_port: 3000
       instance_size_slug: apps-s-1vcpu-2gb
@@ -17,7 +17,7 @@ spec:
         - { key: APP_URL, scope: RUN_TIME, value: '${APP_URL}' }
         - { key: TENANCY_MODE, scope: RUN_TIME, value: single }
   databases:
-    # Dev database: fine to try Shopnex, not for a live shop (no backups). `production: true` needs an existing
+    # Dev database: fine to try ShopNex, not for a live shop (no backups). `production: true` needs an existing
     # managed cluster (`cluster_name`), so it can't be created from a one-click template. Before going live, create a
     # managed Postgres cluster in DigitalOcean and point DATABASE_URL at it.
     - name: db

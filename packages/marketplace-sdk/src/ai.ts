@@ -1,12 +1,12 @@
-// AI apps: the contract between a Shopnex instance and an app that provides AI capabilities (product
-// descriptions, SEO, image alt text, classification, collection and page copy). Shopnex owns the commerce side (who may ask, which data the app sees, what is saved); the
-// app owns the AI side (provider, model, prompts, keys). Any provider works without changing Shopnex.
+// AI apps: the contract between a ShopNex instance and an app that provides AI capabilities (product
+// descriptions, SEO, image alt text, classification, collection and page copy). ShopNex owns the commerce side (who may ask, which data the app sees, what is saved); the
+// app owns the AI side (provider, model, prompts, keys). Any provider works without changing ShopNex.
 //
 //   1. The app registers what it provides for the shop: POST /api/v1/admin/ai-app/configure
 //      (scope write_ai_capabilities) with a URL per capability on its own origin.
-//   2. Staff (or an integration) ask Shopnex: POST /api/v1/admin/ai/run { capability, productId | collectionId |
-//      pageId, input }. Shopnex loads the subject itself and POSTs a signed AiRunRequest to the capability's URL.
-//   3. The app answers 200 AiRunResponse { output, usage? } within 60 seconds. Shopnex checks the output
+//   2. Staff (or an integration) ask ShopNex: POST /api/v1/admin/ai/run { capability, productId | collectionId |
+//      pageId, input }. ShopNex loads the subject itself and POSTs a signed AiRunRequest to the capability's URL.
+//   3. The app answers 200 AiRunResponse { output, usage? } within 60 seconds. ShopNex checks the output
 //      against the capability's schema and returns it as a suggestion: nothing is saved until staff save it.
 //
 // Capabilities are versioned and only ever change additively; a breaking change is a new capability name.
@@ -27,7 +27,7 @@ const seoOutput = z.object({
   description: z.string().trim().min(1).max(500),
 })
 const descriptionOutput = z.object({
-  /** Basic HTML (p, ul, li, strong, em…); Shopnex sanitizes it like any description */
+  /** Basic HTML (p, ul, li, strong, em…); ShopNex sanitizes it like any description */
   descriptionHtml: z.string().trim().min(1).max(100_000),
 })
 
@@ -173,7 +173,7 @@ type AiRunRequestBase = {
   kind: 'ai.run'
   /** The generation id: idempotency key for retries, and what staff feedback refers to */
   id: string
-  /** The Shopnex instance's public origin: its keys sign this request */
+  /** The ShopNex instance's public origin: its keys sign this request */
   instance: string
   shopId: string
   version: number

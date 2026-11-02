@@ -1,10 +1,10 @@
-// Stripe for Shopnex: a bundled payments app on @shopnex/app. Runs next to Shopnex (its own process) and keeps
+// Stripe for ShopNex: a bundled payments app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
 // its data in DATA_DIR (SQLite): the merchant's Stripe keys are stored there, encrypted with this app's key.
 //
 //   GET  /                      Embedded settings page (session token)
 //   POST /api/settings          Save the Stripe key (+ webhook secret when local), register "Credit card"
-//   POST /payments/session      Shopnex: start paying a session → Stripe Checkout URL
-//   POST /payments/refund       Shopnex: refund a session's payment
+//   POST /payments/session      ShopNex: start paying a session → Stripe Checkout URL
+//   POST /payments/refund       ShopNex: refund a session's payment
 //   POST /stripe/webhook        Stripe: checkout completed / expired, async payments → resolve / reject
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
@@ -15,12 +15,12 @@ import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
 import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
-// Public origin Shopnex, the admin (iframe) and Stripe reach this app at
+// Public origin ShopNex, the admin (iframe) and Stripe reach this app at
 const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 
-// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). Shopnex reads the public key
+// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const store = await openLocalStore()
 const shopnex = createShopnexApp({
@@ -156,7 +156,7 @@ app.post('/api/settings', async (c) => {
         await stripeFor(shop)
       ).webhookEndpoints.create({
         url: webhookUrl(shop),
-        description: `Shopnex (${shop.instance})`,
+        description: `ShopNex (${shop.instance})`,
         enabled_events: [...WEBHOOK_EVENTS],
       })
       await shop.data.setSecret('stripe_webhook_secret', endpoint.secret!)
@@ -171,12 +171,12 @@ app.post('/api/settings', async (c) => {
   try {
     await configure(shop, ready)
   } catch (error) {
-    return c.json({ error: `Saved, but Shopnex didn't accept the payment method: ${message(error)}` }, 502)
+    return c.json({ error: `Saved, but ShopNex didn't accept the payment method: ${message(error)}` }, 502)
   }
   return c.json({ ready, message: ready ? 'Stripe is ready to take payments' : 'Saved' })
 })
 
-// --- Shopnex → app: payment / refund sessions (signed with the instance's key) ---
+// --- ShopNex → app: payment / refund sessions (signed with the instance's key) ---
 
 // Stripe Checkout sessions last 30 minutes to 24 hours
 const checkoutExpiry = (expiresAt: string) => {
@@ -199,7 +199,7 @@ app.post('/payments/session', async (c) => {
     ).checkout.sessions.create(
       {
         mode: 'payment',
-        // Tags Shopnex checkouts in the Stripe Dashboard
+        // Tags ShopNex checkouts in the Stripe Dashboard
         integration_identifier: 'shopnex_checkout_qmvkzrtd',
         client_reference_id: request.id,
         customer_email: request.customer.email,
@@ -219,7 +219,7 @@ app.post('/payments/session', async (c) => {
         metadata,
         payment_intent_data: { metadata },
       },
-      // Shopnex retrying the same session gets the same Checkout Session
+      // ShopNex retrying the same session gets the same Checkout Session
       { idempotencyKey: `shopnex-payment-${request.id}` },
     )
     return c.json({ redirectUrl: session.url })
@@ -229,7 +229,7 @@ app.post('/payments/session', async (c) => {
   }
 })
 
-// Answers right away; the refund is made and reported to Shopnex in the background
+// Answers right away; the refund is made and reported to ShopNex in the background
 app.post('/payments/refund', async (c) => {
   const { request, shop } = await shopnex.verifyPaymentsRequest(c, 'refund')
   void refund(shop, request)

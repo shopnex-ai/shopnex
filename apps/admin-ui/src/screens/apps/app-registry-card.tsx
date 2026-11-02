@@ -37,7 +37,7 @@ export function AppRegistryCard() {
       <CardHeader>
         <CardTitle>Custom apps</CardTitle>
         <CardDescription>
-          Private apps for this Shopnex install, not listed in the marketplace (e.g. your own integrations). Only super
+          Private apps for this ShopNex install, not listed in the marketplace (e.g. your own integrations). Only super
           admins see this.
         </CardDescription>
         <CardAction>
@@ -260,7 +260,7 @@ function CredentialsView({ title, credentials }: { title: string; credentials: C
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>
           Give these to the app&apos;s developer (<code>SHOPNEX_CLIENT_ID</code>, <code>SHOPNEX_APP_KEY</code>). The
-          private key is shown only now and never stored here: Shopnex keeps the public half. Rotate it if it&apos;s
+          private key is shown only now and never stored here: ShopNex keeps the public half. Rotate it if it&apos;s
           lost.
         </DialogDescription>
       </DialogHeader>

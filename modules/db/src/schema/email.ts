@@ -45,7 +45,7 @@ export const emailSettings = pgTable('email_settings', {
 
 export type EmailSettings = typeof emailSettings.$inferSelect
 
-// Emails Shopnex sends by itself (Settings → Notifications). `layout` wraps every other one (header, footer).
+// Emails ShopNex sends by itself (Settings → Notifications). `layout` wraps every other one (header, footer).
 export const NOTIFICATIONS = [
   'order_confirmation',
   'shipping_confirmation',

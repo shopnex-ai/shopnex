@@ -32,4 +32,4 @@ Security fixes are released for 0.8 and newer, with the latest release first. Up
 ## Notes for operators
 
 - Anyone who reaches a fresh install can claim it: finish `/admin/setup` right after deploying.
-- Card data is handled by Stripe Checkout and never stored by Shopnex.
+- Card data is handled by Stripe Checkout and never stored by ShopNex.

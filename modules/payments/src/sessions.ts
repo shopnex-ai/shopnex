@@ -1,5 +1,5 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module (outbound calls to apps aside).
-// Payment sessions: Shopnex decides the amount, the app reports the outcome, Shopnex changes the order.
+// Payment sessions: ShopNex decides the amount, the app reports the outcome, ShopNex changes the order.
 // Calls to apps happen after the transaction that created the session commits: no row lock is held while
 // waiting on the network, and the app may call resolve before it even answers.
 import { and, desc, eq, gt, isNull, lte, notExists, or } from 'drizzle-orm'

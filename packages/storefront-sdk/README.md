@@ -1,6 +1,6 @@
 # @shopnex/storefront-sdk
 
-The Shopnex Storefront SDK provides a typed client and API contract for building custom storefronts with frameworks such as Next.js and Astro. It supports accessing shop data, products, collections, carts, checkout, and theme information through the Shopnex Storefront API.
+The ShopNex Storefront SDK provides a typed client and API contract for building custom storefronts with frameworks such as Next.js and Astro. It supports accessing shop data, products, collections, carts, checkout, and theme information through the ShopNex Storefront API.
 
 ## Installation
 

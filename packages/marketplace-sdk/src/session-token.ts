@@ -1,4 +1,4 @@
-// Session tokens for embedded apps: a JWT (EdDSA) the Shopnex admin hands the app's frontend (see
+// Session tokens for embedded apps: a JWT (EdDSA) the ShopNex admin hands the app's frontend (see
 // @shopnex/app-bridge), saying which staff member of which shop is using the app right now. The instance signs
 // it with its own key; the app's backend checks it against the instance's published keys (createJwksResolver),
 // so the app needs nothing stored per install. Trade it for an Admin API token with the token exchange grant.
@@ -6,7 +6,7 @@
 import { decodeJwt, signJwt, verifyJwt, type KeyResolver, type Signer } from './keys'
 
 export type SessionTokenClaims = {
-  /** The Shopnex instance's public origin */
+  /** The ShopNex instance's public origin */
   iss: string
   /** The app's client_id */
   aud: string

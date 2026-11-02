@@ -10,7 +10,7 @@
 
 - /landing # marketing site (Astro + Tailwind, static) on :3300 — `pnpm dev:landing`; links and copy in `src/site.ts`
 
-- /marketplace # App Marketplace (Next.js on :3200, own database): vendors list apps, Shopnex instances connect and sync
+- /marketplace # App Marketplace (Next.js on :3200, own database): vendors list apps, ShopNex instances connect and sync
 
 /packages
 
@@ -21,7 +21,7 @@
 /templates
 
 - /app-starter # minimal embedded marketplace app (Hono): OAuth install, marketplace verify, app bridge, Admin API, webhooks
-- /storefront # the Shopnex storefront (Astro): renders the shop's live theme (Liquid themes in themes/; Storeplate first), editable under Online store → Themes
+- /storefront # the ShopNex storefront (Astro): renders the shop's live theme (Liquid themes in themes/; Storeplate first), editable under Online store → Themes
 
 /modules
 
@@ -104,8 +104,8 @@ Admin ✨ Generate → POST /admin/ai/run → modules/ai ─┬→ built-in prov
                     loads the product, checks the answer against the schema, sanitizes it, records the generation
 ```
 
-- Built-in providers run in the Shopnex process: settings in `ai_settings`, the key encrypted with
-  `@shopnex/db/secrets`, the SDKs imported on first use (Shopnex starts without them), one attempt under a minute
+- Built-in providers run in the ShopNex process: settings in `ai_settings`, the key encrypted with
+  `@shopnex/db/secrets`, the SDKs imported on first use (ShopNex starts without them), one attempt under a minute
 
 - Capabilities (`product.description`, `product.seo`, `product.image_alt`, `product.classify`, `collection.description`, `collection.seo`, `page.content`) are a typed, versioned registry with zod input/output schemas;
   additive changes only, a breaking change is a new name

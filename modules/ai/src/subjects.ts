@@ -1,4 +1,4 @@
-// What a capability is about, as the provider sees it: loaded by Shopnex from the shop's own data, never by the
+// What a capability is about, as the provider sees it: loaded by ShopNex from the shop's own data, never by the
 // provider. Only what the copy needs, nothing about orders or customers.
 import { and, asc, count, desc, eq, sql } from 'drizzle-orm'
 import { htmlToText, productService, type ProductWithDetails } from '@shopnex/catalog'

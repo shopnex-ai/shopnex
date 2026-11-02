@@ -25,7 +25,7 @@ if (!/^\d+\.\d+\.\d+$/.test(next ?? '')) {
   process.exit(1)
 }
 
-// Versioned on its own: the storefront API contract, not the Shopnex release
+// Versioned on its own: the storefront API contract, not the ShopNex release
 const independent = new Set(['packages/storefront-sdk/package.json'])
 
 const files = git('ls-files', '*package.json').split('\n')

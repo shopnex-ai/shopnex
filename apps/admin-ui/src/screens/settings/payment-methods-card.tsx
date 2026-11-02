@@ -167,7 +167,7 @@ function MethodDialog({ method }: { method?: Method }) {
           <DialogDescription>
             {appMethod
               ? 'Taken by a payments app. Its settings (keys, accounts) are in the app: Manage.'
-              : 'For payments that happen outside Shopnex.'}
+              : 'For payments that happen outside ShopNex.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate>

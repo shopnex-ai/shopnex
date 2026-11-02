@@ -1,5 +1,5 @@
 // Ed25519 keys and EdDSA JWTs. No shared secrets anywhere:
-//   - each Shopnex instance signs session tokens, access tokens and payments requests with its own key and
+//   - each ShopNex instance signs session tokens, access tokens and payments requests with its own key and
 //     publishes the public half at GET {instance}/api/v1/oauth/jwks;
 //   - each app holds a private key (SHOPNEX_APP_KEY, snxk_…) and proves who it is with a short-lived client
 //     assertion (RFC 7523) addressed to one server. Instances and the marketplace only store its public key.
@@ -46,7 +46,7 @@ export async function generateKeyPair() {
 }
 
 export function importPrivateKey(privateKey: string) {
-  if (!privateKey.startsWith(PRIVATE_KEY_PREFIX)) throw new Error(`Not a Shopnex private key (${PRIVATE_KEY_PREFIX}…)`)
+  if (!privateKey.startsWith(PRIVATE_KEY_PREFIX)) throw new Error(`Not a ShopNex private key (${PRIVATE_KEY_PREFIX}…)`)
   const pkcs8 = fromBase64url(privateKey.slice(PRIVATE_KEY_PREFIX.length))
   // Extractable so publicKeyOf can read the public half from the JWK
   return crypto.subtle.importKey('pkcs8', pkcs8, ED25519, true, ['sign'])
