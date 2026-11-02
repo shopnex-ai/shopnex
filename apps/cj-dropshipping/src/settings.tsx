@@ -39,6 +39,8 @@ export type SettingsView = {
   settings: CjSettings
   /** Why CJ's shipping prices aren't offered at checkout (null: they are) */
   shippingError: string | null
+  /** The merchant switched CJ's shipping prices off in Settings → Shipping */
+  shippingOff?: boolean
   orders: ForwardedOrder[]
 }
 
@@ -190,7 +192,7 @@ export function ProductList({ products, productsError }: { products: MyProduct[]
 
 const STATUS_TONE = { pending: 'warning', created: 'default', fulfilled: 'success', failed: 'critical' } as const
 
-export function SettingsPage({ connected, settings, shippingError, orders }: SettingsView) {
+export function SettingsPage({ connected, settings, shippingError, shippingOff, orders }: SettingsView) {
   return (
     <Page
       title="CJ Dropshipping"
@@ -253,6 +255,11 @@ export function SettingsPage({ connected, settings, shippingError, orders }: Set
             {shippingError ? (
               <Banner tone="warning" title="Not on yet">
                 {shippingError.replace(/[.\s]*$/, '.')} Uninstall the app and install it again to allow shipping prices.
+              </Banner>
+            ) : shippingOff ? (
+              <Banner tone="warning" title="Off">
+                You turned CJ&apos;s shipping prices off, so buyers get your own shipping rates. Turn them back on in
+                Settings → Shipping → Carrier services.
               </Banner>
             ) : (
               <Banner tone="success" title="On">
