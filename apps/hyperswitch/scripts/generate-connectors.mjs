@@ -1,0 +1,131 @@
+#!/usr/bin/env node
+// Writes src/connectors.generated.ts: every processor hyperswitch-prism supports and the credential fields its config
+// takes, read from the package's own type definitions. Run again after upgrading hyperswitch-prism:
+//
+//   pnpm --filter @shopnex/hyperswitch generate-connectors
+import { mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const pkgDir = dirname(realpathSync(createRequire(import.meta.url).resolve('hyperswitch-prism/package.json')))
+const dts = readFileSync(join(pkgDir, 'dist/src/payments/generated/proto.d.ts'), 'utf8')
+
+const body = (name) => new RegExp(`interface ${name} \\{(.*?)\\n    \\}`, 's').exec(dts)?.[1]
+const fieldsOf = (name) =>
+  [...(body(name) ?? '').matchAll(/^\s+(\w+)\?: \((.*?)\)/gm)].map(([, field, type]) => ({ field, type }))
+
+// Prism checks a config before it talks to anyone: an incomplete one fails with FAILED_TO_OBTAIN_AUTH_TYPE, a complete
+// one goes on to the network (pointed at a dead port here, so nothing is ever sent). Filling every field and removing
+// them one at a time finds the required ones.
+const { PaymentClient, types } = createRequire(import.meta.url)('hyperswitch-prism')
+const DEAD = 'http://127.0.0.1:9/'
+const card = {
+  cardNumber: { value: '4111111111111111' },
+  cardExpMonth: { value: '12' },
+  cardExpYear: { value: '2030' },
+  cardCvc: { value: '123' },
+  cardHolderName: { value: 'Test' },
+}
+async function accepts(id, secrets, options, skip) {
+  const entry = { baseUrl: DEAD }
+  for (const f of options) if (f !== skip) entry[f] = DEAD
+  for (const f of secrets) if (f !== skip) entry[f] = { value: 'x' }
+  try {
+    await new PaymentClient({ connectorConfig: { [id]: entry } }).authorize({
+      merchantTransactionId: 't',
+      amount: { minorAmount: 1000, currency: types.Currency.USD },
+      captureMethod: types.CaptureMethod.AUTOMATIC,
+      paymentMethod: { card },
+      address: { billingAddress: {} },
+      authType: types.AuthenticationType.NO_THREE_DS,
+      returnUrl: 'https://example.com/return',
+      testMode: true,
+    })
+    return true
+  } catch (error) {
+    return error?.errorCode !== 'FAILED_TO_OBTAIN_AUTH_TYPE'
+  }
+}
+
+// "bankofamerica" has no word breaks to find: the label is the id with a capital
+const label = (id) => id.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase())
+
+let connectors = []
+for (const { field: id, type } of fieldsOf('IConnectorSpecificConfig')) {
+  {
+    const fields = fieldsOf(type.replace(/^types\.|\|null$/g, ''))
+    // Secret values (keys, passwords…) are stored encrypted; plain strings (base URLs…) are optional settings
+    const secrets = fields.filter((f) => f.type.startsWith('types.ISecretString')).map((f) => f.field)
+    const options = fields.filter((f) => f.type === 'string|null' && f.field !== 'baseUrl').map((f) => f.field)
+    // Required: without it Prism rejects the config. Null when even a full config is rejected (it needs something
+    // this script doesn't fill): then only the live check at save time can tell.
+    const complete = await accepts(id, secrets, options)
+    const required = complete ? [] : null
+    if (complete) {
+      for (const f of [...secrets, ...options]) if (!(await accepts(id, secrets, options, f))) required.push(f)
+    }
+    connectors.push({ id, label: label(id), secrets, options, required })
+  }
+}
+// Which processors take a card: Prism tests each one per payment method (data/field_probe in hyperswitch-prism) and
+// records supported / not_supported (the processor can't) / not_implemented (Prism can't yet) / error (the probe got
+// stuck, e.g. it needs a token from the processor's browser SDK). Only this app's card flow matters, so processors
+// that can't take a card are left out (a merchant could pick one and every payment would fail), and the ones the
+// probe couldn't settle are kept but flagged as unverified. No probe file at all counts as "can't tell": left out.
+const PROBE =
+  'https://raw.githubusercontent.com/juspay/hyperswitch-prism/b9ab759f72a609c808002058b021dbf8433d52b9/data/field_probe'
+async function cardSupport(id) {
+  for (const name of new Set([id.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase(), id.toLowerCase()])) {
+    const res = await fetch(`${PROBE}/${name}.json`)
+    if (!res.ok) continue
+    const status = (await res.json()).flows?.authorize?.Card?.status
+    return status === 'supported' ? 'yes' : status === 'error' ? 'unverified' : 'no'
+  }
+  return 'no'
+}
+for (const c of connectors) c.card = await cardSupport(c.id)
+const excluded = connectors.filter((c) => c.card === 'no').map((c) => c.id)
+connectors = connectors.filter((c) => c.card !== 'no')
+
+// Logos: the Hyperswitch Control Center (Apache-2.0) keeps one SVG per processor, named after it. They're third-party
+// files that end up in a page, so each is checked: small, and nothing that can run or load anything but an embedded picture.
+const LOGOS =
+  'https://raw.githubusercontent.com/juspay/hyperswitch-control-center/768337b1afb717039e4ba9880230b0d2c3906b94/public/hyperswitch/assets/Gateway'
+const unsafe =
+  /<script|\son\w+\s*=|<foreignObject|<iframe|<use[^>]*href=["'](?!#)|javascript:|<!ENTITY|<!DOCTYPE[^>]*\[|(?:href|src)\s*=\s*["'](?!#|data:image\/(?:png|jpeg|webp|gif);base64,)/i
+const iconDir = join(here, '../icons')
+mkdirSync(iconDir, { recursive: true })
+for (const file of readdirSync(iconDir)) rmSync(join(iconDir, file))
+const logos = []
+for (const { id } of connectors) {
+  const names = [id.toUpperCase(), id.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase()]
+  for (const name of new Set(names)) {
+    const res = await fetch(`${LOGOS}/${name}.svg`)
+    if (!res.ok) continue
+    const svg = await res.text()
+    if (svg.length > 60_000 || unsafe.test(svg) || !svg.trimStart().startsWith('<')) break
+    writeFileSync(join(iconDir, `${id}.svg`), svg)
+    logos.push(id)
+    break
+  }
+}
+connectors.sort((a, b) => a.label.localeCompare(b.label))
+
+writeFileSync(
+  join(here, '../src/connectors.generated.ts'),
+  `// Generated by scripts/generate-connectors.mjs from hyperswitch-prism ${JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')).version}: don't edit\n` +
+    `export const CONNECTORS: Record<string, { label: string; secrets: string[]; options: string[]; required: string[] | null; card: 'yes' | 'unverified' }> = {\n` +
+    connectors
+      .map(
+        (c) =>
+          `  ${c.id}: { label: ${JSON.stringify(c.label)}, secrets: ${JSON.stringify(c.secrets)}, options: ${JSON.stringify(c.options)}, required: ${JSON.stringify(c.required)}, card: ${JSON.stringify(c.card)} },`,
+      )
+      .join('\n') +
+    `\n}\n\n// Processors with a logo in icons/ (from the Hyperswitch Control Center, Apache-2.0; the marks belong to their owners)\nexport const ICONS: string[] = ${JSON.stringify(logos)}\n`,
+)
+console.log(`left out (no card support in Prism's probe): ${excluded.join(', ')}`)
+console.log(
+  `${connectors.length} connectors, ${connectors.filter((c) => !c.required).length} that only the live check can validate, ${connectors.filter((c) => c.required?.length === 0).length} with no required field found`,
+)

@@ -676,6 +676,14 @@ const BUNDLED_APPS = [
     scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
   },
   {
+    clientId: 'app_hyperswitch',
+    urlEnv: 'HYPERSWITCH_APP_URL',
+    internalUrl: 'http://hyperswitch:4800',
+    name: 'Hyperswitch',
+    description: 'Accept card payments through Hyperswitch Prism: Stripe, Adyen and more behind one integration.',
+    scopes: ['read_orders', 'write_payment_sessions'] as ApiScope[],
+  },
+  {
     clientId: 'app_cj_dropshipping',
     urlEnv: 'CJ_DROPSHIPPING_APP_URL',
     internalUrl: 'http://cj-dropshipping:4700',
