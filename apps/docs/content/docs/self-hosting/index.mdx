@@ -4,45 +4,84 @@ description: Deploy ShopNex in one click or on your own server.
 ---
 
 import { SITE_URL } from '@/lib/site'
+import { CodeBlock, Pre } from 'fumadocs-ui/components/codeblock'
 
-ShopNex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port. Pick the way you want to run it.
+import { ShieldAlert } from 'lucide-react'
+import { siRender, siDigitalocean, siRailway, siDocker, siLinux } from 'simple-icons'
+import { BrandIcon } from '@/components/brand-icon'
+import { DokployIcon } from '@/components/dokploy-icon'
+
+ShopNex ships as one image containing the admin, API, hosted checkout and the default storefront, fronted by Caddy on a single port. Two ways are fully supported: one-click deploys on Render and DigitalOcean, and the install script on your own server.
 
 ## One-click deploy
 
-Each of these creates the app and a Postgres database for you.
+No server to manage. Each of these creates the app and a Postgres database for you.
 
 <Cards>
-  <Card title="Render" href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2">
+  <Card
+    icon={<BrandIcon icon={siRender} brand={false} />}
+    title="Render"
+    href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/v2"
+  >
     App plus managed Postgres, HTTPS included.
   </Card>
   <Card
+    icon={<BrandIcon icon={siDigitalocean} />}
     title="DigitalOcean"
     href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2"
   >
     App Platform with a managed database.
   </Card>
-  <Card title="Railway" href="/docs/self-hosting/railway">
-    App, Postgres and a volume from one template.
-  </Card>
-  <Card title="AWS" href={`${SITE_URL}/download`}>
-    A server with a fixed IP, launched from CloudFormation.
-  </Card>
 </Cards>
 
-<Callout type="warn">
+<Callout type="warn" icon={<ShieldAlert />}>
   Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there
   first.
 </Callout>
 
-## Your own server
+## Dokploy, Coolify or Portainer
+
+Already run one of these on a server? Deploy ShopNex from one Docker Compose file: the prebuilt image plus Postgres. They handle HTTPS, updates and rollbacks from a web UI.
 
 <Cards>
-  <Card title="Install script" href="/docs/self-hosting/docker">
-    <code>{`curl -fsSL ${SITE_URL}/install.sh | sudo sh`}</code> on a fresh Linux server, or run the Docker image
-    yourself.
+  <Card icon={<DokployIcon />} title="Deploy with Docker Compose" href="/docs/self-hosting/dokploy">
+    Full Dokploy guide, plus notes for Coolify and Portainer.
   </Card>
-  <Card title="Dokploy, Coolify, Portainer" href="/docs/self-hosting/dokploy">
-    One Docker Compose file: the prebuilt image plus Postgres.
+</Cards>
+
+## Your own server
+
+The cheapest way to run ShopNex long term, if you are comfortable with a terminal. You need a fresh Linux server with at least 2 GB of memory and a domain. Point two DNS records at the server first: `shop.example.com` for the shop and `stripe.shop.example.com` for the Stripe app. The installer sets up Docker, Postgres and ShopNex, and gets HTTPS certificates automatically.
+
+<CodeBlock title="Terminal">
+  <Pre className="px-4">
+    <code>{`curl -fsSL ${SITE_URL}/install.sh | sudo SHOPNEX_DOMAIN=shop.example.com sh`}</code>
+  </Pre>
+</CodeBlock>
+
+Then open your domain and finish the setup wizard.
+
+<Callout type="warn" icon={<ShieldAlert />}>
+  Without `SHOPNEX_DOMAIN` the shop runs over plain HTTP on the server's IP address. That is fine for a quick test, but
+  do not create your admin account or take orders that way.
+</Callout>
+
+<Cards>
+  <Card icon={<BrandIcon icon={siLinux} />} title="Install script guide" href="/docs/self-hosting/install">
+    What the installer does, requirements, and how to update.
+  </Card>
+</Cards>
+
+## Other ways to run it
+
+Works with the same image, but you set more of it up yourself.
+
+<Cards>
+  <Card icon={<BrandIcon icon={siDocker} />} title="Plain Docker" href="/docs/self-hosting/docker">
+    Run the image yourself against your own Postgres.
+  </Card>
+  <Card icon={<BrandIcon icon={siRailway} brand={false} />} title="Railway" href="/docs/self-hosting/railway">
+    Manual setup for now; the one-click template isn't published yet.
   </Card>
 </Cards>
 

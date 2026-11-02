@@ -1,7 +1,26 @@
 ---
-title: Dokploy & similar platforms
-description: Deploy ShopNex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
+title: Dokploy
+description: Deploy ShopNex on your own server with Dokploy, from install to your first order.
 ---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps'
+
+## One-click template
+
+The fastest way on Dokploy. The ShopNex template creates Postgres, ShopNex and the Stripe app, generates both domains and the secrets, and wires everything together.
+
+<Steps>
+  <Step>In your project, click **Create Service** and choose **Template**.</Step>
+  <Step>Search for **ShopNex** and click **Create**.</Step>
+  <Step>Click **Deploy**, then open the shop's domain at `/admin/setup` and finish the wizard.</Step>
+</Steps>
+
+To use your own domain, replace the generated ones under **Domains** (shop on service `shopnex`, port `3000`; Stripe on service `stripe`, port `4600`) and update `APP_URL` and `STRIPE_APP_URL` under **Environment** to match.
+
+<Callout title="Template pending">
+  The ShopNex template is not in Dokploy's catalog yet. Until it is, follow the manual steps below; they produce the
+  same setup.
+</Callout>
 
 Platforms that run Docker Compose on your own server can deploy ShopNex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); pin `SHOPNEX_VERSION` to a release tag for production.
 
@@ -25,16 +44,100 @@ Every variable has a local default, so `docker compose up` works without any set
 
 `BETTER_AUTH_SECRET` and `SHOPNEX_SECRET` are optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
-## Dokploy
+## Deploy on Dokploy
 
-Use [`deploy/docker-compose.dokploy.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.dokploy.yml), the same stack without published host `ports:`. Dokploy's proxy reaches the containers over the Docker network, and a published port such as `3000` can collide with it or with another app and fail the first deploy.
+[Dokploy](https://dokploy.com) is a self-hosted dashboard that deploys Docker Compose apps, gets HTTPS certificates and handles redeploys. This is the full path from an empty server to a working shop.
 
-1. Create a **Compose** service in a project and choose the **Raw** provider.
-2. Paste the Dokploy compose file and set `APP_URL`, `STRIPE_APP_URL`, and `SHOPNEX_VERSION` under **Environment**.
-3. Under **Domains**, add the ShopNex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
-4. Click **Deploy**.
+### Before you start
 
-To update, change `SHOPNEX_VERSION` to the desired release tag and deploy again. `pull_policy: always` fetches that tagged image. ShopNex and Stripe use the same release tag.
+- A Linux server with at least 2 GB of memory and Docker-friendly ports **80**, **443** and **3000** free. Dokploy's own dashboard uses port 3000, which is why ShopNex uses a separate Compose file without published ports.
+- A domain you control. You need two DNS records, both pointing at the server's IP address:
+  - `shop.example.com` for the shop and admin.
+  - `stripe.shop.example.com` for the bundled Stripe app. Skip it if you will not take card payments.
+
+### Install Dokploy
+
+On the server, run Dokploy's installer, then open `http://<server-ip>:3000` and create the admin account. Follow [Dokploy's installation guide](https://docs.dokploy.com/docs/core/installation) for the current command and requirements.
+
+### Create the ShopNex service
+
+<Steps>
+  <Step>
+    ### Create a project
+
+    In Dokploy, create a **Project** (for example `shop`), then add a **Compose** service to it.
+
+  </Step>
+  <Step>
+    ### Paste the compose file
+
+    Choose the **Raw** provider and paste the contents of [`deploy/docker-compose.dokploy.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.dokploy.yml). It is the same stack as the main Compose file, without published host ports. It contains Postgres, ShopNex and the Stripe app; the optional CJ Dropshipping app stays off.
+
+  </Step>
+  <Step>
+    ### Set the environment
+
+    Open the **Environment** tab and add:
+
+    ```sh
+    APP_URL=https://shop.example.com
+    STRIPE_APP_URL=https://stripe.shop.example.com
+    SHOPNEX_VERSION=v1.2.3
+    DEFAULT_SHOP_NAME=My Shop
+    ```
+
+    Use a real release tag from the [releases page](https://github.com/shopnex-ai/shopnex/releases) for `SHOPNEX_VERSION`. `latest` works, but a pinned tag means a redeploy never changes the version by surprise.
+
+  </Step>
+  <Step>
+    ### Add the domains
+
+    Open the **Domains** tab and add two entries, each with HTTPS enabled and a Let's Encrypt certificate:
+
+    | Host                      | Service   | Port   |
+    | ------------------------- | --------- | ------ |
+    | `shop.example.com`        | `shopnex` | `3000` |
+    | `stripe.shop.example.com` | `stripe`  | `4600` |
+
+    The DNS records must already point at the server, or the certificate request fails.
+
+  </Step>
+  <Step>
+    ### Deploy
+
+    Click **Deploy** and watch the logs. The first deploy pulls the images and runs the database migrations, so it takes a minute or two. When the `shopnex` container is healthy, open `https://shop.example.com/admin/setup`.
+
+  </Step>
+</Steps>
+
+<Callout type="warn">
+  Complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there first.
+</Callout>
+
+### After the first deploy
+
+1. Finish the setup wizard and create your admin account.
+2. Add your products, then set up payments from **Settings** in the admin.
+3. Check that the storefront loads at `https://shop.example.com`.
+
+### Update
+
+Change `SHOPNEX_VERSION` in **Environment** to the new release tag and click **Deploy**. `pull_policy: always` fetches that tagged image, and ShopNex and Stripe use the same tag. Migrations run on start, so upgrades need no extra step.
+
+### Back up
+
+Two volumes hold your data: `db` (Postgres) and `shopnex_data`. The secret that encrypts provider keys, SMTP passwords and storage credentials lives in `shopnex_data`, so back up both together. A database restored without the same secret keeps its rows, but saved keys can't be read and must be entered again. Dokploy can schedule database backups to S3-compatible storage; see its documentation.
+
+### Optional: CJ Dropshipping
+
+Add `COMPOSE_PROFILES=cj` and `CJ_DROPSHIPPING_APP_URL=https://cj.shop.example.com` to the environment, add a DNS record for `cj.shop.example.com`, and add a domain pointing at service `cj-dropshipping` on port `4700`. Redeploy.
+
+### Troubleshooting
+
+- **The first deploy fails with a port error.** You pasted the main `docker-compose.yml`, which publishes ports 3000, 80 and 443. Use `docker-compose.dokploy.yml`.
+- **No certificate, or a browser warning.** The DNS record is missing or has not propagated yet. Check it, then redeploy.
+- **Checkout or Stripe links point at `localhost`.** `APP_URL` or `STRIPE_APP_URL` is unset. Set both and redeploy.
+- **`/admin` loads but sign-in fails.** `APP_URL` does not match the domain you are visiting, including `https://` and no trailing slash.
 
 ## Coolify, Portainer and others
 
