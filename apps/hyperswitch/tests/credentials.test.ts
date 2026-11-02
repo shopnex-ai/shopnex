@@ -4,10 +4,17 @@ import { describe, test } from 'node:test'
 import { allFields, CONNECTORS, checkCredentials, fieldLabel, fieldsOf, missingFields } from '../src/prism'
 
 describe('credentials', () => {
-  test('lists the processors Prism supports, with their required fields', () => {
-    assert.ok(Object.keys(CONNECTORS).length > 100)
+  test('lists the processors that take cards, with their required fields', () => {
+    assert.ok(Object.keys(CONNECTORS).length > 60)
     assert.deepEqual(CONNECTORS.stripe?.required, ['apiKey'])
     assert.deepEqual(CONNECTORS.adyen?.required, ['apiKey', 'merchantAccount'])
+  })
+
+  test("leaves out processors that can't take a card, and flags the unverified", () => {
+    for (const id of ['affirm', 'cryptopay', 'phonepe', 'kount', 'hyperswitch'])
+      assert.equal(CONNECTORS[id], undefined, id)
+    assert.equal(CONNECTORS.stripe?.card, 'yes')
+    assert.equal(CONNECTORS.braintree?.card, 'unverified')
   })
 
   test('each processor asks for its required fields first, then the optional ones', () => {

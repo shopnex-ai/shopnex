@@ -35,7 +35,10 @@ const css = `
 background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
 .hs-card:hover,.hs-card:focus-visible{border-color:var(--ring);background:var(--muted);outline:none}
 .hs-card span{min-width:0}
-.hs-card b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs-card b{display:flex;align-items:center;gap:.4rem;font-weight:600}
+.hs-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs-dot{display:inline-block;flex:none;width:.5rem;height:.5rem;border-radius:50%;background:var(--warning)}
+.hs-legend{display:flex;align-items:center;gap:.5rem;margin:0;font-size:.8rem}
 .hs-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem;color:color-mix(in oklch,var(--fg) 60%,transparent)}
 .hs-tile{flex:none;display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:.65rem;font-weight:700;font-size:1rem}
 .hs-logo{background:#fff;box-shadow:inset 0 0 0 1px #0000001a}.hs-logo img{width:1.7rem;height:1.7rem;object-fit:contain}
@@ -74,12 +77,23 @@ const needs = (id: string) => {
 }
 
 function ProcessorCard({ id }: { id: string }) {
-  const { label } = CONNECTORS[id]!
+  const { label, card } = CONNECTORS[id]!
+  const unverified = card === 'unverified'
   return (
-    <button type="button" class="hs-card" data-id={id} data-name={`${label} ${id}`.toLowerCase()}>
+    <button
+      type="button"
+      class="hs-card"
+      data-id={id}
+      data-name={`${label} ${id}`.toLowerCase()}
+      data-label={label}
+      data-unverified={unverified ? '' : undefined}
+    >
       <ProcessorTile id={id} />
       <span>
-        <b>{label}</b>
+        <b>
+          <span class="hs-name">{label}</span>
+          {unverified && <i class="hs-dot" title="Unverified for card payments"></i>}
+        </b>
         <small>{needs(id)}</small>
       </span>
     </button>
@@ -106,7 +120,8 @@ function configure(id) {
   input.value = id
   const card = $('.hs-card[data-id=' + id + ']')
   $('#hs-head-tile').innerHTML = card.querySelector('.hs-tile').outerHTML
-  $('#hs-head-name').textContent = card.querySelector('b').textContent
+  $('#hs-head-name').textContent = card.dataset.label
+  $('#hs-unverified').hidden = !card.hasAttribute('data-unverified')
   $('#hs-head-needs').textContent = card.querySelector('small').textContent
   const wanted = new Map((fields[id] || []).map((f, i) => [f.name, { ...f, i }]))
   for (const box of document.querySelectorAll('[data-field]')) {
@@ -130,13 +145,15 @@ window.addEventListener('popstate', (e) => step((e.state && e.state.step) || ${J
 $('.hs-search').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase()
   let shown = 0
-  for (const card of document.querySelectorAll('#hs-all .hs-card')) {
+  for (const card of document.querySelectorAll('.hs-card')) {
     const on = !q || card.dataset.name.includes(q)
     card.hidden = !on
     if (on) shown++
   }
-  $('#hs-popular').hidden = !!q
-  $('#hs-all h3').textContent = q ? 'Results' : 'All processors'
+  for (const section of document.querySelectorAll('.hs-section')) {
+    section.hidden = ![...section.querySelectorAll('.hs-card')].some((c) => !c.hidden)
+  }
+  $('#hs-more h3').textContent = q ? 'Results' : 'More processors'
   $('.hs-none').hidden = shown > 0
 })
 
@@ -179,9 +196,12 @@ export function SettingsPage({ connection, saved, ready, webhookUrl }: SettingsV
       <div id="hs-pick" hidden={initial !== 'pick'}>
         <Card
           title="Choose a payment processor"
-          description={`Hyperswitch Prism connects to ${Object.keys(CONNECTORS).length} processors through one integration. Pick the one your business already uses.`}
+          description={`${Object.keys(CONNECTORS).length} processors that take card payments, through one integration. Pick the one your business already uses.`}
         >
           <input type="search" class="sx-input hs-search" placeholder="Search processors…" autocomplete="off" />
+          <p class="hs-muted hs-legend">
+            <i class="hs-dot"></i> Unverified: Prism's own tests couldn't confirm card payments for these.
+          </p>
           <div class="hs-section" id="hs-popular">
             <h3>Popular</h3>
             <div class="hs-grid">
@@ -190,17 +210,19 @@ export function SettingsPage({ connection, saved, ready, webhookUrl }: SettingsV
               ))}
             </div>
           </div>
-          <div class="hs-section" id="hs-all">
-            <h3>All processors</h3>
+          <div class="hs-section" id="hs-more">
+            <h3>More processors</h3>
             <div class="hs-grid">
-              {Object.keys(CONNECTORS).map((id) => (
-                <ProcessorCard id={id} />
-              ))}
+              {Object.keys(CONNECTORS)
+                .filter((id) => !POPULAR.includes(id))
+                .map((id) => (
+                  <ProcessorCard id={id} />
+                ))}
             </div>
-            <p class="hs-none" hidden>
-              No processor matches.
-            </p>
           </div>
+          <p class="hs-none" hidden>
+            No processor matches.
+          </p>
         </Card>
       </div>
 
@@ -227,6 +249,12 @@ export function SettingsPage({ connection, saved, ready, webhookUrl }: SettingsV
               Credentials are stored encrypted in your shop. Buyers enter their card on a page hosted by this app, and
               the card is sent straight to your processor; it is never stored or logged.
             </p>
+            <div id="hs-unverified" hidden={CONNECTORS[current]?.card !== 'unverified'}>
+              <Banner tone="warning" title="Not verified for card payments">
+                Prism's own tests couldn't confirm card payments for this processor (many need a token from the
+                processor's browser SDK, which this app doesn't use). Try it in test mode first.
+              </Banner>
+            </div>
             <div class="hs-fields">
               {allFields.map((field) => (
                 <div data-field={field} data-label={fieldLabel(field)} hidden={!wanted.has(field)}>
