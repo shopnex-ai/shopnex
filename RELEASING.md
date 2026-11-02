@@ -6,6 +6,20 @@ the main Shopnex and Stripe app Docker images to GHCR with the same version
 tag, then publishes a GitHub Release with generated notes and both image pull
 commands.
 
+## Cadence
+
+Ship a stable release every one to two weeks, on a fixed weekday (Tuesday or Wednesday), not on a weekend.
+
+- **Batch the changes.** Everything merged to `main` since the last tag goes out together as one `minor` release,
+  so the notes read as "what's new" instead of one small change. Don't cut a release per merged PR: everyone
+  watching the repo for releases gets a notification for each one.
+- **Hotfixes ship right away.** A security fix, or a bug that breaks installs or data, goes out as a `patch`
+  release as soon as it is on `main`. Everything else waits for the next scheduled release.
+- **Try risky changes first.** Tag a release candidate (`v0.14.0-rc.1`, see Notes) and run it before tagging the
+  stable version.
+- **`main` stays usable in between.** Production installs pin `SHOPNEX_VERSION` to a release tag; only people
+  who want the latest changes follow `main` or `latest`.
+
 ## Steps
 
 1. Make sure `main` is green in CI and contains everything you want to ship.
