@@ -2,6 +2,7 @@ import type { ToOptions } from '@tanstack/react-router'
 import {
   BellIcon,
   BlocksIcon,
+  BookOpenIcon,
   CodeIcon,
   CreditCardIcon,
   GlobeIcon,
@@ -32,6 +33,16 @@ export type NavItem = {
   icon: LucideIcon
   /** Only this exact path is active */ exact?: boolean
   /** Hidden from everyone else */ superAdminOnly?: boolean
+  external?: undefined
+}
+
+// A link to a page the API serves (not an admin route): opens in a new tab
+export type ExternalNavItem = {
+  href: string
+  label: string
+  icon: LucideIcon
+  external: true
+  superAdminOnly?: boolean
 }
 
 // Add screens here as they're built
@@ -55,7 +66,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
 ]
 
 // Under /admin/settings the sidebar shows these instead of the main nav, one page each
-export const settingsNav: { label: string; items: NavItem[] }[] = [
+export const settingsNav: { label: string; items: (NavItem | ExternalNavItem)[] }[] = [
   {
     label: 'Shop',
     items: [
@@ -92,6 +103,7 @@ export const settingsNav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/settings/storefront-keys', label: 'Storefront keys', icon: KeyRoundIcon },
       { href: '/admin/settings/api-tokens', label: 'API tokens', icon: CodeIcon },
       { href: '/admin/settings/webhooks', label: 'Webhooks', icon: WebhookIcon },
+      { href: '/api/v1/docs', label: 'API reference', icon: BookOpenIcon, external: true },
     ],
   },
 ]

@@ -2,7 +2,6 @@
 
 import {
   ArrowLeftIcon,
-  BookOpenIcon,
   CheckIcon,
   ChevronsUpDownIcon,
   ExternalLinkIcon,
@@ -18,7 +17,7 @@ import { Link, useLocation } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 import { GlobalSearch } from '@/components/admin/global-search'
-import { nav, settingsNav, type NavItem } from '@/components/admin/nav'
+import { nav, settingsNav, type ExternalNavItem, type NavItem } from '@/components/admin/nav'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
 import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
 import { useSignOut } from '@/components/auth/sign-out-button'
@@ -99,18 +98,6 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-            <SidebarMenuItem>
-              {/* Served by the API (oRPC OpenAPI reference), not a Next page: open in a new tab */}
-              <SidebarMenuButton
-                render={<a href="/api/v1/docs" target="_blank" rel="noopener" />}
-                tooltip="API reference"
-                size="sm"
-              >
-                <BookOpenIcon />
-                <span>API reference</span>
-                <ExternalLinkIcon className="ml-auto opacity-50" />
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <UpdateMenuItem enabled={shop.superAdmin} />
           </SidebarMenu>
         </SidebarGroup>
@@ -220,7 +207,7 @@ function NavGroup({
   superAdmin,
 }: {
   label: string
-  items: NavItem[]
+  items: (NavItem | ExternalNavItem)[]
   canManageApps: boolean
   superAdmin: boolean
 }) {
@@ -232,19 +219,31 @@ function NavGroup({
       <SidebarMenu>
         {items
           .filter((item) => !item.superAdminOnly || superAdmin)
-          .map(({ href, label, icon: Icon, exact }) => (
-            <SidebarMenuItem key={href}>
-              <SidebarMenuButton
-                render={<Link to={href} onClick={() => isMobile && setOpenMobile(false)} />}
-                isActive={exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)}
-                tooltip={label}
-              >
-                <Icon />
-                <span>{label}</span>
-              </SidebarMenuButton>
-              {canManageApps && href === '/admin/apps' && <InstalledApps />}
-            </SidebarMenuItem>
-          ))}
+          .map((item) =>
+            item.external ? (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton render={<a href={item.href} target="_blank" rel="noopener" />} tooltip={item.label}>
+                  <item.icon />
+                  <span>{item.label}</span>
+                  <ExternalLinkIcon className="ml-auto opacity-50" />
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  render={<Link to={item.href} onClick={() => isMobile && setOpenMobile(false)} />}
+                  isActive={
+                    item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+                  }
+                  tooltip={item.label}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+                {canManageApps && item.href === '/admin/apps' && <InstalledApps />}
+              </SidebarMenuItem>
+            ),
+          )}
       </SidebarMenu>
     </SidebarGroup>
   )
