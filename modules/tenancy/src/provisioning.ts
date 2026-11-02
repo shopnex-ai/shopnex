@@ -27,22 +27,31 @@ async function uniqueSlug(conn: Pick<typeof db, 'select'>, name: string) {
 }
 
 /**
- * The storefront header's menu, so a new shop has working navigation from the first visit. Both links need no
- * content (the front page and the catalog), so the menu is valid before there is a product or collection.
+ * The storefront's menus, so a new shop has working navigation from the first visit: the header (`main-menu`)
+ * and the footer (`footer`), the two handles every bundled theme reads. Every link needs no content (the front
+ * page, the catalog, search), so the menus are valid before there is a product or collection.
  * Never replaces an existing menu: a merchant who deleted or rebuilt theirs keeps it that way.
  */
 export async function seedDefaultMenu(conn: Conn, shopId: string) {
   await conn
     .insert(schema.menus)
-    .values({
-      shopId,
-      handle: 'main-menu',
-      title: 'Main menu',
-      items: [
-        { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
-        { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
-      ],
-    })
+    .values([
+      {
+        shopId,
+        handle: 'main-menu',
+        title: 'Main menu',
+        items: [
+          { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
+          { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
+        ],
+      },
+      {
+        shopId,
+        handle: 'footer',
+        title: 'Footer menu',
+        items: [{ id: randomUUID(), title: 'Search', type: 'search', items: [] }],
+      },
+    ])
     .onConflictDoNothing()
 }
 
