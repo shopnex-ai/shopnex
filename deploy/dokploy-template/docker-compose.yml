@@ -1,0 +1,52 @@
+# Dokploy template: the Dokploy Compose file minus the optional CJ Dropshipping app.
+# Variables come from template.toml. Keep the rest in sync with ../docker-compose.dokploy.yml.
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shopnex
+      POSTGRES_PASSWORD: shopnex
+      POSTGRES_DB: shopnex
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U shopnex']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  shopnex:
+    image: ghcr.io/shopnex-ai/shopnex:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    volumes:
+      - shopnex_data:/data
+    environment:
+      DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
+      SHOPNEX_SECRET: ${SHOPNEX_SECRET:-}
+      TENANCY_MODE: single
+      DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
+      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      SHOPNEX_BUNDLED_APPS: docker
+
+  stripe:
+    image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    volumes:
+      - stripe_data:/data
+    environment:
+      STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      DATA_DIR: /data
+
+volumes:
+  db:
+  shopnex_data:
+  stripe_data:

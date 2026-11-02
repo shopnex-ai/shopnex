@@ -1,0 +1,23 @@
+[variables]
+main_domain = "${domain}"
+stripe_domain = "${domain}"
+auth_secret = "${base64:32}"
+shopnex_secret = "${base64:32}"
+
+[config]
+[[config.domains]]
+serviceName = "shopnex"
+port = 3000
+host = "${main_domain}"
+
+[[config.domains]]
+serviceName = "stripe"
+port = 4600
+host = "${stripe_domain}"
+
+[config.env]
+APP_URL = "https://${main_domain}"
+STRIPE_APP_URL = "https://${stripe_domain}"
+SHOPNEX_VERSION = "latest"
+BETTER_AUTH_SECRET = "${auth_secret}"
+SHOPNEX_SECRET = "${shopnex_secret}"
