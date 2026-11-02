@@ -42,7 +42,9 @@ function renderCart(cart: Cart | null) {
             : ''
           const options = m.selectedOptions
             .filter((o) => o.value !== 'Default Title')
-            .map((o) => `<div class="flex text-primary/50"><dt>${esc(o.name)}:&nbsp;</dt><dd>${esc(o.value)}</dd></div>`)
+            .map(
+              (o) => `<div class="flex text-primary/50"><dt>${esc(o.name)}:&nbsp;</dt><dd>${esc(o.value)}</dd></div>`,
+            )
             .join('')
           return `
           <div class="grid grid-cols-[auto_1fr] gap-4 ${pending.has(line.id) ? 'opacity-50' : ''}">
