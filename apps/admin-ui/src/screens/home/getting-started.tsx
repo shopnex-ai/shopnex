@@ -26,10 +26,15 @@ export function GettingStarted({ shopId }: { shopId: string }) {
   const [dismissed, setDismissed] = useState(() => readDismissed(shopId))
   const payments = useQuery({ ...orpc.admin.paymentMethods.list.queryOptions(), enabled: !dismissed })
   const shipping = useQuery({ ...orpc.admin.shippingRates.list.queryOptions(), enabled: !dismissed })
+  const carriers = useQuery({ ...orpc.admin.carrierServices.list.queryOptions(), enabled: !dismissed })
   const products = useQuery({ ...orpc.admin.products.list.queryOptions({ input: { limit: 1 } }), enabled: !dismissed })
 
-  // Wait for all three so the card doesn't flash with items that are already done
-  if (dismissed || !payments.data || !shipping.data || !products.data) return null
+  // Wait for all of them so the card doesn't flash with items that are already done. Carrier services are
+  // optional (an error just means none), so they don't hold the card back.
+  if (dismissed || !payments.data || !shipping.data || !products.data || carriers.isPending) return null
+
+  // An app like CJ quotes shipping at checkout: that is shipping set up too
+  const carrier = carriers.data?.find((s) => s.active && s.ready)
 
   const items = [
     {
@@ -40,9 +45,9 @@ export function GettingStarted({ shopId }: { shopId: string }) {
       action: 'Set up payments',
     },
     {
-      done: shipping.data.length > 0,
+      done: shipping.data.length > 0 || !!carrier,
       title: 'Set a shipping rate',
-      text: 'Without one, checkout charges no shipping.',
+      text: 'Without one, checkout charges no shipping. Apps like CJ can also quote rates at checkout.',
       to: '/admin/settings/shipping',
       action: 'Set up shipping',
     },
