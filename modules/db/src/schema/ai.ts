@@ -1,5 +1,5 @@
-// AI capabilities (see @shopnex/marketplace-sdk/ai). They come from the provider built into Shopnex (Settings →
-// AI, with the shop's own key) or from installed apps that register what they provide. Staff ask Shopnex, Shopnex
+// AI capabilities (see @shopnex/marketplace-sdk/ai). They come from the provider built into ShopNex (Settings →
+// AI, with the shop's own key) or from installed apps that register what they provide. Staff ask ShopNex, ShopNex
 // sends only the data the capability needs and returns the answer as a suggestion. Every run is kept as a
 // generation: what was asked, what came back, and whether staff used it.
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
@@ -28,7 +28,7 @@ export const aiProviders = pgTable(
   (t) => [uniqueIndex('ai_providers_shop_app_capability_idx').on(t.shopId, t.appId, t.capability)],
 )
 
-// Settings → AI: the provider built into Shopnex, called with the shop's own API key. One row per shop; no row
+// Settings → AI: the provider built into ShopNex, called with the shop's own API key. One row per shop; no row
 // means built-in AI is off (apps can still provide capabilities).
 export const AI_BUILTIN_PROVIDERS = ['anthropic', 'openai'] as const
 export type AiBuiltinProvider = (typeof AI_BUILTIN_PROVIDERS)[number]

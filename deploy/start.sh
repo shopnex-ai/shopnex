@@ -85,7 +85,7 @@ announce_ready() {
   url="${url%/}"
   if [ -z "$NO_COLOR" ]; then b=$'\e[1m' c=$'\e[36m' d=$'\e[2m' g=$'\e[32m' r=$'\e[0m'; fi
   printf '\n%s\n' "${d}────────────────────────────────────────────────────────────${r}"
-  printf '  %s✔ Shopnex is ready%s\n\n' "${g}${b}" "$r"
+  printf '  %s✔ ShopNex is ready%s\n\n' "${g}${b}" "$r"
   printf '  %sShop %s  %s%s%s\n' "$b" "$r" "$c" "$url" "$r"
   printf '  %sAdmin%s  %s%s/admin%s  %s(first run opens the setup wizard)%s\n' "$b" "$r" "$c" "$url" "$r" "$d" "$r"
   printf '\n  %sCreate the owner account right away: anyone who reaches a fresh install can claim it.%s\n' "$d" "$r"

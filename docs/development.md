@@ -25,7 +25,7 @@ STRIPE=none pnpm dev                          # skip a bundled app
 ```
 
 Bundled apps (`apps/<name>` built on `@shopnex/app`, e.g. `apps/stripe`) start with `pnpm dev` when `.env` sets
-`<NAME>_APP_URL`, the same value Shopnex registers them from. An app listens on its URL's port unless `PORT` is set.
+`<NAME>_APP_URL`, the same value ShopNex registers them from. An app listens on its URL's port unless `PORT` is set.
 
 ### Local ports
 

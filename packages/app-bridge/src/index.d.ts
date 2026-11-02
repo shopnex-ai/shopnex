@@ -1,7 +1,7 @@
 export type { AdminMessage, AppMessage, AppRequest } from './protocol'
 
 export type AppBridge = {
-  /** The Shopnex instance origin the app is embedded in */
+  /** The ShopNex instance origin the app is embedded in */
   readonly instance: string
   /** A fresh session token (JWT, valid 60s) for your backend: verify it with verifySessionToken */
   getSessionToken(): Promise<string>
@@ -14,7 +14,7 @@ export type AppBridge = {
 }
 
 /**
- * Connects to the Shopnex admin this page is embedded in. `instance` defaults to the `instance` query
+ * Connects to the ShopNex admin this page is embedded in. `instance` defaults to the `instance` query
  * parameter the admin adds to your app URL.
  */
 export function createAppBridge(options?: { instance?: string; timeoutMs?: number }): AppBridge

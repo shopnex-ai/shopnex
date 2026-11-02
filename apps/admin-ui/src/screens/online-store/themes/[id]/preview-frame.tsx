@@ -96,7 +96,7 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
     <div className="flex h-full flex-col">
       {noBridge && (
         <p className="border-b bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          The storefront isn&apos;t showing your draft. Check that it is connected to this Shopnex (in the bundled
+          The storefront isn&apos;t showing your draft. Check that it is connected to this ShopNex (in the bundled
           template: COMMERCE_PROVIDER=shopnex) and that its theme supports the editor.
         </p>
       )}

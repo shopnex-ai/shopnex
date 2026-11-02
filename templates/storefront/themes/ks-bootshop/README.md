@@ -1,6 +1,6 @@
-# KS BootShop for Shopnex
+# KS BootShop for ShopNex
 
-[KS BootShop](https://github.com/kondasoft/ks-bootshop) (KondaSoft, MIT) ported to Shopnex's Liquid themes: a clean
+[KS BootShop](https://github.com/kondasoft/ks-bootshop) (KondaSoft, MIT) ported to ShopNex's Liquid themes: a clean
 storefront on [Bootstrap](https://getbootstrap.com/) 5, with no JavaScript framework.
 
 - Home page sections: hero carousel, featured products, featured collections, media with text, rich text,
@@ -15,7 +15,7 @@ See [Writing a theme](../../../../apps/docs/content/docs/storefronts/themes.mdx)
 ## What differs from the Shopify theme
 
 The Shopify theme's Liquid depends on Shopify's server (JSON templates, `{% schema %}`, `section.blocks`, `t`
-translations, Shopify's cart and search). Shopnex themes describe their settings in `theme.json` and render
+translations, Shopify's cart and search). ShopNex themes describe their settings in `theme.json` and render
 with its own objects, so the templates, sections and snippets were rewritten; the Bootstrap build is the same.
 
 - `assets/vendor-bootstrap.min.css` and `vendor-bootstrap.bundle.min.js`: Bootstrap 5.3 as shipped with the Shopify

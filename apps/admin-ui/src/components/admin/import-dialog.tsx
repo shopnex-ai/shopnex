@@ -56,7 +56,7 @@ const PLATFORMS = {
   shopify: { label: 'Shopify', icon: ShopifyLogo },
   woocommerce: { label: 'WooCommerce', icon: WooCommerceLogo },
   magento: { label: 'Magento', icon: MagentoLogo },
-  shopnex: { label: 'Shopnex', icon: ShopnexLogo },
+  shopnex: { label: 'ShopNex', icon: ShopnexLogo },
 }
 export type Platform = keyof typeof PLATFORMS
 

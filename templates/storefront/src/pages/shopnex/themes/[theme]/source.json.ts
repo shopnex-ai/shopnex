@@ -1,4 +1,4 @@
-// A theme's own Liquid files for the Shopnex admin's code editor (a ThemeSource; see THEME_SOURCE_PATH).
+// A theme's own Liquid files for the ShopNex admin's code editor (a ThemeSource; see THEME_SOURCE_PATH).
 // Not public: it needs a preview token for a copy of this theme, which only the admin can make.
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'

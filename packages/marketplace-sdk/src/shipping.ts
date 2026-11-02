@@ -3,9 +3,9 @@
 //
 //   1. The app registers itself for the shop: POST /api/v1/admin/carrier-services/configure
 //      (scope write_shipping) with its rates URL.
-//   2. Once the buyer's address is known, Shopnex POSTs a signed RatesRequest to `ratesUrl`. The app answers
+//   2. Once the buyer's address is known, ShopNex POSTs a signed RatesRequest to `ratesUrl`. The app answers
 //      200 { rates: [...] } within a few seconds; a slow, failing or invalid answer just means no rates from it.
-//   3. The buyer picks one. When the order is placed Shopnex asks again and uses the app's price for that
+//   3. The buyer picks one. When the order is placed ShopNex asks again and uses the app's price for that
 //      `code`, so a price from the browser is never trusted.
 //
 // Requests are signed exactly like payments requests (Standard Webhooks, the instance's Ed25519 key), so an app
@@ -16,7 +16,7 @@ export type RatesRequest = {
   kind: 'rates'
   /** Unique per request */
   id: string
-  /** The Shopnex instance's public origin: its keys sign this request */
+  /** The ShopNex instance's public origin: its keys sign this request */
   instance: string
   shopId: string
   /** The shop's currency: prices in the request and the answer are in it, in cents */

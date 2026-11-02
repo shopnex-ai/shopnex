@@ -57,7 +57,7 @@ export function GeneratePage({
           />
         </>
       }
-      // Sanitized by Shopnex before it gets here
+      // Sanitized by ShopNex before it gets here
       preview={(output) => (
         <>
           <p className="text-base font-semibold">{output.title}</p>

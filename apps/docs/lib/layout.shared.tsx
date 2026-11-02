@@ -1,6 +1,6 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared'
 
-// The Shopnex mark, drawn in currentColor so it follows the theme.
+// The ShopNex mark, drawn in currentColor so it follows the theme.
 function Logo() {
   return (
     <svg viewBox="0 0 500 500" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={30} aria-hidden>
@@ -16,7 +16,7 @@ export function baseOptions(): BaseLayoutProps {
       title: (
         <>
           <Logo />
-          <span className="font-medium">Shopnex</span>
+          <span className="font-medium">ShopNex</span>
         </>
       ),
     },

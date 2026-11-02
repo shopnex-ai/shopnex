@@ -1,4 +1,4 @@
-// @shopnex/app: everything an app needs to talk to Shopnex, with nothing to store. Set SHOPNEX_CLIENT_ID and
+// @shopnex/app: everything an app needs to talk to ShopNex, with nothing to store. Set SHOPNEX_CLIENT_ID and
 // SHOPNEX_APP_KEY (from the app registry or the marketplace dashboard), then:
 //
 //   const shopnex = createShopnexApp()
@@ -9,10 +9,10 @@
 //     return c.json({ shop: shop.name, orders: await admin.get('/orders?limit=1') })
 //   })
 //
-// How it stays stateless: Shopnex signs session tokens, payments requests and webhooks with its own key
+// How it stays stateless: ShopNex signs session tokens, payments requests and webhooks with its own key
 // (checked against {instance}/api/v1/oauth/jwks); the app proves who it is with client assertions signed by
 // its key and gets 1-hour Admin API tokens on demand (token exchange / client credentials), cached in memory.
-// Per-shop settings live in the shop's Shopnex (`data`).
+// Per-shop settings live in the shop's ShopNex (`data`).
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Context } from 'hono'
@@ -71,32 +71,32 @@ export type ShopnexAppOptions = {
   appKey?: string
   /**
    * Only trust instances the marketplace reports this app installed on (marketplace apps: anyone can run a
-   * Shopnex instance). Default: SHOPNEX_MARKETPLACE_URL; unset, any instance that installed the app is served.
+   * ShopNex instance). Default: SHOPNEX_MARKETPLACE_URL; unset, any instance that installed the app is served.
    */
   marketplaceUrl?: string
-  /** Where the app keeps a shop's data. Default: the shop's storage in Shopnex; see `openLocalStore` for SQLite */
+  /** Where the app keeps a shop's data. Default: the shop's storage in ShopNex; see `openLocalStore` for SQLite */
   data?: (instance: string, shopId: string) => AppData
   /** Instances allowed over plain http (default: localhost only) */
   allowHttp?: JwksResolverOptions['allowHttp']
   /**
-   * Where to send requests to the Shopnex instance when its public address isn't reachable from here (Docker:
+   * Where to send requests to the ShopNex instance when its public address isn't reachable from here (Docker:
    * http://shopnex:3000). Only the request goes there; the instance keeps its public identity. For apps bundled
-   * with one self-hosted Shopnex, not for marketplace apps serving many instances. Default: SHOPNEX_INTERNAL_URL
+   * with one self-hosted ShopNex, not for marketplace apps serving many instances. Default: SHOPNEX_INTERNAL_URL
    */
   instanceInternalUrl?: string
   /**
-   * Runs right after the app is installed on a shop (Shopnex POSTs a signed app.installed to /shopnex/installed),
+   * Runs right after the app is installed on a shop (ShopNex POSTs a signed app.installed to /shopnex/installed),
    * with an Admin API client for it: set the shop up here, e.g. register a payment method. Best effort and it may
    * repeat, so keep it idempotent; an app that misses it should still set up when first opened.
    */
   onInstalled?: (shop: ShopContext, request: AppInstalledRequest) => Promise<void> | void
-  /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so Shopnex needs no setting */
+  /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so ShopNex needs no setting */
   appUrl?: string
 }
 
 /** One shop the app is installed on, with an Admin API client for it */
 export type ShopContext = {
-  /** The Shopnex instance's origin, e.g. https://shop.example.com */
+  /** The ShopNex instance's origin, e.g. https://shop.example.com */
   instance: string
   shopId: string
   installationId: string
@@ -288,7 +288,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
     const claims = sessionToken && (await verifySessionToken(sessionToken, { clientId: clientId!, keys }))
     if (!claims) {
       throw new HTTPException(401, {
-        res: new Response('Open this app from your Shopnex admin.', { status: 401 }),
+        res: new Response('Open this app from your ShopNex admin.', { status: 401 }),
       })
     }
     if (!(c instanceof Request)) c.header('Content-Security-Policy', `frame-ancestors ${claims.iss}`)
@@ -302,7 +302,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
-   * Payments apps: a payment or refund session request from Shopnex, checked against the instance's keys, with
+   * Payments apps: a payment or refund session request from ShopNex, checked against the instance's keys, with
    * its shop. Throws a 401 HTTPException when the signature doesn't check out.
    */
   async function verifyPaymentsRequest<K extends 'payment' | 'refund'>(
@@ -322,7 +322,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
-   * AI apps: a capability run from Shopnex, checked against the instance's keys, with its shop. Answer with
+   * AI apps: a capability run from ShopNex, checked against the instance's keys, with its shop. Answer with
    * AiRunResponse { output, usage? } for `request.capability`. Throws a 401 HTTPException when the signature
    * doesn't check out.
    */
@@ -334,7 +334,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
-   * Carrier apps: a rates request from Shopnex, checked against the instance's keys, with its shop. Answer it with
+   * Carrier apps: a rates request from ShopNex, checked against the instance's keys, with its shop. Answer it with
    * `{ rates: [{ code, name, priceCents, description? }] }`. Throws a 401 HTTPException when the signature doesn't
    * check out.
    */
@@ -346,7 +346,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   /**
-   * A webhook delivery from Shopnex (subscriptions the app made with its token), checked against the instance's
+   * A webhook delivery from ShopNex (subscriptions the app made with its token), checked against the instance's
    * keys: no endpoint secret to keep. Throws a 401 HTTPException when the signature doesn't check out.
    */
   async function verifyWebhook<T = unknown>(
@@ -390,7 +390,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       return c.body(null, 204)
     })
   }
-  // Who this app is, for an instance that knows only its URL (bundled apps: Shopnex reads this at startup)
+  // Who this app is, for an instance that knows only its URL (bundled apps: ShopNex reads this at startup)
   routes.get('/.well-known/shopnex-app.json', async (c) =>
     c.json({ clientId, publicKey: await publicKeyOf(await privateKey), appUrl: options.appUrl }, 200, {
       'cache-control': 'no-store',

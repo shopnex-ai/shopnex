@@ -40,7 +40,7 @@ const origin = (url: string) => {
 
 /**
  * Creates or updates the app's carrier service in this shop. The rates URL must be on the app's own origin (its
- * registered app URL), so an app can't point Shopnex at someone else's server. Staff's name and switch stay.
+ * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and switch stay.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))

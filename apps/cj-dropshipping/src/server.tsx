@@ -1,16 +1,16 @@
-// CJ Dropshipping for Shopnex: a bundled app on @shopnex/app. Runs next to Shopnex (its own process) and keeps
+// CJ Dropshipping for ShopNex: a bundled app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
 // its data in DATA_DIR (SQLite): the shop's CJ key is stored there, encrypted with this app's key.
 //
 //   GET  /                          Embedded settings page (session token)
 //   GET  /api/products              My Products cards (HTML), loaded by the settings page after it opens
 //   POST /api/connect               Save the CJ API key, subscribe to paid orders
 //   POST /api/settings              Markup and auto-pay
-//   POST /api/import                CJ product → draft Shopnex product (already in the shop: link it instead)
+//   POST /api/import                CJ product → draft ShopNex product (already in the shop: link it instead)
 //   POST /api/link                  Tie a product already in the shop to CJ, so its orders go to CJ
 //   POST /api/orders/:id/retry      Send a failed order to CJ again
-//   POST /shopnex/webhook           Shopnex: order.paid → CJ order
-//   POST /shipping/rates            Shopnex: what CJ shipping costs for this cart and address (carrier service)
-//   (every 15 minutes)              CJ tracking numbers → Shopnex fulfillments
+//   POST /shopnex/webhook           ShopNex: order.paid → CJ order
+//   POST /shipping/rates            ShopNex: what CJ shipping costs for this cart and address (carrier service)
+//   (every 15 minutes)              CJ tracking numbers → ShopNex fulfillments
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -34,12 +34,12 @@ import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
 import { icon, ProductList, SettingsPage, type MyProduct } from './settings'
 
-// Public origin Shopnex and the admin (iframe) reach this app at
+// Public origin ShopNex and the admin (iframe) reach this app at
 const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 
-// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). Shopnex reads the public key
+// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const store = await openLocalStore()
 const tables = openTables(store.db)
@@ -85,7 +85,7 @@ async function ensureOrderWebhook(shop: ShopContext) {
 }
 
 /**
- * Offers CJ's shipping prices at checkout (a Shopnex carrier service). It needs the shipping permission, so a shop
+ * Offers CJ's shipping prices at checkout (a ShopNex carrier service). It needs the shipping permission, so a shop
  * that installed the app before it existed gets an error here until the app is installed again.
  */
 async function registerCarrier(shop: ShopContext) {
@@ -241,7 +241,7 @@ app.post('/api/orders/:id/retry', async (c) => {
   return c.json({ message: 'Sent again' })
 })
 
-// --- Shopnex → app ---
+// --- ShopNex → app ---
 
 // Answers right away; the CJ order is made in the background
 app.post('/shopnex/webhook', async (c) => {
@@ -250,7 +250,7 @@ app.post('/shopnex/webhook', async (c) => {
   return c.body(null, 204)
 })
 
-// Shopnex asks what shipping costs once the buyer's address is known (see shipping.ts). A failure is no rates, not
+// ShopNex asks what shipping costs once the buyer's address is known (see shipping.ts). A failure is no rates, not
 // an error: checkout carries on with the shop's other methods, or says it can't ship there.
 app.post('/shipping/rates', async (c) => {
   const { request, shop } = await shopnex.verifyRatesRequest(c)
@@ -268,7 +268,7 @@ app.onError((error, c) => {
   return c.json({ error: message(error) }, 500)
 })
 
-// --- CJ → Shopnex: CJ pushes order changes only for some order kinds, so poll for tracking numbers ---
+// --- CJ → ShopNex: CJ pushes order changes only for some order kinds, so poll for tracking numbers ---
 
 async function pollTracking() {
   for (const { instance, shop_id } of tables.shopsAwaitingTracking()) {

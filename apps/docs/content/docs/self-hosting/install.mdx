@@ -1,11 +1,11 @@
 ---
 title: Install on a server
-description: Install Shopnex on your own Linux server with one command, using Docker Compose.
+description: Install ShopNex on your own Linux server with one command, using Docker Compose.
 ---
 
 import { SITE_URL } from '@/lib/site'
 
-The installer sets up Docker if needed, then runs the released Shopnex images and a Postgres database with Docker Compose in `/opt/shopnex`. Nothing is built on your server. You need a fresh Linux server with at least 2 GB of memory.
+The installer sets up Docker if needed, then runs the released ShopNex images and a Postgres database with Docker Compose in `/opt/shopnex`. Nothing is built on your server. You need a fresh Linux server with at least 2 GB of memory.
 
 <code>{`curl -fsSL ${SITE_URL}/install.sh | sudo sh`}</code>
 
@@ -21,7 +21,7 @@ Point two DNS records at the server: `shop.example.com` for the shop and `stripe
 
 <code>{`curl -fsSL ${SITE_URL}/install.sh | sudo SHOPNEX_DOMAIN=shop.example.com sh`}</code>
 
-HTTPS comes from the Caddy inside the Shopnex container, so there is no separate proxy to manage.
+HTTPS comes from the Caddy inside the ShopNex container, so there is no separate proxy to manage.
 
 ## Options
 
@@ -37,7 +37,7 @@ Run the install command again, or set `SHOPNEX_VERSION` to a release tag. It kee
 
 ## Moving from the older installer
 
-Earlier versions of the installer ran Shopnex directly on the server, with Node and Postgres installed on the host and no Docker. The new installer refuses to run on such a server, because it would start a new, empty shop next to your real one.
+Earlier versions of the installer ran ShopNex directly on the server, with Node and Postgres installed on the host and no Docker. The new installer refuses to run on such a server, because it would start a new, empty shop next to your real one.
 
 There is no automatic migration yet. Until there is, your existing shop keeps running as it is. If you want to move it to Docker, first save two things from the old server:
 

@@ -6,7 +6,7 @@ import { paymentsAppConfigureInput } from './schemas'
 
 const id = z.object({ id: z.uuid() })
 
-// What an app sees of a session (amounts are Shopnex's: the app reports outcomes, never amounts)
+// What an app sees of a session (amounts are ShopNex's: the app reports outcomes, never amounts)
 const view = (s: Awaited<ReturnType<typeof paymentService.get>>) => ({
   id: s.id,
   kind: s.kind,
@@ -20,7 +20,7 @@ const view = (s: Awaited<ReturnType<typeof paymentService.get>>) => ({
 })
 
 // Payments apps (see @shopnex/marketplace-sdk/payments): register the shop's payment method, then resolve or
-// reject the payment / refund sessions Shopnex sends them. App tokens only.
+// reject the payment / refund sessions ShopNex sends them. App tokens only.
 export const paymentsAppApi = {
   configure: paymentsApp
     .route({ method: 'POST', path: '/admin/payments-app/configure' })

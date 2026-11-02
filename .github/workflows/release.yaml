@@ -210,7 +210,7 @@ jobs:
           gh release view "$TAG" --json body --jq .body > release-notes.md
           {
             printf '\n\n## Docker image\n\n'
-            printf 'Shopnex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
+            printf 'ShopNex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
             printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
             printf 'CJ Dropshipping app (optional): `docker pull %s:%s`\n\n' "$CJ_IMAGE" "$TAG"
             printf 'Images are published for linux/amd64 and linux/arm64. Offline `.tar.gz` copies of both (amd64) are attached below.\n'

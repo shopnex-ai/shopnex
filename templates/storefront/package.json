@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.13.0",
-  "description": "The Shopnex storefront: renders the shop's chosen theme. Themes are Liquid templates in themes/.",
+  "description": "The ShopNex storefront: renders the shop's chosen theme. Themes are Liquid templates in themes/.",
   "license": "MIT",
   "scripts": {
     "dev": "node scripts/dev.mjs",

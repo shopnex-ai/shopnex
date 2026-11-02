@@ -15,4 +15,4 @@ app.use('*', serveStatic({ root: './dist/client' }))
 app.all('*', (c) => handler.fetch(c.req.raw))
 
 const port = Number(process.env.PORT ?? 3000)
-serve({ fetch: app.fetch, port, hostname: process.env.HOST }, () => console.log(`Shopnex listening on :${port}`))
+serve({ fetch: app.fetch, port, hostname: process.env.HOST }, () => console.log(`ShopNex listening on :${port}`))

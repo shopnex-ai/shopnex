@@ -1,18 +1,18 @@
-// Payments apps (like Shopify's Payments Apps API): the contract between a Shopnex instance and an app that
+// Payments apps (like Shopify's Payments Apps API): the contract between a ShopNex instance and an app that
 // takes payments (Stripe, a local bank…).
 //
 //   1. The app registers its payment method for the shop: POST /api/v1/admin/payments-app/configure
 //      (scope write_payment_sessions) with its session URLs.
-//   2. At checkout, Shopnex POSTs a signed PaymentSessionRequest to `paymentSessionUrl`. The app answers
-//      200 { redirectUrl } and Shopnex sends the buyer there to pay.
+//   2. At checkout, ShopNex POSTs a signed PaymentSessionRequest to `paymentSessionUrl`. The app answers
+//      200 { redirectUrl } and ShopNex sends the buyer there to pay.
 //   3. When the provider confirms (or declines), the app calls
 //      POST /api/v1/admin/payment-sessions/{id}/resolve  { externalId? }
 //      POST /api/v1/admin/payment-sessions/{id}/reject   { reason }
-//      Both are idempotent. The amount is Shopnex's, never the app's. A resolve is accepted even after a reject
+//      Both are idempotent. The amount is ShopNex's, never the app's. A resolve is accepted even after a reject
 //      (the provider took the money, so the order is paid).
 //      POST /api/v1/admin/payment-sessions/{id}/attempt-failed  { reason }
 //      One attempt failed (card declined) but the buyer can retry: only records the reason, the session stays open.
-//   4. Refunds: Shopnex POSTs a RefundSessionRequest to `refundSessionUrl` (answer 2xx right away), and the app
+//   4. Refunds: ShopNex POSTs a RefundSessionRequest to `refundSessionUrl` (answer 2xx right away), and the app
 //      resolves / rejects the session the same way once the provider has refunded.
 //
 // Requests are signed with the instance's key (see ./signed-request). WebCrypto only, so it runs in Node 20+,
@@ -26,7 +26,7 @@ export type PaymentSessionRequest = {
   kind: 'payment'
   /** Resolve / reject this id */
   id: string
-  /** The Shopnex instance's public origin: its keys sign this request, its Admin API takes the outcome */
+  /** The ShopNex instance's public origin: its keys sign this request, its Admin API takes the outcome */
   instance: string
   shopId: string
   orderId: string
@@ -36,7 +36,7 @@ export type PaymentSessionRequest = {
   customer: { email: string; name: string | null }
   /** Send the buyer back here after paying (or giving up): it shows the order and its payment status */
   returnUrl: string
-  /** Shopnex stops waiting then (rejects the session and cancels the unpaid order); end the provider's session by it */
+  /** ShopNex stops waiting then (rejects the session and cancels the unpaid order); end the provider's session by it */
   expiresAt: string
 }
 

@@ -1,4 +1,4 @@
-// CJ product → Shopnex product. The new product is a draft the merchant reviews; each variant keeps CJ's SKU, which
+// CJ product → ShopNex product. The new product is a draft the merchant reviews; each variant keeps CJ's SKU, which
 // is how an order line is matched back to CJ (the CJ ids are in the app's database).
 import { ShopnexError, type ShopContext } from '@shopnex/app'
 import type { ProductDetails } from '@shopnex/cj-sdk'

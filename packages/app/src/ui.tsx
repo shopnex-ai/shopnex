@@ -1,5 +1,5 @@
 /** @jsxRuntime automatic @jsxImportSource hono/jsx */
-// Server-rendered components (hono/jsx) that look like the Shopnex admin, for an app's embedded pages. No build
+// Server-rendered components (hono/jsx) that look like the ShopNex admin, for an app's embedded pages. No build
 // step and no client framework: <Page> loads /shopnex/app.js (served by `shopnex.routes`), which connects to the
 // admin and makes <Form action> and <Button action> call the app's backend with fresh session tokens.
 //

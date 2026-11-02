@@ -1,5 +1,5 @@
 // The cart drawer, its discount code box and the toast for cart errors (snippets/cart-drawer.liquid). The cart
-// itself is @shopnex/storefront-sdk/cart (Storefront API); checkout is Shopnex's hosted page. Anything with
+// itself is @shopnex/storefront-sdk/cart (Storefront API); checkout is ShopNex's hosted page. Anything with
 // data-add-to-cart="{variant id}" adds that variant, and data-cart-open opens the drawer.
 import {
   $cart,
@@ -42,7 +42,9 @@ function renderCart(cart: Cart | null) {
             : ''
           const options = m.selectedOptions
             .filter((o) => o.value !== 'Default Title')
-            .map((o) => `<div class="flex text-primary/50"><dt>${esc(o.name)}:&nbsp;</dt><dd>${esc(o.value)}</dd></div>`)
+            .map(
+              (o) => `<div class="flex text-primary/50"><dt>${esc(o.name)}:&nbsp;</dt><dd>${esc(o.value)}</dd></div>`,
+            )
             .join('')
           return `
           <div class="grid grid-cols-[auto_1fr] gap-4 ${pending.has(line.id) ? 'opacity-50' : ''}">

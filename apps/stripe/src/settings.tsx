@@ -1,4 +1,4 @@
-// The settings page, embedded in the Shopnex admin
+// The settings page, embedded in the ShopNex admin
 import { Badge, Banner, Button, Card, Code, CopyableCode, Form, Page, Text, TextField } from '@shopnex/app/ui'
 
 export const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#635bff"/><path fill="#fff" d="M29.6 25.3c0-1.6 1.3-2.2 3.4-2.2 3 0 6.9.9 9.9 2.6v-9.3c-3.3-1.3-6.6-1.8-9.9-1.8-8.1 0-13.5 4.2-13.5 11.3 0 11.1 15.2 9.3 15.2 14.1 0 1.9-1.6 2.5-3.9 2.5-3.3 0-7.6-1.4-11-3.2v9.4c3.7 1.6 7.5 2.3 11 2.3 8.3 0 14-4.1 14-11.3-.1-12-15.2-9.9-15.2-14.4z"/></svg>`

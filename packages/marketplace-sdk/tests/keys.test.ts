@@ -48,8 +48,8 @@ test('publicKeyOf recovers the public half from a private key string or CryptoKe
   assert.equal(await publicKeyOf(await importPrivateKey(privateKey)), publicKey)
 })
 
-test('importPrivateKey rejects keys that lack the Shopnex prefix', () => {
-  assert.throws(() => importPrivateKey('not-a-shopnex-key'), /Not a Shopnex private key/)
+test('importPrivateKey rejects keys that lack the ShopNex prefix', () => {
+  assert.throws(() => importPrivateKey('not-a-shopnex-key'), /Not a ShopNex private key/)
 })
 
 test('importPublicKey returns a key usable for verification', async () => {

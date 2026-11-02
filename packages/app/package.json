@@ -1,7 +1,7 @@
 {
   "name": "@shopnex/app",
   "version": "0.13.0",
-  "description": "Build Shopnex apps with no database and no OAuth code: authenticate, Admin API, per-shop data, signed requests, and admin-styled UI components",
+  "description": "Build ShopNex apps with no database and no OAuth code: authenticate, Admin API, per-shop data, signed requests, and admin-styled UI components",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

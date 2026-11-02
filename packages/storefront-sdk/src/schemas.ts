@@ -140,7 +140,7 @@ export const Page = z.object({
   id: z.uuid(),
   handle: z.string(),
   title: z.string(),
-  /** HTML (sanitized by Shopnex) */
+  /** HTML (sanitized by ShopNex) */
   body: z.string(),
   /** Plain-text start of the body, for listings and meta descriptions */
   bodySummary: z.string(),

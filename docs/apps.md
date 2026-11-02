@@ -15,7 +15,7 @@ per-resource access, then call the Admin REST API with `Authorization: Bearer sk
 ## Apps
 
 Admin → Apps. Super admins register apps (name, app URL, the most scopes it may get, optional redirect URLs) and get
-a `client_id` + a **private key** (`snxk_…`, shown once, never stored: Shopnex keeps only the Ed25519 public half).
+a `client_id` + a **private key** (`snxk_…`, shown once, never stored: ShopNex keeps only the Ed25519 public half).
 No secret is ever shared: the instance signs with its own key, the app with its own.
 
 - **Instance keys**: each instance has an Ed25519 signing key (created on first use, `instance_keys`), published at
@@ -70,10 +70,10 @@ app.get('/', async (c) => {
 - `authenticate(c)`: session token (bearer from the app bridge, or `?session_token=` on the embedded load) → `{ shop, userId,
 admin, data, payments }`; sets `frame-ancestors`. `forShop(instance, shopId)` for background work
 - `verifyPaymentsRequest(c, 'payment' | 'refund')`, `verifyWebhook(c)`: checked against the instance's published keys
-- `onInstalled(shop, request)` option: Shopnex POSTs a signed `app.installed` to `{appUrl}/shopnex/installed` right after an
+- `onInstalled(shop, request)` option: ShopNex POSTs a signed `app.installed` to `{appUrl}/shopnex/installed` right after an
   install (best effort, may repeat), so the app can set the shop up before anyone opens it (the Stripe app registers its
   payment method there)
-- `data.get/set/delete`, `data.getSecret/setSecret` (AES-GCM with a key derived from the app key, unreadable in Shopnex's database)
+- `data.get/set/delete`, `data.getSecret/setSecret` (AES-GCM with a key derived from the app key, unreadable in ShopNex's database)
 - `@shopnex/app/ui`: `Page`, `Card`, `Stack`, `Inline`, `Text`, `Badge`, `Banner`, `Stat`, `Button`, `Form`, `TextField`,
   `Select`, `Checkbox`, `Code` (hono/jsx, admin styles, light/dark). `<Form action>` / `<Button action>` call the app's
   backend with fresh session tokens; no client build
@@ -81,10 +81,10 @@ admin, data, payments }`; sets `frame-ancestors`. `forShop(instance, shopId)` fo
 
 ## App Marketplace
 
-A separate hosted service; self-hosted Shopnex installs connect to it.
+A separate hosted service; self-hosted ShopNex installs connect to it.
 
 ```
-Vendor ──▶ Marketplace (:3200)  ◀── catalog sync / install reports ──  Shopnex instance (:3000)
+Vendor ──▶ Marketplace (:3200)  ◀── catalog sync / install reports ──  ShopNex instance (:3000)
              ▲                                                            ▲
              └──── app verifies installs ──── App ── OAuth + Admin API ───┘
 ```
@@ -96,7 +96,7 @@ Vendor ──▶ Marketplace (:3200)  ◀── catalog sync / install reports �
   (and on "Sync now") into the local `apps` table (`source = 'marketplace'`); apps gone from it are delisted (no new installs)
 - **Install**: App Store → Install opens the consent screen for managed apps; apps with redirect URLs get
   `{appUrl}?shop_id=…&instance=…` and start OAuth (see Apps above)
-- **Trust**: anyone can run a Shopnex instance, so apps confirm installs with the marketplace:
+- **Trust**: anyone can run a ShopNex instance, so apps confirm installs with the marketplace:
   `POST {marketplace}/api/v1/installations/verify` (client assertion for the marketplace, `instance_url`, `shop_id`;
   `@shopnex/app` does it). Instances report installs on install and uninstall, and send the full list on every sync
 - Custom apps (Admin → Apps → Custom apps) stay for private integrations that never touch the marketplace

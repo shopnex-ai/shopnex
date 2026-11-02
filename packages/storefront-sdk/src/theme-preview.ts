@@ -1,4 +1,4 @@
-// The theme editor's preview protocol, between the Shopnex admin and a storefront in its iframe.
+// The theme editor's preview protocol, between the ShopNex admin and a storefront in its iframe.
 // Dependency-free (no zod/oRPC), so the storefront's preview script stays small in any framework.
 //
 //   1. The editor loads the storefront with ?shopnex_preview=<token>; the theme passes the token to
@@ -37,7 +37,7 @@ export function isThemePreviewMessage(data: unknown): data is ThemePreviewMessag
 }
 
 export interface ConnectThemePreviewOptions {
-  /** Origin of the Shopnex admin; messages from anywhere else are ignored */
+  /** Origin of the ShopNex admin; messages from anywhere else are ignored */
   adminOrigin: string
   /** Replaces the default reload (a full page reload that keeps the scroll position) */
   onReload?: () => void

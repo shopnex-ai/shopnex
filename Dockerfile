@@ -1,4 +1,4 @@
-# Shopnex admin, API, hosted checkout and storefront in one image, behind Caddy on a single port.
+# ShopNex admin, API, hosted checkout and storefront in one image, behind Caddy on a single port.
 # Used by the one-click deploys (Render, DigitalOcean…).
 FROM node:24-slim
 RUN corepack enable
