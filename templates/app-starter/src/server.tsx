@@ -1,6 +1,6 @@
-// Shopnex app starter: an embedded app with no database and no OAuth code (@shopnex/app does both).
+// ShopNex app starter: an embedded app with no database and no OAuth code (@shopnex/app does both).
 //
-//   GET  /             The app's page inside the Shopnex admin
+//   GET  /             The app's page inside the ShopNex admin
 //   POST /api/notes    Saves a note in the shop's app data (called by the page's form)
 //   POST /webhooks     order.created deliveries, checked against the shop's published keys
 import { serve } from '@hono/node-server'
@@ -45,7 +45,7 @@ app.get('/', async (c) => {
         </Inline>
         <Text tone="subdued">New orders are logged by this app's server (order.created webhook).</Text>
       </Card>
-      <Card title="Note" description="Kept in the shop's Shopnex (app data): this app stores nothing itself.">
+      <Card title="Note" description="Kept in the shop's ShopNex (app data): this app stores nothing itself.">
         <Form action="/api/notes" success="Saved">
           <TextField label="Note" name="note" value={note} multiline />
           <div>

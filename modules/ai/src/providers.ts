@@ -26,7 +26,7 @@ const origin = (url: string) => {
 
 /**
  * Replaces what the app provides in this shop. URLs must be on the app's own origin (its registered app URL),
- * so an app can't point Shopnex at someone else's server.
+ * so an app can't point ShopNex at someone else's server.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))

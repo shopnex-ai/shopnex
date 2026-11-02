@@ -1,14 +1,14 @@
 ---
 title: AI
-description: Descriptions, search listings, image alt text, tags and page drafts written by AI, from Shopnex itself or from apps.
+description: Descriptions, search listings, image alt text, tags and page drafts written by AI, from ShopNex itself or from apps.
 ---
 
-Shopnex shows a ✨ **Generate** button wherever an AI **capability** is available: a product's description, search
+ShopNex shows a ✨ **Generate** button wherever an AI **capability** is available: a product's description, search
 engine listing, images (alt text) and organization (type, tags, collections), a collection's description and listing,
 and the page editor (About, FAQ, shipping…). Results are suggestions: **Use this** puts the text into the form, and nothing is saved
 until staff press Save.
 
-Shopnex owns the commerce side: who may ask, which product data is used, and what gets saved. Every run is kept as a
+ShopNex owns the commerce side: who may ask, which product data is used, and what gets saved. Every run is kept as a
 generation with its usage and whether staff used the suggestion.
 
 ## Built-in AI
@@ -18,11 +18,11 @@ API key, and optionally a model and a brand voice applied to everything written 
 with the provider first. The key is stored encrypted, like email passwords, and generations are billed to the
 shop's account with the provider. Turning AI off deletes the key.
 
-It runs inside Shopnex: no extra service, domain or environment variable. The provider SDKs are loaded the first
+It runs inside ShopNex: no extra service, domain or environment variable. The provider SDKs are loaded the first
 time a shop uses them.
 
 ```text
-Admin ✨ Generate → POST /admin/ai/run → Shopnex loads the product → Claude / OpenAI (the shop's key)
+Admin ✨ Generate → POST /admin/ai/run → ShopNex loads the product → Claude / OpenAI (the shop's key)
 ```
 
 ## Capabilities
@@ -41,7 +41,7 @@ Admin ✨ Generate → POST /admin/ai/run → Shopnex loads the product → Clau
   reachable from the internet (a shop running on `localhost` can't have its images described). `position` is the
   image's index in the product's images; positions the product doesn't have are dropped. Alt text is saved right away,
   like other media changes.
-- `product.classify` is given the shop's collections, product types and tags and prefers what exists. Shopnex drops
+- `product.classify` is given the shop's collections, product types and tags and prefers what exists. ShopNex drops
   any collection handle that isn't one of the shop's. Tags are added to the product's, collections are joined on "Use".
 - `page.content` is for staff only (it isn't available to API tokens) and the page may not exist yet. Policies and
   contact details come from `instructions`; whatever is missing is left as a `[placeholder]`.
@@ -55,7 +55,7 @@ Built-in AI answers first when it's on. Apps can provide capabilities too, for e
 another model provider, and staff can pick them in the Generate dialog.
 
 Register the app with the `write_ai_capabilities` scope. Once the merchant has entered a provider key, tell
-Shopnex what you provide:
+ShopNex what you provide:
 
 ```ts
 await shop.ai.configure({
@@ -66,7 +66,7 @@ await shop.ai.configure({
 
 URLs must be on the app's own origin. Each call replaces the previous set; `{}` provides nothing.
 
-Shopnex then POSTs a signed `AiRunRequest` containing the capability, the staff's input and a snapshot of the
+ShopNex then POSTs a signed `AiRunRequest` containing the capability, the staff's input and a snapshot of the
 product (title, description as text, options, variants with prices, tags, images, collections). The app never
 needs `read_products`. Answer within 60 seconds:
 
@@ -87,7 +87,7 @@ app.post('/ai/run', async (c) => {
 })
 ```
 
-Shopnex checks the answer against the capability's output schema (a mismatch is a 502 for staff) and sanitizes
+ShopNex checks the answer against the capability's output schema (a mismatch is a 502 for staff) and sanitizes
 HTML, the same as for built-in AI.
 
 ## Admin API

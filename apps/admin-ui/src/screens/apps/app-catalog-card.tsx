@@ -31,7 +31,7 @@ export function AppCatalogCard({ shopId, superAdmin }: { shopId: string; superAd
       <CardHeader>
         <CardTitle>Discover apps</CardTitle>
         <CardDescription>
-          Apps that come with this install, from the Shopnex marketplace, or registered by your team. Installing shows
+          Apps that come with this install, from the ShopNex marketplace, or registered by your team. Installing shows
           what each app can access first.
         </CardDescription>
       </CardHeader>

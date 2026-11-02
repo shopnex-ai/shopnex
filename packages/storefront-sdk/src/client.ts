@@ -6,7 +6,7 @@ import { API_BASE_PATH, CUSTOMER_TOKEN_HEADER, PUBLISHABLE_KEY_HEADER } from './
 import { storefrontContract, type StorefrontContract } from './contract'
 
 export type StorefrontClientOptions = {
-  /** Shopnex origin, e.g. https://shop.example.com or http://localhost:3000 */
+  /** ShopNex origin, e.g. https://shop.example.com or http://localhost:3000 */
   baseUrl: string
   /** pk_… key from the admin. Optional in single-tenant mode or on a shop's own domain. */
   publishableKey?: string

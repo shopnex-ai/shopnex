@@ -1,10 +1,10 @@
-# Shopnex, its Stripe app and Postgres from prebuilt images: `docker compose up`, then open http://localhost:3000.
+# ShopNex, its Stripe app and Postgres from prebuilt images: `docker compose up`, then open http://localhost:3000.
 # Every variable has a local default. For a public deployment set APP_URL and STRIPE_APP_URL
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # HTTPS: set DOMAIN=shop.example.com (DNS pointing at this host, ports 80 and 443 open) and Caddy inside the shopnex
 # container gets a Let's Encrypt certificate by itself; APP_URL defaults to https://$DOMAIN.
 # The Stripe and CJ apps are served at https://stripe.$DOMAIN and https://cj.$DOMAIN: point those DNS records at this host too.
-# Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`. Shopnex finds the apps on the
+# Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`. ShopNex finds the apps on the
 # compose network and each app announces its own public URL, so only a custom domain needs setting: STRIPE_APP_URL /
 # CJ_DROPSHIPPING_APP_URL (on the app service).
 name: shopnex

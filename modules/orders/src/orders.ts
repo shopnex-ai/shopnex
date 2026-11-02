@@ -29,7 +29,7 @@ export type CreateOrderInput = {
   billingAddress?: MailingAddress
   // Delivery method chosen at checkout; free when the subtotal reaches freeAboveCents
   shipping?: { title: string; code: string | null; priceCents: number; freeAboveCents: number | null }
-  // Payment method chosen at checkout (manual methods: paid outside Shopnex, marked as paid by staff)
+  // Payment method chosen at checkout (manual methods: paid outside ShopNex, marked as paid by staff)
   payment?: { gateway: string; name: string; instructions: string | null }
   // Case-insensitive. An unusable code fails the order (the buyer was shown the discounted total).
   discountCode?: string
@@ -179,13 +179,20 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         .from(schema.orders)
         .where(and(eq(schema.orders.shopId, shopId), sql`left(${schema.orders.note}, ${marker.length}) = ${marker}`))
         .limit(1)
-      if (existing) { skipped.push(input.sourceOrderName); continue }
-      const customer = await customerService.findOrCreateByEmail(shopId, {
-        email: input.email,
-        name: input.name ?? null,
-        phone: input.phone ?? null,
-        userId: null,
-      }, tx)
+      if (existing) {
+        skipped.push(input.sourceOrderName)
+        continue
+      }
+      const customer = await customerService.findOrCreateByEmail(
+        shopId,
+        {
+          email: input.email,
+          name: input.name ?? null,
+          phone: input.phone ?? null,
+          userId: null,
+        },
+        tx,
+      )
       const [shop] = await tx
         .update(schema.shops)
         .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
@@ -193,47 +200,52 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         .returning({ orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1` })
       if (!shop) throw new OrderError('CUSTOMER_NOT_FOUND', 'Shop not found')
       const importedNote = `${marker}${input.note ? `\n${input.note}` : ''}`
-      const [order] = await tx.insert(schema.orders).values({
-        shopId,
-        orderNumber: shop.orderNumber,
-        channelId: channel.id,
-        customerId: customer.id,
-        email: input.email,
-        phone: input.phone ?? null,
-        financialStatus: input.financialStatus,
-        fulfillmentStatus: input.fulfillmentStatus,
-        cancelledAt: input.cancelledAt ?? null,
-        cancelReason: null,
-        currency: input.currency,
-        subtotalCents: input.subtotalCents,
-        shippingCents: input.shippingCents,
-        taxCents: input.taxCents,
-        discountCents: input.discountCents,
-        totalCents: input.totalCents,
-        taxesIncluded: false,
-        taxLines: [],
-        discountCodes: input.discountCodes,
-        shippingAddress: input.shippingAddress ?? null,
-        billingAddress: input.billingAddress ?? input.shippingAddress ?? null,
-        paymentGateway: 'imported',
-        paymentMethodName: input.paymentMethodName ?? null,
-        note: importedNote,
-        createdAt: input.createdAt,
-        updatedAt: input.createdAt,
-      }).returning()
-      await tx.insert(schema.orderItems).values(input.items.map((item) => ({
-        orderId: order!.id,
-        productId: null,
-        variantId: null,
-        title: item.title,
-        variantTitle: item.variantTitle ?? null,
-        sku: item.sku ?? null,
-        vendor: item.vendor ?? null,
-        imageUrl: item.imageUrl ?? null,
-        unitPriceCents: item.unitPriceCents,
-        quantity: item.quantity,
-        discountCents: item.discountCents,
-      })))
+      const [order] = await tx
+        .insert(schema.orders)
+        .values({
+          shopId,
+          orderNumber: shop.orderNumber,
+          channelId: channel.id,
+          customerId: customer.id,
+          email: input.email,
+          phone: input.phone ?? null,
+          financialStatus: input.financialStatus,
+          fulfillmentStatus: input.fulfillmentStatus,
+          cancelledAt: input.cancelledAt ?? null,
+          cancelReason: null,
+          currency: input.currency,
+          subtotalCents: input.subtotalCents,
+          shippingCents: input.shippingCents,
+          taxCents: input.taxCents,
+          discountCents: input.discountCents,
+          totalCents: input.totalCents,
+          taxesIncluded: false,
+          taxLines: [],
+          discountCodes: input.discountCodes,
+          shippingAddress: input.shippingAddress ?? null,
+          billingAddress: input.billingAddress ?? input.shippingAddress ?? null,
+          paymentGateway: 'imported',
+          paymentMethodName: input.paymentMethodName ?? null,
+          note: importedNote,
+          createdAt: input.createdAt,
+          updatedAt: input.createdAt,
+        })
+        .returning()
+      await tx.insert(schema.orderItems).values(
+        input.items.map((item) => ({
+          orderId: order!.id,
+          productId: null,
+          variantId: null,
+          title: item.title,
+          variantTitle: item.variantTitle ?? null,
+          sku: item.sku ?? null,
+          vendor: item.vendor ?? null,
+          imageUrl: item.imageUrl ?? null,
+          unitPriceCents: item.unitPriceCents,
+          quantity: item.quantity,
+          discountCents: item.discountCents,
+        })),
+      )
       if (input.shippingTitle && input.shippingCents > 0) {
         await tx.insert(schema.orderShippingLines).values({
           orderId: order!.id,
@@ -244,7 +256,9 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         })
       }
       if (input.fulfillmentStatus === 'fulfilled') {
-        await tx.insert(schema.fulfillments).values({ orderId: order!.id, createdAt: input.fulfilledAt ?? input.createdAt })
+        await tx
+          .insert(schema.fulfillments)
+          .values({ orderId: order!.id, createdAt: input.fulfilledAt ?? input.createdAt })
       }
       imported.push(order!)
     }
@@ -497,7 +511,7 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
 
 export type CancelInput = { reason: CancelReason; restock: boolean }
 
-// Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside Shopnex,
+// Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside ShopNex,
 // recorded as a refund transaction). Paid through a payments app: the refund transaction stays pending and the
 // order paid until the app confirms it (@shopnex/payments sends it a refund session).
 // Fulfilled orders can't be cancelled (returns come later).

@@ -47,7 +47,7 @@ export function GenerateCollectionDescription({
           />
         </>
       }
-      // Sanitized by Shopnex before it gets here
+      // Sanitized by ShopNex before it gets here
       preview={(output) => (
         <div
           className="[&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_strong]:font-semibold [&_em]:italic"

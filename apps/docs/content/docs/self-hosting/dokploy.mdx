@@ -1,9 +1,9 @@
 ---
 title: Dokploy & similar platforms
-description: Deploy Shopnex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
+description: Deploy ShopNex with Docker Compose on Dokploy, Coolify, Portainer or any Docker host.
 ---
 
-Platforms that run Docker Compose on your own server can deploy Shopnex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); pin `SHOPNEX_VERSION` to a release tag for production.
+Platforms that run Docker Compose on your own server can deploy ShopNex and its Stripe app from versioned prebuilt images plus a Postgres database. Nothing is built on the server. The production Compose file is [`deploy/docker-compose.yml`](https://github.com/shopnex-ai/shopnex/blob/main/deploy/docker-compose.yml); pin `SHOPNEX_VERSION` to a release tag for production.
 
 ## The compose file
 
@@ -21,7 +21,7 @@ Every variable has a local default, so `docker compose up` works without any set
 | `STRIPE_APP_URL`  | Public origin for the Stripe app, e.g. `https://stripe.example.com`. Default `http://localhost:4600`. |
 | `SHOPNEX_VERSION` | Release tag for both images, e.g. `v1.2.3`. Default `latest`; pin a tag in production.                |
 
-**Optional apps.** The CJ Dropshipping app is off by default. Enable it with `COMPOSE_PROFILES=cj` (or `docker compose --profile cj up`); Shopnex finds it on the Compose network. For a public domain set `CJ_DROPSHIPPING_APP_URL` (e.g. `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. The same applies to `STRIPE_APP_URL` and the `stripe` service.
+**Optional apps.** The CJ Dropshipping app is off by default. Enable it with `COMPOSE_PROFILES=cj` (or `docker compose --profile cj up`); ShopNex finds it on the Compose network. For a public domain set `CJ_DROPSHIPPING_APP_URL` (e.g. `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. The same applies to `STRIPE_APP_URL` and the `stripe` service.
 
 `BETTER_AUTH_SECRET` and `SHOPNEX_SECRET` are optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
@@ -31,14 +31,14 @@ Use [`deploy/docker-compose.dokploy.yml`](https://github.com/shopnex-ai/shopnex/
 
 1. Create a **Compose** service in a project and choose the **Raw** provider.
 2. Paste the Dokploy compose file and set `APP_URL`, `STRIPE_APP_URL`, and `SHOPNEX_VERSION` under **Environment**.
-3. Under **Domains**, add the Shopnex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
+3. Under **Domains**, add the ShopNex host with service `shopnex` and port `3000`, plus the Stripe host with service `stripe` and port `4600`. Enable HTTPS and point both DNS records at the server.
 4. Click **Deploy**.
 
-To update, change `SHOPNEX_VERSION` to the desired release tag and deploy again. `pull_policy: always` fetches that tagged image. Shopnex and Stripe use the same release tag.
+To update, change `SHOPNEX_VERSION` to the desired release tag and deploy again. `pull_policy: always` fetches that tagged image. ShopNex and Stripe use the same release tag.
 
 ## Coolify, Portainer and others
 
-Any platform that accepts a compose file works the same way: Coolify (a Docker Compose resource), Portainer (a stack from the web editor), or plain `docker compose up -d`. Route the Shopnex domain to port `3000` and the Stripe domain to port `4600`; let the platform's proxy handle HTTPS. For plain Docker Compose without a proxy, publish both ports on the host.
+Any platform that accepts a compose file works the same way: Coolify (a Docker Compose resource), Portainer (a stack from the web editor), or plain `docker compose up -d`. Route the ShopNex domain to port `3000` and the Stripe domain to port `4600`; let the platform's proxy handle HTTPS. For plain Docker Compose without a proxy, publish both ports on the host.
 
 The container already includes Caddy, which routes the admin and API to the admin app and everything else to the storefront, so the platform only needs to forward one port.
 

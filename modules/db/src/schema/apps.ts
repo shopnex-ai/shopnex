@@ -1,4 +1,4 @@
-// Installable apps (Admin → Apps). An app is registered once per Shopnex install (by a super admin) and
+// Installable apps (Admin → Apps). An app is registered once per ShopNex install (by a super admin) and
 // installed per shop, either right in the admin (managed install) or through OAuth (authorization code). Each
 // installation is backed by an API token, so scopes and webhook subscriptions work exactly as for hand-made
 // tokens. Apps authenticate with their own key pair; this instance only stores the public half.

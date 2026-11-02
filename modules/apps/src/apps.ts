@@ -660,8 +660,8 @@ export async function deleteAppData(token: ApiToken, key: string) {
 // --- bundled apps ---
 
 /**
- * First-party apps that ship with Shopnex and run next to it (e.g. apps/stripe). Each is registered as a
- * custom, managed app with a fixed client id, so staff only click Install. Shopnex learns its public key from
+ * First-party apps that ship with ShopNex and run next to it (e.g. apps/stripe). Each is registered as a
+ * custom, managed app with a fixed client id, so staff only click Install. ShopNex learns its public key from
  * the app itself (GET {url}/.well-known/shopnex-app.json). The address is operator config, which is why the key is
  * trusted: either <NAME>_APP_URL, or, with SHOPNEX_BUNDLED_APPS=docker (the Compose files), the app's default
  * internal address on the Compose network, where the app announces its own public URL. Otherwise it is left alone.
@@ -734,7 +734,7 @@ async function syncBundledApp(bundled: BundledApp, url: string | undefined) {
 }
 
 /**
- * Registers the bundled apps that are configured or, under Docker, found. The app may start after Shopnex (or not
+ * Registers the bundled apps that are configured or, under Docker, found. The app may start after ShopNex (or not
  * at all: an optional app), so a failure is retried with a growing delay; once registered it is checked again now
  * and then, which picks up a replaced key (the app's data folder was recreated: it is a new app and merchants
  * reconnect). An app that is not configured and not answering is not an error, so it is retried quietly.

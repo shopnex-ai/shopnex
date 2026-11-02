@@ -2,11 +2,11 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.svg">
-    <img src="docs/images/logo.svg" alt="Shopnex logo" width="72">
+    <img src="docs/images/logo.svg" alt="ShopNex logo" width="72">
   </picture>
 </p>
 
-<h1 align="center">Shopnex</h1>
+<h1 align="center">ShopNex</h1>
 
 <p align="center"><b>Self-hosted Shopify alternative. Run <code>docker compose up</code>, open the setup wizard, start selling.</b></p>
 
@@ -21,11 +21,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/dashboard.png" alt="Shopnex admin dashboard with sales analytics" width="900">
+  <img src="docs/images/dashboard.png" alt="ShopNex admin dashboard with sales analytics" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/images/storefront.png" alt="Shopnex storefront product page with variants and add to cart" width="900">
+  <img src="docs/images/storefront.png" alt="ShopNex storefront product page with variants and add to cart" width="900">
 </p>
 
 <!-- TODO: add a ~15s GIF: docker compose up -> setup wizard -> first order, e.g. docs/images/quickstart.gif -->
@@ -34,24 +34,24 @@ Run your own shop with an admin, a themeable storefront, hosted checkout, a type
 out-of-process apps. No code or CLI needed for day-to-day selling.
 
 - **Admin**: products, collections, orders, discounts, shipping, taxes, staff and settings in the browser
-- **Storefront**: a bundled Astro storefront with Liquid themes (Shopify-style object names, but themes are ported to Shopnex's format, not drop-in), or bring your own through the typed REST Storefront API (Shopify-style naming, not GraphQL)
+- **Storefront**: a bundled Astro storefront with Liquid themes (Shopify-style object names, but themes are ported to ShopNex's format, not drop-in), or bring your own through the typed REST Storefront API (Shopify-style naming, not GraphQL)
 - **Hosted checkout**: shipping rates, payment methods, discount codes, order confirmation
 - **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
 - **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
 
-## Why Shopnex
+## Why ShopNex
 
 - **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
 - **You own your data.** Everything lives in your PostgreSQL database on your server.
 - **Built for merchants, not just developers.** Day-to-day selling happens in the browser admin; `.env` holds infrastructure only.
 - **One command to run.** `docker compose up` starts the admin, storefront and migrations.
-- **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to Shopnex's format rather than drop-in, so check the bundled ones for the structure.
+- **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to ShopNex's format rather than drop-in, so check the bundled ones for the structure.
 - **Agency friendly.** Run many shops from one install with `TENANCY_MODE`.
 - **Extend without forking.** Apps run out of process through scoped API tokens and signed webhooks.
 
 ## Status
 
-Shopnex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for what's done and what's next, and the
+ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for what's done and what's next, and the
 [releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
 
 ## Quick start

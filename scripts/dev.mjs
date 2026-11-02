@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// One command for local development: the TanStack Shopnex app + one storefront template.
+// One command for local development: the TanStack ShopNex app + one storefront template.
 //
-//   pnpm dev                                     app (:3000) + the Shopnex storefront (:4321, templates/storefront)
+//   pnpm dev                                     app (:3000) + the ShopNex storefront (:4321, templates/storefront)
 //   STOREFRONT=<folder> pnpm dev                 pick another template (folder name in templates/)
 //   STOREFRONT=none pnpm dev                     app only
 //   STOREFRONT_PORT=4400 pnpm dev                template port
@@ -103,7 +103,7 @@ if (template !== 'none') {
 }
 
 console.log(
-  color(1, '\nShopnex dev') +
+  color(1, '\nShopNex dev') +
     `\n  admin + API + checkout  ${APP_URL}/admin` +
     (template !== 'none' ? `\n  storefront (${template})  http://localhost:${templatePort}` : '') +
     bundledApps.map((app) => `\n  ${`${app.name} app`.padEnd(24)} ${app.url}`).join('') +

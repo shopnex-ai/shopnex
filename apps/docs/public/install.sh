@@ -1,10 +1,10 @@
 #!/bin/sh
-# Shopnex installer for Linux servers.
+# ShopNex installer for Linux servers.
 #
 #   curl -fsSL https://shopnex.ai/install.sh | sudo sh
 #   curl -fsSL https://shopnex.ai/install.sh | sudo SHOPNEX_DOMAIN=shop.example.com sh
 #
-# Installs Docker if missing, then runs the released Shopnex images with Docker Compose in /opt/shopnex.
+# Installs Docker if missing, then runs the released ShopNex images with Docker Compose in /opt/shopnex.
 # With SHOPNEX_DOMAIN set, the Caddy inside the app container serves HTTPS for the shop and for stripe.<domain>
 # (point both DNS records at this server first). Safe to re-run: it keeps your database and secret and moves to
 # the newest release.
@@ -18,7 +18,7 @@ die() { printf 'Error: %s\n' "$1" >&2; exit 1; }
 
 [ "$(uname -s)" = "Linux" ] || die "This installer supports Linux. See https://docs.shopnex.ai/docs/self-hosting"
 [ "$(id -u)" -eq 0 ] || die "Run as root: curl -fsSL <url> | sudo sh"
-[ ! -f /etc/systemd/system/shopnex.service ] || die "An older Shopnex install (no Docker) was found; installing over it would start an empty shop. See https://docs.shopnex.ai/docs/self-hosting/install"
+[ ! -f /etc/systemd/system/shopnex.service ] || die "An older ShopNex install (no Docker) was found; installing over it would start an empty shop. See https://docs.shopnex.ai/docs/self-hosting/install"
 
 if ! docker compose version >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
@@ -49,6 +49,6 @@ touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%
 docker compose pull -q
 docker compose up -d --remove-orphans
 
-printf '\nShopnex %s is starting. Open %s/admin/setup in a minute to create the owner account.\n' "$VERSION" "$APP_URL"
+printf '\nShopNex %s is starting. Open %s/admin/setup in a minute to create the owner account.\n' "$VERSION" "$APP_URL"
 printf 'Finish setup right away: until then anyone who finds the address can claim the shop.\n'
 printf 'Config: %s/.env   Logs: cd %s && docker compose logs -f   Update: run this command again.\n' "$DIR" "$DIR"

@@ -1,6 +1,6 @@
-# Contributing to Shopnex
+# Contributing to ShopNex
 
-Thanks for helping. Shopnex is built for merchants first: if a merchant has to touch code, the CLI or `.env` to do
+Thanks for helping. ShopNex is built for merchants first: if a merchant has to touch code, the CLI or `.env` to do
 something, that is a product bug.
 
 ## Getting started

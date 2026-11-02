@@ -1,5 +1,5 @@
 // Stripe webhook handling: signature checks, declines, 3D Secure, delayed methods and duplicate / out-of-order
-// deliveries. Events are really signed (Stripe's own test-header helper); Shopnex is a small ledger that answers
+// deliveries. Events are really signed (Stripe's own test-header helper); ShopNex is a small ledger that answers
 // resolve / reject like the payments module does (idempotent; the opposite outcome on a closed session → 409).
 import assert from 'node:assert/strict'
 import { beforeEach, describe, test } from 'node:test'
@@ -231,7 +231,7 @@ describe('duplicate and out-of-order deliveries', () => {
     assert.deepEqual(state(), { status: 'resolved', externalId: 'pi_1', reason: 'Checkout expired without payment' })
   })
 
-  test('a PAID event for a session Shopnex does not have fails loudly so Stripe retries (never dropped)', async () => {
+  test('a PAID event for a session ShopNex does not have fails loudly so Stripe retries (never dropped)', async () => {
     sessions.clear()
     assert.equal((await deliver(paid())).status, 500)
     assert.equal(
@@ -311,7 +311,7 @@ describe('declines', () => {
     assert.deepEqual(calls, [])
   })
 
-  test('a decline answers 5xx while Shopnex is down so Stripe retries', async () => {
+  test('a decline answers 5xx while ShopNex is down so Stripe retries', async () => {
     shopnexDown = true
     assert.equal((await deliver(declined('Your card was declined.'))).status, 503)
   })
@@ -378,7 +378,7 @@ describe('3D Secure and delayed payments', () => {
   })
 })
 
-describe('Shopnex unavailable', () => {
+describe('ShopNex unavailable', () => {
   test('the webhook answers 5xx so Stripe retries, and the retry then settles the order', async () => {
     shopnexDown = true
     const e = paid()

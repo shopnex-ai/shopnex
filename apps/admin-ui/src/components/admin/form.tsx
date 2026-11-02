@@ -19,6 +19,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { formatCentsInput, toCents } from '@/lib/money'
 import '@/lib/zod-messages'
 
 export function useZodForm<TInput extends FieldValues, TOutput extends FieldValues>(
@@ -197,13 +198,16 @@ export function MoneyField<T extends FieldValues>({
 }: BaseFieldProps<T> & { currency: string; nullable?: boolean }) {
   const id = useId()
   const { field, fieldState } = useController({ control, name })
-  const cents = field.value as number | null | undefined
-  const formatted = cents == null ? '' : (cents / 100).toFixed(2)
+  // While the user types junk the form value is that raw string (so zod can report it); only a real
+  // number is formatted back into the input, otherwise "abc" would be overwritten with "NaN".
+  const value = field.value as number | string | null | undefined
+  const cents = typeof value === 'number' && Number.isFinite(value) ? value : null
+  const formatted = formatCentsInput(cents)
   const [text, setText] = useState(formatted)
-  useEffect(
-    () => setText((current) => (toCents(current) === (cents ?? null) ? current : formatted)),
-    [cents, formatted],
-  )
+  useEffect(() => {
+    if (typeof value === 'string') return
+    setText((current) => (toCents(current) === cents ? current : formatted))
+  }, [value, cents, formatted])
   return (
     <FieldShell id={id} label={label} description={description} error={fieldState.error}>
       <div className="relative">
@@ -226,7 +230,7 @@ export function MoneyField<T extends FieldValues>({
             else field.onChange(next)
           }}
           onBlur={() => {
-            if (toCents(text) !== null) setText(formatted)
+            if (Number.isFinite(toCents(text)) && toCents(text) !== null) setText(formatted)
             field.onBlur()
           }}
           aria-invalid={fieldState.invalid || undefined}
@@ -234,14 +238,6 @@ export function MoneyField<T extends FieldValues>({
       </div>
     </FieldShell>
   )
-}
-
-// "19.99" → 1999, "" → null, junk → NaN
-function toCents(text: string): number | null {
-  const trimmed = text.trim().replace(/,/g, '')
-  if (trimmed === '') return null
-  if (!/^-?\d*(\.\d{0,2})?$/.test(trimmed)) return Number.NaN
-  return Math.round(Number(trimmed) * 100)
 }
 
 /** Whole number; `nullable`: empty means null (e.g. stock not tracked) */

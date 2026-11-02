@@ -78,7 +78,7 @@ export const marketplaceConnection = {
   }),
 }
 
-// Apps registered on this Shopnex install, installable by every shop (super admins)
+// Apps registered on this ShopNex install, installable by every shop (super admins)
 export const appRegistry = {
   list: superAdminOnly.route({ method: 'GET', path: '/admin/app-registry' }).handler(() => appService.listApps()),
 

@@ -85,7 +85,7 @@ status running pull "Pulling the new images"
 docker compose pull -q >/dev/null 2>&1 || rollback pull
 
 # ── switch over ──────────────────────────────────────────────────────────────
-status running restart "Restarting Shopnex"
+status running restart "Restarting ShopNex"
 docker compose up -d --remove-orphans >/dev/null 2>&1 || rollback restart
 
 tries=0

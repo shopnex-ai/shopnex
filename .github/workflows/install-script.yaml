@@ -39,7 +39,7 @@ jobs:
             curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
             sleep 2
           done
-          echo "Shopnex did not answer in 3 minutes" >&2
+          echo "ShopNex did not answer in 3 minutes" >&2
           exit 1
 
       - name: Setup page is served and the config is private
@@ -73,7 +73,7 @@ jobs:
             curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
             sleep 2
           done
-          echo "Shopnex did not come back after the re-run" >&2
+          echo "ShopNex did not come back after the re-run" >&2
           exit 1
 
       - name: Logs

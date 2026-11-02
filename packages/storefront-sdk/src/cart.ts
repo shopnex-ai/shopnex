@@ -1,6 +1,6 @@
 // The buyer's cart, in the browser, for theme scripts: Storefront API calls (plain fetch keeps theme bundles
 // small; no zod/oRPC) and nanostores a theme's scripts and islands can subscribe to. The cart id stays in
-// localStorage; checkout is Shopnex's hosted page (`cart.checkoutUrl`).
+// localStorage; checkout is ShopNex's hosted page (`cart.checkoutUrl`).
 import { atom } from 'nanostores'
 import { API_BASE_PATH, PUBLISHABLE_KEY_HEADER } from './constants'
 import type { StorefrontOutputs } from './contract'

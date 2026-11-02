@@ -4,7 +4,7 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:
 
 const LABEL = 'shopnex:stored-secret:v1'
 
-/** The instance secret for everything Shopnex encrypts or signs itself */
+/** The instance secret for everything ShopNex encrypts or signs itself */
 export function shopnexSecret() {
   const secret = process.env.SHOPNEX_SECRET
   if (!secret) throw new Error('SHOPNEX_SECRET is not set')

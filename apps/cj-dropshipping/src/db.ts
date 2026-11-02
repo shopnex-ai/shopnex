@@ -1,4 +1,4 @@
-// What the app remembers beyond per-shop settings: which Shopnex variant is which CJ variant, and what happened
+// What the app remembers beyond per-shop settings: which ShopNex variant is which CJ variant, and what happened
 // to each order it forwarded. Lives in the app's SQLite database (shop data is capped at 100 keys).
 import type { DatabaseSync } from 'node:sqlite'
 import type { ShopContext } from '@shopnex/app'

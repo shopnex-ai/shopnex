@@ -36,7 +36,7 @@ export function MarketplaceCard({
       <CardHeader>
         <CardTitle>Marketplace</CardTitle>
         <CardDescription>
-          Connects this Shopnex install to the app marketplace: its apps appear under Discover apps for every shop, and
+          Connects this ShopNex install to the app marketplace: its apps appear under Discover apps for every shop, and
           installs are reported so apps can trust them.
         </CardDescription>
       </CardHeader>

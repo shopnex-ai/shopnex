@@ -53,10 +53,10 @@ const apiReference = new OpenAPIReferencePlugin({
   schemaConverters: [new ZodToJsonSchemaConverter()],
   specPath: '/openapi.json',
   docsPath: '/docs',
-  docsTitle: 'Shopnex API',
+  docsTitle: 'ShopNex API',
   specGenerateOptions: {
     info: {
-      title: 'Shopnex API',
+      title: 'ShopNex API',
       version: '1.0.0',
       description: [
         '**Storefront** endpoints are public. Send your publishable key (`pk_…`, created in the admin) in the',

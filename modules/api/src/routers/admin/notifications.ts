@@ -2,7 +2,7 @@ import { notificationService } from '@shopnex/email'
 import { shopManager } from '../../orpc'
 import { notificationParam, templateInput, templatePatchInput } from './schemas'
 
-// Settings → Notifications: the Liquid of the emails Shopnex sends (order confirmation, shipping…), with a
+// Settings → Notifications: the Liquid of the emails ShopNex sends (order confirmation, shipping…), with a
 // preview, a test send and the recent emails. Owners and admins only.
 export const notifications = {
   list: shopManager

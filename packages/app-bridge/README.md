@@ -1,6 +1,6 @@
 # @shopnex/app-bridge
 
-Lightweight browser client for embedded apps running inside the Shopnex admin. It communicates with the host admin window via `postMessage` to retrieve short-lived session tokens, make authenticated backend requests without third-party cookies, display toast notifications, and trigger top-level window redirects.
+Lightweight browser client for embedded apps running inside the ShopNex admin. It communicates with the host admin window via `postMessage` to retrieve short-lived session tokens, make authenticated backend requests without third-party cookies, display toast notifications, and trigger top-level window redirects.
 
 ## Installation
 
@@ -10,7 +10,7 @@ pnpm add @shopnex/app-bridge
 
 ## Usage
 
-Initialize the bridge inside an embedded iframe. The bridge automatically resolves the Shopnex instance from the `instance` query parameter added to your app URL by the admin:
+Initialize the bridge inside an embedded iframe. The bridge automatically resolves the ShopNex instance from the `instance` query parameter added to your app URL by the admin:
 
 ```ts
 import { createAppBridge } from '@shopnex/app-bridge'
@@ -24,7 +24,7 @@ const res = await bridge.authenticatedFetch('/api/settings', {
   body: JSON.stringify({ notifications: true }),
 })
 
-// Display a toast in the Shopnex admin
+// Display a toast in the ShopNex admin
 await bridge.toast('Settings saved')
 
 // Or display an error toast
@@ -43,4 +43,4 @@ await bridge.redirect('https://example.com/oauth/authorize')
 
 ## Documentation
 
-See [Shopnex Apps](https://github.com/shopnex-ai/shopnex/blob/main/docs/apps.md) for architecture details, and the [App SDK Guide](https://github.com/shopnex-ai/shopnex/blob/main/apps/docs/content/docs/apps/sdk.mdx) for frontend components and backend token verification.
+See [ShopNex Apps](https://github.com/shopnex-ai/shopnex/blob/main/docs/apps.md) for architecture details, and the [App SDK Guide](https://github.com/shopnex-ai/shopnex/blob/main/apps/docs/content/docs/apps/sdk.mdx) for frontend components and backend token verification.

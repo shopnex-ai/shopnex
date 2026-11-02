@@ -1,11 +1,11 @@
-// Customer sessions on the storefront server. The token Shopnex returns at sign-in lives in an httpOnly
+// Customer sessions on the storefront server. The token ShopNex returns at sign-in lives in an httpOnly
 // cookie; pages send it back with every Storefront API call made for the customer (shopnexFor).
 import type { AstroCookies } from 'astro'
 import { ORPCError, isDefinedError, safe, type Customer } from '@shopnex/storefront-sdk'
 import { shopnexFor } from './shopnex'
 
 const COOKIE = 'shopnex_customer'
-// Matches how long Shopnex keeps a customer session (Better Auth's default)
+// Matches how long ShopNex keeps a customer session (Better Auth's default)
 const MAX_AGE_S = 7 * 24 * 60 * 60
 
 export const tokenOf = (cookies: AstroCookies) => cookies.get(COOKIE)?.value

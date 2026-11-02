@@ -1,5 +1,5 @@
 // Writes the API spec (public/openapi.json) and the Scalar page that renders it (public/reference) at
-// build time, straight from the router, so the docs build needs no running Shopnex instance or database.
+// build time, straight from the router, so the docs build needs no running ShopNex instance or database.
 import { mkdir, writeFile } from 'node:fs/promises'
 import { OpenAPIGenerator } from '@orpc/openapi'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
@@ -10,7 +10,7 @@ const generator = new OpenAPIGenerator({ schemaConverters: [new ZodToJsonSchemaC
 
 const spec = await generator.generate(router, {
   info: {
-    title: 'Shopnex API',
+    title: 'ShopNex API',
     version: '1.0.0',
     description: [
       '**Storefront** endpoints are public. Send your publishable key (`pk_…`, created in the admin) in the',
@@ -54,7 +54,7 @@ await writeFile(
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shopnex API reference</title>
+    <title>ShopNex API reference</title>
   </head>
   <body>
     <div id="app"></div>

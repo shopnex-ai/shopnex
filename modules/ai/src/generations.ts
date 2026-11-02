@@ -1,5 +1,5 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module (outbound calls to providers aside).
-// Running a capability: Shopnex picks the provider (built-in AI from Settings → AI first, then installed apps),
+// Running a capability: ShopNex picks the provider (built-in AI from Settings → AI first, then installed apps),
 // builds the context itself (a provider never reads the shop's data on its own) and checks the answer against the
 // capability's schema. The result is a suggestion: saving it is an ordinary write by whoever asked.
 import { randomUUID } from 'node:crypto'

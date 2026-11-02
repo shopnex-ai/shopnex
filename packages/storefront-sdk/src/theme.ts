@@ -1,10 +1,10 @@
-// Theme editor format, shared by the Shopnex admin (the editor) and themes (storefront templates).
+// Theme editor format, shared by the ShopNex admin (the editor) and themes (storefront templates).
 //
 //   - A theme describes what can be customized in a ThemeDefinition: global settings, section types with
 //     their settings, each page's default sections, and optional styles (presets). The storefront serves
 //     its themes at THEME_DEFINITION_PATH (e.g. https://shop.acme.com/shopnex/theme.json): a ThemeManifest
 //     listing them, or a single ThemeDefinition for a storefront with one theme.
-//   - The merchant's choices are a ThemeDocument. Shopnex stores it (a draft and a published copy);
+//   - The merchant's choices are a ThemeDocument. ShopNex stores it (a draft and a published copy);
 //     the storefront reads it back with `storefront.theme.current` (or `theme.get` for a single theme) and
 //     renders the sections in order.
 //
@@ -63,7 +63,7 @@ export const ThemeSectionDefinition = z.object({
   limit: z.number().int().min(1).optional(),
 })
 
-// ── document (the merchant's choices, stored by Shopnex) ──────────────────────
+// ── document (the merchant's choices, stored by ShopNex) ──────────────────────
 
 export const ThemeSettingValue = z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])
 export const ThemeSettings = z.record(Id, ThemeSettingValue)
@@ -104,7 +104,7 @@ export const ThemePreset = z.object({
 /**
  * Which of the theme's settings brand the hosted checkout (it isn't rendered by the theme): each names a
  * setting id. Colors take `color` settings, fonts `select` ones (the option value is a Google Fonts family,
- * or "System"/"system"), `logo` an `image` one. Left out, checkout keeps Shopnex's own look for that part.
+ * or "System"/"system"), `logo` an `image` one. Left out, checkout keeps ShopNex's own look for that part.
  */
 export const ThemeCheckoutBranding = z.object({
   background: Id.optional(),
@@ -159,7 +159,7 @@ export function parseThemeManifest(json: unknown) {
 }
 
 // ── code (Online store → Themes → Edit code) ──────────────────────────────────
-// A Liquid theme's templates can be edited from the admin. Shopnex stores the edited files per copy and
+// A Liquid theme's templates can be edited from the admin. ShopNex stores the edited files per copy and
 // storefronts render them instead of their own (`storefront.theme.files`). To show the originals, the
 // admin reads them from the storefront: THEME_SOURCE_PATH with a preview token for a copy of that theme.
 

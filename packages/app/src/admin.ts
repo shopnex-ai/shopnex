@@ -1,4 +1,4 @@
-// The Shopnex Admin API for one shop, with an access token the SDK fetches (and refreshes) itself, plus the
+// The ShopNex Admin API for one shop, with an access token the SDK fetches (and refreshes) itself, plus the
 // app's own per-shop storage on top of it.
 
 export class ShopnexError extends Error {
@@ -65,9 +65,9 @@ export async function errorOf(res: Response, what: string) {
 }
 
 /**
- * Per-shop storage for the app, kept in the shop's Shopnex and readable only with the app's own token: settings,
+ * Per-shop storage for the app, kept in the shop's ShopNex and readable only with the app's own token: settings,
  * provider API keys… Values are JSON (64 KB each, 100 keys per shop). Secrets are encrypted with a key derived
- * from the app's private key before they leave the app, so they're unreadable in the Shopnex database
+ * from the app's private key before they leave the app, so they're unreadable in the ShopNex database
  * (rotating the app key makes stored secrets unreadable: merchants enter them again).
  */
 export type AppData = {
@@ -83,7 +83,7 @@ const SECRET_PREFIX = 'enc:v1:'
 /** Plain JSON key-value storage; `createAppData` adds secrets on top of any of these */
 export type KeyValue = Pick<AppData, 'get' | 'set' | 'delete'>
 
-/** The default backend: the shop's own storage in Shopnex (Admin API) */
+/** The default backend: the shop's own storage in ShopNex (Admin API) */
 export function remoteKeyValue(admin: AdminClient): KeyValue {
   const path = (key: string) => `/app-data/${encodeURIComponent(key)}`
   return {

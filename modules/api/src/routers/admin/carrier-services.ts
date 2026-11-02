@@ -16,7 +16,7 @@ const view = (s: Awaited<ReturnType<typeof carrierService.configure>>) => ({
 })
 
 // Carrier apps (see @shopnex/marketplace-sdk/shipping): register the shop's carrier service, then answer the
-// signed rates requests Shopnex sends it. App tokens only.
+// signed rates requests ShopNex sends it. App tokens only.
 export const carrierServicesApp = {
   configure: carrierApp
     .route({ method: 'POST', path: '/admin/carrier-services/configure' })

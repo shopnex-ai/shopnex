@@ -33,11 +33,11 @@ if (existing) {
 
 await ensureDefaultShop()
 await updateShop(DEFAULT_SHOP_ID, {
-  name: 'Shopnex Demo',
+  name: 'ShopNex Demo',
   currency: 'USD',
   storefrontUrl: process.env.APP_URL || null,
-  seoTitle: 'Shopnex Demo Store',
-  seoDescription: 'A demo store running on Shopnex, the open-source commerce platform.',
+  seoTitle: 'ShopNex Demo Store',
+  seoDescription: 'A demo store running on ShopNex, the open-source commerce platform.',
 })
 
 // The first member of a shop is its owner, later ones are staff
@@ -55,12 +55,12 @@ const about = await pageService.create(DEFAULT_SHOP_ID, {
   title: 'About',
   published: true,
   bodyHtml:
-    "<p>This is a demo store running on <strong>Shopnex</strong>. Sign in to the admin to edit products, themes and settings.</p><p>Data resets regularly, so please don't enter real personal information.</p>",
+    "<p>This is a demo store running on <strong>ShopNex</strong>. Sign in to the admin to edit products, themes and settings.</p><p>Data resets regularly, so please don't enter real personal information.</p>",
 })
 const contact = await pageService.create(DEFAULT_SHOP_ID, {
   title: 'Contact',
   published: true,
-  bodyHtml: '<p>Questions about Shopnex? Visit the project website.</p>',
+  bodyHtml: '<p>Questions about ShopNex? Visit the project website.</p>',
 })
 
 await menuService.create(DEFAULT_SHOP_ID, {

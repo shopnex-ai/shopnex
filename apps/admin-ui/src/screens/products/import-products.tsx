@@ -395,7 +395,7 @@ export function ImportProductsDialog() {
   return (
     <ImportDialog<ImportProduct>
       title="Import products"
-      description="Bring products into Shopnex from a platform product export CSV. Existing products are not changed."
+      description="Bring products into ShopNex from a platform product export CSV. Existing products are not changed."
       noun="products"
       resetKey={source}
       hint={`Export products from ${sourceNames[source]} and upload the CSV. Names, variants, prices, stock and image links are imported.`}
