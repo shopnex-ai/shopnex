@@ -3,7 +3,7 @@ services:
   - type: web
     name: shopnex
     runtime: docker
-    branch: v2
+    branch: main
     plan: standard
     healthCheckPath: /admin/login
     envVars:

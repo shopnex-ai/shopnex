@@ -1,11 +1,11 @@
-# DigitalOcean App Platform: https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/v2
+# DigitalOcean App Platform: https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/main
 spec:
   name: shopnex
   services:
     - name: web
       git:
         repo_clone_url: https://github.com/shopnex-ai/shopnex.git
-        branch: v2
+        branch: main
       dockerfile_path: Dockerfile
       http_port: 3000
       instance_size_slug: apps-s-1vcpu-2gb
