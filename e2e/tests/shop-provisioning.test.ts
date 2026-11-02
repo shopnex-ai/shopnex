@@ -46,11 +46,14 @@ describe('createShop', () => {
       [['manual', true, true]],
     )
 
-    // The storefront header has links from the first visit, with no product or collection needed
+    // The storefront header and footer have links from the first visit, with no product or collection needed
     const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, shop.id))
     assert.deepEqual(
-      menus.map((m) => [m.handle, m.items.map((i) => i.type)]),
-      [['main-menu', ['frontpage', 'catalog']]],
+      menus.map((m) => [m.handle, m.items.map((i) => i.type)]).sort(([a], [b]) => String(a).localeCompare(String(b))),
+      [
+        ['footer', ['search']],
+        ['main-menu', ['frontpage', 'catalog']],
+      ],
     )
   })
 
