@@ -173,6 +173,18 @@ jobs:
             gh release create "$TAG" $flags --title "$TAG"
           fi
 
+      # The first image in each pull request's description goes under its entry in the notes. Nice-to-have: a
+      # failure here leaves the plain generated notes and never fails the release.
+      - name: Add pull request screenshots to release notes
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" --json body --jq .body > release-notes.md
+          node scripts/release-notes-images.mjs release-notes.md
+          gh release edit "$TAG" --notes-file release-notes.md
+
       - name: Attach images to the release
         env:
           GH_TOKEN: ${{ github.token }}

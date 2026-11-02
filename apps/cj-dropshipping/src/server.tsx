@@ -95,6 +95,7 @@ async function registerCarrier(shop: ShopContext) {
     ready: true,
   })
   await shop.data.set('carrier_service', { id: service.id })
+  return service
 }
 
 const app = new Hono()
@@ -107,9 +108,14 @@ app.get('/', async (c) => {
   const shop = await shopnex.authenticate(c)
   const connected = await isConnected(shop)
   let shippingError: string | null = null
+  let shippingOff = false
   // Registering again is safe, and keeps the service (and its id, which orders are matched on) right after a
   // new install; shops connected before shipping prices existed switch them on here too
-  if (connected) await registerCarrier(shop).catch((error) => (shippingError = message(error)))
+  // `active` is the merchant's switch in Settings → Shipping: registering doesn't turn it back on
+  if (connected)
+    await registerCarrier(shop)
+      .then((service) => (shippingOff = !service.active))
+      .catch((error) => (shippingError = message(error)))
   // After an uninstall and a new install the subscription is gone: make it again, so paid orders still reach CJ
   if (connected)
     await ensureOrderWebhook(shop).catch((error) => console.warn('[cj] order subscription:', message(error)))
@@ -118,6 +124,7 @@ app.get('/', async (c) => {
       connected={connected}
       settings={await settingsOf(shop)}
       shippingError={shippingError}
+      shippingOff={shippingOff}
       orders={tables.orders(shop)}
     />,
   )

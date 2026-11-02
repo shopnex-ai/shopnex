@@ -22,7 +22,7 @@ posthog.init(${JSON.stringify(key)}, {
   defaults: 'latest',
   person_profiles: 'identified_only',
   persistence: 'localStorage',
-  respect_dnt: true,
+  respect_dnt: false,
   autocapture: false,
   disable_session_recording: true,
   capture_pageview: 'history_change',
