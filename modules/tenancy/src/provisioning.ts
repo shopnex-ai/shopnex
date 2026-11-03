@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
+import { channelService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import { RESERVED_SLUGS } from './subdomains'
 
@@ -58,7 +59,7 @@ export async function seedDefaultMenu(conn: Conn, shopId: string) {
 /**
  * A new shop for `ownerId`, ready to take an order: the owner membership plus the checkout defaults a shop
  * can't sell without (one shipping rate, one manual payment method) and a main menu. The Online Store channel
- * and the first theme are created on first use, so they aren't touched here.
+ * is created here too, so products added right away are published on it; the first theme is created on first use.
  */
 export async function createShop(input: { ownerId: string; name: string; currency?: string }) {
   const name = input.name.trim()
@@ -81,6 +82,9 @@ export async function createShop(input: { ownerId: string; name: string; currenc
       instructions: 'Pay the courier when your order arrives.',
     })
     await seedDefaultMenu(tx, id)
+    // Make the Online Store now: it's otherwise created on first use, after the sample products are added,
+    // and a product is only auto-published on channels that already exist
+    await channelService.getDefault(id, tx)
     return shop!
   })
 }
