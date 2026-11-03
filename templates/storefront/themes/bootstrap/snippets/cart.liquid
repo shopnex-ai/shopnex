@@ -1,0 +1,30 @@
+{%- comment -%}
+  The cart (a Bootstrap offcanvas) and the toast for cart errors, on every page; filled in by src/cart.ts.
+  Anything with data-add-to-cart="{variant id}" adds that variant, and data-cart-open opens the cart.
+{%- endcomment -%}
+<div class="snippet-cart offcanvas offcanvas-end" tabindex="-1" id="cart" aria-labelledby="cart-title" data-cart>
+  <div class="offcanvas-header border-bottom">
+    <h2 class="offcanvas-title h5" id="cart-title">Your cart</h2>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body" data-cart-lines>
+    <p class="text-body-secondary">Your cart is empty.</p>
+  </div>
+  <div class="snippet-cart__summary border-top p-3" data-cart-summary hidden>
+    <div data-cart-discounts></div>
+    <div class="d-flex justify-content-between fw-bold mb-1">
+      <span>Total</span>
+      <span data-cart-total></span>
+    </div>
+    <p class="small text-body-secondary mb-3">Shipping and taxes are calculated at checkout.</p>
+    <a class="btn btn-primary btn-lg w-100" data-cart-checkout>Checkout</a>
+  </div>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div class="toast align-items-center text-bg-danger border-0" role="status" aria-live="polite" aria-atomic="true" data-toast>
+    <div class="d-flex">
+      <div class="toast-body" data-toast-message></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>

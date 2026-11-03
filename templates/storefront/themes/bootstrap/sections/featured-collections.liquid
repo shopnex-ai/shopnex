@@ -1,0 +1,16 @@
+{%- comment -%} Featured collections: a slider of the picked collections (none picked: the shop's first ones) {%- endcomment -%}
+{%- assign picked = '' | split: ',' -%}
+{%- for i in (1..6) -%}
+  {%- assign key = 'collection_' | append: i -%}
+  {%- if section.settings[key] != blank -%}
+    {%- assign picked = picked | push: section.settings[key] -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- if picked.size == 0 -%}
+  {%- assign picked = collections | slice: 0, 6 -%}
+{%- endif -%}
+{%- if picked.size > 0 -%}
+  <div class="container">
+    {% render 'featured-slider', title: section.settings.title, items: picked, type: 'collection' %}
+  </div>
+{%- endif -%}

@@ -1,0 +1,78 @@
+{%- comment -%}
+  /products, /collections/{handle} and /search: the page header, search form (on /search), filters, sort,
+  a grid of product cards and paging.
+{%- endcomment -%}
+{%- if search.performed -%}
+  {%- if search.terms == blank -%}
+    {%- assign heading = 'Search' -%}
+  {%- else -%}
+    {%- assign heading = 'Search results for “' | append: search.terms | append: '”' -%}
+  {%- endif -%}
+  {%- assign description = '' -%}
+{%- else -%}
+  {%- if collection.handle == 'all' or collection.handle == blank -%}
+    {%- assign heading = 'All products' -%}
+  {%- else -%}
+    {%- assign heading = collection.title -%}
+  {%- endif -%}
+  {%- assign description = collection.description | strip_html | strip -%}
+{%- endif -%}
+{% render 'page-header', title: heading, description: description %}
+
+<div class="template-collection">
+  <div class="container">
+    {% render 'filters', collection: collection, search: search %}
+
+    {%- unless search.performed and search.terms == blank %}
+      <div class="template-collection__toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <span class="text-body-secondary">{{ collection.products.size }} {{ collection.products.size | pluralize: 'product', 'products' }}{% if paginate.next %} on this page{% endif %}</span>
+        {%- if collection.sort_options.size > 0 %}
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Sort by:
+              {%- for option in collection.sort_options %}{% if option.selected %} {{ option.name }}{% endif %}{% endfor %}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {%- for option in collection.sort_options %}
+                <li><a class="dropdown-item{% if option.selected %} active{% endif %}" href="{{ option.url }}">{{ option.name }}</a></li>
+              {%- endfor %}
+            </ul>
+          </div>
+        {%- endif %}
+      </div>
+    {%- endunless %}
+
+    {%- if collection.products.size == 0 %}
+      <div class="card">
+        <div class="card-body text-center py-5">
+          {%- if collection.active_filters.size > 0 %}
+            <p class="lead">No products match these filters.</p>
+          {%- elsif search.performed and search.terms == blank %}
+            <p class="lead mb-0">Type something to search the store.</p>
+          {%- elsif search.performed %}
+            <p class="lead">There are no results for <b>{{ search.terms }}</b>. Try checking your spelling or using different words.</p>
+          {%- else %}
+            <p class="lead">No products found.</p>
+          {%- endif %}
+          {%- if collection.clear_filters_url %}
+            <a href="{{ collection.clear_filters_url }}" class="btn btn-primary">Clear filters</a>
+          {%- elsif search.performed %}
+            {%- if search.terms != blank %}<a href="/products" class="btn btn-primary">See all products</a>{% endif %}
+          {%- elsif heading != 'All products' %}
+            <a href="/products" class="btn btn-primary">See all products</a>
+          {%- endif %}
+        </div>
+      </div>
+    {%- else %}
+      <div class="row g-4 mb-4">
+        {%- for product in collection.products %}
+          <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            {% render 'product-item', product: product %}
+          </div>
+        {%- endfor %}
+      </div>
+    {%- endif %}
+
+    {% render 'pagination', paginate: paginate %}
+  </div>
+</div>

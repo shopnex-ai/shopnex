@@ -1,0 +1,58 @@
+{%- comment -%}
+  The fixed dark navbar: shop name, the main menu (Online store → Navigation, "main-menu"; links with children
+  open a Bootstrap dropdown), search, account and the cart button. Collapses behind a toggler on small screens.
+{%- endcomment -%}
+{%- assign menu = linklists['main-menu'] -%}
+<nav class="snippet-main-menu navbar navbar-expand-lg navbar-dark fixed-top shadow" aria-label="Main">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="/">{{ shop.name }}</a>
+
+    <button type="button" class="snippet-main-menu__cart nav-link text-white d-lg-none ms-auto me-3" data-cart-open aria-label="Open cart">
+      Cart <sup class="badge rounded-pill bg-danger" data-cart-count hidden>0</sup>
+    </button>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-menu" aria-controls="main-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="main-menu">
+      <ul class="navbar-nav ms-auto">
+        {%- if menu and menu.links.size > 0 -%}
+          {%- for link in menu.links %}
+            {%- if link.links.size == 0 %}
+              <li class="nav-item">
+                <a class="nav-link{% if link.active %} active{% endif %}" href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title }}</a>
+              </li>
+            {%- else %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle{% if link.active or link.child_active %} active{% endif %}" href="{{ link.url }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">{{ link.title }}</a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item{% if link.active %} active{% endif %}" href="{{ link.url }}">All {{ link.title }}</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  {%- for child in link.links %}
+                    <li><a class="dropdown-item{% if child.active %} active{% endif %}" href="{{ child.url }}">{{ child.title }}</a></li>
+                    {%- for grandchild in child.links %}
+                      <li><a class="dropdown-item ps-4 small{% if grandchild.active %} active{% endif %}" href="{{ grandchild.url }}">{{ grandchild.title }}</a></li>
+                    {%- endfor %}
+                  {%- endfor %}
+                </ul>
+              </li>
+            {%- endif %}
+          {%- endfor %}
+        {%- else -%}
+          {%- comment %} No main menu yet {% endcomment %}
+          <li class="nav-item"><a class="nav-link{% if request.path == '/' %} active{% endif %}" href="/">Home</a></li>
+          <li class="nav-item"><a class="nav-link{% if request.path == '/products' %} active{% endif %}" href="/products">Catalog</a></li>
+        {%- endif %}
+        <li class="nav-item d-none d-lg-block"><span class="nav-link text-secondary" aria-hidden="true">|</span></li>
+        <li class="nav-item"><a class="nav-link{% if request.path == '/search' %} active{% endif %}" href="/search">Search</a></li>
+        <li class="nav-item"><a class="nav-link{% if request.page_type == 'account' %} active{% endif %}" href="{{ routes.account_url }}">Account</a></li>
+        <li class="nav-item d-none d-lg-block">
+          <button type="button" class="snippet-main-menu__cart nav-link" data-cart-open aria-label="Open cart">
+            Cart <sup class="badge rounded-pill bg-danger" data-cart-count hidden>0</sup>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

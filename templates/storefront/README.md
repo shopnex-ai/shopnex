@@ -36,6 +36,7 @@ themes/
   maison/              a printed, editorial theme (serif type, hairline rules); plain scripts, no islands
   shopco/              a bold fashion store (wide uppercase type, pill buttons, rounded cards); plain scripts
   hydrogen/            a quiet store in Shopify Hydrogen's style (system type, 4:5 photos, sticky gallery); plain scripts
+  bootstrap/           stock Bootstrap 5 (dark navbar, cards, carousels, offcanvas cart); plain scripts, no Tailwind
 ```
 
 ## A theme
@@ -90,3 +91,5 @@ TODO-creator-name (TODO-figma-community-link), [CC BY 4.0](https://creativecommo
 markup and code are new. Product photos and brand logos from the kit aren't included.
 The Hydrogen theme is a port of [hydrogen-theme](https://github.com/montalvomiguelo/hydrogen-theme) by Miguel
 Montalvo (MIT), itself a port of Shopify Hydrogen's default template, from Shopify OS 2.0 to ShopNex's Liquid.
+The Bootstrap theme is a port of [Bootstrap Shopify Theme](https://github.com/VienDinhCom/bootstrap-shopify-theme)
+by Vien Dinh (MIT), from Shopify (Sass, webpack, Swiper) to ShopNex's Liquid with stock Bootstrap 5.3.

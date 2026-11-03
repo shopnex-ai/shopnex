@@ -1,0 +1,18 @@
+{%- comment -%}
+  A page's title, with an optional breadcrumb label and description.
+  {% render 'page-header', title: 'Search', description: collection.description %}
+{%- endcomment -%}
+<div class="snippet-page-header">
+  <div class="container">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb small mb-2">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ crumb | default: title }}</li>
+      </ol>
+    </nav>
+    <h1 class="snippet-page-header__title">{{ title }}</h1>
+    {%- if description != blank %}
+      <div class="snippet-page-header__desc lead">{{ description | escape_once }}</div>
+    {%- endif %}
+  </div>
+</div>

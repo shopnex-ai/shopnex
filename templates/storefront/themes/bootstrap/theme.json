@@ -1,0 +1,225 @@
+{
+  "id": "bootstrap",
+  "name": "Bootstrap",
+  "version": "1.0.0",
+  "settings": [
+    {
+      "id": "color_primary",
+      "label": "Primary color",
+      "type": "color",
+      "default": "#0d6efd",
+      "info": "Buttons, links and highlights"
+    },
+    {
+      "id": "color_price",
+      "label": "Price color",
+      "type": "color",
+      "default": "#dc3545"
+    },
+    {
+      "id": "color_nav",
+      "label": "Header and footer color",
+      "type": "color",
+      "default": "#212529"
+    },
+    {
+      "id": "color_body_bg",
+      "label": "Background color",
+      "type": "color",
+      "default": "#ffffff"
+    },
+    {
+      "id": "color_body_color",
+      "label": "Text color",
+      "type": "color",
+      "default": "#212529"
+    },
+    {
+      "id": "font_body",
+      "label": "Font",
+      "type": "select",
+      "options": [
+        { "value": "system", "label": "System font" },
+        { "value": "Inter", "label": "Inter" },
+        { "value": "Roboto", "label": "Roboto" },
+        { "value": "Open Sans", "label": "Open Sans" },
+        { "value": "Lato", "label": "Lato" },
+        { "value": "Nunito", "label": "Nunito" },
+        { "value": "Poppins", "label": "Poppins" },
+        { "value": "Merriweather", "label": "Merriweather" }
+      ],
+      "default": "system"
+    },
+    {
+      "id": "border_radius",
+      "label": "Corner radius",
+      "type": "range",
+      "min": 0,
+      "max": 1.5,
+      "step": 0.125,
+      "default": 0.375,
+      "unit": "rem"
+    },
+    {
+      "id": "footer_text",
+      "label": "Footer text",
+      "type": "text",
+      "info": "Defaults to © year and the shop name"
+    },
+    {
+      "id": "custom_css",
+      "label": "Custom CSS",
+      "info": "Added after the theme styles on every page",
+      "type": "code",
+      "language": "css"
+    },
+    {
+      "id": "head_html",
+      "label": "Head code",
+      "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "type": "code",
+      "language": "html"
+    }
+  ],
+  "checkout": {
+    "background": "color_body_bg",
+    "text": "color_body_color",
+    "accent": "color_primary",
+    "headingFont": "font_body",
+    "bodyFont": "font_body"
+  },
+  "sections": {
+    "slideshow": {
+      "name": "Slideshow",
+      "settings": [
+        {
+          "id": "height",
+          "label": "Height",
+          "type": "select",
+          "options": [
+            { "value": "300px", "label": "Small" },
+            { "value": "450px", "label": "Medium" },
+            { "value": "600px", "label": "Large" }
+          ],
+          "default": "450px"
+        },
+        { "id": "autoplay", "label": "Autoplay", "type": "checkbox", "default": true },
+        { "id": "image_1", "label": "Slide 1: image", "type": "image" },
+        { "id": "title_1", "label": "Slide 1: title", "type": "text", "default": "Welcome to our store" },
+        {
+          "id": "text_1",
+          "label": "Slide 1: text",
+          "type": "textarea",
+          "default": "Quality products, shipped fast."
+        },
+        { "id": "button_label_1", "label": "Slide 1: button label", "type": "text", "default": "Shop now" },
+        { "id": "button_link_1", "label": "Slide 1: button link", "type": "url", "default": "/products" },
+        { "id": "image_2", "label": "Slide 2: image", "type": "image" },
+        { "id": "title_2", "label": "Slide 2: title", "type": "text" },
+        { "id": "text_2", "label": "Slide 2: text", "type": "textarea" },
+        { "id": "button_label_2", "label": "Slide 2: button label", "type": "text" },
+        { "id": "button_link_2", "label": "Slide 2: button link", "type": "url", "default": "/products" },
+        { "id": "image_3", "label": "Slide 3: image", "type": "image" },
+        { "id": "title_3", "label": "Slide 3: title", "type": "text" },
+        { "id": "text_3", "label": "Slide 3: text", "type": "textarea" },
+        { "id": "button_label_3", "label": "Slide 3: button label", "type": "text" },
+        { "id": "button_link_3", "label": "Slide 3: button link", "type": "url", "default": "/products" }
+      ]
+    },
+    "featured-products": {
+      "name": "Featured products",
+      "settings": [
+        { "id": "title", "label": "Title", "type": "text", "default": "Featured Products" },
+        {
+          "id": "collection",
+          "label": "Collection",
+          "type": "collection",
+          "info": "Empty: the newest products"
+        },
+        { "id": "limit", "label": "Products shown", "type": "range", "min": 2, "max": 16, "step": 1, "default": 8 }
+      ]
+    },
+    "featured-collections": {
+      "name": "Featured collections",
+      "settings": [
+        { "id": "title", "label": "Title", "type": "text", "default": "Featured Collections" },
+        {
+          "id": "collection_1",
+          "label": "Collection 1",
+          "type": "collection",
+          "info": "None picked: the shop's first collections"
+        },
+        { "id": "collection_2", "label": "Collection 2", "type": "collection" },
+        { "id": "collection_3", "label": "Collection 3", "type": "collection" },
+        { "id": "collection_4", "label": "Collection 4", "type": "collection" },
+        { "id": "collection_5", "label": "Collection 5", "type": "collection" },
+        { "id": "collection_6", "label": "Collection 6", "type": "collection" }
+      ]
+    },
+    "rich-text": {
+      "name": "Rich text",
+      "settings": [
+        { "id": "title", "label": "Title", "type": "text", "default": "About us" },
+        {
+          "id": "text",
+          "label": "Text",
+          "type": "textarea",
+          "default": "Tell customers about your store, your products and what makes them special."
+        },
+        { "id": "button_label", "label": "Button label", "type": "text" },
+        { "id": "button_link", "label": "Button link", "type": "url" }
+      ]
+    },
+    "custom-html": {
+      "name": "Custom HTML",
+      "settings": [
+        {
+          "id": "html",
+          "label": "HTML",
+          "type": "code",
+          "language": "html",
+          "info": "Output as is, inside a card"
+        }
+      ]
+    }
+  },
+  "pages": {
+    "home": {
+      "name": "Home page",
+      "sections": [
+        { "id": "slideshow", "type": "slideshow", "settings": {} },
+        { "id": "products", "type": "featured-products", "settings": {} },
+        { "id": "collections", "type": "featured-collections", "settings": {} }
+      ]
+    }
+  },
+  "presets": {
+    "bootstrap": {
+      "name": "Bootstrap",
+      "description": "Bootstrap blue, dark navbar, system font",
+      "settings": {}
+    },
+    "indigo": {
+      "name": "Indigo",
+      "description": "Indigo accent on a deep navy navbar, Inter",
+      "settings": {
+        "color_primary": "#6610f2",
+        "color_price": "#6610f2",
+        "color_nav": "#1b1340",
+        "font_body": "Inter"
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "Green accent, soft background, Nunito, rounder corners",
+      "settings": {
+        "color_primary": "#198754",
+        "color_price": "#146c43",
+        "color_nav": "#10332a",
+        "color_body_bg": "#f6f8f5",
+        "font_body": "Nunito",
+        "border_radius": 0.75
+      }
+    }
+  }
+}

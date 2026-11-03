@@ -1,0 +1,32 @@
+{%- comment -%}
+  A card with a title and a horizontal row of items that scrolls (and snaps) one card at a time; the arrow
+  buttons are wired by src/slider.ts. Without scripts the row still scrolls.
+  {% render 'featured-slider', title: 'Featured', items: products, type: 'product' %}
+{%- endcomment -%}
+<div class="snippet-featured-slider card" data-slider>
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <h2 class="h4 m-0">{{ title }}</h2>
+    {%- if link != blank %}<a href="{{ link }}" class="small">View all</a>{% endif %}
+  </div>
+  <div class="card-body position-relative">
+    <div class="snippet-featured-slider__track" data-slider-track>
+      {%- for item in items %}
+        <div class="snippet-featured-slider__slide">
+          {%- if type == 'collection' -%}
+            {% render 'collection-item', collection: item %}
+          {%- else -%}
+            {% render 'product-item', product: item %}
+          {%- endif -%}
+        </div>
+      {%- endfor %}
+    </div>
+    <button class="snippet-featured-slider__control carousel-control-prev" type="button" data-slider-prev hidden>
+      <span aria-hidden="true" class="carousel-control-prev-icon"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="snippet-featured-slider__control carousel-control-next" type="button" data-slider-next hidden>
+      <span aria-hidden="true" class="carousel-control-next-icon"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+{%- comment -%}
+  A product's price ("Starting at" when variants differ) and its compare-at price, struck through.
+  {% render 'price', product: product %}
+{%- endcomment -%}
+<span class="snippet-price">
+  {%- if product.price_varies %}<span class="snippet-price__from">Starting at</span> {% endif -%}
+  {{ product.price_min | money }}
+  {%- if product.compare_at_price_max > product.price_min %}
+    <s class="snippet-price__was">{{ product.compare_at_price_max | money }}</s>
+  {%- endif %}
+</span>

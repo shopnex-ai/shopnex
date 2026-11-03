@@ -1,0 +1,16 @@
+{%- comment -%} The footer: the "footer" menu (Online store → Navigation) and a copyright line {%- endcomment -%}
+{%- assign footer_text = settings.footer_text | strip -%}
+{%- if footer_text == blank -%}
+  {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.{% endcapture -%}
+{%- endif -%}
+{%- assign menu = linklists['footer'] -%}
+<footer class="snippet-footer text-white">
+  {%- if menu and menu.links.size > 0 %}
+    <nav class="snippet-footer__nav container mb-1" aria-label="Footer">
+      {%- for link in menu.links %}
+        <a class="snippet-footer__nav-link text-white text-decoration-none" href="{{ link.url }}">{{ link.title }}</a>
+      {%- endfor %}
+    </nav>
+  {%- endif %}
+  <div class="snippet-footer__copyright container">{{ footer_text }}</div>
+</footer>

@@ -1,0 +1,14 @@
+{%- comment -%} Rich text: a title, a paragraph and an optional button, in a card {%- endcomment -%}
+{%- if section.settings.title != blank or section.settings.text != blank -%}
+  <div class="container">
+    <div class="section-rich-text card">
+      <div class="card-body text-center py-5">
+        {%- if section.settings.title != blank %}<h2 class="card-title mb-3">{{ section.settings.title }}</h2>{% endif %}
+        {%- if section.settings.text != blank %}<p class="lead mx-auto mb-0">{{ section.settings.text }}</p>{% endif %}
+        {%- if section.settings.button_label != blank and section.settings.button_link != blank %}
+          <a class="btn btn-primary mt-4" href="{{ section.settings.button_link }}">{{ section.settings.button_label }}</a>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+{%- endif -%}

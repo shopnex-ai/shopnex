@@ -1,0 +1,6 @@
+{%- comment -%} The merchant's own HTML, output as is (a `code` setting: only staff can edit it), in a card {%- endcomment -%}
+{%- if section.settings.html != blank -%}
+  <div class="container">
+    <div class="section-custom-html card"><div class="card-body">{{ section.settings.html }}</div></div>
+  </div>
+{%- endif -%}

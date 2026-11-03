@@ -1,0 +1,19 @@
+{%- comment -%}
+  A collection card: image, title, a line of the description and an "Explore" button.
+  {% render 'collection-item', collection: collection %}
+{%- endcomment -%}
+{%- assign excerpt = collection.description | strip_html | strip | truncate: 90 -%}
+<div class="snippet-collection-item card">
+  {%- if collection.image %}
+    <img class="snippet-collection-item__image card-img-top" src="{{ collection.image | image_url }}" alt="{{ collection.image.alt | default: collection.title }}" loading="lazy">
+  {%- else %}
+    <span class="snippet-collection-item__image card-img-top snippet-placeholder" aria-hidden="true"></span>
+  {%- endif %}
+  <div class="snippet-collection-item__card-body card-body">
+    <div class="snippet-collection-item__card-info">
+      <h5 class="card-title">{{ collection.title }}</h5>
+      {%- if excerpt != blank %}<p class="card-text text-body-secondary small">{{ excerpt | escape_once }}</p>{% endif %}
+    </div>
+    <a class="btn btn-primary stretched-link" href="{{ collection.url }}">Explore</a>
+  </div>
+</div>

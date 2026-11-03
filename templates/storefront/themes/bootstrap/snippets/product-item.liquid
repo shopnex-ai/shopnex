@@ -1,0 +1,27 @@
+{%- comment -%}
+  A product card: image, title, a line of the description, price and a "View" button.
+  {% render 'product-item', product: product %}
+{%- endcomment -%}
+{%- assign excerpt = product.description | strip_html | strip | truncate: 60 -%}
+<div class="snippet-product-item card">
+  <a href="{{ product.url }}" class="snippet-product-item__media">
+    {%- if product.featured_image %}
+      <img class="snippet-product-item__image card-img-top" src="{{ product.featured_image | image_url }}" alt="{{ product.featured_image.alt | default: product.title }}" loading="lazy">
+    {%- else %}
+      <span class="snippet-product-item__image card-img-top snippet-placeholder" aria-hidden="true"></span>
+    {%- endif %}
+    {%- if product.available == false %}
+      <span class="snippet-product-item__badge badge text-bg-secondary">Sold out</span>
+    {%- elsif product.compare_at_price_max > product.price_min %}
+      <span class="snippet-product-item__badge badge text-bg-danger">Sale</span>
+    {%- endif %}
+  </a>
+  <div class="snippet-product-item__card-body card-body">
+    <div class="snippet-product-item__card-info">
+      <h5 class="card-title"><a href="{{ product.url }}" class="stretched-link text-reset text-decoration-none">{{ product.title }}</a></h5>
+      {%- if excerpt != blank %}<p class="card-text text-body-secondary small">{{ excerpt | escape_once }}</p>{% endif %}
+    </div>
+    <h6 class="snippet-product-item__price mb-3">{% render 'price', product: product %}</h6>
+    <span class="btn btn-primary">View</span>
+  </div>
+</div>

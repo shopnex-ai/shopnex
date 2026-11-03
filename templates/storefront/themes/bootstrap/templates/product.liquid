@@ -1,0 +1,182 @@
+{%- comment -%}
+  Product page: an image carousel, title, price, one select per option, quantity and Add to cart, then
+  Description / Details tabs. The chosen variant is kept in the URL (?variant=id); its price, availability and
+  image follow the selects (src/product.ts, which reads the product's JSON below).
+{%- endcomment -%}
+{%- assign variant = product.selected_or_first_available_variant -%}
+{%- assign images = product.images -%}
+{%- if images.size == 0 and variant.image -%}
+  {%- assign images = variant.image | concat: images -%}
+{%- endif -%}
+{%- assign excerpt = product.description | strip_html | strip -%}
+<div class="template-product" data-product-form>
+  <script type="application/json" data-product-json>
+    {{ product | json | raw }}
+  </script>
+  <div class="container">
+    <nav aria-label="Breadcrumb">
+      <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/products">Catalog</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ product.title }}</li>
+      </ol>
+    </nav>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-12 col-lg-6 mb-3">
+            <div class="template-product__slider carousel slide" id="product-gallery" data-product-gallery>
+              <div class="carousel-inner">
+                {%- for image in images %}
+                  <div class="template-product__slider-slide carousel-item{% if variant.image and image.src == variant.image.src %} active{% elsif variant.image == blank and forloop.first %} active{% endif %}" data-image="{{ image | image_url }}">
+                    <img src="{{ image | image_url }}" alt="{{ image.alt | default: product.title }}"{% unless forloop.first %} loading="lazy"{% endunless %}>
+                  </div>
+                {%- else %}
+                  <div class="template-product__slider-slide carousel-item active">
+                    <span class="snippet-placeholder" aria-hidden="true"></span>
+                  </div>
+                {%- endfor %}
+              </div>
+              {%- if images.size > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#product-gallery" data-bs-slide="prev">
+                  <span aria-hidden="true" class="carousel-control-prev-icon"></span>
+                  <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#product-gallery" data-bs-slide="next">
+                  <span aria-hidden="true" class="carousel-control-next-icon"></span>
+                  <span class="visually-hidden">Next</span>
+                </button>
+              {%- endif %}
+            </div>
+            {%- if images.size > 1 %}
+              <div class="template-product__thumbs mt-2">
+                {%- for image in images %}
+                  <button type="button" class="template-product__thumb" data-bs-target="#product-gallery" data-bs-slide-to="{{ forloop.index0 }}" aria-label="Show image {{ forloop.index }}">
+                    <img src="{{ image | image_url }}" alt="" loading="lazy">
+                  </button>
+                {%- endfor %}
+              </div>
+            {%- endif %}
+          </div>
+
+          <div class="col-md-12 col-lg-6 mb-3">
+            <div class="template-product__form">
+              {%- if product.vendor != blank %}<p class="text-body-secondary text-uppercase small mb-1">{{ product.vendor }}</p>{% endif %}
+              <h1 class="mb-3">{{ product.title }}</h1>
+
+              {%- if excerpt != blank %}<p class="mb-3">{{ excerpt | truncate: 220 | escape_once }}</p>{% endif %}
+
+              <h3 class="template-product__price mb-3">
+                <span data-price>{{ variant.price | money }}</span>
+                <s class="template-product__was{% unless variant.compare_at_price > variant.price %} d-none{% endunless %}" data-compare-at>
+                  {%- if variant.compare_at_price > variant.price %}{{ variant.compare_at_price | money }}{% endif -%}
+                </s>
+              </h3>
+
+              {%- unless product.has_only_default_variant %}
+                {%- for option in product.options_with_values %}
+                  <div class="template-product__form-option mb-3">
+                    <label class="form-label" for="product-option-{{ forloop.index }}">{{ option.name }}</label>
+                    <select class="form-select" id="product-option-{{ forloop.index }}" data-option="{{ option.name }}">
+                      {%- for value in option.values %}
+                        <option value="{{ value.name }}"{% if value.selected %} selected{% endif %}>{{ value.name }}{% unless value.available %} (sold out){% endunless %}</option>
+                      {%- endfor %}
+                    </select>
+                  </div>
+                {%- endfor %}
+              {%- endunless %}
+
+              <div class="mb-4">
+                <label class="form-label" for="product-quantity">Quantity</label>
+                <input class="form-control template-product__quantity" id="product-quantity" min="1" max="99" name="quantity" type="number" value="1" data-quantity>
+              </div>
+
+              <button
+                class="btn btn-primary btn-lg mb-2"
+                type="button"
+                data-add-to-cart="{{ variant.id }}"
+                {% unless variant.available %}disabled{% endunless %}
+              >
+                <span data-add-label>{% if variant.available %}Add to Cart{% else %}Sold out{% endif %}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12">
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button aria-controls="product-description" aria-selected="true" class="nav-link active" id="product-description-tab" data-bs-target="#product-description" data-bs-toggle="tab" role="tab" type="button">Description</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button aria-controls="product-details" aria-selected="false" class="nav-link" id="product-details-tab" data-bs-target="#product-details" data-bs-toggle="tab" role="tab" type="button">Details</button>
+              </li>
+            </ul>
+            <div class="tab-content pt-3">
+              <div aria-labelledby="product-description-tab" class="tab-pane fade show active template-product__description" id="product-description" role="tabpanel">
+                {%- if product.description != blank %}{{ product.description }}{% else %}<p class="text-body-secondary">No description yet.</p>{% endif %}
+              </div>
+              <div aria-labelledby="product-details-tab" class="tab-pane fade" id="product-details" role="tabpanel">
+                <table class="table table-bordered mb-0">
+                  <tbody>
+                    <tr data-spec-row="sku"{% if variant.sku == blank %} hidden{% endif %}>
+                      <th scope="row" class="w-25">SKU</th>
+                      <td data-spec="sku">{{ variant.sku }}</td>
+                    </tr>
+                    {%- if product.vendor != blank %}
+                      <tr><th scope="row" class="w-25">Vendor</th><td>{{ product.vendor }}</td></tr>
+                    {%- endif %}
+                    {%- if product.type != blank %}
+                      <tr><th scope="row" class="w-25">Type</th><td>{{ product.type }}</td></tr>
+                    {%- endif %}
+                    {%- if product.tags.size > 0 %}
+                      <tr><th scope="row" class="w-25">Tags</th><td>{{ product.tags | join: ', ' }}</td></tr>
+                    {%- endif %}
+                    <tr>
+                      <th scope="row" class="w-25">Availability</th>
+                      <td data-spec="availability">{% if variant.available %}In stock{% else %}Sold out{% endif %}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {%- if recommendations.products.size > 0 %}
+      {% render 'featured-slider', title: 'You may also like', items: recommendations.products, type: 'product' %}
+    {%- endif %}
+  </div>
+</div>
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": {{ product.title | json | raw }},
+    {%- if product.vendor != blank %}
+    "brand": { "@type": "Brand", "name": {{ product.vendor | json | raw }} },
+    {%- endif %}
+    "image": [
+      {%- for image in images -%}
+        {{ image | image_url | json | raw }}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ],
+    "description": {{ excerpt | json | raw }},
+    "offers": [
+      {%- for v in product.variants -%}
+        {
+          {%- if v.sku != blank %}"sku": {{ v.sku | json | raw }}, {% endif -%}
+          "@type": "Offer",
+          "price": {{ v.price | money_without_currency | json | raw }},
+          "priceCurrency": {{ v.price.currency | json | raw }},
+          "availability": "https://schema.org/{% if v.available %}InStock{% else %}OutOfStock{% endif %}"
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+</script>

@@ -1,0 +1,13 @@
+{%- comment -%} Paging of a catalog page (forward-only: back to the first page, and the next one) {%- endcomment -%}
+{%- if paginate.next or paginate.first %}
+  <nav class="snippet-pagination" aria-label="Pagination">
+    <ul class="pagination justify-content-center">
+      <li class="page-item{% unless paginate.first %} disabled{% endunless %}">
+        <a class="page-link" {% if paginate.first %}href="{{ paginate.first.url }}"{% else %}aria-disabled="true"{% endif %}>First page</a>
+      </li>
+      <li class="page-item{% unless paginate.next %} disabled{% endunless %}">
+        <a class="page-link" {% if paginate.next %}href="{{ paginate.next.url }}"{% else %}aria-disabled="true"{% endif %}>Next</a>
+      </li>
+    </ul>
+  </nav>
+{%- endif %}

@@ -1,0 +1,67 @@
+{%- comment -%}
+  Every page: Bootstrap and the theme's styles (assets/theme.css), the merchant's colors and font as CSS
+  variables, the fixed dark navbar, the footer and the cart (an offcanvas, filled in by src/cart.ts).
+{%- endcomment -%}
+{%- capture theme_style -%}
+  --bn-primary:{{ settings.color_primary }};
+  --bn-price:{{ settings.color_price }};
+  --bn-nav:{{ settings.color_nav }};
+  --bs-body-bg:{{ settings.color_body_bg }};
+  --bs-body-color:{{ settings.color_body_color }};
+  --bs-border-radius:{{ settings.border_radius }}rem;
+  {%- if settings.font_body != 'system' -%}
+    --bs-body-font-family:'{{ settings.font_body }}', system-ui, sans-serif;
+  {%- endif -%}
+{%- endcapture -%}
+{%- if page_title != blank and request.page_type == 'index' -%}
+  {%- assign title = page_title -%}
+{%- elsif page_title != blank -%}
+  {%- assign title = page_title | append: ' – ' | append: shop.name -%}
+{%- else -%}
+  {%- assign title = shop.name -%}
+{%- endif -%}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="{{ settings.color_nav }}">
+    <title>{{ title }}</title>
+    {%- if page_description != blank %}
+    <meta name="description" content="{{ page_description }}">
+    {%- endif %}
+    <meta property="og:site_name" content="{{ shop.name }}">
+    <meta property="og:title" content="{{ title }}">
+    {%- if page_description != blank %}
+    <meta property="og:description" content="{{ page_description }}">
+    {%- endif %}
+    {%- if page_image != blank %}
+    <meta property="og:image" content="{{ page_image }}">
+    {%- endif %}
+    <link rel="icon" type="image/png" href="{{ 'favicon.png' | asset_url }}">
+    {%- if settings.font_body != 'system' %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={{ settings.font_body | replace: ' ', '+' }}:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+    {%- endif %}
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+    {%- comment %} Color settings are validated hex values, so they're safe in CSS {% endcomment %}
+    <style>:root{ {{- theme_style -}} }</style>
+    {%- if settings.custom_css != blank %}
+    {%- comment %} Code settings are output as is (only staff can edit them); `</style` can't end the tag early {% endcomment %}
+    <style>{{ settings.custom_css | replace: '</style', '<\/style' | raw }}</style>
+    {%- endif %}
+    {{ content_for_header }}
+    {{ settings.head_html }}
+  </head>
+  <body class="layout-theme template-{{ request.page_type }}">
+    <a class="visually-hidden-focusable" href="#main">Skip to content</a>
+    {% render 'main-menu' %}
+    <main id="main" class="layout-theme__content">
+      {{ content_for_layout }}
+    </main>
+    {% render 'footer' %}
+    {% render 'cart' %}
+    {{ 'theme.js' | asset_url | script_tag }}
+  </body>
+</html>

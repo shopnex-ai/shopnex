@@ -1,0 +1,8 @@
+{%- comment -%} Featured products: a slider of products from one collection (or the newest) {%- endcomment -%}
+{%- assign source = section.settings.collection | default: collections.all -%}
+{%- assign products = source.products | slice: 0, section.settings.limit -%}
+{%- if products.size > 0 -%}
+  <div class="container">
+    {% render 'featured-slider', title: section.settings.title, items: products, type: 'product', link: source.url %}
+  </div>
+{%- endif -%}
