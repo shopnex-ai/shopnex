@@ -1,7 +1,7 @@
 // /sitemap.xml: every page search engines should find (home, catalog, collections, products, pages), with
 // when it last changed. One file: the sitemap protocol allows 50,000 addresses, far beyond a typical shop.
 import type { APIRoute } from 'astro'
-import type { PageInfo } from '@shopnex/storefront-sdk'
+import { ORPCError, type PageInfo } from '@shopnex/storefront-sdk'
 import { shopnex } from '../core/shopnex'
 
 const MAX_URLS = 50_000
@@ -22,8 +22,7 @@ async function all<T>(list: (after?: string) => Promise<{ nodes: T[]; pageInfo: 
 const xml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]!)
 
-export const GET: APIRoute = async ({ url }) => {
-  const first = 100
+async function load(first: number) {
   const [collections, pages] = await Promise.all([
     all((after) => shopnex.collections.list({ first, after }), MAX_URLS),
     all((after) => shopnex.pages.list({ first, after }), MAX_URLS),
@@ -32,6 +31,20 @@ export const GET: APIRoute = async ({ url }) => {
     (after) => shopnex.products.list({ first, after }),
     MAX_URLS - 2 - collections.length - pages.length,
   )
+  return { collections, pages, products }
+}
+
+export const GET: APIRoute = async ({ url }) => {
+  const first = 100
+  let lists
+  try {
+    lists = await load(first)
+  } catch (error) {
+    // Multi-tenant: a host no shop is served on has no sitemap
+    if (error instanceof ORPCError && error.code === 'NOT_FOUND') return new Response('Not found', { status: 404 })
+    throw error
+  }
+  const { collections, pages, products } = lists
 
   const entries: { path: string; lastmod?: string }[] = [
     { path: '/' },

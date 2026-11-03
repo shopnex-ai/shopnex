@@ -5,6 +5,7 @@ import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { seedSampleProducts } from '@shopnex/catalog'
+import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
 
@@ -74,12 +75,21 @@ describe('createShop', () => {
     assert.match(shop.slug, /^shop/)
   })
 
-  test('sample products are active and scoped to the shop', async () => {
+  test('sample products are active, scoped to the shop and on its Online Store', async () => {
     const shop = await createShop({ ownerId: owner.id, name: 'E2E Samples' })
     created.push(shop.id)
     await seedSampleProducts(shop.id)
     const products = await db.select().from(schema.products).where(eq(schema.products.shopId, shop.id))
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))
+    // Published on the Online Store, or the storefront would show an empty catalog
+    const channel = await channelService.getDefault(shop.id)
+    const live = await publicationService.liveIds(
+      shop.id,
+      channel.id,
+      'product',
+      products.map((p) => p.id),
+    )
+    assert.equal(live.size, 4)
   })
 })

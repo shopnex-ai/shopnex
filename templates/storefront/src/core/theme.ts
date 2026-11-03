@@ -17,6 +17,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { Context, type Liquid } from 'liquidjs'
 import {
+  ORPCError,
   THEME_PREVIEW_PARAM,
   ThemeDefinition,
   defaultDocument,
@@ -112,6 +113,8 @@ function editedLiquid(theme: Theme, files: { copyId: string; version: number }, 
 }
 
 export interface LoadedTheme {
+  /** Multi-tenant: no shop is served on this host (render() answers 404) */
+  shopMissing: boolean
   theme: Theme
   /** The theme's engine, with the merchant's edited files when there are some */
   liquid: Liquid
@@ -131,11 +134,17 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
     preview: boolean
     files: { copyId: string; version: number } | null
   } = { themeId: null, document: null, preview: false, files: null }
+  let shopMissing = false
   try {
     current = await shopnex.theme.current({ previewToken })
   } catch (error) {
-    // The store keeps working on the default theme if ShopNex is unreachable
-    console.error('[theme] could not load the shop’s theme:', error)
+    if (error instanceof ORPCError && error.code === 'NOT_FOUND') {
+      // Every shop-scoped call answers this for a host no shop is served on: that's no store, not an outage
+      shopMissing = true
+    } else {
+      // The store keeps working on the default theme if ShopNex is unreachable
+      console.error('[theme] could not load the shop’s theme:', error)
+    }
   }
   const all = themes()
   const found = current.themeId ? all.find((t) => t.id === current.themeId) : undefined
@@ -153,6 +162,7 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
   }
 
   return {
+    shopMissing,
     theme,
     liquid,
     settings: resolveSettings(definition.settings, document.settings),
@@ -302,11 +312,25 @@ function contentForHeader(preview: boolean, seo: string[] = []) {
     .join('\n')
 }
 
+// Multi-tenant: a host that no shop is served on (a mistyped <slug>.ROOT_DOMAIN, a deleted shop). Plain HTML, since
+// there is no shop to take a theme from; noindex so crawlers don't keep it.
+function shopNotFound(): Response {
+  return new Response(
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">` +
+      `<meta name="robots" content="noindex"><title>Store not found</title></head>` +
+      `<body style="margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.5 system-ui,sans-serif;color:#1f2937;text-align:center">` +
+      `<main style="padding:1.5rem"><h1 style="font-size:1.5rem;margin:0 0 .5rem">Store not found</h1>` +
+      `<p style="margin:0;color:#6b7280">There is no store at this address. Check the link and try again.</p></main></body></html>`,
+    { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } },
+  )
+}
+
 /**
  * Renders a page with the theme: the template, then layout/theme.liquid around it. Both share one scope, so
  * a template can `{% assign page_title = … %}` for the layout.
  */
 export async function render(loaded: LoadedTheme, url: URL, page: ThemePage): Promise<Response> {
+  if (loaded.shopMissing) return shopNotFound()
   try {
     return await renderPage(loaded, url, page)
   } catch (error) {
