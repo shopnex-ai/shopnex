@@ -4,10 +4,11 @@ import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 import { db, schema } from '@shopnex/db'
-import { isMultiTenant } from '@shopnex/tenancy'
+import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed } from './sign-up-policy'
+import { clientIpHeaders, signupsPerIp } from './signup-limit'
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 
@@ -50,6 +51,11 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword: { enabled: true },
+  // Better Auth limits sign-in and sign-up requests per address (on in production). Open sign-up gets an hourly cap on
+  // top of its burst limit, and CLIENT_IP_HEADER says which header carries the address (cf-connecting-ip behind
+  // Cloudflare); see signup-limit.ts. The signup form doesn't go through here: it checks the same cap itself.
+  ...(isOpenSignup && { rateLimit: { customRules: { '/sign-up/email': { window: 3600, max: signupsPerIp() } } } }),
+  ...(process.env.CLIENT_IP_HEADER && { advanced: { ipAddress: { ipAddressHeaders: clientIpHeaders() } } }),
   hooks: {
     // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
     before: createAuthMiddleware(async (ctx) => {
