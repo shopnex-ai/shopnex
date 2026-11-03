@@ -10,6 +10,7 @@
   "dependencies": {
     "@shopnex/app": "workspace:*",
     "@shopnex/apps": "workspace:*",
+    "@shopnex/auth": "workspace:*",
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",

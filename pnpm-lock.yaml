@@ -377,6 +377,9 @@ importers:
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../modules/apps
+      '@shopnex/auth':
+        specifier: workspace:*
+        version: link:../modules/auth
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../modules/cart

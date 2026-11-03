@@ -5,6 +5,7 @@ import { and, eq, gt, sql } from 'drizzle-orm'
 import { APIError } from 'better-auth/api'
 import { db, schema } from '@shopnex/db'
 import { isOpenSignup } from '@shopnex/tenancy'
+import { SIGNUP_LIMIT_MESSAGE, takeGlobalSignup } from './signup-limit'
 
 const trusted = new AsyncLocalStorage<true>()
 
@@ -14,7 +15,12 @@ export function withSignUpAllowed<T>(fn: () => Promise<T>) {
 }
 
 export async function assertSignUpAllowed(email: string) {
-  if (trusted.getStore() || isOpenSignup) return
+  if (trusted.getStore()) return
+  if (isOpenSignup) {
+    // Anyone may sign up, so cap how many accounts all visitors together can create per hour (every path ends here)
+    if (takeGlobalSignup() !== null) throw new APIError('TOO_MANY_REQUESTS', { message: SIGNUP_LIMIT_MESSAGE })
+    return
+  }
   const [invitation] = await db
     .select({ id: schema.shopInvitations.id })
     .from(schema.shopInvitations)

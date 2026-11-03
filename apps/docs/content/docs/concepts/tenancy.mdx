@@ -12,6 +12,7 @@ ShopNex is always multi-tenant underneath: every tenant table has a `shop_id`. `
 | New users  | invited from Admin → Staff | invited, or create their own shop                 |
 
 - Set `OPEN_SIGNUP=true` (with `TENANCY_MODE=multi`) to let anyone create an account and their own shop at `/admin/signup`, as on a public demo. Without it, accounts are invitation-only.
+- Open sign-up is rate limited: `SIGNUP_RATE_PER_IP` (default 5) and `SIGNUP_RATE_GLOBAL` (default 200) new accounts per hour, counted in memory (a restart clears them). Visitors are told apart by `CLIENT_IP_HEADER`, the request header that carries their address: set it to `cf-connecting-ip` behind Cloudflare. A header holding several addresses is never trusted, and without an address only the global cap applies. Only set a header your own proxy sets, since a client can send any header the proxy passes on. Better Auth's request limits (sign-in and sign-up, on in production) use the same header.
 - Shops are Better Auth organizations (`shops`, `shop_members`, `shop_invitations`).
 - Switching from single to multi needs no data migration: add each shop's domains under Settings → Domains and set `TENANCY_MODE=multi`.
 - A domain is claimed first, then verified by adding a DNS TXT record (`_shopnex-challenge.<domain>`) with the token shown in the admin. Only verified domains resolve to a shop. A domain inserted into `shop_domains` by hand needs `verified_at` set before it resolves.
