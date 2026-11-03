@@ -481,7 +481,9 @@ const installedApps = (shopId: string) =>
     .where(and(eq(schema.appInstallations.shopId, shopId), isNull(schema.appInstallations.uninstalledAt)))
 
 export async function listInstallations(shopId: string) {
-  const rows = await installedApps(shopId).orderBy(desc(schema.appInstallations.installedAt))
+  const rows = (await installedApps(shopId).orderBy(desc(schema.appInstallations.installedAt))).filter(
+    ({ app }) => !isBundledAppUnavailable(app),
+  )
   return rows.map(({ installation, app, lastUsedAt }) => ({
     ...installation,
     app: publicApp(app),
@@ -688,6 +690,23 @@ const BUNDLED_APPS = [
 
 type BundledApp = (typeof BUNDLED_APPS)[number]
 
+// Bundled apps whose last check failed (cleared when one succeeds). An app not checked yet isn't in here, so
+// a restart doesn't hide every installed app until the first check is done.
+const failingBundled = new Set<string>()
+
+/**
+ * A bundled app that can't be used on this install: it isn't part of this build (a database from another
+ * version or branch), it isn't configured, or it isn't answering. Such an app is left out of the installed list
+ * rather than shown as something to open; the installation itself is kept and returns with the app.
+ */
+function isBundledAppUnavailable(app: { source: string; clientId: string }) {
+  if (app.source !== 'bundled') return false
+  const bundled = BUNDLED_APPS.find((b) => b.clientId === app.clientId)
+  if (!bundled) return true
+  const configured = !!process.env[bundled.urlEnv]?.trim() || process.env.SHOPNEX_BUNDLED_APPS === 'docker'
+  return !configured || failingBundled.has(bundled.clientId)
+}
+
 // An announced public URL is shown to staff and opened in their browser: https, or plain http on this machine only
 function publicOrigin(value: unknown) {
   if (typeof value !== 'string') return null
@@ -748,10 +767,12 @@ export function registerBundledApps() {
       let next = 10 * 60_000
       try {
         await syncBundledApp(bundled, url)
+        failingBundled.delete(bundled.clientId)
         failures = 0
       } catch (error) {
         if (failures === 0 && url)
           console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
+        failingBundled.add(bundled.clientId)
         next = Math.min(5000 * 2 ** failures, 60_000)
         failures++
       }
