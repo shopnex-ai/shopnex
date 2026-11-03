@@ -132,11 +132,30 @@ Two volumes hold your data: `db` (Postgres) and `shopnex_data`. The secret that 
 
 Add `COMPOSE_PROFILES=cj` and `CJ_DROPSHIPPING_APP_URL=https://cj.shop.example.com` to the environment, add a DNS record for `cj.shop.example.com`, and add a domain pointing at service `cj-dropshipping` on port `4700`. Redeploy.
 
+### Optional: multi-shop (public demo or SaaS)
+
+To let anyone sign up and get their own shop at `<slug>.example.com`, add three values to **Environment** and redeploy. The compose file already routes the shops' hosts to ShopNex, so there are no labels to write.
+
+| Variable       | Value                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| `TENANCY_MODE` | `multi`                                                                                          |
+| `OPEN_SIGNUP`  | `true` lets anyone create an account and a shop at `/admin/signup`. Without it, invitation-only. |
+| `ROOT_DOMAIN`  | The bare domain the shops live under, e.g. `example.com` (no `https://`, no path).               |
+
+1. Add a wildcard DNS record, `*`, pointing at the server. Behind Cloudflare, proxy it and set SSL/TLS to **Full**; the wildcard route uses Traefik's default certificate, because a Let's Encrypt wildcard needs a DNS challenge. Cloudflare's free certificate covers one wildcard level, so `*.example.com` gets HTTPS but `*.shops.example.com` does not.
+2. Keep the admin on its own domain (added under **Domains**, service `shopnex`, port `3000`), and set `APP_URL` to it. It can sit under `ROOT_DOMAIN` (for example `app.example.com`, a name the platform keeps) or on another domain. The admin host has no storefront.
+3. Set `ROOT_DOMAIN` only together with `TENANCY_MODE=multi`. In single mode it would send every subdomain to the one shop.
+4. Create your own account first: a fresh install lets whoever arrives first claim it.
+
+A shop's name becomes its address (`acme-candles.example.com`), except names the platform keeps (`admin`, `app`, `www`, `api`…). Two multi-shop installs on one Dokploy server would share the route name `shopnex-shops`; rename it in the compose labels if you run both. See [Tenancy](/docs/concepts/tenancy) for how shops are resolved.
+
 ### Troubleshooting
 
 - **The first deploy fails with a port error.** You pasted the main `docker-compose.yml`, which publishes ports 3000, 80 and 443. Use `docker-compose.dokploy.yml`.
 - **No certificate, or a browser warning.** The DNS record is missing or has not propagated yet. Check it, then redeploy.
 - **Checkout or Stripe links point at `localhost`.** `APP_URL` or `STRIPE_APP_URL` is unset. Set both and redeploy.
+- **A shop's address answers `404 page not found` (multi-shop).** That text is Traefik's, so no route matched the host. Check that `ROOT_DOMAIN` is set, bare, in **Environment**, and that you redeployed after changing it. A plain "Store not found" page is ShopNex's: the shop does not exist or the slug is reserved.
+- **Multi-shop is set but signup stays invitation-only.** The compose file must pass the variables through; use the current `docker-compose.dokploy.yml`, which reads `TENANCY_MODE`, `OPEN_SIGNUP` and `ROOT_DOMAIN` from **Environment**.
 - **`/admin` loads but sign-in fails.** `APP_URL` does not match the domain you are visiting, including `https://` and no trailing slash.
 
 ## Coolify, Portainer and others
