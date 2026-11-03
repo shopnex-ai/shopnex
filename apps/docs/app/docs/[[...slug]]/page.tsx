@@ -1,5 +1,6 @@
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/page'
 import { notFound } from 'next/navigation'
+import { PageFeedback } from '@/components/page-feedback'
 import { source } from '@/lib/source'
 import { getMDXComponents } from '@/mdx-components'
 
@@ -16,6 +17,12 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         <MDX components={getMDXComponents()} />
+        <PageFeedback
+          path={page.path.replace(/\.mdx?$/, '')}
+          title={page.data.title}
+          verified={page.data.verified}
+          verifiedVersion={page.data.verifiedVersion}
+        />
       </DocsBody>
     </DocsPage>
   )
