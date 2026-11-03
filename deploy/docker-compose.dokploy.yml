@@ -4,6 +4,8 @@
 # shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700. Keep the rest in sync with docker-compose.yml.
 # Set APP_URL and STRIPE_APP_URL, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj, plus CJ_DROPSHIPPING_APP_URL for its domain.
+# The services that get a domain are also on `dokploy-network`, which is how the proxy (Traefik) reaches them; without
+# it the domain answers 502 or 404. `default` stays in each list: it is how they reach `db` and each other.
 name: shopnex
 
 services:
@@ -28,6 +30,7 @@ services:
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
+    networks: [default, dokploy-network]
     volumes:
       - shopnex_data:/data
     environment:
@@ -45,6 +48,7 @@ services:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}
     pull_policy: always
     restart: unless-stopped
+    networks: [default, dokploy-network]
     volumes:
       - stripe_data:/data
     environment:
@@ -57,6 +61,7 @@ services:
     image: ghcr.io/shopnex-ai/shopnex-cj-dropshipping:${SHOPNEX_VERSION:-latest}
     pull_policy: always
     restart: unless-stopped
+    networks: [default, dokploy-network]
     volumes:
       - cj_dropshipping_data:/data
     environment:
@@ -64,6 +69,10 @@ services:
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4700
       DATA_DIR: /data
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   db:
