@@ -39,7 +39,11 @@ services:
       BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       SHOPNEX_SECRET: ${SHOPNEX_SECRET:-}
-      TENANCY_MODE: single
+      # Multi-shop (a public demo or SaaS): TENANCY_MODE=multi, OPEN_SIGNUP=true lets anyone create a shop, ROOT_DOMAIN
+      # serves every shop at <slug>.ROOT_DOMAIN (see docs: Concepts > Tenancy). The defaults keep a single shop.
+      TENANCY_MODE: ${TENANCY_MODE:-single}
+      OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
+      ROOT_DOMAIN: ${ROOT_DOMAIN:-}
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker
