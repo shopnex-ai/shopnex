@@ -23,7 +23,8 @@
     "next": "16.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "simple-icons": "^16.36.0"
+    "simple-icons": "^16.36.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
