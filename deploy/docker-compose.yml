@@ -51,6 +51,11 @@ services:
       TENANCY_MODE: ${TENANCY_MODE:-single}
       OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
       ROOT_DOMAIN: ${ROOT_DOMAIN:-}
+      # Open sign-up limits (OPEN_SIGNUP=true): per address and for everyone, per hour. Behind Cloudflare set
+      # CLIENT_IP_HEADER=cf-connecting-ip so each visitor is told apart (see docs: Concepts > Tenancy).
+      SIGNUP_RATE_PER_IP: ${SIGNUP_RATE_PER_IP:-}
+      SIGNUP_RATE_GLOBAL: ${SIGNUP_RATE_GLOBAL:-}
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker

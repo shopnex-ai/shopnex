@@ -2,6 +2,8 @@
 import { createShop, isOpenSignup } from '@shopnex/tenancy'
 import { auth } from './index'
 
+export { SIGNUP_LIMIT_MESSAGE, checkSignupRate } from './signup-limit'
+
 export class SignupError extends Error {
   constructor(message: string) {
     super(message)
