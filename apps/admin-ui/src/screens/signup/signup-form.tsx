@@ -15,7 +15,7 @@ import { runSignup } from './actions'
 export function SignupForm({ providers }: { providers: SocialProvider[] }) {
   const navigate = useNavigate()
   const router = useRouter()
-  const form = useZodForm(signupInput, { defaultValues: { shopName: '', email: '', password: '' } })
+  const form = useZodForm(signupInput, { defaultValues: { email: '', password: '' } })
 
   const onSubmit = form.handleSubmit(async (values) => {
     const { error } = await runSignup({ data: values })
@@ -26,7 +26,7 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
     const signIn = await authClient.signIn.email({ email: values.email, password: values.password })
     // The account exists either way; worst case they sign in by hand
     clearAdminContext(router)
-    await navigate({ to: signIn.error ? '/admin/login' : '/admin', replace: true })
+    await navigate({ to: signIn.error ? '/admin/login' : '/admin/welcome', replace: true })
     await router.invalidate()
   })
 
@@ -34,13 +34,14 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Start your store</CardTitle>
-        <CardDescription>Create an account and your own shop. You can rename it later in Settings.</CardDescription>
+        <CardDescription>
+          Create an account and your own shop. Next you'll name it and pick its currency.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
           <FieldGroup>
-            <TextField control={form.control} name="shopName" label="Shop name" autoFocus />
-            <TextField control={form.control} name="email" label="Email" type="email" autoComplete="email" />
+            <TextField control={form.control} name="email" label="Email" type="email" autoComplete="email" autoFocus />
             <TextField
               control={form.control}
               name="password"

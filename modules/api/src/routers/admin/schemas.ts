@@ -191,10 +191,9 @@ export const setupInput = z.object({
   password: z.string().min(MIN_PASSWORD).max(128),
 })
 
-// Self-serve signup (/admin/signup, OPEN_SIGNUP=true) and "create your shop" for accounts without one
-export const shopNameInput = z.string().trim().min(2, 'Enter a shop name').max(60)
-export const signupInput = setupInput.extend({ shopName: shopNameInput })
-export const createShopInput = z.object({ shopName: shopNameInput })
+// Self-serve signup (/admin/signup, OPEN_SIGNUP=true) is the same as first-run setup: just the account. The shop is
+// named in /admin/welcome, like everywhere else.
+export const signupInput = setupInput
 
 export {
   CANCEL_REASONS,

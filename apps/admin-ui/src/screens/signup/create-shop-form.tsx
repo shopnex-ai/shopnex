@@ -1,8 +1,8 @@
 'use client'
 
-import { useRouter } from '@tanstack/react-router'
-import { createShopInput } from '@shopnex/api/schemas'
-import { FormError, TextField, useZodForm } from '@/components/admin/form'
+import { useNavigate, useRouter } from '@tanstack/react-router'
+import { z } from 'zod'
+import { FormError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup } from '@/components/ui/field'
@@ -11,16 +11,19 @@ import { createMyShop } from './actions'
 
 // For a signed-in account that has no shop yet
 export function CreateShopForm() {
+  const navigate = useNavigate()
   const router = useRouter()
-  const form = useZodForm(createShopInput, { defaultValues: { shopName: '' } })
+  const form = useZodForm(z.object({}), { defaultValues: {} })
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    const { error } = await createMyShop({ data: values })
+  const onSubmit = form.handleSubmit(async () => {
+    const { error } = await createMyShop()
     if (error) {
       form.setError('root', { message: error })
       return
     }
     clearAdminContext(router)
+    // Same last step as every other sign-up: name the shop and pick the currency
+    await navigate({ to: '/admin/welcome', replace: true })
     await router.invalidate()
   })
 
@@ -28,12 +31,13 @@ export function CreateShopForm() {
     <Card>
       <CardHeader>
         <CardTitle>Create your shop</CardTitle>
-        <CardDescription>Your account isn&apos;t part of a shop yet. Name yours to get started.</CardDescription>
+        <CardDescription>
+          Your account isn&apos;t part of a shop yet. Next you&apos;ll name it and pick its currency.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} noValidate>
           <FieldGroup>
-            <TextField control={form.control} name="shopName" label="Shop name" autoFocus />
             <FormError form={form} />
             <Field>
               <Button type="submit" disabled={form.formState.isSubmitting}>
