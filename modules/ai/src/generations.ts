@@ -8,6 +8,7 @@ import { instanceSigner, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
 import { db, schema } from '@shopnex/db'
 import type { AiFeedback } from '@shopnex/db/schema'
+import { withStorefrontUrl } from '@shopnex/tenancy'
 import {
   aiCapabilities,
   aiRunResponse,
@@ -134,8 +135,9 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
   }
   const provider = app ? { id: app.app.id, name: app.app.name } : { id: BUILTIN, name: own!.name }
 
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
-  if (!shop) throw new AiError('SUBJECT_NOT_FOUND', 'Shop not found')
+  const [shopRow] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  if (!shopRow) throw new AiError('SUBJECT_NOT_FOUND', 'Shop not found')
+  const shop = await withStorefrontUrl(shopRow)
   const needSubject = () => {
     if (!request.subjectId) throw new AiError('SUBJECT_REQUIRED', `${capability} needs a ${definition.subject}`)
     return request.subjectId

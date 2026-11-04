@@ -56,7 +56,10 @@ import {
   webhookEndpoints,
 } from '@shopnex/db/schema'
 
-export const shopOutput = createSelectSchema(shops)
+export const shopOutput = createSelectSchema(shops).extend({
+  /** True when the Storefront URL is derived from the shop's domains and can't be set (multi-tenant mode) */
+  storefrontUrlManaged: z.boolean(),
+})
 
 export const webhookOutput = createSelectSchema(webhookEndpoints, { topics: z.array(z.enum(WEBHOOK_TOPICS)) })
 
