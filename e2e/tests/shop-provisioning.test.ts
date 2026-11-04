@@ -1,5 +1,5 @@
 // Creating a shop for an account (self-serve signup, OPEN_SIGNUP=true): the owner membership, a unique slug
-// and the checkout defaults. The signup route itself needs a server in multi mode and isn't covered here.
+// and a menu (no made-up shipping rate or payment method). The signup route itself needs a server in multi mode and isn't covered here.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -27,7 +27,7 @@ after(async () => {
 })
 
 describe('createShop', () => {
-  test('makes the account the owner and sets up checkout', async () => {
+  test('makes the account the owner and leaves shipping and payments to the owner', async () => {
     const shop = await createShop({ ownerId: owner.id, name: '  E2E Provisioned  ' })
     created.push(shop.id)
     assert.equal(shop.name, 'E2E Provisioned')
@@ -40,12 +40,9 @@ describe('createShop', () => {
     assert.equal(member?.role, 'owner')
 
     const rates = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.shopId, shop.id))
-    assert.equal(rates.length, 1)
+    assert.equal(rates.length, 0)
     const methods = await db.select().from(schema.paymentMethods).where(eq(schema.paymentMethods.shopId, shop.id))
-    assert.deepEqual(
-      methods.map((m) => [m.provider, m.active, m.ready]),
-      [['manual', true, true]],
-    )
+    assert.equal(methods.length, 0)
 
     // The storefront header and footer have links from the first visit, with no product or collection needed
     const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, shop.id))
