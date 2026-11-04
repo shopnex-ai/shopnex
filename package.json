@@ -14,6 +14,7 @@
     "dev:docs": "pnpm --filter @shopnex/docs dev",
     "dev:stripe": "pnpm --filter @shopnex/stripe dev",
     "dev:cj": "pnpm --filter @shopnex/cj-dropshipping dev",
+    "dev:shippo": "pnpm --filter @shopnex/shippo dev",
     "e2e": "pnpm --filter @shopnex/e2e test",
     "test": "pnpm -r --if-present --filter '!@shopnex/e2e' test",
     "lint": "eslint .",

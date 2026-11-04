@@ -347,6 +347,25 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  apps/shippo:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.14)
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../../packages/app
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.14
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   apps/stripe:
     dependencies:
       '@hono/node-server':

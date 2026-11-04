@@ -34,7 +34,7 @@ services:
       APP_URL: '${APP_URL:-http://localhost:3000}'
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       SHOPNEX_SECRET: ${SHOPNEX_SECRET:-}
-      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      # Look for the bundled apps (stripe, cj-dropshipping, shippo) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker
 
   stripe:
@@ -60,11 +60,27 @@ services:
     ports:
       - '4700:4700'
     volumes:
-      - cj_dropshipping_data:/data
+      - cj_dropshippo_data:/data
     environment:
       CJ_DROPSHIPPING_APP_URL: '${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}'
       SHOPNEX_INTERNAL_URL: http://admin:3000
       PORT: 4700
+      DATA_DIR: /data
+
+  shippo:
+    profiles: [shippo]
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args: { APP: shippo }
+    ports:
+      - '4900:4900'
+    volumes:
+      - shippo_data:/data
+    environment:
+      SHIPPO_APP_URL: '${SHIPPO_APP_URL:-http://localhost:4900}'
+      SHOPNEX_INTERNAL_URL: http://admin:3000
+      PORT: 4900
       DATA_DIR: /data
 
 volumes:
@@ -72,3 +88,4 @@ volumes:
   data:
   stripe_data:
   cj_dropshipping_data:
+  shippo_data:

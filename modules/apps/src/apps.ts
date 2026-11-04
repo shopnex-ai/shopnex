@@ -692,6 +692,14 @@ const BUNDLED_APPS = [
     // write_shipping: quote CJ's shipping prices at checkout (a carrier service)
     scopes: ['write_products', 'write_orders', 'write_shipping'] as ApiScope[],
   },
+  {
+    clientId: 'app_shippo',
+    urlEnv: 'SHIPPO_APP_URL',
+    internalUrl: 'http://shippo:4900',
+    name: 'Shippo',
+    description: 'Live shipping rates at checkout from the carriers on your Shippo account (USPS, UPS, FedEx, DHL…).',
+    scopes: ['write_shipping'] as ApiScope[],
+  },
 ]
 
 type BundledApp = (typeof BUNDLED_APPS)[number]
