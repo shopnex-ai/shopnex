@@ -128,13 +128,15 @@
         {
           "id": "image",
           "label": "First image",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/hydrogen/banner-1.jpg"
         },
         {
           "id": "image_2",
           "label": "Second image",
           "info": "Shown beside the first on larger screens",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/hydrogen/banner-2.jpg"
         },
         {
           "id": "heading",
