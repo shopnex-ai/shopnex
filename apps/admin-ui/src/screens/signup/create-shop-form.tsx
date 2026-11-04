@@ -1,30 +1,20 @@
 'use client'
 
-import { useNavigate, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
 import { FormError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup } from '@/components/ui/field'
-import { clearAdminContext } from '@/lib/admin-context'
-import { createMyShop } from './actions'
+import { useCreateShop } from './use-create-shop'
 
 // For a signed-in account that has no shop yet
 export function CreateShopForm() {
-  const navigate = useNavigate()
-  const router = useRouter()
+  const createShop = useCreateShop()
   const form = useZodForm(z.object({}), { defaultValues: {} })
 
   const onSubmit = form.handleSubmit(async () => {
-    const { error } = await createMyShop()
-    if (error) {
-      form.setError('root', { message: error })
-      return
-    }
-    clearAdminContext(router)
-    // Same last step as every other sign-up: name the shop and pick the currency
-    await navigate({ to: '/admin/welcome', replace: true })
-    await router.invalidate()
+    const error = await createShop()
+    if (error) form.setError('root', { message: error })
   })
 
   return (

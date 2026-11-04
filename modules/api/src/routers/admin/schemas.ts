@@ -191,10 +191,6 @@ export const setupInput = z.object({
   password: z.string().min(MIN_PASSWORD).max(128),
 })
 
-// Self-serve signup (/admin/signup, OPEN_SIGNUP=true) is the same as first-run setup: just the account. The shop is
-// named in /admin/welcome, like everywhere else.
-export const signupInput = setupInput
-
 export {
   CANCEL_REASONS,
   FINANCIAL_STATUSES,
