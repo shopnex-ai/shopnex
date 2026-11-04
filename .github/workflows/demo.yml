@@ -3,9 +3,9 @@ name: Demo image
 # Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo, plus the
 # Stripe and CJ Dropshipping app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge).
 # :latest is reserved for releases (multi-arch, see release.yaml).
-# The Dokploy app uses Provider "Docker" with :edge. If DOKPLOY_URL, DOKPLOY_APP_ID and
-# the DOKPLOY_API_KEY secret are set, a redeploy is triggered after the push; otherwise it only pushes.
-# Unlike a full env sync, this never touches the app's environment in Dokploy.
+# The Dokploy app uses Provider "Docker" with :edge. If the DOKPLOY_WEBHOOK_URL secret (the app's deploy
+# webhook from Dokploy: Deployments > Webhook URL) is set, a redeploy is triggered after the push; otherwise
+# it only pushes. This never touches the app's environment in Dokploy.
 
 on:
   push:
@@ -84,16 +84,12 @@ jobs:
 
       - name: Deploy on Dokploy
         env:
-          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
-          DOKPLOY_APP_ID: ${{ vars.DOKPLOY_APP_ID }}
-          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
         run: |
-          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_APP_ID" ] || [ -z "$DOKPLOY_API_KEY" ]; then
+          if [ -z "$DOKPLOY_WEBHOOK_URL" ]; then
             echo "Dokploy not configured, image pushed only"
             exit 0
           fi
-          jq -n --arg id "$DOKPLOY_APP_ID" '{applicationId: $id}' \
-          | curl -fsS -X POST "$DOKPLOY_URL/api/application.deploy" \
-              -H "x-api-key: $DOKPLOY_API_KEY" -H "Content-Type: application/json" \
-              --data-binary @- -o /dev/null
+          curl -fsS -X POST "$DOKPLOY_WEBHOOK_URL" -H "Content-Type: application/json" \
+              -d '{}' -o /dev/null
           echo "Deploy triggered for ${{ steps.image.outputs.name }}:${{ github.sha }}"
