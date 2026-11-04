@@ -4,6 +4,7 @@ import { marketplaceService } from '@shopnex/apps'
 import { carrierService } from '@shopnex/cart'
 import { carrierApp, shopManager } from '../../orpc'
 import { carrierServiceConfigureInput } from './schemas'
+import { carrierServiceOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -21,6 +22,7 @@ const view = (s: Awaited<ReturnType<typeof carrierService.configure>>) => ({
 export const carrierServicesApp = {
   configure: carrierApp
     .route({ method: 'POST', path: '/admin/carrier-services/configure' })
+    .output(carrierServiceOutput)
     .input(carrierServiceConfigureInput)
     .handler(async ({ input, context }) => view(await carrierService.configure(context.shop.id, context.appId, input))),
 }
@@ -39,9 +41,11 @@ export const carrierServices = {
     }),
   list: shopManager
     .route({ method: 'GET', path: '/admin/carrier-services' })
+    .output(z.array(carrierServiceOutput))
     .handler(async ({ context }) => (await carrierService.list(context.shop.id)).map(view)),
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/carrier-services/{id}' })
+    .output(carrierServiceOutput)
     .input(id.extend({ name: z.string().trim().min(1).max(100).optional(), active: z.boolean().optional() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       const service = await carrierService.update(context.shop.id, id, patch)

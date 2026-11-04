@@ -5,6 +5,7 @@ import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { cancelOrderInput, fulfillOrderInput } from './schemas'
+import { orderDetailOutput, orderOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -46,16 +47,24 @@ const importedOrder = z.object({
   paymentMethodName: z.string().max(200).nullable().optional(),
   note: z.string().max(10_000).nullable().optional(),
   createdAt: z.coerce.date(),
-  items: z.array(z.object({
-    title: z.string().min(1).max(500),
-    variantTitle: z.string().max(500).nullable().optional(),
-    sku: z.string().max(200).nullable().optional(),
-    vendor: z.string().max(200).nullable().optional(),
-    imageUrl: z.url({ protocol: /^https?$/ }).nullable().optional(),
-    unitPriceCents: z.number().int().nonnegative(),
-    quantity: z.number().int().min(1).max(9999),
-    discountCents: z.number().int().nonnegative(),
-  })).min(1).max(500),
+  items: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(500),
+        variantTitle: z.string().max(500).nullable().optional(),
+        sku: z.string().max(200).nullable().optional(),
+        vendor: z.string().max(200).nullable().optional(),
+        imageUrl: z
+          .url({ protocol: /^https?$/ })
+          .nullable()
+          .optional(),
+        unitPriceCents: z.number().int().nonnegative(),
+        quantity: z.number().int().min(1).max(9999),
+        discountCents: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(500),
 })
 
 export const orders = {
@@ -86,6 +95,7 @@ export const orders = {
 
   get: read
     .route({ method: 'GET', path: '/admin/orders/{id}' })
+    .output(orderDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const order = await orderService.getById(context.shop.id, input.id)
@@ -126,6 +136,7 @@ export const orders = {
 
   fulfill: write
     .route({ method: 'POST', path: '/admin/orders/{id}/fulfill' })
+    .output(orderOutput)
     .input(id.extend(fulfillOrderInput.shape))
     .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, tracking)),
 

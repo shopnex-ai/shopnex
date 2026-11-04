@@ -2,10 +2,14 @@ import { ORPCError } from '@orpc/server'
 import { updateShop } from '@shopnex/tenancy'
 import { adminOrToken, shopManager } from '../../orpc'
 import { shopInput } from './schemas'
+import { shopOutput } from './outputs'
 
 // The shop the admin (or API token) is working in
 export const shop = {
-  get: adminOrToken.route({ method: 'GET', path: '/admin/shop' }).handler(({ context }) => context.shop),
+  get: adminOrToken
+    .route({ method: 'GET', path: '/admin/shop' })
+    .output(shopOutput)
+    .handler(({ context }) => context.shop),
 
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/shop' })

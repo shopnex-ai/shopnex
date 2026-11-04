@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { appService, marketplaceService } from '@shopnex/apps'
 import { adminOrToken, shopManager, superAdminOnly } from '../../orpc'
 import { appInput, marketplaceConnectInput } from './schemas'
+import { appDataValueOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -121,6 +122,7 @@ export const appData = {
 
   get: appToken
     .route({ method: 'GET', path: '/admin/app-data/{key}' })
+    .output(appDataValueOutput)
     .input(dataKey)
     .handler(async ({ input, context }) => found(await appService.getAppData(context.token, input.key))),
 

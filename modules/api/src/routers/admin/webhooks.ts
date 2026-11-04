@@ -5,6 +5,7 @@ import { webhookService, type WebhookTopic } from '@shopnex/webhooks'
 import { webhookManager } from '../../orpc'
 import { pagination } from '../pagination'
 import { webhookEndpointInput } from './schemas'
+import { webhookListItemOutput, webhookOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -36,9 +37,11 @@ function assertTopicsAllowed(token: ApiToken | null, topics: WebhookTopic[] | un
 export const webhooks = {
   list: webhookManager
     .route({ method: 'GET', path: '/admin/webhooks' })
+    .output(z.array(webhookListItemOutput))
     .handler(({ context }) => webhookService.list(context.shop.id, context.token?.id)),
   create: webhookManager
     .route({ method: 'POST', path: '/admin/webhooks' })
+    .output(webhookOutput)
     .input(webhookEndpointInput)
     .handler(({ input, context }) => {
       assertTopicsAllowed(context.token, input.topics)
@@ -46,6 +49,7 @@ export const webhooks = {
     }),
   update: webhookManager
     .route({ method: 'PATCH', path: '/admin/webhooks/{id}' })
+    .output(webhookOutput)
     .input(id.extend(webhookEndpointInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) => {
       assertTopicsAllowed(context.token, patch.topics)

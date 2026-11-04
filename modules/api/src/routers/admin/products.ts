@@ -6,6 +6,7 @@ import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
+import { productListOutput, productOutput } from './outputs'
 
 const read = scoped('read_products')
 const write = scoped('write_products')
@@ -42,6 +43,7 @@ export const products = {
 
   list: read
     .route({ method: 'GET', path: '/admin/products' })
+    .output(productListOutput)
     .input(pagination.extend({ search: z.string().trim().max(200).optional() }))
     .handler(async ({ input, context }) => {
       const [rows, total] = await Promise.all([
@@ -54,6 +56,7 @@ export const products = {
   // Images, options, variants, collection slugs (the list also has `publications`; get those with GET …/publications)
   get: read
     .route({ method: 'GET', path: '/admin/products/{id}' })
+    .output(productOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       const product = await productService.getById(context.shop.id, input.id)
@@ -81,6 +84,7 @@ export const products = {
 
   create: write
     .route({ method: 'POST', path: '/admin/products' })
+    .output(productOutput)
     .input(
       productFields
         .extend({
@@ -99,6 +103,7 @@ export const products = {
   // Partial update; `images` replaces the whole set when given
   update: write
     .route({ method: 'PATCH', path: '/admin/products/{id}' })
+    .output(productOutput)
     .input(productFields.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       await checkFulfilledBy(context.token, patch.fulfilledBy)
@@ -110,6 +115,7 @@ export const products = {
   // Replace options + variants. Variants keep their ids when their option combination is unchanged.
   setVariants: write
     .route({ method: 'PUT', path: '/admin/products/{id}/variants' })
+    .output(productOutput)
     .input(variantsInput.extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...variants }, context }) => {
       const product = await productService.setVariants(context.shop.id, id, variants)
