@@ -1,7 +1,7 @@
 name: Demo image
 
 # Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo, plus the
-# Stripe and CJ Dropshipping app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge).
+# Stripe, CJ Dropshipping and Shippo app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge, <repo>-shippo:edge).
 # :latest is reserved for releases (multi-arch, see release.yaml).
 # The Dokploy app uses Provider "Docker" with :edge. If the DOKPLOY_WEBHOOK_URL secret (the app's deploy
 # webhook from Dokploy: Deployments > Webhook URL) is set, a redeploy is triggered after the push; otherwise
@@ -81,6 +81,19 @@ jobs:
             ${{ steps.image.outputs.name }}-cj-dropshipping:${{ github.sha }}
           cache-from: type=gha,scope=cj-dropshipping
           cache-to: type=gha,mode=max,scope=cj-dropshipping
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile.app
+          build-args: APP=shippo
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}-shippo:edge
+            ${{ steps.image.outputs.name }}-shippo:${{ github.sha }}
+          cache-from: type=gha,scope=shippo
+          cache-to: type=gha,mode=max,scope=shippo
 
       - name: Deploy on Dokploy
         env:

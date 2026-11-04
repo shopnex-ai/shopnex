@@ -1,9 +1,10 @@
 # Same stack as docker-compose.yml, without host `ports:`, for Dokploy, Coolify and other platforms whose proxy
-# routes domains to containers over the Docker network. Published host ports (3000, 4600, 4700) collide with the
+# routes domains to containers over the Docker network. Published host ports (3000, 4600, 4700, 4900) collide with the
 # proxy or with other apps on the server and fail the first deploy. Add domains in the platform instead:
-# shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700. Keep the rest in sync with docker-compose.yml.
+# shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700, shippo -> 4900. Keep the rest in sync with docker-compose.yml.
 # Set APP_URL and STRIPE_APP_URL, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj, plus CJ_DROPSHIPPING_APP_URL for its domain.
+# Shippo: COMPOSE_PROFILES=shippo (comma-separate to enable both), plus SHIPPO_APP_URL.
 # The services that get a domain are also on `dokploy-network`, which is how the proxy (Traefik) reaches them; without
 # it the domain answers 502 or 404. `default` stays in each list: it is how they reach `db` and each other.
 name: shopnex
@@ -50,7 +51,7 @@ services:
       SIGNUP_RATE_GLOBAL: ${SIGNUP_RATE_GLOBAL:-}
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
-      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      # Look for the bundled apps (stripe, cj-dropshipping, shippo) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker
     # Multi-shop only (TENANCY_MODE=multi): routes every <slug>.ROOT_DOMAIN to this service, next to the domain added
     # in Dokploy (the admin). ROOT_DOMAIN is the bare domain, e.g. shopnex.app, with a wildcard DNS record (*) pointing
@@ -94,6 +95,20 @@ services:
       PORT: 4700
       DATA_DIR: /data
 
+  shippo:
+    profiles: [shippo]
+    image: ghcr.io/shopnex-ai/shopnex-shippo:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    networks: [default, dokploy-network]
+    volumes:
+      - shippo_data:/data
+    environment:
+      SHIPPO_APP_URL: ${SHIPPO_APP_URL:-http://localhost:4900}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      PORT: 4900
+      DATA_DIR: /data
+
 networks:
   dokploy-network:
     external: true
@@ -103,3 +118,4 @@ volumes:
   shopnex_data:
   stripe_data:
   cj_dropshipping_data:
+  shippo_data:
