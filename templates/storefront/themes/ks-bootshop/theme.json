@@ -191,7 +191,7 @@
           "id": "image_1",
           "label": "Slide 1: image",
           "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-1.svg"
+          "default": "/shopnex/assets/ks-bootshop/hero-1.jpg"
         },
         {
           "id": "heading_1",
@@ -220,7 +220,7 @@
           "id": "image_2",
           "label": "Slide 2: image",
           "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-2.svg"
+          "default": "/shopnex/assets/ks-bootshop/hero-2.jpg"
         },
         {
           "id": "heading_2",
@@ -250,7 +250,7 @@
           "id": "image_3",
           "label": "Slide 3: image",
           "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-3.svg"
+          "default": "/shopnex/assets/ks-bootshop/hero-3.jpg"
         },
         {
           "id": "heading_3",
@@ -445,7 +445,7 @@
           "id": "image",
           "label": "Image",
           "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/media.svg"
+          "default": "/shopnex/assets/ks-bootshop/media.jpg"
         },
         {
           "id": "eyebrow",

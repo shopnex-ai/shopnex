@@ -147,7 +147,7 @@
           "id": "image",
           "label": "Image URL",
           "type": "image",
-          "default": "/shopnex/assets/maison/banner.svg"
+          "default": "/shopnex/assets/maison/banner.jpg"
         },
         {
           "id": "eyebrow",
