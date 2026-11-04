@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { clearAdminContext } from '@/lib/admin-context'
+import { oauthErrorMessage } from './oauth-errors'
 import { SocialButtons } from './social-buttons'
 
 // Only same-app admin paths, so ?next= can't be used to send people elsewhere
@@ -39,7 +40,7 @@ export function LoginForm({
 
   // OAuth failures come back as /admin/login?error=...
   useEffect(() => {
-    if (error) toast.error(`Sign in failed: ${error.replaceAll('_', ' ')}`)
+    if (error) toast.error(oauthErrorMessage(error))
   }, [error])
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
