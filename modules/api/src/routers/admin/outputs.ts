@@ -31,6 +31,15 @@ import {
   storefrontKeys,
   taxRates,
   webhookDeliveries,
+  aiGenerations,
+  aiSettings,
+  carrierServices,
+  emailDeliveries,
+  marketplaceConnection,
+  marketplaceThemes,
+  productImages,
+  shopMembers,
+  shopDomains,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
@@ -84,7 +93,7 @@ const optionOutput = z.object({
 })
 
 export const productOutput = createSelectSchema(products, { status: z.enum(PRODUCT_STATUSES) }).extend({
-  images: z.array(z.object({ id: z.uuid(), url: z.string(), alt: z.string().nullable() })),
+  images: z.array(createSelectSchema(productImages).pick({ id: true, url: true, alt: true })),
   collectionSlugs: z.array(z.string()),
   options: z.array(optionOutput),
   variants: z.array(variantOutput),
@@ -111,14 +120,14 @@ export const orderDetailOutput = orderOutput.extend({
   customer: createSelectSchema(customers).nullable(),
 })
 
-export const carrierServiceOutput = z.object({
-  id: z.uuid(),
-  appId: z.uuid().nullable(),
-  name: z.string(),
+export const carrierServiceOutput = createSelectSchema(carrierServices).pick({
+  id: true,
+  appId: true,
+  name: true,
   /** The merchant's switch in Settings → Shipping */
-  active: z.boolean(),
+  active: true,
   /** The app has what it needs to quote rates */
-  ready: z.boolean(),
+  ready: true,
 })
 
 export const appDataValueOutput = z.object({ key: z.string(), value: z.unknown(), updatedAt: z.date() })
@@ -143,10 +152,10 @@ export const taxRateOutput = createSelectSchema(taxRates)
 // Catalog
 export const collectionOutput = createSelectSchema(collections)
 export const collectionDetailOutput = collectionOutput.extend({ productCount: z.number().int(), publications })
-export const collectionProductOutput = z.object({
-  id: z.uuid(),
-  title: z.string(),
-  status: z.enum(PRODUCT_STATUSES),
+export const collectionProductOutput = createSelectSchema(products, { status: z.enum(PRODUCT_STATUSES) }).pick({
+  id: true,
+  title: true,
+  status: true,
 })
 export const variantRowOutput = createSelectSchema(productVariants).extend({ available: z.boolean() })
 export const customerOutput = createSelectSchema(customers)
@@ -190,15 +199,15 @@ export const appCatalogOutput = z.object({
 })
 export const appRegisteredOutput = z.object({ app: appOutput, privateKey: z.string() })
 export const sessionTokenOutput = z.object({ token: z.string() })
-export const marketplaceConnectionOutput = z
-  .object({
-    id: z.string(),
-    marketplaceUrl: z.string(),
-    publicUrl: z.string(),
-    instanceId: z.string().nullable(),
-    connectedAt: z.date().nullable(),
-    lastSyncAt: z.date().nullable(),
-    lastSyncError: z.string().nullable(),
+export const marketplaceConnectionOutput = createSelectSchema(marketplaceConnection)
+  .pick({
+    id: true,
+    marketplaceUrl: true,
+    publicUrl: true,
+    instanceId: true,
+    connectedAt: true,
+    lastSyncAt: true,
+    lastSyncError: true,
   })
   .nullable()
 export const marketplaceConnectedOutput = z.object({ connected: z.boolean() })
@@ -208,14 +217,14 @@ export const appDataKeyOutput = z.object({ key: z.string() })
 export const availableAppsOutput = z.object({
   instanceUrl: z.string(),
   apps: z.array(
-    z.object({
-      id: z.uuid(),
-      name: z.string(),
-      description: z.string().nullable(),
-      iconUrl: z.string().nullable(),
-      appUrl: z.string(),
-      clientId: z.string(),
-      redirectUrls: z.array(z.string()),
+    createSelectSchema(apps).pick({
+      id: true,
+      name: true,
+      description: true,
+      iconUrl: true,
+      appUrl: true,
+      clientId: true,
+      redirectUrls: true,
     }),
   ),
 })
@@ -233,24 +242,23 @@ export const paymentSessionOutput = z.object({
   expiresAt: z.date(),
   resolvedAt: z.date().nullable(),
 })
-export const paymentsAppOutput = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  gateway: z.string().nullable(),
-  ready: z.boolean(),
-  active: z.boolean(),
+export const paymentsAppOutput = createSelectSchema(paymentMethods).pick({
+  id: true,
+  name: true,
+  gateway: true,
+  ready: true,
+  active: true,
 })
 
 // Domains, email, storage, files, notifications
-const domainOutput = z.object({
-  id: z.uuid(),
-  domain: z.string(),
-  verified: z.boolean(),
-  verifiedAt: z.date().nullable(),
-  createdAt: z.date(),
-  /** The DNS record that proves ownership */
-  record: z.object({ type: z.literal('TXT'), name: z.string(), value: z.string() }),
-})
+const domainOutput = createSelectSchema(shopDomains)
+  .pick({ id: true, domain: true, verifiedAt: true, createdAt: true })
+  .extend({
+    /** verifiedAt is set */
+    verified: z.boolean(),
+    /** The DNS record that proves ownership */
+    record: z.object({ type: z.literal('TXT'), name: z.string(), value: z.string() }),
+  })
 export const domainsListOutput = z.object({ routing: z.boolean(), domains: z.array(domainOutput) })
 export const domainVerifiedOutput = z.object({ verified: z.boolean(), domain: domainOutput })
 export const domainCreatedOutput = domainOutput
@@ -305,16 +313,19 @@ export const notificationOutput = z.object({
   body: z.string(),
   defaults: z.object({ subject: z.string(), body: z.string() }),
 })
-export const notificationDeliveryOutput = z.object({
-  id: z.uuid(),
+export const notificationDeliveryOutput = createSelectSchema(emailDeliveries, {
   notification: z.enum(NOTIFICATIONS),
-  orderId: z.uuid().nullable(),
-  to: z.string(),
-  subject: z.string(),
   status: z.enum(['pending', 'failed', 'sent', 'skipped']),
-  attempts: z.number().int(),
-  lastError: z.string().nullable(),
-  createdAt: z.date(),
+}).pick({
+  id: true,
+  notification: true,
+  orderId: true,
+  to: true,
+  subject: true,
+  status: true,
+  attempts: true,
+  lastError: true,
+  createdAt: true,
 })
 export const notificationPreviewOutput = z.object({
   sample: z.boolean(),
@@ -327,25 +338,12 @@ export const notificationTestOutput = z.object({ to: z.string() })
 // Staff
 export const staffListOutput = z.object({
   members: z.array(
-    z.object({
-      id: z.string(),
-      userId: z.string(),
-      role: z.string(),
-      createdAt: z.date(),
-      name: z.string(),
-      email: z.string(),
-    }),
+    createSelectSchema(shopMembers).omit({ organizationId: true }).extend({ name: z.string(), email: z.string() }),
   ),
   invitations: z.array(createSelectSchema(shopInvitations)),
 })
 export const invitationOutput = createSelectSchema(shopInvitations)
-export const memberOutput = z.object({
-  id: z.string(),
-  organizationId: z.string(),
-  userId: z.string(),
-  role: z.string(),
-  createdAt: z.date(),
-})
+export const memberOutput = createSelectSchema(shopMembers)
 
 // Themes
 const themeRole = z.enum(['live', 'unpublished']) satisfies z.ZodType<ThemeRole>
@@ -368,17 +366,18 @@ export const themePublishCodeOutput = z.union([
   z.object({ published: z.literal(true), rev: z.number().int(), value: z.void() }),
 ])
 export const themeStoreOutput = z.array(
-  z.object({
-    id: z.uuid(),
-    name: z.string(),
-    tagline: z.string(),
-    description: z.string().nullable(),
-    developerName: z.string(),
-    baseThemeId: z.string(),
-    screenshotUrl: z.string().nullable(),
-    listingUrl: z.string(),
-    updatedAt: z.date(),
-  }),
+  createSelectSchema(marketplaceThemes)
+    .pick({
+      id: true,
+      name: true,
+      tagline: true,
+      description: true,
+      developerName: true,
+      baseThemeId: true,
+      screenshotUrl: true,
+      updatedAt: true,
+    })
+    .extend({ listingUrl: z.string() }),
 )
 export const idOutput = z.object({ id: z.string() })
 export const updatedAtOutput = z.object({ updatedAt: z.date() })
@@ -411,10 +410,15 @@ export const aiRunOutput = z.object({
     })
     .nullable(),
 })
-export const aiFeedbackOutput = z.object({ id: z.uuid(), feedback: z.enum(['rejected', 'accepted']).nullable() })
+export const aiFeedbackOutput = createSelectSchema(aiGenerations, {
+  feedback: z.enum(['rejected', 'accepted']).nullable(),
+}).pick({
+  id: true,
+  feedback: true,
+})
 export const aiSettingsOutput = z.object({
-  settings: z
-    .object({ provider: z.enum(AI_BUILTIN_PROVIDERS), model: z.string(), brandVoice: z.string(), enabled: z.boolean() })
+  settings: createSelectSchema(aiSettings, { provider: z.enum(AI_BUILTIN_PROVIDERS) })
+    .pick({ provider: true, model: true, brandVoice: true, enabled: true })
     .nullable(),
   providers: z.array(
     z.object({ id: z.enum(AI_BUILTIN_PROVIDERS), name: z.string(), keyHint: z.string(), models: z.array(z.string()) }),
