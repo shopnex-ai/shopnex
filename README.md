@@ -10,7 +10,7 @@
 
 <p align="center"><b>Self-hosted Shopify alternative. Run <code>docker compose up</code>, open the setup wizard, start selling.</b></p>
 
-<p align="center"><a href="https://demo.shopnex.ai/admin/login?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
+<p align="center"><a href="https://app.shopnex.ai/admin/login?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
 <p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
