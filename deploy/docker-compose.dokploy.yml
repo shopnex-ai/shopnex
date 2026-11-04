@@ -44,9 +44,29 @@ services:
       TENANCY_MODE: ${TENANCY_MODE:-single}
       OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
       ROOT_DOMAIN: ${ROOT_DOMAIN:-}
+      # Open sign-up limits (OPEN_SIGNUP=true): per address and for everyone, per hour. Behind Cloudflare set
+      # CLIENT_IP_HEADER=cf-connecting-ip so each visitor is told apart (see docs: Concepts > Tenancy).
+      SIGNUP_RATE_PER_IP: ${SIGNUP_RATE_PER_IP:-}
+      SIGNUP_RATE_GLOBAL: ${SIGNUP_RATE_GLOBAL:-}
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
       # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker
+    # Multi-shop only (TENANCY_MODE=multi): routes every <slug>.ROOT_DOMAIN to this service, next to the domain added
+    # in Dokploy (the admin). ROOT_DOMAIN is the bare domain, e.g. shopnex.app, with a wildcard DNS record (*) pointing
+    # at the server. With ROOT_DOMAIN unset it matches no host. priority=1 keeps the admin's own domain on its own route.
+    # `$$` is a literal `$` in Compose. The router names its service because the container has several (Dokploy adds
+    # its own for the admin domain), and Traefik won't pick one. Behind a CDN that terminates TLS (Cloudflare, SSL mode
+    # Full) the default certificate is enough: this route has no certificate resolver, as a wildcard needs DNS-01.
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.shopnex-shops.rule=HostRegexp(`^[a-z0-9-]+\.${ROOT_DOMAIN:-none}$$`)
+      - traefik.http.routers.shopnex-shops.entrypoints=websecure
+      - traefik.http.routers.shopnex-shops.tls=true
+      - traefik.http.routers.shopnex-shops.priority=1
+      - traefik.http.routers.shopnex-shops.service=shopnex-shops
+      - traefik.http.services.shopnex-shops.loadbalancer.server.port=3000
 
   stripe:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}

@@ -4,10 +4,11 @@ import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 import { db, schema } from '@shopnex/db'
-import { isMultiTenant } from '@shopnex/tenancy'
+import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed } from './sign-up-policy'
+import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 
@@ -50,10 +51,16 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword: { enabled: true },
+  // Better Auth limits sign-in and sign-up requests per address (on in production). CLIENT_IP_HEADER says which header
+  // carries the address (cf-connecting-ip behind Cloudflare); open sign-up's hourly caps are in the hook below.
+  ...(process.env.CLIENT_IP_HEADER && { advanced: { ipAddress: { ipAddressHeaders: clientIpHeaders() } } }),
   hooks: {
     // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
     before: createAuthMiddleware(async (ctx) => {
       if (isOtpPath(ctx.path) && !currentOtpSender()) throw new APIError('FORBIDDEN', { message: 'Not available' })
+      // Open sign-up: the per address cap (signup-limit.ts). Server calls have no request and are not counted.
+      if (isOpenSignup && ctx.path === '/sign-up/email' && ctx.request && !checkSignupRate(ctx.request.headers).ok)
+        throw new APIError('TOO_MANY_REQUESTS', { message: SIGNUP_LIMIT_MESSAGE })
     }),
   },
   socialProviders,

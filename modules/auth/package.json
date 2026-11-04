@@ -8,7 +8,7 @@
     "./providers": "./src/providers.ts",
     "./roles": "./src/roles.ts",
     "./setup": "./src/setup.ts",
-    "./signup": "./src/signup.ts"
+    "./signup-limit": "./src/signup-limit.ts"
   },
   "scripts": {
     "typecheck": "tsc",
