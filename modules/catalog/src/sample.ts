@@ -1,6 +1,11 @@
 import { create } from './products'
 
-// Free-to-use photos from Burst by Shopify (https://burst.shopify.com/photos/<name>), cropped square by its CDN
+// Free-to-use photos from Burst by Shopify (https://burst.shopify.com/photos/<name>), cropped square by its CDN.
+// Free for commercial use, no attribution required; the photos may not be sold as digital files.
+//   tshirts                                 Matthew Henry      CC0
+//   black-bag-over-the-shoulder             Shopify Partners   Burst license
+//   coffee-cup-on-table-top                 Tomáš Hustoles     Burst license
+//   close-up-leather-jacket-over-shoulders  Jeremy Marasigan   Burst license
 const image = (name: string, alt: string) => [
   { url: `https://burst.shopifycdn.com/photos/${name}.jpg?width=900&height=900&crop=center`, alt },
 ]
