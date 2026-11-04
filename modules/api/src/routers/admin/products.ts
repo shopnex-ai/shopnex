@@ -2,6 +2,7 @@ import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { publicationService } from '@shopnex/channels'
 import { productService, variantService } from '@shopnex/catalog'
+import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
@@ -10,6 +11,18 @@ const read = scoped('read_products')
 const write = scoped('write_products')
 const readPublications = scoped('read_publications')
 const writePublications = scoped('write_publications')
+
+/**
+ * `fulfilledBy` says which app ships a product, and carrier apps trust it, so an app can only claim products for
+ * itself. Anyone with write access can clear it (null: the shop ships it); staff can't name an app.
+ */
+async function checkFulfilledBy(token: { appId?: string | null } | null | undefined, value: string | null | undefined) {
+  if (!value) return
+  const mine = token?.appId ? await appService.clientIdOf(token.appId) : null
+  if (mine !== value) {
+    throw new ORPCError('FORBIDDEN', { message: 'fulfilledBy can only be set to the calling app itself' })
+  }
+}
 
 // The channels each product is published on (a scheduled one has a date in the future)
 async function withPublications<T extends { id: string }>(shopId: string, items: T[]) {
@@ -78,13 +91,17 @@ export const products = {
           message: 'Provide either priceCents (simple product) or variants',
         }),
     )
-    .handler(({ input, context }) => productService.create(context.shop.id, input)),
+    .handler(async ({ input, context }) => {
+      await checkFulfilledBy(context.token, input.fulfilledBy)
+      return productService.create(context.shop.id, input)
+    }),
 
   // Partial update; `images` replaces the whole set when given
   update: write
     .route({ method: 'PATCH', path: '/admin/products/{id}' })
     .input(productFields.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
+      await checkFulfilledBy(context.token, patch.fulfilledBy)
       const product = await productService.update(context.shop.id, id, patch)
       if (!product) throw new ORPCError('NOT_FOUND')
       return product

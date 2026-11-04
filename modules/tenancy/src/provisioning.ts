@@ -2,29 +2,18 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
-import { RESERVED_SLUGS } from './subdomains'
 
 const DEFAULT_CURRENCY = 'USD'
 
-const baseSlug = (name: string) =>
-  name
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40) || 'shop'
-
-// "acme", then "acme-4f2a"… until it's free; a name the platform keeps ("admin") is never free as is
-// (the unique index still decides if two signups race)
-async function uniqueSlug(conn: Pick<typeof db, 'select'>, name: string) {
-  const base = baseSlug(name)
+// A shop's slug is its subdomain and never changes, so it is a random handle ("shop-4f2a9c1e"), not made from the name
+// the owner may change. A clash is not expected; the unique index still decides if two sign-ups race.
+async function randomSlug(conn: Pick<typeof db, 'select'>) {
   for (let attempt = 0; attempt < 5; attempt++) {
-    const slug = attempt === 0 ? base : `${base}-${randomUUID().slice(0, 4)}`
-    if (attempt === 0 && RESERVED_SLUGS.has(slug)) continue
+    const slug = `shop-${randomUUID().replaceAll('-', '').slice(0, 8)}`
     const [taken] = await conn.select({ id: schema.shops.id }).from(schema.shops).where(eq(schema.shops.slug, slug))
     if (!taken) return slug
   }
-  return `${base}-${randomUUID().slice(0, 8)}`
+  return `shop-${randomUUID().replaceAll('-', '').slice(0, 16)}`
 }
 
 /**
@@ -67,7 +56,7 @@ export async function createShop(input: { ownerId: string; name: string; currenc
     const id = randomUUID()
     const [shop] = await tx
       .insert(schema.shops)
-      .values({ id, name, slug: await uniqueSlug(tx, name), currency: input.currency ?? DEFAULT_CURRENCY })
+      .values({ id, name, slug: await randomSlug(tx), currency: input.currency ?? DEFAULT_CURRENCY })
       .returning()
     await tx
       .insert(schema.shopMembers)

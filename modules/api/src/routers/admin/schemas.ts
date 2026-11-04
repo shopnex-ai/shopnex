@@ -75,6 +75,7 @@ const productColumns = createInsertSchema(products, {
   // Sanitized on save
   descriptionHtml: html,
   vendor: (s) => s.max(200),
+  fulfilledBy: () => z.string().trim().min(1).max(100).nullable().optional(),
   productType: (s) => s.max(200),
   tags: () => z.array(z.string().max(100)).max(250),
   seoTitle: (s) => s.max(200),
@@ -95,6 +96,7 @@ export const productFields = productColumns
     description: true,
     descriptionHtml: true,
     vendor: true,
+    fulfilledBy: true,
     productType: true,
     tags: true,
     slug: true,

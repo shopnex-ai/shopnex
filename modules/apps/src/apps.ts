@@ -77,6 +77,12 @@ export async function listApps() {
   return rows.map(publicApp)
 }
 
+/** The client id of an installed app by its row id (what apps call themselves), or null */
+export async function clientIdOf(id: string) {
+  const [app] = await db.select({ clientId: schema.apps.clientId }).from(schema.apps).where(eq(schema.apps.id, id))
+  return app?.clientId ?? null
+}
+
 export async function getApp(id: string) {
   const [app] = await db.select().from(schema.apps).where(customApp(id))
   return app ? publicApp(app) : null
