@@ -4,11 +4,13 @@ import { AI_FEEDBACK, aiProviderService, aiService, aiSettingsService } from '@s
 import { hasScope } from '@shopnex/tenancy'
 import { adminOrToken, aiApp, scoped, shopManager } from '../../orpc'
 import { aiAppConfigureInput, aiRunInput, aiSettingsInput } from './schemas'
+import { aiAppConfigureOutput, aiCapabilitiesOutput, aiFeedbackOutput, aiRunOutput, aiSettingsOutput } from './outputs'
 
 // AI apps (see @shopnex/marketplace-sdk/ai): register the capabilities they provide for the shop. App tokens only.
 export const aiAppApi = {
   configure: aiApp
     .route({ method: 'POST', path: '/admin/ai-app/configure' })
+    .output(aiAppConfigureOutput)
     .input(aiAppConfigureInput)
     .handler(async ({ input, context }) => {
       const rows = await aiProviderService.configure(context.shop.id, context.appId, input)
@@ -24,10 +26,12 @@ export const ai = {
   // What staff can use: capabilities with who provides them (built-in AI first, then installed apps)
   capabilities: adminOrToken
     .route({ method: 'GET', path: '/admin/ai/capabilities' })
+    .output(aiCapabilitiesOutput)
     .handler(({ context }) => aiProviderService.available(context.shop.id)),
 
   run: adminOrToken
     .route({ method: 'POST', path: '/admin/ai/run' })
+    .output(aiRunOutput)
     .input(aiRunInput)
     .handler(({ input, context }) => {
       if (context.token && (input.capability === 'page.content' || !hasScope(context.token.scopes, 'read_products'))) {
@@ -50,6 +54,7 @@ export const ai = {
   // Staff used the suggestion (accepted) or dismissed it (rejected)
   feedback: productReader
     .route({ method: 'POST', path: '/admin/ai/generations/{id}/feedback' })
+    .output(aiFeedbackOutput)
     .input(z.object({ id: z.uuid(), feedback: z.enum(AI_FEEDBACK) }))
     .handler(({ input, context }) => aiService.feedback(context.shop.id, input.id, input.feedback)),
 }
@@ -58,10 +63,12 @@ export const ai = {
 export const aiSettings = {
   get: shopManager
     .route({ method: 'GET', path: '/admin/ai/settings' })
+    .output(aiSettingsOutput)
     .handler(({ context }) => aiSettingsService.getSettings(context.shop.id)),
   // Checks the key can use the model first and fails if the provider refuses it
   update: shopManager
     .route({ method: 'PUT', path: '/admin/ai/settings' })
+    .output(aiSettingsOutput)
     .input(aiSettingsInput)
     .handler(({ input, context }) =>
       aiSettingsService.save(context.shop.id, {
@@ -72,5 +79,6 @@ export const aiSettings = {
     ),
   turnOff: shopManager
     .route({ method: 'POST', path: '/admin/ai/settings/off' })
+    .output(aiSettingsOutput)
     .handler(({ context }) => aiSettingsService.turnOff(context.shop.id)),
 }

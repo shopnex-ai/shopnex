@@ -3,6 +3,20 @@ import { z } from 'zod'
 import { appService, marketplaceService } from '@shopnex/apps'
 import { adminOrToken, shopManager, superAdminOnly } from '../../orpc'
 import { appInput, marketplaceConnectInput } from './schemas'
+import {
+  appCatalogOutput,
+  appDataItemOutput,
+  appDataKeyOutput,
+  appDataValueOutput,
+  appInstallationOutput,
+  appInstalledOutput,
+  appOutput,
+  appRegisteredOutput,
+  marketplaceConnectedOutput,
+  marketplaceConnectionOutput,
+  okOutput,
+  sessionTokenOutput,
+} from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -14,11 +28,13 @@ const found = <T>(row: T | null) => {
 export const apps = {
   list: shopManager
     .route({ method: 'GET', path: '/admin/apps' })
+    .output(z.array(appInstalledOutput))
     .handler(({ context }) => appService.listInstallations(context.shop.id)),
 
   // Revokes the app's token and deletes its webhooks
   uninstall: shopManager
     .route({ method: 'POST', path: '/admin/apps/{id}/uninstall' })
+    .output(appInstallationOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const installation = found(await appService.uninstall(context.shop.id, input.id))
@@ -29,6 +45,7 @@ export const apps = {
   // Embedded app page: the app's frontend asks for one through @shopnex/app-bridge (valid 60s)
   sessionToken: shopManager
     .route({ method: 'POST', path: '/admin/apps/{id}/session-token' })
+    .output(sessionTokenOutput)
     .input(id)
     .handler(async ({ input, context }) => ({
       token: await appService.createSessionToken({
@@ -40,68 +57,88 @@ export const apps = {
 
   // Everything this shop can install (bundled, marketplace, custom), each marked installed or not. Install goes to
   // the consent screen, or opens the app's URL (?shop_id=…&instance=…) where it starts OAuth.
-  catalog: shopManager.route({ method: 'GET', path: '/admin/apps/catalog' }).handler(async ({ context }) => {
-    const [connection, instanceUrl, apps] = await Promise.all([
-      marketplaceService.getConnection(),
-      marketplaceService.instanceUrl(),
-      appService.listCatalog(context.shop.id),
-    ])
-    return { marketplaceConnected: Boolean(connection?.instanceKey), instanceUrl, apps }
-  }),
+  catalog: shopManager
+    .route({ method: 'GET', path: '/admin/apps/catalog' })
+    .output(appCatalogOutput)
+    .handler(async ({ context }) => {
+      const [connection, instanceUrl, apps] = await Promise.all([
+        marketplaceService.getConnection(),
+        marketplaceService.instanceUrl(),
+        appService.listCatalog(context.shop.id),
+      ])
+      return { marketplaceConnected: Boolean(connection?.instanceKey), instanceUrl, apps }
+    }),
 }
 
 // Admin → Apps → Marketplace (super admins): this instance's link to the app marketplace
 export const marketplaceConnection = {
-  get: superAdminOnly.route({ method: 'GET', path: '/admin/marketplace' }).handler(async () => {
-    const connection = await marketplaceService.getConnection()
-    if (!connection?.instanceKey) return null
-    const { instanceKey: _, pendingChallenge: __, ...visible } = connection
-    return visible
-  }),
+  get: superAdminOnly
+    .route({ method: 'GET', path: '/admin/marketplace' })
+    .output(marketplaceConnectionOutput)
+    .handler(async () => {
+      const connection = await marketplaceService.getConnection()
+      if (!connection?.instanceKey) return null
+      const { instanceKey: _, pendingChallenge: __, ...visible } = connection
+      return visible
+    }),
 
   connect: superAdminOnly
     .route({ method: 'POST', path: '/admin/marketplace/connect' })
+    .output(marketplaceConnectedOutput)
     .input(marketplaceConnectInput)
     .handler(async ({ input, context }) => {
       const connection = await marketplaceService.connect({ ...input, name: context.shop.name })
       return { connected: Boolean(connection?.instanceKey) }
     }),
 
-  sync: superAdminOnly.route({ method: 'POST', path: '/admin/marketplace/sync' }).handler(async () => {
-    await marketplaceService.sync()
-    return { ok: true }
-  }),
+  sync: superAdminOnly
+    .route({ method: 'POST', path: '/admin/marketplace/sync' })
+    .output(okOutput)
+    .handler(async () => {
+      await marketplaceService.sync()
+      return { ok: true }
+    }),
 
-  disconnect: superAdminOnly.route({ method: 'POST', path: '/admin/marketplace/disconnect' }).handler(async () => {
-    found(await marketplaceService.disconnect())
-    return { ok: true }
-  }),
+  disconnect: superAdminOnly
+    .route({ method: 'POST', path: '/admin/marketplace/disconnect' })
+    .output(okOutput)
+    .handler(async () => {
+      found(await marketplaceService.disconnect())
+      return { ok: true }
+    }),
 }
 
 // Apps registered on this ShopNex install, installable by every shop (super admins)
 export const appRegistry = {
-  list: superAdminOnly.route({ method: 'GET', path: '/admin/app-registry' }).handler(() => appService.listApps()),
+  list: superAdminOnly
+    .route({ method: 'GET', path: '/admin/app-registry' })
+    .output(z.array(appOutput))
+    .handler(() => appService.listApps()),
 
   // The response is the only time `privateKey` is returned
   register: superAdminOnly
     .route({ method: 'POST', path: '/admin/app-registry' })
+    .output(appRegisteredOutput)
     .input(appInput)
     .handler(({ input, context }) => appService.registerApp(input, context.user.id)),
 
   update: superAdminOnly
     .route({ method: 'PATCH', path: '/admin/app-registry/{id}' })
+    .output(appOutput)
     .input(id.extend(appInput.partial().shape))
     .handler(async ({ input: { id, ...patch } }) => found(await appService.updateApp(id, patch))),
 
   // Uninstalls it from every shop
   delete: superAdminOnly
     .route({ method: 'DELETE', path: '/admin/app-registry/{id}' })
+    .output(appOutput)
     .input(id)
     .handler(async ({ input }) => found(await appService.deleteApp(input.id))),
 
   // A new key pair; the old private key stops working right away
   rotateKey: superAdminOnly
     .route({ method: 'POST', path: '/admin/app-registry/{id}/rotate-key' })
+    .output(appRegisteredOutput)
     .input(id)
     .handler(async ({ input }) => found(await appService.rotateKey(input.id))),
 }
@@ -117,20 +154,24 @@ const dataKey = z.object({ key: z.string().regex(/^[A-Za-z0-9_.:-]{1,100}$/) })
 export const appData = {
   list: appToken
     .route({ method: 'GET', path: '/admin/app-data' })
+    .output(z.array(appDataItemOutput))
     .handler(({ context }) => appService.listAppData(context.token)),
 
   get: appToken
     .route({ method: 'GET', path: '/admin/app-data/{key}' })
+    .output(appDataValueOutput)
     .input(dataKey)
     .handler(async ({ input, context }) => found(await appService.getAppData(context.token, input.key))),
 
   set: appToken
     .route({ method: 'PUT', path: '/admin/app-data/{key}' })
+    .output(appDataItemOutput)
     .input(dataKey.extend({ value: z.json() }))
     .handler(({ input, context }) => appService.setAppData(context.token, input.key, input.value)),
 
   delete: appToken
     .route({ method: 'DELETE', path: '/admin/app-data/{key}' })
+    .output(appDataKeyOutput)
     .input(dataKey)
     .handler(async ({ input, context }) => found(await appService.deleteAppData(context.token, input.key))),
 }

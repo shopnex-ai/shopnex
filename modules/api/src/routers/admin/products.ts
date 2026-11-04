@@ -6,6 +6,7 @@ import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
+import { countOutput, productListOutput, productOutput, publicationsOutput, variantRowOutput } from './outputs'
 
 const read = scoped('read_products')
 const write = scoped('write_products')
@@ -37,11 +38,13 @@ async function withPublications<T extends { id: string }>(shopId: string, items:
 export const products = {
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/products/bulk' })
+    .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
     .handler(({ input, context }) => productService.removeMany(context.shop.id, input.ids)),
 
   list: read
     .route({ method: 'GET', path: '/admin/products' })
+    .output(productListOutput)
     .input(pagination.extend({ search: z.string().trim().max(200).optional() }))
     .handler(async ({ input, context }) => {
       const [rows, total] = await Promise.all([
@@ -54,6 +57,7 @@ export const products = {
   // Images, options, variants, collection slugs (the list also has `publications`; get those with GET …/publications)
   get: read
     .route({ method: 'GET', path: '/admin/products/{id}' })
+    .output(productOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       const product = await productService.getById(context.shop.id, input.id)
@@ -63,6 +67,7 @@ export const products = {
 
   publications: readPublications
     .route({ method: 'GET', path: '/admin/products/{id}/publications' })
+    .output(publicationsOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       if (!(await productService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
@@ -72,6 +77,7 @@ export const products = {
   // Publishes the product on exactly these channels (an unpublished product, by status, is still hidden)
   setPublications: writePublications
     .route({ method: 'PUT', path: '/admin/products/{id}/publications' })
+    .output(publicationsOutput)
     .input(publicationsInput.extend({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       const publications = await productService.setPublications(context.shop.id, input.id, input.publications)
@@ -81,6 +87,7 @@ export const products = {
 
   create: write
     .route({ method: 'POST', path: '/admin/products' })
+    .output(productOutput)
     .input(
       productFields
         .extend({
@@ -99,6 +106,7 @@ export const products = {
   // Partial update; `images` replaces the whole set when given
   update: write
     .route({ method: 'PATCH', path: '/admin/products/{id}' })
+    .output(productOutput)
     .input(productFields.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       await checkFulfilledBy(context.token, patch.fulfilledBy)
@@ -110,6 +118,7 @@ export const products = {
   // Replace options + variants. Variants keep their ids when their option combination is unchanged.
   setVariants: write
     .route({ method: 'PUT', path: '/admin/products/{id}/variants' })
+    .output(productOutput)
     .input(variantsInput.extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...variants }, context }) => {
       const product = await productService.setVariants(context.shop.id, id, variants)
@@ -120,6 +129,7 @@ export const products = {
   // One variant's price / SKU / stock
   updateVariant: write
     .route({ method: 'PATCH', path: '/admin/variants/{variantId}' })
+    .output(variantRowOutput)
     .input(variantInput.omit({ options: true }).partial().extend({ variantId: z.uuid() }))
     .handler(async ({ input: { variantId, ...patch }, context }) => {
       const variant = await variantService.update(context.shop.id, variantId, patch)

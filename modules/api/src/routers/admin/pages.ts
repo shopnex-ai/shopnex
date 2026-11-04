@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { pageService } from '@shopnex/content'
 import { admin } from '../../orpc'
 import { pageInput } from './schemas'
+import { pageOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -14,23 +15,28 @@ const found = <T>(row: T | null) => {
 export const pages = {
   list: admin
     .route({ method: 'GET', path: '/admin/pages' })
+    .output(z.array(pageOutput))
     .handler(({ context }) => pageService.list(context.shop.id)),
   get: admin
     .route({ method: 'GET', path: '/admin/pages/{id}' })
+    .output(pageOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await pageService.getById(context.shop.id, input.id))),
   create: admin
     .route({ method: 'POST', path: '/admin/pages' })
+    .output(pageOutput)
     .input(pageInput)
     .handler(({ input, context }) => pageService.create(context.shop.id, input)),
   update: admin
     .route({ method: 'PATCH', path: '/admin/pages/{id}' })
+    .output(pageOutput)
     .input(id.extend(pageInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) =>
       found(await pageService.update(context.shop.id, id, patch)),
     ),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/pages/{id}' })
+    .output(pageOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await pageService.remove(context.shop.id, input.id))),
 }

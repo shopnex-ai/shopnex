@@ -15,6 +15,20 @@ import { DraftConflictError } from '@shopnex/drafts'
 import { checkLiquid, createPreviewToken, themeService, type ShopTheme } from '@shopnex/theme'
 import { z } from 'zod'
 import { admin } from '../../orpc'
+import {
+  idOutput,
+  previewTokenOutput,
+  publishedAtOutput,
+  revOutput,
+  themeDetailOutput,
+  themeDraftOutput,
+  themeFilesOutput,
+  themePublishCodeOutput,
+  themeRowOutput,
+  themeStoreOutput,
+  themeSummaryOutput,
+  updatedAtOutput,
+} from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const themeId = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/)
@@ -91,9 +105,11 @@ const summary = ({ shopId: _, draft: __, published: ___, files: ____, ...entry }
 export const themes = {
   list: admin
     .route({ method: 'GET', path: '/admin/themes' })
+    .output(z.array(themeSummaryOutput))
     .handler(({ context }) => themeService.list(context.shop.id)),
   get: admin
     .route({ method: 'GET', path: '/admin/themes/{id}' })
+    .output(themeDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const { files: _, ...theme } = found(await themeService.get(context.shop.id, input.id))
@@ -104,6 +120,7 @@ export const themes = {
   // the merchant added. `rev` is the draft's, to say which one is being published.
   files: admin
     .route({ method: 'GET', path: '/admin/themes/{id}/files' })
+    .output(themeFilesOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const copy = found(await themeService.get(context.shop.id, input.id))
@@ -115,6 +132,7 @@ export const themes = {
   // refused with where it went wrong.
   saveFile: admin
     .route({ method: 'PUT', path: '/admin/themes/{id}/files' })
+    .output(revOutput)
     .input(
       id.extend({
         path: ThemeFilePath,
@@ -141,6 +159,7 @@ export const themes = {
   // Back to the theme's own file, or deletes an added snippet, in the draft
   deleteFile: admin
     .route({ method: 'DELETE', path: '/admin/themes/{id}/files' })
+    .output(revOutput)
     .input(id.extend({ path: ThemeFilePath }))
     .handler(async ({ input, context }) =>
       found(await themeService.saveFile(context.shop.id, input.id, input.path, null)),
@@ -149,6 +168,7 @@ export const themes = {
   // draft isn't touched, and this never changes which theme is live. `rev`: the draft the editor saw.
   publishCode: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/files/publish' })
+    .output(themePublishCodeOutput)
     .input(id.extend({ rev: z.number().int().nonnegative().optional() }))
     .handler(async ({ input, context }) => {
       try {
@@ -161,11 +181,13 @@ export const themes = {
   // Throws the unpublished code edits away
   discardCode: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/files/discard' })
+    .output(revOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await themeService.discardCode(context.shop.id, input.id))),
   // Adds a copy of the storefront's theme when the library has none (the first one goes live). Null: one exists.
   ensure: admin
     .route({ method: 'POST', path: '/admin/themes/ensure' })
+    .output(themeRowOutput)
     .input(z.object({ themeId, name, document }))
     .handler(async ({ input, context }) => {
       const row = await themeService.ensure(context.shop.id, {
@@ -176,11 +198,15 @@ export const themes = {
       return row && summary(row)
     }),
   // The Theme Store: styles from the connected marketplace, for themes storefronts include
-  store: admin.route({ method: 'GET', path: '/admin/themes/store' }).handler(() => themeService.listStore()),
+  store: admin
+    .route({ method: 'GET', path: '/admin/themes/store' })
+    .output(themeStoreOutput)
+    .handler(() => themeService.listStore()),
   // A copy of a Theme Store style, ready to customize. Its `code` settings (custom CSS/HTML) are dropped:
   // a marketplace style never ships code.
   addFromStore: admin
     .route({ method: 'POST', path: '/admin/themes/store/{id}' })
+    .output(themeRowOutput.unwrap())
     .input(id)
     .handler(async ({ input, context }) => {
       const style = found(await themeService.getStoreTheme(input.id))
@@ -196,18 +222,21 @@ export const themes = {
     }),
   rename: admin
     .route({ method: 'PATCH', path: '/admin/themes/{id}' })
+    .output(themeRowOutput.unwrap())
     .input(id.extend({ name }))
     .handler(async ({ input, context }) =>
       summary(found(await themeService.rename(context.shop.id, input.id, input.name))),
     ),
   duplicate: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/duplicate' })
+    .output(themeRowOutput.unwrap())
     .input(id.extend({ name: name.optional() }))
     .handler(async ({ input, context }) =>
       summary(found(await themeService.duplicate(context.shop.id, input.id, input.name))),
     ),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/themes/{id}' })
+    .output(idOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const row = found(await themeService.get(context.shop.id, input.id))
@@ -218,6 +247,7 @@ export const themes = {
     }),
   saveDraft: admin
     .route({ method: 'PUT', path: '/admin/themes/{id}/draft' })
+    .output(updatedAtOutput)
     .input(id.extend({ document }))
     .handler(async ({ input, context }) => {
       const row = found(await themeService.saveDraft(context.shop.id, input.id, input.document))
@@ -226,6 +256,7 @@ export const themes = {
   // The draft goes live and this copy replaces the shop's live theme
   publish: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/publish' })
+    .output(publishedAtOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const row = found(await themeService.publish(context.shop.id, input.id))
@@ -233,6 +264,7 @@ export const themes = {
     }),
   discardDraft: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/discard' })
+    .output(themeDraftOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const row = await themeService.discardDraft(context.shop.id, input.id)
@@ -242,6 +274,7 @@ export const themes = {
   // For the editor's preview iframe (valid for an hour)
   previewToken: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/preview-token' })
+    .output(previewTokenOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       found(await themeService.get(context.shop.id, input.id))

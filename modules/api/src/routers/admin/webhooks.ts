@@ -5,6 +5,7 @@ import { webhookService, type WebhookTopic } from '@shopnex/webhooks'
 import { webhookManager } from '../../orpc'
 import { pagination } from '../pagination'
 import { webhookEndpointInput } from './schemas'
+import { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -36,9 +37,11 @@ function assertTopicsAllowed(token: ApiToken | null, topics: WebhookTopic[] | un
 export const webhooks = {
   list: webhookManager
     .route({ method: 'GET', path: '/admin/webhooks' })
+    .output(z.array(webhookListItemOutput))
     .handler(({ context }) => webhookService.list(context.shop.id, context.token?.id)),
   create: webhookManager
     .route({ method: 'POST', path: '/admin/webhooks' })
+    .output(webhookOutput)
     .input(webhookEndpointInput)
     .handler(({ input, context }) => {
       assertTopicsAllowed(context.token, input.topics)
@@ -46,6 +49,7 @@ export const webhooks = {
     }),
   update: webhookManager
     .route({ method: 'PATCH', path: '/admin/webhooks/{id}' })
+    .output(webhookOutput)
     .input(id.extend(webhookEndpointInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) => {
       assertTopicsAllowed(context.token, patch.topics)
@@ -53,30 +57,35 @@ export const webhooks = {
     }),
   delete: webhookManager
     .route({ method: 'DELETE', path: '/admin/webhooks/{id}' })
+    .output(webhookOutput)
     .input(id)
     .handler(async ({ input, context }) =>
       found(await webhookService.remove(context.shop.id, input.id, context.token?.id)),
     ),
   rotateSecret: webhookManager
     .route({ method: 'POST', path: '/admin/webhooks/{id}/rotate-secret' })
+    .output(webhookOutput)
     .input(id)
     .handler(async ({ input, context }) =>
       found(await webhookService.rotateSecret(context.shop.id, input.id, context.token?.id)),
     ),
   sendTest: webhookManager
     .route({ method: 'POST', path: '/admin/webhooks/{id}/test' })
+    .output(webhookDeliveryOutput)
     .input(id)
     .handler(async ({ input, context }) =>
       found(await webhookService.sendTest(context.shop.id, input.id, context.token?.id)),
     ),
   deliveries: webhookManager
     .route({ method: 'GET', path: '/admin/webhooks/{endpointId}/deliveries' })
+    .output(z.object({ items: z.array(webhookDeliveryOutput), total: z.number().int() }))
     .input(pagination.extend({ endpointId: z.uuid() }))
     .handler(async ({ input, context }) =>
       found(await webhookService.listDeliveries(context.shop.id, input, context.token?.id)),
     ),
   redeliver: webhookManager
     .route({ method: 'POST', path: '/admin/webhook-deliveries/{id}/redeliver' })
+    .output(webhookDeliveryOutput)
     .input(id)
     .handler(async ({ input, context }) =>
       found(await webhookService.redeliver(context.shop.id, input.id, context.token?.id)),
