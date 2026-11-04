@@ -3,7 +3,7 @@
 // rates with a signed request (see @shopnex/marketplace-sdk/shipping). A slow, failing or invalid answer only
 // means no rates from that app: the shop's flat rates and the other apps still show.
 import { randomUUID } from 'node:crypto'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
@@ -90,6 +90,43 @@ export async function update(shopId: string, id: string, patch: { name?: string;
     .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.id, id)))
     .returning()
   return service ?? null
+}
+
+/**
+ * Apps that can quote shipping (allowed write_shipping) and aren't installed in this shop yet, for the install card
+ * in Settings → Shipping. An app that also imports products (write_products, a dropshipping app) is a different kind
+ * of app that happens to quote its own freight: it is installed from Apps, not offered here.
+ */
+export async function availableApps(shopId: string) {
+  const rows = await db
+    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .from(schema.apps)
+    .leftJoin(
+      schema.appInstallations,
+      and(
+        eq(schema.appInstallations.appId, schema.apps.id),
+        eq(schema.appInstallations.shopId, shopId),
+        isNull(schema.appInstallations.uninstalledAt),
+      ),
+    )
+    .where(
+      and(
+        sql`'write_shipping' = any(${schema.apps.scopes})`,
+        sql`not ('write_products' = any(${schema.apps.scopes}))`,
+        isNull(schema.apps.delistedAt),
+      ),
+    )
+  return rows
+    .filter((r) => r.installationId === null)
+    .map(({ app }) => ({
+      id: app.id,
+      name: app.name,
+      description: app.description,
+      iconUrl: app.iconUrl,
+      appUrl: app.appUrl,
+      clientId: app.clientId,
+      redirectUrls: app.redirectUrls,
+    }))
 }
 
 export type QuoteInput = Pick<RatesRequest, 'currency' | 'destination' | 'items' | 'subtotalCents'>

@@ -39,8 +39,9 @@ Bundled apps (`apps/<name>` built on `@shopnex/app`, e.g. `apps/stripe`) start w
 | 4500 | app-starter (third-party app development) |
 | 4600 | stripe (bundled app)                      |
 | 4700 | cj-dropshipping (bundled app)             |
+| 4900 | shippo (bundled app)                      |
 
-A new bundled app takes the next free port (4800, 4900…) in its `<NAME>_APP_URL`; an app listens on that URL's port unless `PORT` is set.
+A new bundled app takes the next free port (5000, 5100…) in its `<NAME>_APP_URL`; an app listens on that URL's port unless `PORT` is set.
 Ports are a local-dev convention only. Core knows an app by its URL (`<NAME>_APP_URL`, the App URL); in production
 each app gets its own hostname and listens on whatever `PORT` its platform assigns.
 

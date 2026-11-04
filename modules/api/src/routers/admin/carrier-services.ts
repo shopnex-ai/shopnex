@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { marketplaceService } from '@shopnex/apps'
 import { carrierService } from '@shopnex/cart'
 import { carrierApp, shopManager } from '../../orpc'
 import { carrierServiceConfigureInput } from './schemas'
@@ -26,6 +27,16 @@ export const carrierServicesApp = {
 
 // Settings → Shipping: the carrier services installed apps registered; staff rename or switch them off
 export const carrierServices = {
+  // Carrier apps this shop could install (Install opens the app, which starts OAuth)
+  available: shopManager
+    .route({ method: 'GET', path: '/admin/carrier-services/available' })
+    .handler(async ({ context }) => {
+      const [instanceUrl, apps] = await Promise.all([
+        marketplaceService.instanceUrl(),
+        carrierService.availableApps(context.shop.id),
+      ])
+      return { instanceUrl, apps }
+    }),
   list: shopManager
     .route({ method: 'GET', path: '/admin/carrier-services' })
     .handler(async ({ context }) => (await carrierService.list(context.shop.id)).map(view)),

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc } from '@/lib/orpc'
+import { AppIcon, installLink } from '../apps/installed-apps-card'
 
 // Carrier services: apps that quote live shipping rates at checkout. They register themselves; staff only switch
 // them on and off here (uninstalling the app removes its service). Hidden while no app has registered one.
@@ -58,6 +59,39 @@ export function CarrierServicesCard() {
                 onClick={() => void toggle(s.id, !s.active)}
               >
                 {s.active ? 'Turn off' : 'Turn on'}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Carrier apps that could quote live rates here (e.g. the bundled Shippo app). Install opens the app, which asks
+// for consent and then registers its carrier service.
+export function CarrierAppsCard({ shopId }: { shopId: string }) {
+  const { data } = useQuery(orpc.admin.carrierServices.available.queryOptions())
+  if (!data?.apps.length) return null
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Live carrier rates</CardTitle>
+        <CardDescription>
+          Carrier apps quote real shipping prices at checkout from your carrier accounts.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="divide-y surface-inset">
+          {data.apps.map((app) => (
+            <li key={app.id} className="flex items-center gap-3 p-3">
+              <AppIcon url={app.iconUrl} />
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{app.name}</div>
+                {app.description && <div className="text-sm text-muted-foreground">{app.description}</div>}
+              </div>
+              <Button size="sm" render={<a href={installLink(app, shopId, data.instanceUrl)} />}>
+                Install
               </Button>
             </li>
           ))}
