@@ -23,9 +23,15 @@ export const slug = (s: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 40)
 
-/** The cart as one parcel: every item at the default weight */
+/**
+ * The items the shop ships itself. A product another app fulfills (fulfilledBy, e.g. CJ Dropshipping) is shipped
+ * and priced by that app, so it is left out of the parcel.
+ */
+export const ownItems = (request: RatesRequest) => request.items.filter((i) => !i.fulfilledBy)
+
+/** The shop's own items as one parcel: every item at the default weight */
 export const parcelWeightOz = (request: RatesRequest, parcel: Parcel) =>
-  Math.max(1, Math.round(request.items.reduce((sum, i) => sum + i.quantity, 0) * parcel.itemWeightOz))
+  Math.max(1, Math.round(ownItems(request).reduce((sum, i) => sum + i.quantity, 0) * parcel.itemWeightOz))
 
 async function call(url: string, key: string, init: RequestInit = {}) {
   const res = await fetch(url, {
@@ -67,6 +73,8 @@ const address = (a: Record<string, string | null | undefined>) => ({
  * carrier + service, which stays the same between the quote and the order, so the price is matched again.
  */
 export async function quoteRates(key: string, origin: Origin, parcel: Parcel, request: RatesRequest): Promise<Rate[]> {
+  // Nothing in the cart ships from the shop: no parcel, no rates from here
+  if (ownItems(request).length === 0) return []
   const to = request.destination
   const shipment = (await call(`${API}/shipments/`, key, {
     method: 'POST',

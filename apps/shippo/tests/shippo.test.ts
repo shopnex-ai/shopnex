@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { afterEach, describe, test } from 'node:test'
 import type { RatesRequest } from '@shopnex/app'
 import { DEFAULT_PARCEL } from '../src/config'
-import { parcelWeightOz, quoteRates, slug, toCents, verifyKey } from '../src/shippo'
+import { ownItems, parcelWeightOz, quoteRates, slug, toCents, verifyKey } from '../src/shippo'
 
 const request = (currency = 'USD'): RatesRequest => ({
   kind: 'rates',
@@ -18,7 +18,7 @@ const request = (currency = 'USD'): RatesRequest => ({
     address1: '1 Main St',
     address2: null,
   },
-  items: [{ sku: 'a', title: 'Mug', quantity: 3, priceCents: 1500 }],
+  items: [{ sku: 'a', fulfilledBy: null, title: 'Mug', quantity: 3, priceCents: 1500 }],
   subtotalCents: 4500,
 })
 const origin = { name: 'Demo', street1: '2 Dock Rd', city: 'Oakland', state: 'CA', zip: '94607', country: 'US' }
@@ -76,6 +76,27 @@ describe('quoteRates', () => {
     assert.equal(sent.parcels[0].weight, '24')
     assert.equal(sent.address_to.country, 'US')
     assert.equal((calls[0]!.init.headers as Record<string, string>).authorization, 'ShippoToken tok')
+  })
+
+  test('products another app fulfills are left out of the parcel', async () => {
+    const calls = mockFetch({ rates: [] })
+    const mixed = request()
+    mixed.items.push({ sku: 'CJ-1', fulfilledBy: 'app_cj_dropshipping', title: 'Lamp', quantity: 5, priceCents: 900 })
+    assert.deepEqual(
+      ownItems(mixed).map((i) => i.sku),
+      ['a'],
+    )
+    assert.equal(parcelWeightOz(mixed, DEFAULT_PARCEL), 24, 'only the 3 mugs')
+    await quoteRates('tok', origin, DEFAULT_PARCEL, mixed)
+    assert.equal(JSON.parse(String(calls[0]!.init.body)).parcels[0].weight, '24')
+  })
+
+  test('a cart with nothing the shop ships gets no rates and no call to Shippo', async () => {
+    const calls = mockFetch({ rates: [] })
+    const cj = request()
+    cj.items = [{ sku: 'CJ-1', fulfilledBy: 'app_cj_dropshipping', title: 'Lamp', quantity: 1, priceCents: 900 }]
+    assert.deepEqual(await quoteRates('tok', origin, DEFAULT_PARCEL, cj), [])
+    assert.equal(calls.length, 0)
   })
 
   test('an API error throws', async () => {
