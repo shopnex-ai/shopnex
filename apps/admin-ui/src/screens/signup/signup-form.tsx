@@ -49,7 +49,7 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
             />
             <FormError form={form} />
             <Field>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button data-ph-capture="signup" type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Creating your store…' : 'Create store'}
               </Button>
             </Field>

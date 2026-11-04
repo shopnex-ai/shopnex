@@ -43,7 +43,7 @@ export function NewCollection() {
           </CardContent>
         </Card>
         <div className="flex justify-end">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
+          <Button data-ph-capture="create-collection" type="submit" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? 'Creating…' : 'Create collection'}
           </Button>
         </div>

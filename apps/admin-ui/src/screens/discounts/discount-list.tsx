@@ -289,7 +289,7 @@ function DiscountDialog({ discount, currency }: { discount?: Discount; currency:
               ) : (
                 <span />
               )}
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button data-ph-capture="save-discount" type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving…' : discount ? 'Save' : 'Create discount'}
               </Button>
             </Field>
