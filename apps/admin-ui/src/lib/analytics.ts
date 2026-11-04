@@ -3,8 +3,9 @@
 // is sent. The key is never in the source or the image: it is read from the server's environment and handed to the
 // browser by the root loader.
 //
-// The admin shows customer names, emails and orders, so this is deliberately narrow: pageviews only, no autocapture
-// (it records element text), no session replay, no person profiles.
+// The admin shows customer names, emails and orders, so this is deliberately narrow: pageviews plus autocapture of
+// opted-in elements only (mark an element with data-ph-capture; everything else is ignored because autocapture records
+// element text), no session replay, no person profiles.
 
 export interface AnalyticsConfig {
   key: string
@@ -23,7 +24,11 @@ posthog.init(${JSON.stringify(key)}, {
   person_profiles: 'identified_only',
   persistence: 'localStorage',
   respect_dnt: false,
-  autocapture: false,
+  autocapture: {
+    css_selector_allowlist: ['[data-ph-capture]'],
+    capture_copied_text: false,
+  },
+  mask_all_element_attributes: true,
   disable_session_recording: true,
   capture_pageview: 'history_change',
 });

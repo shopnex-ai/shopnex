@@ -50,7 +50,7 @@ export function SetupForm() {
             />
             <FormError form={form} />
             <Field>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button data-ph-capture="setup-account" type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Setting up…' : 'Create account'}
               </Button>
             </Field>

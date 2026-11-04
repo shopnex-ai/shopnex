@@ -169,7 +169,7 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
               <Button type="button" variant="ghost" size="sm" onClick={() => form.reset()}>
                 Discard
               </Button>
-              <Button type="submit" size="sm" disabled={isSubmitting}>
+              <Button data-ph-capture="save-product" type="submit" size="sm" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving…' : 'Save'}
               </Button>
             </div>

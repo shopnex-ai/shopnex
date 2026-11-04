@@ -80,7 +80,7 @@ export function NewProductButton({ currency }: { currency: string }) {
             <SelectField control={form.control} name="status" label="Status" options={statusOptions} />
             <FormError form={form} />
             <Field orientation="horizontal" className="justify-end">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button data-ph-capture="create-product" type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Creating…' : 'Create product'}
               </Button>
             </Field>

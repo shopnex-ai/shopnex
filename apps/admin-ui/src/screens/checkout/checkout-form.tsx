@@ -295,7 +295,7 @@ export function CheckoutForm({
             ))}
         </dl>
         {state.error && <FieldError>{state.error}</FieldError>}
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        <Button data-ph-capture="place-order" type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'}
         </Button>
       </div>

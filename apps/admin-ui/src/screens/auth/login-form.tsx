@@ -94,7 +94,7 @@ export function LoginForm({
               />
             </Field>
             <Field>
-              <Button type="submit" disabled={pending || !ready}>
+              <Button data-ph-capture="login" type="submit" disabled={pending || !ready}>
                 {pending ? 'Logging in…' : 'Login'}
               </Button>
             </Field>

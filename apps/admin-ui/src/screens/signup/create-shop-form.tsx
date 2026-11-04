@@ -30,7 +30,7 @@ export function CreateShopForm() {
           <FieldGroup>
             <FormError form={form} />
             <Field>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button data-ph-capture="create-shop" type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Creating…' : 'Create shop'}
               </Button>
             </Field>

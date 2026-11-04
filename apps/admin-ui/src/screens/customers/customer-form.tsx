@@ -48,7 +48,7 @@ export function CustomerForm({ customer, onSaved }: { customer?: Customer; onSav
               Discard
             </Button>
           )}
-          <Button type="submit" disabled={isSubmitting || (customer && !isDirty)}>
+          <Button data-ph-capture="save-customer" type="submit" disabled={isSubmitting || (customer && !isDirty)}>
             {isSubmitting ? 'Saving…' : customer ? 'Save' : 'Create customer'}
           </Button>
         </Field>
