@@ -47,6 +47,8 @@ export type ProductInput = {
   /** Sanitized on write */
   descriptionHtml?: string | null
   vendor?: string
+  /** Client id of the app that fulfills this product (dropshipping); null = the shop ships it itself */
+  fulfilledBy?: string | null
   productType?: string
   tags?: string[]
   seo?: { title?: string | null; description?: string | null }
@@ -340,6 +342,7 @@ function contentColumns(input: Partial<ProductInput>) {
       descriptionHtml: input.descriptionHtml ? sanitizeHtml(input.descriptionHtml) || null : null,
     }),
     ...(input.vendor !== undefined && { vendor: input.vendor.trim() }),
+    ...(input.fulfilledBy !== undefined && { fulfilledBy: input.fulfilledBy }),
     ...(input.productType !== undefined && { productType: input.productType.trim() }),
     ...(input.tags !== undefined && { tags: [...new Set(input.tags.map((t) => t.trim()).filter(Boolean))] }),
     ...(input.seo?.title !== undefined && { seoTitle: input.seo.title }),

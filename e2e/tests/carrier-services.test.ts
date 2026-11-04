@@ -17,6 +17,8 @@ const fx = new Fixtures()
 let server: Server
 let appUrl: string
 let appId: string
+let clientId: string
+const productIds: string[] = []
 let auth: Record<string, string>
 const keys = createJwksResolver({ allowHttp: true })
 let variant: { id: string; priceCents: number; sku?: string | null }
@@ -43,21 +45,28 @@ before(async () => {
   appUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 
   const { app, privateKey } = await appService.registerApp(
-    { name: `E2E carrier ${Date.now()}`, appUrl: `${appUrl}/app`, redirectUrls: [], scopes: ['write_shipping'] },
+    {
+      name: `E2E carrier ${Date.now()}`,
+      appUrl: `${appUrl}/app`,
+      redirectUrls: [],
+      scopes: ['write_shipping', 'write_products'],
+    },
     null,
   )
   appId = app.id
+  clientId = app.clientId
   await appService.installManaged({
     appId,
     shopId: SHOP,
     userId: null as unknown as string,
-    scopes: ['write_shipping'],
+    scopes: ['write_shipping', 'write_products'],
   })
   auth = { authorization: `Bearer ${await appToken(app.clientId, privateKey, { shop_id: SHOP })}` }
 })
 
 after(async () => {
   await fx.cleanup()
+  if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
   // The app owns its carrier service, installation and token
   if (appId) await db.delete(schema.apps).where(eq(schema.apps.id, appId))
   server?.close()
@@ -125,6 +134,7 @@ describe('carrier service: quoting', () => {
     assert.equal(request.destination.countryCode, 'US')
     assert.equal(request.destination.zip, '12345')
     assert.equal(request.items[0]?.quantity, 2)
+    assert.equal(request.items[0]?.fulfilledBy, null, 'a product the shop ships itself')
     assert.equal(request.subtotalCents, variant.priceCents * 2)
   })
 
@@ -151,6 +161,35 @@ describe('carrier service: quoting', () => {
 
 // A carrier app that prices the cart replaces the shop's own flat rates; when it can't (no rates for this cart or
 // destination) the flat rates are what is on offer.
+describe('fulfilledBy: which app ships a product', () => {
+  const create = (fulfilledBy: string | null, headers = auth) =>
+    call('POST', '/admin/products', { title: `E2E fulfilled ${Date.now()}`, priceCents: 1500, fulfilledBy }, headers)
+
+  test('an app marks its own products, and carrier apps are told', async () => {
+    ok(await configure(serviceBody(true)))
+    const product = ok(await create(clientId))
+    productIds.push(product.id)
+    assert.equal(product.fulfilledBy, clientId)
+    const cart = await fx.cart([{ merchandiseId: product.variants[0].id, quantity: 1 }])
+    received.length = 0
+    ratesAnswer = () => quote(4)
+    carrierRates(await options(cart.id))
+    assert.equal(received.at(-1)?.items[0]?.fulfilledBy, clientId)
+  })
+
+  test('an app cannot claim a product for another app', async () => {
+    const r = await create('app_someone_else')
+    assert.equal(r.status, 403)
+  })
+
+  test('anyone with write access can clear it', async () => {
+    const product = ok(await create(clientId))
+    productIds.push(product.id)
+    const cleared = ok(await call('PATCH', `/admin/products/${product.id}`, { fulfilledBy: null }, auth))
+    assert.equal(cleared.fulfilledBy, null)
+  })
+})
+
 describe('carrier service: replaces the shop’s own rates', () => {
   let flatId: string
   before(async () => {

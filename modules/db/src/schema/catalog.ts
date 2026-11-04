@@ -24,6 +24,9 @@ export const products = pgTable(
     description: text('description'),
     descriptionHtml: text('description_html'),
     vendor: text('vendor').notNull().default(''),
+    // Which app fulfills this product (its client id, e.g. app_cj_dropshipping); null = the shop ships it itself.
+    // Carrier apps use it to quote only the products they ship.
+    fulfilledBy: text('fulfilled_by'),
     productType: text('product_type').notNull().default(''),
     tags: text('tags')
       .array()
