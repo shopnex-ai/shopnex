@@ -3,6 +3,7 @@ import type { schema } from '@shopnex/db'
 import { challengeHost, domainService, isMultiTenant } from '@shopnex/tenancy'
 import { shopManager } from '../../orpc'
 import { domainInput } from './schemas'
+import { domainCreatedOutput, domainVerifiedOutput, domainsListOutput, okOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -19,18 +20,23 @@ const view = (d: schema.ShopDomain) => ({
 // Storefront domains. Verifying one proves the shop controls the host. Only used to pick the shop for a request
 // when TENANCY_MODE=multi (`routing` tells the admin whether that's on).
 export const domains = {
-  list: shopManager.route({ method: 'GET', path: '/admin/domains' }).handler(async ({ context }) => ({
-    routing: isMultiTenant,
-    domains: (await domainService.listDomains(context.shop.id)).map((d) => view(d)),
-  })),
+  list: shopManager
+    .route({ method: 'GET', path: '/admin/domains' })
+    .output(domainsListOutput)
+    .handler(async ({ context }) => ({
+      routing: isMultiTenant,
+      domains: (await domainService.listDomains(context.shop.id)).map((d) => view(d)),
+    })),
 
   create: shopManager
     .route({ method: 'POST', path: '/admin/domains' })
+    .output(domainCreatedOutput)
     .input(domainInput)
     .handler(async ({ input, context }) => view(await domainService.addDomain(context.shop.id, input.domain))),
 
   verify: shopManager
     .route({ method: 'POST', path: '/admin/domains/{id}/verify' })
+    .output(domainVerifiedOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const { domain, verified } = await domainService.verifyDomain(context.shop.id, input.id)
@@ -39,6 +45,7 @@ export const domains = {
 
   delete: shopManager
     .route({ method: 'DELETE', path: '/admin/domains/{id}' })
+    .output(okOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       await domainService.removeDomain(context.shop.id, input.id)

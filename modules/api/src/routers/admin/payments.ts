@@ -3,6 +3,7 @@ import { marketplaceService } from '@shopnex/apps'
 import { paymentService, paymentsAppService } from '@shopnex/payments'
 import { paymentsApp, shopManager } from '../../orpc'
 import { paymentsAppConfigureInput } from './schemas'
+import { availableAppsOutput, paymentSessionOutput, paymentsAppOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -24,6 +25,7 @@ const view = (s: Awaited<ReturnType<typeof paymentService.get>>) => ({
 export const paymentsAppApi = {
   configure: paymentsApp
     .route({ method: 'POST', path: '/admin/payments-app/configure' })
+    .output(paymentsAppOutput)
     .input(paymentsAppConfigureInput)
     .handler(async ({ input, context }) => {
       const method = await paymentsAppService.configure(context.shop.id, context.appId, input)
@@ -34,12 +36,14 @@ export const paymentsAppApi = {
 export const paymentSessions = {
   get: paymentsApp
     .route({ method: 'GET', path: '/admin/payment-sessions/{id}' })
+    .output(paymentSessionOutput)
     .input(id)
     .handler(async ({ input, context }) => view(await paymentService.get(context.shop.id, context.appId, input.id))),
 
   // The provider took the payment (or made the refund). Idempotent.
   resolve: paymentsApp
     .route({ method: 'POST', path: '/admin/payment-sessions/{id}/resolve' })
+    .output(paymentSessionOutput)
     .input(id.extend({ externalId: z.string().trim().min(1).max(255).optional() }))
     .handler(async ({ input, context }) =>
       view(await paymentService.resolve(context.shop.id, context.appId, input.id, { externalId: input.externalId })),
@@ -48,6 +52,7 @@ export const paymentSessions = {
   // One attempt failed (card declined…) but the buyer can retry on the same page: the session stays open.
   attemptFailed: paymentsApp
     .route({ method: 'POST', path: '/admin/payment-sessions/{id}/attempt-failed' })
+    .output(paymentSessionOutput)
     .input(id.extend({ reason: z.string().trim().min(1).max(500) }))
     .handler(async ({ input, context }) =>
       view(await paymentService.attemptFailed(context.shop.id, context.appId, input.id, { reason: input.reason })),
@@ -56,6 +61,7 @@ export const paymentSessions = {
   // Declined or failed at the provider. Idempotent; the buyer can try again.
   reject: paymentsApp
     .route({ method: 'POST', path: '/admin/payment-sessions/{id}/reject' })
+    .output(paymentSessionOutput)
     .input(id.extend({ reason: z.string().trim().min(1).max(500) }))
     .handler(async ({ input, context }) =>
       view(await paymentService.reject(context.shop.id, context.appId, input.id, { reason: input.reason })),
@@ -66,6 +72,7 @@ export const paymentSessions = {
 export const paymentApps = {
   available: shopManager
     .route({ method: 'GET', path: '/admin/payment-apps/available' })
+    .output(availableAppsOutput)
     .handler(async ({ context }) => {
       const [instanceUrl, apps] = await Promise.all([
         marketplaceService.instanceUrl(),

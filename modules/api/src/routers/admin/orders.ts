@@ -5,7 +5,7 @@ import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { cancelOrderInput, fulfillOrderInput } from './schemas'
-import { orderDetailOutput, orderOutput } from './outputs'
+import { countOutput, orderCreatedOutput, orderDetailOutput, orderListItemOutput, orderOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -70,16 +70,19 @@ const importedOrder = z.object({
 export const orders = {
   importHistorical: write
     .route({ method: 'POST', path: '/admin/orders/import' })
+    .output(z.object({ imported: z.array(orderOutput), skipped: z.array(z.string()) }))
     .input(z.object({ orders: z.array(importedOrder).min(1).max(50) }))
     .handler(({ input, context }) => orderService.importHistoricalMany(context.shop.id, input.orders)),
 
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/orders/bulk' })
+    .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
     .handler(({ input, context }) => orderService.removeMany(context.shop.id, input.ids)),
 
   list: read
     .route({ method: 'GET', path: '/admin/orders' })
+    .output(z.object({ items: z.array(orderListItemOutput), total: z.number().int() }))
     .input(
       pagination.extend({
         customerId: z.uuid().optional(),
@@ -106,6 +109,7 @@ export const orders = {
   // Manual order from the admin (no shipping or payment method; mark it as paid when the money arrives)
   create: write
     .route({ method: 'POST', path: '/admin/orders' })
+    .output(orderCreatedOutput)
     .input(
       z
         .object({
@@ -131,6 +135,7 @@ export const orders = {
   // Shopify "Mark as paid": manual payment received
   markAsPaid: write
     .route({ method: 'POST', path: '/admin/orders/{id}/mark-as-paid' })
+    .output(orderOutput)
     .input(id)
     .handler(({ input, context }) => orderService.markAsPaid(context.shop.id, input.id)),
 
@@ -142,6 +147,7 @@ export const orders = {
 
   cancel: write
     .route({ method: 'POST', path: '/admin/orders/{id}/cancel' })
+    .output(orderOutput)
     .input(id.extend(cancelOrderInput.shape))
     // Paid through a payments app: the refund is sent to it and the order shows refunded once it confirms
     .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options)),

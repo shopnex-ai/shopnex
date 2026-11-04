@@ -5,6 +5,14 @@ import { publicationService } from '@shopnex/channels'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { collectionInput, publicationsInput } from './schemas'
+import {
+  collectionDetailOutput,
+  collectionOutput,
+  collectionProductOutput,
+  countOutput,
+  okOutput,
+  publicationsOutput,
+} from './outputs'
 
 const membership = z.object({ id: z.uuid(), productId: z.uuid() })
 
@@ -32,6 +40,7 @@ async function withExtras(shopId: string, rows: CollectionRow[]) {
 export const collections = {
   list: read
     .route({ method: 'GET', path: '/admin/collections' })
+    .output(z.array(collectionDetailOutput))
     .input(pagination)
     .handler(async ({ input, context }) =>
       withExtras(context.shop.id, await collectionService.list(context.shop.id, input)),
@@ -39,6 +48,7 @@ export const collections = {
 
   get: read
     .route({ method: 'GET', path: '/admin/collections/{id}' })
+    .output(collectionDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       const row = await collectionService.getById(context.shop.id, input.id)
@@ -48,6 +58,7 @@ export const collections = {
 
   publications: readPublications
     .route({ method: 'GET', path: '/admin/collections/{id}/publications' })
+    .output(publicationsOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
@@ -57,6 +68,7 @@ export const collections = {
   // Publishes the collection on exactly these channels
   setPublications: writePublications
     .route({ method: 'PUT', path: '/admin/collections/{id}/publications' })
+    .output(publicationsOutput)
     .input(publicationsInput.extend(id.shape))
     .handler(async ({ input, context }) => {
       if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
@@ -66,11 +78,13 @@ export const collections = {
 
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/collections/bulk' })
+    .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
     .handler(({ input, context }) => collectionService.removeMany(context.shop.id, input.ids)),
 
   update: write
     .route({ method: 'PATCH', path: '/admin/collections/{id}' })
+    .output(collectionOutput)
     .input(collectionInput.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       const row = await collectionService.update(context.shop.id, id, patch)
@@ -80,6 +94,7 @@ export const collections = {
 
   delete: write
     .route({ method: 'DELETE', path: '/admin/collections/{id}' })
+    .output(okOutput)
     .input(id)
     .handler(async ({ input, context }) => {
       if (!(await collectionService.remove(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
@@ -88,16 +103,19 @@ export const collections = {
 
   products: read
     .route({ method: 'GET', path: '/admin/collections/{id}/products' })
+    .output(z.array(collectionProductOutput))
     .input(id)
     .handler(({ input, context }) => collectionService.listProducts(context.shop.id, input.id)),
 
   create: write
     .route({ method: 'POST', path: '/admin/collections' })
+    .output(collectionOutput)
     .input(collectionInput)
     .handler(({ input, context }) => collectionService.create(context.shop.id, input)),
 
   addProduct: write
     .route({ method: 'POST', path: '/admin/collections/{id}/products' })
+    .output(okOutput)
     .input(membership)
     .handler(async ({ input, context }) => {
       await collectionService.addProduct(context.shop.id, input.id, input.productId)
@@ -106,6 +124,7 @@ export const collections = {
 
   removeProduct: write
     .route({ method: 'DELETE', path: '/admin/collections/{id}/products/{productId}' })
+    .output(okOutput)
     .input(membership)
     .handler(async ({ input, context }) => {
       await collectionService.removeProduct(context.shop.id, input.id, input.productId)

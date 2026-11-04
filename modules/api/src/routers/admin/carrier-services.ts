@@ -4,7 +4,7 @@ import { marketplaceService } from '@shopnex/apps'
 import { carrierService } from '@shopnex/cart'
 import { carrierApp, shopManager } from '../../orpc'
 import { carrierServiceConfigureInput } from './schemas'
-import { carrierServiceOutput } from './outputs'
+import { availableAppsOutput, carrierServiceOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 
@@ -32,6 +32,7 @@ export const carrierServices = {
   // Carrier apps this shop could install (Install opens the app, which starts OAuth)
   available: shopManager
     .route({ method: 'GET', path: '/admin/carrier-services/available' })
+    .output(availableAppsOutput)
     .handler(async ({ context }) => {
       const [instanceUrl, apps] = await Promise.all([
         marketplaceService.instanceUrl(),

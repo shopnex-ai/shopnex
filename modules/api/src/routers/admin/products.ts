@@ -6,7 +6,7 @@ import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
 import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
-import { productListOutput, productOutput } from './outputs'
+import { countOutput, productListOutput, productOutput, publicationsOutput, variantRowOutput } from './outputs'
 
 const read = scoped('read_products')
 const write = scoped('write_products')
@@ -38,6 +38,7 @@ async function withPublications<T extends { id: string }>(shopId: string, items:
 export const products = {
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/products/bulk' })
+    .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
     .handler(({ input, context }) => productService.removeMany(context.shop.id, input.ids)),
 
@@ -66,6 +67,7 @@ export const products = {
 
   publications: readPublications
     .route({ method: 'GET', path: '/admin/products/{id}/publications' })
+    .output(publicationsOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       if (!(await productService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
@@ -75,6 +77,7 @@ export const products = {
   // Publishes the product on exactly these channels (an unpublished product, by status, is still hidden)
   setPublications: writePublications
     .route({ method: 'PUT', path: '/admin/products/{id}/publications' })
+    .output(publicationsOutput)
     .input(publicationsInput.extend({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       const publications = await productService.setPublications(context.shop.id, input.id, input.publications)
@@ -126,6 +129,7 @@ export const products = {
   // One variant's price / SKU / stock
   updateVariant: write
     .route({ method: 'PATCH', path: '/admin/variants/{variantId}' })
+    .output(variantRowOutput)
     .input(variantInput.omit({ options: true }).partial().extend({ variantId: z.uuid() }))
     .handler(async ({ input: { variantId, ...patch }, context }) => {
       const variant = await variantService.update(context.shop.id, variantId, patch)

@@ -13,6 +13,7 @@ export const shop = {
 
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/shop' })
+    .output(shopOutput)
     .input(shopInput.partial())
     .handler(async ({ input, context }) => {
       const updated = await updateShop(context.shop.id, input)

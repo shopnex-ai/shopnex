@@ -112,3 +112,127 @@ describe('shop and orders', () => {
     assert.equal(fulfilled.fulfillmentStatus, 'fulfilled')
   })
 })
+
+// The routes staff use: an owner session creates, reads, changes and removes one of each, and reads the settings
+// pages. The answer to each must come back (a schema that disagrees with its handler is a 500 here).
+describe('staff routes', () => {
+  let owner: { headers: { cookie: string } }
+  const get = (path: string) => call('GET', path, undefined, owner.headers)
+  const send = (method: string, path: string, body?: unknown) => call(method, path, body ?? {}, owner.headers)
+  const suffix = Date.now()
+
+  before(async () => {
+    owner = await fx.account('owner')
+  })
+
+  /** create → get/list → update → delete for a resource; `create` is the POST body */
+  async function crud(
+    base: string,
+    create: Record<string, unknown>,
+    update: Record<string, unknown>,
+    opts: { listKey?: string; hasGet?: boolean; hasDelete?: boolean } = {},
+  ) {
+    const created = ok(await send('POST', base, create))
+    assert.ok(created.id, `${base} create answers with the row`)
+    const list = ok(await get(base))
+    const rows = opts.listKey ? list[opts.listKey] : list
+    assert.ok(
+      rows.some((r: { id: string }) => r.id === created.id),
+      `${base} lists it`,
+    )
+    if (opts.hasGet) assert.equal(ok(await get(`${base}/${created.id}`)).id, created.id)
+    const updated = ok(await send('PATCH', `${base}/${created.id}`, update))
+    assert.equal(updated.id, created.id)
+    if (opts.hasDelete !== false) ok(await send('DELETE', `${base}/${created.id}`))
+    return created
+  }
+
+  test('channels, shipping rates, payment methods, tax rates', async () => {
+    await crud('/admin/channels', { name: `E2E ${suffix}`, type: 'headless' }, { name: `E2E b ${suffix}` })
+    await crud('/admin/shipping-rates', { name: `E2E ${suffix}`, priceCents: 500 }, { priceCents: 700 })
+    await crud('/admin/payment-methods', { name: `E2E ${suffix}`, provider: 'manual' }, { active: false })
+    await crud('/admin/tax-rates', { name: `E2E ${suffix}`, countryCode: 'ZZ', ratePercent: 5 }, { ratePercent: 6 })
+  })
+
+  test('collections, customers, discounts, pages, menus', async () => {
+    const collection = ok(await send('POST', '/admin/collections', { title: `E2E ${suffix}` }))
+    ok(await get('/admin/collections'))
+    assert.equal(ok(await get(`/admin/collections/${collection.id}`)).productCount, 0)
+    ok(await get(`/admin/collections/${collection.id}/products`))
+    ok(await get(`/admin/collections/${collection.id}/publications`))
+    ok(await send('PATCH', `/admin/collections/${collection.id}`, { title: `E2E b ${suffix}` }))
+    ok(await send('DELETE', `/admin/collections/${collection.id}`))
+
+    const customer = ok(await send('POST', '/admin/customers', { email: `e2e-out-${suffix}@example.com` }))
+    assert.equal(ok(await get(`/admin/customers/${customer.id}`)).id, customer.id)
+    assert.ok(ok(await get('/admin/customers')).items.length >= 1)
+    ok(await send('PATCH', `/admin/customers/${customer.id}`, { name: 'E2E' }))
+    assert.equal(ok(await send('DELETE', '/admin/customers/bulk', { ids: [customer.id] })), 1)
+
+    await crud(
+      '/admin/discounts',
+      { code: `E2E${suffix}`, type: 'percentage', value: 10 },
+      { active: false },
+      { hasGet: true },
+    )
+    await crud('/admin/pages', { title: `E2E ${suffix}`, bodyHtml: '<p>x</p>' }, { title: 'E2E b' }, { hasGet: true })
+    await crud(
+      '/admin/menus',
+      { title: `E2E ${suffix}`, handle: `e2e-${suffix}`, items: [] },
+      { title: 'b' },
+      { hasGet: true },
+    )
+  })
+
+  test('settings pages and the rest of the reads', async () => {
+    for (const path of [
+      '/admin/analytics/overview',
+      '/admin/api-tokens',
+      '/admin/apps',
+      '/admin/apps/catalog',
+      '/admin/domains',
+      '/admin/email',
+      '/admin/files',
+      '/admin/notifications',
+      '/admin/notifications/deliveries',
+      '/admin/notifications/order_confirmation',
+      '/admin/staff',
+      '/admin/storage',
+      '/admin/storefront-keys',
+      '/admin/themes',
+      '/admin/themes/store',
+      '/admin/ai/capabilities',
+      '/admin/ai/settings',
+      '/admin/carrier-services',
+      '/admin/carrier-services/available',
+      '/admin/payment-apps/available',
+    ]) {
+      const r = await get(path)
+      assert.equal(r.status, 200, `${path}: ${JSON.stringify(r.body)}`)
+    }
+  })
+
+  test('themes: read, duplicate, rename and delete', async () => {
+    const themes = ok(await get('/admin/themes'))
+    if (!themes.length) return // a fresh shop has none until the storefront asks for one
+    const id = themes[0].id
+    const detail = ok(await get(`/admin/themes/${id}`))
+    assert.ok(detail.draft && detail.draft.settings)
+    // (/files reads the theme's source from the running storefront, so it isn't called here)
+    const copy = ok(await send('POST', `/admin/themes/${id}/duplicate`))
+    ok(await send('PATCH', `/admin/themes/${copy.id}`, { name: 'E2E copy' }))
+    ok(await send('DELETE', `/admin/themes/${copy.id}`))
+  })
+
+  test('keys and tokens: create, list and revoke', async () => {
+    const key = ok(await send('POST', '/admin/storefront-keys', { name: `E2E ${suffix}` }))
+    assert.ok(key.token)
+    assert.ok(ok(await get('/admin/storefront-keys')).some((k: { id: string }) => k.id === key.id))
+    ok(await send('POST', `/admin/storefront-keys/${key.id}/revoke`))
+    const token = ok(await send('POST', '/admin/api-tokens', { name: `E2E ${suffix}`, scopes: ['read_products'] }))
+    fx.apiToken(token.id)
+    assert.ok(token.token)
+    assert.equal(token.tokenHash, undefined, 'the hash is never sent')
+    ok(await send('POST', `/admin/api-tokens/${token.id}/revoke`))
+  })
+})
