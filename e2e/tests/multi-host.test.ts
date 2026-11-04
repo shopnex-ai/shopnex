@@ -54,7 +54,7 @@ const sub = (shop: Shop) => `${shop.slug}.${ROOT}`
 
 describe('<slug>.ROOT_DOMAIN', () => {
   test('each subdomain is its own shop', async () => {
-    assert.match(acme.slug, /^e2e-acme-/)
+    assert.match(acme.slug, /^shop-[0-9a-f]{8}$/)
     const a = await resolve(sub(acme))
     const b = await resolve(sub(beta))
     assert.ok(a.ok && b.ok)
@@ -119,12 +119,11 @@ describe('storefront URL', () => {
 })
 
 describe('slugs from createShop', () => {
-  test('a name the platform keeps gets a different slug', async () => {
+  test('a name the platform keeps does not become the slug, and every new slug resolves', async () => {
     for (const name of ['Admin', 'WWW', 'Api']) {
       const shop = await createShop({ ownerId, name })
       shopIds.push(shop.id)
       assert.notEqual(shop.slug, name.toLowerCase())
-      assert.match(shop.slug, new RegExp(`^${name.toLowerCase()}-`))
       const r = await resolve(`${shop.slug}.${ROOT}`)
       assert.ok(r.ok && r.shop.id === shop.id, 'and the new slug works')
     }

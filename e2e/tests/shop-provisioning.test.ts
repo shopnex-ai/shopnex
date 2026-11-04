@@ -31,7 +31,7 @@ describe('createShop', () => {
     const shop = await createShop({ ownerId: owner.id, name: '  E2E Provisioned  ' })
     created.push(shop.id)
     assert.equal(shop.name, 'E2E Provisioned')
-    assert.equal(shop.slug, 'e2e-provisioned')
+    assert.match(shop.slug, /^shop-[0-9a-f]{8}$/)
 
     const [member] = await db
       .select()
@@ -55,21 +55,14 @@ describe('createShop', () => {
     )
   })
 
-  test('same name twice gets a different slug', async () => {
+  test('the slug is a random handle: the same name twice gets different slugs, none made from the name', async () => {
     const [a, b] = [
       await createShop({ ownerId: owner.id, name: 'E2E Twin' }),
       await createShop({ ownerId: owner.id, name: 'E2E Twin' }),
     ]
     created.push(a.id, b.id)
-    assert.equal(a.slug, 'e2e-twin')
-    assert.notEqual(b.slug, a.slug)
-    assert.match(b.slug, /^e2e-twin-/)
-  })
-
-  test('a name with no letters still gets a slug', async () => {
-    const shop = await createShop({ ownerId: owner.id, name: '!!' })
-    created.push(shop.id)
-    assert.match(shop.slug, /^shop/)
+    assert.notEqual(a.slug, b.slug)
+    for (const slug of [a.slug, b.slug]) assert.match(slug, /^shop-[0-9a-f]{8}$/)
   })
 
   test('sample products are active, scoped to the shop and on its Online Store', async () => {
