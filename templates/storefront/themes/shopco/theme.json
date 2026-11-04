@@ -214,7 +214,8 @@
           "id": "image",
           "label": "Image URL",
           "info": "A cut-out photo works best: it sits at the bottom right of the hero",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/shopco/hero.svg"
         },
         {
           "id": "stat_1_value",

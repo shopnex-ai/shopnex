@@ -190,7 +190,8 @@
         {
           "id": "image_1",
           "label": "Slide 1: image",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/ks-bootshop/hero-1.svg"
         },
         {
           "id": "heading_1",
@@ -218,24 +219,26 @@
         {
           "id": "image_2",
           "label": "Slide 2: image",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/ks-bootshop/hero-2.svg"
         },
         {
           "id": "heading_2",
           "label": "Slide 2: heading",
           "type": "text",
-          "default": ""
+          "default": "New season, new favourites"
         },
         {
           "id": "text_2",
           "label": "Slide 2: text",
-          "type": "textarea"
+          "type": "textarea",
+          "default": "Fresh arrivals picked for you."
         },
         {
           "id": "button_label_2",
           "label": "Slide 2: button label",
           "type": "text",
-          "default": ""
+          "default": "Browse the collection"
         },
         {
           "id": "button_link_2",
@@ -246,24 +249,26 @@
         {
           "id": "image_3",
           "label": "Slide 3: image",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/ks-bootshop/hero-3.svg"
         },
         {
           "id": "heading_3",
           "label": "Slide 3: heading",
           "type": "text",
-          "default": ""
+          "default": "Free shipping on orders over $50"
         },
         {
           "id": "text_3",
           "label": "Slide 3: text",
-          "type": "textarea"
+          "type": "textarea",
+          "default": "Fast delivery and easy returns."
         },
         {
           "id": "button_label_3",
           "label": "Slide 3: button label",
           "type": "text",
-          "default": ""
+          "default": "Start shopping"
         },
         {
           "id": "button_link_3",
@@ -439,7 +444,8 @@
         {
           "id": "image",
           "label": "Image",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/ks-bootshop/media.svg"
         },
         {
           "id": "eyebrow",

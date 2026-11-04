@@ -146,7 +146,8 @@
         {
           "id": "image",
           "label": "Image URL",
-          "type": "image"
+          "type": "image",
+          "default": "/shopnex/assets/maison/banner.svg"
         },
         {
           "id": "eyebrow",
@@ -319,6 +320,11 @@
         {
           "id": "hero",
           "type": "house-hero",
+          "settings": {}
+        },
+        {
+          "id": "banner",
+          "type": "banner",
           "settings": {}
         },
         {
