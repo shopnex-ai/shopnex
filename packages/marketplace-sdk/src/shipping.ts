@@ -32,6 +32,11 @@ export type RatesRequest = {
   }
   items: {
     sku: string | null
+    /**
+     * Client id of the app that fulfills this product (a dropshipping app such as app_cj_dropshipping), or null when
+     * the shop ships it itself. A carrier app quotes the items it ships and leaves the rest to others.
+     */
+    fulfilledBy: string | null
     title: string
     quantity: number
     /** Price of one unit, after nothing but the shop's own price */

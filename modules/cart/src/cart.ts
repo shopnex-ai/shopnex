@@ -21,6 +21,8 @@ export type CartLineView = {
   /** true for a product's hidden default variant */
   isDefaultVariant: boolean
   sku: string | null
+  /** Client id of the app that fulfills this product (dropshipping), or null: the shop ships it */
+  fulfilledBy: string | null
   selectedOptions: { name: string; value: string }[]
   productId: string
   productSlug: string
@@ -118,6 +120,7 @@ export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
       variantTitle: variant.title,
       isDefaultVariant: variant.optionsKey === '',
       sku: variant.sku,
+      fulfilledBy: product.fulfilledBy,
       selectedOptions: detail?.selectedOptions ?? [],
       productId: product.id,
       productSlug: product.slug,

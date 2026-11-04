@@ -33,7 +33,7 @@ This calls `POST /api/v1/admin/carrier-services/configure`. There is one service
 app.post('/shipping/rates', async (c) => {
   const { request, shop } = await shopnex.verifyRatesRequest(c)
   // request.destination: { countryCode, province, city, zip, address1, address2 } (unknown fields are null)
-  // request.items: [{ sku, title, quantity, priceCents }], request.subtotalCents, request.currency
+  // request.items: [{ sku, title, quantity, priceCents, fulfilledBy }], request.subtotalCents, request.currency
   return c.json({
     rates: [{ code: 'standard', name: 'Standard (5-10 days)', priceCents: 499, description: 'Tracked' }],
   })
@@ -43,6 +43,12 @@ app.post('/shipping/rates', async (c) => {
 - `code` is stable within your app (up to 100 characters): the buyer's choice is matched on it when the order is placed. Use the same code for the same method every time.
 - `priceCents` is a whole number of cents in the shop's currency (`request.currency`). `description` is optional.
 - Up to 20 rates per answer; duplicate codes and invalid rates are dropped.
+
+### Quote only what you ship
+
+Each item has `fulfilledBy`: the client id of the app that fulfills the product (a dropshipping app such as `app_cj_dropshipping`), or `null` when the shop ships it itself, like Shopify's `fulfillment_service`. A carrier for the shop's own products should answer with no rates for a cart that has an item with another app in `fulfilledBy`: that product ships by its own app's method, and a rate from you would be charged to the buyer for a shipment you don't make. Answer `{ rates: [] }` and checkout offers the others.
+
+A dropshipping app marks its products when it creates them (`fulfilledBy` on `POST /admin/products`). An app can only set it to its own client id; anyone with product access can clear it with `null`.
 
 Requests are signed with the instance's key, the same way as [payments requests](/docs/apps/sdk): `verifyRatesRequest` checks the signature against the instance's published keys and returns the request and its shop.
 
