@@ -3,10 +3,10 @@
 # (env or a .env file next to this one), and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # HTTPS: set DOMAIN=shop.example.com (DNS pointing at this host, ports 80 and 443 open) and Caddy inside the shopnex
 # container gets a Let's Encrypt certificate by itself; APP_URL defaults to https://$DOMAIN.
-# The Stripe and CJ apps are served at https://stripe.$DOMAIN and https://cj.$DOMAIN: point those DNS records at this host too.
-# Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`. ShopNex finds the apps on the
+# The Stripe, CJ and Shippo apps are served at https://stripe.$DOMAIN, https://cj.$DOMAIN and https://shippo.$DOMAIN: point those DNS records at this host too.
+# Optional apps are off by default. CJ Dropshipping: `docker compose --profile cj up`; Shippo: `--profile shippo`. ShopNex finds the apps on the
 # compose network and each app announces its own public URL, so only a custom domain needs setting: STRIPE_APP_URL /
-# CJ_DROPSHIPPING_APP_URL (on the app service).
+# CJ_DROPSHIPPING_APP_URL / SHIPPO_APP_URL (on the app service).
 name: shopnex
 
 services:
@@ -57,7 +57,7 @@ services:
       SIGNUP_RATE_GLOBAL: ${SIGNUP_RATE_GLOBAL:-}
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       DEFAULT_SHOP_NAME: ${DEFAULT_SHOP_NAME:-My Shop}
-      # Look for the bundled apps (stripe, cj-dropshipping) at their service names on this network
+      # Look for the bundled apps (stripe, cj-dropshipping, shippo) at their service names on this network
       SHOPNEX_BUNDLED_APPS: docker
 
   stripe:
@@ -88,8 +88,24 @@ services:
       PORT: 4700
       DATA_DIR: /data
 
+  shippo:
+    profiles: [shippo]
+    image: ghcr.io/shopnex-ai/shopnex-shippo:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    ports:
+      - '4900:4900'
+    volumes:
+      - shippo_data:/data
+    environment:
+      SHIPPO_APP_URL: ${SHIPPO_APP_URL:-${DOMAIN:+https://shippo.}${DOMAIN:-http://localhost:4900}}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      PORT: 4900
+      DATA_DIR: /data
+
 volumes:
   db:
   shopnex_data:
   stripe_data:
   cj_dropshipping_data:
+  shippo_data:

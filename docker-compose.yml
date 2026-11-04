@@ -1,6 +1,6 @@
 # ShopNex with its database and the Stripe app, each in its own container:
 #
-#   docker compose up --build            # add --profile cj for the CJ Dropshipping app
+#   docker compose up --build            # add --profile cj / --profile shippo for the CJ Dropshipping / Shippo apps
 # For contributors who build from source; to just run ShopNex use
 # deploy/docker-compose.yml, which pulls prebuilt GHCR images and needs no setup.
 #
@@ -60,7 +60,7 @@ services:
     ports:
       - '4700:4700'
     volumes:
-      - cj_dropshippo_data:/data
+      - cj_dropshipping_data:/data
     environment:
       CJ_DROPSHIPPING_APP_URL: '${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}'
       SHOPNEX_INTERNAL_URL: http://admin:3000

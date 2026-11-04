@@ -60,6 +60,8 @@ jobs:
               arch: arm64,
               runner: ubuntu-24.04-arm,
             }
+          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: amd64, runner: ubuntu-latest }
+          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: arm64, runner: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@v7
 
@@ -113,6 +115,7 @@ jobs:
           - { image: shopnex, suffix: '' }
           - { image: stripe, suffix: -stripe }
           - { image: cj-dropshipping, suffix: -cj-dropshipping }
+          - { image: shippo, suffix: -shippo }
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -206,6 +209,7 @@ jobs:
           IMAGE: ${{ steps.image.outputs.name }}
           STRIPE_IMAGE: ${{ steps.image.outputs.name }}-stripe
           CJ_IMAGE: ${{ steps.image.outputs.name }}-cj-dropshipping
+          SHIPPO_IMAGE: ${{ steps.image.outputs.name }}-shippo
         run: |
           gh release view "$TAG" --json body --jq .body > release-notes.md
           {
@@ -213,6 +217,7 @@ jobs:
             printf 'ShopNex: `docker pull %s:%s`\n\n' "$IMAGE" "$TAG"
             printf 'Stripe app: `docker pull %s:%s`\n\n' "$STRIPE_IMAGE" "$TAG"
             printf 'CJ Dropshipping app (optional): `docker pull %s:%s`\n\n' "$CJ_IMAGE" "$TAG"
+            printf 'Shippo app (optional): `docker pull %s:%s`\n\n' "$SHIPPO_IMAGE" "$TAG"
             printf 'Images are published for linux/amd64 and linux/arm64. Offline `.tar.gz` copies of both (amd64) are attached below.\n'
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md
