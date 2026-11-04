@@ -111,10 +111,20 @@ describe('storefront URL', () => {
     assert.equal((await getShopById(acme.id))?.storefrontUrl, `https://${sub(acme)}`)
   })
 
-  test('a saved one wins', async () => {
-    await updateShop(beta.id, { storefrontUrl: 'https://shop.beta.example' })
-    assert.equal((await getShopById(beta.id))?.storefrontUrl, 'https://shop.beta.example')
+  test('a shop cannot set its own', async () => {
+    await updateShop(beta.id, { storefrontUrl: 'https://evil.example' })
+    assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${sub(beta)}`)
+  })
+
+  test('a verified domain becomes it, and removing the domain goes back to the subdomain', async () => {
+    const domain = `shop-${run}.beta.example`
+    const { id } = await domainService.addDomain(beta.id, domain)
+    assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${sub(beta)}`, 'unverified does nothing')
+    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, id))
+    assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${domain}`)
     assert.equal((await getShopById(acme.id))?.storefrontUrl, `https://${sub(acme)}`)
+    await domainService.removeDomain(beta.id, id)
+    assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${sub(beta)}`)
   })
 })
 

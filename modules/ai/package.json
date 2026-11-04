@@ -14,6 +14,7 @@
     "@shopnex/catalog": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
     "drizzle-orm": "catalog:",
     "openai": "^7.45.1",
     "zod": "catalog:"

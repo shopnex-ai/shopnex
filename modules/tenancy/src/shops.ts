@@ -4,17 +4,26 @@ import { db, schema } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
 
-// Zero setup: a single shop that hasn't saved a Storefront URL uses STOREFRONT_URL (`pnpm dev` sets it to the
-// bundled storefront). Multi-tenant shops each need their own: without a saved one a shop gets its
-// <slug>.ROOT_DOMAIN address (when ROOT_DOMAIN is set), otherwise nothing is guessed.
-export function withStorefrontUrl<T extends schema.Shop | null>(shop: T): T {
-  if (!shop || shop.storefrontUrl) return shop
-  if (isMultiTenant) {
-    if (!ROOT_DOMAIN || !isSubdomainSlug(shop.slug)) return shop
-    return { ...shop, storefrontUrl: subdomainUrl(shop.slug, ROOT_DOMAIN) }
+// Where a shop's storefront lives.
+// - Multi mode: derived, never chosen. The shop's first verified domain (domains prove ownership), else its
+//   <slug>.ROOT_DOMAIN address (when ROOT_DOMAIN is set), otherwise nothing is guessed. The stored column is ignored.
+// - Single mode: the saved Storefront URL, else STOREFRONT_URL (`pnpm dev` sets it to the bundled storefront).
+export async function withStorefrontUrl<T extends schema.Shop | null>(shop: T): Promise<T> {
+  if (!shop) return shop
+  if (!isMultiTenant) {
+    if (shop.storefrontUrl) return shop
+    const fallback = process.env.STOREFRONT_URL?.trim().replace(/\/$/, '')
+    return fallback ? { ...shop, storefrontUrl: fallback } : shop
   }
-  const fallback = process.env.STOREFRONT_URL?.trim().replace(/\/$/, '')
-  return fallback ? { ...shop, storefrontUrl: fallback } : shop
+  const [domain] = await db
+    .select({ domain: schema.shopDomains.domain })
+    .from(schema.shopDomains)
+    .where(and(eq(schema.shopDomains.shopId, shop.id), isNotNull(schema.shopDomains.verifiedAt)))
+    .orderBy(asc(schema.shopDomains.verifiedAt), asc(schema.shopDomains.id))
+    .limit(1)
+  if (domain) return { ...shop, storefrontUrl: `https://${domain.domain}` }
+  const derived = ROOT_DOMAIN && isSubdomainSlug(shop.slug) ? subdomainUrl(shop.slug, ROOT_DOMAIN) : null
+  return { ...shop, storefrontUrl: derived }
 }
 
 let defaultShopCreated: Promise<void> | undefined
@@ -47,8 +56,12 @@ export async function updateShop(
     >
   >,
 ) {
-  const [shop] = await db.update(schema.shops).set(patch).where(eq(schema.shops.id, id)).returning()
-  return shop ?? null
+  // Multi mode derives the Storefront URL from the shop's domains; a shop can't set its own
+  const { storefrontUrl: _ignored, ...rest } = patch
+  const values = isMultiTenant ? rest : patch
+  if (Object.keys(values).length === 0) return getShopById(id)
+  const [shop] = await db.update(schema.shops).set(values).where(eq(schema.shops.id, id)).returning()
+  return withStorefrontUrl(shop ?? null)
 }
 
 export async function getShopById(id: string) {

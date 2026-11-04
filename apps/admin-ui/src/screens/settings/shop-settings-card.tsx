@@ -85,7 +85,12 @@ function ShopForm({ shop }: { shop: Shop }) {
           type="url"
           nullable
           placeholder="https://shop.example.com"
-          description="Where your storefront lives. Checkout links back to it (“Continue shopping”)."
+          description={
+            shop.storefrontUrlManaged
+              ? 'Set automatically: your verified domain, else your shop address. Add a domain under Settings → Domains to change it.'
+              : 'Where your storefront lives. Checkout links back to it (“Continue shopping”).'
+          }
+          readOnly={shop.storefrontUrlManaged}
           autoComplete="off"
         />
         <TextField

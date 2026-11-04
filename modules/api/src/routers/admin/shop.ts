@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/server'
-import { updateShop } from '@shopnex/tenancy'
+import { isMultiTenant, updateShop } from '@shopnex/tenancy'
 import { adminOrToken, shopManager } from '../../orpc'
 import { shopInput } from './schemas'
 import { shopOutput } from './outputs'
@@ -9,7 +9,7 @@ export const shop = {
   get: adminOrToken
     .route({ method: 'GET', path: '/admin/shop' })
     .output(shopOutput)
-    .handler(({ context }) => context.shop),
+    .handler(({ context }) => ({ ...context.shop, storefrontUrlManaged: isMultiTenant })),
 
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/shop' })
@@ -18,6 +18,6 @@ export const shop = {
     .handler(async ({ input, context }) => {
       const updated = await updateShop(context.shop.id, input)
       if (!updated) throw new ORPCError('NOT_FOUND')
-      return updated
+      return { ...updated, storefrontUrlManaged: isMultiTenant }
     }),
 }
