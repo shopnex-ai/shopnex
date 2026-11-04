@@ -24,6 +24,8 @@ import {
   importProduct,
   inShop,
   isOffSale,
+  CLIENT_ID,
+  markFulfilled,
   isSkuConflict,
   linkProduct,
   needsCheck,
@@ -44,7 +46,7 @@ const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 const store = await openLocalStore()
 const tables = openTables(store.db)
 const shopnex = createShopnexApp({
-  clientId: 'app_cj_dropshipping',
+  clientId: CLIENT_ID,
   appUrl: APP_URL,
   appKey: store.appKey,
   data: store.dataFor,
@@ -98,6 +100,14 @@ async function registerCarrier(shop: ShopContext) {
   return service
 }
 
+/** One time per shop: mark the products the app already ships as fulfilled by CJ (see markFulfilled) */
+async function backfillFulfilledBy(shop: ShopContext) {
+  if (await shop.data.get('fulfilled_by_marked')) return
+  const skus = new Set([...tables.linkedSkus(shop).values()].flat())
+  if (skus.size) await markFulfilled(shop, skus)
+  await shop.data.set('fulfilled_by_marked', true)
+}
+
 const app = new Hono()
 app.route('/', shopnex.routes)
 app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }))
@@ -107,6 +117,9 @@ app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml',
 app.get('/', async (c) => {
   const shop = await shopnex.authenticate(c)
   const connected = await isConnected(shop)
+  // Products imported or linked before `fulfilledBy` existed get it once, in the background
+  if (connected)
+    void backfillFulfilledBy(shop).catch((error) => console.warn('[cj] fulfilledBy backfill:', message(error)))
   let shippingError: string | null = null
   let shippingOff = false
   // Registering again is safe, and keeps the service (and its id, which orders are matched on) right after a

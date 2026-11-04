@@ -7,6 +7,9 @@ import type { Tables } from './db'
 
 type Product = { id: string; title: string }
 
+/** What products this app ships are marked with, so other carrier apps leave them alone (fulfilledBy) */
+export const CLIENT_ID = 'app_cj_dropshipping'
+
 /** CJ error 1602002: the product was taken off sale. Nothing to retry. */
 export const isOffSale = (error: unknown) =>
   (error as { code?: number }).code === 1602002 || String((error as Error)?.message).includes('(1602002)')
@@ -114,6 +117,7 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
     status: 'draft',
     descriptionHtml: product.description ?? '',
     vendor: 'CJ Dropshipping',
+    fulfilledBy: CLIENT_ID,
     images: imagesOf(product.productImage)
       .filter(httpUrl)
       .slice(0, 20)
@@ -162,7 +166,31 @@ export async function linkProduct(shop: ShopContext, tables: Tables, pid: string
   if (variants.length === 0) throw new Error(details.error ?? 'This CJ product has no variants')
   variants.forEach((v) => tables.saveVariant(shop, v.variantSku, pid, v.vid))
   tables.setAvailable(shop, pid, true)
+  await markFulfilled(shop, new Set(variants.map((v) => v.variantSku))).catch((error) =>
+    console.warn('[cj] marking the product as fulfilled by CJ:', error instanceof Error ? error.message : error),
+  )
   return variants.length
+}
+
+/**
+ * Marks the shop's products that have one of these SKUs as fulfilled by this app (up to 500 products), so a carrier
+ * app that ships the shop's own products doesn't quote them. Returns how many it changed.
+ */
+export async function markFulfilled(shop: ShopContext, skus: Set<string>) {
+  let changed = 0
+  for (let offset = 0; offset < 500; offset += 100) {
+    const page = await shop.admin.get<{
+      items: { id: string; fulfilledBy: string | null; variants: { sku: string | null }[] }[]
+      total: number
+    }>(`/products?limit=100&offset=${offset}`)
+    for (const p of page.items) {
+      if (p.fulfilledBy === CLIENT_ID || !p.variants.some((v) => v.sku && skus.has(v.sku))) continue
+      await shop.admin.patch(`/products/${p.id}`, { fulfilledBy: CLIENT_ID })
+      changed++
+    }
+    if (offset + 100 >= page.total) break
+  }
+  return changed
 }
 
 export const isSkuConflict = (error: unknown) => error instanceof ShopnexError && error.status === 409

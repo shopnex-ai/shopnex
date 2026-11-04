@@ -82,6 +82,7 @@ function quoteInput(cart: CartView, address: QuoteAddress): QuoteInput {
     },
     items: cart.lines.map((l) => ({
       sku: l.sku,
+      fulfilledBy: l.fulfilledBy,
       title: l.isDefaultVariant ? l.title : `${l.title} - ${l.variantTitle}`,
       quantity: l.quantity,
       priceCents: l.unitPriceCents,
