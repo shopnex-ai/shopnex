@@ -2,7 +2,7 @@
 import { Badge, Banner, Button, Card, Form, Page, Text, TextField } from '@shopnex/app/ui'
 import type { Config } from './config'
 
-export const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0f766e"/><path fill="#fff" d="M12 20h28v22H12zM40 27h9l6 8v7H40z"/><circle cx="23" cy="45" r="5" fill="#0f766e" stroke="#fff" stroke-width="3"/><circle cx="46" cy="45" r="5" fill="#0f766e" stroke="#fff" stroke-width="3"/></svg>`
+export const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0f766e"/><path fill="#fff" d="M32 11 50 21.500 32 32 14 21.500z"/><path fill="#ccfbf1" d="M14 21.500 32 32v21L14 42.500z"/><path fill="#5eead4" d="M50 21.500 32 32v21l18-10.500z"/><path fill="none" stroke="#0f766e" stroke-width="3.500" d="M23 16.250 41 26.750M23 26.750v21"/></svg>`
 
 export type SettingsView = {
   config: Config
