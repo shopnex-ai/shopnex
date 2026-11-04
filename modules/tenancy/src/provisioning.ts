@@ -57,8 +57,8 @@ export async function seedDefaultMenu(conn: Conn, shopId: string) {
 }
 
 /**
- * A new shop for `ownerId`, ready to take an order: the owner membership plus the checkout defaults a shop
- * can't sell without (one shipping rate, one manual payment method) and a main menu. The Online Store channel
+ * A new shop for `ownerId`: the owner membership and a main menu. Shipping rates and payment methods are real
+ * settings the owner chooses (the Home checklist points to them), so none are made up here. The Online Store channel
  * is created here too, so products added right away are published on it; the first theme is created on first use.
  */
 export async function createShop(input: { ownerId: string; name: string; currency?: string }) {
@@ -72,15 +72,6 @@ export async function createShop(input: { ownerId: string; name: string; currenc
     await tx
       .insert(schema.shopMembers)
       .values({ id: randomUUID(), organizationId: id, userId: input.ownerId, role: 'owner' })
-    await tx
-      .insert(schema.shippingRates)
-      .values({ shopId: id, name: 'Standard shipping', priceCents: 500, freeAboveCents: 5000 })
-    await tx.insert(schema.paymentMethods).values({
-      shopId: id,
-      provider: 'manual',
-      name: 'Cash on delivery',
-      instructions: 'Pay the courier when your order arrives.',
-    })
     await seedDefaultMenu(tx, id)
     // Make the Online Store now: it's otherwise created on first use, after the sample products are added,
     // and a product is only auto-published on channels that already exist
