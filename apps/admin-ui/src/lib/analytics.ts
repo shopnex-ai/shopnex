@@ -1,4 +1,4 @@
-// PostHog for hosted deployments of ShopNex (app.shopnex.ai, the public demo). It exists only when the operator sets
+// PostHog for hosted deployments of ShopNex (demo.shopnex.ai, the public demo). It exists only when the operator sets
 // POSTHOG_KEY at runtime: a clone, a fork or a self-hosted install has no key anywhere, so nothing loads and nothing
 // is sent. The key is never in the source or the image: it is read from the server's environment and handed to the
 // browser by the root loader.
