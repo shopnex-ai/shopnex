@@ -4,7 +4,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { shopInput } from '@shopnex/api/schemas'
-import { FormError, SelectField, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
+import {
+  CheckboxField,
+  FormError,
+  SelectField,
+  TextField,
+  TextareaField,
+  setServerError,
+  useZodForm,
+} from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup } from '@/components/ui/field'
@@ -21,6 +29,7 @@ const toValues = (shop: Shop) => ({
   storefrontUrl: shop.storefrontUrl,
   seoTitle: shop.seoTitle,
   seoDescription: shop.seoDescription,
+  showPoweredBy: shop.showPoweredBy,
 })
 
 export function ShopSettingsCard() {
@@ -109,6 +118,12 @@ function ShopForm({ shop }: { shop: Shop }) {
           nullable
           rows={3}
           description="A sentence or two about your store, shown under its title in search results."
+        />
+        <CheckboxField
+          control={form.control}
+          name="showPoweredBy"
+          label="Show “Powered by ShopNex”"
+          description="A small link at the bottom of your storefront. It helps other people find ShopNex; turn it off any time."
         />
         <FormError form={form} />
         <Field orientation="horizontal" className="justify-end">

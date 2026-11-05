@@ -44,6 +44,7 @@ import {
   shopObject,
 } from './drops'
 import { RENDER, createLiquid, type RenderData } from './liquid'
+import { withPoweredBy } from './powered-by'
 import { seoTags } from './seo'
 import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
 
@@ -389,7 +390,8 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   const content =
     page.template === 'account' ? page.html : await liquid.renderFile(`templates/${page.template}`, context)
   context.push({ content_for_layout: new SafeHtml(content) })
-  const html = await liquid.renderFile('layout/theme', context)
+  // A shop we couldn't load keeps the default (shown)
+  const html = withPoweredBy(await liquid.renderFile('layout/theme', context), shop?.showPoweredBy ?? true)
 
   return new Response(html, {
     status: page.template === '404' ? 404 : page.template === 'account' ? (page.status ?? 200) : 200,

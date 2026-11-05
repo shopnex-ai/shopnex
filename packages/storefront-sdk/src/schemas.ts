@@ -56,6 +56,8 @@ export const Shop = z.object({
   currencyCode: z.string().length(3),
   /** The homepage's title and meta description (Shopify: Online store → Preferences) */
   seo: Seo,
+  /** Whether the storefront shows its small "Powered by ShopNex" link (Settings → General) */
+  showPoweredBy: z.boolean(),
 })
 
 // ── catalog ───────────────────────────────────────────────────────────────────

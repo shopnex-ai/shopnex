@@ -13,6 +13,11 @@
 <p align="center"><a href="https://demo.shopnex.ai/admin/signup?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
 <p align="center">
+  <a href="https://render.com/deploy?repo=https://github.com/shopnex-ai/shopnex/tree/main"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" height="40"></a>
+  <a href="https://cloud.digitalocean.com/apps/new?repo=https://github.com/shopnex-ai/shopnex/tree/main"><img src="https://www.deploytodo.com/do-btn-blue.svg" alt="Deploy to DigitalOcean" height="40"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
   <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shopnex-ai/shopnex" alt="License: MIT"></a>
@@ -55,6 +60,8 @@ ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for wh
 [releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
 
 ## Quick start
+
+One click: use the **Deploy** buttons at the top (Render or DigitalOcean, each with a managed Postgres). Open the deployed URL and finish `/admin/setup` right away. Or run it yourself:
 
 Requires [Docker](https://docs.docker.com/get-docker/).
 
