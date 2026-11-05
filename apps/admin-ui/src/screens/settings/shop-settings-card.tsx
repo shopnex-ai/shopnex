@@ -90,7 +90,7 @@ function ShopForm({ shop }: { shop: Shop }) {
               ? 'Set automatically: your verified domain, else your shop address. Add a domain under Settings → Domains to change it.'
               : 'Where your storefront lives. Checkout links back to it (“Continue shopping”).'
           }
-          readOnly={shop.storefrontUrlManaged}
+          disabled={shop.storefrontUrlManaged}
           autoComplete="off"
         />
         <TextField
