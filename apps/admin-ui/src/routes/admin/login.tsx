@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { getDemoLogin, getSocialProviders } from '@/lib/session.functions'
 import { adminContextQuery } from '@/lib/admin-context'
@@ -8,15 +8,18 @@ export const Route = createFileRoute('/admin/login')({
   validateSearch: (search: Record<string, unknown>): { error?: string; next?: string; demo?: boolean } => ({
     error: typeof search.error === 'string' ? search.error : undefined,
     next: typeof search.next === 'string' ? search.next : undefined,
-    // ?demo prefills the shared demo login on a demo deployment (DEMO_MODE=true)
+    // ?demo prefills the shared demo login on a demo deployment (DEMO_MODE=true); on an open-signup demo without
+    // one it goes to /admin/signup
     demo: search.demo === '' || search.demo === true || search.demo === 'true' || search.demo === 1 ? true : undefined,
   }),
   loaderDeps: ({ search }) => ({ demo: search.demo }),
-  loader: async ({ deps, context }) => ({
-    providers: await getSocialProviders(),
-    openSignup: (await context.queryClient.ensureQueryData(adminContextQuery)).openSignup,
-    demoLogin: deps.demo ? await getDemoLogin() : null,
-  }),
+  loader: async ({ deps, context }) => {
+    const { openSignup } = await context.queryClient.ensureQueryData(adminContextQuery)
+    const demoLogin = deps.demo ? await getDemoLogin() : null
+    // A demo where anyone can open a shop has no shared login: send the link to sign-up instead of an empty form
+    if (deps.demo && !demoLogin && openSignup) throw redirect({ to: '/admin/signup' })
+    return { providers: await getSocialProviders(), openSignup, demoLogin }
+  },
   component: LoginPage,
 })
 
