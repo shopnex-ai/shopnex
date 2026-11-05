@@ -180,6 +180,7 @@ export const shopInput = createInsertSchema(shops, {
   storefrontUrl: true,
   seoTitle: true,
   seoDescription: true,
+  showPoweredBy: true,
   taxesIncluded: true,
   taxShipping: true,
 })

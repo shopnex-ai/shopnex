@@ -29,6 +29,8 @@ export const shops = pgTable('shops', {
   // Homepage <title> and meta description (Shopify: Online store → Preferences); null = shop name, none
   seoTitle: text('seo_title'),
   seoDescription: text('seo_description'),
+  // The small "Powered by ShopNex" link the storefront adds to every page; the owner can switch it off
+  showPoweredBy: boolean('show_powered_by').notNull().default(true),
   // Next order number (Shopify-style #1001, #1002…); taken under a row lock when an order is created
   nextOrderNumber: integer('next_order_number').notNull().default(1001),
   // Shopify taxesIncluded: prices already contain tax (EU/UK style); tax is extracted, not added

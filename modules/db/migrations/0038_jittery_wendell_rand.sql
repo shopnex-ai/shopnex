@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "show_powered_by" boolean DEFAULT true NOT NULL;
