@@ -1,8 +1,9 @@
-# Multi mode with ROOT_DOMAIN only (start.sh sets SHOP_HOSTS_CADDYFILE). The admin is served on the main host
-# (DOMAIN); on a shop's own address (<slug>.ROOT_DOMAIN) /admin goes there instead, so a mistyped or unknown
-# subdomain never shows an admin page. The checkout and the API stay on every host: the storefront needs them.
+# Loaded when the admin has its own host (start.sh sets SHOP_HOSTS_CADDYFILE and ADMIN_HOST: ADMIN_HOST, or in multi
+# mode DOMAIN / the host of APP_URL). The admin is served there; on any other host (a shop's <slug>.ROOT_DOMAIN, a
+# mistyped subdomain) /admin goes there instead, so those never show an admin page. The checkout and the API stay on
+# every host: the storefront needs them.
 @shopAdmin {
 	path /admin /admin/*
-	not host {$DOMAIN}
+	not host {$ADMIN_HOST}
 }
-redir @shopAdmin https://{$DOMAIN}{uri} 308
+redir @shopAdmin https://{$ADMIN_HOST}{uri} 308
