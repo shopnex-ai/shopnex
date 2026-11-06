@@ -6,4 +6,4 @@ dist/
 # Built by scripts/themes.mjs
 themes/*/assets/theme.css
 themes/*/assets/theme.js
-public/shopnex/
+built/

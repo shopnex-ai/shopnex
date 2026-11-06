@@ -3,7 +3,8 @@
 //
 //   themes/{id}/src/theme.css → themes/{id}/assets/theme.css   Tailwind (scans the theme's folder)
 //   themes/{id}/src/theme.ts  → themes/{id}/assets/theme.js    esbuild: TypeScript, npm packages, React islands
-//   src/runtime/preview.ts    → public/shopnex/preview.js      the theme editor's preview connector
+//   src/runtime/preview.ts    → built/preview.js               the theme editor's preview connector (served by
+//                                                              src/pages/shopnex/preview.js.ts)
 //
 // A theme without src/theme.css or src/theme.ts skips that step. The server never runs theme code: these are
 // only the files a theme's pages link to.
@@ -23,7 +24,7 @@ const themesDir = process.env.SHOPNEX_THEMES_DIR ?? join(root, 'themes')
 export async function buildThemes({ watch = false } = {}) {
   const { themes } = JSON.parse(readFileSync(join(themesDir, 'index.json'), 'utf8'))
   const scripts = [
-    { name: 'preview', entry: join(root, 'src/runtime/preview.ts'), out: join(root, 'public/shopnex/preview.js') },
+    { name: 'preview', entry: join(root, 'src/runtime/preview.ts'), out: join(root, 'built/preview.js') },
   ]
   const styles = []
   for (const id of themes) {
