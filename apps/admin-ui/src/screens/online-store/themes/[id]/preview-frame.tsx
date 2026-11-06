@@ -13,6 +13,7 @@ import {
 } from '@shopnex/storefront-sdk/theme-preview'
 import { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
+import { PreviewLoader } from '../preview-loader'
 
 // Tokens last an hour; renew well before that
 const TOKEN_REFRESH_MS = 45 * 60 * 1000
@@ -101,20 +102,24 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
         </p>
       )}
       <div className="flex flex-1 justify-center overflow-hidden bg-muted/40 p-3">
-        {src ? (
-          <iframe
-            key={hardReloads}
-            ref={frame}
-            src={src}
-            title="Storefront preview"
-            className={cn(
-              'h-full rounded-md border bg-white shadow-sm transition-[width]',
-              device === 'mobile' ? 'w-[390px]' : 'w-full',
-            )}
-          />
-        ) : (
-          <div className="flex items-center text-sm text-muted-foreground">Loading preview…</div>
-        )}
+        <div
+          className={cn(
+            'relative h-full overflow-hidden rounded-md border bg-white shadow-sm transition-[width]',
+            device === 'mobile' ? 'w-[390px]' : 'w-full',
+          )}
+        >
+          {src && (
+            <iframe
+              key={hardReloads}
+              ref={frame}
+              src={src}
+              title="Storefront preview"
+              className="h-full w-full border-0 bg-white"
+            />
+          )}
+          {/* Until the storefront says "ready" (or we give up waiting and show the warning above) */}
+          {(!src || (!ready && !noBridge)) && <PreviewLoader />}
+        </div>
       </div>
     </div>
   )
