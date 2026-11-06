@@ -1,5 +1,6 @@
 // A theme's assets (themes/{id}/assets): its built stylesheet and script, images, fonts. `| asset_url` adds
-// ?v={modified time}, so versioned URLs are cached for good.
+// ?v={modified time}, so versioned URLs are cached for good. Unversioned ones (image settings store plain URLs)
+// are cached for an hour, then served stale while the CDN refetches, instead of revalidating on every request.
 import { readFile } from 'node:fs/promises'
 import { extname, join, resolve, sep } from 'node:path'
 import type { APIRoute } from 'astro'
@@ -33,8 +34,11 @@ export const GET: APIRoute = async ({ params, url }) => {
     return new Response(await readFile(file), {
       headers: {
         'content-type': type,
-        'cache-control':
-          url.searchParams.has('v') && !import.meta.env.DEV ? 'public, max-age=31536000, immutable' : 'no-cache',
+        'cache-control': import.meta.env.DEV
+          ? 'no-cache'
+          : url.searchParams.has('v')
+            ? 'public, max-age=31536000, immutable'
+            : 'public, max-age=3600, stale-while-revalidate=86400',
       },
     })
   } catch {

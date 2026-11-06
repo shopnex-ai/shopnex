@@ -44,6 +44,7 @@ import {
   shopObject,
 } from './drops'
 import { RENDER, createLiquid, type RenderData } from './liquid'
+import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
 
@@ -305,7 +306,7 @@ function contentForHeader(preview: boolean, seo: string[] = []) {
     browserConfig.publishableKey && `<meta name="shopnex-key" content="${attr(browserConfig.publishableKey)}">`,
     // In the theme editor's preview iframe: reload after a save, highlight the picked section
     preview && `<meta name="shopnex-admin-origin" content="${attr(adminOrigin)}">`,
-    preview && `<script type="module" src="/shopnex/preview.js"></script>`,
+    preview && `<script type="module" src="${previewScriptUrl()}"></script>`,
     ...seo,
   ]
     .filter(Boolean)
