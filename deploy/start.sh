@@ -45,7 +45,9 @@ if [ -n "$DOMAIN" ] && [ "$TENANCY_MODE" = "multi" ] && [ -n "$ROOT_DOMAIN" ]; t
   root="${ROOT_DOMAIN#*://}"
   root="${root%%[:/]*}"
   export SITE_ADDRESS="$DOMAIN, *.$root"
+  export SHOP_HOSTS_CADDYFILE=Caddyfile.shops
 fi
+export SHOP_HOSTS_CADDYFILE="${SHOP_HOSTS_CADDYFILE:-no-shops-*.caddy}"
 export SITE_TLS_FILE="${SITE_TLS_FILE:-no-tls-*.caddy}"
 
 # Caddy serves the bundled storefront on the app's own origin, so a single shop that hasn't saved a

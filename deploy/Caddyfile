@@ -11,6 +11,9 @@
 {$SITE_ADDRESS} {
 	import {$SITE_TLS_FILE}
 
+	# Multi mode: the admin lives on the main host only; a shop's address (<slug>.ROOT_DOMAIN) is its storefront.
+	import {$SHOP_HOSTS_CADDYFILE}
+
 	@admin path /admin /admin/* /_serverFn/* /api/* /checkout/* /assets/* /fonts/* /favicon.svg
 	handle @admin {
 		reverse_proxy localhost:{$ADMIN_PORT}
