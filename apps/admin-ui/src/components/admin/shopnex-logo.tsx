@@ -10,7 +10,8 @@ export function ShopnexLogo({ className }: { className?: string }) {
   )
 }
 
-// The mark drawing itself in a loop: a loading state for previews and other empty panels.
+// The mark drawing itself in, then wiping out from the start, in a loop: a loading state for previews and
+// other empty panels.
 // Stands still (dimmed) for people who prefer reduced motion.
 export function ShopnexLoader({ className }: { className?: string }) {
   return (
@@ -26,13 +27,13 @@ export function ShopnexLoader({ className }: { className?: string }) {
       aria-label="Loading"
     >
       <style>{`
-        .shopnex-loader path { stroke-dasharray: 1; animation: shopnex-draw 1.8s ease-in-out infinite; }
-        .shopnex-loader path + path { animation-delay: 0.25s; }
+        .shopnex-loader path { stroke-dasharray: 1; animation: shopnex-draw 2.2s ease-in-out infinite; }
+        .shopnex-loader path + path { animation-delay: 0.2s; }
         @keyframes shopnex-draw {
-          0% { stroke-dashoffset: 1; opacity: 1; }
-          55% { stroke-dashoffset: 0; opacity: 1; }
-          85% { stroke-dashoffset: 0; opacity: 1; }
-          100% { stroke-dashoffset: 0; opacity: 0; }
+          0% { stroke-dashoffset: 1; }
+          45% { stroke-dashoffset: 0; }
+          55% { stroke-dashoffset: 0; }
+          100% { stroke-dashoffset: -1; }
         }
         @media (prefers-reduced-motion: reduce) {
           .shopnex-loader path { animation: none; stroke-dashoffset: 0; opacity: 0.4; }
