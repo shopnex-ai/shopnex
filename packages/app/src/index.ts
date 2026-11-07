@@ -396,8 +396,14 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   )
   if (options.icon) {
     const icon = options.icon
+    // The CSP keeps a script in the SVG from running if someone opens the URL itself; <img> never runs it
     routes.get('/icon.svg', (c) =>
-      c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }),
+      c.body(icon, 200, {
+        'content-type': 'image/svg+xml',
+        'cache-control': 'max-age=86400',
+        'content-security-policy': "default-src 'none'; sandbox",
+        'x-content-type-options': 'nosniff',
+      }),
     )
   }
   if (options.onInstalled) {
