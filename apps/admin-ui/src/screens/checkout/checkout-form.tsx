@@ -195,9 +195,7 @@ export function CheckoutForm({
             {field('firstName', 'First name (optional)', { autoComplete: 'given-name' })}
             {field('lastName', 'Last name', { autoComplete: 'family-name', required: true })}
           </div>
-          {optionalField('company', 'Company', { autoComplete: 'organization' })}
           {field('address1', 'Address', { autoComplete: 'address-line1', required: true })}
-          {optionalField('address2', 'Apartment, suite, etc.', { autoComplete: 'address-line2' })}
           <div className="grid gap-4 sm:grid-cols-3">
             {field('zip', 'Postal code', { autoComplete: 'postal-code' })}
             {field('city', 'City', { autoComplete: 'address-level2', required: true })}
@@ -206,6 +204,8 @@ export function CheckoutForm({
               onChange: (e) => setProvince(e.target.value),
             })}
           </div>
+          {optionalField('address2', 'Apartment, suite, etc.', { autoComplete: 'address-line2' })}
+          {optionalField('company', 'Company', { autoComplete: 'organization' })}
           {optionalField('phone', 'Phone', { type: 'tel', autoComplete: 'tel' })}
           {addLinks([
             { name: 'address2', label: 'Apartment, suite, etc.' },
