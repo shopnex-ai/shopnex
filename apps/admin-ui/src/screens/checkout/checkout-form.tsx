@@ -3,8 +3,7 @@
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useController, useWatch } from 'react-hook-form'
-import { FormError, TextareaField, TextField, useZodForm } from '@/components/admin/form'
-import { Button } from '@/components/ui/button'
+import { TextareaField, TextField, useZodForm } from '@/components/admin/form'
 import {
   Field,
   FieldDescription,
@@ -17,7 +16,7 @@ import {
 import { formatMoney } from '@/lib/money'
 import { buyer } from './buyer-schema'
 import { placeOrder, quoteRates, type CheckoutFields } from './functions'
-import { useCheckoutTotals } from './totals'
+import { PlaceOrderButton, useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
   id: string
@@ -81,7 +80,7 @@ export function CheckoutForm({
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
   })
   // Tax follows the address as it's typed, and the order summary beside the form follows the totals
-  const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
+  const { setCountry, setProvince, setShippingCents, setAction } = useCheckoutTotals()
   useEffect(() => setCountry(country), [country, setCountry])
   useEffect(() => setProvince(province), [province, setProvince])
   const money = (cents: number) => formatMoney(cents, currency)
@@ -127,7 +126,19 @@ export function CheckoutForm({
     }
   }
 
+  // Shipping is offered but none chosen (carriers still waiting for an address): the schema can't know
+  const needsRate = rates.length > 0 || options.liveRates
   const onSubmit = form.handleSubmit(async () => {
+    if (needsRate && !form.getValues('shippingRateId')) {
+      form.setError('root', {
+        message: ratesPending
+          ? 'Still getting shipping rates, try again in a moment.'
+          : rates.length === 0 && quoted
+            ? "We can't ship to this address. Check it, or try another one."
+            : 'Enter your address to choose a shipping method.',
+      })
+      return
+    }
     try {
       // The raw strings: the server parses them with the same schema
       const result = await placeOrder({ data: { token, values: form.getValues() as CheckoutFields } })
@@ -173,16 +184,14 @@ export function CheckoutForm({
     )
   }
 
-  // Ready once the details are valid and a shipping method is chosen wherever shipping is offered
-  const needsRate = rates.length > 0 || options.liveRates
-  const ready = formState.isValid && Boolean(methodId) && (!needsRate || Boolean(rateId))
-  const hint = !formState.isValid
-    ? 'Fill in your details to continue.'
-    : needsRate && !rateId
-      ? ratesPending
-        ? 'Getting shipping rates…'
-        : 'Choose a shipping method to continue.'
-      : ''
+  // The summary beside the form shows the same button
+  const label = formState.isSubmitting ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'
+  const disabled = formState.isSubmitting
+  const error = formState.errors.root?.message
+  useEffect(() => {
+    setAction({ label, disabled, error })
+    return () => setAction(null)
+  }, [label, disabled, error, setAction])
 
   const optionalAddressFields: OptionalField[] = [
     { name: 'address2', label: 'Apartment, suite, etc.', props: { autoComplete: 'address-line2' } },
@@ -192,6 +201,7 @@ export function CheckoutForm({
 
   return (
     <form
+      id="checkout-form"
       onSubmit={onSubmit}
       onBlurCapture={(e) => {
         if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
@@ -304,20 +314,9 @@ export function CheckoutForm({
         addLinks([{ name: 'note', label: 'Order note' }])
       )}
 
-      <div className="space-y-3">
-        <FormError form={form} />
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">{ready ? '' : hint}</p>
-          <Button
-            data-ph-capture="place-order"
-            type="submit"
-            size="lg"
-            className="w-full sm:w-auto sm:min-w-48"
-            disabled={formState.isSubmitting || !ready}
-          >
-            {formState.isSubmitting ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'}
-          </Button>
-        </div>
+      {/* On wide screens the button sits under the total, in the summary */}
+      <div className="md:hidden">
+        <PlaceOrderButton />
       </div>
     </form>
   )
