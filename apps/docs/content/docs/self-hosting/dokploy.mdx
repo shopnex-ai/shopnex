@@ -143,7 +143,7 @@ To let anyone sign up and get their own shop at `<slug>.example.com`, add three 
 | `ROOT_DOMAIN`  | The bare domain the shops live under, e.g. `example.com` (no `https://`, no path).               |
 
 1. Add a wildcard DNS record, `*`, pointing at the server. Behind Cloudflare, proxy it and set SSL/TLS to **Full**; the wildcard route uses Traefik's default certificate, because a Let's Encrypt wildcard needs a DNS challenge. Cloudflare's free certificate covers one wildcard level, so `*.example.com` gets HTTPS but `*.shops.example.com` does not.
-2. Keep the admin on its own domain (added under **Domains**, service `shopnex`, port `3000`), and set `APP_URL` to it. It can sit under `ROOT_DOMAIN` (for example `app.example.com`, a name the platform keeps) or on another domain. The admin host has no storefront.
+2. Keep the admin on its own domain (added under **Domains**, service `shopnex`, port `3000`), and set `APP_URL` to it. It can sit under `ROOT_DOMAIN` (for example `app.example.com`, a name the platform keeps) or on another domain. The admin host has no storefront. `/admin` on any other host (a shop's address, a mistyped subdomain) redirects to the admin host, taken from `APP_URL`; set `ADMIN_HOST` to name it explicitly.
 3. Set `ROOT_DOMAIN` only together with `TENANCY_MODE=multi`. In single mode it would send every subdomain to the one shop.
 4. Create your own account first: a fresh install lets whoever arrives first claim it.
 

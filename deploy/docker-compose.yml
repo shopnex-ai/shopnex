@@ -51,6 +51,8 @@ services:
       TENANCY_MODE: ${TENANCY_MODE:-single}
       OPEN_SIGNUP: ${OPEN_SIGNUP:-false}
       ROOT_DOMAIN: ${ROOT_DOMAIN:-}
+      # The one host that serves /admin (others redirect to it). Defaults to the host of APP_URL in multi mode.
+      ADMIN_HOST: ${ADMIN_HOST:-}
       # Open sign-up limits (OPEN_SIGNUP=true): per address and for everyone, per hour. Behind Cloudflare set
       # CLIENT_IP_HEADER=cf-connecting-ip so each visitor is told apart (see docs: Concepts > Tenancy).
       SIGNUP_RATE_PER_IP: ${SIGNUP_RATE_PER_IP:-}

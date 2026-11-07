@@ -45,7 +45,20 @@ if [ -n "$DOMAIN" ] && [ "$TENANCY_MODE" = "multi" ] && [ -n "$ROOT_DOMAIN" ]; t
   root="${ROOT_DOMAIN#*://}"
   root="${root%%[:/]*}"
   export SITE_ADDRESS="$DOMAIN, *.$root"
-  export SHOP_HOSTS_CADDYFILE=Caddyfile.shops
+fi
+
+# The admin is served on one host only; /admin on any other host (a shop's <slug>.ROOT_DOMAIN, a mistyped subdomain)
+# redirects there. ADMIN_HOST sets it explicitly and works behind a proxy or CDN that terminates TLS (Cloudflare,
+# Traefik) without DOMAIN, which would turn on Caddy's own HTTPS. In multi mode with ROOT_DOMAIN it defaults to
+# DOMAIN, else to the host of APP_URL. Single-shop installs keep /admin on every host unless ADMIN_HOST is set.
+admin_host="$ADMIN_HOST"
+if [ -z "$admin_host" ] && [ "$TENANCY_MODE" = "multi" ] && [ -n "$ROOT_DOMAIN" ]; then
+  admin_host="${DOMAIN:-${APP_URL#*://}}"
+fi
+admin_host="${admin_host#*://}"
+admin_host="${admin_host%%[:/]*}"
+if [ -n "$admin_host" ]; then
+  export ADMIN_HOST="$admin_host" SHOP_HOSTS_CADDYFILE=Caddyfile.shops
 fi
 export SHOP_HOSTS_CADDYFILE="${SHOP_HOSTS_CADDYFILE:-no-shops-*.caddy}"
 export SITE_TLS_FILE="${SITE_TLS_FILE:-no-tls-*.caddy}"
