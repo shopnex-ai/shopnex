@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from '@/lib/server-fn'
 import { AppError, appService, marketplaceService } from '@shopnex/apps'
 import { getAdminContext } from '@/lib/session.functions'
 
@@ -11,7 +11,7 @@ function withParams(redirectUri: string, params: Record<string, string | undefin
   return url.toString()
 }
 
-export const loadConsent = createServerFn({ method: 'GET' })
+export const loadConsent = publicFn({ method: 'GET' })
   .validator(
     (input: { clientId?: string; redirectUri?: string; scope?: string; state?: string; responseType?: string }) =>
       input,
@@ -54,7 +54,7 @@ export const loadConsent = createServerFn({ method: 'GET' })
     }
   })
 
-export const approveConsent = createServerFn({ method: 'POST' })
+export const approveConsent = publicFn({ method: 'POST' })
   .validator((request: AuthorizeRequest) => request)
   .handler(async ({ data }) => {
     const [access, validated] = await Promise.all([getAdminContext(), appService.validateAuthorizeRequest(data)])
@@ -82,7 +82,7 @@ export const approveConsent = createServerFn({ method: 'POST' })
     return withParams(data.redirectUri, { code, state: data.state, shop_id: tenant.shop.id, instance })
   })
 
-export const denyConsent = createServerFn({ method: 'POST' })
+export const denyConsent = publicFn({ method: 'POST' })
   .validator((request: AuthorizeRequest) => request)
   .handler(async ({ data }) => {
     await appService.validateAuthorizeRequest({ clientId: data.clientId, redirectUri: data.redirectUri })

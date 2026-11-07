@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from '@shopnex/auth'
 import { seedSampleProducts } from '@shopnex/catalog'
@@ -11,7 +11,7 @@ const NEW_SHOP_NAME = 'My Shop'
 
 // The one place a self-serve shop is made, for every sign-up path (email, OAuth, or an account that stopped halfway):
 // the account exists first (sign-up is rate limited by Better Auth), then this makes its shop. One shop each.
-export const createMyShop = createServerFn({ method: 'POST' }).handler(async (): Promise<SignupResult> => {
+export const createMyShop = publicFn({ method: 'POST' }).handler(async (): Promise<SignupResult> => {
   if (!isOpenSignup) return { error: 'Creating shops is disabled' }
   const session = await auth.api.getSession({ headers: getRequest().headers })
   if (!session) return { error: 'Sign in first' }

@@ -180,24 +180,21 @@ const AdminOauthAuthorizeRoute = AdminOauthAuthorizeRouteImport.update({
   path: '/oauth/authorize',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const AdminOnlineStoreNavigationRouteRoute =
-  AdminOnlineStoreNavigationRouteRouteImport.update({
-    id: '/navigation',
-    path: '/navigation',
-    getParentRoute: () => AdminOnlineStoreRouteRoute,
-  } as any)
-const AdminOnlineStorePagesRouteRoute =
-  AdminOnlineStorePagesRouteRouteImport.update({
-    id: '/pages',
-    path: '/pages',
-    getParentRoute: () => AdminOnlineStoreRouteRoute,
-  } as any)
-const AdminOnlineStoreThemesRouteRoute =
-  AdminOnlineStoreThemesRouteRouteImport.update({
-    id: '/themes',
-    path: '/themes',
-    getParentRoute: () => AdminOnlineStoreRouteRoute,
-  } as any)
+const AdminOnlineStoreNavigationRouteRoute = AdminOnlineStoreNavigationRouteRouteImport.update({
+  id: '/navigation',
+  path: '/navigation',
+  getParentRoute: () => AdminOnlineStoreRouteRoute,
+} as any)
+const AdminOnlineStorePagesRouteRoute = AdminOnlineStorePagesRouteRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => AdminOnlineStoreRouteRoute,
+} as any)
+const AdminOnlineStoreThemesRouteRoute = AdminOnlineStoreThemesRouteRouteImport.update({
+  id: '/themes',
+  path: '/themes',
+  getParentRoute: () => AdminOnlineStoreRouteRoute,
+} as any)
 const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -238,18 +235,16 @@ const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
-const AdminSettingsMarketplaceRoute =
-  AdminSettingsMarketplaceRouteImport.update({
-    id: '/marketplace',
-    path: '/marketplace',
-    getParentRoute: () => AdminSettingsRouteRoute,
-  } as any)
-const AdminSettingsNotificationsRouteRoute =
-  AdminSettingsNotificationsRouteRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AdminSettingsRouteRoute,
-  } as any)
+const AdminSettingsMarketplaceRoute = AdminSettingsMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
+const AdminSettingsNotificationsRouteRoute = AdminSettingsNotificationsRouteRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsPaymentsRoute = AdminSettingsPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -270,12 +265,11 @@ const AdminSettingsStorageRoute = AdminSettingsStorageRouteImport.update({
   path: '/storage',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
-const AdminSettingsStorefrontKeysRoute =
-  AdminSettingsStorefrontKeysRouteImport.update({
-    id: '/storefront-keys',
-    path: '/storefront-keys',
-    getParentRoute: () => AdminSettingsRouteRoute,
-  } as any)
+const AdminSettingsStorefrontKeysRoute = AdminSettingsStorefrontKeysRouteImport.update({
+  id: '/storefront-keys',
+  path: '/storefront-keys',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsTaxesRoute = AdminSettingsTaxesRouteImport.update({
   id: '/taxes',
   path: '/taxes',
@@ -286,41 +280,36 @@ const AdminSettingsWebhooksRoute = AdminSettingsWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
-const AdminOnlineStoreNavigationIdRoute =
-  AdminOnlineStoreNavigationIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AdminOnlineStoreNavigationRouteRoute,
-  } as any)
+const AdminOnlineStoreNavigationIdRoute = AdminOnlineStoreNavigationIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminOnlineStoreNavigationRouteRoute,
+} as any)
 const AdminOnlineStorePagesIdRoute = AdminOnlineStorePagesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AdminOnlineStorePagesRouteRoute,
 } as any)
-const AdminOnlineStoreThemesIdRoute =
-  AdminOnlineStoreThemesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
-  } as any)
-const AdminOnlineStoreThemesSelectRoute =
-  AdminOnlineStoreThemesSelectRouteImport.update({
-    id: '/select',
-    path: '/select',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
-  } as any)
-const AdminSettingsNotificationsNotificationRoute =
-  AdminSettingsNotificationsNotificationRouteImport.update({
-    id: '/$notification',
-    path: '/$notification',
-    getParentRoute: () => AdminSettingsNotificationsRouteRoute,
-  } as any)
-const AdminOnlineStoreThemesIdCodeRoute =
-  AdminOnlineStoreThemesIdCodeRouteImport.update({
-    id: '/$id_/code',
-    path: '/$id/code',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
-  } as any)
+const AdminOnlineStoreThemesIdRoute = AdminOnlineStoreThemesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
+} as any)
+const AdminOnlineStoreThemesSelectRoute = AdminOnlineStoreThemesSelectRouteImport.update({
+  id: '/select',
+  path: '/select',
+  getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
+} as any)
+const AdminSettingsNotificationsNotificationRoute = AdminSettingsNotificationsNotificationRouteImport.update({
+  id: '/$notification',
+  path: '/$notification',
+  getParentRoute: () => AdminSettingsNotificationsRouteRoute,
+} as any)
+const AdminOnlineStoreThemesIdCodeRoute = AdminOnlineStoreThemesIdCodeRouteImport.update({
+  id: '/$id_/code',
+  path: '/$id/code',
+  getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -1006,9 +995,7 @@ const AdminAppsRouteRouteChildren: AdminAppsRouteRouteChildren = {
   AdminAppsIdRoute: AdminAppsIdRoute,
 }
 
-const AdminAppsRouteRouteWithChildren = AdminAppsRouteRoute._addFileChildren(
-  AdminAppsRouteRouteChildren,
-)
+const AdminAppsRouteRouteWithChildren = AdminAppsRouteRoute._addFileChildren(AdminAppsRouteRouteChildren)
 
 interface AdminCollectionsRouteRouteChildren {
   AdminCollectionsIdRoute: typeof AdminCollectionsIdRoute
@@ -1020,10 +1007,9 @@ const AdminCollectionsRouteRouteChildren: AdminCollectionsRouteRouteChildren = {
   AdminCollectionsNewRoute: AdminCollectionsNewRoute,
 }
 
-const AdminCollectionsRouteRouteWithChildren =
-  AdminCollectionsRouteRoute._addFileChildren(
-    AdminCollectionsRouteRouteChildren,
-  )
+const AdminCollectionsRouteRouteWithChildren = AdminCollectionsRouteRoute._addFileChildren(
+  AdminCollectionsRouteRouteChildren,
+)
 
 interface AdminCustomersRouteRouteChildren {
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
@@ -1033,36 +1019,31 @@ const AdminCustomersRouteRouteChildren: AdminCustomersRouteRouteChildren = {
   AdminCustomersIdRoute: AdminCustomersIdRoute,
 }
 
-const AdminCustomersRouteRouteWithChildren =
-  AdminCustomersRouteRoute._addFileChildren(AdminCustomersRouteRouteChildren)
+const AdminCustomersRouteRouteWithChildren = AdminCustomersRouteRoute._addFileChildren(AdminCustomersRouteRouteChildren)
 
 interface AdminOnlineStoreNavigationRouteRouteChildren {
   AdminOnlineStoreNavigationIdRoute: typeof AdminOnlineStoreNavigationIdRoute
 }
 
-const AdminOnlineStoreNavigationRouteRouteChildren: AdminOnlineStoreNavigationRouteRouteChildren =
-  {
-    AdminOnlineStoreNavigationIdRoute: AdminOnlineStoreNavigationIdRoute,
-  }
+const AdminOnlineStoreNavigationRouteRouteChildren: AdminOnlineStoreNavigationRouteRouteChildren = {
+  AdminOnlineStoreNavigationIdRoute: AdminOnlineStoreNavigationIdRoute,
+}
 
-const AdminOnlineStoreNavigationRouteRouteWithChildren =
-  AdminOnlineStoreNavigationRouteRoute._addFileChildren(
-    AdminOnlineStoreNavigationRouteRouteChildren,
-  )
+const AdminOnlineStoreNavigationRouteRouteWithChildren = AdminOnlineStoreNavigationRouteRoute._addFileChildren(
+  AdminOnlineStoreNavigationRouteRouteChildren,
+)
 
 interface AdminOnlineStorePagesRouteRouteChildren {
   AdminOnlineStorePagesIdRoute: typeof AdminOnlineStorePagesIdRoute
 }
 
-const AdminOnlineStorePagesRouteRouteChildren: AdminOnlineStorePagesRouteRouteChildren =
-  {
-    AdminOnlineStorePagesIdRoute: AdminOnlineStorePagesIdRoute,
-  }
+const AdminOnlineStorePagesRouteRouteChildren: AdminOnlineStorePagesRouteRouteChildren = {
+  AdminOnlineStorePagesIdRoute: AdminOnlineStorePagesIdRoute,
+}
 
-const AdminOnlineStorePagesRouteRouteWithChildren =
-  AdminOnlineStorePagesRouteRoute._addFileChildren(
-    AdminOnlineStorePagesRouteRouteChildren,
-  )
+const AdminOnlineStorePagesRouteRouteWithChildren = AdminOnlineStorePagesRouteRoute._addFileChildren(
+  AdminOnlineStorePagesRouteRouteChildren,
+)
 
 interface AdminOnlineStoreThemesRouteRouteChildren {
   AdminOnlineStoreThemesIdRoute: typeof AdminOnlineStoreThemesIdRoute
@@ -1070,17 +1051,15 @@ interface AdminOnlineStoreThemesRouteRouteChildren {
   AdminOnlineStoreThemesIdCodeRoute: typeof AdminOnlineStoreThemesIdCodeRoute
 }
 
-const AdminOnlineStoreThemesRouteRouteChildren: AdminOnlineStoreThemesRouteRouteChildren =
-  {
-    AdminOnlineStoreThemesIdRoute: AdminOnlineStoreThemesIdRoute,
-    AdminOnlineStoreThemesSelectRoute: AdminOnlineStoreThemesSelectRoute,
-    AdminOnlineStoreThemesIdCodeRoute: AdminOnlineStoreThemesIdCodeRoute,
-  }
+const AdminOnlineStoreThemesRouteRouteChildren: AdminOnlineStoreThemesRouteRouteChildren = {
+  AdminOnlineStoreThemesIdRoute: AdminOnlineStoreThemesIdRoute,
+  AdminOnlineStoreThemesSelectRoute: AdminOnlineStoreThemesSelectRoute,
+  AdminOnlineStoreThemesIdCodeRoute: AdminOnlineStoreThemesIdCodeRoute,
+}
 
-const AdminOnlineStoreThemesRouteRouteWithChildren =
-  AdminOnlineStoreThemesRouteRoute._addFileChildren(
-    AdminOnlineStoreThemesRouteRouteChildren,
-  )
+const AdminOnlineStoreThemesRouteRouteWithChildren = AdminOnlineStoreThemesRouteRoute._addFileChildren(
+  AdminOnlineStoreThemesRouteRouteChildren,
+)
 
 interface AdminOnlineStoreRouteRouteChildren {
   AdminOnlineStoreNavigationRouteRoute: typeof AdminOnlineStoreNavigationRouteRouteWithChildren
@@ -1089,17 +1068,14 @@ interface AdminOnlineStoreRouteRouteChildren {
 }
 
 const AdminOnlineStoreRouteRouteChildren: AdminOnlineStoreRouteRouteChildren = {
-  AdminOnlineStoreNavigationRouteRoute:
-    AdminOnlineStoreNavigationRouteRouteWithChildren,
+  AdminOnlineStoreNavigationRouteRoute: AdminOnlineStoreNavigationRouteRouteWithChildren,
   AdminOnlineStorePagesRouteRoute: AdminOnlineStorePagesRouteRouteWithChildren,
-  AdminOnlineStoreThemesRouteRoute:
-    AdminOnlineStoreThemesRouteRouteWithChildren,
+  AdminOnlineStoreThemesRouteRoute: AdminOnlineStoreThemesRouteRouteWithChildren,
 }
 
-const AdminOnlineStoreRouteRouteWithChildren =
-  AdminOnlineStoreRouteRoute._addFileChildren(
-    AdminOnlineStoreRouteRouteChildren,
-  )
+const AdminOnlineStoreRouteRouteWithChildren = AdminOnlineStoreRouteRoute._addFileChildren(
+  AdminOnlineStoreRouteRouteChildren,
+)
 
 interface AdminOrdersRouteRouteChildren {
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
@@ -1109,8 +1085,7 @@ const AdminOrdersRouteRouteChildren: AdminOrdersRouteRouteChildren = {
   AdminOrdersIdRoute: AdminOrdersIdRoute,
 }
 
-const AdminOrdersRouteRouteWithChildren =
-  AdminOrdersRouteRoute._addFileChildren(AdminOrdersRouteRouteChildren)
+const AdminOrdersRouteRouteWithChildren = AdminOrdersRouteRoute._addFileChildren(AdminOrdersRouteRouteChildren)
 
 interface AdminProductsRouteRouteChildren {
   AdminProductsIdRoute: typeof AdminProductsIdRoute
@@ -1120,23 +1095,19 @@ const AdminProductsRouteRouteChildren: AdminProductsRouteRouteChildren = {
   AdminProductsIdRoute: AdminProductsIdRoute,
 }
 
-const AdminProductsRouteRouteWithChildren =
-  AdminProductsRouteRoute._addFileChildren(AdminProductsRouteRouteChildren)
+const AdminProductsRouteRouteWithChildren = AdminProductsRouteRoute._addFileChildren(AdminProductsRouteRouteChildren)
 
 interface AdminSettingsNotificationsRouteRouteChildren {
   AdminSettingsNotificationsNotificationRoute: typeof AdminSettingsNotificationsNotificationRoute
 }
 
-const AdminSettingsNotificationsRouteRouteChildren: AdminSettingsNotificationsRouteRouteChildren =
-  {
-    AdminSettingsNotificationsNotificationRoute:
-      AdminSettingsNotificationsNotificationRoute,
-  }
+const AdminSettingsNotificationsRouteRouteChildren: AdminSettingsNotificationsRouteRouteChildren = {
+  AdminSettingsNotificationsNotificationRoute: AdminSettingsNotificationsNotificationRoute,
+}
 
-const AdminSettingsNotificationsRouteRouteWithChildren =
-  AdminSettingsNotificationsRouteRoute._addFileChildren(
-    AdminSettingsNotificationsRouteRouteChildren,
-  )
+const AdminSettingsNotificationsRouteRouteWithChildren = AdminSettingsNotificationsRouteRoute._addFileChildren(
+  AdminSettingsNotificationsRouteRouteChildren,
+)
 
 interface AdminSettingsRouteRouteChildren {
   AdminSettingsNotificationsRouteRoute: typeof AdminSettingsNotificationsRouteRouteWithChildren
@@ -1157,8 +1128,7 @@ interface AdminSettingsRouteRouteChildren {
 }
 
 const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
-  AdminSettingsNotificationsRouteRoute:
-    AdminSettingsNotificationsRouteRouteWithChildren,
+  AdminSettingsNotificationsRouteRoute: AdminSettingsNotificationsRouteRouteWithChildren,
   AdminSettingsAiRoute: AdminSettingsAiRoute,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
@@ -1175,8 +1145,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsWebhooksRoute: AdminSettingsWebhooksRoute,
 }
 
-const AdminSettingsRouteRouteWithChildren =
-  AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
+const AdminSettingsRouteRouteWithChildren = AdminSettingsRouteRoute._addFileChildren(AdminSettingsRouteRouteChildren)
 
 interface AdminRouteRouteChildren {
   AdminAppsRouteRoute: typeof AdminAppsRouteRouteWithChildren
@@ -1216,9 +1185,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminOauthAuthorizeRoute: AdminOauthAuthorizeRoute,
 }
 
-const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
-  AdminRouteRouteChildren,
-)
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(AdminRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1226,9 +1193,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSplatRoute: ApiSplatRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
 }
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
 import type { createStart } from '@tanstack/react-start'

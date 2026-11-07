@@ -1,28 +1,16 @@
-import { createServerFn } from '@tanstack/react-start'
 import { appService, marketplaceService } from '@shopnex/apps'
-import { getAdminContext } from '@/lib/session.functions'
-import { embeddedAppAccess } from './access'
+import { adminFn, publicFn } from '@/lib/server-fn'
 
-export const getMarketplaceInstanceUrl = createServerFn({ method: 'GET' }).handler(() =>
-  marketplaceService.instanceUrl(),
-)
+// Public: the instance's own URL, which every embedded app is also told
+export const getMarketplaceInstanceUrl = publicFn({ method: 'GET' }).handler(() => marketplaceService.instanceUrl())
 
-export const getEmbeddedApp = createServerFn({ method: 'GET' })
+export const getEmbeddedApp = adminFn
   .validator((input: { id: string }) => ({ id: input.id }))
-  .handler(async ({ data }) => {
-    // This is a public RPC endpoint of its own: authorize here, from the request's session, not in the page loader.
-    const access = embeddedAppAccess(await getAdminContext())
-    if (access.status === 'none') return null
-    if (access.status === 'forbidden') return { forbidden: true as const }
-    const { shopId, userId } = access
+  .handler(async ({ data, context: { shopId, userId } }) => {
     const installation = await appService.getInstallationWithApp(shopId, data.id)
     if (!installation) return null
     const instanceUrl = await marketplaceService.instanceUrl()
-    const token = await appService.createSessionToken({
-      shopId,
-      installationId: installation.id,
-      userId,
-    })
+    const token = await appService.createSessionToken({ shopId, installationId: installation.id, userId })
     const src = new URL(installation.app.appUrl)
     src.searchParams.set('shop_id', shopId)
     src.searchParams.set('instance', instanceUrl)
