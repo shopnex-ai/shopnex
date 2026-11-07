@@ -3,7 +3,8 @@
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useController, useWatch } from 'react-hook-form'
-import { REQUIRED_MARK, TextareaField, TextField, useZodForm } from '@/components/admin/form'
+import { FormError, REQUIRED_MARK, TextareaField, TextField, useZodForm } from '@/components/admin/form'
+import { Button } from '@/components/ui/button'
 import {
   Field,
   FieldDescription,
@@ -16,7 +17,7 @@ import {
 import { formatMoney } from '@/lib/money'
 import { buyer, postalCodeRequired, regionRequired } from './buyer-schema'
 import { placeOrder, quoteRates, type CheckoutFields } from './functions'
-import { PlaceOrderButton, useCheckoutTotals } from './totals'
+import { useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
   id: string
@@ -80,7 +81,7 @@ export function CheckoutForm({
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
   })
   // Tax follows the address as it's typed, and the order summary beside the form follows the totals
-  const { setCountry, setProvince, setShippingCents, setAction } = useCheckoutTotals()
+  const { setCountry, setProvince, setShippingCents, totals, shippingUnknown } = useCheckoutTotals()
   useEffect(() => setCountry(country), [country, setCountry])
   useEffect(() => setProvince(province), [province, setProvince])
   const money = (cents: number) => formatMoney(cents, currency)
@@ -175,14 +176,13 @@ export function CheckoutForm({
     )
   }
 
-  // The summary beside the form shows the same button
-  const label = formState.isSubmitting ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'
-  const disabled = formState.isSubmitting
-  const error = formState.errors.root?.message
-  useEffect(() => {
-    setAction({ label, disabled, error })
-    return () => setAction(null)
-  }, [label, disabled, error, setAction])
+  // The amount rides on the button once shipping is known (until then the total would still change)
+  const action = method?.offsite ? 'Continue to payment' : 'Place order'
+  const label = formState.isSubmitting
+    ? 'Placing order…'
+    : shippingUnknown
+      ? action
+      : `${action} · ${money(totals.totalCents)}`
 
   const optionalAddressFields: OptionalField[] = [
     { name: 'address2', label: 'Apartment, suite, etc.', props: { autoComplete: 'address-line2' } },
@@ -192,7 +192,6 @@ export function CheckoutForm({
 
   return (
     <form
-      id="checkout-form"
       onSubmit={onSubmit}
       onBlurCapture={(e) => {
         if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
@@ -321,9 +320,17 @@ export function CheckoutForm({
         addLinks([{ name: 'note', label: 'Order note' }])
       )}
 
-      {/* On wide screens the button sits under the total, in the summary */}
-      <div className="md:hidden">
-        <PlaceOrderButton />
+      <div className="space-y-3">
+        <FormError form={form} />
+        <Button
+          data-ph-capture="place-order"
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={formState.isSubmitting}
+        >
+          {label}
+        </Button>
       </div>
     </form>
   )

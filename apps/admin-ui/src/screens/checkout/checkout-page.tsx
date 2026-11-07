@@ -11,7 +11,7 @@ import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
 import { DiscountCodeForm } from './discount-code-form'
 import { OffsitePayment } from './offsite-payment'
-import { PlaceOrderButton, SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
+import { SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
 
 export type CheckoutView = Exclude<Awaited<ReturnType<typeof getCheckout>>, null>
 
@@ -90,9 +90,6 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
                   <TotalsBreakdown />
                 </div>
               )}
-              <div className="mt-4 hidden md:block">
-                <PlaceOrderButton />
-              </div>
             </SummaryToggle>
           </aside>
         </div>

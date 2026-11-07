@@ -5,17 +5,12 @@
 import { ChevronDownIcon, ShoppingBagIcon } from 'lucide-react'
 import { Fragment, createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { calculate, taxRateFor, type PricingDiscount, type PricingTaxRate } from '@shopnex/pricing/calculate'
-import { Button } from '@/components/ui/button'
-import { FieldError } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 export type TaxContextView = { taxesIncluded: boolean; taxShipping: boolean; taxRates: PricingTaxRate[] }
 
 type Totals = ReturnType<typeof calculate>
-
-/** What the "place order" button shows: the form owns it, the summary beside it renders the same button too */
-export type PlaceOrderAction = { label: string; disabled: boolean; error?: string }
 
 type TotalsContextValue = {
   totals: Totals
@@ -28,8 +23,6 @@ type TotalsContextValue = {
   setProvince: (value: string) => void
   /** null while no shipping method is available */
   setShippingCents: (value: number | null) => void
-  action: PlaceOrderAction | null
-  setAction: (value: PlaceOrderAction | null) => void
 }
 
 const TotalsContext = createContext<TotalsContextValue | null>(null)
@@ -63,7 +56,6 @@ export function TotalsProvider({
   const [country, setCountry] = useState(defaultCountry)
   const [province, setProvince] = useState('')
   const [shippingCents, setShippingCents] = useState<number | null>(initialShippingCents)
-  const [action, setAction] = useState<PlaceOrderAction | null>(null)
   const value = useMemo<TotalsContextValue>(
     () => ({
       totals: calculate({
@@ -81,10 +73,8 @@ export function TotalsProvider({
       setCountry,
       setProvince,
       setShippingCents,
-      action,
-      setAction,
     }),
-    [lineTotals, shippingCents, discount, tax, country, province, currency, action],
+    [lineTotals, shippingCents, discount, tax, country, province, currency],
   )
   return <TotalsContext.Provider value={value}>{children}</TotalsContext.Provider>
 }
@@ -125,27 +115,6 @@ export function TotalsBreakdown() {
           </dd>
         ))}
     </dl>
-  )
-}
-
-/** Submits the checkout form from anywhere on the page (the form has id="checkout-form") */
-export function PlaceOrderButton() {
-  const { action } = useCheckoutTotals()
-  if (!action) return null
-  return (
-    <div className="space-y-2">
-      {action.error && <FieldError>{action.error}</FieldError>}
-      <Button
-        data-ph-capture="place-order"
-        type="submit"
-        form="checkout-form"
-        size="lg"
-        className="w-full"
-        disabled={action.disabled}
-      >
-        {action.label}
-      </Button>
-    </div>
   )
 }
 
