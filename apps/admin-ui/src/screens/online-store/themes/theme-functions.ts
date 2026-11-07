@@ -1,4 +1,3 @@
-import { createServerFn } from '@tanstack/react-start'
 import {
   THEME_DEFINITION_PATH,
   defaultDocument,
@@ -7,6 +6,7 @@ import {
   type ThemeDocument,
 } from '@shopnex/storefront-sdk/theme'
 import { serverClient } from '@/lib/orpc.server'
+import { adminFn } from '@/lib/server-fn'
 import type { PreviewCatalog } from './preview-pages'
 
 export type Storefront = {
@@ -28,55 +28,68 @@ async function loadPreviewCatalog(storefrontUrl: string | null): Promise<Preview
   return { products: [], collections: [], pages: [] }
 }
 
-export const loadStorefront = createServerFn({ method: 'GET' })
-  .validator((storefrontUrl: string | null) => storefrontUrl)
-  .handler(async ({ data: storefrontUrl }): Promise<StorefrontResult> => {
-    if (!storefrontUrl)
+// The URL is the shop's own saved setting, never an input: fetching a caller's URL would be an open proxy (SSRF)
+async function fetchStorefront(storefrontUrl: string | null): Promise<StorefrontResult> {
+  if (!storefrontUrl)
+    return {
+      storefront: null,
+      storefrontError: 'Set your Storefront URL under Settings, or STOREFRONT_URL in .env.',
+    }
+  const url = new URL(THEME_DEFINITION_PATH, storefrontUrl)
+  let themes
+  try {
+    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
+    if (!response.ok) return { storefront: null, storefrontError: `${url} answered ${response.status}` }
+    const parsed = parseThemeManifest(await response.json())
+    if (!parsed.success)
       return {
         storefront: null,
-        storefrontError: 'Set your Storefront URL under Settings, or STOREFRONT_URL in .env.',
+        storefrontError: `${url} isn't a valid theme manifest: ${parsed.error.issues[0]?.message}`,
       }
-    const url = new URL(THEME_DEFINITION_PATH, storefrontUrl)
-    let themes
-    try {
-      const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) })
-      if (!response.ok) return { storefront: null, storefrontError: `${url} answered ${response.status}` }
-      const parsed = parseThemeManifest(await response.json())
-      if (!parsed.success)
-        return {
-          storefront: null,
-          storefrontError: `${url} isn't a valid theme manifest: ${parsed.error.issues[0]?.message}`,
-        }
-      themes = parsed.themes
-    } catch {
-      return { storefront: null, storefrontError: `Could not reach ${url}. Is the storefront running?` }
-    }
-    const documents = themes.map((definition) => ({
-      id: definition.id,
-      name: definition.name,
-      defaults: defaultDocument(definition),
-      definition,
-    }))
-    const first = documents[0]
-    if (first) await serverClient.admin.themes.ensure({ themeId: first.id, name: first.name, document: first.defaults })
-    return { storefront: { url: storefrontUrl, themes: documents }, storefrontError: null }
-  })
+    themes = parsed.themes
+  } catch {
+    return { storefront: null, storefrontError: `Could not reach ${url}. Is the storefront running?` }
+  }
+  const documents = themes.map((definition) => ({
+    id: definition.id,
+    name: definition.name,
+    defaults: defaultDocument(definition),
+    definition,
+  }))
+  return { storefront: { url: storefrontUrl, themes: documents }, storefrontError: null }
+}
 
-export const loadThemeEditor = createServerFn({ method: 'GET' })
-  .validator((input: { id: string; storefrontUrl: string | null }) => input)
-  .handler(async ({ data }) => {
+// Makes sure the storefront's first theme exists in the shop (serverClient is passed in so that this module's
+// import of it stays inside the handlers, which the client build removes)
+async function ensureFirstTheme(client: typeof serverClient, result: StorefrontResult) {
+  const first = result.storefront?.themes[0]
+  if (first) await client.admin.themes.ensure({ themeId: first.id, name: first.name, document: first.defaults })
+}
+
+export const loadStorefront = adminFn.handler(async ({ context }) => {
+  const result = await fetchStorefront(context.shop.storefrontUrl)
+  await ensureFirstTheme(serverClient, result)
+  return result
+})
+
+export const loadThemeEditor = adminFn
+  .validator((input: { id: string }) => ({ id: input.id }))
+  .handler(async ({ data, context }) => {
     const theme = await serverClient.admin.themes.get({ id: data.id })
-    const storefront = await loadStorefront({ data: data.storefrontUrl })
+    const storefront = await fetchStorefront(context.shop.storefrontUrl)
+    await ensureFirstTheme(serverClient, storefront)
     const definition = storefront.storefront?.themes.find((item) => item.id === theme.themeId)?.definition
     const previewCatalog = await loadPreviewCatalog(storefront.storefront?.url ?? null)
     return { theme, storefront, definition: definition ?? null, previewCatalog }
   })
 
-export const loadThemeCode = createServerFn({ method: 'GET' })
-  .validator((input: { id: string; storefrontUrl: string | null }) => input)
-  .handler(async ({ data }) => {
+export const loadThemeCode = adminFn
+  .validator((input: { id: string }) => ({ id: input.id }))
+  .handler(async ({ data, context }) => {
     const { draft, published: __, ...theme } = await serverClient.admin.themes.get({ id: data.id })
-    const { storefront } = await loadStorefront({ data: data.storefrontUrl })
+    const result = await fetchStorefront(context.shop.storefrontUrl)
+    await ensureFirstTheme(serverClient, result)
+    const { storefront } = result
     const definition = storefront?.themes.find((item) => item.id === theme.themeId)?.definition
     const previewCatalog = await loadPreviewCatalog(storefront?.url ?? null)
     // Which sections each page has and where it previews, so the code editor can point the preview at one

@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from './server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth, isSuperAdmin } from '@shopnex/auth'
 
@@ -74,7 +74,7 @@ async function requireSuperAdmin(): Promise<boolean> {
   return !!session && isSuperAdmin(session.user)
 }
 
-export const getUpdateStatus = createServerFn({ method: 'GET' }).handler(async (): Promise<UpdateStatus | null> => {
+export const getUpdateStatus = publicFn({ method: 'GET' }).handler(async (): Promise<UpdateStatus | null> => {
   if (!(await requireSuperAdmin())) return null
   const current = process.env.APP_VERSION || null
   const none = { current, latest: null, updateAvailable: false, releaseUrl: null, canUpdate: false }
@@ -92,7 +92,7 @@ export const getUpdateStatus = createServerFn({ method: 'GET' }).handler(async (
 })
 
 // The host updater writes this file; the folder is mounted read-only here
-export const getUpdateProgress = createServerFn({ method: 'GET' }).handler(async (): Promise<UpdateProgress | null> => {
+export const getUpdateProgress = publicFn({ method: 'GET' }).handler(async (): Promise<UpdateProgress | null> => {
   const dir = updaterDir()
   if (!dir || !(await requireSuperAdmin())) return null
   try {
@@ -112,7 +112,7 @@ export const getUpdateProgress = createServerFn({ method: 'GET' }).handler(async
 
 // Asks the host updater to move to the newest release. The browser never names the version: it has to be the
 // release GitHub reports as latest, and the host script checks it again before touching anything.
-export const requestUpdate = createServerFn({ method: 'POST' }).handler(async (): Promise<{ requestedAt: number }> => {
+export const requestUpdate = publicFn({ method: 'POST' }).handler(async (): Promise<{ requestedAt: number }> => {
   const dir = updaterDir()
   if (!dir || !(await requireSuperAdmin())) throw new Error('Updating from the dashboard is not available here.')
   const current = process.env.APP_VERSION

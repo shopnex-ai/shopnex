@@ -1,9 +1,9 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from '@/lib/server-fn'
 import { getOpenInvitation, userExists } from '@shopnex/tenancy'
 import { enabledSocialProviders } from '@shopnex/auth'
 import { getAdminContext } from '@/lib/session.functions'
 
-export const loadInvitation = createServerFn({ method: 'GET' })
+export const loadInvitation = publicFn({ method: 'GET' })
   .validator((id: string) => id)
   .handler(async ({ data: id }) => {
     const [invitation, access] = await Promise.all([getOpenInvitation(id), getAdminContext()])

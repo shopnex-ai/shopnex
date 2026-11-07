@@ -1,15 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { NoAccess } from '@/components/admin/no-access'
+import { managerAccess } from '@/lib/admin-access'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmbeddedApp } from '@/screens/apps/[id]/embedded-app'
 import { getEmbeddedApp } from '@/screens/apps/functions'
 
 export const Route = createFileRoute('/admin/apps/$id')({
-  loader: async ({ params, context }) => {
-    const { tenant, session } = context.access
-    if (!tenant || !session) return null
-    if (!tenant.superAdmin && tenant.role !== 'owner' && tenant.role !== 'admin') return { forbidden: true as const }
-    return getEmbeddedApp({ data: { id: params.id, shopId: tenant.shop.id, userId: session.user.id } })
+  loader: ({ params, context }) => {
+    // The server function enforces this too; the check here is for the page to show a message, not an error
+    const access = managerAccess(context.access)
+    if (access.status === 'none') return null
+    if (access.status === 'forbidden') return { forbidden: true as const }
+    return getEmbeddedApp({ data: { id: params.id } })
   },
   pendingMs: 0,
   pendingComponent: () => <Skeleton className="h-[calc(100svh-8rem)] w-full" />,
