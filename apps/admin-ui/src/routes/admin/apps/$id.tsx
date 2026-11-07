@@ -5,12 +5,7 @@ import { EmbeddedApp } from '@/screens/apps/[id]/embedded-app'
 import { getEmbeddedApp } from '@/screens/apps/functions'
 
 export const Route = createFileRoute('/admin/apps/$id')({
-  loader: async ({ params, context }) => {
-    const { tenant, session } = context.access
-    if (!tenant || !session) return null
-    if (!tenant.superAdmin && tenant.role !== 'owner' && tenant.role !== 'admin') return { forbidden: true as const }
-    return getEmbeddedApp({ data: { id: params.id, shopId: tenant.shop.id, userId: session.user.id } })
-  },
+  loader: ({ params }) => getEmbeddedApp({ data: { id: params.id } }),
   pendingMs: 0,
   pendingComponent: () => <Skeleton className="h-[calc(100svh-8rem)] w-full" />,
   component: EmbeddedAppPage,
