@@ -119,10 +119,9 @@ async function placeOrder(page: Page) {
   await page.getByLabel('City').fill('Somewhere')
   await page.getByLabel('Postal code').fill('10001')
   await page.getByLabel('State / region').fill('NY')
-  const shipping = page.locator('input[name="shippingRateId"]').first()
-  await expect(shipping).toBeVisible()
-  await shipping.check()
-  await page.getByLabel(METHOD).check()
+  await expect(page.getByText(METHOD)).toBeVisible()
+  // The flat rate is preselected and shown in the summary
+  await expect(page.getByText('$5.00').first()).toBeVisible()
   await page.getByRole('button', { name: 'Continue to payment' }).click()
   await page.waitForURL(`${appUrl}/pay/*`)
   await expect(page.getByText('Fake provider')).toBeVisible()

@@ -39,23 +39,32 @@ type BaseFieldProps<T extends FieldValues> = {
   description?: ReactNode
 }
 
+/** Class for a label of a required field: an asterisk after the text */
+export const REQUIRED_MARK =
+  "after:-ml-1 after:text-muted-foreground after:content-['*'] group-data-[invalid=true]/field:after:text-destructive"
+
 // Label + control + description + error, wired for accessibility
 function FieldShell({
   id,
   label,
   description,
   error,
+  required,
   children,
 }: {
   id: string
   label: string
   description?: ReactNode
   error?: { message?: string }
+  /** Marks the label with an asterisk (drawn by CSS, so the accessible name stays the label) */
+  required?: boolean
   children: ReactNode
 }) {
   return (
     <Field data-invalid={error ? true : undefined}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} className={required ? REQUIRED_MARK : undefined}>
+        {label}
+      </FieldLabel>
       {children}
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldError errors={[error]} />
@@ -74,14 +83,16 @@ export function TextField<T extends FieldValues>({
   label,
   description,
   nullable,
+  required,
   ...inputProps
 }: TextFieldProps<T>) {
   const id = useId()
   const { field, fieldState } = useController({ control, name })
   return (
-    <FieldShell id={id} label={label} description={description} error={fieldState.error}>
+    <FieldShell id={id} label={label} description={description} error={fieldState.error} required={required}>
       <Input
         {...inputProps}
+        required={required}
         id={id}
         ref={field.ref}
         name={field.name}

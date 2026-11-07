@@ -1,7 +1,9 @@
 'use client'
 
-import { Fragment, useRef, useState, type ComponentProps, type FormEvent } from 'react'
-import { calculate, taxRateFor, type PricingDiscount, type PricingTaxRate } from '@shopnex/pricing/calculate'
+import { PlusIcon } from 'lucide-react'
+import { useEffect, useRef, useState, type ComponentProps } from 'react'
+import { useController, useWatch } from 'react-hook-form'
+import { FormError, REQUIRED_MARK, TextareaField, TextField, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import {
   Field,
@@ -12,10 +14,10 @@ import {
   FieldLegend,
   FieldSet,
 } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { formatMoney } from '@/lib/money'
-import { placeOrder, quoteRates, type CheckoutFields, type PlaceOrderState } from './functions'
+import { buyer, postalCodeRequired, regionRequired } from './buyer-schema'
+import { placeOrder, quoteRates, type CheckoutFields } from './functions'
+import { useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
   id: string
@@ -33,63 +35,71 @@ export type CheckoutOptionsView = {
   paymentMethods: { id: string; name: string; additionalDetails: string | null; offsite: boolean }[]
 }
 
-export type TaxContextView = { taxesIncluded: boolean; taxShipping: boolean; taxRates: PricingTaxRate[] }
-
 export function CheckoutForm({
   token,
   currency,
-  lineTotals,
-  discount,
-  tax,
   options,
   defaultCountry,
   countries,
 }: {
   token: string
   currency: string
-  /** Cart line totals (unit price × quantity) */
-  lineTotals: number[]
-  /** The cart's discount code, when it applies */
-  discount: PricingDiscount | null
-  tax: TaxContextView
   options: CheckoutOptionsView
   defaultCountry: string
   countries: { value: string; label: string }[]
 }) {
-  const [state, setState] = useState<PlaceOrderState>({})
-  const [pending, setPending] = useState(false)
+  // The server's schema, so the browser rejects exactly what `placeOrder` would. Values stay the raw strings typed
+  const form = useZodForm(buyer, {
+    mode: 'onTouched',
+    defaultValues: {
+      email: '',
+      firstName: '',
+      lastName: '',
+      company: '',
+      address1: '',
+      address2: '',
+      city: '',
+      province: '',
+      countryCode: defaultCountry,
+      zip: '',
+      phone: '',
+      shippingRateId: options.shippingRates[0]?.id ?? '',
+      paymentMethodId: options.paymentMethods[0]?.id ?? '',
+      note: '',
+    },
+  })
+  const { control, formState } = form
   const [rates, setRates] = useState(options.shippingRates)
   const [ratesPending, setRatesPending] = useState(false)
   // A quote for the address has come back (empty or not): no rates then means none for this address
   const [quoted, setQuoted] = useState(false)
-  const [rateId, setRateId] = useState(state.values?.shippingRateId || options.shippingRates[0]?.id || '')
-  const formRef = useRef<HTMLFormElement>(null)
   const latestQuote = useRef(0)
-  const [methodId, setMethodId] = useState(state.values?.paymentMethodId || options.paymentMethods[0]?.id || '')
-  // Tax follows the address as it's typed
-  const [country, setCountry] = useState(state.values?.countryCode || defaultCountry)
-  const [province, setProvince] = useState(state.values?.province ?? '')
+  // Optional fields stay behind a link until the buyer wants them, and appear in the order they are opened
+  const [opened, setOpened] = useState<string[]>([])
+  const [rateId = '', methodId = '', country = defaultCountry, province = ''] = useWatch({
+    control,
+    name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
+  })
+  // Tax follows the address as it's typed, and the order summary beside the form follows the totals
+  const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
+  useEffect(() => setCountry(country), [country, setCountry])
+  useEffect(() => setProvince(province), [province, setProvince])
   const money = (cents: number) => formatMoney(cents, currency)
   const method = options.paymentMethods.find((m) => m.id === methodId)
-  // Same math the server uses when the order is placed
-  const totals = calculate({
-    lines: lineTotals,
-    shippingCents: rates.find((r) => r.id === rateId)?.priceCents ?? 0,
-    discount,
-    taxRate: taxRateFor(tax.taxRates, { countryCode: country, province }),
-    taxesIncluded: tax.taxesIncluded,
-    taxShipping: tax.taxShipping,
-  })
+  const shippingCents = rates.find((r) => r.id === rateId)?.priceCents ?? (options.liveRates ? null : 0)
+  useEffect(() => setShippingCents(shippingCents), [shippingCents, setShippingCents])
+  const countryField = useController({ control, name: 'countryCode' })
+  const setRateId = (id: string) => form.setValue('shippingRateId', id)
+  const setMethodId = (id: string) => form.setValue('paymentMethodId', id)
 
   // Carrier services quote for the address, so ask again when it changes (flat rates come back unchanged).
   // Only the newest answer counts: the buyer may keep typing.
   async function refreshRates() {
-    const form = formRef.current
-    if (!options.liveRates || !form) return
-    const data = new FormData(form)
-    const text = (name: string) => String(data.get(name) ?? '').trim() || undefined
-    const countryCode = text('countryCode')
-    if (!countryCode || !text('address1') || !text('city')) return
+    if (!options.liveRates) return
+    const values = form.getValues()
+    const text = (value: string | undefined) => value?.trim() || undefined
+    const countryCode = text(values.countryCode)
+    if (!countryCode || !text(values.address1) || !text(values.city)) return
     const quote = ++latestQuote.current
     setRatesPending(true)
     try {
@@ -98,10 +108,10 @@ export function CheckoutForm({
           token,
           address: {
             countryCode,
-            province: text('province'),
-            city: text('city'),
-            zip: text('zip'),
-            address1: text('address1'),
+            province: text(values.province),
+            city: text(values.city),
+            zip: text(values.zip),
+            address1: text(values.address1),
           },
         },
       })
@@ -109,7 +119,7 @@ export function CheckoutForm({
       setRates(next)
       setQuoted(true)
       // Keep the buyer's choice while it is still offered
-      setRateId((current) => (next.some((r) => r.id === current) ? current : (next[0]?.id ?? '')))
+      if (!next.some((r) => r.id === form.getValues('shippingRateId'))) setRateId(next[0]?.id ?? '')
     } catch {
       // The shipping methods already shown stay: the order is checked again when it is placed
     } finally {
@@ -117,42 +127,65 @@ export function CheckoutForm({
     }
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setPending(true)
-    try {
-      const values = Object.fromEntries(new FormData(event.currentTarget).entries()) as CheckoutFields
-      const result = await placeOrder({ data: { token, values } })
-      if (result.redirectTo) window.location.assign(result.redirectTo)
-      else setState(result)
-    } catch (error) {
-      setState({ error: error instanceof Error ? error.message : 'Could not place the order.' })
-    } finally {
-      setPending(false)
+  // Shipping is offered but none chosen (carriers still waiting for an address): the schema can't know
+  const needsRate = rates.length > 0 || options.liveRates
+  const onSubmit = form.handleSubmit(async () => {
+    if (needsRate && !form.getValues('shippingRateId')) {
+      form.setError('root', {
+        message: ratesPending
+          ? 'Still getting shipping rates, try again in a moment.'
+          : rates.length === 0 && quoted
+            ? "We can't ship to this address. Check it, or try another one."
+            : 'Enter your address to choose a shipping method.',
+      })
+      return
     }
-  }
+    try {
+      // The raw strings: the server parses them with the same schema
+      const result = await placeOrder({ data: { token, values: form.getValues() as CheckoutFields } })
+      if (result.redirectTo) {
+        window.location.assign(result.redirectTo)
+        return
+      }
+      // Refused by the server: its messages go on the fields they belong to
+      for (const [name, message] of Object.entries(result.fieldErrors ?? {}))
+        form.setError(name as keyof typeof buyer.shape, { message })
+      form.setError('root', { message: result.error ?? 'Could not place the order.' })
+    } catch (error) {
+      form.setError('root', { message: error instanceof Error ? error.message : 'Could not place the order.' })
+    }
+  })
 
-  // Uncontrolled inputs keep what was typed when the action returns an error (values are echoed back)
-  const field = (name: string, label: string, props: ComponentProps<typeof Input> = {}) => {
-    const error = state.fieldErrors?.[name]
+  const isOpen = (name: string) => opened.includes(name)
+  const optionalFields = (items: OptionalField[]) =>
+    opened.map((name) => {
+      const item = items.find((i) => i.name === name)
+      return (
+        item && <TextField key={name} control={control} name={item.name} label={item.label} autoFocus {...item.props} />
+      )
+    })
+  const addLinks = (items: { name: string; label: string }[]) => {
+    const closed = items.filter((i) => !isOpen(i.name))
+    if (closed.length === 0) return null
     return (
-      <Field data-invalid={error ? true : undefined}>
-        <FieldLabel htmlFor={name}>{label}</FieldLabel>
-        <Input
-          id={name}
-          name={name}
-          defaultValue={state.values?.[name]}
-          aria-invalid={error ? true : undefined}
-          {...props}
-        />
-        {error && <FieldError>{error}</FieldError>}
-      </Field>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {closed.map((i) => (
+          <AddLink key={i.name} label={i.label} onClick={() => setOpened((o) => [...o, i.name])} />
+        ))}
+      </div>
     )
   }
 
+  const label = formState.isSubmitting ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'
+
+  const optionalAddressFields: OptionalField[] = [
+    { name: 'address2', label: 'Apartment, suite, etc.', props: { autoComplete: 'address-line2' } },
+    { name: 'company', label: 'Company', props: { autoComplete: 'organization' } },
+    { name: 'phone', label: 'Phone', props: { type: 'tel', autoComplete: 'tel' } },
+  ]
+
   return (
     <form
-      ref={formRef}
       onSubmit={onSubmit}
       onBlurCapture={(e) => {
         if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
@@ -163,21 +196,29 @@ export function CheckoutForm({
     >
       <FieldSet>
         <FieldLegend>Contact</FieldLegend>
-        <FieldGroup>{field('email', 'Email', { type: 'email', autoComplete: 'email', required: true })}</FieldGroup>
+        <FieldGroup>
+          <TextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
+        </FieldGroup>
       </FieldSet>
 
       <FieldSet>
         <FieldLegend>Shipping address</FieldLegend>
         <FieldGroup>
-          <Field data-invalid={state.fieldErrors?.countryCode ? true : undefined}>
-            <FieldLabel htmlFor="countryCode">Country / region</FieldLabel>
+          <Field data-invalid={countryField.fieldState.error ? true : undefined}>
+            <FieldLabel htmlFor="countryCode" className={REQUIRED_MARK}>
+              Country / region
+            </FieldLabel>
             <select
               id="countryCode"
-              name="countryCode"
+              name={countryField.field.name}
+              ref={countryField.field.ref}
+              value={countryField.field.value}
               autoComplete="country"
-              defaultValue={state.values?.countryCode || defaultCountry}
+              onBlur={countryField.field.onBlur}
               onChange={(e) => {
-                setCountry(e.target.value)
+                countryField.field.onChange(e.target.value)
+                // What was typed for the old country may not fit the new one
+                for (const name of ['zip', 'province'] as const) if (form.getValues(name)) void form.trigger(name)
                 void refreshRates()
               }}
               className="h-9 w-full rounded-md border bg-background px-2.5 text-sm"
@@ -188,24 +229,32 @@ export function CheckoutForm({
                 </option>
               ))}
             </select>
-            {state.fieldErrors?.countryCode && <FieldError>{state.fieldErrors.countryCode}</FieldError>}
+            <FieldError errors={[countryField.fieldState.error]} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            {field('firstName', 'First name (optional)', { autoComplete: 'given-name' })}
-            {field('lastName', 'Last name', { autoComplete: 'family-name', required: true })}
+            <TextField control={control} name="firstName" label="First name" autoComplete="given-name" />
+            <TextField control={control} name="lastName" label="Last name" autoComplete="family-name" required />
           </div>
-          {field('company', 'Company (optional)', { autoComplete: 'organization' })}
-          {field('address1', 'Address', { autoComplete: 'address-line1', required: true })}
-          {field('address2', 'Apartment, suite, etc. (optional)', { autoComplete: 'address-line2' })}
+          <TextField control={control} name="address1" label="Address" autoComplete="address-line1" required />
           <div className="grid gap-4 sm:grid-cols-3">
-            {field('zip', 'Postal code', { autoComplete: 'postal-code' })}
-            {field('city', 'City', { autoComplete: 'address-level2', required: true })}
-            {field('province', 'State / region', {
-              autoComplete: 'address-level1',
-              onChange: (e) => setProvince(e.target.value),
-            })}
+            <TextField
+              control={control}
+              name="zip"
+              label="Postal code"
+              required={postalCodeRequired(country)}
+              autoComplete="postal-code"
+            />
+            <TextField control={control} name="city" label="City" autoComplete="address-level2" required />
+            <TextField
+              control={control}
+              name="province"
+              label="State / region"
+              required={regionRequired(country)}
+              autoComplete="address-level1"
+            />
           </div>
-          {field('phone', 'Phone (optional)', { type: 'tel', autoComplete: 'tel' })}
+          {optionalFields(optionalAddressFields)}
+          {addLinks(optionalAddressFields)}
         </FieldGroup>
       </FieldSet>
 
@@ -256,54 +305,51 @@ export function CheckoutForm({
             {method.additionalDetails}
           </p>
         )}
-        {state.fieldErrors?.paymentMethodId && <FieldError>{state.fieldErrors.paymentMethodId}</FieldError>}
+        <FieldError errors={[formState.errors.paymentMethodId]} />
       </FieldSet>
 
-      <Field>
-        <FieldLabel htmlFor="note">Order note (optional)</FieldLabel>
-        <Textarea id="note" name="note" rows={2} defaultValue={state.values?.note} />
-      </Field>
+      {isOpen('note') ? (
+        <TextareaField control={control} name="note" label="Order note" rows={2} autoFocus />
+      ) : (
+        addLinks([{ name: 'note', label: 'Order note' }])
+      )}
 
-      <div className="space-y-3 border-t pt-6">
-        <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
-          <dt className="text-muted-foreground">Subtotal</dt>
-          <dd className="text-right">{money(totals.subtotalCents)}</dd>
-          {totals.discountCents > 0 && (
-            <>
-              <dt className="text-muted-foreground">Discount · {discount!.code}</dt>
-              <dd className="text-right">−{money(totals.discountCents)}</dd>
-            </>
-          )}
-          <dt className="text-muted-foreground">Shipping</dt>
-          <dd className="text-right">{totals.shippingCents === 0 ? 'Free' : money(totals.shippingCents)}</dd>
-          {!totals.taxesIncluded &&
-            totals.taxLines.map((t) => (
-              <Fragment key={t.title}>
-                <dt className="text-muted-foreground">
-                  {t.title} {t.ratePercent}%
-                </dt>
-                <dd className="text-right">{money(t.amountCents)}</dd>
-              </Fragment>
-            ))}
-          <dt className="text-base font-semibold">Total</dt>
-          <dd className="text-right text-base font-semibold">{money(totals.totalCents)}</dd>
-          {totals.taxesIncluded &&
-            totals.taxLines.map((t) => (
-              <dd key={t.title} className="col-span-2 text-right text-muted-foreground">
-                Including {money(t.amountCents)} {t.title}
-              </dd>
-            ))}
-        </dl>
-        {state.error && <FieldError>{state.error}</FieldError>}
-        <Button data-ph-capture="place-order" type="submit" size="lg" className="w-full" disabled={pending}>
-          {pending ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'}
+      <div className="space-y-3">
+        <FormError form={form} />
+        <Button
+          data-ph-capture="place-order"
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={formState.isSubmitting}
+        >
+          {label}
         </Button>
       </div>
     </form>
   )
 }
 
-// Radio list styled as selectable rows
+type OptionalField = {
+  name: 'address2' | 'company' | 'phone'
+  label: string
+  props?: Pick<ComponentProps<'input'>, 'type' | 'autoComplete'>
+}
+
+function AddLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
+      <PlusIcon className="size-3.5" />
+      {label}
+    </button>
+  )
+}
+
+// Radio list styled as selectable rows. A lone choice is just shown: nothing to pick.
 function Choices({
   name,
   value,
@@ -315,18 +361,24 @@ function Choices({
   onChange: (id: string) => void
   choices: { id: string; label: string; aside?: string; hint?: string }[]
 }) {
+  const single = choices.length === 1
   return (
     <div className="divide-y rounded-lg border">
       {choices.map((c) => (
-        <label key={c.id} className="flex cursor-pointer items-center gap-3 p-3 text-sm has-checked:bg-muted/60">
-          <input
-            type="radio"
-            name={name}
-            value={c.id}
-            checked={value === c.id}
-            onChange={() => onChange(c.id)}
-            className="size-4 accent-primary"
-          />
+        <label
+          key={c.id}
+          className={`flex items-center gap-3 p-3 text-sm has-checked:bg-muted/60 ${single ? '' : 'cursor-pointer'}`}
+        >
+          {!single && (
+            <input
+              type="radio"
+              name={name}
+              value={c.id}
+              checked={value === c.id}
+              onChange={() => onChange(c.id)}
+              className="size-4 accent-primary"
+            />
+          )}
           <span className="flex-1">
             {c.label}
             {c.hint && <span className="block text-xs text-muted-foreground">{c.hint}</span>}
