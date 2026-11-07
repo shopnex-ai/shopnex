@@ -119,8 +119,9 @@ async function placeOrder(page: Page) {
   await page.getByLabel('City').fill('Somewhere')
   await page.getByLabel('Postal code').fill('10001')
   await page.getByLabel('State / region').fill('NY')
-  await expect(page.locator('input[name="shippingRateId"]').first()).toBeAttached()
   await expect(page.getByText(METHOD)).toBeVisible()
+  // The button wakes up once the details are valid and shipping is chosen
+  await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled()
   await page.getByRole('button', { name: 'Continue to payment' }).click()
   await page.waitForURL(`${appUrl}/pay/*`)
   await expect(page.getByText('Fake provider')).toBeVisible()

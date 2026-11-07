@@ -1,6 +1,5 @@
 import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
-import { z } from 'zod'
 import { CartError, cartService, checkoutService } from '@shopnex/cart'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
@@ -8,6 +7,7 @@ import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
 import { checkoutBranding } from './branding'
+import { buyer, checkoutFieldNames } from './buyer-schema'
 
 const tokenValidator = (token: string) => token
 
@@ -89,30 +89,6 @@ const unexpected = (action: string, error: unknown) => {
   return `Could not ${action}. Please try again.`
 }
 
-const optional = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => value || undefined)
-const buyer = z.object({
-  email: z.email('Enter a valid email'),
-  firstName: optional(100),
-  lastName: z.string().trim().min(1, 'Enter a last name').max(100),
-  company: optional(200),
-  address1: z.string().trim().min(1, 'Enter an address').max(200),
-  address2: optional(200),
-  city: z.string().trim().min(1, 'Enter a city').max(100),
-  province: optional(100),
-  countryCode: z.string().regex(/^[A-Z]{2}$/, 'Choose a country'),
-  zip: optional(20),
-  phone: optional(40),
-  // A flat rate's id, or carrier:{service}:{code} for a carrier service's live rate
-  shippingRateId: z.string().max(200).optional(),
-  paymentMethodId: z.uuid('Choose a payment method'),
-  note: optional(1000),
-})
-const fields = Object.keys(buyer.shape)
 export type CheckoutFields = Record<string, string>
 export type PlaceOrderState = {
   error?: string
@@ -124,7 +100,7 @@ export type PlaceOrderState = {
 export const placeOrder = publicFn({ method: 'POST' })
   .validator((input: { token: string; values: CheckoutFields }) => input)
   .handler(async ({ data }): Promise<PlaceOrderState> => {
-    const values = Object.fromEntries(fields.map((field) => [field, String(data.values[field] ?? '')]))
+    const values = Object.fromEntries(checkoutFieldNames.map((field) => [field, String(data.values[field] ?? '')]))
     const parsed = buyer.safeParse({ ...values, shippingRateId: values.shippingRateId || undefined })
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {}

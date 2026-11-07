@@ -58,8 +58,9 @@ test('a shopper checks out and the owner sees the order in the admin', async ({ 
   await page.getByLabel('Postal code').fill('10001')
   await page.getByLabel('State / region').fill('NY')
   // Shipping methods appear once the address is in
-  await expect(page.locator('input[name="shippingRateId"]').first()).toBeAttached()
   await expect(page.getByText('E2E bank transfer')).toBeVisible()
+  // The button wakes up once the details are valid and shipping is chosen
+  await expect(page.getByRole('button', { name: /place order/i })).toBeEnabled()
 
   await page.getByRole('button', { name: /place order/i }).click()
   await expect(page.getByText(/Transfer the total to IBAN E2E-0000/)).toBeVisible()
