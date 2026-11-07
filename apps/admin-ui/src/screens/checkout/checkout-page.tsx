@@ -1,7 +1,6 @@
 // Hosted checkout: any storefront (Next, Astro, …) creates a cart through the Storefront API and redirects
 // here. Buyer gives contact + shipping address, picks a shipping rate and a payment method; after placing
 // the order the same URL shows the confirmation (with payment instructions for manual methods).
-import { ChevronLeftIcon } from 'lucide-react'
 import { Fragment, type ReactNode } from 'react'
 import { AddressLines } from '@/components/admin/address'
 import { Button } from '@/components/ui/button'
@@ -64,15 +63,6 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
                 defaultCountry={data.defaultCountry}
                 countries={data.countries}
               />
-            )}
-            {data.storefrontUrl && (
-              <a
-                href={data.storefrontUrl}
-                className="mt-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              >
-                <ChevronLeftIcon className="size-4" />
-                Return to shop
-              </a>
             )}
           </section>
 
@@ -262,7 +252,13 @@ function Shell({
       )}
       <header className="border-b">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
-          {storefrontUrl ? <a href={storefrontUrl}>{name}</a> : name}
+          {storefrontUrl ? (
+            <a href={storefrontUrl} aria-label={`Back to ${shopName}`} title={`Back to ${shopName}`}>
+              {name}
+            </a>
+          ) : (
+            name
+          )}
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</main>
