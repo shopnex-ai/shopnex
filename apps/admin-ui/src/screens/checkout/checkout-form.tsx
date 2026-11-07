@@ -58,7 +58,7 @@ export function CheckoutForm({
   const latestQuote = useRef(0)
   const [methodId, setMethodId] = useState(state.values?.paymentMethodId || options.paymentMethods[0]?.id || '')
   // Optional fields stay behind a link until the buyer wants them
-  const [opened, setOpened] = useState<Record<string, boolean>>({})
+  const [opened, setOpened] = useState<string[]>([])
   // Tax follows the address as it's typed, and the order summary beside the form follows the totals
   const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
   const money = (cents: number) => formatMoney(cents, currency)
@@ -136,20 +136,30 @@ export function CheckoutForm({
   }
 
   // Optional fields sit behind a "+ Add" link; one that already holds a value (after an error) shows right away
-  const isOpen = (name: string) => Boolean(opened[name] || state.values?.[name])
-  const optionalField = (name: string, label: string, props: ComponentProps<typeof Input> = {}) =>
-    isOpen(name) ? field(name, `${label} (optional)`, { ...props, autoFocus: opened[name] }) : null
+  const isOpen = (name: string) => opened.includes(name) || Boolean(state.values?.[name])
+  // Opened ones are appended in the order the buyer opened them
+  const optionalFields = (items: { name: string; label: string; props?: ComponentProps<typeof Input> }[]) =>
+    [...opened, ...items.map((i) => i.name).filter((n) => !opened.includes(n) && isOpen(n))].map((name) => {
+      const item = items.find((i) => i.name === name)
+      return item && field(name, `${item.label} (optional)`, { ...item.props, autoFocus: opened.includes(name) })
+    })
   const addLinks = (items: { name: string; label: string }[]) => {
     const closed = items.filter((i) => !isOpen(i.name))
     if (closed.length === 0) return null
     return (
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {closed.map((i) => (
-          <AddLink key={i.name} label={i.label} onClick={() => setOpened((o) => ({ ...o, [i.name]: true }))} />
+          <AddLink key={i.name} label={i.label} onClick={() => setOpened((o) => [...o, i.name])} />
         ))}
       </div>
     )
   }
+
+  const optionalAddressFields = [
+    { name: 'address2', label: 'Apartment, suite, etc.', props: { autoComplete: 'address-line2' } },
+    { name: 'company', label: 'Company', props: { autoComplete: 'organization' } },
+    { name: 'phone', label: 'Phone', props: { type: 'tel', autoComplete: 'tel' } },
+  ]
 
   return (
     <form
@@ -204,14 +214,8 @@ export function CheckoutForm({
               onChange: (e) => setProvince(e.target.value),
             })}
           </div>
-          {optionalField('address2', 'Apartment, suite, etc.', { autoComplete: 'address-line2' })}
-          {optionalField('company', 'Company', { autoComplete: 'organization' })}
-          {optionalField('phone', 'Phone', { type: 'tel', autoComplete: 'tel' })}
-          {addLinks([
-            { name: 'address2', label: 'Apartment, suite, etc.' },
-            { name: 'company', label: 'Company' },
-            { name: 'phone', label: 'Phone' },
-          ])}
+          {optionalFields(optionalAddressFields)}
+          {addLinks(optionalAddressFields)}
         </FieldGroup>
       </FieldSet>
 
@@ -268,7 +272,13 @@ export function CheckoutForm({
       {isOpen('note') ? (
         <Field>
           <FieldLabel htmlFor="note">Order note (optional)</FieldLabel>
-          <Textarea id="note" name="note" rows={2} defaultValue={state.values?.note} autoFocus={opened.note} />
+          <Textarea
+            id="note"
+            name="note"
+            rows={2}
+            defaultValue={state.values?.note}
+            autoFocus={opened.includes('note')}
+          />
         </Field>
       ) : (
         addLinks([{ name: 'note', label: 'Order note' }])
