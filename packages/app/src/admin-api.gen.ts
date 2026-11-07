@@ -913,6 +913,54 @@ export interface paths {
         patch: operations["admin.staff.updateRole"];
         trace?: never;
     };
+    "/platform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.platform.overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/shops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.platform.shops"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.platform.users"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/storage": {
         parameters: {
             query?: never;
@@ -5731,6 +5779,105 @@ export interface operations {
                         role: string;
                         /** Format: date-time */
                         createdAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.platform.overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        shops: number;
+                        users: number;
+                        newShops: number;
+                        newUsers: number;
+                        recentDays: number;
+                    };
+                };
+            };
+        };
+    };
+    "admin.platform.shops": {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            slug: string;
+                            currency: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                            members: number;
+                            orders: number;
+                            ownerEmail: string | null;
+                        }[];
+                        total: number;
+                    };
+                };
+            };
+        };
+    };
+    "admin.platform.users": {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            id: string;
+                            name: string;
+                            email: string;
+                            role: string | null;
+                            banned: boolean | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            shops: number;
+                        }[];
+                        total: number;
                     };
                 };
             };
