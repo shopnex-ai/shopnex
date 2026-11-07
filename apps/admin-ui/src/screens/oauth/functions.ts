@@ -32,6 +32,8 @@ export const loadConsent = publicFn({ method: 'GET' })
       if (!(error instanceof AppError)) throw error
       if (error.code === 'invalid_scope' && request.redirectUri)
         return { redirectTo: withParams(request.redirectUri, { error: 'invalid_scope', state: request.state }) }
+      if (error.code === 'APP_NOT_APPROVED')
+        return { error: 'This app has not been approved for this install yet. Ask a super admin to approve it.' }
       return { error: `${error.message}. Contact the app's developer.` }
     }
     const access = await getAdminContext()

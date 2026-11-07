@@ -186,7 +186,15 @@ export const appOutput = createSelectSchema(apps, {
   source: z.enum(['custom', 'marketplace', 'bundled']),
 }).extend({
   managed: z.boolean(),
+  /** A super admin approved it: always for custom and bundled apps, for marketplace apps once someone does */
+  approved: z.boolean(),
 })
+export const marketplaceAppsOutput = z.object({
+  /** Shops can only install approved marketplace apps */
+  requireApproval: z.boolean(),
+  apps: z.array(appOutput.extend({ installs: z.number().int() })),
+})
+export const approvalPolicyOutput = z.object({ requireApproval: z.boolean() })
 export const appInstallationOutput = createSelectSchema(appInstallations, { scopes })
 export const appInstalledOutput = appInstallationOutput.extend({ app: appOutput, lastUsedAt: z.date().nullable() })
 export const appCatalogOutput = z.object({

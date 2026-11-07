@@ -2,7 +2,7 @@
 // installed per shop, either right in the admin (managed install) or through OAuth (authorization code). Each
 // installation is backed by an API token, so scopes and webhook subscriptions work exactly as for hand-made
 // tokens. Apps authenticate with their own key pair; this instance only stores the public half.
-import { index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { apiTokens, shops, type ApiScope } from './tenancy'
 
@@ -24,6 +24,11 @@ export const apps = pgTable('apps', {
   listingUrl: text('listing_url'),
   // No longer in the marketplace catalog: can't be installed anymore; existing installs keep working
   delistedAt: timestamp('delisted_at', { withTimezone: true }),
+  // A super admin's approval of a marketplace app (null: not approved). Shops can only install unapproved ones
+  // while the instance doesn't require approval (see appPolicy). Custom and bundled apps are this install's own:
+  // approved by definition (see isApproved in modules/apps)
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  approvedById: text('approved_by_id').references(() => user.id, { onDelete: 'set null' }),
   description: text('description'),
   iconUrl: text('icon_url'),
   // Where "Open app" in the admin goes (the app's own UI)
@@ -112,6 +117,14 @@ export const instanceKeys = pgTable('instance_keys', {
 
 export type App = typeof apps.$inferSelect
 export type AppInstallation = typeof appInstallations.$inferSelect
+
+// Instance-wide rules for apps (one row, 'default'; no row means the defaults). Kept apart from the marketplace
+// connection, which is deleted on disconnect: a security setting must not reset when someone reconnects.
+export const appPolicy = pgTable('app_policy', {
+  id: text('id').primaryKey().default('default'),
+  // Shops can only install marketplace apps a super admin approved (default: any marketplace app can be installed)
+  requireApproval: boolean('require_approval').notNull().default(false),
+})
 
 // This instance's link to an app marketplace (one per install; super admins manage it in Admin → Apps)
 export const marketplaceConnection = pgTable('marketplace_connection', {

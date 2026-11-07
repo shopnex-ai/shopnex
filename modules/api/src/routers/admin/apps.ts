@@ -11,6 +11,8 @@ import {
   appInstallationOutput,
   appInstalledOutput,
   appOutput,
+  approvalPolicyOutput,
+  marketplaceAppsOutput,
   appRegisteredOutput,
   marketplaceConnectedOutput,
   marketplaceConnectionOutput,
@@ -114,6 +116,32 @@ export const appRegistry = {
     .route({ method: 'GET', path: '/admin/app-registry' })
     .output(z.array(appOutput))
     .handler(() => appService.listApps()),
+
+  // Marketplace apps synced to this install, and whether shops need a super admin's approval to install them
+  marketplace: superAdminOnly
+    .route({ method: 'GET', path: '/admin/app-registry/marketplace' })
+    .output(marketplaceAppsOutput)
+    .handler(() => appService.listMarketplaceApps()),
+
+  // Turning it on approves the marketplace apps shops already run
+  setApprovalRequired: superAdminOnly
+    .route({ method: 'PUT', path: '/admin/app-registry/approval-required' })
+    .output(approvalPolicyOutput)
+    .input(z.object({ requireApproval: z.boolean() }))
+    .handler(({ input, context }) => appService.setApprovalRequired(input.requireApproval, context.user.id)),
+
+  approve: superAdminOnly
+    .route({ method: 'POST', path: '/admin/app-registry/{id}/approve' })
+    .output(appOutput)
+    .input(id)
+    .handler(async ({ input, context }) => found(await appService.setApproval(input.id, true, context.user.id))),
+
+  // Shops that already installed the app keep it; only new installs stop
+  unapprove: superAdminOnly
+    .route({ method: 'POST', path: '/admin/app-registry/{id}/unapprove' })
+    .output(appOutput)
+    .input(id)
+    .handler(async ({ input, context }) => found(await appService.setApproval(input.id, false, context.user.id))),
 
   // The response is the only time `privateKey` is returned
   register: superAdminOnly
