@@ -1,6 +1,7 @@
 // Codes follow OAuth 2.0 (RFC 6749) where there is one, so app developers recognise them
 export type AppErrorCode =
   | 'APP_NOT_FOUND'
+  | 'APP_NOT_APPROVED'
   | 'INSTALLATION_NOT_FOUND'
   | 'MARKETPLACE_NOT_CONNECTED'
   | 'MARKETPLACE_CONNECT_FAILED'

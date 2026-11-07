@@ -108,7 +108,9 @@ const domainErrors = base.middleware(async ({ next }) => {
           ? 'NOT_FOUND'
           : error.code === 'invalid_client'
             ? 'UNAUTHORIZED'
-            : 'BAD_REQUEST'
+            : error.code === 'APP_NOT_APPROVED'
+              ? 'FORBIDDEN'
+              : 'BAD_REQUEST'
       // OAuth clients look for `error` (RFC 6749 §5.2)
       throw new ORPCError(status, {
         message: error.message,

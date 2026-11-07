@@ -43,8 +43,24 @@ export type AppInput = {
   scopes: ApiScope[]
 }
 
+/**
+ * Approved by a super admin of this install. Custom (registered by a super admin) and bundled (shipped with this
+ * install) apps are this install's own, so they always are; a marketplace app is once someone approves it.
+ */
+export const isApproved = (app: Pick<App, 'source' | 'approvedAt'>) =>
+  app.source !== 'marketplace' || app.approvedAt !== null
+
+/** Whether this instance only lets shops install approved marketplace apps (off by default) */
+export async function approvalRequired() {
+  const [policy] = await db.select().from(schema.appPolicy).where(eq(schema.appPolicy.id, 'default'))
+  return policy?.requireApproval ?? false
+}
+
+/** Approval only gates new installs: apps a shop already runs keep working if it is taken back */
+const canInstall = (app: Pick<App, 'source' | 'approvedAt'>, required: boolean) => !required || isApproved(app)
+
 export function publicApp(app: App) {
-  return { ...app, managed: app.redirectUrls.length === 0 }
+  return { ...app, managed: app.redirectUrls.length === 0, approved: isApproved(app) }
 }
 
 // --- registry (super admins) ---
@@ -75,6 +91,71 @@ export async function listApps() {
     .where(eq(schema.apps.source, 'custom'))
     .orderBy(asc(schema.apps.name))
   return rows.map(publicApp)
+}
+
+// --- approval (super admins) ---
+
+/** The marketplace apps synced to this instance (not delisted), approved or waiting, with how many shops run each */
+export async function listMarketplaceApps() {
+  const requireApproval = await approvalRequired()
+  const rows = await db
+    .select({
+      app: schema.apps,
+      installs:
+        sql<number>`count(${schema.appInstallations.id}) filter (where ${schema.appInstallations.uninstalledAt} is null)`.mapWith(
+          Number,
+        ),
+    })
+    .from(schema.apps)
+    .leftJoin(schema.appInstallations, eq(schema.appInstallations.appId, schema.apps.id))
+    .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
+    .groupBy(schema.apps.id)
+    .orderBy(asc(schema.apps.name))
+  return { requireApproval, apps: rows.map((r) => ({ ...publicApp(r.app), installs: r.installs })) }
+}
+
+/**
+ * Turns the approval requirement on or off. Turning it on approves the marketplace apps shops already run, so
+ * nothing that works today shows up as waiting.
+ */
+export async function setApprovalRequired(required: boolean, userId: string | null) {
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(schema.appPolicy)
+      .values({ id: 'default', requireApproval: required })
+      .onConflictDoUpdate({ target: schema.appPolicy.id, set: { requireApproval: required } })
+    if (!required) return
+    await tx
+      .update(schema.apps)
+      .set({ approvedAt: new Date(), approvedById: userId })
+      .where(
+        and(
+          eq(schema.apps.source, 'marketplace'),
+          isNull(schema.apps.approvedAt),
+          inArray(
+            schema.apps.id,
+            tx
+              .select({ id: schema.appInstallations.appId })
+              .from(schema.appInstallations)
+              .where(isNull(schema.appInstallations.uninstalledAt)),
+          ),
+        ),
+      )
+  })
+  return { requireApproval: required }
+}
+
+/**
+ * Approves a marketplace app so shops can install it, or takes the approval back (shops that already installed it
+ * keep it and it keeps working; only new installs stop). Null when there is no such marketplace app.
+ */
+export async function setApproval(id: string, approved: boolean, userId: string | null) {
+  const [app] = await db
+    .update(schema.apps)
+    .set(approved ? { approvedAt: new Date(), approvedById: userId } : { approvedAt: null, approvedById: null })
+    .where(and(eq(schema.apps.id, id), eq(schema.apps.source, 'marketplace')))
+    .returning()
+  return app ? publicApp(app) : null
 }
 
 /** The client id of an installed app by its row id (what apps call themselves), or null */
@@ -134,6 +215,9 @@ export async function validateAuthorizeRequest(input: { clientId: string; redire
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.clientId, input.clientId))
   if (!app) throw new AppError('invalid_client', 'Unknown app (client_id)')
   if (app.delistedAt) throw new AppError('invalid_client', 'This app is no longer available in the App Store')
+  if (!canInstall(app, await approvalRequired())) {
+    throw new AppError('APP_NOT_APPROVED', 'A super admin has not approved this app on this install yet')
+  }
   // Without redirect_uri: a managed install (the consent screen installs it, nothing is sent to the app)
   if (input.redirectUri !== undefined && !app.redirectUrls.includes(input.redirectUri)) {
     throw new AppError('invalid_redirect_uri', 'redirect_uri is not registered for this app')
@@ -337,6 +421,8 @@ export async function installManaged(input: { appId: string; shopId: string; use
   const { installation, app } = await db.transaction(async (tx) => {
     const [app] = await tx.select().from(schema.apps).where(eq(schema.apps.id, input.appId))
     if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
+    if (!canInstall(app, await approvalRequired()))
+      throw new AppError('APP_NOT_APPROVED', 'A super admin has not approved this app yet')
     const { token: _, ...secret } = mintToken()
     const installation = await install(tx, {
       app,
@@ -451,6 +537,7 @@ async function install(
  * marketplace apps synced to this instance, and custom apps a super admin registered. `installed` is per shop.
  */
 export async function listCatalog(shopId: string) {
+  const required = await approvalRequired()
   const rows = await db
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
@@ -464,12 +551,14 @@ export async function listCatalog(shopId: string) {
     )
     .where(isNull(schema.apps.delistedAt))
     .orderBy(asc(schema.apps.name))
-  return rows.map((r) => ({
-    ...publicApp(r.app),
-    origin: r.app.source,
-    installationId: r.installationId,
-    installed: r.installationId !== null,
-  }))
+  return rows
+    .filter((r) => canInstall(r.app, required))
+    .map((r) => ({
+      ...publicApp(r.app),
+      origin: r.app.source,
+      installationId: r.installationId,
+      installed: r.installationId !== null,
+    }))
 }
 
 // --- installations (shop owners/admins) ---

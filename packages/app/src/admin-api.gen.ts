@@ -1633,6 +1633,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/app-registry/marketplace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.appRegistry.marketplace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-registry/approval-required": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["admin.appRegistry.setApprovalRequired"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-registry/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.appRegistry.approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/app-registry/{id}/unapprove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.appRegistry.unapprove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/app-registry/{id}": {
         parameters: {
             query?: never;
@@ -7936,6 +8000,8 @@ export interface operations {
                             developerName: string | null;
                             listingUrl: string | null;
                             delistedAt: string | null;
+                            approvedAt: string | null;
+                            approvedById: string | null;
                             description: string | null;
                             iconUrl: string | null;
                             appUrl: string;
@@ -7949,6 +8015,7 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             managed: boolean;
+                            approved: boolean;
                         };
                         lastUsedAt: string | null;
                     }[];
@@ -8043,6 +8110,8 @@ export interface operations {
                             developerName: string | null;
                             listingUrl: string | null;
                             delistedAt: string | null;
+                            approvedAt: string | null;
+                            approvedById: string | null;
                             description: string | null;
                             iconUrl: string | null;
                             appUrl: string;
@@ -8056,6 +8125,7 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             managed: boolean;
+                            approved: boolean;
                             /** @enum {string} */
                             origin: "custom" | "marketplace" | "bundled";
                             installationId: string | null;
@@ -8092,6 +8162,8 @@ export interface operations {
                         developerName: string | null;
                         listingUrl: string | null;
                         delistedAt: string | null;
+                        approvedAt: string | null;
+                        approvedById: string | null;
                         description: string | null;
                         iconUrl: string | null;
                         appUrl: string;
@@ -8105,6 +8177,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         managed: boolean;
+                        approved: boolean;
                     }[];
                 };
             };
@@ -8149,6 +8222,8 @@ export interface operations {
                             developerName: string | null;
                             listingUrl: string | null;
                             delistedAt: string | null;
+                            approvedAt: string | null;
+                            approvedById: string | null;
                             description: string | null;
                             iconUrl: string | null;
                             appUrl: string;
@@ -8162,8 +8237,186 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             managed: boolean;
+                            approved: boolean;
                         };
                         privateKey: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.appRegistry.marketplace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requireApproval: boolean;
+                        apps: {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            source: "custom" | "marketplace" | "bundled";
+                            marketplaceAppId: string | null;
+                            name: string;
+                            tagline: string | null;
+                            developerName: string | null;
+                            listingUrl: string | null;
+                            delistedAt: string | null;
+                            approvedAt: string | null;
+                            approvedById: string | null;
+                            description: string | null;
+                            iconUrl: string | null;
+                            appUrl: string;
+                            redirectUrls: string[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping")[];
+                            clientId: string;
+                            publicKey: string | null;
+                            createdById: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            managed: boolean;
+                            approved: boolean;
+                            installs: number;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.appRegistry.setApprovalRequired": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    requireApproval: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        requireApproval: boolean;
+                    };
+                };
+            };
+        };
+    };
+    "admin.appRegistry.approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        source: "custom" | "marketplace" | "bundled";
+                        marketplaceAppId: string | null;
+                        name: string;
+                        tagline: string | null;
+                        developerName: string | null;
+                        listingUrl: string | null;
+                        delistedAt: string | null;
+                        approvedAt: string | null;
+                        approvedById: string | null;
+                        description: string | null;
+                        iconUrl: string | null;
+                        appUrl: string;
+                        redirectUrls: string[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping")[];
+                        clientId: string;
+                        publicKey: string | null;
+                        createdById: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        managed: boolean;
+                        approved: boolean;
+                    };
+                };
+            };
+        };
+    };
+    "admin.appRegistry.unapprove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        /** @enum {string} */
+                        source: "custom" | "marketplace" | "bundled";
+                        marketplaceAppId: string | null;
+                        name: string;
+                        tagline: string | null;
+                        developerName: string | null;
+                        listingUrl: string | null;
+                        delistedAt: string | null;
+                        approvedAt: string | null;
+                        approvedById: string | null;
+                        description: string | null;
+                        iconUrl: string | null;
+                        appUrl: string;
+                        redirectUrls: string[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping")[];
+                        clientId: string;
+                        publicKey: string | null;
+                        createdById: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        managed: boolean;
+                        approved: boolean;
                     };
                 };
             };
@@ -8197,6 +8450,8 @@ export interface operations {
                         developerName: string | null;
                         listingUrl: string | null;
                         delistedAt: string | null;
+                        approvedAt: string | null;
+                        approvedById: string | null;
                         description: string | null;
                         iconUrl: string | null;
                         appUrl: string;
@@ -8210,6 +8465,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         managed: boolean;
+                        approved: boolean;
                     };
                 };
             };
@@ -8255,6 +8511,8 @@ export interface operations {
                         developerName: string | null;
                         listingUrl: string | null;
                         delistedAt: string | null;
+                        approvedAt: string | null;
+                        approvedById: string | null;
                         description: string | null;
                         iconUrl: string | null;
                         appUrl: string;
@@ -8268,6 +8526,7 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                         managed: boolean;
+                        approved: boolean;
                     };
                 };
             };
@@ -8302,6 +8561,8 @@ export interface operations {
                             developerName: string | null;
                             listingUrl: string | null;
                             delistedAt: string | null;
+                            approvedAt: string | null;
+                            approvedById: string | null;
                             description: string | null;
                             iconUrl: string | null;
                             appUrl: string;
@@ -8315,6 +8576,7 @@ export interface operations {
                             /** Format: date-time */
                             updatedAt: string;
                             managed: boolean;
+                            approved: boolean;
                         };
                         privateKey: string;
                     };
