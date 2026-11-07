@@ -90,6 +90,21 @@ jobs:
 
       - run: scripts/smoke-app.sh ${{ matrix.app }}
 
+  # The real Caddyfile in front of stub apps: X-Forwarded-Proto from a TLS-terminating proxy must reach the apps
+  proxy-headers:
+    name: Proxy headers
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - run: scripts/smoke-proxy.sh
+
   e2e:
     name: End-to-end tests
     needs: changes
