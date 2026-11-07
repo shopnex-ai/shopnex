@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ORPCError } from '@orpc/server'
-import { CLIENT_ASSERTION_TYPE, appService, jwks, marketplaceService } from '@shopnex/apps'
+import { CLIENT_ASSERTION_TYPE, appService, jwks } from '@shopnex/apps'
 import { pub } from '../orpc'
 
 const TOKEN_EXCHANGE = 'urn:ietf:params:oauth:grant-type:token-exchange'
@@ -35,8 +35,6 @@ export const oauth = {
       if (input.grant_type === 'authorization_code') {
         if (!input.code || !input.redirect_uri) throw missing('code and redirect_uri')
         const result = await appService.exchangeCode({ ...client, code: input.code, redirectUri: input.redirect_uri })
-        // Marketplace apps verify the install with the marketplace next: report it before answering
-        await marketplaceService.reportInstallationsSoon()
         return {
           access_token: result.accessToken,
           token_type: 'bearer' as const,

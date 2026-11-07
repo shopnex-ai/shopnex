@@ -68,7 +68,6 @@ export const approveConsent = publicFn({ method: 'POST' })
         userId: session.user.id,
         scopes: validated.scopes,
       })
-      void marketplaceService.reportInstallationsSoon()
       return `/admin/apps/${installation.id}`
     }
     const code = await appService.createAuthorizationCode({
