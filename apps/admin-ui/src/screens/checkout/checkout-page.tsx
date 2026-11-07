@@ -1,6 +1,7 @@
 // Hosted checkout: any storefront (Next, Astro, …) creates a cart through the Storefront API and redirects
 // here. Buyer gives contact + shipping address, picks a shipping rate and a payment method; after placing
 // the order the same URL shows the confirmation (with payment instructions for manual methods).
+import { ChevronLeftIcon } from 'lucide-react'
 import { Fragment, type ReactNode } from 'react'
 import { AddressLines } from '@/components/admin/address'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
 import { DiscountCodeForm } from './discount-code-form'
 import { OffsitePayment } from './offsite-payment'
-import { PlaceOrderButton, TotalsBreakdown, TotalsProvider } from './totals'
+import { PlaceOrderButton, SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
 
 export type CheckoutView = Exclude<Awaited<ReturnType<typeof getCheckout>>, null>
 
@@ -64,34 +65,45 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
                 countries={data.countries}
               />
             )}
+            {data.storefrontUrl && (
+              <a
+                href={data.storefrontUrl}
+                className="mt-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              >
+                <ChevronLeftIcon className="size-4" />
+                Return to shop
+              </a>
+            )}
           </section>
 
           <aside className="order-1 rounded-lg border bg-muted/30 p-4 md:order-2 md:sticky md:top-6">
-            <h2 className="mb-3 font-medium">Order summary</h2>
-            <LineList
-              lines={cart.lines.map((l) => ({
-                key: l.lineId,
-                title: l.title,
-                detail: l.isDefaultVariant ? null : l.variantTitle,
-                imageUrl: l.imageUrl,
-                quantity: l.quantity,
-                total: money(l.lineTotalCents),
-                warning: l.available ? null : 'Not enough stock',
-              }))}
-            />
-            {cart.lines.length > 0 && (
-              <div className="mt-3 border-t pt-3">
-                <DiscountCodeForm token={cart.token} current={cart.discountCode} />
+            <SummaryToggle>
+              <h2 className="mb-3 hidden font-medium md:block">Order summary</h2>
+              <LineList
+                lines={cart.lines.map((l) => ({
+                  key: l.lineId,
+                  title: l.title,
+                  detail: l.isDefaultVariant ? null : l.variantTitle,
+                  imageUrl: l.imageUrl,
+                  quantity: l.quantity,
+                  total: money(l.lineTotalCents),
+                  warning: l.available ? null : 'Not enough stock',
+                }))}
+              />
+              {cart.lines.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <DiscountCodeForm token={cart.token} current={cart.discountCode} />
+                </div>
+              )}
+              {cart.lines.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <TotalsBreakdown />
+                </div>
+              )}
+              <div className="mt-4 hidden md:block">
+                <PlaceOrderButton />
               </div>
-            )}
-            {cart.lines.length > 0 && (
-              <div className="mt-3 border-t pt-3">
-                <TotalsBreakdown />
-              </div>
-            )}
-            <div className="mt-4 hidden md:block">
-              <PlaceOrderButton />
-            </div>
+            </SummaryToggle>
           </aside>
         </div>
       </TotalsProvider>

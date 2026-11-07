@@ -2,11 +2,13 @@
 
 // The order summary (beside the form) and the form share one set of totals: they follow the address
 // and the shipping method as the buyer picks them, with the same math the server uses at placement.
+import { ChevronDownIcon, ShoppingBagIcon } from 'lucide-react'
 import { Fragment, createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { calculate, taxRateFor, type PricingDiscount, type PricingTaxRate } from '@shopnex/pricing/calculate'
 import { Button } from '@/components/ui/button'
 import { FieldError } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
+import { cn } from '@/lib/utils'
 
 export type TaxContextView = { taxesIncluded: boolean; taxShipping: boolean; taxRates: PricingTaxRate[] }
 
@@ -144,5 +146,38 @@ export function PlaceOrderButton() {
         {action.label}
       </Button>
     </div>
+  )
+}
+
+/**
+ * The order summary: always open beside the form on wide screens; on narrow ones a bar with the live total
+ * ("Show order summary · $9.54") that opens it, so the form isn't pushed down the page.
+ */
+export function SummaryToggle({ children }: { children: ReactNode }) {
+  const { totals, currency } = useCheckoutTotals()
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="order-summary"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between gap-3 text-sm md:hidden"
+      >
+        <span className="flex items-center gap-2">
+          <ShoppingBagIcon className="size-4" />
+          {open ? 'Hide' : 'Show'} order summary
+          <ChevronDownIcon className={cn('size-4 transition-transform', open && 'rotate-180')} />
+        </span>
+        <span className="font-medium tabular-nums">{formatMoney(totals.totalCents, currency)}</span>
+      </button>
+      <div
+        id="order-summary"
+        className={cn(open ? 'mt-4 border-t pt-4' : 'hidden', 'md:mt-0 md:block md:border-0 md:pt-0')}
+      >
+        {children}
+      </div>
+    </>
   )
 }
