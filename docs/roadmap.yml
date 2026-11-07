@@ -1,0 +1,90 @@
+# Source of the public roadmap at https://shopnex.ai/roadmap. Edit this file and open a pull request.
+# Order inside a column is priority. No dates: items move between columns as we learn what merchants need.
+updated: 2026-11-07
+rule: If a merchant has to touch code, the CLI or .env to do something, it's a product bug.
+ruleNote: .env keeps infrastructure only (database URL, app secret). Everything else lives in the admin.
+shipped:
+  - title: Setup wizard and checklist
+    body: Owner account, shop name and currency in the browser, then a Getting started checklist on the dashboard.
+  - title: Discounts and taxes
+    body: Discount codes with import and export, tax rates, both applied at checkout.
+  - title: Search and filters
+    body: Product search, filters and facets in the Storefront API and the bundled themes, plus ⌘K search in the admin.
+  - title: Liquid themes and editor
+    body: Theme library with draft and publish, a section editor with live preview, and a code view.
+  - title: Email notifications
+    body: Order emails over your own SMTP, with editable Liquid templates, live preview and test send.
+  - title: Stripe app
+    body: Stripe Checkout connected from the admin; webhooks mark orders paid, handle declines and late payments.
+  - title: Shippo and carrier rates
+    body: Live carrier rates at checkout from the Shippo app, next to flat rates and free-shipping thresholds.
+  - title: CJ dropshipping
+    body: Import products as drafts, show CJ shipping at checkout, send paid orders and bring tracking back.
+  - title: App marketplace
+    body: Vendor dashboard, public catalog, App Store, OAuth install and apps that open inside the admin.
+  - title: Multi-shop
+    body: Self-serve sign-up, a subdomain per shop, custom domains verified by DNS, and a shop switcher.
+  - title: Built-in AI
+    body: Draft product descriptions and SEO text from the admin with your own API key.
+  - title: Browser tests in CI
+    body: Playwright runs fresh-install, checkout, payments and shipping flows on every change, with a report.
+columns:
+  - id: now
+    title: Now
+    items:
+      - title: Abandoned cart emails
+        body: Win back shoppers who left at checkout, using your SMTP and editable Liquid templates.
+        area: Growth
+      - title: Failure scenarios
+        body: Two buyers for the last item, refunds and cancellations, rounding, and staff permissions in the UI.
+        area: Trust
+      - title: Upgrade test
+        body: Install the previous release, seed data, upgrade to the current build, and fail on any lost data.
+        area: Operations
+      - title: Multi-shop toggle in the admin
+        body: Turn multi-shop on from the super admin. Today it is the TENANCY_MODE environment variable.
+        area: Admin
+  - id: next
+    title: Next
+    items:
+      - title: Real Stripe test mode in CI
+        body: Checkout against Stripe test keys with real webhooks, including 3DS and duplicate deliveries.
+        area: Trust
+      - title: Public test report
+        body: A nightly run on main, a plain-language "What we test" page and the latest report online.
+        area: Trust
+  - id: later
+    title: Later
+    items:
+      - title: Google and Meta channel apps
+        body: Product feed, pixel and conversions API, shipped as apps.
+        area: Growth
+      - title: Zapier and n8n app
+        body: Connect ShopNex events to the tools merchants already use. Webhooks work with both today.
+        area: Apps
+      - title: Built-in analytics
+        body: Analytics switched on in settings, like Stripe and Shippo are today.
+        area: Apps
+      - title: WooCommerce REST compatibility
+        body: Only if the integrations merchants ask for work over REST alone. No WordPress plugin.
+        area: Apps
+trust:
+  title: Tests you can see
+  lead: 'Not only tests we run: results merchants can read. Details in the e2e plan.'
+  items:
+    - title: API-level e2e suite in CI
+      done: true
+    - title: 'Browser e2e in CI: login, checkout, payments, shipping rates'
+      done: true
+    - title: 'Payment sessions: declines, late and repeated confirmations'
+      done: true
+    - title: CI status badge in the README
+      done: true
+    - title: Failure scenarios (last-item race, refunds, rounding, staff permissions)
+      done: false
+    - title: Checkout against Stripe test mode with real webhooks
+      done: false
+    - title: 'Upgrade test: previous release to current keeps all data'
+      done: false
+    - title: Public test report and nightly run on main
+      done: false
