@@ -70,13 +70,13 @@ columns:
         area: Apps
 trust:
   title: Tests you can see
-  lead: "Not only tests we run: results merchants can read. Details in the e2e plan."
+  lead: 'Not only tests we run: results merchants can read. Details in the e2e plan.'
   items:
     - title: API-level e2e suite in CI
       done: true
-    - title: "Browser e2e in CI: login, checkout, payments, shipping rates"
+    - title: 'Browser e2e in CI: login, checkout, payments, shipping rates'
       done: true
-    - title: "Payment sessions: declines, late and repeated confirmations"
+    - title: 'Payment sessions: declines, late and repeated confirmations'
       done: true
     - title: CI status badge in the README
       done: true
@@ -84,7 +84,7 @@ trust:
       done: false
     - title: Checkout against Stripe test mode with real webhooks
       done: false
-    - title: "Upgrade test: previous release to current keeps all data"
+    - title: 'Upgrade test: previous release to current keeps all data'
       done: false
     - title: Public test report and nightly run on main
       done: false
