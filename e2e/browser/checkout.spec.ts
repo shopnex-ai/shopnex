@@ -58,10 +58,8 @@ test('a shopper checks out and the owner sees the order in the admin', async ({ 
   await page.getByLabel('Postal code').fill('10001')
   await page.getByLabel('State / region').fill('NY')
   // Shipping methods appear once the address is in
-  const shipping = page.locator('input[name="shippingRateId"]').first()
-  await expect(shipping).toBeVisible()
-  await shipping.check()
-  await page.getByLabel('E2E bank transfer').check()
+  await expect(page.locator('input[name="shippingRateId"]').first()).toBeAttached()
+  await expect(page.getByText('E2E bank transfer')).toBeVisible()
 
   await page.getByRole('button', { name: /place order/i }).click()
   await expect(page.getByText(/Transfer the total to IBAN E2E-0000/)).toBeVisible()

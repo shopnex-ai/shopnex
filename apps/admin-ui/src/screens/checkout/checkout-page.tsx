@@ -11,6 +11,7 @@ import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
 import { DiscountCodeForm } from './discount-code-form'
 import { OffsitePayment } from './offsite-payment'
+import { TotalsBreakdown, TotalsProvider } from './totals'
 
 export type CheckoutView = Exclude<Awaited<ReturnType<typeof getCheckout>>, null>
 
@@ -30,62 +31,67 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
   const money = (cents: number) => formatMoney(cents, cart.currency)
   const unavailable = cart.lines.some((l) => !l.available)
 
+  // What shipping costs before the buyer picks: the preselected method's price, unknown while carriers wait for an address
+  const firstRate = options.shippingRates[0]
   return (
     <Shell shopName={data.shopName} storefrontUrl={data.storefrontUrl} branding={data.branding}>
-      <div className="grid gap-10 md:grid-cols-[1fr_380px] md:items-start">
-        <section className="order-2 md:order-1">
-          {cart.lines.length === 0 ? (
-            <p className="text-muted-foreground">Your cart is empty.</p>
-          ) : unavailable ? (
-            <p className="text-muted-foreground">Some items are out of stock. Update your cart to continue.</p>
-          ) : cart.discountCode && !cart.discountCode.applicable ? (
-            <p className="text-muted-foreground">Remove the discount code that no longer applies to continue.</p>
-          ) : options.paymentMethods.length === 0 ? (
-            <p className="text-muted-foreground">This store isn&apos;t accepting orders yet. Please check back soon.</p>
-          ) : (
-            <CheckoutForm
-              token={cart.token}
-              currency={cart.currency}
-              lineTotals={cart.lines.map((l) => l.lineTotalCents)}
-              discount={cart.discount}
-              tax={tax}
-              options={options}
-              defaultCountry={data.defaultCountry}
-              countries={data.countries}
-            />
-          )}
-        </section>
-
-        <aside className="order-1 rounded-lg border bg-muted/30 p-4 md:order-2 md:sticky md:top-6">
-          <h2 className="mb-3 font-medium">Order summary</h2>
-          <LineList
-            lines={cart.lines.map((l) => ({
-              key: l.lineId,
-              title: l.title,
-              detail: l.isDefaultVariant ? null : l.variantTitle,
-              imageUrl: l.imageUrl,
-              quantity: l.quantity,
-              total: money(l.lineTotalCents),
-              warning: l.available ? null : 'Not enough stock',
-            }))}
-          />
-          {cart.lines.length > 0 && (
-            <div className="mt-3 border-t pt-3">
-              <DiscountCodeForm token={cart.token} current={cart.discountCode} />
-            </div>
-          )}
-          <dl className="mt-3 grid grid-cols-[1fr_auto] gap-y-1 border-t pt-3 text-sm tabular-nums">
-            <dt className="text-muted-foreground">Subtotal</dt>
-            <dd className="text-right">{money(cart.subtotalCents)}</dd>
-            {cart.discountCents > 0 && (
-              <>
-                <dt className="text-muted-foreground">Discount · {cart.discountCode!.code}</dt>
-                <dd className="text-right">−{money(cart.discountCents)}</dd>
-              </>
+      <TotalsProvider
+        currency={cart.currency}
+        lineTotals={cart.lines.map((l) => l.lineTotalCents)}
+        discount={cart.discount}
+        tax={tax}
+        defaultCountry={data.defaultCountry}
+        initialShippingCents={firstRate ? firstRate.priceCents : options.liveRates ? null : 0}
+      >
+        <div className="grid gap-10 md:grid-cols-[1fr_380px] md:items-start">
+          <section className="order-2 md:order-1">
+            {cart.lines.length === 0 ? (
+              <p className="text-muted-foreground">Your cart is empty.</p>
+            ) : unavailable ? (
+              <p className="text-muted-foreground">Some items are out of stock. Update your cart to continue.</p>
+            ) : cart.discountCode && !cart.discountCode.applicable ? (
+              <p className="text-muted-foreground">Remove the discount code that no longer applies to continue.</p>
+            ) : options.paymentMethods.length === 0 ? (
+              <p className="text-muted-foreground">
+                This store isn&apos;t accepting orders yet. Please check back soon.
+              </p>
+            ) : (
+              <CheckoutForm
+                token={cart.token}
+                currency={cart.currency}
+                options={options}
+                defaultCountry={data.defaultCountry}
+                countries={data.countries}
+              />
             )}
-          </dl>
-        </aside>
-      </div>
+          </section>
+
+          <aside className="order-1 rounded-lg border bg-muted/30 p-4 md:order-2 md:sticky md:top-6">
+            <h2 className="mb-3 font-medium">Order summary</h2>
+            <LineList
+              lines={cart.lines.map((l) => ({
+                key: l.lineId,
+                title: l.title,
+                detail: l.isDefaultVariant ? null : l.variantTitle,
+                imageUrl: l.imageUrl,
+                quantity: l.quantity,
+                total: money(l.lineTotalCents),
+                warning: l.available ? null : 'Not enough stock',
+              }))}
+            />
+            {cart.lines.length > 0 && (
+              <div className="mt-3 border-t pt-3">
+                <DiscountCodeForm token={cart.token} current={cart.discountCode} />
+              </div>
+            )}
+            {cart.lines.length > 0 && (
+              <div className="mt-3 border-t pt-3">
+                <TotalsBreakdown />
+              </div>
+            )}
+          </aside>
+        </div>
+      </TotalsProvider>
     </Shell>
   )
 }

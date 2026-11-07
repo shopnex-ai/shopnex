@@ -1,7 +1,7 @@
 'use client'
 
-import { Fragment, useRef, useState, type ComponentProps, type FormEvent } from 'react'
-import { calculate, taxRateFor, type PricingDiscount, type PricingTaxRate } from '@shopnex/pricing/calculate'
+import { PlusIcon } from 'lucide-react'
+import { useEffect, useRef, useState, type ComponentProps, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Field,
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { formatMoney } from '@/lib/money'
 import { placeOrder, quoteRates, type CheckoutFields, type PlaceOrderState } from './functions'
+import { useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
   id: string
@@ -33,25 +34,15 @@ export type CheckoutOptionsView = {
   paymentMethods: { id: string; name: string; additionalDetails: string | null; offsite: boolean }[]
 }
 
-export type TaxContextView = { taxesIncluded: boolean; taxShipping: boolean; taxRates: PricingTaxRate[] }
-
 export function CheckoutForm({
   token,
   currency,
-  lineTotals,
-  discount,
-  tax,
   options,
   defaultCountry,
   countries,
 }: {
   token: string
   currency: string
-  /** Cart line totals (unit price × quantity) */
-  lineTotals: number[]
-  /** The cart's discount code, when it applies */
-  discount: PricingDiscount | null
-  tax: TaxContextView
   options: CheckoutOptionsView
   defaultCountry: string
   countries: { value: string; label: string }[]
@@ -66,20 +57,14 @@ export function CheckoutForm({
   const formRef = useRef<HTMLFormElement>(null)
   const latestQuote = useRef(0)
   const [methodId, setMethodId] = useState(state.values?.paymentMethodId || options.paymentMethods[0]?.id || '')
-  // Tax follows the address as it's typed
-  const [country, setCountry] = useState(state.values?.countryCode || defaultCountry)
-  const [province, setProvince] = useState(state.values?.province ?? '')
+  // Optional fields stay behind a link until the buyer wants them
+  const [opened, setOpened] = useState<Record<string, boolean>>({})
+  // Tax follows the address as it's typed, and the order summary beside the form follows the totals
+  const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
   const money = (cents: number) => formatMoney(cents, currency)
   const method = options.paymentMethods.find((m) => m.id === methodId)
-  // Same math the server uses when the order is placed
-  const totals = calculate({
-    lines: lineTotals,
-    shippingCents: rates.find((r) => r.id === rateId)?.priceCents ?? 0,
-    discount,
-    taxRate: taxRateFor(tax.taxRates, { countryCode: country, province }),
-    taxesIncluded: tax.taxesIncluded,
-    taxShipping: tax.taxShipping,
-  })
+  const shippingCents = rates.find((r) => r.id === rateId)?.priceCents ?? (options.liveRates ? null : 0)
+  useEffect(() => setShippingCents(shippingCents), [shippingCents, setShippingCents])
 
   // Carrier services quote for the address, so ask again when it changes (flat rates come back unchanged).
   // Only the newest answer counts: the buyer may keep typing.
@@ -150,6 +135,22 @@ export function CheckoutForm({
     )
   }
 
+  // Optional fields sit behind a "+ Add" link; one that already holds a value (after an error) shows right away
+  const isOpen = (name: string) => Boolean(opened[name] || state.values?.[name])
+  const optionalField = (name: string, label: string, props: ComponentProps<typeof Input> = {}) =>
+    isOpen(name) ? field(name, `${label} (optional)`, { ...props, autoFocus: opened[name] }) : null
+  const addLinks = (items: { name: string; label: string }[]) => {
+    const closed = items.filter((i) => !isOpen(i.name))
+    if (closed.length === 0) return null
+    return (
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {closed.map((i) => (
+          <AddLink key={i.name} label={i.label} onClick={() => setOpened((o) => ({ ...o, [i.name]: true }))} />
+        ))}
+      </div>
+    )
+  }
+
   return (
     <form
       ref={formRef}
@@ -194,9 +195,9 @@ export function CheckoutForm({
             {field('firstName', 'First name (optional)', { autoComplete: 'given-name' })}
             {field('lastName', 'Last name', { autoComplete: 'family-name', required: true })}
           </div>
-          {field('company', 'Company (optional)', { autoComplete: 'organization' })}
+          {optionalField('company', 'Company', { autoComplete: 'organization' })}
           {field('address1', 'Address', { autoComplete: 'address-line1', required: true })}
-          {field('address2', 'Apartment, suite, etc. (optional)', { autoComplete: 'address-line2' })}
+          {optionalField('address2', 'Apartment, suite, etc.', { autoComplete: 'address-line2' })}
           <div className="grid gap-4 sm:grid-cols-3">
             {field('zip', 'Postal code', { autoComplete: 'postal-code' })}
             {field('city', 'City', { autoComplete: 'address-level2', required: true })}
@@ -205,7 +206,12 @@ export function CheckoutForm({
               onChange: (e) => setProvince(e.target.value),
             })}
           </div>
-          {field('phone', 'Phone (optional)', { type: 'tel', autoComplete: 'tel' })}
+          {optionalField('phone', 'Phone', { type: 'tel', autoComplete: 'tel' })}
+          {addLinks([
+            { name: 'address2', label: 'Apartment, suite, etc.' },
+            { name: 'company', label: 'Company' },
+            { name: 'phone', label: 'Phone' },
+          ])}
         </FieldGroup>
       </FieldSet>
 
@@ -259,41 +265,16 @@ export function CheckoutForm({
         {state.fieldErrors?.paymentMethodId && <FieldError>{state.fieldErrors.paymentMethodId}</FieldError>}
       </FieldSet>
 
-      <Field>
-        <FieldLabel htmlFor="note">Order note (optional)</FieldLabel>
-        <Textarea id="note" name="note" rows={2} defaultValue={state.values?.note} />
-      </Field>
+      {isOpen('note') ? (
+        <Field>
+          <FieldLabel htmlFor="note">Order note (optional)</FieldLabel>
+          <Textarea id="note" name="note" rows={2} defaultValue={state.values?.note} autoFocus={opened.note} />
+        </Field>
+      ) : (
+        addLinks([{ name: 'note', label: 'Order note' }])
+      )}
 
-      <div className="space-y-3 border-t pt-6">
-        <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
-          <dt className="text-muted-foreground">Subtotal</dt>
-          <dd className="text-right">{money(totals.subtotalCents)}</dd>
-          {totals.discountCents > 0 && (
-            <>
-              <dt className="text-muted-foreground">Discount · {discount!.code}</dt>
-              <dd className="text-right">−{money(totals.discountCents)}</dd>
-            </>
-          )}
-          <dt className="text-muted-foreground">Shipping</dt>
-          <dd className="text-right">{totals.shippingCents === 0 ? 'Free' : money(totals.shippingCents)}</dd>
-          {!totals.taxesIncluded &&
-            totals.taxLines.map((t) => (
-              <Fragment key={t.title}>
-                <dt className="text-muted-foreground">
-                  {t.title} {t.ratePercent}%
-                </dt>
-                <dd className="text-right">{money(t.amountCents)}</dd>
-              </Fragment>
-            ))}
-          <dt className="text-base font-semibold">Total</dt>
-          <dd className="text-right text-base font-semibold">{money(totals.totalCents)}</dd>
-          {totals.taxesIncluded &&
-            totals.taxLines.map((t) => (
-              <dd key={t.title} className="col-span-2 text-right text-muted-foreground">
-                Including {money(t.amountCents)} {t.title}
-              </dd>
-            ))}
-        </dl>
+      <div className="space-y-3">
         {state.error && <FieldError>{state.error}</FieldError>}
         <Button data-ph-capture="place-order" type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'}
@@ -303,7 +284,20 @@ export function CheckoutForm({
   )
 }
 
-// Radio list styled as selectable rows
+function AddLink({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+    >
+      <PlusIcon className="size-3.5" />
+      {label}
+    </button>
+  )
+}
+
+// Radio list styled as selectable rows. A lone choice is just shown: nothing to pick, the value still goes along.
 function Choices({
   name,
   value,
@@ -315,16 +309,20 @@ function Choices({
   onChange: (id: string) => void
   choices: { id: string; label: string; aside?: string; hint?: string }[]
 }) {
+  const single = choices.length === 1
   return (
     <div className="divide-y rounded-lg border">
       {choices.map((c) => (
-        <label key={c.id} className="flex cursor-pointer items-center gap-3 p-3 text-sm has-checked:bg-muted/60">
+        <label
+          key={c.id}
+          className={`flex items-center gap-3 p-3 text-sm has-checked:bg-muted/60 ${single ? '' : 'cursor-pointer'}`}
+        >
           <input
-            type="radio"
+            type={single ? 'hidden' : 'radio'}
             name={name}
             value={c.id}
-            checked={value === c.id}
-            onChange={() => onChange(c.id)}
+            checked={single ? undefined : value === c.id}
+            onChange={single ? undefined : () => onChange(c.id)}
             className="size-4 accent-primary"
           />
           <span className="flex-1">
