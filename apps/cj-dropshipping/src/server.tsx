@@ -34,6 +34,7 @@ import {
 } from './import'
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
+import { ensureOrderWebhook } from './webhook'
 import { icon, ProductList, SettingsPage, type MyProduct } from './settings'
 
 // Public origin ShopNex and the admin (iframe) reach this app at
@@ -72,19 +73,6 @@ function myProducts(data: unknown): MyProduct[] {
         linked: false,
       },
     ]
-  })
-}
-
-/**
- * Paid orders reach the app through a subscription made with its own token. Uninstalling the app deletes it (and
- * installing again makes a new token), so check it is there instead of remembering that it was made.
- */
-async function ensureOrderWebhook(shop: ShopContext) {
-  const url = `${APP_URL}/shopnex/webhook`
-  const mine = await shop.admin.api.get('/webhooks')
-  if (mine.some((h) => h.url === url && h.active)) return
-  await shop.admin.api.post('/webhooks', {
-    body: { url, description: 'CJ Dropshipping', topics: ['order.paid'], active: true },
   })
 }
 
@@ -133,7 +121,7 @@ app.get('/', async (c) => {
       .catch((error) => (shippingError = message(error)))
   // After an uninstall and a new install the subscription is gone: make it again, so paid orders still reach CJ
   if (connected)
-    await ensureOrderWebhook(shop).catch((error) => console.warn('[cj] order subscription:', message(error)))
+    await ensureOrderWebhook(shop, APP_URL).catch((error) => console.warn('[cj] order subscription:', message(error)))
   return c.html(
     <SettingsPage
       connected={connected}
@@ -185,7 +173,7 @@ app.post('/api/connect', async (c) => {
     return c.json({ error: `CJ rejected this key: ${message(error)}` }, 400)
   }
   try {
-    await ensureOrderWebhook(shop)
+    await ensureOrderWebhook(shop, APP_URL)
   } catch (error) {
     return c.json({ error: `Saved, but couldn't subscribe to paid orders: ${message(error)}` }, 502)
   }
