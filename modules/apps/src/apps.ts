@@ -25,7 +25,7 @@ import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken 
 import { AppError } from './errors'
 import { instanceSigner, ownKey } from './keys'
 import { rememberInternalUrl, serverUrl } from './internal-url'
-import { instanceUrl } from './marketplace'
+import { instanceUrl, reportInstallationsSoon } from './marketplace'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const random = (bytes: number) => randomBytes(bytes).toString('base64url')
@@ -225,7 +225,8 @@ export async function exchangeCode(input: {
       })
       return { accessToken: token, scopes: code.scopes, shopId: code.shopId, installationId: installation.id, app }
     })
-    .then(({ app, ...result }) => {
+    .then(async ({ app, ...result }) => {
+      await reportToMarketplace(app)
       notifyInstalled(app, result.installationId, result.shopId)
       return result
     })
@@ -347,8 +348,19 @@ export async function installManaged(input: { appId: string; shopId: string; use
     })
     return { installation, app }
   })
+  await reportToMarketplace(app)
   notifyInstalled(app, installation.id, installation.shopId)
   return installation
+}
+
+/**
+ * A marketplace app asks the marketplace "is this install real?" before it trusts an instance, and the marketplace
+ * only knows what we report. So report first, then let the app (and the merchant, who is sent into it next) in:
+ * after the install commits and before the app is notified. Never throws and gives up after 5s (a failed report
+ * heals on the next sync, and the app checks again when it is opened). Other apps are not the marketplace's business.
+ */
+async function reportToMarketplace(app: Pick<App, 'source'>) {
+  if (app.source === 'marketplace') await reportInstallationsSoon()
 }
 
 /**
