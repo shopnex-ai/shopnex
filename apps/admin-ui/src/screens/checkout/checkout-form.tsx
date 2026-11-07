@@ -81,7 +81,7 @@ export function CheckoutForm({
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
   })
   // Tax follows the address as it's typed, and the order summary beside the form follows the totals
-  const { setCountry, setProvince, setShippingCents, totals, shippingUnknown } = useCheckoutTotals()
+  const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
   useEffect(() => setCountry(country), [country, setCountry])
   useEffect(() => setProvince(province), [province, setProvince])
   const money = (cents: number) => formatMoney(cents, currency)
@@ -176,13 +176,7 @@ export function CheckoutForm({
     )
   }
 
-  // The amount rides on the button once shipping is known (until then the total would still change)
-  const action = method?.offsite ? 'Continue to payment' : 'Place order'
-  const label = formState.isSubmitting
-    ? 'Placing order…'
-    : shippingUnknown
-      ? action
-      : `${action} · ${money(totals.totalCents)}`
+  const label = formState.isSubmitting ? 'Placing order…' : method?.offsite ? 'Continue to payment' : 'Place order'
 
   const optionalAddressFields: OptionalField[] = [
     { name: 'address2', label: 'Apartment, suite, etc.', props: { autoComplete: 'address-line2' } },
