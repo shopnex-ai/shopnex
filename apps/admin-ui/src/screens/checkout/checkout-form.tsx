@@ -14,7 +14,7 @@ import {
   FieldSet,
 } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
-import { buyer } from './buyer-schema'
+import { buyer, regionRequired } from './buyer-schema'
 import { placeOrder, quoteRates, type CheckoutFields } from './functions'
 import { PlaceOrderButton, useCheckoutTotals } from './totals'
 
@@ -251,7 +251,12 @@ export function CheckoutForm({
           <div className="grid gap-4 sm:grid-cols-3">
             <TextField control={control} name="zip" label="Postal code" autoComplete="postal-code" />
             <TextField control={control} name="city" label="City" autoComplete="address-level2" />
-            <TextField control={control} name="province" label="State / region" autoComplete="address-level1" />
+            <TextField
+              control={control}
+              name="province"
+              label={regionRequired(country) ? 'State / region' : 'State / region (optional)'}
+              autoComplete="address-level1"
+            />
           </div>
           {optionalFields(optionalAddressFields)}
           {addLinks(optionalAddressFields)}
