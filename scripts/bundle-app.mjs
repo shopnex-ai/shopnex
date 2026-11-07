@@ -4,7 +4,8 @@
 //   node scripts/bundle-app.mjs apps/stripe        → apps/stripe/dist/server.mjs
 //
 // Everything is inlined (no node_modules at runtime). @shopnex/app reads the app-bridge file from disk, which a
-// bundle can't do, so that one read is replaced by the file's contents.
+// bundle can't do, so that one read is replaced by the file's contents. The same goes for an app's own icon:
+// `readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` becomes the SVG's text.
 import { build } from 'esbuild'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -31,6 +32,23 @@ const inlineAppBridge = {
   },
 }
 
+const svgRead = /readFileSync\(new URL\('(\.\/[\w.-]+\.svg)', import\.meta\.url\), 'utf8'\)/g
+const inlineSvgFiles = {
+  name: 'inline-svg-files',
+  setup(b) {
+    b.onLoad({ filter: /\.tsx?$/ }, (args) => {
+      if (!args.path.startsWith(join(dir, 'src'))) return
+      const source = readFileSync(args.path, 'utf8')
+      if (!svgRead.test(source)) return
+      svgRead.lastIndex = 0
+      const contents = source.replace(svgRead, (_, file) =>
+        JSON.stringify(readFileSync(join(dirname(args.path), file), 'utf8')),
+      )
+      return { contents, loader: args.path.endsWith('x') ? 'tsx' : 'ts' }
+    })
+  },
+}
+
 await build({
   entryPoints: [entry],
   outfile: join(dir, 'dist/server.mjs'),
@@ -42,6 +60,6 @@ await build({
   legalComments: 'none',
   // Bundled CommonJS dependencies call require()
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
-  plugins: [inlineAppBridge],
+  plugins: [inlineAppBridge, inlineSvgFiles],
   logLevel: 'info',
 })

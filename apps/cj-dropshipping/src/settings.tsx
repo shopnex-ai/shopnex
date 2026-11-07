@@ -17,8 +17,6 @@ import {
 import type { CjSettings } from './cj'
 import type { ForwardedOrder } from './db'
 
-export const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#ff6a00"/><text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="28" fill="#fff">CJ</text></svg>`
-
 export type MyProduct = {
   pid: string
   name: string
