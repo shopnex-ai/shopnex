@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { CartError, cartService, checkoutService } from '@shopnex/cart'
@@ -11,7 +11,7 @@ import { checkoutBranding } from './branding'
 
 const tokenValidator = (token: string) => token
 
-export const getCheckout = createServerFn({ method: 'GET' })
+export const getCheckout = publicFn({ method: 'GET' })
   .validator(tokenValidator)
   .handler(async ({ data: token }) => {
     const found = await cartService.findByToken(null, token)
@@ -68,7 +68,7 @@ export type RatesAddress = {
 }
 
 /** The shipping methods for the address typed so far: the shop's flat rates plus its carrier services' live rates */
-export const quoteRates = createServerFn({ method: 'POST' })
+export const quoteRates = publicFn({ method: 'POST' })
   .validator((input: { token: string; address: RatesAddress }) => input)
   .handler(async ({ data }) => {
     const found = await cartService.findByToken(null, data.token)
@@ -121,7 +121,7 @@ export type PlaceOrderState = {
   redirectTo?: string
 }
 
-export const placeOrder = createServerFn({ method: 'POST' })
+export const placeOrder = publicFn({ method: 'POST' })
   .validator((input: { token: string; values: CheckoutFields }) => input)
   .handler(async ({ data }): Promise<PlaceOrderState> => {
     const values = Object.fromEntries(fields.map((field) => [field, String(data.values[field] ?? '')]))
@@ -163,7 +163,7 @@ const confirmationUrl = (token: string) =>
   `${(process.env.APP_URL ?? process.env.BETTER_AUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/checkout/${token}`
 
 /** Confirmation page "Pay now": a new attempt for an unpaid payments app order */
-export const payNow = createServerFn({ method: 'POST' })
+export const payNow = publicFn({ method: 'POST' })
   .validator(tokenValidator)
   .handler(async ({ data: token }): Promise<{ redirectTo?: string; error?: string }> => {
     const cart = await cartService.findByToken(null, token)
@@ -180,7 +180,7 @@ export const payNow = createServerFn({ method: 'POST' })
   })
 
 export type DiscountCodeState = { error?: string }
-export const applyDiscountCode = createServerFn({ method: 'POST' })
+export const applyDiscountCode = publicFn({ method: 'POST' })
   .validator((input: { token: string; code: string }) => input)
   .handler(async ({ data }): Promise<DiscountCodeState> => {
     const code = data.code.trim()
@@ -205,7 +205,7 @@ export const applyDiscountCode = createServerFn({ method: 'POST' })
     return {}
   })
 
-export const removeDiscountCode = createServerFn({ method: 'POST' })
+export const removeDiscountCode = publicFn({ method: 'POST' })
   .validator(tokenValidator)
   .handler(async ({ data: token }) => {
     const cart = await cartService.findByToken(null, token)

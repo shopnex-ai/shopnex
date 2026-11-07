@@ -1,0 +1,66 @@
+name: PR labels
+
+# Sets one label from the pull request title prefix, so release notes (.github/release.yml) group themselves:
+#   feat: / perf:                                  → enhancement
+#   fix:                                           → bug
+#   docs:                                          → documentation
+#   chore: / refactor: / test: / style: / ci: ...  → maintenance
+#   chore(deps): / build(deps):                    → dependencies (left out of the notes)
+# A title without a known prefix gets no label and lands under "Other changes". Labels you add by hand are never touched.
+
+on:
+  # pull_request_target so fork PRs get a token that can label. Nothing from the PR is checked out or run: only the
+  # title is read, and it goes through an environment variable, never straight into the shell.
+  pull_request_target:
+    types: [opened, edited, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    name: Label from title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          title=$(printf '%s' "$TITLE" | tr '[:upper:]' '[:lower:]')
+
+          # type(scope)!: description
+          if [[ "$title" =~ ^([a-z]+)(\(([^\)]*)\))?\!?: ]]; then
+            type="${BASH_REMATCH[1]}"
+            scope="${BASH_REMATCH[3]}"
+          else
+            type=""
+            scope=""
+          fi
+
+          case "$type" in
+            feat | perf) want=enhancement ;;
+            fix) want=bug ;;
+            docs) want=documentation ;;
+            chore | build | refactor | test | style | ci | remove | upgrade) want=maintenance ;;
+            *) want="" ;;
+          esac
+          # dependency bumps are noise in the notes
+          if [[ "$scope" == "deps" || "$scope" == "deps-dev" ]]; then want=dependencies; fi
+
+          # the labels this workflow manages; drop the ones that no longer match after a title edit
+          for label in enhancement bug documentation maintenance dependencies; do
+            if [[ "$label" != "$want" ]]; then
+              gh api -X DELETE "repos/$REPO/issues/$PR/labels/$label" --silent 2>/dev/null || true
+            fi
+          done
+
+          if [[ -n "$want" ]]; then
+            # adding through the API creates the label if the repo does not have it yet
+            gh api -X POST "repos/$REPO/issues/$PR/labels" -f "labels[]=$want" --silent
+            echo "Labeled #$PR: $want"
+          else
+            echo "No known prefix in the title of #$PR: left unlabeled"
+          fi

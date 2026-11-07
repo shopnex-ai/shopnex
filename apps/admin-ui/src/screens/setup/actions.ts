@@ -1,10 +1,10 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from '@/lib/server-fn'
 import { setupInput } from '@shopnex/api/schemas'
 import { completeSetup } from '@shopnex/auth/setup'
 
 export type SetupResult = { error?: string }
 
-export const runSetup = createServerFn({ method: 'POST' })
+export const runSetup = publicFn({ method: 'POST' })
   .validator((values: unknown) => values)
   .handler(async ({ data }): Promise<SetupResult> => {
     const parsed = setupInput.safeParse(data)

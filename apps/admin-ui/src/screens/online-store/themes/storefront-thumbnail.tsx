@@ -5,8 +5,8 @@
 // editor.
 import { Link } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
-import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { PreviewLoader } from './preview-loader'
 
 // The page is laid out at this size, then scaled to the thumbnail's width
 const VIEWPORT = { width: 1280, height: 800 }
@@ -33,7 +33,7 @@ export function StorefrontThumbnail({ url, themeId }: { url: string | null; them
       aria-label="Customize theme"
       className="relative block aspect-[16/10] w-full overflow-hidden rounded-md border bg-muted ring-offset-background transition hover:ring-2 hover:ring-ring hover:ring-offset-2"
     >
-      {!loaded && <Skeleton className="absolute inset-0 rounded-none" />}
+      {!loaded && <PreviewLoader logoClassName="size-10" />}
       {scale > 0 && url && (
         <iframe
           src={url}

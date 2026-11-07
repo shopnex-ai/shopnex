@@ -22,7 +22,7 @@ export default defineConfig(
     '**/next-env.d.ts',
     // Built by templates/storefront/scripts/themes.mjs
     'templates/storefront/themes/*/assets/',
-    'templates/storefront/public/shopnex/',
+    'templates/storefront/built/',
   ]),
 
   js.configs.recommended,

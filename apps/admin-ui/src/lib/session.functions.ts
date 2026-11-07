@@ -1,26 +1,26 @@
-import { createServerFn } from '@tanstack/react-start'
+import { publicFn } from './server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { isSetupComplete } from '@shopnex/auth/setup'
 import { auth, enabledSocialProviders, isSuperAdmin } from '@shopnex/auth'
 import { isOpenSignup, listSwitchableShops, resolveAdminShop, setActiveShop } from '@shopnex/tenancy'
 
-export const getSocialProviders = createServerFn({ method: 'GET' }).handler(() => enabledSocialProviders)
+export const getSocialProviders = publicFn({ method: 'GET' }).handler(() => enabledSocialProviders)
 
 // Public demo only (DEMO_MODE=true): the shared login that /admin/login?demo prefills. These credentials are
 // meant to be public, which is why nothing else ever returns them.
-export const getDemoLogin = createServerFn({ method: 'GET' }).handler(() => {
+export const getDemoLogin = publicFn({ method: 'GET' }).handler(() => {
   const { DEMO_MODE, DEMO_EMAIL, DEMO_PASSWORD } = process.env
   return DEMO_MODE === 'true' && DEMO_EMAIL && DEMO_PASSWORD ? { email: DEMO_EMAIL, password: DEMO_PASSWORD } : null
 })
 
 // Hosted deployments only: POSTHOG_KEY is set on demo.shopnex.ai / the demo and nowhere else, so a self-hosted or cloned
 // install gets null and loads no analytics. See lib/analytics.ts.
-export const getAnalyticsConfig = createServerFn({ method: 'GET' }).handler(() => {
+export const getAnalyticsConfig = publicFn({ method: 'GET' }).handler(() => {
   const { POSTHOG_KEY, POSTHOG_HOST } = process.env
   return POSTHOG_KEY ? { key: POSTHOG_KEY, host: POSTHOG_HOST || 'https://eu.i.posthog.com' } : null
 })
 
-export const getAdminContext = createServerFn({ method: 'GET' }).handler(async () => {
+export const getAdminContext = publicFn({ method: 'GET' }).handler(async () => {
   const setupComplete = await isSetupComplete()
   const openSignup = isOpenSignup
   if (!setupComplete) return { setupComplete, openSignup, session: null, tenant: null }
@@ -34,15 +34,15 @@ export const getAdminContext = createServerFn({ method: 'GET' }).handler(async (
   return { setupComplete, openSignup, session, tenant }
 })
 
-export const getSetupStatus = createServerFn({ method: 'GET' }).handler(async () => isSetupComplete())
+export const getSetupStatus = publicFn({ method: 'GET' }).handler(async () => isSetupComplete())
 
 // Shops the sidebar's switcher offers (empty in single mode, or without a session)
-export const getSwitchableShops = createServerFn({ method: 'GET' }).handler(async () => {
+export const getSwitchableShops = publicFn({ method: 'GET' }).handler(async () => {
   const session = await auth.api.getSession({ headers: getRequest().headers })
   return session ? listSwitchableShops(session.user.id, isSuperAdmin(session.user)) : []
 })
 
-export const switchShop = createServerFn({ method: 'POST' })
+export const switchShop = publicFn({ method: 'POST' })
   .validator((shopId: string) => shopId)
   .handler(async ({ data: shopId }) => {
     const session = await auth.api.getSession({ headers: getRequest().headers })
