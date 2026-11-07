@@ -19,6 +19,7 @@ import { Route as AdminDiscountsRouteImport } from './routes/admin/discounts'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminOnlineStoreRouteRouteImport } from './routes/admin/online-store/route'
 import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/route'
+import { Route as AdminPlatformRouteImport } from './routes/admin/platform'
 import { Route as AdminProductsRouteRouteImport } from './routes/admin/products/route'
 import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/route'
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
@@ -108,6 +109,11 @@ const AdminOnlineStoreRouteRoute = AdminOnlineStoreRouteRouteImport.update({
 const AdminOrdersRouteRoute = AdminOrdersRouteRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPlatformRoute = AdminPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminProductsRouteRoute = AdminProductsRouteRouteImport.update({
@@ -334,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -438,6 +446,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
@@ -492,6 +501,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/login'
+    | '/admin/platform'
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
@@ -543,6 +553,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/login'
+    | '/admin/platform'
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/login'
+    | '/admin/platform'
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
@@ -713,6 +725,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/platform': {
+      id: '/admin/platform'
+      path: '/platform'
+      fullPath: '/admin/platform'
+      preLoaderRoute: typeof AdminPlatformRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/products': {
@@ -1188,6 +1207,7 @@ interface AdminRouteRouteChildren {
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminPlatformRoute: typeof AdminPlatformRoute
   AdminSetupRoute: typeof AdminSetupRoute
   AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
@@ -1207,6 +1227,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminPlatformRoute: AdminPlatformRoute,
   AdminSetupRoute: AdminSetupRoute,
   AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,

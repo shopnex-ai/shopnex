@@ -15,6 +15,7 @@ import {
   NotebookTextIcon,
   PackageIcon,
   PercentIcon,
+  ServerIcon,
   Share2Icon,
   ShoppingCartIcon,
   SparklesIcon,
@@ -62,6 +63,10 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
+  },
+  {
+    label: 'Platform',
+    items: [{ href: '/admin/platform', label: 'Shops & users', icon: ServerIcon, superAdminOnly: true }],
   },
 ]
 

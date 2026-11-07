@@ -213,37 +213,38 @@ function NavGroup({
 }) {
   const pathname = useLocation({ select: (location) => location.pathname })
   const { isMobile, setOpenMobile } = useSidebar()
+  const visible = items.filter((item) => !item.superAdminOnly || superAdmin)
+  // A group that is all super admin pages has nothing to show everyone else
+  if (visible.length === 0) return null
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
-        {items
-          .filter((item) => !item.superAdminOnly || superAdmin)
-          .map((item) =>
-            item.external ? (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton render={<a href={item.href} target="_blank" rel="noopener" />} tooltip={item.label}>
-                  <item.icon />
-                  <span>{item.label}</span>
-                  <ExternalLinkIcon className="ml-auto opacity-50" />
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ) : (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  render={<Link to={item.href} onClick={() => isMobile && setOpenMobile(false)} />}
-                  isActive={
-                    item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  }
-                  tooltip={item.label}
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-                {canManageApps && item.href === '/admin/apps' && <InstalledApps />}
-              </SidebarMenuItem>
-            ),
-          )}
+        {visible.map((item) =>
+          item.external ? (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton render={<a href={item.href} target="_blank" rel="noopener" />} tooltip={item.label}>
+                <item.icon />
+                <span>{item.label}</span>
+                <ExternalLinkIcon className="ml-auto opacity-50" />
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ) : (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                render={<Link to={item.href} onClick={() => isMobile && setOpenMobile(false)} />}
+                isActive={
+                  item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+                }
+                tooltip={item.label}
+              >
+                <item.icon />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+              {canManageApps && item.href === '/admin/apps' && <InstalledApps />}
+            </SidebarMenuItem>
+          ),
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )

@@ -34,6 +34,7 @@ import {
 import { orders as adminOrders } from './routers/admin/orders'
 import { products as adminProducts } from './routers/admin/products'
 import { shop as adminShop } from './routers/admin/shop'
+import { platform as adminPlatform } from './routers/admin/platform'
 import { staff as adminStaff } from './routers/admin/staff'
 import { storage as adminStorage } from './routers/admin/storage'
 import { channels as adminChannels } from './routers/admin/channels'
@@ -73,6 +74,7 @@ export const router = {
     domains: tagged('Admin · Domains').router(adminDomains),
     storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
     staff: tagged('Admin · Staff').router(adminStaff),
+    platform: tagged('Admin · Platform').router(adminPlatform),
     storage: tagged('Admin · Storage').router(adminStorage),
     email: tagged('Admin · Email').router(adminEmail),
     notifications: tagged('Admin · Email').router(adminNotifications),
