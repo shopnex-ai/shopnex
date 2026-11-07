@@ -6,7 +6,7 @@
 //   app.route('/', shopnex.routes)
 //   app.get('/api/stats', async (c) => {
 //     const { shop, admin } = await shopnex.authenticate(c)
-//     return c.json({ shop: shop.name, orders: await admin.get('/orders?limit=1') })
+//     return c.json({ shop: shop.name, orders: await admin.api.get('/orders', { params: { query: { limit: 1 } } }) })
 //   })
 //
 // How it stays stateless: ShopNex signs session tokens, payments requests and webhooks with its own key
@@ -114,7 +114,7 @@ export type ShopContext = {
       name: string
       gateway: string
       paymentSessionUrl: string
-      refundSessionUrl?: string
+      refundSessionUrl: string
       ready: boolean
     }): Promise<void>
   }
@@ -236,7 +236,6 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
 
   function shopContext(instance: string, shopId: string, first: Token): ShopContext {
     const admin = createAdminClient(instance, async () => (await token(instance, shopId)).accessToken, reach(instance))
-    const session = (id: string, action: string) => `/payment-sessions/${encodeURIComponent(id)}/${action}`
     return {
       instance,
       shopId,
@@ -244,16 +243,25 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       admin,
       data: options.data?.(instance, shopId) ?? createAppData(remoteKeyValue(admin), dataKey),
       payments: {
-        resolve: async (id, externalId) => void (await admin.post(session(id, 'resolve'), { externalId })),
-        reject: async (id, reason) => void (await admin.post(session(id, 'reject'), { reason })),
-        attemptFailed: async (id, reason) => void (await admin.post(session(id, 'attempt-failed'), { reason })),
-        configure: async (method) => void (await admin.post('/payments-app/configure', method)),
+        resolve: async (id, externalId) =>
+          void (await admin.api.post('/payment-sessions/{id}/resolve', {
+            params: { path: { id } },
+            body: { externalId },
+          })),
+        reject: async (id, reason) =>
+          void (await admin.api.post('/payment-sessions/{id}/reject', { params: { path: { id } }, body: { reason } })),
+        attemptFailed: async (id, reason) =>
+          void (await admin.api.post('/payment-sessions/{id}/attempt-failed', {
+            params: { path: { id } },
+            body: { reason },
+          })),
+        configure: async (method) => void (await admin.api.post('/payments-app/configure', { body: method })),
       },
       ai: {
-        configure: async (capabilities) => void (await admin.post('/ai-app/configure', { capabilities })),
+        configure: async (capabilities) => void (await admin.api.post('/ai-app/configure', { body: { capabilities } })),
       },
       shipping: {
-        configure: (service) => admin.post('/carrier-services/configure', service),
+        configure: (service) => admin.api.post('/carrier-services/configure', { body: service }),
       },
     }
   }
@@ -269,7 +277,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
     const key = `${ctx.instance}|${ctx.shopId}`
     const cached = shops.get(key)
     if (cached && Date.now() - cached.at < 5 * 60_000) return cached.shop
-    const shop = await ctx.admin.get<Shop>('/shop')
+    const shop = await ctx.admin.api.get('/shop')
     shops.set(key, { shop, at: Date.now() })
     return shop
   }

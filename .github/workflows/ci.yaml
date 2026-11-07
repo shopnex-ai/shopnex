@@ -65,6 +65,10 @@ jobs:
 
       - run: pnpm typecheck
 
+      # The Admin API types in @shopnex/app are generated from the router: a route change needs `pnpm --filter @shopnex/app generate`
+      - name: Admin API types are up to date
+        run: pnpm --filter @shopnex/app generate && git diff --exit-code packages/app/src/admin-api.gen.ts
+
       - run: pnpm test
 
       - run: pnpm build

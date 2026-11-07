@@ -100,9 +100,9 @@ export async function syncTracking(shop: ShopContext, tables: Tables) {
       const result = await cj.orders.queryOrder({ orderId: cj_order_id })
       const trackingNumber = result.data?.trackNumber
       if (!trackingNumber) continue
-      await shop.admin.post(`/orders/${order_id}/fulfill`, {
-        trackingNumber,
-        trackingCompany: result.data?.logisticName,
+      await shop.admin.api.post('/orders/{id}/fulfill', {
+        params: { path: { id: order_id } },
+        body: { trackingNumber, trackingCompany: result.data?.logisticName },
       })
       tables.setOrder(shop, order_id, 'fulfilled', { trackingNumber })
     } catch (error) {

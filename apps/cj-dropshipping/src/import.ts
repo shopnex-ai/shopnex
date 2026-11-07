@@ -5,8 +5,6 @@ import type { ProductDetails } from '@shopnex/cj-sdk'
 import { cjFor, settingsOf } from './cj'
 import type { Tables } from './db'
 
-type Product = { id: string; title: string }
-
 /** What products this app ships are marked with, so other carrier apps leave them alone (fulfilledBy) */
 export const CLIENT_ID = 'app_cj_dropshipping'
 
@@ -112,18 +110,20 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
     }
   })
 
-  const created = await shop.admin.post<Product>('/products', {
-    title: product.productNameEn || product.productName[0],
-    status: 'draft',
-    descriptionHtml: product.description ?? '',
-    vendor: 'CJ Dropshipping',
-    fulfilledBy: CLIENT_ID,
-    images: imagesOf(product.productImage)
-      .filter(httpUrl)
-      .slice(0, 20)
-      .map((url) => ({ url })),
-    options: [{ name: 'Variant', values: variants.map((v) => v.value) }],
-    variants: variants.map(({ value: _, ...v }) => v),
+  const created = await shop.admin.api.post('/products', {
+    body: {
+      title: product.productNameEn || product.productName[0] || pid,
+      status: 'draft',
+      descriptionHtml: product.description ?? '',
+      vendor: 'CJ Dropshipping',
+      fulfilledBy: CLIENT_ID,
+      images: imagesOf(product.productImage)
+        .filter(httpUrl)
+        .slice(0, 20)
+        .map((url) => ({ url })),
+      options: [{ name: 'Variant', values: variants.map((v) => v.value) }],
+      variants: variants.map(({ value: _, ...v }) => v),
+    },
   })
 
   cjVariants.forEach((v) => tables.saveVariant(shop, v.variantSku, pid, v.vid))
@@ -135,9 +135,7 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
 export async function shopSkus(shop: ShopContext) {
   const skus = new Set<string>()
   for (let offset = 0; offset < 500; offset += 100) {
-    const page = await shop.admin.get<{ items: { variants: { sku: string | null }[] }[]; total: number }>(
-      `/products?limit=100&offset=${offset}`,
-    )
+    const page = await shop.admin.api.get('/products', { params: { query: { limit: 100, offset } } })
     for (const product of page.items) for (const v of product.variants) if (v.sku) skus.add(v.sku)
     if (offset + 100 >= page.total) break
   }
@@ -179,13 +177,10 @@ export async function linkProduct(shop: ShopContext, tables: Tables, pid: string
 export async function markFulfilled(shop: ShopContext, skus: Set<string>) {
   let changed = 0
   for (let offset = 0; offset < 500; offset += 100) {
-    const page = await shop.admin.get<{
-      items: { id: string; fulfilledBy: string | null; variants: { sku: string | null }[] }[]
-      total: number
-    }>(`/products?limit=100&offset=${offset}`)
+    const page = await shop.admin.api.get('/products', { params: { query: { limit: 100, offset } } })
     for (const p of page.items) {
       if (p.fulfilledBy === CLIENT_ID || !p.variants.some((v) => v.sku && skus.has(v.sku))) continue
-      await shop.admin.patch(`/products/${p.id}`, { fulfilledBy: CLIENT_ID })
+      await shop.admin.api.patch('/products/{id}', { params: { path: { id: p.id } }, body: { fulfilledBy: CLIENT_ID } })
       changed++
     }
     if (offset + 100 >= page.total) break

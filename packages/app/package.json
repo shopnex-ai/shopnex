@@ -9,14 +9,22 @@
     "./store": "./src/store.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "generate": "tsx --env-file-if-exists=../../.env scripts/generate-admin-api.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/app-bridge": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
-    "hono": "catalog:"
+    "hono": "catalog:",
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@orpc/openapi": "^1.16.1",
+    "@orpc/zod": "^1.16.1",
+    "@shopnex/api": "workspace:^",
+    "@types/node": "catalog:",
+    "openapi-typescript": "^7.13.0",
+    "tsx": "^4.23.15"
   }
 }

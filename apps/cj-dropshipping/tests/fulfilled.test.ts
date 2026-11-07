@@ -7,11 +7,14 @@ import { CLIENT_ID, markFulfilled } from '../src/import'
 type P = { id: string; fulfilledBy: string | null; variants: { sku: string | null }[] }
 
 function shopWith(items: P[]) {
-  const patched: { path: string; body: unknown }[] = []
+  const patched: { id: string; body: unknown }[] = []
   const shop = {
     admin: {
-      get: async () => ({ items, total: items.length }),
-      patch: async (path: string, body: unknown) => void patched.push({ path, body }),
+      api: {
+        get: async () => ({ items, total: items.length }),
+        patch: async (_path: string, init: { params: { path: { id: string } }; body: unknown }) =>
+          void patched.push({ id: init.params.path.id, body: init.body }),
+      },
     },
   } as unknown as ShopContext
   return { shop, patched }
@@ -27,7 +30,7 @@ describe('markFulfilled', () => {
     ])
     const changed = await markFulfilled(shop, new Set(['CJ-1', 'CJ-3']))
     assert.equal(changed, 1)
-    assert.deepEqual(patched, [{ path: '/products/a', body: { fulfilledBy: CLIENT_ID } }])
+    assert.deepEqual(patched, [{ id: 'a', body: { fulfilledBy: CLIENT_ID } }])
   })
 
   test('nothing to mark, nothing changed', async () => {
