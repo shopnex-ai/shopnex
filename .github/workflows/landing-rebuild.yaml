@@ -1,0 +1,29 @@
+name: Rebuild landing
+
+# shopnex.ai/roadmap is prerendered from docs/roadmap.yml and shopnex.ai/changelog from GitHub Releases,
+# so the site must rebuild when either changes.
+# Needs the LANDING_DEPLOY_HOOK repo secret (a Cloudflare deploy hook URL for the landing project).
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/roadmap.yml
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger landing deploy
+        env:
+          HOOK: ${{ secrets.LANDING_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "LANDING_DEPLOY_HOOK is not set; skipping"
+            exit 0
+          fi
+          curl --fail --silent --show-error -X POST "$HOOK"
