@@ -81,9 +81,11 @@ function myProducts(data: unknown): MyProduct[] {
  */
 async function ensureOrderWebhook(shop: ShopContext) {
   const url = `${APP_URL}/shopnex/webhook`
-  const mine = await shop.admin.get<{ url: string; active: boolean }[]>('/webhooks')
+  const mine = await shop.admin.api.get('/webhooks')
   if (mine.some((h) => h.url === url && h.active)) return
-  await shop.admin.post('/webhooks', { url, description: 'CJ Dropshipping', topics: ['order.paid'], active: true })
+  await shop.admin.api.post('/webhooks', {
+    body: { url, description: 'CJ Dropshipping', topics: ['order.paid'], active: true },
+  })
 }
 
 /**
@@ -249,8 +251,9 @@ app.post('/api/link', async (c) => {
 
 app.post('/api/orders/:id/retry', async (c) => {
   const shop = await shopnex.authenticate(c)
-  const order = await shop.admin.get<PaidOrder>(`/orders/${c.req.param('id')}`)
-  await forwardOrder(shop, tables, order)
+  const order = await shop.admin.api.get('/orders/{id}', { params: { path: { id: c.req.param('id') } } })
+  // The API types the shipping address as plain JSON; it is the same address the order.paid webhook carries
+  await forwardOrder(shop, tables, order as PaidOrder)
   return c.json({ message: 'Sent again' })
 })
 

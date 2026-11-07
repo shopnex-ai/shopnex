@@ -1,6 +1,9 @@
 // The ShopNex Admin API for one shop, with an access token the SDK fetches (and refreshes) itself, plus the
 // app's own per-shop storage on top of it.
 
+import createClient, { type FetchResponse, type MaybeOptionalInit } from 'openapi-fetch'
+import type { paths } from './admin-api.gen'
+
 export class ShopnexError extends Error {
   constructor(
     readonly status: number,
@@ -12,7 +15,32 @@ export class ShopnexError extends Error {
   }
 }
 
+type Method = 'get' | 'put' | 'post' | 'patch' | 'delete'
+type PathsWith<M extends Method> = {
+  [P in keyof paths]: paths[P] extends { [K in M]: object } ? P : never
+}[keyof paths]
+type Rest<Init> = undefined extends Init ? [init?: Init] : [init: Init]
+type Call<M extends Method> = <P extends PathsWith<M>, Init extends MaybeOptionalInit<paths[P], M>>(
+  path: P,
+  ...init: Rest<Init>
+) => Promise<
+  NonNullable<FetchResponse<Extract<paths[P][M], Record<string | number, any>>, Init, 'application/json'>['data']>
+>
+
+/**
+ * The Admin API with types generated from the server (admin-api.gen.ts): paths, path/query params, request bodies
+ * and responses are checked. Paths are the templates (`/products/{id}`) with the values in `params`:
+ *
+ *   await admin.api.get('/products/{id}', { params: { path: { id } } })
+ *   await admin.api.post('/orders/{id}/fulfill', { params: { path: { id } }, body: { trackingNumber } })
+ *
+ * Throws a ShopnexError on a non-2xx answer, like the untyped methods.
+ */
+export type AdminApi = { [M in Method]: Call<M> }
+
 export type AdminClient = {
+  /** The typed Admin API: prefer it to the untyped methods below */
+  api: AdminApi
   /** Raw fetch against {instance}/api/v1/admin{path}, with the token */
   fetch(path: string, init?: RequestInit): Promise<Response>
   get<T = unknown>(path: string): Promise<T>
@@ -40,7 +68,28 @@ export function createAdminClient(instance: string, token: () => Promise<string>
     const text = await res.text()
     return (text ? JSON.parse(text) : null) as T
   }
+  const client = createClient<paths>({
+    baseUrl: base,
+    fetch: async (request) => {
+      const headers = new Headers(request.headers)
+      headers.set('authorization', `Bearer ${await token()}`)
+      return fetch(new Request(request, { headers, signal: AbortSignal.timeout(15_000) }))
+    },
+  })
+  client.use({
+    async onResponse({ response, request }) {
+      if (!response.ok) throw await errorOf(response.clone(), `${request.method} ${new URL(request.url).pathname}`)
+    },
+  })
+  const typed = (method: Method) => async (path: string, init?: object) => {
+    const run = client[method.toUpperCase() as Uppercase<Method>] as (
+      path: string,
+      init?: object,
+    ) => Promise<{ data?: unknown }>
+    return (await run(path, init)).data
+  }
   return {
+    api: Object.fromEntries((['get', 'put', 'post', 'patch', 'delete'] as const).map((m) => [m, typed(m)])) as AdminApi,
     fetch: doFetch,
     get: (path) => call('GET', path),
     post: (path, body) => call('POST', path, body ?? {}),
@@ -85,22 +134,23 @@ export type KeyValue = Pick<AppData, 'get' | 'set' | 'delete'>
 
 /** The default backend: the shop's own storage in ShopNex (Admin API) */
 export function remoteKeyValue(admin: AdminClient): KeyValue {
-  const path = (key: string) => `/app-data/${encodeURIComponent(key)}`
+  const at = (key: string) => ({ params: { path: { key } } })
   return {
     async get<T>(key: string) {
       try {
-        return (await admin.get<{ value: T }>(path(key))).value
+        return ((await admin.api.get('/app-data/{key}', at(key))) as { value: T }).value
       } catch (error) {
         if (error instanceof ShopnexError && error.status === 404) return null
         throw error
       }
     },
     async set(key, value) {
-      await admin.put(path(key), { value })
+      // Any JSON: the generated type spells JSON out structurally, which `unknown` can't be narrowed to
+      await admin.api.put('/app-data/{key}', { ...at(key), body: { value: value as never } })
     },
     async delete(key) {
       try {
-        await admin.delete(path(key))
+        await admin.api.delete('/app-data/{key}', at(key))
       } catch (error) {
         if (!(error instanceof ShopnexError && error.status === 404)) throw error
       }

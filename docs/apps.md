@@ -50,7 +50,7 @@ app.route('/', shopnex.routes) // /shopnex/app.js + app-bridge.js for the UI com
 
 app.get('/api/stats', async (c) => {
   const { shop, admin, data } = await shopnex.authenticate(c) // session token → cached 1-hour token
-  return c.json({ shop: shop.name, orders: await admin.get('/orders?limit=1') })
+  return c.json({ shop: shop.name, orders: await admin.api.get('/orders', { params: { query: { limit: 1 } } }) })
 })
 
 app.get('/', async (c) => {
