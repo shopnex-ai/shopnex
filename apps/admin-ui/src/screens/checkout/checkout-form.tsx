@@ -3,7 +3,7 @@
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useController, useWatch } from 'react-hook-form'
-import { TextareaField, TextField, useZodForm } from '@/components/admin/form'
+import { REQUIRED_MARK, TextareaField, TextField, useZodForm } from '@/components/admin/form'
 import {
   Field,
   FieldDescription,
@@ -160,16 +160,7 @@ export function CheckoutForm({
     opened.map((name) => {
       const item = items.find((i) => i.name === name)
       return (
-        item && (
-          <TextField
-            key={name}
-            control={control}
-            name={item.name}
-            label={`${item.label} (optional)`}
-            autoFocus
-            {...item.props}
-          />
-        )
+        item && <TextField key={name} control={control} name={item.name} label={item.label} autoFocus {...item.props} />
       )
     })
   const addLinks = (items: { name: string; label: string }[]) => {
@@ -213,7 +204,7 @@ export function CheckoutForm({
       <FieldSet>
         <FieldLegend>Contact</FieldLegend>
         <FieldGroup>
-          <TextField control={control} name="email" label="Email" type="email" autoComplete="email" />
+          <TextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
         </FieldGroup>
       </FieldSet>
 
@@ -221,7 +212,9 @@ export function CheckoutForm({
         <FieldLegend>Shipping address</FieldLegend>
         <FieldGroup>
           <Field data-invalid={countryField.fieldState.error ? true : undefined}>
-            <FieldLabel htmlFor="countryCode">Country / region</FieldLabel>
+            <FieldLabel htmlFor="countryCode" className={REQUIRED_MARK}>
+              Country / region
+            </FieldLabel>
             <select
               id="countryCode"
               name={countryField.field.name}
@@ -246,22 +239,24 @@ export function CheckoutForm({
             <FieldError errors={[countryField.fieldState.error]} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField control={control} name="firstName" label="First name (optional)" autoComplete="given-name" />
-            <TextField control={control} name="lastName" label="Last name" autoComplete="family-name" />
+            <TextField control={control} name="firstName" label="First name" autoComplete="given-name" />
+            <TextField control={control} name="lastName" label="Last name" autoComplete="family-name" required />
           </div>
-          <TextField control={control} name="address1" label="Address" autoComplete="address-line1" />
+          <TextField control={control} name="address1" label="Address" autoComplete="address-line1" required />
           <div className="grid gap-4 sm:grid-cols-3">
             <TextField
               control={control}
               name="zip"
-              label={postalCodeRequired(country) ? 'Postal code' : 'Postal code (optional)'}
+              label="Postal code"
+              required={postalCodeRequired(country)}
               autoComplete="postal-code"
             />
-            <TextField control={control} name="city" label="City" autoComplete="address-level2" />
+            <TextField control={control} name="city" label="City" autoComplete="address-level2" required />
             <TextField
               control={control}
               name="province"
-              label={regionRequired(country) ? 'State / region' : 'State / region (optional)'}
+              label="State / region"
+              required={regionRequired(country)}
               autoComplete="address-level1"
             />
           </div>
@@ -321,7 +316,7 @@ export function CheckoutForm({
       </FieldSet>
 
       {isOpen('note') ? (
-        <TextareaField control={control} name="note" label="Order note (optional)" rows={2} autoFocus />
+        <TextareaField control={control} name="note" label="Order note" rows={2} autoFocus />
       ) : (
         addLinks([{ name: 'note', label: 'Order note' }])
       )}
