@@ -118,9 +118,9 @@ function AppRow({ app, required }: { app: MarketplaceApp; required: boolean }) {
           <span className="font-medium">{app.name}</span>
           {app.approved ? (
             <Badge variant="secondary">Approved</Badge>
-          ) : (
+          ) : required ? (
             <Badge variant="outline">Awaiting approval</Badge>
-          )}
+          ) : null}
         </div>
         {app.developerName && <div className="text-xs text-muted-foreground">by {app.developerName}</div>}
         <div className="text-xs text-muted-foreground">Can access: {scopeSummary(app.scopes)}</div>
