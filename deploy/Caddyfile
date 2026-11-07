@@ -6,6 +6,13 @@
 {
 	admin off
 	{$AUTO_HTTPS_OPT}
+
+	# Behind a proxy that ends TLS (Traefik on Dokploy, a load balancer), keep the X-Forwarded-Proto/Host it sends.
+	# Without this Caddy overwrites them with its own plain-HTTP view, and the storefront builds http:// API URLs
+	# that the browser blocks as mixed content. Only private addresses are trusted, never the public internet.
+	servers {
+		trusted_proxies static private_ranges
+	}
 }
 
 {$SITE_ADDRESS} {
