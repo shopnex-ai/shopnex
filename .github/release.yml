@@ -1,0 +1,26 @@
+# Groups the generated release notes (`gh release create --generate-notes`) by pull request label.
+# Labels are set from the PR title prefix by .github/workflows/pr-labels.yaml (feat: → enhancement, fix: → bug, ...).
+changelog:
+  exclude:
+    labels:
+      - dependencies
+      - skip-changelog
+    authors:
+      - dependabot
+      - dependabot[bot]
+  categories:
+    - title: New features and improvements
+      labels:
+        - enhancement
+    - title: Fixes
+      labels:
+        - bug
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Under the hood
+      labels:
+        - maintenance
+    - title: Other changes
+      labels:
+        - '*'
