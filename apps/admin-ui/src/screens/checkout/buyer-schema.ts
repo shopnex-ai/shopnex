@@ -12,6 +12,34 @@ const optional = (max: number) =>
 export const REGION_REQUIRED = ['US', 'CA', 'AU']
 export const regionRequired = (countryCode: string) => REGION_REQUIRED.includes(countryCode)
 
+// Postal code shapes for the main countries, matched case-insensitively and loosely (a space or dash is optional).
+// Countries not listed take any code, or none: a wrong guess would turn away a real address.
+const POSTAL_CODES: Record<string, RegExp> = {
+  US: /^\d{5}(-?\d{4})?$/,
+  CA: /^[A-Z]\d[A-Z][ -]?\d[A-Z]\d$/i,
+  GB: /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i,
+  AU: /^\d{4}$/,
+  NZ: /^\d{4}$/,
+  DE: /^\d{5}$/,
+  FR: /^\d{5}$/,
+  ES: /^\d{5}$/,
+  IT: /^\d{5}$/,
+  NL: /^\d{4} ?[A-Z]{2}$/i,
+  BE: /^\d{4}$/,
+  AT: /^\d{4}$/,
+  CH: /^\d{4}$/,
+  SE: /^\d{3} ?\d{2}$/,
+  DK: /^\d{4}$/,
+  NO: /^\d{4}$/,
+  PL: /^\d{2}-?\d{3}$/,
+  JP: /^\d{3}-?\d{4}$/,
+  IN: /^\d{6}$/,
+  BR: /^\d{5}-?\d{3}$/,
+  MX: /^\d{5}$/,
+}
+/** The country uses postal codes we know the shape of, so one is required */
+export const postalCodeRequired = (countryCode: string) => countryCode in POSTAL_CODES
+
 export const buyer = z
   .object({
     email: z.email('Enter a valid email'),
@@ -33,5 +61,14 @@ export const buyer = z
   .superRefine((value, ctx) => {
     if (regionRequired(value.countryCode) && !value.province)
       ctx.addIssue({ code: 'custom', path: ['province'], message: 'Enter a state or region' })
+    const pattern = POSTAL_CODES[value.countryCode]
+    if (pattern && !(value.zip && pattern.test(value.zip))) {
+      const name = value.countryCode === 'US' ? 'ZIP' : 'postal'
+      ctx.addIssue({
+        code: 'custom',
+        path: ['zip'],
+        message: value.zip ? `Enter a valid ${name} code` : `Enter a ${name} code`,
+      })
+    }
   })
 export const checkoutFieldNames = Object.keys(buyer.shape)

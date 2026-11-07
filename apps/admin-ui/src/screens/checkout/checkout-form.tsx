@@ -14,7 +14,7 @@ import {
   FieldSet,
 } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
-import { buyer, regionRequired } from './buyer-schema'
+import { buyer, postalCodeRequired, regionRequired } from './buyer-schema'
 import { placeOrder, quoteRates, type CheckoutFields } from './functions'
 import { PlaceOrderButton, useCheckoutTotals } from './totals'
 
@@ -231,6 +231,8 @@ export function CheckoutForm({
               onBlur={countryField.field.onBlur}
               onChange={(e) => {
                 countryField.field.onChange(e.target.value)
+                // What was typed for the old country may not fit the new one
+                for (const name of ['zip', 'province'] as const) if (form.getValues(name)) void form.trigger(name)
                 void refreshRates()
               }}
               className="h-9 w-full rounded-md border bg-background px-2.5 text-sm"
@@ -249,7 +251,12 @@ export function CheckoutForm({
           </div>
           <TextField control={control} name="address1" label="Address" autoComplete="address-line1" />
           <div className="grid gap-4 sm:grid-cols-3">
-            <TextField control={control} name="zip" label="Postal code" autoComplete="postal-code" />
+            <TextField
+              control={control}
+              name="zip"
+              label={postalCodeRequired(country) ? 'Postal code' : 'Postal code (optional)'}
+              autoComplete="postal-code"
+            />
             <TextField control={control} name="city" label="City" autoComplete="address-level2" />
             <TextField
               control={control}
