@@ -61,6 +61,8 @@ function useRefresh() {
     Promise.all([
       queryClient.invalidateQueries({ queryKey: orpc.admin.marketplace.key() }),
       queryClient.invalidateQueries({ queryKey: orpc.admin.apps.key() }),
+      // The approval list below this card shows the apps a connect or sync just brought in
+      queryClient.invalidateQueries({ queryKey: orpc.admin.appRegistry.key() }),
     ])
 }
 
