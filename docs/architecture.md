@@ -40,7 +40,30 @@
 
 Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
-one way (orders → catalog, customers); domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`.
+one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`. Today's graph
+(a module imports only what is on its right):
+
+```text
+db        →
+channels  → db
+pricing   → db
+drafts    → db
+webhooks  → db
+theme     → db, drafts
+tenancy   → db, channels
+auth      → db, tenancy
+files     → db, tenancy, webhooks
+email     → db, tenancy, webhooks
+catalog   → db, channels, webhooks
+content   → db, catalog
+customers → db, auth, email, webhooks   (sign-in codes link a login to the customer)
+orders    → db, catalog, channels, customers, email, pricing, webhooks
+payments  → db, apps, orders, email, webhooks
+cart      → db, apps, catalog, channels, orders, payments, pricing
+apps      → db, tenancy
+ai        → db, apps, catalog, tenancy
+api       → everything above (transport only)
+```
 
 ## API layout
 

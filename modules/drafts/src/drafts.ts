@@ -77,7 +77,11 @@ export async function publish<T>(
   conn: Conn = db,
 ) {
   return conn.transaction(async (tx) => {
-    const [row] = await tx.select().from(t).where(byEntity(shopId, type, id)).for('update')
+    const [row] = await tx
+      .select()
+      .from(t)
+      .where(byEntity(shopId, type, id))
+      .for('update')
     if (!row) return { published: false as const, rev: 0 }
     if (options.expectedRev !== undefined && options.expectedRev !== row.rev) throw new DraftConflictError(row.rev)
     if (!Object.keys(row.changes).length) return { published: false as const, rev: row.rev }

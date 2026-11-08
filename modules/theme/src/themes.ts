@@ -150,7 +150,11 @@ export async function duplicate(shopId: string, id: string, name?: string, conn:
 // publishing them writes `files`, which buyers get when the copy is live. Apart from the document's draft. ---
 
 /** The files as the preview shows them: the copy's, with the draft over them */
-export async function codeDraft(shopId: string, copy: Pick<ShopTheme, 'id' | 'files' | 'filesVersion'>, conn: Conn = db) {
+export async function codeDraft(
+  shopId: string,
+  copy: Pick<ShopTheme, 'id' | 'files' | 'filesVersion'>,
+  conn: Conn = db,
+) {
   const { changes, rev } = await draftService.get(shopId, CODE_DRAFT, copy.id, conn)
   return {
     files: applyChanges(copy.files, changes),
