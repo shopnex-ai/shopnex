@@ -59,19 +59,17 @@ function priceRange(prices: number[], currency: string) {
 function toProduct(p: ProductWithDetails, currency: string): Product {
   const images = p.images.map(image)
   const featuredImage = images[0] ?? null
-  const variants = p.variants.map(
-    (v): ProductVariant => ({
-      id: v.id,
-      title: v.title,
-      sku: v.sku,
-      availableForSale: v.available,
-      price: money(v.priceCents, currency),
-      compareAtPrice: v.compareAtPriceCents != null ? money(v.compareAtPriceCents, currency) : null,
-      selectedOptions: v.selectedOptions,
-      // Like Shopify: falls back to the product image
-      image: v.imageUrl ? image({ url: v.imageUrl }) : featuredImage,
-    }),
-  )
+  const variants = p.variants.map((v): ProductVariant => ({
+    id: v.id,
+    title: v.title,
+    sku: v.sku,
+    availableForSale: v.available,
+    price: money(v.priceCents, currency),
+    compareAtPrice: v.compareAtPriceCents != null ? money(v.compareAtPriceCents, currency) : null,
+    selectedOptions: v.selectedOptions,
+    // Like Shopify: falls back to the product image
+    image: v.imageUrl ? image({ url: v.imageUrl }) : featuredImage,
+  }))
   const compareAt = p.variants.flatMap((v) => (v.compareAtPriceCents != null ? [v.compareAtPriceCents] : []))
   return {
     id: p.id,

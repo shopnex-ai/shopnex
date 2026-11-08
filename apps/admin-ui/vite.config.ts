@@ -14,9 +14,7 @@ export default defineConfig(({ mode }) => {
     ssr: { external: ['pg'] },
     resolve: {
       tsconfigPaths: true,
-      alias: [
-        { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
-      ],
+      alias: [{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) }],
     },
     plugins: [tanstackStart(), tailwindcss(), react()],
   }

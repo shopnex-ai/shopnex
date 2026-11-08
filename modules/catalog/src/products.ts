@@ -457,7 +457,7 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
     const { images, priceCents, slug } = patch
     const fields = { ...contentColumns(patch), ...(slug !== undefined && { slug }) }
     if (priceCents !== undefined) {
-      const variants = await listByProduct(id, tx)
+      const variants = await listByProduct(shopId, id, tx)
       if (variants.length !== 1 || variants[0]!.optionsKey !== '') {
         throw new CatalogError('HAS_VARIANTS', 'This product has variants: update the price on each variant')
       }
@@ -465,7 +465,7 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
         .update(schema.productVariants)
         .set({ priceCents, updatedAt: new Date() })
         .where(eq(schema.productVariants.id, variants[0]!.id))
-      await syncPriceCache(tx, id)
+      await syncPriceCache(shopId, id, tx)
     }
     if (Object.keys(fields).length) {
       await tx
