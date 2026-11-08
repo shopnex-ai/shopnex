@@ -1,13 +1,18 @@
 import type { APIRoute } from 'astro'
 import { shopnex } from '../../core/shopnex'
 
-async function all<T extends { handle: string; title: string }>(list: (args: { first: number; after?: string }) => Promise<{ nodes: T[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } }>) {
+async function all<T extends { handle: string; title: string }>(
+  list: (args: {
+    first: number
+    after?: string
+  }) => Promise<{ nodes: T[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } }>,
+) {
   const nodes: T[] = []
   let after: string | undefined
   do {
     const page = await list({ first: 100, after })
     nodes.push(...page.nodes)
-    after = page.pageInfo.hasNextPage ? page.pageInfo.endCursor ?? undefined : undefined
+    after = page.pageInfo.hasNextPage ? (page.pageInfo.endCursor ?? undefined) : undefined
     if (!after) break
   } while (after)
   return nodes
@@ -20,9 +25,14 @@ export const GET: APIRoute = async () => {
     all((args) => shopnex.collections.list(args)).catch(() => []),
     all((args) => shopnex.pages.list(args)).catch(() => []),
   ])
-  return new Response(JSON.stringify({
-    products: products.map(({ handle, title }) => ({ handle, title })),
-    collections: collections.map(({ handle, title }) => ({ handle, title })),
-    pages: pages.map(({ handle, title }) => ({ handle, title })),
-  }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' } })
+  return new Response(
+    JSON.stringify({
+      products: products.map(({ handle, title }) => ({ handle, title })),
+      collections: collections.map(({ handle, title }) => ({ handle, title })),
+      pages: pages.map(({ handle, title }) => ({ handle, title })),
+    }),
+    {
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*' },
+    },
+  )
 }
