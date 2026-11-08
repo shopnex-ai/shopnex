@@ -516,6 +516,8 @@ export const shopObject = (shop: Shop | null) => ({
   name: shop?.name ?? 'Store',
   handle: shop?.handle ?? null,
   currency: shop?.currencyCode ?? null,
+  /** The storefront's language, a BCP 47 tag: en, fr, pt-BR */
+  language: shop?.languageCode ?? 'en',
 })
 
 export const pageObject = (page: Page) => ({

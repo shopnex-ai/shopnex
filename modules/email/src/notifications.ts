@@ -474,6 +474,7 @@ function sampleOrder(shop: Shop): OrderView {
     email: 'jamie@example.com',
     phone: null,
     currency: shop.currency,
+    languageCode: shop.language,
     financialStatus: 'paid',
     fulfillmentStatus: 'unfulfilled',
     cancelledAt: null,

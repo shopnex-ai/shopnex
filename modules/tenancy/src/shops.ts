@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { canonicalLanguage } from '@shopnex/db/schema'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
 
@@ -52,13 +53,25 @@ export async function updateShop(
   patch: Partial<
     Pick<
       schema.Shop,
-      'name' | 'currency' | 'storefrontUrl' | 'seoTitle' | 'seoDescription' | 'taxesIncluded' | 'taxShipping'
+      | 'name'
+      | 'currency'
+      | 'language'
+      | 'storefrontUrl'
+      | 'seoTitle'
+      | 'seoDescription'
+      | 'taxesIncluded'
+      | 'taxShipping'
     >
   >,
 ) {
   // Multi mode derives the Storefront URL from the shop's domains; a shop can't set its own
   const { storefrontUrl: _ignored, ...rest } = patch
   const values = isMultiTenant ? rest : patch
+  if (values.language !== undefined) {
+    const language = canonicalLanguage(values.language)
+    if (!language) throw new Error(`"${values.language}" is not a language tag`)
+    values.language = language
+  }
   if (Object.keys(values).length === 0) return getShopById(id)
   const [shop] = await db.update(schema.shops).set(values).where(eq(schema.shops.id, id)).returning()
   return withStorefrontUrl(shop ?? null)

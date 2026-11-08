@@ -33,6 +33,7 @@ import {
   S3_PRESETS,
   SMTP_PRESETS,
   NOTIFICATIONS,
+  canonicalLanguage,
   type StoredMenuItem,
 } from '@shopnex/db/schema'
 
@@ -169,6 +170,9 @@ export const shopInput = createInsertSchema(shops, {
   name: (s) => s.trim().min(1).max(100),
   // Prices are stored in the shop's currency; existing orders keep the currency they were placed in
   currency: () => z.string().refine((c) => CURRENCY_CODES.includes(c), 'Choose a currency'),
+  // A BCP 47 tag (en, fr, pt-BR); stored in its canonical form
+  language: () =>
+    z.string().refine((l) => canonicalLanguage(l) !== null, 'Use a language code such as en, fr or pt-BR'),
   // Checkout's "Continue shopping" link
   storefrontUrl: () => z.url({ protocol: /^https?$/ }).max(500),
   // The homepage's <title> and meta description; empty = the shop name, none
@@ -177,6 +181,7 @@ export const shopInput = createInsertSchema(shops, {
 }).pick({
   name: true,
   currency: true,
+  language: true,
   storefrontUrl: true,
   seoTitle: true,
   seoDescription: true,

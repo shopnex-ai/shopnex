@@ -139,18 +139,23 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
     ),
   )
 
+  // Prices are written the way the shop's language writes them (1,234.50 in English, 1 234,50 in French)
+  const languageOf = (context: Context) => {
+    const language = context.getSync(['shop', 'language'])
+    return typeof language === 'string' && language ? language : 'en'
+  }
   liquid.registerFilter('money', function (this: { context: Context }, value: unknown) {
     const amount = MoneyDrop.unwrap(value)
-    if (amount) return formatMoney(amount)
+    if (amount) return formatMoney(amount, languageOf(this.context))
     // A plain number (minor units) is in the shop's currency
     const currency = this.context.getSync(['shop', 'currency'])
     if (typeof value === 'number' && typeof currency === 'string')
-      return formatMoney({ amountMinor: value, currencyCode: currency })
+      return formatMoney({ amountMinor: value, currencyCode: currency }, languageOf(this.context))
     return ''
   })
-  liquid.registerFilter('money_with_currency', (value: unknown) => {
+  liquid.registerFilter('money_with_currency', function (this: { context: Context }, value: unknown) {
     const amount = MoneyDrop.unwrap(value)
-    return amount ? `${formatMoney(amount)} ${amount.currencyCode}` : ''
+    return amount ? `${formatMoney(amount, languageOf(this.context))} ${amount.currencyCode}` : ''
   })
   /** "19.99" (structured data, forms) */
   liquid.registerFilter('money_without_currency', (value: unknown) => {

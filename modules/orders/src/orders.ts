@@ -364,6 +364,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       .returning({
         orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1`,
         currency: schema.shops.currency,
+        language: schema.shops.language,
         taxesIncluded: schema.shops.taxesIncluded,
         taxShipping: schema.shops.taxShipping,
       })
@@ -395,6 +396,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
         email: customer.email,
         phone: input.phone ?? input.shippingAddress?.phone ?? null,
         currency: shop!.currency,
+        languageCode: shop!.language,
         subtotalCents,
         shippingCents,
         discountCents: totals.discountCents,

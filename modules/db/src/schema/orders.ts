@@ -86,6 +86,9 @@ export const orders = pgTable(
     billingAddress: jsonb('billing_address').$type<MailingAddress>(),
     // Payment method chosen at checkout, snapshotted (Shopify paymentGatewayNames + manual method details)
     paymentGateway: text('payment_gateway'),
+    // The language of the storefront when the order was placed (the shop's language for now; the customer's own once
+    // shops can have several). Null on orders from before this existed and on imported ones: it can't be rebuilt later.
+    languageCode: text('language_code'),
     paymentMethodName: text('payment_method_name'),
     paymentInstructions: text('payment_instructions'),
     note: text('note'),

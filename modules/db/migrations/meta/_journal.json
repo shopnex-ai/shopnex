@@ -267,6 +267,13 @@
       "when": 1793775711057,
       "tag": "0037_sleepy_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794133071683,
+      "tag": "0038_vengeful_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }

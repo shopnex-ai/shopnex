@@ -11,6 +11,7 @@ import { Field, FieldGroup } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { clearAdminContext } from '@/lib/admin-context'
 import { currencyOptions } from '@/lib/currency'
+import { languageOptions } from '@/lib/languages'
 import { orpc, type Outputs } from '@/lib/orpc'
 
 type Shop = Outputs['admin']['shop']['get']
@@ -18,6 +19,7 @@ type Shop = Outputs['admin']['shop']['get']
 const toValues = (shop: Shop) => ({
   name: shop.name,
   currency: shop.currency,
+  language: shop.language,
   storefrontUrl: shop.storefrontUrl,
   seoTitle: shop.seoTitle,
   seoDescription: shop.seoDescription,
@@ -77,6 +79,13 @@ function ShopForm({ shop }: { shop: Shop }) {
           label="Currency"
           description="Existing prices are not converted. Orders already placed keep their currency."
           options={currencyOptions}
+        />
+        <SelectField
+          control={form.control}
+          name="language"
+          label="Language"
+          description="The language of your storefront: prices and dates are written the way it writes them, and pages carry it as their language. Theme text stays English until a theme has a translation for it."
+          options={languageOptions(shop.language)}
         />
         <TextField
           control={form.control}

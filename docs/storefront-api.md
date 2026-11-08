@@ -9,7 +9,7 @@ const shopnex = createStorefrontClient({
   baseUrl: 'http://localhost:3000',
   publishableKey: 'pk_…', // admin: POST /api/v1/admin/storefront-keys
 })
-const shop = await shopnex.shop.get() // { name, handle, currencyCode }
+const shop = await shopnex.shop.get() // { name, handle, currencyCode, languageCode }
 const { nodes, pageInfo } = await shopnex.products.list({
   first: 20,
   collection: 'summer',

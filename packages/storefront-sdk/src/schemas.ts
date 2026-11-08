@@ -54,6 +54,8 @@ export const Shop = z.object({
   handle: z.string(),
   /** ≠ Shopify nests this as paymentSettings.currencyCode */
   currencyCode: z.string().length(3),
+  /** The language of the storefront, a BCP 47 tag (en, fr, pt-BR) */
+  languageCode: z.string().default('en'),
   /** The homepage's title and meta description (Shopify: Online store → Preferences) */
   seo: Seo,
 })

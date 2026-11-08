@@ -1849,6 +1849,7 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        language: string;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -1869,6 +1870,7 @@ export interface operations {
                 "application/json": {
                     name?: string;
                     currency?: string;
+                    language?: string;
                     storefrontUrl?: string | null;
                     seoTitle?: string | null;
                     seoDescription?: string | null;
@@ -1897,6 +1899,7 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        language: string;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -3222,6 +3225,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3320,6 +3324,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3404,6 +3409,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -3493,6 +3499,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -3622,6 +3629,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -3693,6 +3701,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -3764,6 +3773,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;

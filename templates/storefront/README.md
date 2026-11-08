@@ -63,6 +63,9 @@ Names follow Shopify's Liquid, so Shopify theme developers feel at home (`src/co
 - Everywhere: `shop`, `settings` (the theme's), `collections` (by handle too, and `collections.all`),
   `linklists['main-menu'].links`, `request` (`path`, `page_type`, `design_mode` in the editor), `template`,
   `page_title`, `page_description`, `page_image`. A template can `{% assign page_title = … %}` for the layout.
+- `shop` has `name`, `handle`, `currency` and `language`, the storefront's language as a BCP 47 tag (`en`, `fr`,
+  `pt-BR`). Layouts set `<html lang="{{ shop.language }}">`, and `| money` writes a price the way that language writes
+  it (1,234.50 in English, 1 234,50 in French). In scripts, `formatMoney` follows the page's `lang`.
 - `product` (and `recommendations.products`), `collection` (with `sort_options`, `filters`, `active_filters`,
   `clear_filters_url` and `paginate` on catalog pages; `search` (`performed`, `terms`) on `/search`), `page`, in their templates. `section` (`id`, `type`, `settings`) in sections; `{% sections 'home' %}`
   renders a page's sections in the merchant's order.

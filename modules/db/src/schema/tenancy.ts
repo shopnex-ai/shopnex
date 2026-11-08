@@ -35,6 +35,9 @@ export const shops = pgTable('shops', {
   taxesIncluded: boolean('taxes_included').notNull().default(false),
   // Shopify "Charge tax on shipping rates"
   taxShipping: boolean('tax_shipping').notNull().default(false),
+  // The language of this shop's storefront, a BCP 47 tag (en, fr, pt-BR). It decides how prices and dates are formatted,
+  // the page's lang attribute, and (as themes gain locale files) which text a theme shows. Default English.
+  language: text('language').notNull().default('en'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
@@ -191,3 +194,16 @@ export const apiTokens = pgTable(
 )
 
 export type ApiToken = typeof apiTokens.$inferSelect
+
+/** A language tag's shape once canonical: 2 or 3 letters, then subtags such as a script or a region (fr, pt-BR, zh-Hant) */
+export const LANGUAGE_TAG_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
+
+/** The canonical form of a language tag (EN → en, pt-br → pt-BR), or null when it isn't one. Pure: safe in the browser. */
+export function canonicalLanguage(tag: string): string | null {
+  try {
+    const [canonical] = Intl.getCanonicalLocales(tag.trim())
+    return canonical && canonical !== 'und' && LANGUAGE_TAG_PATTERN.test(canonical) ? canonical : null
+  } catch {
+    return null
+  }
+}

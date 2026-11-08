@@ -138,3 +138,73 @@ describe('Storefront SDK Money Helpers', () => {
     })
   })
 })
+
+describe('formatMoney in a language', () => {
+  // Compared with the runtime's own formatting, so the test doesn't depend on one ICU version's exact characters
+  const written = (locale: string, currency: string, major: number) =>
+    new Intl.NumberFormat(locale, { style: 'currency', currency }).format(major)
+
+  test('writes a price the way the language writes it', () => {
+    assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'fr'), written('fr', 'EUR', 1234.5))
+    assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'de'), written('de', 'EUR', 1234.5))
+    assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'en-GB'), written('en-GB', 'EUR', 1234.5))
+    assert.notEqual(
+      formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'fr'),
+      formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'en'),
+      'French and English really do differ',
+    )
+  })
+
+  test('the decimal comma is a comma in French and German, a point in English', () => {
+    assert.match(formatMoney({ amountMinor: 1999, currencyCode: 'EUR' }, 'fr'), /19,99/)
+    assert.match(formatMoney({ amountMinor: 1999, currencyCode: 'EUR' }, 'de'), /19,99/)
+    assert.match(formatMoney({ amountMinor: 1999, currencyCode: 'EUR' }, 'en'), /19\.99/)
+  })
+
+  test('the currency decides the decimals, the language only how they are written', () => {
+    assert.equal(formatMoney({ amountMinor: 1000, currencyCode: 'JPY' }, 'ja'), written('ja', 'JPY', 1000))
+    assert.doesNotMatch(formatMoney({ amountMinor: 1000, currencyCode: 'JPY' }, 'fr'), /[.,]\d/)
+  })
+
+  test('with no language it is English, as before', () => {
+    assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'USD' }), '$1,234.50')
+  })
+
+  test('a language the runtime cannot read falls back to English instead of throwing', () => {
+    for (const bad of ['not a language!!', 'en_US', '']) {
+      assert.equal(formatMoney({ amountMinor: 1999, currencyCode: 'USD' }, bad || 'en'), '$19.99', bad)
+    }
+    assert.equal(formatMoney({ amountMinor: 1999, currencyCode: 'USD' }, 'x'), '$19.99')
+  })
+
+  test('in a browser the default is the page’s language, so theme scripts need no setup', () => {
+    const globals = globalThis as { document?: unknown }
+    try {
+      globals.document = { documentElement: { lang: 'de' } }
+      assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }), written('de', 'EUR', 1234.5))
+      globals.document = { documentElement: { lang: '' } }
+      assert.equal(
+        formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }),
+        written('en', 'EUR', 1234.5),
+        'no lang: English',
+      )
+      // An explicit language still wins over the page's
+      globals.document = { documentElement: { lang: 'de' } }
+      assert.equal(formatMoney({ amountMinor: 123450, currencyCode: 'EUR' }, 'fr'), written('fr', 'EUR', 1234.5))
+    } finally {
+      delete globals.document
+    }
+  })
+
+  test('one language never leaks into another through the cache', () => {
+    const money = { amountMinor: 123450, currencyCode: 'EUR' }
+    const first = formatMoney(money, 'fr')
+    assert.equal(formatMoney(money, 'en'), written('en', 'EUR', 1234.5))
+    assert.equal(formatMoney(money, 'fr'), first)
+  })
+
+  test('moneyAmount does not depend on language: it is for structured data and forms', () => {
+    assert.equal(moneyAmount({ amountMinor: 1999, currencyCode: 'EUR' }), '19.99')
+    assert.equal(moneyAmount({ amountMinor: 1000, currencyCode: 'JPY' }), '1000')
+  })
+})
