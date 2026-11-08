@@ -36,7 +36,11 @@ if (form) {
       )
       b.toggleAttribute('data-unavailable', !canBuy)
     }
-    q('[data-add-label]')!.textContent = !variant ? 'Unavailable' : variant.availableForSale ? 'Add to cart' : 'Sold out'
+    q('[data-add-label]')!.textContent = !variant
+      ? 'Unavailable'
+      : variant.availableForSale
+        ? 'Add to cart'
+        : 'Sold out'
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToCart = variant.id
