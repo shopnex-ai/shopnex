@@ -345,7 +345,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     const quantities = new Map<string, number>()
     for (const l of lines) quantities.set(l.variantId, (quantities.get(l.variantId) ?? 0) + l.quantity)
     for (const [variantId, quantity] of quantities) {
-      if (!(await variantService.reserveStock(tx, variantId, quantity))) {
+      if (!(await variantService.reserveStock(shopId, variantId, quantity, tx))) {
         const available =
           variants.get(variantId)?.variant.inventoryQuantity ??
           productVariants.get(lines.find((l) => l.variantId === variantId)!.productId)?.[0]?.variant
@@ -525,7 +525,7 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     if (input.restock) {
       const items = await tx.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id))
       for (const item of items) {
-        if (item.variantId) await variantService.restock(tx, item.variantId, item.quantity)
+        if (item.variantId) await variantService.restock(shopId, item.variantId, item.quantity, tx)
       }
     }
     let financialStatus = order.financialStatus
