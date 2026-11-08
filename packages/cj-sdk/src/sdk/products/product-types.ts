@@ -152,11 +152,7 @@ export interface ProductDetails {
   productNameEn: string
   productSku: string
   productType:
-    | 'ORDINARY_PRODUCT'
-    | 'PACKAGING_PRODUCT'
-    | 'SERVICE_PRODUCT'
-    | 'SUPPLIER_PRODUCT'
-    | 'SUPPLIER_SHIPPED_PRODUCT'
+    'ORDINARY_PRODUCT' | 'PACKAGING_PRODUCT' | 'SERVICE_PRODUCT' | 'SUPPLIER_PRODUCT' | 'SUPPLIER_SHIPPED_PRODUCT'
   productUnit: string
   productWeight: number
   sellPrice: number

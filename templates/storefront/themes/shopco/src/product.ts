@@ -42,7 +42,11 @@ if (form) {
     form!.querySelectorAll<HTMLElement>('[data-selected-value]').forEach((el) => {
       el.textContent = selection[el.dataset.selectedValue!] ?? ''
     })
-    q('[data-add-label]')!.textContent = !variant ? 'Unavailable' : variant.availableForSale ? 'Add to cart' : 'Sold out'
+    q('[data-add-label]')!.textContent = !variant
+      ? 'Unavailable'
+      : variant.availableForSale
+        ? 'Add to cart'
+        : 'Sold out'
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToCart = variant.id
