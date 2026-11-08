@@ -1,6 +1,7 @@
 // Payments apps register their payment method for a shop (Shopify paymentsAppConfigure). Staff then see it in
 // Settings → Payments, where they can rename, reorder or deactivate it; uninstalling the app removes it.
 import { and, eq, isNull, sql } from 'drizzle-orm'
+import { onAppOrigin } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
 import { PaymentError } from './errors'
 
@@ -15,15 +16,6 @@ export type ConfigureInput = {
   ready: boolean
 }
 
-export const origin = (url: string) => {
-  try {
-    const u = new URL(url)
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.origin : null
-  } catch {
-    return null
-  }
-}
-
 /**
  * Creates or updates the app's payment method in this shop. Session URLs must be on the app's own origin (its
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and position stay.
@@ -31,12 +23,8 @@ export const origin = (url: string) => {
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
   if (!app) throw new PaymentError('NOT_A_PAYMENTS_APP', 'Only an installed app can configure a payment method')
-  const appOrigin = origin(app.appUrl)
-  for (const url of [input.paymentSessionUrl, input.refundSessionUrl]) {
-    if (!appOrigin || origin(url) !== appOrigin) {
-      throw new PaymentError('INVALID_SESSION_URL', `Session URLs must be on the app's origin (${appOrigin})`)
-    }
-  }
+  const { ok, appOrigin } = onAppOrigin(app.appUrl, [input.paymentSessionUrl, input.refundSessionUrl])
+  if (!ok) throw new PaymentError('INVALID_SESSION_URL', `Session URLs must be on the app's origin (${appOrigin})`)
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()

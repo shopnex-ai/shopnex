@@ -4,7 +4,7 @@
 // means no rates from that app: the shop's flat rates and the other apps still show.
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
-import { callApp, instanceUrl } from '@shopnex/apps'
+import { callApp, instanceUrl, onAppOrigin } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './errors'
@@ -29,15 +29,6 @@ export type ConfigureInput = {
   ready: boolean
 }
 
-const origin = (url: string) => {
-  try {
-    const u = new URL(url)
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.origin : null
-  } catch {
-    return null
-  }
-}
-
 /**
  * Creates or updates the app's carrier service in this shop. The rates URL must be on the app's own origin (its
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and switch stay.
@@ -45,10 +36,8 @@ const origin = (url: string) => {
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
   if (!app) throw new CartError('NOT_A_CARRIER_APP', 'Only an installed app can configure a carrier service')
-  const appOrigin = origin(app.appUrl)
-  if (!appOrigin || origin(input.ratesUrl) !== appOrigin) {
-    throw new CartError('INVALID_RATES_URL', `The rates URL must be on the app's origin (${appOrigin})`)
-  }
+  const { ok, appOrigin } = onAppOrigin(app.appUrl, [input.ratesUrl])
+  if (!ok) throw new CartError('INVALID_RATES_URL', `The rates URL must be on the app's origin (${appOrigin})`)
   const [existing] = await db
     .select()
     .from(schema.carrierServices)

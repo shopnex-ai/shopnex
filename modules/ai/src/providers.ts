@@ -2,6 +2,7 @@
 // register the ones they provide (like payments apps register their method), when their own setup decides.
 // Uninstalling an app removes them (see appService.uninstall).
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
+import { onAppOrigin } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
 import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
@@ -15,15 +16,6 @@ export type ConfigureInput = {
   capabilities: Partial<Record<AiCapability, string>>
 }
 
-const origin = (url: string) => {
-  try {
-    const u = new URL(url)
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.origin : null
-  } catch {
-    return null
-  }
-}
-
 /**
  * Replaces what the app provides in this shop. URLs must be on the app's own origin (its registered app URL),
  * so an app can't point ShopNex at someone else's server.
@@ -31,13 +23,12 @@ const origin = (url: string) => {
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
   const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
   if (!app) throw new AiError('NOT_AN_AI_APP', 'Only an installed app can provide AI capabilities')
-  const appOrigin = origin(app.appUrl)
   const entries = Object.entries(input.capabilities).filter((e): e is [AiCapability, string] => Boolean(e[1]))
-  for (const [, url] of entries) {
-    if (!appOrigin || origin(url) !== appOrigin) {
-      throw new AiError('INVALID_PROVIDER_URL', `Capability URLs must be on the app's origin (${appOrigin})`)
-    }
-  }
+  const { ok, appOrigin } = onAppOrigin(
+    app.appUrl,
+    entries.map(([, url]) => url),
+  )
+  if (!ok) throw new AiError('INVALID_PROVIDER_URL', `Capability URLs must be on the app's origin (${appOrigin})`)
   const own = and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, appId))
   return db.transaction(async (tx) => {
     const names = entries.map(([capability]) => capability)
