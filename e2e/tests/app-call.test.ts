@@ -32,7 +32,9 @@ before(async () => {
     let body = ''
     for await (const chunk of req) body += chunk
     hits.push(req.url ?? '')
-    const handler = handlers[req.url ?? '']
+    // Matched against the registered paths, never looked up as handlers[req.url]: a path such as "__proto__" or
+    // "constructor" must not be able to reach something on Object.prototype and get called
+    const handler = Object.entries(handlers).find(([path]) => path === req.url)?.[1]
     if (!handler) return res.writeHead(404).end('no such path')
     await handler(req, res, body)
   })
