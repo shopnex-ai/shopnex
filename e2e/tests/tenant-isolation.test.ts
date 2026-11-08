@@ -44,6 +44,17 @@ function assertRefused(r: { status: number; body: unknown }, what: string) {
 
 const cleanup: (() => Promise<unknown>)[] = []
 
+// A case that fails partway never records the routes after the failure as covered, so the coverage check would
+// fail too, for a reason that has nothing to do with coverage. It reports only when every case ran to the end.
+const cases = { started: 0, finished: 0 }
+function isolated(name: string, fn: () => Promise<void>) {
+  test(name, async () => {
+    cases.started++
+    await fn()
+    cases.finished++
+  })
+}
+
 before(async () => {
   await requireApp()
   await fx.init()
@@ -63,7 +74,7 @@ after(async () => {
 })
 
 describe('shop B cannot reach shop A by id', () => {
-  test('products and variants', async () => {
+  isolated('products and variants', async () => {
     const p = ok(await call('POST', '/admin/products', { title: `E2E iso ${run}`, priceCents: 1500 }, a))
     cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [p.id] }, a))
     const variantId = p.variants[0].id as string
@@ -108,7 +119,7 @@ describe('shop B cannot reach shop A by id', () => {
     assert.equal(ok(await call('GET', '/admin/products', undefined, b)).total, 0, 'not in B’s list')
   })
 
-  test('collections', async () => {
+  isolated('collections', async () => {
     const c = ok(await call('POST', '/admin/collections', { title: `E2E iso col ${run}` }, a))
     cleanup.push(() => call('DELETE', `/admin/collections/${c.id}`, undefined, a))
 
@@ -175,7 +186,7 @@ describe('shop B cannot reach shop A by id', () => {
     assert.equal(ok(await call('GET', `/admin/collections/${c.id}`, undefined, a)).title, `E2E iso col ${run}`)
   })
 
-  test('customers', async () => {
+  isolated('customers', async () => {
     const c = ok(
       await call(
         'POST',
@@ -207,7 +218,7 @@ describe('shop B cannot reach shop A by id', () => {
     assert.equal(ok(await call('GET', `/admin/customers/${c.id}`, undefined, a)).name, 'Iso Customer')
   })
 
-  test('discounts', async () => {
+  isolated('discounts', async () => {
     const d = ok(await call('POST', '/admin/discounts', { code: `E2E${run}ISO2`, type: 'percentage', value: 10 }, a))
     fx.discount(d.id)
 
@@ -232,7 +243,7 @@ describe('shop B cannot reach shop A by id', () => {
     assert.equal(ok(await call('GET', `/admin/discounts/${d.id}`, undefined, a)).value, 10)
   })
 
-  test('orders', async () => {
+  isolated('orders', async () => {
     const p = ok(await call('POST', '/admin/products', { title: `E2E iso order ${run}`, priceCents: 2500 }, a))
     cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [p.id] }, a))
     const created = ok(
@@ -289,7 +300,7 @@ describe('shop B cannot reach shop A by id', () => {
     assert.ok(!still.cancelledAt && !still.cancelled, 'A’s order is not cancelled')
   })
 
-  test('pages and menus', async () => {
+  isolated('pages and menus', async () => {
     const page = ok(await call('POST', '/admin/pages', { title: `E2E iso page ${run}` }, ownerA))
     cleanup.push(() => call('DELETE', `/admin/pages/${page.id}`, undefined, ownerA))
     assertRefused(
@@ -426,7 +437,8 @@ const PENDING: Record<string, string[]> = {
 }
 
 describe('coverage', () => {
-  test('every route that takes an id is covered or listed as pending', async () => {
+  test('every route that takes an id is covered or listed as pending', async (t) => {
+    if (cases.finished !== cases.started) return t.skip('an isolation case failed: coverage not evaluated')
     const spec = (await (await fetch(`${API}/openapi.json`)).json()) as {
       paths: Record<string, Record<string, unknown>>
     }
