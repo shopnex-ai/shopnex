@@ -35,6 +35,23 @@ export async function ensureWebhookEvents(stripe: Stripe, endpointId: string) {
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
+/**
+ * The amount and currency ShopNex asked Stripe to collect travel in the Checkout Session's metadata. What Stripe
+ * reports must match them before an order is marked paid. Today a Checkout with one fixed line item charges exactly
+ * that; this keeps it true if promotion codes, an adjustable quantity or another flow are added later, and stops a
+ * shortfall from being booked as a full sale. Sessions created before this check carry no amount and pass as before.
+ * Returns what differs, or null.
+ */
+export function amountMismatch(session: Stripe.Checkout.Session): string | null {
+  const wantCents = session.metadata?.shopnex_amount_cents
+  const wantCurrency = session.metadata?.shopnex_currency
+  if (wantCents === undefined || wantCurrency === undefined) return null
+  const gotCents = session.amount_total
+  const gotCurrency = session.currency?.toLowerCase()
+  if (String(gotCents) === wantCents && gotCurrency === wantCurrency) return null
+  return `expected ${wantCents} ${wantCurrency}, Stripe reports ${gotCents ?? 'no amount'} ${gotCurrency ?? 'no currency'}`
+}
+
 // The URL names the shop (?instance=…&shop=…); its own webhook secret proves the event is Stripe's
 export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
   const app = new Hono()
@@ -71,6 +88,19 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
     const session = object as Stripe.Checkout.Session
     const paymentIntent =
       typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+
+    // An event that says the money arrived must also carry the amount ShopNex asked for. If it doesn't, don't mark
+    // the order paid: fail loudly (like an unknown session, below) so Stripe retries and flags the endpoint
+    const claimsPaid =
+      event.type === 'checkout.session.async_payment_succeeded' ||
+      (event.type === 'checkout.session.completed' && session.payment_status === 'paid')
+    const mismatch = claimsPaid ? amountMismatch(session) : null
+    if (mismatch) {
+      console.error(
+        `[stripe] AMOUNT MISMATCH on session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): ${mismatch}. Order NOT marked paid: check it in Stripe, refund or fix by hand`,
+      )
+      return c.text('Paid amount does not match the order', 500)
+    }
 
     // Events that say the money arrived: a session ShopNex can't find for one of these is a payment nobody sees
     let paidEvent = false
