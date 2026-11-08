@@ -264,8 +264,12 @@ function TrendChart({ series, metric, format }: { series: Day[]; metric: Metric;
   const { cur, prev, max } = useMemo(() => {
     const cur = series.map(current)
     const prev = series.map(previous)
-    return { cur, prev, max: niceMax(Math.max(...cur, ...prev)) }
-  }, [series, current, previous])
+    const top = Math.max(...cur, ...prev)
+    // Money is in cents. With no data (or a tiny max) a bare niceMax gives sub-cent / fractional ticks ($0.01, 0.25),
+    // so give the axis a floor: a $100 scale when empty, and whole-number order counts
+    const floor = metric === 'orders' ? 4 : top > 0 ? 100 : 10_000
+    return { cur, prev, max: niceMax(Math.max(top, floor)) }
+  }, [series, current, previous, metric])
 
   const x = (i: number) => (series.length === 1 ? W / 2 : (i / (series.length - 1)) * W)
   const y = (v: number) => H - (v / max) * H
