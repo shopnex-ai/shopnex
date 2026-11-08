@@ -15,7 +15,7 @@ import { signAiRequest, verifyAiRequest } from '@shopnex/marketplace-sdk/ai'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { signPaymentsRequest, verifyPaymentsRequest } from '@shopnex/marketplace-sdk/payments'
 import { signRatesRequest, verifyRatesRequest } from '@shopnex/marketplace-sdk/shipping'
-import { Fixtures, closeDb, requireApp } from '../lib'
+import { Fixtures, call, closeDb, requireApp } from '../lib'
 
 const fx = new Fixtures()
 const keys = createJwksResolver({ allowHttp: true })
@@ -193,6 +193,29 @@ describe('where the call goes', () => {
       delete process.env.E2ECALL_APP_INTERNAL_URL
     }
   })
+})
+
+describe('only an installed app’s own token can set up what the server calls', () => {
+  // Payments, AI and carrier apps register their URLs through three routes that share one rule
+  const routes = [
+    { name: 'payments', path: '/admin/payments-app/configure', scope: 'write_payment_sessions', who: 'a payments app' },
+    { name: 'ai', path: '/admin/ai-app/configure', scope: 'write_ai_capabilities', who: 'an AI app' },
+    { name: 'carrier', path: '/admin/carrier-services/configure', scope: 'write_shipping', who: 'a carrier app' },
+  ] as const
+
+  for (const r of routes) {
+    test(`${r.name}: an ordinary token is refused, with or without the scope, and no credentials get a 401`, async () => {
+      const withScope = await call('POST', r.path, {}, await fx.token([r.scope]))
+      assert.equal(withScope.status, 403)
+      assert.equal(withScope.body.message, `Only ${r.who}'s own token can do this`)
+
+      const without = await call('POST', r.path, {}, await fx.token(['read_products']))
+      assert.equal(without.status, 403)
+      assert.equal(without.body.message, `This API token needs the ${r.scope} scope`)
+
+      assert.equal((await call('POST', r.path, {})).status, 401)
+    })
+  }
 })
 
 describe('carrier quotes, in a shop of its own', () => {

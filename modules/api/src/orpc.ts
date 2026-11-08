@@ -314,26 +314,18 @@ export const scoped = (scope: ApiScope) =>
     return next()
   })
 
-// Payments apps: an installed app's token with the payment session scope (staff never resolve sessions)
-export const paymentsApp = scoped('write_payment_sessions').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a payments app's own token can do this" })
-  return next({ context: { appId } })
-})
+// An installed app's own token with this scope: staff never do these jobs, they use the admin screens instead
+// (staff resolve no payment sessions, register no AI capabilities, configure carrier services from Settings)
+const installedApp = (scope: ApiScope, who: string) =>
+  scoped(scope).use(({ context, next }) => {
+    const appId = context.token?.appId
+    if (!appId) throw new ORPCError('FORBIDDEN', { message: `Only ${who}'s own token can do this` })
+    return next({ context: { appId } })
+  })
 
-// AI apps: an installed app's token with the AI capability scope (staff never register capabilities)
-export const aiApp = scoped('write_ai_capabilities').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an AI app's own token can do this" })
-  return next({ context: { appId } })
-})
-
-// Carrier services: an installed app's token with the shipping scope (staff manage them from the admin instead)
-export const carrierApp = scoped('write_shipping').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a carrier app's own token can do this" })
-  return next({ context: { appId } })
-})
+export const paymentsApp = installedApp('write_payment_sessions', 'a payments app')
+export const aiApp = installedApp('write_ai_capabilities', 'an AI app')
+export const carrierApp = installedApp('write_shipping', 'a carrier app')
 
 // Shop settings (keys, etc.): owners/admins of the shop, or a super admin
 export const shopManager = admin.use(async ({ context, next }) => {
