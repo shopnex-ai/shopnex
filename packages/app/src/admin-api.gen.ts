@@ -1913,6 +1913,7 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        unpaidOrderExpiryHours: number | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -1938,6 +1939,7 @@ export interface operations {
                     seoDescription?: string | null;
                     taxesIncluded?: boolean;
                     taxShipping?: boolean;
+                    unpaidOrderExpiryHours?: (number | null) | null;
                 };
             };
         };
@@ -1961,6 +1963,7 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        unpaidOrderExpiryHours: number | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;

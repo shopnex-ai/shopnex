@@ -521,7 +521,12 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
   })
 }
 
-export type CancelInput = { reason: CancelReason; restock: boolean }
+export type CancelInput = {
+  reason: CancelReason
+  restock: boolean
+  /** Automatic cancellations: give up (INVALID_STATUS_TRANSITION) when the order was paid since it was picked, instead of refunding it */
+  onlyIfUnpaid?: boolean
+}
 
 // Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside ShopNex,
 // recorded as a refund transaction). Paid through a payments app: the refund transaction stays pending and the
@@ -533,6 +538,9 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     if (order.cancelledAt) throw new OrderError('ORDER_CANCELLED', 'Order is already cancelled')
     if (order.fulfillmentStatus !== 'unfulfilled') {
       throw new OrderError('INVALID_STATUS_TRANSITION', "Fulfilled orders can't be cancelled")
+    }
+    if (input.onlyIfUnpaid && order.financialStatus !== 'pending') {
+      throw new OrderError('INVALID_STATUS_TRANSITION', 'The order is no longer unpaid')
     }
     if (input.restock) {
       const items = await tx.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id))
