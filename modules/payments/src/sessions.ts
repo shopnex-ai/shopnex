@@ -344,6 +344,8 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
     const now = new Date()
     let transactionId = session.transactionId
     if (session.kind === 'payment') {
+      // Is this the payment that makes the order take more than it should (a second payment for one order)?
+      const before = await orderService.charge(shopId, session.orderId, tx)
       const [sale] = await tx
         .insert(schema.orderTransactions)
         .values({
@@ -363,6 +365,16 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
         .where(eq(schema.orders.id, session.orderId))
       await emit(tx, shopId, 'order.paid', () => orderService.getById(shopId, session.orderId, tx))
       await notify(tx, shopId, 'order.paid', () => orderService.getById(shopId, session.orderId, tx))
+      // The money is real, so the payment is recorded; but nobody is told the order is now overpaid unless we say so.
+      // Once, when it first happens (this runs under the order's row lock), and never refunded automatically: what to
+      // do (refund the extra, keep it as a tip, a deposit…) is for a person to decide.
+      const after = await orderService.charge(shopId, session.orderId, tx)
+      if (after && after.overpaidCents > 0 && (before?.overpaidCents ?? 0) === 0) {
+        console.warn(
+          `[payments] order ${session.orderId} is overpaid by ${after.overpaidCents} (${session.currency}, in cents): a second payment was recorded`,
+        )
+        await emit(tx, shopId, 'order.overpaid', () => orderService.getById(shopId, session.orderId, tx))
+      }
     } else {
       if (session.transactionId) {
         await tx

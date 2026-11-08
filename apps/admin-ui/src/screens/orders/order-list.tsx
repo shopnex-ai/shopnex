@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
-import { FinancialStatusBadge, FulfillmentStatusBadge } from '@/components/admin/order-status'
+import { FinancialStatusBadge, FulfillmentStatusBadge, OverpaidBadge } from '@/components/admin/order-status'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +41,12 @@ const columnsFor = (channels: { id: string; name: string }[] | undefined) => [
     : []),
   col.accessor('financialStatus', {
     header: 'Payment',
-    cell: ({ row: { original: o } }) => <FinancialStatusBadge status={o.financialStatus} />,
+    cell: ({ row: { original: o } }) => (
+      <span className="inline-flex flex-wrap gap-1">
+        <FinancialStatusBadge status={o.financialStatus} />
+        <OverpaidBadge overpaidCents={o.overpaidCents} />
+      </span>
+    ),
   }),
   col.accessor('fulfillmentStatus', {
     header: 'Fulfillment',

@@ -9,6 +9,8 @@ export const WEBHOOK_TOPICS = [
   'order.paid',
   'order.fulfilled',
   'order.cancelled',
+  // The order has taken more money than it should (e.g. two payments for one order), once, when that first happens
+  'order.overpaid',
   'product.created',
   'product.updated',
   'customer.created',

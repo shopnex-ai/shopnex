@@ -182,6 +182,63 @@ describe('payments app: payment sessions', () => {
     assert.equal(sales.length, 1)
   })
 
+  test('a second payment for an order that is already paid is recorded, shown as overpaid, and announced once', async () => {
+    const admin = await fx.token(['read_orders'])
+    const endpoint = ok(
+      await call(
+        'POST',
+        '/admin/webhooks',
+        { url: 'https://example.com/e2e-overpaid-hook', topics: ['order.overpaid'] },
+        admin,
+      ),
+    )
+    try {
+      const queued = async () =>
+        (await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.endpointId, endpoint.id)))
+          .length
+      const view = async (id: string) => ok(await call('GET', `/admin/orders/${id}`, undefined, admin))
+
+      const placed = await checkout()
+      const first = sessionOf(placed.orderId)
+      // The buyer leaves that payment page, comes back and starts a second payment on the same order
+      ok(await call('POST', `/admin/payment-sessions/${first.id}/reject`, { reason: 'abandoned' }, auth))
+      ok(await call('POST', `/storefront/carts/${placed.cartId}/complete`, { email: fx.email }))
+      const second = sessionOf(placed.orderId)
+      assert.notEqual(second.id, first.id, 'a new payment session')
+
+      // The first payment goes through (the other tab was still open at the provider): exactly paid, nothing to report
+      ok(await call('POST', `/admin/payment-sessions/${first.id}/resolve`, { externalId: 'pi_first' }, auth))
+      let seen = await view(placed.orderId)
+      assert.equal(seen.financialStatus, 'paid')
+      assert.equal(seen.overpaidCents, 0)
+      assert.equal(await queued(), 0, 'one payment is not an overpayment')
+
+      // …and then the second one does too. The money is real, so it is recorded, not refused
+      ok(await call('POST', `/admin/payment-sessions/${second.id}/resolve`, { externalId: 'pi_second' }, auth))
+      seen = await view(placed.orderId)
+      assert.equal(seen.financialStatus, 'paid', 'still just paid')
+      assert.equal(seen.chargedCents, 2 * seen.totalCents)
+      assert.equal(seen.overpaidCents, seen.totalCents, 'the whole second payment is the overpayment')
+      assert.equal(seen.refundedCents + seen.refundPendingCents, 0, 'and nothing was refunded for us')
+      assert.equal(await queued(), 1, 'order.overpaid was queued for subscribers')
+
+      // The orders list says so too, so the merchant sees it without opening the order
+      const listed = ok(await call('GET', `/admin/orders?search=${placed.orderNumber}`, undefined, admin))
+      assert.equal(listed.items.find((o: { id: string }) => o.id === placed.orderId)?.overpaidCents, seen.totalCents)
+
+      // The provider repeating itself changes nothing: one sale per payment, still one event
+      ok(await call('POST', `/admin/payment-sessions/${second.id}/resolve`, { externalId: 'pi_second' }, auth))
+      const sales = await db
+        .select()
+        .from(schema.orderTransactions)
+        .where(eq(schema.orderTransactions.orderId, placed.orderId))
+      assert.equal(sales.length, 2)
+      assert.equal(await queued(), 1, 'announced once')
+    } finally {
+      await call('DELETE', `/admin/webhooks/${endpoint.id}`, undefined, admin)
+    }
+  })
+
   test('attempt-failed records why a card was declined and keeps the session open', async () => {
     const placed = await checkout()
     const { id } = sessionOf(placed.orderId)

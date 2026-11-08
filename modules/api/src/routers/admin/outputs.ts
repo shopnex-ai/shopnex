@@ -115,12 +115,21 @@ export const orderOutput = createSelectSchema(orders, {
   cancelReason: z.enum(CANCEL_REASONS).nullable(),
 })
 
+// What the order has taken against what it should have (see @shopnex/orders charge.ts), all in cents
+export const orderChargeOutput = z.object({
+  chargedCents: z.number().int(),
+  refundedCents: z.number().int(),
+  refundPendingCents: z.number().int(),
+  overpaidCents: z.number().int(),
+})
+
 export const orderDetailOutput = orderOutput.extend({
   items: z.array(createSelectSchema(orderItems)),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
   transactions: z.array(createSelectSchema(orderTransactions)),
   fulfillments: z.array(createSelectSchema(fulfillments)),
   customer: createSelectSchema(customers).nullable(),
+  ...orderChargeOutput.shape,
 })
 
 export const carrierServiceOutput = createSelectSchema(carrierServices).pick({
@@ -169,7 +178,10 @@ export const pageOutput = createSelectSchema(pages)
 export const menuOutput = createSelectSchema(menus).extend({ items: z.custom<StoredMenuItem[]>() })
 
 // Orders
-export const orderListItemOutput = orderOutput.extend({ customerName: z.string().nullable() })
+export const orderListItemOutput = orderOutput.extend({
+  customerName: z.string().nullable(),
+  ...orderChargeOutput.shape,
+})
 export const orderCreatedOutput = orderOutput.extend({
   items: z.array(createSelectSchema(orderItems)),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),

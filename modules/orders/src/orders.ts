@@ -11,6 +11,7 @@ import { notify } from '@shopnex/email'
 import { calculate, discountService, taxService } from '@shopnex/pricing'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
+import { chargeSummary, type ChargeTransaction } from './charge'
 import { OrderError } from './errors'
 
 export type OrderLineInput =
@@ -124,7 +125,29 @@ export async function list(shopId: string, opts: ListOrdersInput, conn: Conn = d
       .leftJoin(schema.customers, eq(schema.customers.id, schema.orders.customerId))
       .where(where),
   ])
-  return { items: rows.map((r) => ({ ...r.order, customerName: r.customerName })), total: counted?.total ?? 0 }
+  // The money position of every order on the page, from one query for all of them
+  const ids = rows.map((r) => r.order.id)
+  const moves = ids.length
+    ? await conn
+        .select({
+          orderId: schema.orderTransactions.orderId,
+          kind: schema.orderTransactions.kind,
+          status: schema.orderTransactions.status,
+          amountCents: schema.orderTransactions.amountCents,
+        })
+        .from(schema.orderTransactions)
+        .where(inArray(schema.orderTransactions.orderId, ids))
+    : []
+  const byOrder = new Map<string, ChargeTransaction[]>()
+  for (const m of moves) byOrder.set(m.orderId, [...(byOrder.get(m.orderId) ?? []), m])
+  return {
+    items: rows.map((r) => ({
+      ...r.order,
+      customerName: r.customerName,
+      ...chargeSummary({ ...r.order, transactions: byOrder.get(r.order.id) ?? [] }),
+    })),
+    total: counted?.total ?? 0,
+  }
 }
 
 export async function getById(shopId: string, id: string, conn: Conn = db) {
@@ -151,7 +174,33 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
     () => (order.customerId ? customerService.getById(shopId, order.customerId, conn) : Promise.resolve(null)),
   ])
 
-  return { ...order, items, shippingLines, transactions, fulfillments, customer }
+  return {
+    ...order,
+    items,
+    shippingLines,
+    transactions,
+    fulfillments,
+    customer,
+    ...chargeSummary({ totalCents: order.totalCents, cancelledAt: order.cancelledAt, transactions }),
+  }
+}
+
+/** What an order has taken against what it should have (see charge.ts), or null when it isn't in this shop */
+export async function charge(shopId: string, id: string, conn: Conn = db) {
+  const [order] = await conn
+    .select({ totalCents: schema.orders.totalCents, cancelledAt: schema.orders.cancelledAt })
+    .from(schema.orders)
+    .where(and(eq(schema.orders.shopId, shopId), eq(schema.orders.id, id)))
+  if (!order) return null
+  const transactions = await conn
+    .select({
+      kind: schema.orderTransactions.kind,
+      status: schema.orderTransactions.status,
+      amountCents: schema.orderTransactions.amountCents,
+    })
+    .from(schema.orderTransactions)
+    .where(eq(schema.orderTransactions.orderId, id))
+  return chargeSummary({ ...order, transactions })
 }
 
 export async function removeMany(shopId: string, ids: string[]) {

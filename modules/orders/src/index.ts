@@ -1,5 +1,6 @@
 export * as orderService from './orders'
 export type { CancelInput, CreateOrderInput, FulfillInput, ListOrdersInput, OrderLineInput } from './orders'
+export { chargeSummary, type ChargeSummary, type ChargeTransaction } from './charge'
 export { OrderError, type OrderErrorCode, type OrderErrorData } from './errors'
 export {
   CANCEL_REASONS,

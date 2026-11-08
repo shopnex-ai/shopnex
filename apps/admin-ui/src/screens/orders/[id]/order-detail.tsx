@@ -78,13 +78,8 @@ export function OrderDetail({ id }: { id: string }) {
 
   const o = order.data
   const money = (cents: number) => formatMoney(cents, o.currency)
-  const paidCents = o.transactions
-    .filter((t) => t.status === 'success')
-    .reduce(
-      (sum, t) =>
-        sum + (t.kind === 'sale' || t.kind === 'capture' ? t.amountCents : t.kind === 'refund' ? -t.amountCents : 0),
-      0,
-    )
+  // Computed once, on the server, from the confirmed transactions: the same figures the API and webhooks carry
+  const paidCents = o.chargedCents - o.refundedCents
   const shippingLine = o.shippingLines[0]
 
   return (
@@ -187,6 +182,16 @@ export function OrderDetail({ id }: { id: string }) {
                 <dt className="text-muted-foreground">Paid by customer</dt>
                 <dd className="text-right">{money(Math.max(paidCents, 0))}</dd>
               </dl>
+              {o.overpaidCents > 0 && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-destructive">
+                  Overpaid by {money(o.overpaidCents)}.{' '}
+                  {o.cancelledAt
+                    ? 'The order is cancelled and the payment has not been fully refunded.'
+                    : 'The customer has paid more than the order total, for example by paying twice.'}{' '}
+                  Orders are never refunded automatically: send the difference back through{' '}
+                  {o.paymentMethodName ?? o.paymentGateway}.
+                </p>
+              )}
               <p className="text-muted-foreground">
                 {o.paymentMethodName ? `Payment method: ${o.paymentMethodName}` : 'No payment method chosen'}
                 {o.paymentGateway === 'manual' && o.financialStatus === 'pending' && !o.cancelledAt

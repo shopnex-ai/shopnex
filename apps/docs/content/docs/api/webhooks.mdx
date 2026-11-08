@@ -7,12 +7,14 @@ In **Settings → Webhooks** (owners and admins) add a URL, pick events, send a 
 
 ## Topics
 
-`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `order.overpaid`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+
+`order.overpaid` is sent once, when an order first takes more money than it should: the usual cause is a buyer who pays twice (two payment pages open on the same order). ShopNex records the second payment, because the money is real, but never refunds it by itself: what to do (refund the extra, keep it) is for the merchant. The payload is the order, with `overpaidCents` (how much too much, in cents), `chargedCents`, `refundedCents` and `refundPendingCents`. The same figures are on every order from the Admin API, and the admin shows an "Overpaid" badge in the orders list and on the order.
 
 ## Payload
 
 ```json
-{ "type": "order.created", "timestamp": "…", "shopId": "…", "data": { } }
+{ "type": "order.created", "timestamp": "…", "shopId": "…", "data": {} }
 ```
 
 `data` is the resource as the admin API returns it, snapshotted when the event happened.

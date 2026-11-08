@@ -28,16 +28,27 @@ export function FulfillmentStatusBadge({ status }: { status: FulfillmentStatus }
   return <Badge variant={variant}>{label}</Badge>
 }
 
+/** The order has taken more money than it should: the difference is owed back (see the order's payment card) */
+export function OverpaidBadge({ overpaidCents }: { overpaidCents?: number }) {
+  return overpaidCents && overpaidCents > 0 ? <Badge variant="destructive">Overpaid</Badge> : null
+}
+
 /** Payment + fulfillment, or just "Cancelled" */
 export function OrderStatusBadges({
   order,
 }: {
-  order: { financialStatus: FinancialStatus; fulfillmentStatus: FulfillmentStatus; cancelledAt: Date | string | null }
+  order: {
+    financialStatus: FinancialStatus
+    fulfillmentStatus: FulfillmentStatus
+    cancelledAt: Date | string | null
+    overpaidCents?: number
+  }
 }) {
   return (
     <span className="inline-flex flex-wrap gap-1">
       {order.cancelledAt && <Badge variant="destructive">Cancelled</Badge>}
       <FinancialStatusBadge status={order.financialStatus} />
+      <OverpaidBadge overpaidCents={order.overpaidCents} />
       {!order.cancelledAt && <FulfillmentStatusBadge status={order.fulfillmentStatus} />}
     </span>
   )
