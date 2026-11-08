@@ -4,7 +4,7 @@
 // capability's schema. The result is a suggestion: saving it is an ordinary write by whoever asked.
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { instanceSigner, instanceUrl } from '@shopnex/apps'
+import { callApp, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
 import { db, schema } from '@shopnex/db'
 import type { AiFeedback } from '@shopnex/db/schema'
@@ -59,22 +59,8 @@ const appError = (text: string) => {
   }
 }
 
-async function post(url: string, id: string, body: string) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: await signAiRequest(await instanceSigner(), id, body),
-    body,
-    redirect: 'manual',
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const text = await res.text().catch(() => '')
-  if (!res.ok) throw new Error(appError(text) ?? `${res.status} ${text.slice(0, 300) || res.statusText}`)
-  try {
-    return JSON.parse(text) as unknown
-  } catch {
-    throw new Error('The app answered something other than JSON')
-  }
-}
+const post = (url: string, id: string, body: string) =>
+  callApp(url, { id, body, sign: signAiRequest, timeoutMs: TIMEOUT_MS, requireJson: true, errorFrom: appError })
 
 // Whoever wrote it, copy is stored like any other: sanitized. And a suggestion can only name what exists
 function clean<C extends AiCapability>(request: AiRunRequest, output: AiOutput<C>): AiOutput<C> {

@@ -11,7 +11,7 @@ import {
   type PaymentSessionRequest,
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
-import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
+import { callApp, instanceUrl } from '@shopnex/apps'
 import { notify } from '@shopnex/email'
 import { orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
@@ -40,23 +40,8 @@ async function installed(conn: Conn, shopId: string, appId: string) {
 }
 
 // Signed with this instance's key; the app checks it against our published keys (`instance` in the body)
-async function post(url: string, id: string, payload: PaymentSessionRequest | RefundSessionRequest) {
-  const body = JSON.stringify(payload)
-  const res = await fetch(serverUrl(url), {
-    method: 'POST',
-    headers: await signPaymentsRequest(await instanceSigner(), id, body),
-    body,
-    redirect: 'manual',
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const text = await res.text().catch(() => '')
-  if (!res.ok) throw new Error(`${res.status} ${text.slice(0, 300) || res.statusText}`)
-  try {
-    return text ? (JSON.parse(text) as unknown) : null
-  } catch {
-    return null
-  }
-}
+const post = (url: string, id: string, payload: PaymentSessionRequest | RefundSessionRequest) =>
+  callApp(url, { id, body: JSON.stringify(payload), sign: signPaymentsRequest, timeoutMs: TIMEOUT_MS })
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 

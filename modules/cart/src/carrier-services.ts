@@ -4,7 +4,7 @@
 // means no rates from that app: the shop's flat rates and the other apps still show.
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
-import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
+import { callApp, instanceUrl } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './errors'
@@ -142,20 +142,15 @@ export type CarrierRate = {
 }
 
 // Signed with this instance's key; the app checks it against our published keys (`instance` in the body)
-async function post(url: string, request: RatesRequest) {
-  const body = JSON.stringify(request)
-  const res = await fetch(serverUrl(url), {
-    method: 'POST',
-    headers: await signRatesRequest(await instanceSigner(), request.id, body),
-    body,
-    redirect: 'manual',
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+const post = (url: string, request: RatesRequest) =>
+  callApp(url, {
+    id: request.id,
+    body: JSON.stringify(request),
+    sign: signRatesRequest,
+    timeoutMs: TIMEOUT_MS,
+    maxBytes: MAX_RESPONSE_BYTES,
+    requireJson: true,
   })
-  const text = await res.text()
-  if (!res.ok) throw new Error(`${res.status} ${text.slice(0, 200) || res.statusText}`)
-  if (text.length > MAX_RESPONSE_BYTES) throw new Error('The answer is too large')
-  return JSON.parse(text) as unknown
-}
 
 /** Rates from one service; anything wrong with the app or its answer gives none */
 async function quoteService(
