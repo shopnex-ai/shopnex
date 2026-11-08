@@ -10,7 +10,8 @@
 //
 // Requests are signed exactly like payments requests (Standard Webhooks, the instance's Ed25519 key), so an app
 // verifies them the same way: see ./payments. WebCrypto only.
-import { sign, verify, type KeyResolver, type Signer } from './keys'
+import type { KeyResolver, Signer } from './keys'
+import { signInstanceRequest, verifyInstanceRequest } from './signed-request'
 
 export type RatesRequest = {
   kind: 'rates'
@@ -58,20 +59,9 @@ export type Rate = {
 /** What the app answers to a RatesRequest */
 export type RatesResponse = { rates: Rate[] }
 
-const KEY_ID_HEADER = 'shopnex-key-id'
-
 /** Instance side: headers for one request with this exact body */
-export async function signRatesRequest(signer: Signer, id: string, body: string, now = new Date()) {
-  const timestamp = String(Math.floor(now.getTime() / 1000))
-  return {
-    'content-type': 'application/json',
-    'user-agent': 'Shopnex-Shipping/1.0',
-    'webhook-id': id,
-    'webhook-timestamp': timestamp,
-    'webhook-signature': 'v1a,' + (await sign(signer.key, `${id}.${timestamp}.${body}`)),
-    [KEY_ID_HEADER]: signer.kid,
-  }
-}
+export const signRatesRequest = (signer: Signer, id: string, body: string, now = new Date()) =>
+  signInstanceRequest(signer, id, body, 'Shopnex-Shipping/1.0', now)
 
 /**
  * App side: checks the signature (with the keys of the instance the body names) and that it's under 5 minutes
@@ -80,25 +70,8 @@ export async function signRatesRequest(signer: Signer, id: string, body: string,
 export async function verifyRatesRequest(
   headers: Headers,
   body: string,
-  { keys, toleranceSeconds = 300 }: { keys: KeyResolver; toleranceSeconds?: number },
+  options: { keys: KeyResolver; toleranceSeconds?: number },
 ): Promise<RatesRequest | null> {
-  const id = headers.get('webhook-id')
-  const timestamp = headers.get('webhook-timestamp')
-  const signatures = headers.get('webhook-signature')
-  if (!id || !timestamp || !signatures) return null
-  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return null
-  let request: RatesRequest
-  try {
-    request = JSON.parse(body) as RatesRequest
-  } catch {
-    return null
-  }
-  if (request?.kind !== 'rates' || typeof request.instance !== 'string') return null
-  const key = await keys(request.instance, headers.get(KEY_ID_HEADER) ?? undefined)
-  if (!key) return null
-  const message = `${id}.${timestamp}.${body}`
-  for (const s of signatures.split(' ')) {
-    if (s.startsWith('v1a,') && (await verify(key, message, s.slice(4)))) return request
-  }
-  return null
+  const request = await verifyInstanceRequest<RatesRequest>(headers, body, options)
+  return request?.kind === 'rates' ? request : null
 }
