@@ -2,10 +2,10 @@
 // deliveries. Events are really signed (Stripe's own test-header helper); ShopNex is a small ledger that answers
 // resolve / reject like the payments module does (idempotent; the opposite outcome on a closed session → 409).
 import assert from 'node:assert/strict'
-import { beforeEach, describe, test } from 'node:test'
+import { afterEach, beforeEach, describe, test } from 'node:test'
 import Stripe from 'stripe'
 import { ShopnexError, type ShopContext } from '@shopnex/app'
-import { WEBHOOK_EVENTS, ensureWebhookEvents, webhookRoutes } from '../src/webhook'
+import { WEBHOOK_EVENTS, amountMismatch, ensureWebhookEvents, webhookRoutes } from '../src/webhook'
 
 const INSTANCE = 'https://shop.example.com'
 const SHOP_ID = 'shop_1'
@@ -432,5 +432,102 @@ describe('webhook endpoint events', () => {
 
   test('the app subscribes to the decline event', () => {
     assert.ok(WEBHOOK_EVENTS.includes('payment_intent.payment_failed'))
+  })
+})
+
+describe('paid amount', () => {
+  // What ShopNex asked Stripe to collect travels in the session's metadata (see /payments/session): 25.00 USD
+  const asked = { shopnex_amount_cents: '2500', shopnex_currency: 'usd' }
+  const collected = (extra: Partial<Stripe.Checkout.Session> = {}) =>
+    paid({ amount_total: 2500, currency: 'usd', metadata: asked, ...extra })
+
+  // The handler reports a mismatch with console.error: keep it out of the test output, and check it was said
+  const realError = console.error
+  let logged: string[]
+  beforeEach(() => {
+    logged = []
+    console.error = (...args: unknown[]) => void logged.push(args.join(' '))
+  })
+  afterEach(() => void (console.error = realError))
+
+  test('the exact amount and currency resolve the session', async () => {
+    assert.equal((await deliver(collected())).status, 204)
+    assert.deepEqual(state(), { status: 'resolved', externalId: 'pi_1' })
+  })
+
+  test('less than asked is refused: nothing is resolved, the endpoint fails and the mismatch is logged', async () => {
+    const r = await deliver(collected({ amount_total: 1000 }))
+    assert.equal(r.status, 500)
+    assert.deepEqual(calls, [])
+    assert.equal(state().status, 'pending')
+    assert.match(logged.join('\n'), /AMOUNT MISMATCH.*expected 2500 usd, Stripe reports 1000 usd.*NOT marked paid/)
+  })
+
+  test('more than asked is refused too', async () => {
+    assert.equal((await deliver(collected({ amount_total: 2501 }))).status, 500)
+    assert.deepEqual(calls, [])
+  })
+
+  test('a different currency is refused, even for the same number', async () => {
+    assert.equal((await deliver(collected({ currency: 'eur' }))).status, 500)
+    assert.deepEqual(calls, [])
+    assert.match(logged.join('\n'), /expected 2500 usd, Stripe reports 2500 eur/)
+  })
+
+  test('a paid event that reports no amount at all is refused', async () => {
+    assert.equal((await deliver(collected({ amount_total: null }))).status, 500)
+    assert.deepEqual(calls, [])
+  })
+
+  test('delayed methods are checked when they settle', async () => {
+    // Completes unpaid first: nothing to check yet, nothing resolved
+    assert.equal((await deliver(event('checkout.session.completed', { metadata: asked }))).status, 204)
+    assert.deepEqual(calls, [])
+    const wrong = event('checkout.session.async_payment_succeeded', {
+      amount_total: 100,
+      currency: 'usd',
+      metadata: asked,
+    })
+    assert.equal((await deliver(wrong)).status, 500)
+    assert.equal(state().status, 'pending')
+    const right = event('checkout.session.async_payment_succeeded', {
+      amount_total: 2500,
+      currency: 'usd',
+      metadata: asked,
+    })
+    assert.equal((await deliver(right)).status, 204)
+    assert.equal(state().status, 'resolved')
+  })
+
+  test('a refused event can be followed by the correct one (Stripe retries, ShopNex settles once)', async () => {
+    assert.equal((await deliver(collected({ amount_total: 1 }))).status, 500)
+    assert.equal((await deliver(collected())).status, 204)
+    assert.deepEqual(calls, ['resolve:ps_1'])
+  })
+
+  test('events that do not claim a payment are not held to the amount', async () => {
+    // Completed but unpaid, and an expiry, carry no money: the amount is irrelevant to them
+    assert.equal((await deliver(event('checkout.session.completed', { amount_total: 1, metadata: asked }))).status, 204)
+    assert.equal((await deliver(event('checkout.session.expired', { amount_total: 1, metadata: asked }))).status, 204)
+    assert.equal(calls.includes('resolve:ps_1'), false)
+  })
+
+  test('sessions created before the amount was recorded still resolve', async () => {
+    assert.equal((await deliver(paid({ amount_total: 999, currency: 'usd' }))).status, 204)
+    assert.equal(state().status, 'resolved')
+  })
+
+  test('amountMismatch names exactly what differs', () => {
+    const session = (s: Partial<Stripe.Checkout.Session>) => s as Stripe.Checkout.Session
+    assert.equal(amountMismatch(session({ metadata: asked, amount_total: 2500, currency: 'usd' })), null)
+    assert.equal(amountMismatch(session({ metadata: {}, amount_total: 1, currency: 'jpy' })), null)
+    assert.equal(
+      amountMismatch(session({ metadata: asked, amount_total: 2000, currency: 'usd' })),
+      'expected 2500 usd, Stripe reports 2000 usd',
+    )
+    assert.equal(
+      amountMismatch(session({ metadata: asked })),
+      'expected 2500 usd, Stripe reports no amount no currency',
+    )
   })
 })

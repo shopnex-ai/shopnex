@@ -193,6 +193,9 @@ app.post('/payments/session', async (c) => {
       shopnex_instance: shop.instance,
       shopnex_shop_id: shop.shopId,
       shopnex_order_id: request.orderId,
+      // What this session must collect: the webhook checks Stripe's amount against it before marking the order paid
+      shopnex_amount_cents: String(request.amount.cents),
+      shopnex_currency: request.amount.currency.toLowerCase(),
     }
     const session = await (
       await stripeFor(shop)
