@@ -1,4 +1,5 @@
 import { ORPCError } from '@orpc/server'
+import { clientIp } from '@shopnex/auth'
 import { cartService, checkoutService, type CartView } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
 import {
@@ -59,19 +60,17 @@ function priceRange(prices: number[], currency: string) {
 function toProduct(p: ProductWithDetails, currency: string): Product {
   const images = p.images.map(image)
   const featuredImage = images[0] ?? null
-  const variants = p.variants.map(
-    (v): ProductVariant => ({
-      id: v.id,
-      title: v.title,
-      sku: v.sku,
-      availableForSale: v.available,
-      price: money(v.priceCents, currency),
-      compareAtPrice: v.compareAtPriceCents != null ? money(v.compareAtPriceCents, currency) : null,
-      selectedOptions: v.selectedOptions,
-      // Like Shopify: falls back to the product image
-      image: v.imageUrl ? image({ url: v.imageUrl }) : featuredImage,
-    }),
-  )
+  const variants = p.variants.map((v): ProductVariant => ({
+    id: v.id,
+    title: v.title,
+    sku: v.sku,
+    availableForSale: v.available,
+    price: money(v.priceCents, currency),
+    compareAtPrice: v.compareAtPriceCents != null ? money(v.compareAtPriceCents, currency) : null,
+    selectedOptions: v.selectedOptions,
+    // Like Shopify: falls back to the product image
+    image: v.imageUrl ? image({ url: v.imageUrl }) : featuredImage,
+  }))
   const compareAt = p.variants.flatMap((v) => (v.compareAtPriceCents != null ? [v.compareAtPriceCents] : []))
   return {
     id: p.id,
@@ -499,11 +498,13 @@ export const storefrontRouter = storefront.router({
   },
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
-      await accountService.requestLoginCode(context.shop.id, input.email)
+      await accountService.requestLoginCode(context.shop.id, input.email, { ip: clientIp(context.headers) })
       return { success: true as const }
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
-      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code)
+      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code, {
+        ip: clientIp(context.headers),
+      })
       return { token, customer: toCustomer(customer) }
     }),
     signOut: storefront.customer.signOut.handler(async ({ context }) => {

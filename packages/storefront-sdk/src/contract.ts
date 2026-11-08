@@ -256,7 +256,7 @@ export const storefrontContract = {
     signIn: oc
       .route({ method: 'POST', path: '/storefront/customer/sign-in' })
       .input(z.object({ email: z.email().max(254), code: z.string().trim().min(4).max(12) }))
-      .errors({ INVALID_CODE })
+      .errors({ INVALID_CODE, TOO_MANY_REQUESTS })
       .output(z.object({ token: z.string(), customer: Customer })),
     signOut: oc
       .route({ method: 'POST', path: '/storefront/customer/sign-out' })
