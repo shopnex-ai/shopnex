@@ -1,0 +1,26 @@
+{
+  "name": "@shopnex/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for ShopNex: run a store from Claude, Cursor or any MCP client",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "shopnex-mcp": "./src/bin.ts"
+  },
+  "exports": {
+    ".": "./src/server.ts"
+  },
+  "scripts": {
+    "start": "tsx src/bin.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

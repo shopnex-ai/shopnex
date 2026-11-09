@@ -17,6 +17,7 @@
 - /marketplace-sdk # Marketplace API contract (oRPC) + typed client; session-token sign/verify for embedded apps
 - /app-bridge # browser library for embedded apps: session tokens, toasts, top-level redirects (postMessage to the admin)
 - /storefront-sdk # public Storefront API contract (oRPC, contract-first) + typed client — for any storefront
+- /mcp # MCP server (stdio): lets Claude, Cursor and other MCP clients run a store through the Admin API with a scoped token; read-only mode, drafts first, `confirm` before anything goes live
 
 /templates
 
