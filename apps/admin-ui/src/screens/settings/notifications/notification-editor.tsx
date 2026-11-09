@@ -33,6 +33,11 @@ const VARIABLES: [string, string][] = [
   ['order.financial_status, order.cancel_reason, order.note, order.created_at', 'Order details'],
   ['order.admin_url', 'The order in your admin (staff emails)'],
   ['fulfillment.tracking_company, fulfillment.tracking_number, fulfillment.tracking_url', 'Shipping confirmation'],
+  [
+    'checkout.url, checkout.first_name, checkout.line_items, checkout.item_count, checkout.subtotal_price',
+    'Abandoned cart: the checkout to come back to (line_items have title, variant_title, quantity, line_price, image_url)',
+  ],
+  ['unsubscribe_url', 'Abandoned cart: keep a link to it, shoppers can opt out'],
   ['content_for_layout, subject', 'Layout only: the email inside it, and its subject'],
 ]
 

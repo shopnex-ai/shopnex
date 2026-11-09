@@ -343,3 +343,20 @@ export async function markCompleted(
     })
     .where(eq(schema.carts.id, cartId))
 }
+
+/**
+ * The contact the buyer has typed so far, kept on the cart so a checkout they walk away from can be followed up
+ * (abandoned cart emails). Without consent the address is not kept at all. A completed cart is left alone.
+ */
+export async function setReminderContact(token: string, email: string, consent: boolean, conn: Conn = db) {
+  await conn
+    .update(schema.carts)
+    .set({
+      email: consent ? email.trim().toLowerCase() : null,
+      reminderConsent: consent,
+      updatedAt: sql`now()`,
+    })
+    .where(
+      and(eq(schema.carts.token, token), eq(schema.carts.status, 'active'), gt(schema.carts.expiresAt, new Date())),
+    )
+}

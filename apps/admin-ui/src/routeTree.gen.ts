@@ -28,6 +28,7 @@ import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminWelcomeRouteImport } from './routes/admin/welcome'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
+import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe/$token'
 import { Route as AdminAppsIdRouteImport } from './routes/admin/apps/$id'
 import { Route as AdminCollectionsIdRouteImport } from './routes/admin/collections/$id'
 import { Route as AdminCollectionsNewRouteImport } from './routes/admin/collections/new'
@@ -154,6 +155,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
 const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
   id: '/checkout/$token',
   path: '/checkout/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
+  id: '/unsubscribe/$token',
+  path: '/unsubscribe/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAppsIdRoute = AdminAppsIdRouteImport.update({
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -399,6 +406,7 @@ export interface FileRoutesByTo {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -508,6 +517,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -613,6 +624,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -653,6 +665,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
+  UnsubscribeTokenRoute: typeof UnsubscribeTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -788,6 +801,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout/$token'
       fullPath: '/checkout/$token'
       preLoaderRoute: typeof CheckoutTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe/$token': {
+      id: '/unsubscribe/$token'
+      path: '/unsubscribe/$token'
+      fullPath: '/unsubscribe/$token'
+      preLoaderRoute: typeof UnsubscribeTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/apps/$id': {
@@ -1246,6 +1266,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
+  UnsubscribeTokenRoute: UnsubscribeTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

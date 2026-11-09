@@ -1,6 +1,8 @@
 import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
+import { z } from 'zod'
 import { CartError, cartService, checkoutService } from '@shopnex/cart'
+import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { discountService } from '@shopnex/pricing'
@@ -38,9 +40,10 @@ export const getCheckout = publicFn({ method: 'GET' })
         : null
     }
     const cart = await cartService.view(found)
-    const [options, tax] = await Promise.all([
+    const [options, tax, offerReminder] = await Promise.all([
       checkoutService.options(found.shopId, cart.subtotalCents),
       checkoutService.taxContext(found.shopId),
+      abandonedCartService.offered(found.shopId),
     ])
     const lang = getRequest().headers.get('accept-language') ?? ''
     const defaultCountry = /^[a-z]{2,3}-([A-Z]{2})\b/.exec(lang)?.[1] ?? 'US'
@@ -53,6 +56,7 @@ export const getCheckout = publicFn({ method: 'GET' })
       options,
       tax,
       defaultCountry,
+      offerReminder,
       // Built here, once: Intl names and their order differ between this server and the browser, and a
       // list the browser computes itself fails hydration, which throws away what the buyer already typed
       countries: countryOptions,
@@ -80,6 +84,21 @@ export const quoteRates = publicFn({ method: 'POST' })
       address: data.address,
     })
     return shippingRates
+  })
+
+/**
+ * Keeps the buyer's email on the cart while they fill in the form, if they asked to be reminded (and un-keeps it
+ * if they change their mind). Does nothing unless the shop sends abandoned cart emails.
+ */
+export const saveReminderContact = publicFn({ method: 'POST' })
+  .validator((input: { token: string; email: string; consent: boolean }) => input)
+  .handler(async ({ data }) => {
+    const email = z.string().trim().email().max(254).safeParse(data.email)
+    if (!email.success) return
+    const cart = await cartService.findByToken(null, data.token)
+    if (!cart || cart.status !== 'active') return
+    if (!(await abandonedCartService.offered(cart.shopId))) return
+    await cartService.setReminderContact(data.token, email.data, data.consent === true)
   })
 
 // Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:

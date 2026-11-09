@@ -12,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { carts } from './cart'
 import { orders } from './orders'
 import { shops } from './tenancy'
 
@@ -52,6 +53,7 @@ export const NOTIFICATIONS = [
   'order_cancelled',
   'staff_order',
   'login_code',
+  'abandoned_cart',
   'layout',
 ] as const
 export type Notification = (typeof NOTIFICATIONS)[number]
@@ -88,6 +90,8 @@ export const emailDeliveries = pgTable(
       .references(() => shops.id, { onDelete: 'cascade' }),
     notification: text('notification').$type<Notification>().notNull(),
     orderId: uuid('order_id').references(() => orders.id, { onDelete: 'cascade' }),
+    // Abandoned cart reminders belong to a checkout, not an order
+    cartId: uuid('cart_id').references(() => carts.id, { onDelete: 'cascade' }),
     to: text('to').notNull(),
     subject: text('subject').notNull(),
     html: text('html').notNull(),
@@ -105,7 +109,37 @@ export const emailDeliveries = pgTable(
     uniqueIndex('email_deliveries_order_once_idx')
       .on(t.orderId, t.notification, t.to)
       .where(sql`${t.orderId} is not null`),
+    // A checkout is reminded once, however often the detector runs
+    uniqueIndex('email_deliveries_cart_once_idx')
+      .on(t.cartId, t.notification)
+      .where(sql`${t.cartId} is not null`),
   ],
 )
 
 export type EmailDelivery = typeof emailDeliveries.$inferSelect
+
+// Settings → Notifications → Abandoned cart emails. Off by default; the delay is how long a checkout with an
+// email must sit untouched before the reminder is queued.
+export const abandonedCartSettings = pgTable('abandoned_cart_settings', {
+  shopId: text('shop_id')
+    .primaryKey()
+    .references(() => shops.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(false),
+  delayMinutes: integer('delay_minutes').notNull().default(60),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export type AbandonedCartSettings = typeof abandonedCartSettings.$inferSelect
+
+// Addresses that unsubscribed from reminders (the link in every one), per shop
+export const emailSuppressions = pgTable(
+  'email_suppressions',
+  {
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.shopId, t.email] })],
+)

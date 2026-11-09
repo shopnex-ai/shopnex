@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
 import { buyer, postalCodeRequired, regionRequired } from './buyer-schema'
-import { placeOrder, quoteRates, type CheckoutFields } from './functions'
+import { placeOrder, quoteRates, saveReminderContact, type CheckoutFields } from './functions'
 import { useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
@@ -41,9 +41,12 @@ export function CheckoutForm({
   options,
   defaultCountry,
   countries,
+  offerReminder,
 }: {
   token: string
   currency: string
+  /** The shop sends abandoned cart emails: show the checkbox that asks for one */
+  offerReminder: boolean
   options: CheckoutOptionsView
   defaultCountry: string
   countries: { value: string; label: string }[]
@@ -76,6 +79,7 @@ export function CheckoutForm({
   const latestQuote = useRef(0)
   // Optional fields stay behind a link until the buyer wants them, and appear in the order they are opened
   const [opened, setOpened] = useState<string[]>([])
+  const [remind, setRemind] = useState(false)
   const [rateId = '', methodId = '', country = defaultCountry, province = ''] = useWatch({
     control,
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
@@ -125,6 +129,16 @@ export function CheckoutForm({
     } finally {
       if (quote === latestQuote.current) setRatesPending(false)
     }
+  }
+
+  // The email is kept with the cart only if the buyer asked to be reminded; the server checks it again
+  function saveContact(consent: boolean) {
+    if (!offerReminder) return
+    const email = form.getValues('email').trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    void saveReminderContact({ data: { token, email, consent } }).catch(() => {
+      // A reminder is a nicety: never get in the way of the order
+    })
   }
 
   // Shipping is offered but none chosen (carriers still waiting for an address): the schema can't know
@@ -188,8 +202,9 @@ export function CheckoutForm({
     <form
       onSubmit={onSubmit}
       onBlurCapture={(e) => {
-        if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
-          void refreshRates()
+        const name = (e.target as unknown as { name?: string }).name ?? ''
+        if (['address1', 'city', 'zip', 'province'].includes(name)) void refreshRates()
+        if (name === 'email') saveContact(remind)
       }}
       noValidate
       className="space-y-8"
@@ -198,6 +213,21 @@ export function CheckoutForm({
         <FieldLegend>Contact</FieldLegend>
         <FieldGroup>
           <TextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
+          {offerReminder && (
+            <label htmlFor="remind-me" className="flex items-center gap-2 text-[13px]">
+              <input
+                id="remind-me"
+                type="checkbox"
+                checked={remind}
+                onChange={(e) => {
+                  setRemind(e.target.checked)
+                  saveContact(e.target.checked)
+                }}
+                className="size-4 accent-brand"
+              />
+              Remind me if I leave without ordering
+            </label>
+          )}
         </FieldGroup>
       </FieldSet>
 

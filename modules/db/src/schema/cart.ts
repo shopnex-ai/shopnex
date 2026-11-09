@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { productVariants } from './catalog'
 import { customers } from './customers'
 import { orders } from './orders'
@@ -25,6 +25,8 @@ export const carts = pgTable(
     status: text('status').$type<CartStatus>().notNull().default('active'),
     customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
     email: text('email'),
+    // The buyer ticked "email me if I don't finish" when giving the email (abandoned cart reminders)
+    reminderConsent: boolean('reminder_consent').notNull().default(false),
     orderId: uuid('order_id').references(() => orders.id, { onDelete: 'set null' }),
     // Entered by the buyer; may not be applicable (checked when the cart is shown and at checkout)
     discountCode: text('discount_code'),
@@ -32,7 +34,7 @@ export const carts = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
-  (t) => [index('carts_shop_idx').on(t.shopId)],
+  (t) => [index('carts_shop_idx').on(t.shopId), index('carts_status_updated_idx').on(t.status, t.updatedAt)],
 )
 
 export const cartLines = pgTable(
