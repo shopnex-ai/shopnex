@@ -1,7 +1,8 @@
 'use client'
 
 import { ORPCError } from '@orpc/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CustomFieldsCard } from '@/components/admin/custom-fields-card'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { OrderStatusBadges } from '@/components/admin/order-status'
 import { PageHeader } from '@/components/admin/page-header'
@@ -31,7 +32,9 @@ const orderColumns = [
 const back = { to: '/admin/customers', label: 'Customers' } as const
 
 export function CustomerDetail({ id }: { id: string }) {
+  const queryClient = useQueryClient()
   const customer = useQuery(orpc.admin.customers.get.queryOptions({ input: { id } }))
+  const update = useMutation(orpc.admin.customers.update.mutationOptions())
   const orders = useQuery(
     orpc.admin.orders.list.queryOptions({ input: { customerId: id, limit: RECENT_ORDERS, offset: 0 } }),
   )
@@ -68,15 +71,25 @@ export function CustomerDetail({ id }: { id: string }) {
         description={`${c.name ? `${c.email} · ` : ''}Customer since ${formatDate(c.createdAt)}`}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* key: re-mount with fresh defaults if another customer loads into this view */}
-            <CustomerForm key={c.id} customer={c} />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* key: re-mount with fresh defaults if another customer loads into this view */}
+              <CustomerForm key={c.id} customer={c} />
+            </CardContent>
+          </Card>
+          <CustomFieldsCard
+            resource="customer"
+            values={c.customFields}
+            save={async (customFields) => {
+              await update.mutateAsync({ id: c.id, customFields })
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.customers.key() })
+            }}
+          />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Recent orders</CardTitle>

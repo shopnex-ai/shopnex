@@ -538,6 +538,7 @@ function sampleOrder(shop: Shop): OrderView {
     paymentMethodName: 'Bank transfer',
     paymentInstructions: null,
     note: null,
+    customFields: {},
     createdAt: now,
     updatedAt: now,
     items: [item('Classic T-shirt', 'M / Black', 2400, 2), item('Canvas tote bag', null, 2000, 1)],

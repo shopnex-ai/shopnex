@@ -3,9 +3,10 @@
 import { and, count, desc, eq, ilike, inArray, or, type SQL } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { NewCustomer } from '@shopnex/db/schema'
+import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
 
-type CustomerInput = Pick<NewCustomer, 'email' | 'name' | 'phone' | 'userId'>
+type CustomerInput = Pick<NewCustomer, 'email' | 'name' | 'phone' | 'userId'> & { customFields?: CustomFieldUpdates }
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
@@ -47,10 +48,15 @@ export async function getByEmail(shopId: string, email: string, conn: Conn = db)
 }
 
 // Returns null when the email is already taken in this shop
-export async function create(shopId: string, input: CustomerInput, conn: Conn = db) {
+export async function create(shopId: string, { customFields, ...input }: CustomerInput, conn: Conn = db) {
   const [row] = await conn
     .insert(schema.customers)
-    .values({ ...input, email: normalizeEmail(input.email), shopId })
+    .values({
+      ...input,
+      email: normalizeEmail(input.email),
+      customFields: await customFieldService.merge(shopId, 'customer', customFields ?? {}, {}, conn),
+      shopId,
+    })
     .onConflictDoNothing()
     .returning()
   if (row) await emit(conn, shopId, 'customer.created', () => row)
@@ -61,12 +67,24 @@ export async function create(shopId: string, input: CustomerInput, conn: Conn = 
 export async function update(
   shopId: string,
   id: string,
-  patch: Partial<Pick<NewCustomer, 'email' | 'name' | 'phone'>>,
+  {
+    customFields,
+    ...patch
+  }: Partial<Pick<NewCustomer, 'email' | 'name' | 'phone'>> & { customFields?: CustomFieldUpdates },
   conn: Conn = db,
 ) {
+  const existing = customFields ? await getById(shopId, id, conn) : null
+  if (customFields && !existing) return null
   const [row] = await conn
     .update(schema.customers)
-    .set({ ...patch, ...(patch.email && { email: normalizeEmail(patch.email) }), updatedAt: new Date() })
+    .set({
+      ...patch,
+      ...(patch.email && { email: normalizeEmail(patch.email) }),
+      ...(customFields && {
+        customFields: await customFieldService.merge(shopId, 'customer', customFields, existing!.customFields, conn),
+      }),
+      updatedAt: new Date(),
+    })
     .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, id)))
     .returning()
   if (row) await emit(conn, shopId, 'customer.updated', () => row)

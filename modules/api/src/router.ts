@@ -19,6 +19,7 @@ import {
   carrierServicesApp as adminCarrierServicesApp,
 } from './routers/admin/carrier-services'
 import { collections as adminCollections } from './routers/admin/collections'
+import { customFields as adminCustomFields } from './routers/admin/custom-fields'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { discounts as adminDiscounts } from './routers/admin/discounts'
 import { email as adminEmail } from './routers/admin/email'
@@ -62,6 +63,7 @@ export const router = {
     shop: tagged('Admin · Shop').router(adminShop),
     products: tagged('Admin · Products').router(adminProducts),
     collections: tagged('Admin · Collections').router(adminCollections),
+    customFields: tagged('Admin · Custom fields').router(adminCustomFields),
     customers: tagged('Admin · Customers').router(adminCustomers),
     orders: tagged('Admin · Orders').router(adminOrders),
     analytics: tagged('Admin · Analytics').router(adminAnalytics),

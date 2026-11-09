@@ -43,6 +43,7 @@ import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
+import { Route as AdminSettingsCustomFieldsRouteImport } from './routes/admin/settings/custom-fields'
 import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
@@ -235,6 +236,12 @@ const AdminSettingsChannelsRoute = AdminSettingsChannelsRouteImport.update({
   path: '/channels',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsCustomFieldsRoute =
+  AdminSettingsCustomFieldsRouteImport.update({
+    id: '/custom-fields',
+    path: '/custom-fields',
+    getParentRoute: () => AdminSettingsRouteRoute,
+  } as any)
 const AdminSettingsDomainsRoute = AdminSettingsDomainsRouteImport.update({
   id: '/domains',
   path: '/domains',
@@ -370,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -423,6 +431,7 @@ export interface FileRoutesByTo {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -478,6 +487,7 @@ export interface FileRoutesById {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -534,6 +544,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -587,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -641,6 +653,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -906,6 +919,13 @@ declare module '@tanstack/react-router' {
       path: '/channels'
       fullPath: '/admin/settings/channels'
       preLoaderRoute: typeof AdminSettingsChannelsRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/custom-fields': {
+      id: '/admin/settings/custom-fields'
+      path: '/custom-fields'
+      fullPath: '/admin/settings/custom-fields'
+      preLoaderRoute: typeof AdminSettingsCustomFieldsRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/domains': {
@@ -1182,6 +1202,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsAiRoute: typeof AdminSettingsAiRoute
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
+  AdminSettingsCustomFieldsRoute: typeof AdminSettingsCustomFieldsRoute
   AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
@@ -1201,6 +1222,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsAiRoute: AdminSettingsAiRoute,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
+  AdminSettingsCustomFieldsRoute: AdminSettingsCustomFieldsRoute,
   AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,

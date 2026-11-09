@@ -509,6 +509,9 @@ importers:
       '@shopnex/content':
         specifier: workspace:*
         version: link:../content
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
       '@shopnex/customers':
         specifier: workspace:*
         version: link:../customers
@@ -651,6 +654,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -697,11 +703,27 @@ importers:
         specifier: 'catalog:'
         version: 22.20.5
 
+  modules/custom-fields:
+    dependencies:
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+
   modules/customers:
     dependencies:
       '@shopnex/auth':
         specifier: workspace:*
         version: link:../auth
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -811,6 +833,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
       '@shopnex/customers':
         specifier: workspace:*
         version: link:../customers

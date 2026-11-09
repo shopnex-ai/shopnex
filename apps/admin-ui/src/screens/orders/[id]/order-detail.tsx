@@ -8,6 +8,7 @@ import { Fragment, useState } from 'react'
 import { toast } from 'sonner'
 import { CANCEL_REASONS, fulfillOrderInput, type CancelReason } from '@shopnex/api/schemas'
 import { AddressLines } from '@/components/admin/address'
+import { CustomFieldsCard } from '@/components/admin/custom-fields-card'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { OrderStatusBadges } from '@/components/admin/order-status'
 import { PageHeader } from '@/components/admin/page-header'
@@ -51,8 +52,10 @@ const kindLabel: Record<string, string> = {
 }
 
 export function OrderDetail({ id }: { id: string }) {
+  const queryClient = useQueryClient()
   const order = useQuery(orpc.admin.orders.get.queryOptions({ input: { id } }))
   const channels = useQuery(orpc.admin.channels.list.queryOptions())
+  const updateFields = useMutation(orpc.admin.orders.update.mutationOptions())
 
   if (order.isPending) {
     return (
@@ -286,6 +289,15 @@ export function OrderDetail({ id }: { id: string }) {
               )}
             </CardContent>
           </Card>
+          <CustomFieldsCard
+            resource="order"
+            values={o.customFields}
+            save={async (customFields) => {
+              const saved = await updateFields.mutateAsync({ id: o.id, customFields })
+              queryClient.setQueryData(orpc.admin.orders.get.queryKey({ input: { id: o.id } }), saved)
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.list.key() })
+            }}
+          />
           {o.note && (
             <Card>
               <CardHeader>

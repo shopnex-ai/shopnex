@@ -24,6 +24,7 @@ import type {
 } from '@shopnex/storefront-sdk'
 import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem } from '@shopnex/content'
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
+import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
 import type { Customer as CustomerRow } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
@@ -56,7 +57,12 @@ function priceRange(prices: number[], currency: string) {
   }
 }
 
-function toProduct(p: ProductWithDetails, currency: string): Product {
+// Keeps only the custom fields the shop shows on the storefront
+type FieldsView = (values: CustomFieldValues) => CustomFieldValues
+const fieldsView = (shopId: string, resource: CustomFieldResource) =>
+  customFieldService.storefrontView(shopId, resource)
+
+function toProduct(p: ProductWithDetails, currency: string, fields: FieldsView): Product {
   const images = p.images.map(image)
   const featuredImage = images[0] ?? null
   const variants = p.variants.map((v): ProductVariant => ({
@@ -91,6 +97,7 @@ function toProduct(p: ProductWithDetails, currency: string): Product {
     images,
     collectionHandles: p.collectionSlugs,
     seo: { title: p.seoTitle, description: p.seoDescription },
+    customFields: fields(p.customFields),
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }
@@ -173,7 +180,13 @@ function toCart(c: CartView): Cart {
 
 // ── customer accounts ──
 
-const toCustomer = (c: CustomerRow): Customer => ({ id: c.id, email: c.email, name: c.name, phone: c.phone })
+const toCustomer = (c: CustomerRow, fields: FieldsView): Customer => ({
+  id: c.id,
+  email: c.email,
+  name: c.name,
+  phone: c.phone,
+  customFields: fields(c.customFields),
+})
 
 type OrderRow = NonNullable<Awaited<ReturnType<typeof orderService.getById>>>
 
@@ -193,7 +206,7 @@ function toOrderAddress(a: OrderRow['shippingAddress']): OrderAddress | null {
   )
 }
 
-function toCustomerOrder(o: OrderRow): CustomerOrder {
+function toCustomerOrder(o: OrderRow, fields: FieldsView): CustomerOrder {
   const m = (cents: number) => money(cents, o.currency)
   return {
     id: o.id,
@@ -225,6 +238,7 @@ function toCustomerOrder(o: OrderRow): CustomerOrder {
       createdAt: f.createdAt.toISOString(),
     })),
     shippingAddress: toOrderAddress(o.shippingAddress),
+    customFields: fields(o.customFields),
   }
 }
 
@@ -263,16 +277,23 @@ async function paginate<T>(
   return { nodes, pageInfo: { hasNextPage, endCursor: nodes.length ? encodeCursor(offset + nodes.length) : null } }
 }
 
-function productFilters(input: {
-  query?: string
-  vendor?: string[]
-  productType?: string[]
-  tag?: string[]
-  minPrice?: number
-  maxPrice?: number
-  available?: boolean
-}) {
+async function productFilters(
+  shopId: string,
+  input: {
+    customField?: string[]
+    query?: string
+    vendor?: string[]
+    productType?: string[]
+    tag?: string[]
+    minPrice?: number
+    maxPrice?: number
+    available?: boolean
+  },
+) {
   return {
+    customFields: await customFieldService.parseFilters(shopId, 'product', input.customField ?? [], {
+      storefrontOnly: true,
+    }),
     search: input.query,
     vendors: input.vendor,
     productTypes: input.productType,
@@ -293,7 +314,7 @@ async function activeProduct(
     throw new ORPCError('NOT_FOUND')
   }
   const [product] = await withLiveCollections(await productService.withDetails([row]), row.shopId, channelId)
-  return toProduct(product!, currency)
+  return toProduct(product!, currency, await fieldsView(row.shopId, 'product'))
 }
 
 // A product names only the collections published on the storefront's channel
@@ -333,12 +354,13 @@ export const storefrontRouter = storefront.router({
             reverse: input.reverse,
             status: 'active',
             channelId: context.channelId,
-            ...productFilters(input),
+            ...(await productFilters(context.shop.id, input)),
           }),
         ),
       )
       const nodes = await withLiveCollections(page.nodes, context.shop.id, context.channelId)
-      return { ...page, nodes: nodes.map((p) => toProduct(p, context.shop.currency)) }
+      const fields = await fieldsView(context.shop.id, 'product')
+      return { ...page, nodes: nodes.map((p) => toProduct(p, context.shop.currency, fields)) }
     }),
     facets: storefront.products.facets.handler(async ({ input, context }) => {
       const none = { vendors: [], productTypes: [], tags: [], price: null }
@@ -502,25 +524,28 @@ export const storefrontRouter = storefront.router({
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
       const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code)
-      return { token, customer: toCustomer(customer) }
+      return { token, customer: toCustomer(customer, await fieldsView(context.shop.id, 'customer')) }
     }),
     signOut: storefront.customer.signOut.handler(async ({ context }) => {
       const token = context.headers.get(CUSTOMER_TOKEN_HEADER)
       if (token) await accountService.signOut(token)
       return { success: true as const }
     }),
-    get: storefront.customer.get.handler(async ({ context }) => toCustomer(await signedIn(context))),
+    get: storefront.customer.get.handler(async ({ context }) =>
+      toCustomer(await signedIn(context), await fieldsView(context.shop.id, 'customer')),
+    ),
     update: storefront.customer.update.handler(async ({ input, context }) => {
       const customer = await signedIn(context)
       const updated = await accountService.updateProfile(context.shop.id, customer.id, input)
-      return toCustomer(updated ?? customer)
+      return toCustomer(updated ?? customer, await fieldsView(context.shop.id, 'customer'))
     }),
     orders: storefront.customer.orders.handler(async ({ input, context }) => {
       const customer = await signedIn(context)
+      const fields = await fieldsView(context.shop.id, 'order')
       return paginate(input, async (limit, offset) => {
         const { items } = await orderService.list(context.shop.id, { customerId: customer.id, limit, offset })
         const full = await Promise.all(items.map((o) => orderService.getById(context.shop.id, o.id)))
-        return full.flatMap((o) => (o ? [toCustomerOrder(o)] : []))
+        return full.flatMap((o) => (o ? [toCustomerOrder(o, fields)] : []))
       })
     }),
     order: storefront.customer.order.handler(async ({ input, context }) => {
@@ -528,7 +553,7 @@ export const storefrontRouter = storefront.router({
       const order = await orderService.getById(context.shop.id, input.id)
       // Someone else's order looks like a missing one
       if (!order || order.customerId !== customer.id) throw defined('NOT_FOUND', 'Order not found')
-      return toCustomerOrder(order)
+      return toCustomerOrder(order, await fieldsView(context.shop.id, 'order'))
     }),
   },
   checkout: {
