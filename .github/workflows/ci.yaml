@@ -126,9 +126,8 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnex
-      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
       SHOPNEX_SECRET: ci-only-shopnex-secret-ci-only-shopnex
-      BETTER_AUTH_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
       STOREFRONT_URL: http://localhost:4321
       DEMO_OWNER_EMAIL: owner@example.com
       DEMO_OWNER_PASSWORD: ci-owner-Passw0rd!

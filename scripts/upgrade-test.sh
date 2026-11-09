@@ -16,16 +16,18 @@ current="${CURRENT_IMAGE:-shopnex-upgrade-current}"
 container=shopnex-upgrade
 trap 'docker rm -f "$container" >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 
-export BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-upgrade-test-secret-upgrade-test-secret}"
 export SHOPNEX_SECRET="${SHOPNEX_SECRET:-upgrade-test-shopnex-secret-upgrade}"
-export BETTER_AUTH_URL="${BETTER_AUTH_URL:-http://localhost:3000}"
-export APP_URL="$BETTER_AUTH_URL"
+export APP_URL="${APP_URL:-http://localhost:3000}"
 export STOREFRONT_URL="${STOREFRONT_URL:-$APP_URL}"
 export DEMO_OWNER_EMAIL="${DEMO_OWNER_EMAIL:-owner@example.com}"
 export DEMO_OWNER_PASSWORD="${DEMO_OWNER_PASSWORD:-upgrade-owner-Passw0rd!}"
 
-env_args=(-e DATABASE_URL -e BETTER_AUTH_SECRET -e SHOPNEX_SECRET -e BETTER_AUTH_URL -e APP_URL
+env_args=(-e DATABASE_URL -e SHOPNEX_SECRET -e APP_URL
   -e STOREFRONT_URL -e DEMO_OWNER_EMAIL -e DEMO_OWNER_PASSWORD)
+
+# Releases up to v0.14.0 require these two; the current build derives them from SHOPNEX_SECRET and APP_URL, so only
+# the previous release gets them. Drop them once the previous release no longer needs them.
+legacy_env=(-e "BETTER_AUTH_SECRET=upgrade-test-secret-upgrade-test-secret" -e "BETTER_AUTH_URL=$APP_URL")
 
 # 1. The previous release
 previous="${PREVIOUS_VERSION:-$(gh release view --json tagName --jq .tagName)}"
@@ -36,7 +38,7 @@ echo "::endgroup::"
 
 # 2. Install it on the empty database and seed it: the shop, accounts, products, collections, pages, menus, orders
 echo "Installing $previous and seeding data"
-docker run --rm --network host "${env_args[@]}" --entrypoint bash "$old_image" \
+docker run --rm --network host "${env_args[@]}" "${legacy_env[@]}" --entrypoint bash "$old_image" \
   -c 'pnpm db:migrate && pnpm demo:seed'
 node scripts/db-snapshot.mjs snapshot "$work/before.json"
 
