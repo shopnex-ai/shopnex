@@ -36,8 +36,8 @@ Fields shown on the storefront are on the product as `custom_fields`, empty unle
 
 `customFields` is a `{ [key]: string | number | boolean }` map on `Product`, `Customer` (the signed-in customer) and `CustomerOrder`:
 
-```ts
-const product = await shopnex.products.get({ handle: 'linen-shirt' })
+```ts setup=storefront
+const product = await shopnex.products.getByHandle({ handle: 'linen-shirt' })
 product.customFields.material // 'Linen'
 ```
 
