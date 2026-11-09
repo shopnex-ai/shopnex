@@ -37,7 +37,14 @@ const isNullable = (s: JsonSchema) =>
   (Array.isArray(s.type) && s.type.includes('null')) || !!s.anyOf?.some((x) => x.type === 'null')
 
 function fieldsOf(schema: z.ZodType): Field[] {
-  const json = z.toJSONSchema(schema, { io: 'output', unrepresentable: 'any' }) as JsonSchema
+  const json = z.toJSONSchema(schema, {
+    io: 'output',
+    unrepresentable: 'any',
+    // Dates are sent as ISO strings
+    override: (ctx) => {
+      if (ctx.zodSchema._zod.def.type === 'date') Object.assign(ctx.jsonSchema, { type: 'string', format: 'date-time' })
+    },
+  }) as JsonSchema
   return Object.entries(json.properties ?? {}).map(([name, s]) => ({ name, type: typeOf(s), nullable: isNullable(s) }))
 }
 
