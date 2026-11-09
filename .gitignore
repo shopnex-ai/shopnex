@@ -10,4 +10,4 @@ next-env.d.ts
 # Bundled apps (scripts/bundle-app.mjs)
 apps/*/dist
 
-.DS_Store
+.DS_Storereport-site/
