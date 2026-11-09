@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/db",
+  "description": "Drizzle client, schema and migrations",
   "private": true,
   "type": "module",
   "exports": {

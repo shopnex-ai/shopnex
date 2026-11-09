@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/cart",
+  "description": "Server-side carts and checkout, which turns a cart into an order in one transaction",
   "private": true,
   "type": "module",
   "exports": {

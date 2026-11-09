@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/customers",
+  "description": "Shop-scoped customers and storefront accounts",
   "private": true,
   "type": "module",
   "exports": {

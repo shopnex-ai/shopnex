@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/theme",
+  "description": "Storefront themes: Liquid templates, preview links and validation",
   "private": true,
   "type": "module",
   "exports": {

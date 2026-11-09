@@ -28,7 +28,7 @@ export type CustomFieldPatch = Partial<Pick<CustomFieldDefinition, 'label' | 'st
 /** What a request sends: a value sets the field, null clears it, keys left out stay as they are */
 export type CustomFieldUpdates = Record<string, CustomFieldValue | null>
 
-const MAX_TEXT = 1000
+export const MAX_TEXT = 1000
 
 const tables = {
   product: schema.products,

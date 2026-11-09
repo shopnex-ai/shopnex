@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/webhooks",
+  "description": "Outbound webhooks: endpoints, outbox and delivery worker",
   "private": true,
   "type": "module",
   "exports": {

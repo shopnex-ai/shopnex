@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/api",
+  "description": "Hono app and oRPC router: the admin, storefront and OpenAPI endpoints",
   "private": true,
   "type": "module",
   "exports": {

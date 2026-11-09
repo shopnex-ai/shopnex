@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/files",
+  "description": "Uploaded files and their storage backends (local disk or S3)",
   "private": true,
   "type": "module",
   "exports": {

@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/channels",
+  "description": "Sales channels and what is published on each",
   "private": true,
   "type": "module",
   "exports": {

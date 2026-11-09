@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/drafts",
+  "description": "Drafts of changes to an entity, applied to it when published",
   "private": true,
   "type": "module",
   "exports": {

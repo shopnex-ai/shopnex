@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/content",
+  "description": "Menus and pages",
   "private": true,
   "type": "module",
   "exports": {

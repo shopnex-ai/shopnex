@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/catalog",
+  "description": "Products, collections, options and variants",
   "private": true,
   "type": "module",
   "exports": {

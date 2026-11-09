@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/orders",
+  "description": "Orders, line items with price snapshots, and status transitions",
   "private": true,
   "type": "module",
   "exports": {
