@@ -16,7 +16,6 @@
     "dev:cj": "pnpm --filter @shopnex/cj-dropshipping dev",
     "dev:shippo": "pnpm --filter @shopnex/shippo dev",
     "e2e": "pnpm --filter @shopnex/e2e test",
-    "roadmap:publish": "bash scripts/roadmap-publish.sh",
     "test": "pnpm -r --if-present --filter '!@shopnex/e2e' test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
