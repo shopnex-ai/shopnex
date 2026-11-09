@@ -11,6 +11,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -20,7 +21,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "^8.23.1",
+    "dotenv": "^18.0.9",
     "drizzle-kit": "^0.31.11",
-    "dotenv": "^18.0.9"
+    "tsx": "^4.23.15"
   }
 }

@@ -5,11 +5,10 @@ set -e
 
 # Platforms like Render only expose their public URL as RENDER_EXTERNAL_URL.
 export APP_URL="${APP_URL:-$RENDER_EXTERNAL_URL}"
-export BETTER_AUTH_URL="${BETTER_AUTH_URL:-$APP_URL}"
 
-# Two independent secrets: BETTER_AUTH_SECRET signs sessions (Better Auth), SHOPNEX_SECRET encrypts the
-# provider keys saved in the admin and signs preview links. One not given is generated once and kept on
-# the /data volume, so restarts keep sessions and stored keys. Without a volume it is regenerated on every start.
+# SHOPNEX_SECRET encrypts the provider keys saved in the admin, signs preview links and (through a derived key)
+# sessions. When not given it is generated once and kept on the /data volume, so restarts keep sessions and stored
+# keys. Without a volume it is regenerated on every start.
 ensure_secret() {
   local name="$1" file="$2" path="${DATA_DIR:-/data}/$2"
   if [ -z "${!name}" ]; then
@@ -21,8 +20,10 @@ ensure_secret() {
     export "$name=$(cat "$path")"
   fi
 }
-ensure_secret BETTER_AUTH_SECRET better-auth-secret
 ensure_secret SHOPNEX_SECRET shopnex-secret
+# Installs from before the single secret generated a separate session secret: keep using it so nobody is signed out
+legacy="${DATA_DIR:-/data}/better-auth-secret"
+if [ -z "$BETTER_AUTH_SECRET" ] && [ -s "$legacy" ]; then export BETTER_AUTH_SECRET="$(cat "$legacy")"; fi
 : "${DATABASE_URL:?set DATABASE_URL}"
 
 export PUBLIC_PORT="${PORT:-3000}" ADMIN_PORT=3001 STOREFRONT_PORT=4321
@@ -33,7 +34,6 @@ if [ -n "$DOMAIN" ]; then
   export SITE_ADDRESS="$DOMAIN" AUTO_HTTPS_OPT="" APPS_CADDYFILE=Caddyfile.apps
   export XDG_DATA_HOME="${DATA_DIR:-/data}/caddy"
   export APP_URL="${APP_URL:-https://$DOMAIN}"
-  export BETTER_AUTH_URL="${BETTER_AUTH_URL:-$APP_URL}"
 else
   export SITE_ADDRESS=":$PUBLIC_PORT" AUTO_HTTPS_OPT="auto_https off" APPS_CADDYFILE="no-apps-*.caddy"
 fi
