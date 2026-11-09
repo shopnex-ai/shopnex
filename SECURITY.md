@@ -27,7 +27,7 @@ server or admin account, and findings on instances you do not own.
 | Older than 0.8  | No        |
 
 Security fixes are released for 0.8 and newer, with the latest release first. Upgrade to a supported version and keep
-`BETTER_AUTH_SECRET` and `SHOPNEX_SECRET` private and unique per deployment.
+`SHOPNEX_SECRET` private and unique per deployment.
 
 ## Notes for operators
 

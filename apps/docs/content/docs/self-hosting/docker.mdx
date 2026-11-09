@@ -24,7 +24,7 @@ The image generates `SHOPNEX_SECRET` into `/data` if you don't set one, so keep 
 
 On start, `deploy/start.sh`:
 
-1. requires `DATABASE_URL`, generates `SHOPNEX_SECRET` if unset, and defaults `BETTER_AUTH_URL` to `APP_URL`;
+1. requires `DATABASE_URL` and generates `SHOPNEX_SECRET` if unset;
 2. checks that the database is reachable and exits with the connection error if not;
 3. runs `pnpm db:migrate`;
 4. starts the admin (port 3001), the storefront (port 4321) and Caddy on `$PORT` (default 3000).
@@ -33,7 +33,7 @@ If any process exits, the container exits so your platform restarts it.
 
 ## Render
 
-`render.yaml` is a Render Blueprint: a Docker web service on the `v2` branch with a managed Postgres database, a generated `BETTER_AUTH_SECRET`, and `TENANCY_MODE=single`. `APP_URL` falls back to `RENDER_EXTERNAL_URL`. The health check is `/admin/login`.
+`render.yaml` is a Render Blueprint: a Docker web service on the `v2` branch with a managed Postgres database, a generated `SHOPNEX_SECRET`, and `TENANCY_MODE=single`. `APP_URL` falls back to `RENDER_EXTERNAL_URL`. The health check is `/admin/login`.
 
 <Callout type="warn">
   Open the deployed URL and complete `/admin/setup` immediately: a fresh install can be claimed by whoever gets there

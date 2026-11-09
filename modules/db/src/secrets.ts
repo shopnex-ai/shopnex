@@ -11,6 +11,16 @@ export function shopnexSecret() {
   return secret
 }
 
+/**
+ * The secret Better Auth signs sessions with. BETTER_AUTH_SECRET when set (installs that predate the single
+ * secret keep their sessions), else derived from SHOPNEX_SECRET under its own label. Undefined when neither is set.
+ */
+export function sessionSecret() {
+  if (process.env.BETTER_AUTH_SECRET) return process.env.BETTER_AUTH_SECRET
+  const secret = process.env.SHOPNEX_SECRET
+  return secret ? createHmac('sha256', secret).update('shopnex:session:v1').digest('hex') : undefined
+}
+
 function key() {
   return createHmac('sha256', shopnexSecret()).update(LABEL).digest()
 }
