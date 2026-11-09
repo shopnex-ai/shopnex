@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/ai",
+  "description": "AI providers, settings and text generation (built-in or through installed apps)",
   "private": true,
   "type": "module",
   "exports": {

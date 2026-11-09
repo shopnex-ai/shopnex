@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/custom-fields",
+  "description": "Custom field definitions and values for products, orders and customers",
   "private": true,
   "type": "module",
   "exports": {

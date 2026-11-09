@@ -1,7 +1,7 @@
 // Renders generated/reference.json (scripts/generate-reference.ts), which is read from the code at build time.
 import reference from '../generated/reference.json'
 
-const { scopes, webhooks, roles, env } = reference
+const { scopes, webhooks, roles, env, modules, values } = reference
 
 function Table({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (
@@ -125,4 +125,18 @@ export function EnvVars() {
       ])}
     />
   )
+}
+
+export function Modules() {
+  return (
+    <Table
+      head={['Module', 'Does']}
+      rows={modules.map((m) => [<code key={m.dir}>modules/{m.dir}</code>, m.description])}
+    />
+  )
+}
+
+/** A number from the code, e.g. <Value name="inviteExpiryDays" /> */
+export function Value({ name }: { name: keyof typeof values }) {
+  return <>{values[name]}</>
 }

@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/pricing",
+  "description": "Discounts and taxes",
   "private": true,
   "type": "module",
   "exports": {

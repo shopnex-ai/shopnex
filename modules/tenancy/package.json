@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/tenancy",
+  "description": "Tenancy mode, shops, domains, staff, invitations, API tokens and storefront keys",
   "private": true,
   "type": "module",
   "exports": {

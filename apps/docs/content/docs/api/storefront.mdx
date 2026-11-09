@@ -46,7 +46,7 @@ await shopnex.checkout.complete({
 Shoppers sign in with a one-time code emailed through the shop's SMTP settings (Settings → Email), so the shop must send email. There are no passwords. The first sign-in creates the account, and guest orders placed with the same email appear in it.
 
 ```ts
-await shopnex.customer.requestCode({ email }) // emails a 6-digit code, valid for 10 minutes
+await shopnex.customer.requestCode({ email }) // emails a one-time code
 const { token, customer } = await shopnex.customer.signIn({ email, code })
 
 // Keep the token server side (the bundled storefront uses an httpOnly cookie) and send it back
@@ -58,7 +58,7 @@ await me.customer.signOut()
 
 - Without the SDK, send the token in the `x-shopnex-customer-token` header.
 - A customer only ever sees their own orders (someone else's order id is `NOT_FOUND`). A token only ever resolves to the customer record of the shop it is used in, and reaches nothing in the admin API.
-- Codes are limited per address and per shop (`TOO_MANY_REQUESTS`), and each code allows 5 attempts and works once.
+- A code has <Value name="loginCodeLength" /> digits and is valid for <Value name="loginCodeMinutes" /> minutes. Codes are limited per address and per shop (`TOO_MANY_REQUESTS`), and each code allows <Value name="loginCodeAttempts" /> attempts and works once.
 - An address that belongs to a staff account gets no code: staff sign in to the admin. Use another address to try the storefront login.
 - The email is the "Customer sign-in code" notification (Settings → Notifications). Without email set up, `requestCode` fails with `CUSTOMER_LOGIN_UNAVAILABLE`.
 - The bundled storefront has the pages: `/account/login`, `/account` (orders, details) and `/account/orders/{id}`, shown in the live theme's layout. Themes link to them with `{{ routes.account_url }}`.

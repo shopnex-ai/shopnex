@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/payments",
+  "description": "Payment sessions, and the payment methods payments apps register",
   "private": true,
   "type": "module",
   "exports": {

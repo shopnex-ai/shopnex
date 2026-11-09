@@ -33,4 +33,4 @@ or just call `shopnex.authenticate(c)`.
 | `client_credentials`                              | `shop_id`                                | 1-hour token for its installation there (background work) |
 | `authorization_code`                              | `code`, `redirect_uri`, client assertion | long-lived `sk_…` token                                   |
 
-Access tokens are JWTs checked against the installation on every request, so uninstalling revokes them at once. Authorization codes are single-use and expire after 10 minutes.
+Access tokens are JWTs checked against the installation on every request, so uninstalling revokes them at once. Authorization codes are single-use and expire after <Value name="authCodeMinutes" /> minutes.
