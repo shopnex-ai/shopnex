@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowDownRightIcon, ArrowUpRightIcon, ChevronRightIcon, PackageIcon } from 'lucide-react'
+import { PackageIcon } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { cn } from 'cn'
 import { useListParams } from '@/components/admin/list-params'
@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
-import { GettingStarted } from './getting-started'
+import { change, formatPercent, StatTile } from './stat-tile'
 
 type Overview = Outputs['admin']['analytics']['overview']
 type Day = Overview['series'][number]
@@ -37,7 +37,7 @@ const METRICS: Record<Metric, { label: string; current: (d: Day) => number; prev
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-export function HomeDashboard({ currency, shopId }: { currency: string; shopId: string }) {
+export function AnalyticsDashboard({ currency }: { currency: string }) {
   const { filter, setFilter } = useListParams()
   const days = RANGES.find((r) => String(r.days) === filter('range'))?.days ?? 30
   const [metric, setMetric] = useState<Metric>('sales')
@@ -49,7 +49,7 @@ export function HomeDashboard({ currency, shopId }: { currency: string; shopId: 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Home"
+        title="Analytics"
         description={`Last ${days} days compared with the ${days} days before`}
         actions={
           <div className="flex gap-1" role="group" aria-label="Date range">
@@ -68,14 +68,10 @@ export function HomeDashboard({ currency, shopId }: { currency: string; shopId: 
         }
       />
 
-      <GettingStarted shopId={shopId} />
-
       {error ? (
         <p className="text-sm text-destructive">Couldn’t load analytics: {error.message}</p>
       ) : (
         <>
-          {data && <Attention attention={data.attention} />}
-
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {(['sales', 'orders', 'aov'] as const).map((m) => (
               <StatTile
@@ -131,102 +127,6 @@ export function HomeDashboard({ currency, shopId }: { currency: string; shopId: 
 function totalOf(data: Overview, metric: Metric, period: 'current' | 'previous') {
   const t = data[period]
   return metric === 'sales' ? t.salesCents : metric === 'orders' ? t.orders : t.averageOrderCents
-}
-
-// Relative change; null when there's nothing to compare with
-function change(current: number, previous: number) {
-  if (previous === 0) return current === 0 ? 0 : null
-  return (current - previous) / previous
-}
-
-function formatPercent(v: number) {
-  return new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 1 }).format(v)
-}
-
-function Attention({ attention }: { attention: Overview['attention'] }) {
-  const items = [
-    { count: attention.unfulfilled, label: 'to fulfill', view: 'unfulfilled' },
-    { count: attention.unpaid, label: 'awaiting payment', view: 'unpaid' },
-  ].filter((i) => i.count > 0)
-  if (!items.length) return null
-  return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((i) => (
-        <Link
-          key={i.view}
-          to="/admin/orders"
-          search={{ view: i.view }}
-          className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm shadow-card hover:bg-muted"
-        >
-          <span className="font-medium tabular-nums">
-            {i.count} {i.count === 1 ? 'order' : 'orders'}
-          </span>
-          <span className="text-muted-foreground">{i.label}</span>
-          <ChevronRightIcon className="size-4 text-muted-foreground" />
-        </Link>
-      ))}
-    </div>
-  )
-}
-
-function StatTile({
-  label,
-  value,
-  change,
-  selected,
-  onSelect,
-}: {
-  label: string
-  value: string | undefined
-  change: number | null | undefined
-  selected?: boolean
-  /** Makes the tile a button that plots this metric */
-  onSelect?: () => void
-}) {
-  const body = (
-    <>
-      <div className="text-sm text-muted-foreground">{label}</div>
-      {value === undefined ? (
-        <Skeleton className="mt-1 h-7 w-24" />
-      ) : (
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
-          <span className="text-2xl font-semibold tabular-nums">{value}</span>
-          <Change value={change ?? null} />
-        </div>
-      )}
-    </>
-  )
-  const className = cn(
-    'rounded-xl bg-card p-4 text-left shadow-card',
-    onSelect && 'transition-colors hover:bg-muted/50',
-    selected && 'ring-2 ring-brand',
-  )
-  return onSelect ? (
-    <button type="button" className={className} aria-pressed={selected} onClick={onSelect}>
-      {body}
-    </button>
-  ) : (
-    <div className={className}>{body}</div>
-  )
-}
-
-function Change({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-xs text-muted-foreground">—</span>
-  if (Math.abs(value) < 0.0005) return <span className="text-xs text-muted-foreground">0%</span>
-  const up = value > 0
-  const Icon = up ? ArrowUpRightIcon : ArrowDownRightIcon
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center text-xs font-medium tabular-nums',
-        up ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400',
-      )}
-    >
-      <Icon className="size-3.5" aria-hidden />
-      <span className="sr-only">{up ? 'Up' : 'Down'}</span>
-      {formatPercent(Math.abs(value))}
-    </span>
-  )
 }
 
 function Legend() {

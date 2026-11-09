@@ -3,6 +3,7 @@ import {
   BellIcon,
   BlocksIcon,
   BookOpenIcon,
+  ChartLineIcon,
   CodeIcon,
   CreditCardIcon,
   GlobeIcon,
@@ -57,6 +58,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
+      { href: '/admin/analytics', label: 'Analytics', icon: ChartLineIcon },
       // Theme library and editor; Pages and Navigation are their own entries
       { href: '/admin/online-store/themes', label: 'Online store', icon: StoreIcon },
       { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
