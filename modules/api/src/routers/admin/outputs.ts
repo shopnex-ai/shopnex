@@ -48,6 +48,7 @@ import {
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
   WEBHOOK_TOPICS,
+  type WebhookTopic,
   customers,
   fulfillments,
   orderItems,
@@ -477,3 +478,16 @@ export const analyticsOverviewOutput = z.object({
   ),
   attention: z.object({ unfulfilled: z.number().int(), unpaid: z.number().int() }),
 })
+
+// The `data` of each webhook topic: the resource as the admin API returns it. The docs list its fields.
+export const webhookPayloads: Record<WebhookTopic, z.ZodType> = {
+  'order.created': orderDetailOutput,
+  'order.paid': orderDetailOutput,
+  'order.fulfilled': orderDetailOutput,
+  'order.cancelled': orderDetailOutput,
+  'order.updated': orderDetailOutput,
+  'product.created': productOutput,
+  'product.updated': productOutput,
+  'customer.created': customerOutput,
+  'customer.updated': customerOutput,
+}

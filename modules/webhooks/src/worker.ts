@@ -7,14 +7,14 @@ import { assertPublicHost } from './network'
 import { signedHeaders } from './sign'
 
 // Wait after the nth failed attempt; one more failure after the last is final (8 attempts over ~25h)
-const RETRY_DELAYS_S = [60, 5 * 60, 30 * 60, 2 * 3600, 5 * 3600, 8 * 3600, 8 * 3600]
-const TIMEOUT_MS = 10_000
+export const RETRY_DELAYS_S = [60, 5 * 60, 30 * 60, 2 * 3600, 5 * 3600, 8 * 3600, 8 * 3600]
+export const TIMEOUT_MS = 10_000
 // A claimed row is invisible to other workers this long; if this process dies mid-send it's retried after
 const LEASE_MS = 60_000
 const BATCH = 20
 const POLL_MS = 3_000
 // Finished deliveries are kept this long for the admin's delivery log
-const RETENTION_MS = 30 * 24 * 3600_000
+export const RETENTION_MS = 30 * 24 * 3600_000
 
 export type WorkerOptions = {
   /**
