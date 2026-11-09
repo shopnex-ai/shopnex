@@ -5,7 +5,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { Fixtures, SHOP, closeDb, requireApp, sellableVariants } from '../lib'
+import { Fixtures, SHOP, requireApp, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
 
 const fx = new Fixtures()
@@ -58,7 +58,6 @@ test.afterAll(async () => {
   if (abandonedBefore.length) await db.insert(schema.abandonedCartSettings).values(abandonedBefore)
   await fx.cleanup()
   await sink.stop()
-  await closeDb()
 })
 
 const deliveriesOf = (cartId: string) =>

@@ -1057,6 +1057,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/abandoned-cart/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.notifications.abandonedCartSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["admin.notifications.updateAbandonedCartSettings"];
+        trace?: never;
+    };
     "/notifications/{notification}": {
         parameters: {
             query?: never;
@@ -6168,7 +6184,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6197,7 +6213,7 @@ export interface operations {
                         /** Format: uuid */
                         id: string;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         orderId: string | null;
                         to: string;
                         subject: string;
@@ -6212,12 +6228,67 @@ export interface operations {
             };
         };
     };
+    "admin.notifications.abandonedCartSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        delayMinutes: number;
+                        emailOn: boolean;
+                    };
+                };
+            };
+        };
+    };
+    "admin.notifications.updateAbandonedCartSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled?: boolean;
+                    delayMinutes?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        delayMinutes: number;
+                        emailOn: boolean;
+                    };
+                };
+            };
+        };
+    };
     "admin.notifications.get": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6233,7 +6304,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6254,7 +6325,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6278,7 +6349,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6299,7 +6370,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6315,7 +6386,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6336,7 +6407,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6373,7 +6444,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
