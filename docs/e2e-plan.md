@@ -38,7 +38,7 @@ Add Playwright next to the existing suite (`e2e/browser/`), run in the same CI j
 - Start the latest stable release image on an empty Postgres, run its migrations and `demo:seed` (shop, accounts, products, collections, pages, menus, orders).
 - Snapshot every table (`scripts/db-snapshot.mjs`), build the current image and run its migrations on the same database.
 - Compare: new tables, columns and rows are fine; a dropped table or column, a missing row or a changed value fails the job.
-- Start the current build on the upgraded database and run a smoke subset of the e2e suite (auth, pricing, stock, customer accounts).
+- Start the current build on the upgraded database and run a smoke subset of the e2e suite (pricing, stock, payments, SEO; not the sign-up-heavy auth tests, which the production-mode rate limit blocks).
 
 One hop only (previous release to current). Run it locally on Linux with Docker: `DATABASE_URL=… scripts/upgrade-test.sh`; `PREVIOUS_VERSION=v0.13.0` picks another release.
 
