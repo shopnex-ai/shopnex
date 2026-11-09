@@ -1,4 +1,4 @@
-// Writes the facts the docs repeat (API scopes, webhook topics and payloads, delivery timings) to
+// Writes the facts the docs repeat (API scopes, roles, env vars, webhook topics and payloads, delivery timings) to
 // generated/reference.json, straight from the code. The <Scopes />, <WebhookTopics /> ... components render it,
 // so these pages cannot drift from the product. Runs before dev, build and typecheck, with no instance or database.
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -6,8 +6,11 @@ import { z } from 'zod'
 import {
   API_SCOPES,
   API_SCOPE_DESCRIPTIONS,
+  ENV_VARS,
   RETENTION_MS,
   RETRY_DELAYS_S,
+  SHOP_ROLES,
+  SHOP_ROLE_DESCRIPTIONS,
   TIMEOUT_MS,
   WEBHOOK_TEST_TOPIC,
   WEBHOOK_TOPICS,
@@ -65,6 +68,8 @@ const topics = WEBHOOK_TOPICS.map((topic) => {
 const formatSeconds = (s: number) => (s >= 3600 ? `${s / 3600}h` : `${s / 60}m`)
 
 const reference = {
+  env: ENV_VARS,
+  roles: SHOP_ROLES.map((role) => ({ role, description: SHOP_ROLE_DESCRIPTIONS[role] })),
   scopes: API_SCOPES.map((scope) => ({ scope, description: API_SCOPE_DESCRIPTIONS[scope] })),
   webhooks: {
     testTopic: WEBHOOK_TEST_TOPIC,

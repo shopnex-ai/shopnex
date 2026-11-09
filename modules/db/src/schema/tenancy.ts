@@ -91,6 +91,17 @@ export type ShopDomain = typeof shopDomains.$inferSelect
 // Roles staff can be given (invitation or role change). 'owner' exists but isn't handed out.
 export const STAFF_ROLES = ['admin', 'member'] as const
 export type StaffRole = (typeof STAFF_ROLES)[number]
+
+// Every role a member can have in a shop. 'owner' is the first account to join it and can't be changed from Staff.
+export const SHOP_ROLES = ['owner', 'admin', 'member'] as const
+export type ShopRole = (typeof SHOP_ROLES)[number]
+// The docs' roles table is generated from this; a new role without a description fails typecheck.
+export const SHOP_ROLE_DESCRIPTIONS: Record<ShopRole, string> = {
+  owner: 'The first account to join the shop. Full access, including creating and changing admins.',
+  admin:
+    'Manages API tokens, webhooks, storefront keys and shop settings, and staff with the member role. Only an owner can create or change admins.',
+  member: 'Works with products, orders and customers. Cannot manage API tokens, webhooks or storefront keys.',
+}
 export type ShopMember = typeof shopMembers.$inferSelect
 
 // Where a shop sells (Shopify: sales channels): the Online Store, a headless storefront, later POS and the like.

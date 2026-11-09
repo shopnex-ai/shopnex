@@ -9,6 +9,7 @@
     "./schemas": "./src/routers/admin/schemas.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc",
     "demo:seed": "tsx --env-file-if-exists=../../.env scripts/demo-seed.ts",
     "demo:products": "tsx --env-file-if-exists=../../.env scripts/demo-products.ts",

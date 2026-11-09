@@ -1,7 +1,7 @@
 // Renders generated/reference.json (scripts/generate-reference.ts), which is read from the code at build time.
 import reference from '../generated/reference.json'
 
-const { scopes, webhooks } = reference
+const { scopes, webhooks, roles, env } = reference
 
 function Table({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (
@@ -87,5 +87,42 @@ export function WebhookDelivery() {
       {w.retrySchedule.join(', ')}; after that the delivery is marked failed. Finished deliveries are kept{' '}
       {w.retentionDays} days.
     </>
+  )
+}
+
+export function Roles() {
+  return <Table head={['Role', 'Can']} rows={roles.map((r) => [<code key={r.role}>{r.role}</code>, r.description])} />
+}
+
+/** Env var descriptions are markdown with `code` and [links](/docs/...), the only syntax they use */
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(`[^`]+`|\[[^\]]+\]\([^)]+\))/g).map((part, i) => {
+        if (part.startsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
+        const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+        return link ? (
+          <a key={i} href={link[2]}>
+            {link[1]}
+          </a>
+        ) : (
+          part
+        )
+      })}
+    </>
+  )
+}
+
+export function EnvVars() {
+  return (
+    <Table
+      head={['Variable', 'Required', 'Default', 'Description']}
+      rows={env.map((v) => [
+        <code key={v.name}>{v.name}</code>,
+        v.required ? 'yes' : 'no',
+        v.default ? <Inline key="d" text={/^[\w./:-]+$/.test(v.default) ? `\`${v.default}\`` : v.default} /> : '',
+        <Inline key="t" text={v.description} />,
+      ])}
+    />
   )
 }
