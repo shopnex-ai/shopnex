@@ -126,9 +126,8 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnex
-      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
       SHOPNEX_SECRET: ci-only-shopnex-secret-ci-only-shopnex
-      BETTER_AUTH_URL: http://localhost:3000
+      APP_URL: http://localhost:3000
       STOREFRONT_URL: http://localhost:4321
       DEMO_OWNER_EMAIL: owner@example.com
       DEMO_OWNER_PASSWORD: ci-owner-Passw0rd!
@@ -160,7 +159,8 @@ jobs:
             node dist/server/entry.mjs > "$RUNNER_TEMP/storefront.log" 2>&1) &
           npx --yes wait-on@8 -t 60000 http-get://localhost:3000/api/v1/storefront/shop http://localhost:4321/
 
-      - run: pnpm e2e
+      # Same tests as `pnpm e2e`, plus a JUnit file for the public test report
+      - run: pnpm --filter @shopnex/e2e test:ci
 
       - name: Browser tests
         run: |
@@ -180,3 +180,45 @@ jobs:
       - name: Server logs
         if: failure()
         run: tail -n 100 "$RUNNER_TEMP/app.log" "$RUNNER_TEMP/storefront.log"
+
+      # The public test report: results.json for shopnex.ai/testing and the Playwright HTML report.
+      # Built on every run of main, also when a test failed, so a red run is published too.
+      - name: Build the test report
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/e2e-summary.mjs report-site
+
+      - name: Upload the test report
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-site
+          path: report-site
+          if-no-files-found: ignore
+
+  # Publishes the latest main run to GitHub Pages (https://shopnex-ai.github.io/shopnex/results.json).
+  # Needs Settings > Pages > Source: GitHub Actions. Until that is on, this job fails without failing CI.
+  publish-report:
+    name: Publish test report
+    needs: e2e
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e.result != 'skipped' && needs.e2e.result != 'cancelled'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: test-report-site
+          path: report-site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: report-site
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/catalog",
+  "description": "Products, collections, options and variants",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,6 +11,7 @@
   },
   "dependencies": {
     "@shopnex/channels": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",

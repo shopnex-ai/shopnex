@@ -5,6 +5,7 @@
   "scripts": {
     "test": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
     "typecheck": "tsc",
+    "test:ci": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=api-results.xml 'tests/**/*.test.ts'",
     "test:browser": "node --env-file-if-exists=../.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {

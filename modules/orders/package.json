@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/orders",
+  "description": "Orders, line items with price snapshots, and status transitions",
   "private": true,
   "type": "module",
   "exports": {
@@ -13,6 +14,7 @@
     "@shopnex/catalog": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/channels": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/pricing": "workspace:*",

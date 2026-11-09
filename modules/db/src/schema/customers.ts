@@ -1,5 +1,6 @@
-import { pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
+import type { CustomFieldValues } from './custom-fields'
 import { shops } from './tenancy'
 
 // Shop-scoped customer records. userId links a storefront login when there is one;
@@ -15,6 +16,8 @@ export const customers = pgTable(
     email: text('email').notNull(),
     name: text('name'),
     phone: text('phone'),
+    // Values of the shop's custom fields (custom_field_definitions), by key
+    customFields: jsonb('custom_fields').$type<CustomFieldValues>().notNull().default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

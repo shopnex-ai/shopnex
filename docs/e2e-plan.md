@@ -6,7 +6,8 @@ Goal: tests that cover what merchants fear most (losing orders, double charges, 
 
 - `e2e/` holds API-level tests (`node:test` via `tsx`) against a running app: auth, staff roles, tenancy isolation, pricing and checkout, payment apps, carrier services, channels, email, notifications, SEO. See [development](./development.md#end-to-end-tests).
 - CI runs them in the `e2e` job on Postgres 17: build, migrate, seed the demo catalog, start the app and storefront, `pnpm e2e`. Server logs are printed on failure.
-- Not covered yet: the admin UI and the storefront in a real browser, Stripe test mode with a real webhook, upgrades between releases, and any public test report.
+- The `Upgrade test` workflow installs the latest release, seeds it, upgrades to the current build and fails on lost or changed data (section 4).
+- Not covered yet: the admin UI and the storefront in a real browser, Stripe test mode with a real webhook, and any public test report.
 
 ## Plan
 
@@ -30,14 +31,24 @@ Add Playwright next to the existing suite (`e2e/browser/`), run in the same CI j
 - Refund and cancellation, tax and shipping rounding, multi-currency.
 - Admin UI permissions: a staff role can't reach owner-only screens.
 
-### 4. Upgrade test
+### 4. Upgrade test (done)
 
-Install the previous release image, seed data, upgrade to the current build, run migrations, then a smoke subset. Fail on any lost data.
+`.github/workflows/upgrade.yaml` runs `scripts/upgrade-test.sh` on pull requests that touch `modules/db/`, and nightly on `main`:
+
+- Start the latest stable release image on an empty Postgres, run its migrations and `demo:seed` (shop, accounts, products, collections, pages, menus, orders).
+- Snapshot every table (`scripts/db-snapshot.mjs`), build the current image and run its migrations on the same database.
+- Compare: new tables, columns and rows are fine; a dropped table or column, a missing row or a changed value fails the job.
+- Start the current build on the upgraded database and run a smoke subset of the e2e suite (pricing, stock, payments; not the sign-up-heavy auth tests, which the production-mode rate limit blocks).
+
+One hop only (previous release to current). Run it locally on Linux with Docker: `DATABASE_URL=… scripts/upgrade-test.sh`; `PREVIOUS_VERSION=v0.13.0` picks another release.
 
 ### 5. Make it visible
 
 - CI status badge and a nightly run on `main` in the README.
-- Publish the Playwright HTML report from the latest `main` run (GitHub Pages).
+- Publish the Playwright HTML report from the latest `main` run (GitHub Pages). Done: the `publish-report` job in
+  `ci.yaml` deploys `results.json` and the report to <https://shopnex-ai.github.io/shopnex/> after every run on `main`,
+  failed runs included (`scripts/e2e-summary.mjs` builds it; it reports a suite that did not run as `incomplete`,
+  never as passing). Needs Settings > Pages > Source: GitHub Actions. shopnex.ai/testing reads `results.json`.
 - A "What we test" page in plain language, and a short video of the checkout run.
 - Flake policy: quarantine a flaky test within days; no retries hiding failures.
 - Optional: an hourly synthetic order against the demo deployment.

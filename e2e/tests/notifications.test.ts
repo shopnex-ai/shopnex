@@ -230,6 +230,7 @@ describe('order notifications', () => {
       list.map((n) => n.notification).sort(),
       (
         [
+          'abandoned_cart',
           'layout',
           'login_code',
           'order_cancelled',

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
-import { index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import type { CustomFieldValues } from './custom-fields'
 import { shops } from './tenancy'
 
 // Valid `slug` (URL handle) for products and collections
@@ -34,6 +35,8 @@ export const products = pgTable(
       .default(sql`'{}'::text[]`),
     seoTitle: text('seo_title'),
     seoDescription: text('seo_description'),
+    // Values of the shop's custom fields (custom_field_definitions), by key
+    customFields: jsonb('custom_fields').$type<CustomFieldValues>().notNull().default({}),
     // DEPRECATED cache of the lowest variant price (variants are the source of truth).
     // Kept in sync by the catalog service; to be dropped once nothing reads it.
     priceCents: integer('price_cents').notNull(),

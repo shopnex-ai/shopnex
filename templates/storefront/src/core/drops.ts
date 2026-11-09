@@ -278,6 +278,10 @@ export class ProductDrop extends Drop {
   get tags() {
     return this.#product.tags
   }
+  /** The shop's custom fields shown on the storefront: `product.custom_fields.material` (empty unless set) */
+  get custom_fields() {
+    return this.#product.customFields
+  }
   get available() {
     return this.#product.availableForSale
   }

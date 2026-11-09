@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/apps",
+  "description": "Installable apps: installations, OAuth codes and tokens, instance signing keys, marketplace sync",
   "private": true,
   "type": "module",
   "exports": {

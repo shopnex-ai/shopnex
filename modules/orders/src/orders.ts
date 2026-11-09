@@ -7,6 +7,7 @@ import { variantService } from '@shopnex/catalog'
 import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
+import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { notify } from '@shopnex/email'
 import { calculate, discountService, taxService } from '@shopnex/pricing'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
@@ -452,6 +453,17 @@ const touch = (tx: Conn, id: string, patch: Partial<typeof schema.orders.$inferI
     .where(eq(schema.orders.id, id))
     .returning()
     .then((rows) => rows[0]!)
+
+// Sets the order's custom field values (null clears one); throws ORDER_NOT_FOUND
+export async function setCustomFields(shopId: string, id: string, updates: CustomFieldUpdates) {
+  return db.transaction(async (tx) => {
+    const order = await lockOrder(tx, shopId, id)
+    const customFields = await customFieldService.merge(shopId, 'order', updates, order.customFields, tx)
+    await touch(tx, id, { customFields })
+    await emit(tx, shopId, 'order.updated', () => getById(shopId, id, tx))
+    return (await getById(shopId, id, tx))!
+  })
+}
 
 // Manual payment received (Shopify "Mark as paid"): records a successful sale for the outstanding amount
 export async function markAsPaid(shopId: string, id: string) {

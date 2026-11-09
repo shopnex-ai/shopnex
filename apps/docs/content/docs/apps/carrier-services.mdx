@@ -17,7 +17,7 @@ The same rule applies when the order is placed: a flat rate is not a choice whil
 
 ## Register
 
-```ts
+```ts setup=app
 await shop.shipping.configure({
   name: 'CJ Dropshipping', // shown at checkout; staff can rename it
   ratesUrl: `${APP_URL}/shipping/rates`, // must be on the app's own origin
@@ -29,7 +29,7 @@ This calls `POST /api/v1/admin/carrier-services/configure`. There is one service
 
 ## Answer rate requests
 
-```tsx
+```tsx setup=app
 app.post('/shipping/rates', async (c) => {
   const { request, shop } = await shopnex.verifyRatesRequest(c)
   // request.destination: { countryCode, province, city, zip, address1, address2 } (unknown fields are null)

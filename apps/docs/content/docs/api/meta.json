@@ -1,1 +1,1 @@
-{ "title": "API", "pages": ["index", "storefront", "admin", "webhooks"] }
+{ "title": "API", "pages": ["index", "storefront", "admin", "custom-fields", "webhooks"] }

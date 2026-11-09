@@ -28,6 +28,7 @@
 
 - /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
+- /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService)
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
@@ -55,10 +56,11 @@ tenancy   → db, channels
 auth      → db, tenancy
 files     → db, tenancy, webhooks
 email     → db, tenancy, webhooks
-catalog   → db, channels, webhooks
+custom-fields → db
+catalog   → db, channels, custom-fields, webhooks
 content   → db, catalog
-customers → db, auth, email, webhooks   (sign-in codes link a login to the customer)
-orders    → db, catalog, channels, customers, email, pricing, webhooks
+customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
+orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
 payments  → db, apps, orders, email, webhooks
 cart      → db, apps, catalog, channels, orders, payments, pricing
 apps      → db, tenancy

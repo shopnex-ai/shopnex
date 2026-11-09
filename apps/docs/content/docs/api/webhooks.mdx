@@ -7,7 +7,7 @@ In **Settings → Webhooks** (owners and admins) add a URL, pick events, send a 
 
 ## Topics
 
-`order.created`, `order.paid`, `order.fulfilled`, `order.cancelled`, `product.created`, `product.updated`, `customer.created`, `customer.updated`, plus `webhook.test`.
+<WebhookTopics />
 
 ## Payload
 
@@ -15,7 +15,9 @@ In **Settings → Webhooks** (owners and admins) add a URL, pick events, send a 
 { "type": "order.created", "timestamp": "…", "shopId": "…", "data": {} }
 ```
 
-`data` is the resource as the admin API returns it, snapshotted when the event happened.
+`data` is the resource as the admin API returns it, snapshotted when the event happened. Its fields:
+
+<WebhookPayloads />
 
 ## Verifying
 
@@ -25,7 +27,7 @@ Deliveries follow [Standard Webhooks](https://www.standardwebhooks.com): `webhoo
 
 - Services call `emit(tx, …)` inside their transaction (outbox), so a rolled-back change sends nothing.
 - A worker polls every 3 seconds and claims rows with `SKIP LOCKED`, so several instances are safe.
-- Non-2xx or a 10-second timeout retries after 1m, 5m, 30m, 2h, 5h, 8h, 8h, then fails. Finished deliveries are kept 30 days.
+- <WebhookDelivery />
 - Order is not guaranteed: use `data.updatedAt`.
 - Stock changes from checkout don't emit `product.updated`; see `order.created`.
 - A token manages only the subscriptions it created, for topics it can read (`order.*` needs `read_orders`). Revoking the token deletes them.

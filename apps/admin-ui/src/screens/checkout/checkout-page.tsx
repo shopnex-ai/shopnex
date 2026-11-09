@@ -59,6 +59,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
               <CheckoutForm
                 token={cart.token}
                 currency={cart.currency}
+                offerReminder={data.offerReminder}
                 options={options}
                 defaultCountry={data.defaultCountry}
                 countries={data.countries}

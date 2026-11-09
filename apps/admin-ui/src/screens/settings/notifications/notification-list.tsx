@@ -86,6 +86,7 @@ function NotificationRow({ item }: { item: Item }) {
           {!item.enabled && <Badge variant="outline">Off</Badge>}
         </div>
         <p className="text-sm text-muted-foreground">{item.description}</p>
+        {item.notification === 'abandoned_cart' && <ReminderDelay />}
       </div>
       <div className="flex gap-1">
         {item.audience !== 'layout' && (
@@ -104,6 +105,55 @@ function NotificationRow({ item }: { item: Item }) {
         </Button>
       </div>
     </li>
+  )
+}
+
+const DELAYS: [minutes: number, label: string][] = [
+  [15, '15 minutes'],
+  [30, '30 minutes'],
+  [60, '1 hour'],
+  [180, '3 hours'],
+  [360, '6 hours'],
+  [720, '12 hours'],
+  [1440, '1 day'],
+  [2880, '2 days'],
+]
+
+// How long a checkout with an email sits untouched before the reminder. Only shoppers who ticked "email me a
+// reminder" at checkout are emailed, and every reminder has an unsubscribe link.
+function ReminderDelay() {
+  const queryClient = useQueryClient()
+  const { data } = useQuery(orpc.admin.notifications.abandonedCartSettings.queryOptions())
+  const save = useMutation(orpc.admin.notifications.updateAbandonedCartSettings.mutationOptions())
+  if (!data) return null
+  const options = DELAYS.some(([m]) => m === data.delayMinutes)
+    ? DELAYS
+    : [...DELAYS, [data.delayMinutes, `${data.delayMinutes} minutes`] as [number, string]].sort((a, b) => a[0] - b[0])
+  return (
+    <label className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+      Send after
+      <select
+        value={data.delayMinutes}
+        disabled={save.isPending}
+        onChange={async (e) => {
+          try {
+            await save.mutateAsync({ delayMinutes: Number(e.target.value) })
+            await queryClient.invalidateQueries({ queryKey: orpc.admin.notifications.abandonedCartSettings.key() })
+            toast.success('Saved')
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Could not save')
+          }
+        }}
+        className="h-8 rounded-md border bg-background px-2 text-sm"
+      >
+        {options.map(([minutes, label]) => (
+          <option key={minutes} value={minutes}>
+            {label}
+          </option>
+        ))}
+      </select>
+      without a completed order
+    </label>
   )
 }
 

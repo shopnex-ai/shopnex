@@ -5,6 +5,7 @@ import { auth, isSuperAdmin } from '@shopnex/auth'
 import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
+import { CustomFieldError } from '@shopnex/custom-fields'
 import { ContentError } from '@shopnex/content'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
@@ -76,6 +77,11 @@ const domainErrors = base.middleware(async ({ next }) => {
           : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS'
             ? 'BAD_REQUEST'
             : 'NOT_FOUND'
+      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+    }
+    if (error instanceof CustomFieldError) {
+      const status =
+        error.code === 'FIELD_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'KEY_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
     }
     if (error instanceof ContentError) {
@@ -213,6 +219,9 @@ const storefrontErrors = base.middleware(async ({ next }) => {
         case 'INVALID_EMAIL':
           throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
       }
+    }
+    if (error instanceof CustomFieldError) {
+      throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
     }
     if (error instanceof EmailError && (error.code === 'EMAIL_OFF' || error.code === 'EMAIL_FAILED')) {
       // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available

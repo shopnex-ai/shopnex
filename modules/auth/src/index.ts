@@ -4,6 +4,7 @@ import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 import { db, schema } from '@shopnex/db'
+import { sessionSecret } from '@shopnex/db/secrets'
 import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
@@ -13,7 +14,7 @@ import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSen
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 
 // A provider is enabled only when both its credentials are set.
-// OAuth callback URL to register: {BETTER_AUTH_URL}/api/auth/callback/{provider}
+// OAuth callback URL to register: {APP_URL}/api/auth/callback/{provider}
 // Platform access control: superadmin gets every admin-plugin permission, regular users none
 const ac = createAccessControl(defaultStatements)
 
@@ -36,8 +37,13 @@ const socialProviders = {
 
 export const enabledSocialProviders = Object.keys(socialProviders) as SocialProvider[]
 
+// The public origin: APP_URL, or BETTER_AUTH_URL on installs that still set it
+const baseURL = process.env.APP_URL || process.env.BETTER_AUTH_URL
+
 export const auth = betterAuth({
   basePath: '/api/auth',
+  secret: sessionSecret(),
+  ...(baseURL && { baseURL }),
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
@@ -114,6 +120,6 @@ export const auth = betterAuth({
 export type Auth = typeof auth
 export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
-export { SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
+export { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
-export { withOtpSender, withOtpSignIn, LOGIN_CODE_TTL_S } from './shopper-login'
+export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

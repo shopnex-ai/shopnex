@@ -1,2 +1,4 @@
 playwright-report/
 test-results/
+playwright-results.json
+api-results.xml

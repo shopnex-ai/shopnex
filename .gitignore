@@ -14,3 +14,7 @@ apps/*/dist
 
 # Built packages (packages/*/dist)
 packages/*/dist
+
+.DS_Store
+
+report-site/

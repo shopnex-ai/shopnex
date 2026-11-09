@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/email",
+  "description": "SMTP settings, sending email and notification templates",
   "private": true,
   "type": "module",
   "exports": {

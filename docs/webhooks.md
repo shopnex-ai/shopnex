@@ -2,7 +2,7 @@
 
 Settings → Webhooks (owners/admins): add a URL, pick events, send a test, see deliveries and redeliver.
 
-- Topics: `order.created|paid|fulfilled|cancelled`, `product.created|updated`, `customer.created|updated` (`webhook.test` from the admin)
+- Topics: `order.created|paid|fulfilled|cancelled|updated`, `product.created|updated`, `customer.created|updated` (`webhook.test` from the admin)
 - Body: `{ type, timestamp, shopId, data }`; `data` is the resource as the admin API returns it, snapshotted when the event happened
 - Signed per [Standard Webhooks](https://www.standardwebhooks.com): `webhook-id` (same on retries — dedupe on it), `webhook-timestamp`, `webhook-signature`; verify with any of its libraries and the endpoint's `whsec_…` secret
 - Outbox: services call `emit(tx, …)` inside their transaction, so a rolled-back change sends nothing

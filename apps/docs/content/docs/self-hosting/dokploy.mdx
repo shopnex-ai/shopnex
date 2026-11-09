@@ -42,7 +42,7 @@ Every variable has a local default, so `docker compose up` works without any set
 
 **Optional apps.** The CJ Dropshipping app is off by default. Enable it with `COMPOSE_PROFILES=cj` (or `docker compose --profile cj up`); ShopNex finds it on the Compose network. For a public domain set `CJ_DROPSHIPPING_APP_URL` (e.g. `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. The same applies to `STRIPE_APP_URL` and the `stripe` service.
 
-`BETTER_AUTH_SECRET` and `SHOPNEX_SECRET` are optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
+`SHOPNEX_SECRET` is optional: when empty, the image generates one into the `shopnex_data` volume, so keep that volume. See [Configuration](/docs/self-hosting/configuration) for the other variables.
 
 ## Deploy on Dokploy
 
@@ -136,11 +136,11 @@ Add `COMPOSE_PROFILES=cj` and `CJ_DROPSHIPPING_APP_URL=https://cj.shop.example.c
 
 To let anyone sign up and get their own shop at `<slug>.example.com`, add three values to **Environment** and redeploy. The compose file already routes the shops' hosts to ShopNex, so there are no labels to write.
 
-| Variable       | Value                                                                                            |
-| -------------- | ------------------------------------------------------------------------------------------------ |
-| `TENANCY_MODE` | `multi`                                                                                          |
-| `OPEN_SIGNUP`  | `true` lets anyone create an account and a shop at `/admin/signup`. Without it, invitation-only. |
-| `ROOT_DOMAIN`  | The bare domain the shops live under, e.g. `example.com` (no `https://`, no path).               |
+| Variable       | Value                                                                              |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `TENANCY_MODE` | `multi`                                                                            |
+| `OPEN_SIGNUP`  | `true` (see [Configuration](/docs/self-hosting/configuration))                     |
+| `ROOT_DOMAIN`  | The bare domain the shops live under, e.g. `example.com` (no `https://`, no path). |
 
 1. Add a wildcard DNS record, `*`, pointing at the server. Behind Cloudflare, proxy it and set SSL/TLS to **Full**; the wildcard route uses Traefik's default certificate, because a Let's Encrypt wildcard needs a DNS challenge. Cloudflare's free certificate covers one wildcard level, so `*.example.com` gets HTTPS but `*.shops.example.com` does not.
 2. Keep the admin on its own domain (added under **Domains**, service `shopnex`, port `3000`), and set `APP_URL` to it. It can sit under `ROOT_DOMAIN` (for example `app.example.com`, a name the platform keeps) or on another domain. The admin host has no storefront. `/admin` on any other host (a shop's address, a mistyped subdomain) redirects to the admin host, taken from `APP_URL`; set `ADMIN_HOST` to name it explicitly.
