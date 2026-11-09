@@ -166,6 +166,27 @@ export const API_SCOPES = [
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 
+// What each scope allows. The docs table is generated from this (apps/docs/scripts/generate-reference.ts), and
+// being a Record, a new scope without a description fails typecheck.
+export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
+  read_products: 'Products, variants and collections',
+  write_products: 'Products, variants and collections',
+  read_orders: 'Orders',
+  write_orders: 'Orders',
+  read_customers: 'Customers',
+  write_customers: 'Customers',
+  read_discounts: 'Discounts',
+  write_discounts: 'Discounts',
+  read_publications: 'What is published on each sales channel',
+  write_publications: 'What is published on each sales channel',
+  read_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',
+  write_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',
+  read_ai_capabilities: 'The AI capabilities an app provides (apps only)',
+  write_ai_capabilities: 'The AI capabilities an app provides (apps only)',
+  read_shipping: 'Carrier services (apps only)',
+  write_shipping: 'Register a carrier service (apps only)',
+}
+
 // Secret admin API tokens (Authorization: Bearer sk_…) for apps and integrations, scoped to one shop.
 // Only a SHA-256 hash is stored: the token is shown once, when it's created.
 export const apiTokens = pgTable(

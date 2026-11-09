@@ -4,11 +4,13 @@
   "type": "module",
   "description": "ShopNex documentation site (Fumadocs on Next.js)",
   "scripts": {
-    "dev": "next dev --port 3400",
-    "build": "pnpm openapi && next build",
+    "dev": "pnpm generate && next dev --port 3400",
+    "build": "pnpm generate && next build",
     "postinstall": "fumadocs-mdx",
-    "typecheck": "fumadocs-mdx && tsc",
+    "typecheck": "pnpm generate && fumadocs-mdx && tsc",
     "openapi": "tsx scripts/generate-openapi.ts",
+    "reference": "tsx scripts/generate-reference.ts",
+    "generate": "pnpm openapi && pnpm reference",
     "preview": "pnpm dlx serve out -l 3400"
   },
   "dependencies": {

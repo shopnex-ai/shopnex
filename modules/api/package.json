@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./router": "./src/router.ts",
+    "./reference": "./src/reference.ts",
     "./schemas": "./src/routers/admin/schemas.ts"
   },
   "scripts": {
