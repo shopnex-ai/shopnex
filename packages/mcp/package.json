@@ -5,22 +5,44 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "shopnex-mcp": "./src/bin.ts"
-  },
-  "exports": {
-    ".": "./src/server.ts"
+    "shopnex-mcp": "./dist/bin.js"
   },
   "scripts": {
+    "build": "esbuild src/bin.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/bin.js --banner:js=\"#!/usr/bin/env node\nimport { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --legal-comments=none",
+    "prepack": "pnpm build",
     "start": "tsx src/bin.ts",
     "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
-  "dependencies": {
+  "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "@types/node": "catalog:",
+    "esbuild": "0.28.2",
+    "tsx": "^4.23.15",
     "zod": "catalog:"
   },
-  "devDependencies": {
-    "@types/node": "catalog:",
-    "tsx": "^4.23.15"
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "shopnex",
+    "ecommerce",
+    "claude",
+    "cursor"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shopnex-ai/shopnex.git",
+    "directory": "packages/mcp"
+  },
+  "homepage": "https://github.com/shopnex-ai/shopnex/tree/main/packages/mcp#readme",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

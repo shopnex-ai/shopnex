@@ -11,3 +11,6 @@ next-env.d.ts
 apps/*/dist
 
 .DS_Store
+
+# Built packages (packages/*/dist)
+packages/*/dist

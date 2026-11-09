@@ -1,5 +1,5 @@
-// The MCP server end to end, the way AI clients really run it: a separate process started from the config snippet
-// in the README, speaking JSON-RPC over stdio, against the running app and its database.
+// The MCP server end to end, the way AI clients really run it: the package as npm would ship it (packed, then run with
+// `npx` from the config snippet in the README), speaking JSON-RPC over stdio, against the running app and its database.
 //
 // Claude Desktop, Cursor, Cline and Windsurf all do the same thing: spawn `command args` with `env` from a JSON
 // config, write newline-delimited JSON-RPC to its stdin, read its stdout. They fail on a polluted stdout, a missing
@@ -43,7 +43,8 @@ function launch(token: string, extraEnv: Record<string, string> = {}) {
   const entry = documentedConfig()
   return {
     command: entry.command,
-    args: entry.args.map((a) => a.replace('/path/to/shopnex', REPO)),
+    // The package stands for the tarball packed in before() (`--package`): the same files npm would serve
+    args: entry.args.flatMap((a) => (a === '@shopnex/mcp' ? ['--package', tarball, 'shopnex-mcp'] : [a])),
     // Desktop apps start servers with a small environment, not the developer's shell
     env: {
       PATH: process.env.PATH ?? '',
@@ -138,6 +139,7 @@ let adminHeaders: Record<string, string>
 let writeToken: string
 let readToken: string
 let elsewhere: string // a working directory that is not the repo, as desktop apps use
+let tarball: string // the packed @shopnex/mcp
 
 const WRITE = ['write_products', 'write_orders', 'write_discounts', 'write_customers'] as const
 const READ = ['read_products', 'read_orders', 'read_discounts', 'read_customers'] as const
@@ -159,6 +161,9 @@ before(async () => {
   await requireApp()
   await fx.init()
   elsewhere = mkdtempSync(join(tmpdir(), 'mcp-e2e-'))
+  // `pnpm pack` is what publishing uses: it runs prepack (the build) and resolves workspace and catalog versions
+  const packed = await exec('pnpm', ['pack', '--pack-destination', elsewhere], { cwd: join(REPO, 'packages/mcp') })
+  tarball = packed.stdout.trim().split('\n').at(-1)!.trim()
   writeToken = (await fx.mintToken([...WRITE])).token
   readToken = (await fx.mintToken([...READ])).token
   adminHeaders = await fx.token(['write_products', 'write_orders'])
@@ -205,6 +210,18 @@ describe('starting like a desktop app does', () => {
       }
     })
   }
+
+  test('the package ships the bundle, license and readme, and no dependencies, and says its version', async () => {
+    const manifest = JSON.parse((await exec('tar', ['-xzOf', tarball, 'package/package.json'])).stdout)
+    assert.equal(manifest.dependencies, undefined, 'everything is bundled: nothing for npm to install')
+    assert.ok(!JSON.stringify(manifest).includes('catalog:') && !JSON.stringify(manifest).includes('workspace:'))
+    const listing = (await exec('tar', ['-tzf', tarball])).stdout.split('\n').filter(Boolean).sort()
+    assert.deepEqual(listing, ['package/LICENSE', 'package/README.md', 'package/dist/bin.js', 'package/package.json'])
+    const { command, args } = launch('')
+    const version = await exec(command, [...args, '--version'], { cwd: elsewhere })
+    assert.match(version.stdout, /^\d+\.\d+\.\d+/)
+    assert.match((await exec(command, [...args, '--help'], { cwd: elsewhere })).stdout, /SHOPNEX_TOKEN/)
+  })
 
   test('ends when the client closes stdin', async () => {
     const server = start(writeToken, elsewhere)

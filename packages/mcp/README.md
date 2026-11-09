@@ -16,7 +16,7 @@ more than that token's scopes allow.
   "mcpServers": {
     "shopnex": {
       "command": "npx",
-      "args": ["-y", "tsx", "/path/to/shopnex/packages/mcp/src/bin.ts"],
+      "args": ["-y", "@shopnex/mcp"],
       "env": {
         "SHOPNEX_URL": "https://shop.example.com",
         "SHOPNEX_TOKEN": "sk_…",
@@ -27,8 +27,17 @@ more than that token's scopes allow.
 }
 ```
 
-`SHOPNEX_READ_ONLY=1` removes every tool that changes something, whatever the token allows. Use one entry per shop (a
-token belongs to one shop).
+In Claude Code, one command does it:
+
+```sh
+claude mcp add shopnex -e SHOPNEX_URL=https://shop.example.com -e SHOPNEX_TOKEN=sk_… -e SHOPNEX_READ_ONLY=1 -- npx -y @shopnex/mcp
+```
+
+`SHOPNEX_READ_ONLY=1` removes every tool that changes something, whatever the token allows; leave it out to allow
+changes. Use one entry per shop (a token belongs to one shop). `npx -y @shopnex/mcp --help` checks it runs.
+
+**Claude Desktop can't find `npx`?** Desktop apps start servers with a minimal `PATH`, which often misses
+nvm-installed Node. Put the absolute path in `command` (`which npx`).
 
 ## What it does
 
@@ -54,5 +63,10 @@ Twenty hand-picked tools, not one per endpoint. Answers are summaries (a page, t
 ```sh
 pnpm --filter @shopnex/mcp test        # in-memory client ↔ server against a fake API
 pnpm --filter @shopnex/mcp typecheck
-SHOPNEX_URL=http://localhost:3000 SHOPNEX_TOKEN=sk_… pnpm --filter @shopnex/mcp start   # stdio
+pnpm --filter @shopnex/mcp build       # dist/bin.js, one bundled file (what npm ships)
+SHOPNEX_URL=http://localhost:3000 SHOPNEX_TOKEN=sk_… pnpm --filter @shopnex/mcp start   # from source, stdio
+pnpm e2e                               # packs the package and starts it from the config above (needs the app running)
 ```
+
+To publish: bump `version`, then `pnpm --filter @shopnex/mcp publish` (the build runs first; the tarball is
+`dist/bin.js`, this README and `package.json`, with no runtime dependencies: everything is bundled). The release workflow does not publish to npm.
