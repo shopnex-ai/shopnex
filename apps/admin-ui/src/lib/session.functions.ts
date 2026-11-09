@@ -14,10 +14,13 @@ export const getDemoLogin = publicFn({ method: 'GET' }).handler(() => {
 })
 
 // Hosted deployments only: POSTHOG_KEY is set on demo.shopnex.ai / the demo and nowhere else, so a self-hosted or cloned
-// install gets null and loads no analytics. See lib/analytics.ts.
+// install gets null and loads no analytics. Session replay is on only for the public demo (DEMO_MODE=true), whose
+// data is fake; it is never on for a real shop. See lib/analytics.ts.
 export const getAnalyticsConfig = publicFn({ method: 'GET' }).handler(() => {
-  const { POSTHOG_KEY, POSTHOG_HOST } = process.env
-  return POSTHOG_KEY ? { key: POSTHOG_KEY, host: POSTHOG_HOST || 'https://eu.i.posthog.com' } : null
+  const { POSTHOG_KEY, POSTHOG_HOST, DEMO_MODE } = process.env
+  return POSTHOG_KEY
+    ? { key: POSTHOG_KEY, host: POSTHOG_HOST || 'https://eu.i.posthog.com', replay: DEMO_MODE === 'true' }
+    : null
 })
 
 export const getAdminContext = publicFn({ method: 'GET' }).handler(async () => {
