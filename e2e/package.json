@@ -24,6 +24,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@playwright/test": "1.64.1",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
