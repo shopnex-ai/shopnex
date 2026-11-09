@@ -12,7 +12,6 @@ CREATE TABLE "email_suppressions" (
 	CONSTRAINT "email_suppressions_shop_id_email_pk" PRIMARY KEY("shop_id","email")
 );
 --> statement-breakpoint
-ALTER TABLE "carts" ADD COLUMN "reminder_consent" boolean DEFAULT false NOT NULL;--> statement-breakpoint
 ALTER TABLE "email_deliveries" ADD COLUMN "cart_id" uuid;--> statement-breakpoint
 ALTER TABLE "abandoned_cart_settings" ADD CONSTRAINT "abandoned_cart_settings_shop_id_shops_id_fk" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_suppressions" ADD CONSTRAINT "email_suppressions_shop_id_shops_id_fk" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

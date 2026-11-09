@@ -63,8 +63,7 @@ export const NOTIFICATION_INFO: NotificationInfo[] = [
   {
     notification: 'abandoned_cart',
     title: 'Abandoned cart',
-    description:
-      'Sent to a shopper who gave their email at checkout, asked to be reminded and did not finish. Off until you turn it on.',
+    description: 'Sent to a shopper who gave their email at checkout and did not finish. Off until you turn it on.',
     audience: 'customer',
   },
   {

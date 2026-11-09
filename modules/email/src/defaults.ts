@@ -151,7 +151,7 @@ const ABANDONED_CART = `<h1 style="font-size:22px;margin:0 0 8px;">You left some
 <p style="margin:0 0 24px;"><a href="{{ checkout.url }}" style="${BUTTON}">Complete your order</a></p>
 
 <p style="margin:0;${MUTED}font-size:12px;">
-  You're getting this because you started a checkout at {{ shop.name }} and asked to be reminded.
+  You're getting this because you started a checkout at {{ shop.name }}.
   <a href="{{ unsubscribe_url }}" style="${MUTED}">Unsubscribe</a>
 </p>
 `

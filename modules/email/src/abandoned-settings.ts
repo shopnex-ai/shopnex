@@ -1,6 +1,6 @@
 // Abandoned cart emails: the shop's settings (Settings → Notifications), and the unsubscribe link every
-// reminder carries. Reminders are marketing-adjacent, so they are off until the shop turns them on, only go to
-// buyers who ticked the box at checkout, and stop for good once an address unsubscribes.
+// reminder carries. They are off until the shop turns them on, the checkout says the email is used for cart
+// reminders (as Shopify's does), and they stop for good once an address unsubscribes.
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'

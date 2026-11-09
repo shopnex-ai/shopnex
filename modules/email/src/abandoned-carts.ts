@@ -1,5 +1,5 @@
 // Abandoned cart reminders. The email worker calls `queueDue` every pass: it finds checkouts that still have
-// an email, consent to be reminded and an idle cart, and queues the reminder in the outbox like any other email.
+// an email and an idle cart, and queues the reminder in the outbox like any other email.
 // A checkout is reminded once: the outbox has a unique row per cart and notification, so a second pass, a second
 // app instance or a retry can't send it twice. A cart that was checked out meanwhile is never picked (its status
 // is no longer `active`), and the worker checks again right before sending.
@@ -57,7 +57,6 @@ async function dueCarts() {
     .where(
       and(
         eq(carts.status, 'active'),
-        eq(carts.reminderConsent, true),
         sql`${carts.email} is not null`,
         gt(carts.expiresAt, sql`now()`),
         lte(carts.updatedAt, sql`now() - ${settings.delayMinutes} * interval '1 minute'`),

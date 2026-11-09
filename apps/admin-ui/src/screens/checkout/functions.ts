@@ -87,18 +87,18 @@ export const quoteRates = publicFn({ method: 'POST' })
   })
 
 /**
- * Keeps the buyer's email on the cart while they fill in the form, if they asked to be reminded (and un-keeps it
- * if they change their mind). Does nothing unless the shop sends abandoned cart emails.
+ * Keeps the buyer's email on the cart while they fill in the form, so a checkout they walk away from can be
+ * followed up. Does nothing unless the shop sends abandoned cart emails.
  */
 export const saveReminderContact = publicFn({ method: 'POST' })
-  .validator((input: { token: string; email: string; consent: boolean }) => input)
+  .validator((input: { token: string; email: string }) => input)
   .handler(async ({ data }) => {
     const email = z.string().trim().email().max(254).safeParse(data.email)
     if (!email.success) return
     const cart = await cartService.findByToken(null, data.token)
     if (!cart || cart.status !== 'active') return
     if (!(await abandonedCartService.offered(cart.shopId))) return
-    await cartService.setReminderContact(data.token, email.data, data.consent === true)
+    await cartService.setReminderContact(data.token, email.data)
   })
 
 // Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:

@@ -1,5 +1,5 @@
 {
-  "id": "c9594fd8-dd9e-481d-87f9-e6f336e0c739",
+  "id": "1140006d-7dc8-4f1c-be80-f15052c7185f",
   "prevId": "13d88c3b-5ae9-48ad-891a-af9ad5d851b6",
   "version": "7",
   "dialect": "postgresql",
@@ -2977,13 +2977,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "reminder_consent": {
-          "name": "reminder_consent",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "order_id": {
           "name": "order_id",

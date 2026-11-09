@@ -79,7 +79,6 @@ export function CheckoutForm({
   const latestQuote = useRef(0)
   // Optional fields stay behind a link until the buyer wants them, and appear in the order they are opened
   const [opened, setOpened] = useState<string[]>([])
-  const [remind, setRemind] = useState(false)
   const [rateId = '', methodId = '', country = defaultCountry, province = ''] = useWatch({
     control,
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
@@ -131,12 +130,12 @@ export function CheckoutForm({
     }
   }
 
-  // The email is kept with the cart only if the buyer asked to be reminded; the server checks it again
-  function saveContact(consent: boolean) {
+  // The email is kept with the cart when the shop sends cart reminders (the hint under the field says so)
+  function saveContact() {
     if (!offerReminder) return
     const email = form.getValues('email').trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
-    void saveReminderContact({ data: { token, email, consent } }).catch(() => {
+    void saveReminderContact({ data: { token, email } }).catch(() => {
       // A reminder is a nicety: never get in the way of the order
     })
   }
@@ -204,7 +203,7 @@ export function CheckoutForm({
       onBlurCapture={(e) => {
         const name = (e.target as unknown as { name?: string }).name ?? ''
         if (['address1', 'city', 'zip', 'province'].includes(name)) void refreshRates()
-        if (name === 'email') saveContact(remind)
+        if (name === 'email') saveContact()
       }}
       noValidate
       className="space-y-8"
@@ -212,22 +211,15 @@ export function CheckoutForm({
       <FieldSet>
         <FieldLegend>Contact</FieldLegend>
         <FieldGroup>
-          <TextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
-          {offerReminder && (
-            <label htmlFor="remind-me" className="flex items-center gap-2 text-[13px]">
-              <input
-                id="remind-me"
-                type="checkbox"
-                checked={remind}
-                onChange={(e) => {
-                  setRemind(e.target.checked)
-                  saveContact(e.target.checked)
-                }}
-                className="size-4 accent-brand"
-              />
-              Remind me if I leave without ordering
-            </label>
-          )}
+          <TextField
+            control={control}
+            name="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            required
+            description={offerReminder ? 'Used for your order confirmation and cart reminders' : undefined}
+          />
         </FieldGroup>
       </FieldSet>
 

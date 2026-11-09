@@ -73,17 +73,15 @@ async function openCheckout(page: Page) {
   return row!
 }
 
-// Email and the reminder checkbox: what the shopper does before walking away
+// The shopper types their email (the hint under it says it is used for cart reminders) and walks away
 async function giveEmail(page: Page, cartId: string) {
+  await expect(page.getByText('Used for your order confirmation and cart reminders')).toBeVisible()
   await page.getByLabel('Email').fill(fx.email)
-  await page.getByLabel(/remind me if I leave/i).check()
-  // Saved with the cart as soon as the shopper leaves the field or ticks the box
+  // Saved with the cart as soon as the shopper leaves the field
+  await page.getByLabel('Email').blur()
   await expect
-    .poll(async () => {
-      const [cart] = await db.select().from(schema.carts).where(eq(schema.carts.id, cartId))
-      return cart?.email === fx.email && cart.reminderConsent
-    })
-    .toBe(true)
+    .poll(async () => (await db.select().from(schema.carts).where(eq(schema.carts.id, cartId)))[0]?.email)
+    .toBe(fx.email)
 }
 
 // "The delay has passed": the cart was last touched two hours ago
@@ -161,19 +159,27 @@ test('a shopper who finishes the order is not reminded', async ({ page }) => {
   expect(reminders().filter((m) => m.includes(cart.token))).toHaveLength(0)
 })
 
-test('without the tick, the email is not kept and nothing is sent', async ({ page }) => {
-  const cart = await openCheckout(page)
-  await page.getByLabel('Email').fill(fx.email)
-  await page.getByLabel(/remind me if I leave/i).check()
-  await expect
-    .poll(async () => (await db.select().from(schema.carts).where(eq(schema.carts.id, cart.id)))[0]?.email)
-    .toBe(fx.email)
-  await page.getByLabel(/remind me if I leave/i).uncheck()
-  await expect
-    .poll(async () => (await db.select().from(schema.carts).where(eq(schema.carts.id, cart.id)))[0]?.email)
-    .toBeNull()
+test('with the feature off, the email is not kept and nothing is sent', async ({ page }) => {
+  await db
+    .update(schema.abandonedCartSettings)
+    .set({ enabled: false })
+    .where(eq(schema.abandonedCartSettings.shopId, SHOP))
+  try {
+    const cart = await openCheckout(page)
+    await expect(page.getByLabel('Email')).toBeVisible()
+    await expect(page.getByText('Used for your order confirmation and cart reminders')).toHaveCount(0)
+    await page.getByLabel('Email').fill(fx.email)
+    await page.getByLabel('Email').blur()
+    await new Promise((resolve) => setTimeout(resolve, 2_000))
+    expect((await db.select().from(schema.carts).where(eq(schema.carts.id, cart.id)))[0]?.email).toBeNull()
 
-  await age(cart.id)
-  await new Promise((resolve) => setTimeout(resolve, 8_000))
-  expect(await deliveriesOf(cart.id)).toHaveLength(0)
+    await age(cart.id)
+    await new Promise((resolve) => setTimeout(resolve, 8_000))
+    expect(await deliveriesOf(cart.id)).toHaveLength(0)
+  } finally {
+    await db
+      .update(schema.abandonedCartSettings)
+      .set({ enabled: true })
+      .where(eq(schema.abandonedCartSettings.shopId, SHOP))
+  }
 })
