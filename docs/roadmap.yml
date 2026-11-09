@@ -38,9 +38,6 @@ columns:
       - title: Failure scenarios
         body: Two buyers for the last item, refunds and cancellations, rounding, and staff permissions in the UI.
         area: Trust
-      - title: Upgrade test
-        body: Install the previous release, seed data, upgrade to the current build, and fail on any lost data.
-        area: Operations
       - title: Multi-shop toggle in the admin
         body: Turn multi-shop on from the super admin. Today it is the TENANCY_MODE environment variable.
         area: Admin
@@ -106,6 +103,6 @@ trust:
     - title: Checkout against Stripe test mode with real webhooks
       done: false
     - title: 'Upgrade test: previous release to current keeps all data'
-      done: false
+      done: true
     - title: Public test report and nightly run on main
       done: false
