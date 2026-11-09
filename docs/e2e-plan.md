@@ -45,7 +45,10 @@ One hop only (previous release to current). Run it locally on Linux with Docker:
 ### 5. Make it visible
 
 - CI status badge and a nightly run on `main` in the README.
-- Publish the Playwright HTML report from the latest `main` run (GitHub Pages).
+- Publish the Playwright HTML report from the latest `main` run (GitHub Pages). Done: the `publish-report` job in
+  `ci.yaml` deploys `results.json` and the report to <https://shopnex-ai.github.io/shopnex/> after every run on `main`,
+  failed runs included (`scripts/e2e-summary.mjs` builds it; it reports a suite that did not run as `incomplete`,
+  never as passing). Needs Settings > Pages > Source: GitHub Actions. shopnex.ai/testing reads `results.json`.
 - A "What we test" page in plain language, and a short video of the checkout run.
 - Flake policy: quarantine a flaky test within days; no retries hiding failures.
 - Optional: an hourly synthetic order against the demo deployment.
