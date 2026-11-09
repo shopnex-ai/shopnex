@@ -11,7 +11,7 @@ The `x-shopnex-key` header selects that key's shop (an invalid or revoked key re
 
 ## Catalog
 
-```ts
+```ts setup=storefront
 const shop = await shopnex.shop.get() // { name, handle, currencyCode }
 const page = await shopnex.products.list({ first: 20, collection: 'summer', sortKey: 'PRICE' })
 const next = await shopnex.products.list({ first: 20, after: page.pageInfo.endCursor! })
@@ -21,7 +21,7 @@ Only `active` products are visible; `draft` and `archived` are admin-only. Price
 
 ## Cart and checkout
 
-```ts
+```ts setup=storefront
 const cart = await shopnex.cart.create({ lines: [{ merchandiseId, quantity: 1 }] })
 await shopnex.cart.discountCodesUpdate({ cartId: cart.id, discountCodes: ['SUMMER20'] })
 
@@ -45,7 +45,9 @@ await shopnex.checkout.complete({
 
 Shoppers sign in with a one-time code emailed through the shop's SMTP settings (Settings → Email), so the shop must send email. There are no passwords. The first sign-in creates the account, and guest orders placed with the same email appear in it.
 
-```ts
+```ts setup=storefront
+import { createStorefrontClient } from '@shopnex/storefront-sdk'
+
 await shopnex.customer.requestCode({ email }) // emails a one-time code
 const { token, customer } = await shopnex.customer.signIn({ email, code })
 

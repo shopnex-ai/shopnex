@@ -15,7 +15,7 @@ An app proves who it is with a 60-second JWT signed by its key, addressed to the
 
 A JWT (EdDSA, 60 s) with `iss` (instance origin), `aud` (client_id), `sub` (staff user), `shop_id` and `sid` (installation). Verify it with:
 
-```ts
+```ts setup=session-token
 import { verifySessionToken, createJwksResolver } from '@shopnex/marketplace-sdk'
 
 await verifySessionToken(token, { clientId, keys: createJwksResolver() })
