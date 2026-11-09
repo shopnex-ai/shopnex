@@ -218,7 +218,7 @@ export function CheckoutForm({
             type="email"
             autoComplete="email"
             required
-            description={offerReminder ? 'Used for your order confirmation and cart reminders' : undefined}
+            hint={offerReminder ? 'Used for your order confirmation and cart reminders' : undefined}
           />
         </FieldGroup>
       </FieldSet>

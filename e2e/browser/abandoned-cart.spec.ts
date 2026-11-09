@@ -75,6 +75,7 @@ async function openCheckout(page: Page) {
 
 // The shopper types their email (the hint under it says it is used for cart reminders) and walks away
 async function giveEmail(page: Page, cartId: string) {
+  await page.getByRole('button', { name: 'More information' }).hover()
   await expect(page.getByText('Used for your order confirmation and cart reminders')).toBeVisible()
   await page.getByLabel('Email').fill(fx.email)
   // Saved with the cart as soon as the shopper leaves the field
@@ -167,7 +168,7 @@ test('with the feature off, the email is not kept and nothing is sent', async ({
   try {
     const cart = await openCheckout(page)
     await expect(page.getByLabel('Email')).toBeVisible()
-    await expect(page.getByText('Used for your order confirmation and cart reminders')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'More information' })).toHaveCount(0)
     await page.getByLabel('Email').fill(fx.email)
     await page.getByLabel('Email').blur()
     await new Promise((resolve) => setTimeout(resolve, 2_000))
