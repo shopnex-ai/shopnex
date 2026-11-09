@@ -221,3 +221,16 @@ jobs:
             printf 'Images are published for linux/amd64 and linux/arm64. Offline `.tar.gz` copies of both (amd64) are attached below.\n'
           } >> release-notes.md
           gh release edit "$TAG" --notes-file release-notes.md
+
+      # Releases created with GITHUB_TOKEN do not trigger other workflows, so the `release` trigger in
+      # landing-rebuild.yaml never fires for them. Call the deploy hook here, after the notes are final, so
+      # shopnex.ai/changelog picks the release up. Optional: skipped when the secret is not set.
+      - name: Rebuild landing
+        env:
+          HOOK: ${{ secrets.LANDING_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "LANDING_DEPLOY_HOOK is not set; skipping"
+            exit 0
+          fi
+          curl --fail --silent --show-error -X POST "$HOOK"
