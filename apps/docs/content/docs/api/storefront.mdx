@@ -17,7 +17,7 @@ const page = await shopnex.products.list({ first: 20, collection: 'summer', sort
 const next = await shopnex.products.list({ first: 20, after: page.pageInfo.endCursor! })
 ```
 
-Only `active` products are visible; `draft` and `archived` are admin-only. Prices are `{ amountMinor, currencyCode }`.
+Only `active` products are visible; `draft` and `archived` are admin-only. Prices are `{ amountMinor, currencyCode }`. `customFields` carries the [custom fields](/docs/api/custom-fields) the shop shows on the storefront.
 
 ## Cart and checkout
 

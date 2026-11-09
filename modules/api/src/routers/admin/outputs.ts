@@ -4,10 +4,13 @@
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
+import { customFieldValues } from './schemas'
 import {
   API_SCOPES,
   CANCEL_REASONS,
   CHANNEL_TYPES,
+  CUSTOM_FIELD_RESOURCES,
+  CUSTOM_FIELD_TYPES,
   NOTIFICATIONS,
   S3_PRESETS,
   SMTP_PRESETS,
@@ -34,6 +37,7 @@ import {
   aiGenerations,
   aiSettings,
   carrierServices,
+  customFieldDefinitions,
   emailDeliveries,
   marketplaceConnection,
   marketplaceThemes,
@@ -95,7 +99,10 @@ const optionOutput = z.object({
   optionValues: z.array(z.object({ id: z.uuid(), name: z.string(), firstSelectableVariantId: z.uuid().nullable() })),
 })
 
-export const productOutput = createSelectSchema(products, { status: z.enum(PRODUCT_STATUSES) }).extend({
+export const productOutput = createSelectSchema(products, {
+  status: z.enum(PRODUCT_STATUSES),
+  customFields: customFieldValues,
+}).extend({
   images: z.array(createSelectSchema(productImages).pick({ id: true, url: true, alt: true })),
   collectionSlugs: z.array(z.string()),
   options: z.array(optionOutput),
@@ -113,6 +120,7 @@ export const orderOutput = createSelectSchema(orders, {
   financialStatus: z.enum(FINANCIAL_STATUSES),
   fulfillmentStatus: z.enum(FULFILLMENT_STATUSES),
   cancelReason: z.enum(CANCEL_REASONS).nullable(),
+  customFields: customFieldValues,
 })
 
 export const orderDetailOutput = orderOutput.extend({
@@ -120,7 +128,7 @@ export const orderDetailOutput = orderOutput.extend({
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
   transactions: z.array(createSelectSchema(orderTransactions)),
   fulfillments: z.array(createSelectSchema(fulfillments)),
-  customer: createSelectSchema(customers).nullable(),
+  customer: createSelectSchema(customers, { customFields: customFieldValues }).nullable(),
 })
 
 export const carrierServiceOutput = createSelectSchema(carrierServices).pick({
@@ -161,7 +169,11 @@ export const collectionProductOutput = createSelectSchema(products, { status: z.
   status: true,
 })
 export const variantRowOutput = createSelectSchema(productVariants).extend({ available: z.boolean() })
-export const customerOutput = createSelectSchema(customers)
+export const customerOutput = createSelectSchema(customers, { customFields: customFieldValues })
+export const customFieldOutput = createSelectSchema(customFieldDefinitions, {
+  resource: z.enum(CUSTOM_FIELD_RESOURCES),
+  type: z.enum(CUSTOM_FIELD_TYPES),
+})
 export const discountOutput = createSelectSchema(discounts, {
   type: z.enum(['percentage', 'fixed_amount', 'free_shipping']),
 })

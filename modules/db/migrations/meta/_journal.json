@@ -274,6 +274,13 @@
       "when": 1794227328007,
       "tag": "0038_abandoned_cart_emails",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794229965351,
+      "tag": "0039_custom_fields",
+      "breakpoints": true
     }
   ]
 }

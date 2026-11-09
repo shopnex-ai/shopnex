@@ -96,6 +96,12 @@ export const PriceRange = z.object({
   maxVariantPrice: Money,
 })
 
+/**
+ * The shop's custom fields that are shown on the storefront, by key. Only fields the shop marked "Show on the
+ * storefront" and that have a value are here, so it is `{}` for most records.
+ */
+export const CustomFields = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+
 export const Product = z.object({
   id: z.uuid(),
   handle: z.string(),
@@ -115,6 +121,7 @@ export const Product = z.object({
   images: z.array(Image),
   collectionHandles: z.array(z.string()),
   seo: Seo,
+  customFields: CustomFields,
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 })
@@ -282,6 +289,7 @@ export const Customer = z.object({
   email: z.string(),
   name: z.string().nullable(),
   phone: z.string().nullable(),
+  customFields: CustomFields,
 })
 
 /** An address as placed on an order (a snapshot) */
@@ -336,6 +344,7 @@ export const CustomerOrder = z.object({
   lines: z.array(OrderLine),
   fulfillments: z.array(OrderFulfillment),
   shippingAddress: OrderAddress.nullable(),
+  customFields: CustomFields,
 })
 
 // Shopify CartDeliveryOption (one delivery group: rates apply to the whole cart)
@@ -389,6 +398,7 @@ export type PageInfo = z.infer<typeof PageInfo>
 export type Connection<T> = { nodes: T[]; pageInfo: PageInfo }
 export type ConnectionArgs = z.input<typeof ConnectionArgs>
 export type Shop = z.infer<typeof Shop>
+export type CustomFields = z.infer<typeof CustomFields>
 export type Customer = z.infer<typeof Customer>
 export type CustomerOrder = z.infer<typeof CustomerOrder>
 export type OrderAddress = z.infer<typeof OrderAddress>

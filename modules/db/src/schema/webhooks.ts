@@ -9,6 +9,7 @@ export const WEBHOOK_TOPICS = [
   'order.paid',
   'order.fulfilled',
   'order.cancelled',
+  'order.updated',
   'product.created',
   'product.updated',
   'customer.created',

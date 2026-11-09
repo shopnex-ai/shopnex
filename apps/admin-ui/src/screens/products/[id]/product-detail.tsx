@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CustomFieldsCard } from '@/components/admin/custom-fields-card'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
 import { ProductChannelsCard } from './channels-card'
@@ -257,6 +258,16 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
                 </FieldGroup>
               </CardContent>
             </Card>
+
+            <CustomFieldsCard
+              resource="product"
+              values={product.customFields}
+              save={async (customFields) => {
+                const saved = await update.mutateAsync({ id: product.id, customFields })
+                queryClient.setQueryData(orpc.admin.products.get.queryKey({ input: { id: product.id } }), saved)
+                await queryClient.invalidateQueries({ queryKey: orpc.admin.products.list.key() })
+              }}
+            />
 
             <Card>
               <CardHeader>

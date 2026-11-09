@@ -4,6 +4,7 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { products, productVariants } from './catalog'
+import type { CustomFieldValues } from './custom-fields'
 import { customers } from './customers'
 import { channels, shops } from './tenancy'
 
@@ -89,6 +90,8 @@ export const orders = pgTable(
     paymentMethodName: text('payment_method_name'),
     paymentInstructions: text('payment_instructions'),
     note: text('note'),
+    // Values of the shop's custom fields (custom_field_definitions), by key
+    customFields: jsonb('custom_fields').$type<CustomFieldValues>().notNull().default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

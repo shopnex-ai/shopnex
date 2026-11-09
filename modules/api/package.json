@@ -24,6 +24,7 @@
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/content": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/channels": "workspace:*",
     "@shopnex/db": "workspace:*",
