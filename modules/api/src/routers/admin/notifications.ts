@@ -1,8 +1,9 @@
 import { z } from 'zod'
-import { notificationService } from '@shopnex/email'
+import { abandonedCartService, emailService, notificationService } from '@shopnex/email'
 import { shopManager } from '../../orpc'
-import { notificationParam, templateInput, templatePatchInput } from './schemas'
+import { abandonedCartSettingsInput, notificationParam, templateInput, templatePatchInput } from './schemas'
 import {
+  abandonedCartSettingsOutput,
   notificationDeliveryOutput,
   notificationListItemOutput,
   notificationOutput,
@@ -22,6 +23,22 @@ export const notifications = {
     .route({ method: 'GET', path: '/admin/notifications/deliveries' })
     .output(z.array(notificationDeliveryOutput))
     .handler(({ context }) => notificationService.deliveries(context.shop.id)),
+  // Abandoned cart emails: the switch and how long to wait. Declared before {notification} like deliveries
+  abandonedCartSettings: shopManager
+    .route({ method: 'GET', path: '/admin/notifications/abandoned-cart/settings' })
+    .output(abandonedCartSettingsOutput)
+    .handler(async ({ context }) => ({
+      ...(await abandonedCartService.getSettings(context.shop.id)),
+      emailOn: (await emailService.getSettings(context.shop.id)).provider !== 'off',
+    })),
+  updateAbandonedCartSettings: shopManager
+    .route({ method: 'PATCH', path: '/admin/notifications/abandoned-cart/settings' })
+    .output(abandonedCartSettingsOutput)
+    .input(abandonedCartSettingsInput)
+    .handler(async ({ input, context }) => ({
+      ...(await abandonedCartService.updateSettings(context.shop.id, input)),
+      emailOn: (await emailService.getSettings(context.shop.id)).provider !== 'off',
+    })),
   get: shopManager
     .route({ method: 'GET', path: '/admin/notifications/{notification}' })
     .output(notificationOutput)

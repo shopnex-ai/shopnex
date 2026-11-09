@@ -330,6 +330,12 @@ export const notificationDeliveryOutput = createSelectSchema(emailDeliveries, {
   lastError: true,
   createdAt: true,
 })
+export const abandonedCartSettingsOutput = z.object({
+  enabled: z.boolean(),
+  delayMinutes: z.number().int(),
+  /** Reminders can only go out when the shop sends email (Settings → Email) */
+  emailOn: z.boolean(),
+})
 export const notificationPreviewOutput = z.object({
   sample: z.boolean(),
   subject: z.string(),

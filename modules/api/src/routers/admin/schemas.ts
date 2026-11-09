@@ -418,6 +418,12 @@ export const smtpInput = z.object({
 
 export const notificationParam = z.object({ notification: z.enum(NOTIFICATIONS) })
 
+// How long a checkout with an email sits untouched before the reminder (the service enforces the limits)
+export const abandonedCartSettingsInput = z.object({
+  enabled: z.boolean().optional(),
+  delayMinutes: z.number().int().optional(),
+})
+
 // Liquid source; syntax is checked by the email service (with the line of the error)
 export const templateInput = z.object({
   subject: z.string().max(500),

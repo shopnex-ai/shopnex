@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/field'
 import { formatMoney } from '@/lib/money'
 import { buyer, postalCodeRequired, regionRequired } from './buyer-schema'
-import { placeOrder, quoteRates, type CheckoutFields } from './functions'
+import { placeOrder, quoteRates, saveReminderContact, type CheckoutFields } from './functions'
 import { useCheckoutTotals } from './totals'
 
 export type ShippingRateView = {
@@ -41,9 +41,12 @@ export function CheckoutForm({
   options,
   defaultCountry,
   countries,
+  offerReminder,
 }: {
   token: string
   currency: string
+  /** The shop sends abandoned cart emails: show the checkbox that asks for one */
+  offerReminder: boolean
   options: CheckoutOptionsView
   defaultCountry: string
   countries: { value: string; label: string }[]
@@ -127,6 +130,16 @@ export function CheckoutForm({
     }
   }
 
+  // The email is kept with the cart when the shop sends cart reminders (the hint under the field says so)
+  function saveContact() {
+    if (!offerReminder) return
+    const email = form.getValues('email').trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    void saveReminderContact({ data: { token, email } }).catch(() => {
+      // A reminder is a nicety: never get in the way of the order
+    })
+  }
+
   // Shipping is offered but none chosen (carriers still waiting for an address): the schema can't know
   const needsRate = rates.length > 0 || options.liveRates
   const onSubmit = form.handleSubmit(async () => {
@@ -188,8 +201,9 @@ export function CheckoutForm({
     <form
       onSubmit={onSubmit}
       onBlurCapture={(e) => {
-        if (['address1', 'city', 'zip', 'province'].includes((e.target as unknown as { name?: string }).name ?? ''))
-          void refreshRates()
+        const name = (e.target as unknown as { name?: string }).name ?? ''
+        if (['address1', 'city', 'zip', 'province'].includes(name)) void refreshRates()
+        if (name === 'email') saveContact()
       }}
       noValidate
       className="space-y-8"
@@ -197,7 +211,15 @@ export function CheckoutForm({
       <FieldSet>
         <FieldLegend>Contact</FieldLegend>
         <FieldGroup>
-          <TextField control={control} name="email" label="Email" type="email" autoComplete="email" required />
+          <TextField
+            control={control}
+            name="email"
+            label="Email"
+            type="email"
+            autoComplete="email"
+            required
+            hint={offerReminder ? 'Used for your order confirmation and cart reminders' : undefined}
+          />
         </FieldGroup>
       </FieldSet>
 
