@@ -7,7 +7,8 @@ name: create-shopnex@edge
 #
 # The `edge` release is created once, as a pre-release (never `latest`, so the admin's update badge ignores it) and is
 # never edited afterwards (an edit would rebuild the landing, see landing-rebuild.yaml). Only its file is replaced.
-# Needs the NPM_TOKEN secret to publish create-shopnex@edge; without it that step is skipped.
+# Publishes with npm trusted publishing, so there is no npm token: create-shopnex's Trusted Publisher settings on
+# npmjs.com name this repository and this file (edge.yaml), and the job's id-token permission proves the run.
 on:
   push:
     branches: [main]
@@ -66,18 +67,15 @@ jobs:
 
       - name: Publish create-shopnex@edge
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           BEFORE: ${{ github.event.before }}
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "NPM_TOKEN is not set; skipping the npm publish"
-            exit 0
-          fi
-          # Publish when the CLI changed, when the edge tag does not exist yet, or on a manual run
+          # Trusted publishing needs npm 11.5.1 or newer
+          npm --version
+          # Publish when the CLI or this workflow changed, when the edge tag does not exist yet, or on a manual run
           publish=false
           if [ "${{ github.event_name }}" = workflow_dispatch ] || ! npm view create-shopnex@edge version > /dev/null 2>&1; then
             publish=true
-          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex 2> /dev/null; then
+          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex .github/workflows/edge.yaml 2> /dev/null; then
             publish=true
           fi
           if [ "$publish" != true ]; then

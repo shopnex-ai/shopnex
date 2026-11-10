@@ -1,7 +1,6 @@
 import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from '@shopnex/auth'
-import { seedSampleProducts } from '@shopnex/catalog'
 import { createShop, getFirstMembership, isOpenSignup } from '@shopnex/tenancy'
 
 export type SignupResult = { error?: string }
@@ -16,8 +15,6 @@ export const createMyShop = publicFn({ method: 'POST' }).handler(async (): Promi
   const session = await auth.api.getSession({ headers: getRequest().headers })
   if (!session) return { error: 'Sign in first' }
   if (await getFirstMembership(session.user.id)) return { error: 'You already have a shop' }
-  const shop = await createShop({ ownerId: session.user.id, name: NEW_SHOP_NAME })
-  // Sample products are a nicety: the shop is usable without them
-  await seedSampleProducts(shop.id).catch(() => {})
+  await createShop({ ownerId: session.user.id, name: NEW_SHOP_NAME })
   return {}
 })
