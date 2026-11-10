@@ -63,6 +63,22 @@ its data in `<shop folder>/apps/`. The admin finds them by itself; install them 
 your keys there. Stripe cannot reach a `localhost` address, so card payments need a public address for the app or
 `stripe listen`: see the Stripe app's settings page.
 
+## The shop's `.env`
+
+The first run writes `<name>/.env` (readable by you only) with the two settings a shop needs, and every run reads it:
+
+```sh
+DATABASE_URL=pglite:./data        # embedded database in the shop folder (a relative path is relative to it)
+SHOPNEX_SECRET=<generated once>   # encrypts the provider keys saved in the admin and signs sessions: keep it
+```
+
+- **PostgreSQL:** set `DATABASE_URL=postgres://user:password@host:5432/shopnex` and start again. The migrations are applied
+  on start (`SHOPNEX_AUTO_MIGRATE`). The data in `data/` is not moved (there is no tool for that yet).
+- **Other settings** in the file (SMTP, and so on) are passed to the admin. The address, the ports and the build's own
+  files are set by the CLI and its flags and win over the file.
+- Do not commit or share it. Without `SHOPNEX_SECRET` the saved provider keys cannot be read: a lost one means a new
+  shop.
+
 To start over, delete the shop folder.
 
 ## Not for production
@@ -78,9 +94,8 @@ migrations: JavaScript and WebAssembly, so one file serves every OS and CPU. `cr
 own version, so a version without a release says so. The checksum comes from the same place as the file: it catches a
 damaged download, not a tampered release.
 
-`SHOPNEX_SECRET` is generated once and kept in `<name>/data.secret` (readable by you only), so the same shop keeps its
-sessions and stored keys. `SHOPNEX_BUNDLE_URL` downloads from somewhere else (a mirror; the `.sha256` sits next to it)
-and `SHOPNEX_APP_DIR` changes where builds are unpacked.
+`SHOPNEX_BUNDLE_URL` downloads from somewhere else (a mirror; the `.sha256` sits next to it) and `SHOPNEX_APP_DIR`
+changes where builds are unpacked.
 
 **Edge:** `npx create-shopnex@edge` (or `pnpm create shopnex@edge`) runs the latest build of `main` (`.github/workflows/edge.yaml` replaces the file of
 the `edge` pre-release on every push). It downloads again only when `main` moved. It can be broken: use a release for

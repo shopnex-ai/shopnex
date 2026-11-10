@@ -21,7 +21,15 @@ test('--with takes names comma separated or repeated, once each, and refuses unk
 })
 
 test('the plan starts an app per extra, on its port, with its data in the shop folder, and tells the admin where it is', () => {
-  const input = { root: '/r', shopDir: '/shop', dataDir: '/shop/data', port: 3000, storefrontPort: 4321, secret: 's' }
+  const input = {
+    root: '/r',
+    shopDir: '/shop',
+    databaseUrl: 'pglite:/shop/data',
+    env: {},
+    port: 3000,
+    storefrontPort: 4321,
+    secret: 's',
+  }
   assert.equal(planFromBundle({ ...input, extras: [] }).processes.length, 2)
   const plan = planFromBundle({ ...input, extras: pickExtras(['stripe', 'cj']) })
   assert.deepEqual(

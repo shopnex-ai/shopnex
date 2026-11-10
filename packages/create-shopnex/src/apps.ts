@@ -9,11 +9,14 @@ export type PlanInput = {
   shopDir: string
   /** Optional apps to start next to the shop (--with) */
   extras: Extra[]
-  dataDir: string
+  /** DATABASE_URL */
+  databaseUrl: string
   port: number
   storefrontPort: number
   /** SHOPNEX_SECRET */
   secret: string
+  /** The other settings of the shop's .env, passed to the admin */
+  env: Record<string, string>
 }
 
 /** One thing create-shopnex can start. Add an entry to `apps` to make it pickable (--app <name>, or the picker) */
