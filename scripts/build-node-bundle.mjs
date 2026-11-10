@@ -28,7 +28,12 @@ if (!version) {
 const outDir = resolve(process.argv[3] ?? join(tmpdir(), 'shopnex-bundle'))
 const stage = join(outDir, 'stage')
 
-for (const required of ['apps/admin-ui/dist/client', 'apps/admin-ui/dist/server', 'templates/storefront/dist/server']) {
+for (const required of [
+  'apps/admin-ui/dist/client',
+  'apps/admin-ui/dist/server',
+  'templates/storefront/dist/server',
+  'templates/storefront/built/preview.js',
+]) {
   if (!existsSync(join(root, required))) {
     console.error(`${required} is missing. Build first: pnpm build && pnpm --dir templates/storefront build`)
     process.exit(1)
@@ -80,6 +85,8 @@ await build({
 })
 cpSync(join(root, 'templates/storefront/dist/client'), join(stage, 'storefront/dist/client'), { recursive: true })
 cpSync(join(root, 'templates/storefront/themes'), join(stage, 'storefront/themes'), { recursive: true })
+// The theme editor's preview connector, read from built/ at request time
+cpSync(join(root, 'templates/storefront/built'), join(stage, 'storefront/built'), { recursive: true })
 
 cpSync(join(root, 'modules/db/migrations'), join(stage, 'migrations'), { recursive: true })
 writeFileSync(join(stage, 'manifest.json'), JSON.stringify({ version, builtAt: new Date().toISOString() }, null, 2))
