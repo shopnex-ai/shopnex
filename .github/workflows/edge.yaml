@@ -1,4 +1,4 @@
-name: Edge
+name: create-shopnex@edge
 
 # The rolling build behind `npx create-shopnex@edge`: every push to main rebuilds the packaged ShopNex
 # (scripts/build-node-bundle.mjs) and replaces the one file of the `edge` pre-release, which create-shopnex@edge

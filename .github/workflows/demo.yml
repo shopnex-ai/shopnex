@@ -1,4 +1,4 @@
-name: Demo image
+name: Deploy demo
 
 # Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo, plus the
 # Stripe, CJ Dropshipping and Shippo app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge, <repo>-shippo:edge).

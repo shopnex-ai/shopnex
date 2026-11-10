@@ -1,11 +1,11 @@
 name: Install script
 
-# Runs the documented install command on a clean runner against the images the Demo image workflow just pushed:
+# Runs the documented install command on a clean runner against the images the Deploy demo workflow just pushed:
 # SHOPNEX_VERSION is the commit SHA, which pins both the images and the compose file to that build. Run it by hand
 # (optionally with a release tag as the version) to test a release. HTTPS is not covered: it needs a public domain.
 on:
   workflow_run:
-    workflows: [Demo image]
+    workflows: [Deploy demo]
     types: [completed]
     branches: [main]
   workflow_dispatch:
