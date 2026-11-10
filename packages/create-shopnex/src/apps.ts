@@ -1,9 +1,14 @@
 import * as p from '@clack/prompts'
 import { planFromBundle, type Plan } from './plan'
 import { UsageError } from './errors'
+import type { Extra } from './extras'
 
 export type PlanInput = {
   root: string
+  /** The shop's folder: optional apps keep their data in <shopDir>/apps/<name> */
+  shopDir: string
+  /** Optional apps to start next to the shop (--with) */
+  extras: Extra[]
   dataDir: string
   port: number
   storefrontPort: number

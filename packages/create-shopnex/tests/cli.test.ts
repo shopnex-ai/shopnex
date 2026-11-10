@@ -29,20 +29,20 @@ test('--help and --version', () => {
 })
 
 test('without a connection it says what failed (exit 1)', () => {
-  const result = run('--data', join(tmpdir(), 'create-shopnex-none'))
+  const result = run(join(tmpdir(), 'create-shopnex-none'))
   assert.equal(result.status, 1)
   assert.match(result.stderr, /Could not download/)
 })
 
-test('--dry-run shows the data folder and the addresses, downloads nothing and starts nothing', () => {
+test('--dry-run shows the shop folder and the addresses, downloads nothing and starts nothing', () => {
   const cache = mkdtempSync(join(tmpdir(), 'create-shopnex-cache-'))
   const result = spawnSync(
     process.execPath,
-    ['--import', 'tsx', main, '--data', '/tmp/shop-data', '--port', '3100', '--storefront-port', '4400', '--dry-run'],
+    ['--import', 'tsx', main, '/tmp/shop-x', '--port', '3100', '--storefront-port', '4400', '--dry-run'],
     { cwd: packageDir, encoding: 'utf8', env: isolated(cache) },
   )
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /Data\s+\/tmp\/shop-data/)
+  assert.match(result.stdout, /Folder\s+\/tmp\/shop-x/)
   assert.match(result.stdout, /http:\/\/localhost:3100\/admin/)
   assert.match(result.stdout, /http:\/\/localhost:4400/)
   assert.match(result.stdout, /downloaded on the first run/)
@@ -63,7 +63,7 @@ test('a taken port is refused before anything is downloaded (exit 2)', async () 
   const { port } = server.address() as AddressInfo
   try {
     // spawnSync would block this process, which is the one that has to accept the probe: run it asynchronously
-    const child = spawn(process.execPath, ['--import', 'tsx', main, '--port', String(port), '--no-open'], {
+    const child = spawn(process.execPath, ['--import', 'tsx', main, 'my-shop', '--port', String(port), '--no-open'], {
       cwd: packageDir,
       env: isolated(),
     })

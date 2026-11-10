@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import type { Extra } from './extras'
 import { databaseUrl } from './paths'
 
 export type ProcessPlan = {
@@ -23,12 +24,15 @@ export type Plan = {
  */
 export function planFromBundle(input: {
   root: string
+  shopDir: string
   dataDir: string
   port: number
   storefrontPort: number
   secret: string
+  extras: Extra[]
 }): Plan {
-  const { root, dataDir, port, storefrontPort, secret } = input
+  const { root, shopDir, dataDir, port, storefrontPort, secret, extras } = input
+  const extraUrl = (extra: Extra) => `http://localhost:${extra.port}`
   const appUrl = `http://localhost:${port}`
   return {
     appUrl,
@@ -50,6 +54,8 @@ export function planFromBundle(input: {
           APP_URL: appUrl,
           // Where the admin finds the storefront (Themes, the theme editor) until a Storefront URL is saved in Settings
           STOREFRONT_URL: `http://localhost:${storefrontPort}`,
+          // The admin registers an optional app when its address is set (the same variable the app reads)
+          ...Object.fromEntries(extras.map((extra) => [extra.urlEnv, extraUrl(extra)])),
         },
         readyUrl: `http://127.0.0.1:${port}/api/v1/health`,
       },
@@ -68,6 +74,22 @@ export function planFromBundle(input: {
         },
         readyUrl: `http://127.0.0.1:${storefrontPort}/`,
       },
+      ...extras.map((extra): ProcessPlan => ({
+        name: extra.name,
+        cwd: join(root, 'apps', extra.dir),
+        command: process.execPath,
+        args: ['server.mjs'],
+        env: {
+          NODE_ENV: 'production',
+          HOST: '127.0.0.1',
+          PORT: String(extra.port),
+          [extra.urlEnv]: extraUrl(extra),
+          SHOPNEX_INTERNAL_URL: appUrl,
+          // Its identity key and the shops' settings: kept with the shop, so the same shop stays connected
+          DATA_DIR: join(shopDir, 'apps', extra.dir),
+        },
+        readyUrl: `http://127.0.0.1:${extra.port}/shopnex/app.js`,
+      })),
     ],
   }
 }

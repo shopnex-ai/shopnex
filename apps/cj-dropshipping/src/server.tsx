@@ -288,4 +288,6 @@ async function pollTracking() {
 }
 setInterval(() => void pollTracking(), 15 * 60_000).unref()
 
-serve({ fetch: app.fetch, port: PORT }, () => console.log(`CJ Dropshipping app on ${APP_URL} (port ${PORT})`))
+serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || undefined }, () =>
+  console.log(`CJ Dropshipping app on ${APP_URL} (port ${PORT})`),
+)
