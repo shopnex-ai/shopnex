@@ -31,6 +31,7 @@
     "@shopnex/auth": "workspace:*",
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
+    "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",

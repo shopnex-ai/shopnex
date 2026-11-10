@@ -20,6 +20,12 @@ export const ENV_VARS: EnvVar[] = [
       'PostgreSQL connection string. `pglite:<directory>` (or `pglite:memory`) runs an embedded PGlite database inside the server instead, migrated at start: for trying ShopNex out on one machine, not for production.',
   },
   {
+    name: 'SHOPNEX_MIGRATIONS_DIR',
+    required: false,
+    description:
+      'Folder with the database migrations (the one that holds `meta/_journal.json`). Only the embedded database (`pglite:`) reads it, to migrate itself at start; found automatically when the server runs from the repository.',
+  },
+  {
     name: 'SHOPNEX_SECRET',
     required: true,
     description:

@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
@@ -15,6 +17,23 @@ type Embedded = { migrate: () => Promise<void> }
 type Database = NodePgDatabase<typeof schema> & { $client: Pool }
 type Created = { db: Database; embedded?: Embedded; pool?: Pool }
 
+// Where the migrations are: SHOPNEX_MIGRATIONS_DIR, next to this module (source), or relative to the working
+// directory (a built server, started from the repository or from apps/admin-ui)
+function migrationsFolder() {
+  const candidates = [
+    process.env.SHOPNEX_MIGRATIONS_DIR,
+    fileURLToPath(new URL('../migrations', import.meta.url)),
+    join(process.cwd(), 'modules/db/migrations'),
+    join(process.cwd(), '../../modules/db/migrations'),
+  ].filter((dir): dir is string => !!dir)
+  const found = candidates.find((dir) => existsSync(join(dir, 'meta/_journal.json')))
+  if (!found)
+    throw new Error(
+      `Cannot find the database migrations (looked in ${candidates.join(', ')}). Set SHOPNEX_MIGRATIONS_DIR.`,
+    )
+  return found
+}
+
 async function createEmbedded(): Promise<Created> {
   const [{ PGlite }, { drizzle: drizzlePglite }, { migrate }] = await Promise.all([
     import('@electric-sql/pglite'),
@@ -29,10 +48,7 @@ async function createEmbedded(): Promise<Created> {
     // Same query API as node-postgres (select, insert, transaction, execute); only the result type of execute differs
     db: embedded as unknown as Database,
     embedded: {
-      migrate: () =>
-        migrate(embedded, {
-          migrationsFolder: fileURLToPath(new URL('../migrations', import.meta.url)),
-        }),
+      migrate: () => migrate(embedded, { migrationsFolder: migrationsFolder() }),
     },
   }
 }
