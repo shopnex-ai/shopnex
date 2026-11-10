@@ -2,7 +2,22 @@
   "name": "create-shopnex",
   "version": "0.14.0",
   "description": "Try ShopNex with one command: npx create-shopnex starts the admin and the storefront on an embedded database, nothing else to install",
-  "private": true,
+  "license": "MIT",
+  "homepage": "https://shopnex.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shopnex-ai/shopnex.git",
+    "directory": "packages/create-shopnex"
+  },
+  "keywords": [
+    "shopnex",
+    "ecommerce",
+    "create-shopnex",
+    "storefront"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "create-shopnex": "./bin/create-shopnex.mjs"
@@ -21,13 +36,11 @@
     "typecheck": "tsc",
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
-  "dependencies": {
-    "@clack/prompts": "^0.7.0",
-    "picocolors": "^1.1.1"
-  },
   "devDependencies": {
+    "@clack/prompts": "^0.7.0",
     "@types/node": "catalog:",
     "esbuild": "0.28.2",
+    "picocolors": "^1.1.1",
     "tsx": "^4.23.15"
   }
 }
