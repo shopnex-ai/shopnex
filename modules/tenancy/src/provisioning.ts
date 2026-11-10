@@ -62,7 +62,7 @@ export async function createShop(input: { ownerId: string; name: string; currenc
       .insert(schema.shopMembers)
       .values({ id: randomUUID(), organizationId: id, userId: input.ownerId, role: 'owner' })
     await seedDefaultMenu(tx, id)
-    // Make the Online Store now: it's otherwise created on first use, after the sample products are added,
+    // Make the Online Store now: it's otherwise created on first use, after the first products are added,
     // and a product is only auto-published on channels that already exist
     await channelService.getDefault(id, tx)
     return shop!
