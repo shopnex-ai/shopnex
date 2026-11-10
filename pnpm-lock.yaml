@@ -1024,6 +1024,18 @@ importers:
         specifier: 'catalog:'
         version: 22.20.5
 
+  packages/create-shopnex:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   packages/marketplace-sdk:
     dependencies:
       '@orpc/client':

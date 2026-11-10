@@ -17,6 +17,7 @@
 - /marketplace-sdk # Marketplace API contract (oRPC) + typed client; session-token sign/verify for embedded apps
 - /app-bridge # browser library for embedded apps: session tokens, toasts, top-level redirects (postMessage to the admin)
 - /storefront-sdk # public Storefront API contract (oRPC, contract-first) + typed client — for any storefront
+- /create-shopnex # `npx create-shopnex`: starts the admin and the storefront on the embedded database (PGlite) for a trial; scaffold, runs from a checkout (`--from`) until the packaged build is published
 
 /templates
 
