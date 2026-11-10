@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import * as p from '@clack/prompts'
 import { parse } from './args'
 import { pickApp } from './apps'
-import { bundleDir, isInstalled, resolveBundle } from './bundle'
+import { bundleDir, isEdge, isInstalled, resolveBundle } from './bundle'
 import { checkCheckout, type Plan } from './checkout'
 import { UnavailableError, UsageError } from './errors'
 import { assertNode } from './node-version'
@@ -73,7 +73,9 @@ async function run(argv: string[]) {
       : await resolveBundle({ version: pkg.version })
   const sourceLabel = options.from
     ? `checkout ${root}`
-    : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
+    : isEdge(pkg.version)
+      ? 'ShopNex edge (the latest build from main, checked on every run)'
+      : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
   const app = await pickApp(options.app, { interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY) })
   const plan = app.plan({
     source,

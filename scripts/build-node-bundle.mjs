@@ -2,7 +2,9 @@
 // Builds the packaged ShopNex that `npx create-shopnex` downloads and runs without a checkout:
 //
 //   pnpm build && pnpm --dir templates/storefront build
-//   node scripts/build-node-bundle.mjs 0.14.0 [outDir]    → <outDir>/shopnex-v0.14.0-node.tgz (+ .sha256)
+//   node scripts/build-node-bundle.mjs 0.14.0 [outDir] [name]   → <outDir>/shopnex-v0.14.0-node.tgz (+ .sha256)
+//
+// `name` replaces the file's base name (shopnex-v<version>-node), for the rolling edge build: shopnex-edge-node.
 //
 // Contents: admin/ (the admin, API and checkout server, bundled into a few files; the embedded database is the one
 // package left as a real dependency, because it loads its WebAssembly from next to itself), storefront/ (the built
@@ -82,7 +84,7 @@ cpSync(join(root, 'templates/storefront/themes'), join(stage, 'storefront/themes
 cpSync(join(root, 'modules/db/migrations'), join(stage, 'migrations'), { recursive: true })
 writeFileSync(join(stage, 'manifest.json'), JSON.stringify({ version, builtAt: new Date().toISOString() }, null, 2))
 
-const file = join(outDir, `shopnex-v${version}-node.tgz`)
+const file = join(outDir, `${process.argv[4] ?? `shopnex-v${version}-node`}.tgz`)
 const tar = spawnSync('tar', ['-czf', file, '-C', stage, '.'], { stdio: 'inherit' })
 if (tar.status !== 0) process.exit(tar.status ?? 1)
 const sha = createHash('sha256').update(readFileSync(file)).digest('hex')

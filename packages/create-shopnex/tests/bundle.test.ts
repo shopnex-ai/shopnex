@@ -7,15 +7,15 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, beforeEach, test } from 'node:test'
-import { bundleDir, bundleUrl, isInstalled, resolveBundle } from '../src/bundle'
+import { bundleDir, bundleUrl, isEdge, isInstalled, resolveBundle } from '../src/bundle'
 import { UnavailableError } from '../src/errors'
 
 /** A tgz like the release's, for `version`, and the checksum file's text */
-function fixture(version: string, { manifestVersion = version } = {}) {
+function fixture(version: string, { manifestVersion = version, content = '// admin' } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'create-shopnex-fixture-'))
   const stage = join(dir, 'stage')
   mkdirSync(join(stage, 'admin'), { recursive: true })
-  writeFileSync(join(stage, 'admin/server.mjs'), '// admin')
+  writeFileSync(join(stage, 'admin/server.mjs'), content)
   writeFileSync(join(stage, 'manifest.json'), JSON.stringify({ version: manifestVersion }))
   const file = join(dir, 'bundle.tgz')
   assert.equal(spawnSync('tar', ['-czf', file, '-C', stage, '.']).status, 0)
@@ -106,4 +106,49 @@ test('a folder without manifest.json is a leftover: it is replaced, not trusted'
   await resolveBundle({ version: '1.0.0' })
   assert.equal(existsSync(join(bundleDir('1.0.0'), 'half')), false)
   assert.ok(isInstalled('1.0.0'))
+})
+
+const EDGE = '0.0.0-edge.abc1234'
+const keyOf = (bundle: { sha: string }) => `edge-${bundle.sha.slice(0, 12)}`
+
+test('an edge version reads the rolling edge release, a normal one its own', () => {
+  delete process.env.SHOPNEX_BUNDLE_URL
+  assert.ok(isEdge(EDGE) && !isEdge('0.14.0') && !isEdge('1.0.0-rc.1'))
+  assert.equal(bundleUrl(EDGE), 'https://github.com/shopnex-ai/shopnex/releases/download/edge/shopnex-edge-node.tgz')
+})
+
+test('edge: named by its checksum, so the next run only asks for the checksum', async () => {
+  const build = fixture(EDGE, { manifestVersion: '0.0.0-edge.def5678' }) // built by a later push than this CLI
+  publish(build)
+  const dir = await resolveBundle({ version: EDGE })
+  assert.equal(dir, bundleDir(keyOf(build)))
+  assert.ok(isInstalled(keyOf(build)))
+  assert.equal(requests.length, 2)
+
+  requests = []
+  assert.equal(await resolveBundle({ version: EDGE }), dir)
+  assert.deepEqual(requests, ['/shopnex.tgz.sha256'])
+})
+
+test('edge: a new build downloads again and the old one is removed', async () => {
+  const first = fixture(EDGE, { content: '// one' })
+  publish(first)
+  await resolveBundle({ version: EDGE })
+  const second = fixture(EDGE, { content: '// two' })
+  publish(second)
+  await resolveBundle({ version: EDGE })
+  assert.deepEqual(readdirSync(process.env.SHOPNEX_APP_DIR as string), [keyOf(second)])
+})
+
+test('edge: without a connection it runs the build it has, and says so', async () => {
+  const build = fixture(EDGE)
+  publish(build)
+  await resolveBundle({ version: EDGE })
+  process.env.SHOPNEX_BUNDLE_URL = 'http://127.0.0.1:1/shopnex.tgz'
+  assert.equal(await resolveBundle({ version: EDGE }), bundleDir(keyOf(build)))
+})
+
+test('edge: without a connection and nothing downloaded it is the usual error', async () => {
+  process.env.SHOPNEX_BUNDLE_URL = 'http://127.0.0.1:1/shopnex.tgz'
+  await assert.rejects(resolveBundle({ version: EDGE }), /Could not download the checksum/)
 })

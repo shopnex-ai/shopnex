@@ -75,6 +75,16 @@ pnpm build && pnpm --dir templates/storefront build
 node scripts/build-node-bundle.mjs 0.14.0 /tmp/bundle
 ```
 
+## Edge
+
+`npx create-shopnex@edge` runs the latest build of `main` instead of a release, to try what is merged but not
+released. Every push to `main` rebuilds the packaged ShopNex and replaces the one file of the `edge` pre-release
+(`.github/workflows/edge.yaml`). The edge CLI finds that file by its checksum, so it downloads again only when `main`
+moved, and keeps just the newest build (about 50 MB) in `~/.shopnex/app`. Offline, it runs the build it already has.
+
+It is `main`, so it can be broken and its data is not guaranteed to open in a later release. Use a release for
+anything you want to keep.
+
 ## Tests
 
 ```sh
