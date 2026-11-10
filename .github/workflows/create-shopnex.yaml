@@ -1,0 +1,114 @@
+name: Test npx create-shopnex
+
+# Runs the real `create-shopnex` the way a user does: it starts the shop (and the optional apps) from the packaged build
+# and checks that every server answers. The package and the bundle are built from this commit and served locally, so
+# nothing is published or downloaded from GitHub releases. It is a workflow of its own: it runs in parallel with the
+# Docker Compose checks (install-script.yaml) and each runner is a separate machine, so the ports (3000, 4321, ...) never clash.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'apps/docs/**'
+      - '**/*.md'
+  pull_request:
+    paths-ignore:
+      - 'apps/docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: create-shopnex-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  build:
+    name: Build the CLI and the bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - name: Build the bundle and the CLI
+        run: |
+          version="$(node -p "require('./packages/create-shopnex/package.json').version")"
+          node scripts/build-node-bundle.mjs "$version" "$RUNNER_TEMP/out/bundle"
+          pnpm --filter create-shopnex build
+          mkdir -p "$RUNNER_TEMP/out/cli"
+          cp -R packages/create-shopnex/bin packages/create-shopnex/dist packages/create-shopnex/package.json "$RUNNER_TEMP/out/cli/"
+          echo "$version" > "$RUNNER_TEMP/out/version"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: create-shopnex
+          path: ${{ runner.temp }}/out
+          retention-days: 3
+
+  smoke:
+    name: Start it on ${{ matrix.os }} (Node ${{ matrix.node }})
+    needs: build
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: ['22.22.0', '24']
+    steps:
+      # Only Node: what a user has. No checkout, no pnpm, no install.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: create-shopnex
+          path: ${{ runner.temp }}/out
+
+      - name: Serve the bundle
+        run: |
+          nohup npx --yes http-server@14.1.1 "$RUNNER_TEMP/out/bundle" -a 127.0.0.1 -p 8000 -s > "$RUNNER_TEMP/serve.log" 2>&1 &
+          npx --yes wait-on@8 -t 60000 http-get://127.0.0.1:8000/
+
+      - name: Start the shop with every app
+        run: |
+          version="$(cat "$RUNNER_TEMP/out/version")"
+          mkdir "$RUNNER_TEMP/work" && cd "$RUNNER_TEMP/work"
+          SHOPNEX_BUNDLE_URL="http://127.0.0.1:8000/shopnex-v${version}-node.tgz" \
+          SHOPNEX_APP_DIR="$RUNNER_TEMP/app" \
+            nohup node "$RUNNER_TEMP/out/cli/bin/create-shopnex.mjs" --no-open --verbose --with stripe,cj,shippo \
+            > "$RUNNER_TEMP/create-shopnex.log" 2>&1 &
+          npx --yes wait-on@8 -t 180000 \
+            http-get://127.0.0.1:3000/api/v1/health \
+            http-get://127.0.0.1:4321/ \
+            http-get://127.0.0.1:4600/shopnex/app.js \
+            http-get://127.0.0.1:4700/shopnex/app.js \
+            http-get://127.0.0.1:4900/shopnex/app.js
+
+      # No name was given: the shop lives in ./shopnex, with its .env, the database and each app's data
+      - name: Check what it created
+        working-directory: ${{ runner.temp }}/work
+        run: |
+          test -d shopnex/data && grep -q '^SHOPNEX_SECRET=.' shopnex/.env && grep -q '^DATABASE_URL=pglite:' shopnex/.env
+          for app in stripe cj-dropshipping shippo; do test -d "shopnex/apps/$app"; done
+          ls -la shopnex shopnex/apps
+
+      - name: The log, when something failed
+        if: failure()
+        run: |
+          echo '--- create-shopnex'; cat "$RUNNER_TEMP/create-shopnex.log" || true
+          echo '--- bundle server'; cat "$RUNNER_TEMP/serve.log" || true

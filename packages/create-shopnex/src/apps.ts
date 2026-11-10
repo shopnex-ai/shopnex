@@ -1,14 +1,22 @@
 import * as p from '@clack/prompts'
 import { planFromBundle, type Plan } from './plan'
 import { UsageError } from './errors'
+import type { Extra } from './extras'
 
 export type PlanInput = {
   root: string
-  dataDir: string
+  /** The shop's folder: optional apps keep their data in <shopDir>/apps/<name> */
+  shopDir: string
+  /** Optional apps to start next to the shop (--with) */
+  extras: Extra[]
+  /** DATABASE_URL */
+  databaseUrl: string
   port: number
   storefrontPort: number
   /** SHOPNEX_SECRET */
   secret: string
+  /** The other settings of the shop's .env, passed to the admin */
+  env: Record<string, string>
 }
 
 /** One thing create-shopnex can start. Add an entry to `apps` to make it pickable (--app <name>, or the picker) */

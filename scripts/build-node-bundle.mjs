@@ -8,7 +8,7 @@
 //
 // Contents: admin/ (the admin, API and checkout server, bundled into a few files; the embedded database is the one
 // package left as a real dependency, because it loads its WebAssembly from next to itself), storefront/ (the built
-// Astro server and the themes), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
+// Astro server and the themes), apps/ (the optional Stripe, CJ Dropshipping and Shippo servers, one file each), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
 // every OS and CPU. The file layout is what packages/create-shopnex/src/plan.ts (planFromBundle) runs.
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
@@ -87,6 +87,16 @@ cpSync(join(root, 'templates/storefront/dist/client'), join(stage, 'storefront/d
 cpSync(join(root, 'templates/storefront/themes'), join(stage, 'storefront/themes'), { recursive: true })
 // The theme editor's preview connector, read from built/ at request time
 cpSync(join(root, 'templates/storefront/built'), join(stage, 'storefront/built'), { recursive: true })
+
+// Optional apps (create-shopnex --with): each one is a single file, bundled the way its Docker image is
+for (const app of ['stripe', 'cj-dropshipping', 'shippo']) {
+  const bundled = spawnSync(process.execPath, [join(root, 'scripts/bundle-app.mjs'), join(root, 'apps', app)], {
+    stdio: 'inherit',
+  })
+  if (bundled.status !== 0) process.exit(bundled.status ?? 1)
+  mkdirSync(join(stage, 'apps', app), { recursive: true })
+  cpSync(join(root, 'apps', app, 'dist/server.mjs'), join(stage, 'apps', app, 'server.mjs'))
+}
 
 cpSync(join(root, 'modules/db/migrations'), join(stage, 'migrations'), { recursive: true })
 writeFileSync(join(stage, 'manifest.json'), JSON.stringify({ version, builtAt: new Date().toISOString() }, null, 2))

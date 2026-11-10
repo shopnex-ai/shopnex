@@ -15,7 +15,7 @@ export const isEmbeddedDatabase = databaseUrl.startsWith(EMBEDDED_PREFIX)
 type Embedded = { migrate: () => Promise<void> }
 // `$client` is the pg Pool (tests and scripts use it); on the embedded database it is the PGlite instance instead
 type Database = NodePgDatabase<typeof schema> & { $client: Pool }
-type Created = { db: Database; embedded?: Embedded; pool?: Pool }
+type Created = { db: Database; embedded?: Embedded; pool?: Pool; migrate?: () => Promise<void> }
 
 // Where the migrations are: SHOPNEX_MIGRATIONS_DIR, next to this module (source), or relative to the working
 // directory (a built server, started from the repository or from apps/admin-ui)
@@ -66,7 +66,16 @@ async function createDb(): Promise<Created> {
     }
   })()
   console.log(`[db] PostgreSQL ${target}`)
-  return { db: drizzle({ client: pool, schema }), pool }
+  const db = drizzle({ client: pool, schema })
+  // Opt-in (create-shopnex sets it): a server-side PostgreSQL is otherwise migrated by `pnpm db:migrate` or the deploy
+  const migrateAtStart =
+    process.env.SHOPNEX_AUTO_MIGRATE === 'true'
+      ? async () => {
+          const { migrate } = await import('drizzle-orm/node-postgres/migrator')
+          await migrate(db, { migrationsFolder: migrationsFolder() })
+        }
+      : undefined
+  return { db, pool, migrate: migrateAtStart }
 }
 
 const globalForDb = globalThis as unknown as { shopnexDb?: Created }
@@ -77,11 +86,12 @@ export const db = created.db
 
 let prepared: Promise<void> | undefined
 /**
- * Called once at server start. With the embedded database it applies the migrations (a server-side Postgres is
- * migrated by `pnpm db:migrate`, or the deploy's migration step), so a fresh data directory just works.
+ * Called once at server start. With the embedded database it applies the migrations, so a fresh data directory just
+ * works. A server-side Postgres is migrated by `pnpm db:migrate` or the deploy's migration step, unless
+ * SHOPNEX_AUTO_MIGRATE=true asks this server to do it (one server at a time: there is no lock).
  */
 export function prepareDatabase() {
-  return (prepared ??= created.embedded ? created.embedded.migrate() : Promise.resolve())
+  return (prepared ??= created.embedded ? created.embedded.migrate() : (created.migrate?.() ?? Promise.resolve()))
 }
 
 export type Db = typeof db
