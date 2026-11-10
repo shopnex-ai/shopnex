@@ -99,11 +99,11 @@ jobs:
             http-get://127.0.0.1:4700/shopnex/app.js \
             http-get://127.0.0.1:4900/shopnex/app.js
 
-      # No name was given: the shop lives in ./shopnex, with the database, the secret and each app's data
+      # No name was given: the shop lives in ./shopnex, with its .env, the database and each app's data
       - name: Check what it created
         working-directory: ${{ runner.temp }}/work
         run: |
-          test -d shopnex/data && test -f shopnex/data.secret
+          test -d shopnex/data && grep -q '^SHOPNEX_SECRET=.' shopnex/.env && grep -q '^DATABASE_URL=pglite:' shopnex/.env
           for app in stripe cj-dropshipping shippo; do test -d "shopnex/apps/$app"; done
           ls -la shopnex shopnex/apps
 
