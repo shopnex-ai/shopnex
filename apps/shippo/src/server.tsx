@@ -151,4 +151,6 @@ app.onError((error, c) => {
   return c.json({ error: message(error) }, 500)
 })
 
-serve({ fetch: app.fetch, port: PORT }, () => console.log(`Shippo app on ${APP_URL} (port ${PORT})`))
+serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || undefined }, () =>
+  console.log(`Shippo app on ${APP_URL} (port ${PORT})`),
+)

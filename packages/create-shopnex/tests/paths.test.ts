@@ -2,17 +2,14 @@ import assert from 'node:assert/strict'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { databaseUrl, defaultDataDir, resolveDataDir } from '../src/paths'
+import { UsageError } from '../src/errors'
+import { databaseUrl, dataDirOf, resolveShopDir } from '../src/paths'
 
-test('the default data folder is ~/.shopnex/data, whichever folder it runs from', () => {
-  assert.equal(defaultDataDir(), join(homedir(), '.shopnex', 'data'))
-  assert.equal(resolveDataDir(undefined), defaultDataDir())
-})
-
-test('--data accepts ~ and relative paths', () => {
-  assert.equal(resolveDataDir('~/shop'), join(homedir(), 'shop'))
-  assert.equal(resolveDataDir('~'), homedir())
-  assert.equal(resolveDataDir('shop-data'), resolve('shop-data'))
+test('the shop folder is the name, relative to where it runs; ~ works; empty is refused', () => {
+  assert.equal(resolveShopDir('shop', '/work'), resolve('/work', 'shop'))
+  assert.equal(resolveShopDir('~/shop'), join(homedir(), 'shop'))
+  assert.throws(() => resolveShopDir('  '), UsageError)
+  assert.equal(dataDirOf('/work/shop'), join('/work/shop', 'data'))
 })
 
 test('the server is told to use the embedded database in that folder', () => {

@@ -2,15 +2,18 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { UsageError } from './errors'
 
-/** Where the embedded database lives unless --data says otherwise: the same shop whichever folder you run it from */
-export const defaultDataDir = () => join(homedir(), '.shopnex', 'data')
-
-export function resolveDataDir(option: string | undefined) {
-  if (!option) return defaultDataDir()
-  const expanded = option === '~' ? homedir() : option.startsWith('~/') ? join(homedir(), option.slice(2)) : option
-  return resolve(expanded)
+/** The shop's folder: the name as given, relative to the folder you run it from (a path like ../shop or ~/shop works too) */
+export function resolveShopDir(name: string, cwd = process.cwd()) {
+  const trimmed = name.trim()
+  if (!trimmed) throw new UsageError('The shop name cannot be empty.')
+  const expanded = trimmed === '~' ? homedir() : trimmed.startsWith('~/') ? join(homedir(), trimmed.slice(2)) : trimmed
+  return resolve(cwd, expanded)
 }
+
+/** The embedded database lives in the shop folder */
+export const dataDirOf = (shopDir: string) => join(shopDir, 'data')
 
 /** The DATABASE_URL that makes the server use the embedded database in that folder */
 export const databaseUrl = (dataDir: string) => `pglite:${dataDir}`

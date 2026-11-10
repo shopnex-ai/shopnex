@@ -5,7 +5,9 @@ import { planFromBundle } from '../src/plan'
 test('the packaged build runs in production mode, on this machine only, with its own secret and migrations', () => {
   const plan = planFromBundle({
     root: '/app/0.14.0',
+    shopDir: '/data',
     dataDir: '/data/shop',
+    extras: [],
     port: 3100,
     storefrontPort: 4400,
     secret: 's3cret',
