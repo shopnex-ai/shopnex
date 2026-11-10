@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { client, orpc, type Outputs } from '@/lib/orpc'
+import { AddSamplesButton } from './add-samples-button'
 import { NewProductButton } from './new-product-button'
 import { ImportProductsDialog } from './import-products'
 import { ExportProductsDialog } from './export-products'
@@ -119,7 +120,16 @@ export function ProductList({ currency }: { currency: string }) {
         rowLink={(p) => ({ to: '/admin/products/$id', params: { id: p.id } })}
         isPending={isPending}
         error={error}
-        empty={search ? `No products match “${search}”.` : 'No products yet. Create one to start selling.'}
+        empty={
+          search ? (
+            `No products match “${search}”.`
+          ) : (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <span>No products yet. Create one to start selling, or look around with a few samples.</span>
+              <AddSamplesButton />
+            </div>
+          )
+        }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton
