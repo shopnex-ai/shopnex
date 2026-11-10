@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { SparklesIcon } from 'lucide-react'
+import { PackagePlusIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
@@ -25,7 +25,7 @@ export function AddSamplesButton() {
         }
       }}
     >
-      <SparklesIcon />
+      <PackagePlusIcon />
       {add.isPending ? 'Adding…' : 'Add sample products'}
     </Button>
   )
