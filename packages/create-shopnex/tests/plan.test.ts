@@ -20,6 +20,7 @@ test('the packaged build runs in production mode, on this machine only, with its
   assert.equal(admin.env.DATABASE_URL, 'pglite:/data/shop')
   assert.equal(admin.env.SHOPNEX_MIGRATIONS_DIR, '/app/0.14.0/migrations')
   assert.equal(admin.env.SHOPNEX_SECRET, 's3cret')
+  assert.equal(admin.env.STOREFRONT_URL, 'http://localhost:4400', 'Themes and the theme editor need the storefront')
   assert.deepEqual([storefront.cwd, storefront.args], ['/app/0.14.0/storefront', ['dist/server/entry.mjs']])
   assert.equal(storefront.env.HOST, '127.0.0.1')
   assert.equal(storefront.env.PORT, '4400')

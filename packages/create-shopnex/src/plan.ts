@@ -48,6 +48,8 @@ export function planFromBundle(input: {
           SHOPNEX_SECRET: secret,
           BETTER_AUTH_URL: appUrl,
           APP_URL: appUrl,
+          // Where the admin finds the storefront (Themes, the theme editor) until a Storefront URL is saved in Settings
+          STOREFRONT_URL: `http://localhost:${storefrontPort}`,
         },
         readyUrl: `http://127.0.0.1:${port}/api/v1/health`,
       },
