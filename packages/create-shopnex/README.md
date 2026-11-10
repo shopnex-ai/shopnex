@@ -3,12 +3,38 @@
 Try ShopNex on your machine with one command. It starts the admin (with the API and hosted checkout) and the
 storefront on an embedded database ([PGlite](https://pglite.dev)): no PostgreSQL, no Docker, no clone.
 
+## Run it
+
 ```sh
-npx create-shopnex
+npx create-shopnex@latest
+```
+
+npm asks once whether to install the package: answer `y`. `@latest` makes npx fetch the newest version instead of
+reusing an older copy from its cache. With pnpm, which does not ask:
+
+```sh
+pnpm create shopnex@latest
 ```
 
 The first run downloads ShopNex (one file, about 15 MB) into `~/.shopnex/app/<version>` and checks its SHA-256; later
-runs start straight away. It prints where to open the shop and the admin. Ctrl+C stops everything.
+runs start straight away. It prints where to open the shop and the admin and opens the admin's setup wizard (use
+`--no-open` to skip that). Ctrl+C stops everything. Nothing is installed globally.
+
+## What it does, and why you can trust it
+
+- **It runs on your machine only.** Both servers listen on `127.0.0.1`, and the data stays in `~/.shopnex/data`.
+- **It downloads one file.** `create-shopnex` itself fetches only the ShopNex build from this repository's GitHub
+  releases, and checks its SHA-256 before it unpacks anything. The checksum comes from the same place as the file, so it
+  catches a damaged or half-finished download, not a tampered release: the release itself is what you trust.
+- **The source is here.** The package is
+  [`packages/create-shopnex`](https://github.com/shopnex-ai/shopnex/tree/main/packages/create-shopnex) in this
+  repository, and has no runtime dependencies: what you run is one bundled file built from that source.
+- **It is built in the open.** Releases and edge builds are published from GitHub Actions
+  ([release](https://github.com/shopnex-ai/shopnex/blob/main/.github/workflows/release.yaml),
+  [edge](https://github.com/shopnex-ai/shopnex/blob/main/.github/workflows/edge.yaml)) with npm provenance, so a
+  version's page on npmjs.com shows which commit and workflow run built it. The one exception is `0.0.0-edge.init`, the
+  first publish, made by hand to create the package. Publishing uses npm trusted publishing, so there is no long-lived
+  npm token.
 
 ## Options
 
@@ -41,7 +67,7 @@ damaged download, not a tampered release.
 sessions and stored keys. `SHOPNEX_BUNDLE_URL` downloads from somewhere else (a mirror; the `.sha256` sits next to it)
 and `SHOPNEX_APP_DIR` changes where builds are unpacked.
 
-**Edge:** `npx create-shopnex@edge` runs the latest build of `main` (`.github/workflows/edge.yaml` replaces the file of
+**Edge:** `npx create-shopnex@edge` (or `pnpm create shopnex@edge`) runs the latest build of `main` (`.github/workflows/edge.yaml` replaces the file of
 the `edge` pre-release on every push). It downloads again only when `main` moved. It can be broken: use a release for
 anything you want to keep.
 

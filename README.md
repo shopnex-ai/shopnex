@@ -53,7 +53,7 @@ scoped API tokens and signed webhooks.
 - **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
 - **You own your data.** Everything lives in your PostgreSQL database on your server.
 - **Built for merchants, not just developers.** Day-to-day selling happens in the browser admin; `.env` holds infrastructure only.
-- **One command to run.** `docker compose up` starts the admin, storefront and migrations.
+- **One command to try, one to run.** `npx create-shopnex@latest` starts a trial on your machine with nothing to install; `docker compose up` runs the real thing: the admin, storefront and migrations.
 - **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to ShopNex's format rather than drop-in, so check the bundled ones for the structure.
 - **Agency friendly.** Run many shops from one install with `TENANCY_MODE`.
 - **Extend without forking.** Apps run out of process through scoped API tokens and signed webhooks.
@@ -64,6 +64,20 @@ ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for wh
 [releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
 
 ## Quick start
+
+### Try it on your machine (no Docker, no clone)
+
+Requires [Node](https://nodejs.org) 22.22 or newer.
+
+```sh
+npx create-shopnex
+```
+
+It downloads ShopNex once (about 15 MB, checked against its SHA-256), starts the admin and the storefront on an embedded
+database and opens the setup wizard. It listens on `127.0.0.1` only and is for trying ShopNex out, not for a real shop:
+one process owns the data.
+
+### Run it for real (Docker)
 
 Requires [Docker](https://docs.docker.com/get-docker/).
 
