@@ -1,8 +1,17 @@
 import * as p from '@clack/prompts'
-import { planFromCheckout, type Plan } from './checkout'
+import { planFromBundle, planFromCheckout, type Plan } from './checkout'
 import { UsageError } from './errors'
 
-export type PlanInput = { root: string; dataDir: string; port: number; storefrontPort: number }
+export type PlanInput = {
+  /** A ShopNex checkout (development mode) or the unpacked packaged build (production mode) */
+  source: 'checkout' | 'bundle'
+  root: string
+  dataDir: string
+  port: number
+  storefrontPort: number
+  /** SHOPNEX_SECRET, for the packaged build */
+  secret: string
+}
 
 /** One thing create-shopnex can start. Add an entry to `apps` to make it pickable (--app <name>, or the picker) */
 export type AppDef = {
@@ -17,7 +26,7 @@ export const apps: AppDef[] = [
     name: 'shop',
     label: 'Shop',
     hint: 'the admin with the API and checkout, and the storefront',
-    plan: planFromCheckout,
+    plan: (input) => (input.source === 'bundle' ? planFromBundle(input) : planFromCheckout(input)),
   },
 ]
 

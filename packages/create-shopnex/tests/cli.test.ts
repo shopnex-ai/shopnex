@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { test } from 'node:test'
@@ -32,10 +32,35 @@ test('--help and --version', () => {
   assert.match(run('--version').stdout, /^\d+\.\d+\.\d+/)
 })
 
-test('without --from it says the packaged build is not available yet (exit 1)', () => {
-  const result = run('--data', join(tmpdir(), 'create-shopnex-none'))
+test('without --from and without a connection it says what failed and points at --from (exit 1)', () => {
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', join(packageDir, 'src/main.ts'), '--data', join(tmpdir(), 'create-shopnex-none')],
+    {
+      cwd: packageDir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        SHOPNEX_APP_DIR: mkdtempSync(join(tmpdir(), 'create-shopnex-cache-')),
+        SHOPNEX_BUNDLE_URL: 'http://127.0.0.1:1/shopnex.tgz',
+      },
+    },
+  )
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /not available yet/)
+  assert.match(result.stderr, /Could not download/)
+  assert.match(result.stderr, /--from/)
+})
+
+test('--dry-run without --from downloads nothing and says it would on the first run', () => {
+  const cache = mkdtempSync(join(tmpdir(), 'create-shopnex-cache-'))
+  const result = spawnSync(process.execPath, ['--import', 'tsx', join(packageDir, 'src/main.ts'), '--dry-run'], {
+    cwd: packageDir,
+    encoding: 'utf8',
+    env: { ...process.env, SHOPNEX_APP_DIR: cache, SHOPNEX_BUNDLE_URL: 'http://127.0.0.1:1/shopnex.tgz' },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /downloaded on the first run/)
+  assert.equal(readdirSync(cache).length, 0)
 })
 
 test('a folder that is not a checkout is refused (exit 2)', () => {

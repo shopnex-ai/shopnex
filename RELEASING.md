@@ -54,6 +54,10 @@ Ship a stable release every one to two weeks, on a fixed weekday (Tuesday or Wed
 
 ## Notes
 
+- The release also attaches `shopnex-v<version>-node.tgz` and its `.sha256` (the `node-bundle` job). That is the
+  build `npx create-shopnex` downloads, so the version `pnpm bump` sets in `packages/create-shopnex` must be the
+  tag's version: the CLI asks for exactly its own. Publishing `create-shopnex` to npm is a separate step (the
+  package is still `private`).
 - The release workflow puts the first image from each pull request's description under its entry in the
   generated notes (`scripts/release-notes-images.mjs`). PRs without an image just list their title, and a failure
   there never fails the release. Ask contributors for a screenshot on visible changes (see `CONTRIBUTING.md`).

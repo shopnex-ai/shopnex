@@ -234,3 +234,33 @@ jobs:
             exit 0
           fi
           curl --fail --silent --show-error -X POST "$HOOK"
+
+  # What `npx create-shopnex` downloads: the admin, the storefront and the migrations in one file, plain JavaScript
+  # and WebAssembly, so a single asset serves every OS and CPU (scripts/build-node-bundle.mjs).
+  node-bundle:
+    name: Attach the npx bundle
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - name: Build and attach
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          node scripts/build-node-bundle.mjs "${TAG#v}" "$RUNNER_TEMP/bundle"
+          gh release upload "$TAG" "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz.sha256 --clobber
