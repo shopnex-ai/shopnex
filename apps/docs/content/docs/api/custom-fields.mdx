@@ -24,7 +24,9 @@ Deleting a field also deletes the values stored under its key.
 
 ## Themes
 
-Fields shown on the storefront are on the product as `custom_fields`, empty unless a value is set:
+The bundled themes list every field shown on the storefront on the product page, under a **Details** or **Specifications** heading: the label comes from the key (`care_guide` becomes "Care guide"), booleans read Yes or No, and a file shows as a link. Fields without a value are left out.
+
+To place one field yourself, or to render fields in a theme of your own, read them from `product.custom_fields` (empty unless a value is set):
 
 ```liquid
 {% if product.custom_fields.material %}

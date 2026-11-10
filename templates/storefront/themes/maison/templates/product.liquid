@@ -145,6 +145,8 @@
     </section>
   {%- endif %}
 
+  {%- render 'custom-fields', fields: product.custom_fields -%}
+
   {%- if recommendations.products.size > 0 %}
     <section class="border-t border-line pt-10 pb-10">
       <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">Also in the archive</h2>

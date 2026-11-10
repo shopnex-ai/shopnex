@@ -1,0 +1,42 @@
+{%- comment -%}
+  The custom fields the shop shows on the storefront (Settings → Custom fields, "Show on the storefront"), as a list:
+  the label is the key ("care_guide" → "Care guide"), booleans read Yes / No, a value that is a link (an uploaded
+  file) becomes one. Fields without a value are not listed; nothing is printed when there is none.
+  Use: {% render 'custom-fields', fields: product.custom_fields %}
+{%- endcomment -%}
+{%- capture rows -%}
+  {%- for field in fields -%}
+    {%- assign value = field[1] -%}
+    {%- capture shown -%}
+      {%- if value == true -%}
+        Yes
+      {%- elsif value == false -%}
+        No
+      {%- elsif value != blank -%}
+        {%- assign text = value | append: '' -%}
+        {%- assign start = text | slice: 0, 4 -%}
+        {%- assign first = text | slice: 0, 1 -%}
+        {%- if start == 'http' or first == '/' -%}
+          <a href="{{ text }}" class="underline" rel="noopener">View file</a>
+        {%- else -%}
+          {{ text }}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- if shown != blank -%}
+      <div class="flex justify-between gap-6 border-b border-current/10 py-2"><dt class="font-bold">{{ field[0] | replace: '_', ' ' | capitalize }}</dt><dd class="text-right">{{ shown }}</dd></div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if rows != blank -%}
+<details class="tab mb-10" open>
+  <summary>
+    <h2 class="flex justify-between text-lead font-bold">
+      Details
+      <span class="icon-caret h-5 w-5">{% render 'icon', name: 'caret', class: 'h-5 w-5' %}</span>
+    </h2>
+  </summary>
+  <dl class="m-0 pt-4 pb-4">{{ rows }}
+  </dl>
+</details>
+{%- endif -%}

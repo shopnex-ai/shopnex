@@ -95,6 +95,7 @@
         {%- if product.description != blank %}
           <div class="ks-rte mt-4">{{ product.description }}</div>
         {%- endif %}
+        {%- render 'custom-fields', fields: product.custom_fields -%}
         {%- if product.tags.size > 0 %}
           <div class="d-flex flex-wrap gap-2 mt-4">
             {%- for tag in product.tags %}<span class="badge text-bg-light border">{{ tag }}</span>{% endfor %}
