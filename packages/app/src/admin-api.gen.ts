@@ -8127,7 +8127,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8155,7 +8155,7 @@ export interface operations {
                     /** Format: uri */
                     url: string;
                     description?: string | null;
-                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                     active?: boolean;
                 };
             };
@@ -8173,7 +8173,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8209,7 +8209,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8237,7 +8237,7 @@ export interface operations {
                     /** Format: uri */
                     url?: string;
                     description?: string | null;
-                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                     active?: boolean;
                 };
             };
@@ -8255,7 +8255,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8291,7 +8291,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;

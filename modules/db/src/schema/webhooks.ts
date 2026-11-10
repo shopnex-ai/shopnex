@@ -12,6 +12,7 @@ export const WEBHOOK_TOPICS = [
   'order.updated',
   'product.created',
   'product.updated',
+  'inventory.updated',
   'customer.created',
   'customer.updated',
 ] as const
@@ -27,7 +28,9 @@ export const WEBHOOK_TOPIC_DESCRIPTIONS: Record<WebhookTopic, string> = {
   'order.cancelled': 'An order was cancelled',
   'order.updated': "An order's custom fields changed",
   'product.created': 'A product was created',
-  'product.updated': 'A product changed (stock changes from checkout do not count)',
+  'product.updated': 'A product changed (stock changes from checkout do not count, see inventory.updated)',
+  'inventory.updated':
+    "A tracked variant's stock changed (checkout, cancel with restock, or a stock edit in the admin or API)",
   'customer.created': 'A customer was created',
   'customer.updated': 'A customer changed',
 }

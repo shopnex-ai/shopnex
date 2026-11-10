@@ -55,6 +55,18 @@ after(async () => {
   await closeDb()
 })
 
+/** The `inventory.updated` payloads queued for these variants (outbox rows, read straight from the database) */
+async function inventoryEvents(variantIds: string[]) {
+  const rows = await db
+    .select({ body: schema.webhookDeliveries.body })
+    .from(schema.webhookDeliveries)
+    .where(eq(schema.webhookDeliveries.topic, 'inventory.updated'))
+    .orderBy(schema.webhookDeliveries.createdAt)
+  return rows
+    .map((r) => JSON.parse(r.body).data as Record<string, unknown>)
+    .filter((d) => variantIds.includes(d.variantId as string))
+}
+
 describe('stock', () => {
   test('an order takes stock; cancelling with restock gives it back', async () => {
     const variantId = await tracked(5)
@@ -120,5 +132,65 @@ describe('stock', () => {
     // and the owner's own shop still can
     assert.equal(await variantService.reserveStock(SHOP, variantId, 1), true)
     assert.equal(await stockOf(variantId), 2)
+  })
+
+  test('inventory.updated carries the new stock for an order, a restock and an admin edit', async () => {
+    const endpoint = ok(
+      await call(
+        'POST',
+        '/admin/webhooks',
+        { url: 'http://127.0.0.1:9/e2e-inventory', topics: ['inventory.updated'] },
+        admin,
+      ),
+    )
+    try {
+      const variantId = await tracked(5)
+      const placed = await place(variantId, 2)
+      assert.equal(placed.status, 200, JSON.stringify(placed.body))
+      ok(
+        await call('POST', `/admin/orders/${placed.body.orderId}/cancel`, { reason: 'customer', restock: true }, admin),
+      )
+      ok(await call('PATCH', `/admin/variants/${variantId}`, { inventoryQuantity: 9 }, admin))
+
+      const events = await inventoryEvents([variantId])
+      assert.deepEqual(
+        events.map((e) => [e.reason, e.change, e.inventoryQuantity]),
+        [
+          ['order', -2, 3],
+          ['restock', 2, 5],
+          ['edit', 4, 9],
+        ],
+      )
+    } finally {
+      await call('DELETE', `/admin/webhooks/${endpoint.id}`, undefined, admin)
+    }
+  })
+
+  test('inventory.updated is not sent for an untracked variant', async () => {
+    const endpoint = ok(
+      await call(
+        'POST',
+        '/admin/webhooks',
+        { url: 'http://127.0.0.1:9/e2e-inventory', topics: ['inventory.updated'] },
+        admin,
+      ),
+    )
+    try {
+      const created = ok(
+        await call(
+          'POST',
+          '/admin/products',
+          { title: `E2E untracked ${run}`, variants: [{ priceCents: 1000 }] },
+          admin,
+        ),
+      )
+      productIds.push(created.id)
+      const variantId = created.variants[0].id as string
+      const placed = await place(variantId, 1)
+      assert.equal(placed.status, 200, JSON.stringify(placed.body))
+      assert.deepEqual(await inventoryEvents([variantId]), [])
+    } finally {
+      await call('DELETE', `/admin/webhooks/${endpoint.id}`, undefined, admin)
+    }
   })
 })

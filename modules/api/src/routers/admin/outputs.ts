@@ -479,6 +479,18 @@ export const analyticsOverviewOutput = z.object({
   attention: z.object({ unfulfilled: z.number().int(), unpaid: z.number().int() }),
 })
 
+// `inventory.updated`: one variant's stock after the change (null when an edit stopped tracking it)
+const inventoryEventOutput = z.object({
+  variantId: z.string(),
+  productId: z.string(),
+  sku: z.string().nullable(),
+  inventoryQuantity: z.number().int().nullable(),
+  // After minus before; null when either side was untracked
+  change: z.number().int().nullable(),
+  reason: z.enum(['order', 'restock', 'edit']),
+  updatedAt: z.date(),
+})
+
 // The `data` of each webhook topic: the resource as the admin API returns it. The docs list its fields.
 export const webhookPayloads: Record<WebhookTopic, z.ZodType> = {
   'order.created': orderDetailOutput,
@@ -488,6 +500,7 @@ export const webhookPayloads: Record<WebhookTopic, z.ZodType> = {
   'order.updated': orderDetailOutput,
   'product.created': productOutput,
   'product.updated': productOutput,
+  'inventory.updated': inventoryEventOutput,
   'customer.created': customerOutput,
   'customer.updated': customerOutput,
 }

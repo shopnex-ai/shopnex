@@ -29,5 +29,6 @@ Deliveries follow [Standard Webhooks](https://www.standardwebhooks.com): `webhoo
 - A worker polls every 3 seconds and claims rows with `SKIP LOCKED`, so several instances are safe.
 - <WebhookDelivery />
 - Order is not guaranteed: use `data.updatedAt`.
-- Stock changes from checkout don't emit `product.updated`; see `order.created`.
+- Stock changes from checkout don't emit `product.updated`; subscribe to `inventory.updated`. Its `data` is `{ variantId, productId, sku, inventoryQuantity, change, reason, updatedAt }` (`reason` is `order`, `restock` or `edit`; `change` is null when stock tracking was just turned on or off). Replacing a product's variants emits `product.updated` only.
+- `inventory.*` needs the `read_products` scope.
 - A token manages only the subscriptions it created, for topics it can read (`order.*` needs `read_orders`). Revoking the token deletes them.
