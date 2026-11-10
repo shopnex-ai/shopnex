@@ -51,7 +51,11 @@
     {%- if page_image != blank %}
     <meta property="og:image" content="{{ page_image }}">
     {%- endif %}
+    {%- if settings.favicon != blank %}
+    <link rel="icon" href="{{ settings.favicon }}">
+    {%- else %}
     <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}">
+    {%- endif %}
     {%- if font_families != blank %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
