@@ -76,7 +76,6 @@ npx create-shopnex my-shop --with stripe,cj,shippo  # ./my-shop, plus the option
 
 - Admin and API on `:3000`, storefront on `:4321` (`--port`, `--storefront-port`), apps on `:4600` `:4700` `:4900`; all on `127.0.0.1`.
 - State lives in the folder: `.env` (`DATABASE_URL`, `SHOPNEX_SECRET`), `data/` (embedded PGlite), `apps/<name>/`. Set `DATABASE_URL` in the `.env` to use PostgreSQL. Delete the folder to start over.
-- The build is downloaded once to `~/.shopnex/app` (about 15 MB, SHA-256 checked). `--dry-run` shows the plan.
 - Trial only: one process owns the database. [All options](packages/create-shopnex/README.md).
 
 ### Run it for real (Docker)
