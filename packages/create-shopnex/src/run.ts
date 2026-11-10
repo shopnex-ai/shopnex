@@ -4,6 +4,7 @@ import * as p from '@clack/prompts'
 import pc from 'picocolors'
 import type { Plan } from './checkout'
 import { UsageError } from './errors'
+import { brand } from './theme'
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -85,7 +86,7 @@ export function runPlan(plan: Plan, { open, verbose }: { open: boolean; verbose:
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       children.push(child)
-      const prefix = (index === 0 ? pc.cyan : pc.magenta)(`[${proc.name}]`.padEnd(12))
+      const prefix = (index === 0 ? brand : pc.magenta)(`[${proc.name}]`.padEnd(12))
       tails.set(proc.name, [])
       for (const stream of [child.stdout, child.stderr]) {
         let buffer = ''
@@ -128,8 +129,8 @@ export function runPlan(plan: Plan, { open, verbose }: { open: boolean; verbose:
       if (animate) spinner.stop('ShopNex is running')
       p.note(
         [
-          `${pc.bold('Shop ')}  ${pc.cyan(plan.storefrontUrl)}`,
-          `${pc.bold('Admin')}  ${pc.cyan(`${plan.appUrl}/admin`)}  (the first run opens the setup wizard)`,
+          `${pc.bold('Shop ')}  ${brand(plan.storefrontUrl)}`,
+          `${pc.bold('Admin')}  ${brand(`${plan.appUrl}/admin`)}  (the first run opens the setup wizard)`,
         ].join('\n'),
         'Open',
       )

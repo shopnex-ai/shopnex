@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import * as p from '@clack/prompts'
-import pc from 'picocolors'
 import { parse } from './args'
 import { pickApp } from './apps'
 import { resolveBundle } from './bundle'
@@ -9,6 +8,7 @@ import { UnavailableError, UsageError } from './errors'
 import { assertNode } from './node-version'
 import { resolveDataDir } from './paths'
 import { resetData } from './reset'
+import { brandBadge } from './theme'
 import { assertPortsFree, runPlan } from './run'
 
 type Pkg = { version: string; engines: { node: string } }
@@ -55,7 +55,7 @@ async function run(argv: string[]) {
   if (options.help) return void console.log(HELP)
   if (options.version) return void console.log(pkg.version)
   assertNode(process.versions.node, pkg.engines.node)
-  p.intro(pc.bgCyan(pc.black(` create-shopnex ${pkg.version} `)))
+  p.intro(brandBadge(` create-shopnex ${pkg.version} `))
 
   const dataDir = resolveDataDir(options.data)
   if (options.reset) {
