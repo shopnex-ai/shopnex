@@ -51,13 +51,15 @@ export function describe({
   source: string
   extras?: Extra[]
 }) {
-  return [
-    `Source      ${source}`,
-    `Folder      ${shopDir}`,
-    `Admin       ${plan.appUrl}/admin`,
-    `Storefront  ${plan.storefrontUrl}`,
-    ...extras.map((extra) => `${extra.label.padEnd(11)} http://localhost:${extra.port} (install it from the admin)`),
-  ].join('\n')
+  const rows = [
+    ['Source', source],
+    ['Folder', shopDir],
+    ['Admin', `${plan.appUrl}/admin`],
+    ['Storefront', plan.storefrontUrl],
+    ...extras.map((extra) => [extra.label, `http://localhost:${extra.port} (install it from the admin)`]),
+  ]
+  const width = Math.max(...rows.map(([label]) => label?.length ?? 0)) + 2
+  return rows.map(([label, value]) => `${label?.padEnd(width)}${value}`).join('\n')
 }
 
 /** The folder of the shop when no name is given */
