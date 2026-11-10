@@ -234,3 +234,82 @@ jobs:
             exit 0
           fi
           curl --fail --silent --show-error -X POST "$HOOK"
+
+  # What `npx create-shopnex` downloads: the admin, the storefront and the migrations in one file, plain JavaScript
+  # and WebAssembly, so a single asset serves every OS and CPU (scripts/build-node-bundle.mjs).
+  node-bundle:
+    name: Attach the npx bundle
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - name: Build and attach
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          node scripts/build-node-bundle.mjs "${TAG#v}" "$RUNNER_TEMP/bundle"
+          gh release upload "$TAG" "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz.sha256 --clobber
+
+  # Publishes create-shopnex to npm once the release and its bundle are attached (it downloads the bundle of its own
+  # version, so it must never be published before that). Needs the NPM_TOKEN secret (an npm automation token that
+  # can publish `create-shopnex`); without it the job only reports that it skipped. Pre-releases (v1.0.0-rc.1) go
+  # to the `next` dist-tag and leave `latest` alone.
+  npm:
+    name: Publish create-shopnex to npm
+    needs: node-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "NPM_TOKEN is not set; skipping the npm publish"
+            exit 0
+          fi
+          version="${TAG#v}"
+          package="$(node -p "require('./packages/create-shopnex/package.json').version")"
+          if [ "$package" != "$version" ]; then
+            echo "packages/create-shopnex is $package but the tag is $version: run pnpm bump before tagging" >&2
+            exit 1
+          fi
+          # A re-run of a tag that already published
+          if npm view "create-shopnex@$version" version > /dev/null 2>&1; then
+            echo "create-shopnex@$version is already on npm"
+            exit 0
+          fi
+          dist_tag=latest
+          if [[ "$version" == *-* ]]; then dist_tag=next; fi
+          cd packages/create-shopnex
+          npm publish --provenance --access public --tag "$dist_tag"
