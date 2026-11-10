@@ -1,6 +1,8 @@
 # ShopNex with its database and the Stripe app, each in its own container:
 #
-#   docker compose up --build            # add --profile cj / --profile shippo for the CJ Dropshipping / Shippo apps
+#   docker compose -f deploy/docker-compose.dev.yml up --build   # --profile cj / --profile shippo adds those apps
+#
+# (run from the repo root)
 # For contributors who build from source; to just run ShopNex use
 # deploy/docker-compose.yml, which pulls prebuilt GHCR images and needs no setup.
 #
@@ -22,7 +24,9 @@ services:
       retries: 10
 
   admin:
-    build: .
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     depends_on:
       db: { condition: service_healthy }
     ports:
@@ -39,8 +43,8 @@ services:
 
   stripe:
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: stripe }
     ports:
       - '4600:4600'
@@ -54,8 +58,8 @@ services:
   cj-dropshipping:
     profiles: [cj]
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: cj-dropshipping }
     ports:
       - '4700:4700'
@@ -70,8 +74,8 @@ services:
   shippo:
     profiles: [shippo]
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: shippo }
     ports:
       - '4900:4900'

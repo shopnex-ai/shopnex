@@ -17,7 +17,7 @@
   <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases&sort=semver" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shopnex-ai/shopnex" alt="License: MIT"></a>
   <a href=".node-version"><img src="https://img.shields.io/badge/node-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white" alt="Node"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
+  <a href=".github/CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
@@ -117,7 +117,7 @@ Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer r
 | [Apps and marketplace](docs/apps.md)     | API tokens, building apps with `@shopnex/app`, embedded apps, marketplace   |
 | [Webhooks](docs/webhooks.md)             | Topics, signatures, delivery and retries                                    |
 | [Roadmap](docs/roadmap.md)               | What's done and what's next                                                 |
-| [Releasing](RELEASING.md)                | How to cut a release                                                        |
+| [Releasing](docs/RELEASING.md)           | How to cut a release                                                        |
 
 ## Community
 
@@ -126,8 +126,8 @@ Chat with the team and other users on [Discord](https://discord.gg/xQ8xKV6MdF), 
 
 ## Contributing
 
-Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
-as described in [SECURITY.md](SECURITY.md).
+Issues and pull requests are welcome: see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Report security issues privately,
+as described in [SECURITY.md](.github/SECURITY.md).
 
 See [`@shopnex/app`](packages/app) for building apps with no database or OAuth code: authenticate,
 Admin API, per-shop data, signed requests (`@shopnex/app/store`), and admin-styled UI (`@shopnex/app/ui`).

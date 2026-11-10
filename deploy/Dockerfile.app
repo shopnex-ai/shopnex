@@ -1,7 +1,7 @@
 # One bundled app (apps/<name>, built on @shopnex/app) as its own small image: the app is bundled into a single
 # file, so the runtime image holds only Node and that file.
 #
-#   docker build -f Dockerfile.app --build-arg APP=stripe -t shopnex-app-stripe .
+#   docker build -f deploy/Dockerfile.app --build-arg APP=stripe -t shopnex-app-stripe .
 #   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -v stripe_data:/data shopnex-app-stripe
 #
 # The app reads <NAME>_APP_URL (its public origin; give ShopNex the same) and keeps its identity key and data in

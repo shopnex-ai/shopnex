@@ -8,7 +8,7 @@ app="${1:?usage: smoke-app.sh <folder in apps/>}"
 name="smoke-$app"
 env_name="$(echo "$app" | tr 'a-z-' 'A-Z_')"
 
-docker build -f Dockerfile.app --build-arg "APP=$app" -t "$name" .
+docker build -f deploy/Dockerfile.app --build-arg "APP=$app" -t "$name" .
 docker rm -f "$name" >/dev/null 2>&1 || true
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
 

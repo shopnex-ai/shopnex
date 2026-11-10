@@ -6,7 +6,7 @@ spec:
       git:
         repo_clone_url: https://github.com/shopnex-ai/shopnex.git
         branch: main
-      dockerfile_path: Dockerfile
+      dockerfile_path: deploy/Dockerfile
       http_port: 3000
       instance_size_slug: apps-s-1vcpu-2gb
       envs:
