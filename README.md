@@ -39,6 +39,15 @@ out-of-process apps. No code or CLI needed for day-to-day selling.
 - **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
 - **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
 
+## Why I built this
+
+I worked for two years at YUM Brands and learned how easy it is to build a system that's hard to manage, and how complex
+e-commerce can get. We integrated with systems like DoorDash, and without a clear contract it was hard to make changes
+without affecting the core.
+
+In ShopNex I set a clear contract between the core and applications. Apps talk to it through an SDK and a bridge, with
+scoped API tokens and signed webhooks.
+
 ## Why ShopNex
 
 - **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
