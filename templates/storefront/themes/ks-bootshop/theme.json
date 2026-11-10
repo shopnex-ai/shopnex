@@ -7,7 +7,7 @@
       "id": "color_primary",
       "label": "Primary color",
       "type": "color",
-      "default": "#d63384",
+      "default": "#198754",
       "info": "Buttons, links and highlights"
     },
     {
@@ -60,7 +60,7 @@
           "label": "Playfair Display"
         }
       ],
-      "default": "system"
+      "default": "Montserrat"
     },
     {
       "id": "font_body",
@@ -100,7 +100,7 @@
           "label": "Playfair Display"
         }
       ],
-      "default": "system"
+      "default": "Open Sans"
     },
     {
       "id": "border_radius",
@@ -876,7 +876,11 @@
     "bootshop": {
       "name": "BootShop",
       "description": "Pink accent, system fonts",
-      "settings": {}
+      "settings": {
+        "color_primary": "#d63384",
+        "font_headings": "system",
+        "font_body": "system"
+      }
     },
     "ocean": {
       "name": "Ocean",
