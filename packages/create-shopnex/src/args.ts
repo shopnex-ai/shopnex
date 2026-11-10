@@ -8,12 +8,9 @@ export type Options = {
   data: string | undefined
   port: number
   storefrontPort: number
-  from: string | undefined
   app: string | undefined
   verbose: boolean
   open: boolean
-  reset: boolean
-  yes: boolean
   dryRun: boolean
   help: boolean
   version: boolean
@@ -23,12 +20,9 @@ const options = {
   data: { type: 'string' },
   port: { type: 'string' },
   'storefront-port': { type: 'string' },
-  from: { type: 'string' },
   app: { type: 'string' },
   verbose: { type: 'boolean' },
   'no-open': { type: 'boolean' },
-  reset: { type: 'boolean' },
-  yes: { type: 'boolean' },
   'dry-run': { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'v' },
@@ -58,12 +52,9 @@ export function parse(argv: string[]): Options {
     data: values.data,
     port,
     storefrontPort,
-    from: values.from,
     app: values.app,
     verbose: Boolean(values.verbose),
     open: !values['no-open'],
-    reset: Boolean(values.reset),
-    yes: Boolean(values.yes),
     dryRun: Boolean(values['dry-run']),
     help: Boolean(values.help),
     version: Boolean(values.version),

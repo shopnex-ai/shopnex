@@ -1,92 +1,54 @@
 # create-shopnex
 
 Try ShopNex on your machine with one command. It starts the admin (with the API and hosted checkout) and the
-storefront on an embedded database ([PGlite](https://pglite.dev)): no PostgreSQL, no Docker, nothing else to install.
+storefront on an embedded database ([PGlite](https://pglite.dev)): no PostgreSQL, no Docker, no clone.
 
 ```sh
 npx create-shopnex
 ```
 
-It prints where to open the shop and the admin, and opens the setup wizard. Ctrl+C stops everything.
-
-The first run downloads ShopNex (one file of about 15 MB) into `~/.shopnex/app/<version>` and checks its SHA-256;
-later runs start straight away. No clone, no build, no `pnpm install`.
+The first run downloads ShopNex (one file, about 15 MB) into `~/.shopnex/app/<version>` and checks its SHA-256; later
+runs start straight away. It prints where to open the shop and the admin. Ctrl+C stops everything.
 
 ## Options
 
-| Option                  | What it does                                                                             |
-| ----------------------- | ---------------------------------------------------------------------------------------- |
-| `--data <folder>`       | Where the database lives. Default `~/.shopnex/data`: the same folder is the same shop    |
-| `--port <n>`            | Admin, API and checkout. Default `3000`                                                  |
-| `--storefront-port <n>` | Storefront. Default `4321`                                                               |
-| `--no-open`             | Do not open the browser                                                                  |
-| `--reset --yes`         | Delete the data folder first and start from an empty shop                                |
-| `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one           |
-| `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                  |
-| `--from <folder>`       | Run from a ShopNex checkout in development mode (what `pnpm dev` runs), not the download |
-| `--dry-run`             | Show what would run, and exit                                                            |
+| Option                  | What it does                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `--data <folder>`       | Where the database lives. Default `~/.shopnex/data`: the same folder is the same shop |
+| `--port <n>`            | Admin, API and checkout. Default `3000`                                               |
+| `--storefront-port <n>` | Storefront. Default `4321`                                                            |
+| `--no-open`             | Do not open the browser                                                               |
+| `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one        |
+| `--verbose`             | Show the servers' output while they start (otherwise only if one fails)               |
+| `--dry-run`             | Show what would run, and exit                                                         |
 
-`--reset` refuses a folder that is not a PGlite database (no `PG_VERSION` inside) and always needs `--yes`, so a wrong
-`--data` cannot delete something else.
+To start over, delete the data folder (and the `<data folder>.secret` file next to it).
 
 ## Not for production
 
-One process owns the data, so nothing else can open the folder. Use Docker or PostgreSQL for a real shop. There is no
-tool yet to move the data from the embedded database to PostgreSQL, so do not keep a real shop on it.
+One process owns the data, so nothing else can open the folder, and the servers listen on `127.0.0.1` only. Use
+Docker or PostgreSQL for a real shop. There is no tool yet to move the data from the embedded database to PostgreSQL.
 
-## From a checkout
+## Where the build comes from
 
-The source is TypeScript (`src/`). Run it directly:
+Each release attaches `shopnex-v<version>-node.tgz` and its `.sha256` (`scripts/build-node-bundle.mjs`, run by the
+release workflow). It holds the admin (bundled into a few files), the built storefront with its themes and the database
+migrations: JavaScript and WebAssembly, so one file serves every OS and CPU. `create-shopnex` asks for the build of its
+own version, so a version without a release says so. The checksum comes from the same place as the file: it catches a
+damaged download, not a tampered release.
 
-```sh
-pnpm install
-pnpm --filter create-shopnex dev -- --from . --data ~/shopnex-try
-```
+`SHOPNEX_SECRET` is generated once and kept in `<data folder>.secret` (readable by you only), so the same shop keeps its
+sessions and stored keys. `SHOPNEX_BUNDLE_URL` downloads from somewhere else (a mirror; the `.sha256` sits next to it)
+and `SHOPNEX_APP_DIR` changes where builds are unpacked.
 
-This starts `vite dev` for the admin and `astro dev` for the storefront, with `DATABASE_URL=pglite:<folder>`.
-
-The published package ships one compiled file (`dist/main.mjs`, built with esbuild by `pnpm --filter create-shopnex build`,
-which `npm pack` runs first), because Node does not strip types from files under `node_modules`, where `npx` puts it.
-After a build, `node packages/create-shopnex/bin/create-shopnex.mjs --from .` runs the compiled version.
-
-## The packaged build
-
-Each release attaches `shopnex-v<version>-node.tgz` and its `.sha256` (built by `scripts/build-node-bundle.mjs`, in
-the release workflow's `node-bundle` job). It holds the admin with the API and checkout (bundled into a few files),
-the built storefront with its themes, the database migrations and a `manifest.json`: plain JavaScript and
-WebAssembly, so one file serves every OS and CPU. `create-shopnex` asks for the build of its **own version** (the
-package version follows the ShopNex release; `pnpm bump` sets it with the others), so a version without a release
-says so and points at `--from`.
-
-It runs in production mode, bound to `127.0.0.1` only (a fresh install lets whoever reaches it create the owner).
-`SHOPNEX_SECRET` is generated once and kept in `<data folder>.secret` (readable by you only), so the same shop keeps
-its sessions and stored keys.
-
-The checksum comes from the same place as the file, so it catches a damaged or half-finished download, not a
-tampered release: the release itself is what you trust.
-
-Environment: `SHOPNEX_BUNDLE_URL` downloads from somewhere else (a mirror; the `.sha256` sits next to it) and
-`SHOPNEX_APP_DIR` changes where builds are unpacked.
-
-To build one yourself:
-
-```sh
-pnpm build && pnpm --dir templates/storefront build
-node scripts/build-node-bundle.mjs 0.14.0 /tmp/bundle
-```
-
-## Edge
-
-`npx create-shopnex@edge` runs the latest build of `main` instead of a release, to try what is merged but not
-released. Every push to `main` rebuilds the packaged ShopNex and replaces the one file of the `edge` pre-release
-(`.github/workflows/edge.yaml`). The edge CLI finds that file by its checksum, so it downloads again only when `main`
-moved, and keeps just the newest build (about 50 MB) in `~/.shopnex/app`. Offline, it runs the build it already has.
-
-It is `main`, so it can be broken and its data is not guaranteed to open in a later release. Use a release for
+**Edge:** `npx create-shopnex@edge` runs the latest build of `main` (`.github/workflows/edge.yaml` replaces the file of
+the `edge` pre-release on every push). It downloads again only when `main` moved. It can be broken: use a release for
 anything you want to keep.
 
-## Tests
+## Development
 
 ```sh
+pnpm --filter create-shopnex dev     # runs src/main.ts (needs a release of this version, or SHOPNEX_BUNDLE_URL)
 pnpm --filter create-shopnex test
+pnpm build && pnpm --dir templates/storefront build && node scripts/build-node-bundle.mjs 0.14.0 /tmp/bundle
 ```

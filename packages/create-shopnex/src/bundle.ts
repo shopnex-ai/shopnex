@@ -8,7 +8,6 @@ import {
   readFileSync,
   renameSync,
   rmSync,
-  statSync,
 } from 'node:fs'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -48,25 +47,21 @@ export const isInstalled = (key: string) => existsSync(join(bundleDir(key), 'man
 const installedEdges = () =>
   existsSync(appCacheDir()) ? readdirSync(appCacheDir()).filter((name) => /^edge-[0-9a-f]{12}$/.test(name)) : []
 
-const FROM_CHECKOUT = 'Or run from a ShopNex checkout:  create-shopnex --from /path/to/shopnex'
-
 async function get(url: string, what: string, version: string) {
   let response: Response
   try {
     response = await fetch(url)
   } catch (error) {
     const reason = (error as { cause?: { message?: string } }).cause?.message ?? (error as Error).message
-    throw new UnavailableError(
-      `Could not download ${what} (${reason}).\nCheck your connection and try again. ${FROM_CHECKOUT}`,
-    )
+    throw new UnavailableError(`Could not download ${what} (${reason}).\nCheck your connection and try again.`)
   }
   if (response.status === 404) {
     throw new UnavailableError(
-      `ShopNex ${version} has no packaged build to download (404 for ${url}).\nUse a released version of create-shopnex. ${FROM_CHECKOUT}`,
+      `ShopNex ${version} has no packaged build to download (404 for ${url}).\nUse a released version of create-shopnex.`,
     )
   }
   if (!response.ok) {
-    throw new UnavailableError(`Could not download ${what}: ${url} answered ${response.status}.\n${FROM_CHECKOUT}`)
+    throw new UnavailableError(`Could not download ${what}: ${url} answered ${response.status}.`)
   }
   return response
 }
@@ -112,19 +107,7 @@ export async function resolveBundle({ version }: { version: string }) {
   let work: string | undefined
   try {
     const url = bundleUrl(version)
-    let expected: string
-    try {
-      expected = parseChecksum(await (await get(`${url}.sha256`, 'the checksum', version)).text())
-    } catch (error) {
-      // Offline, with an edge build already here: run that one rather than nothing
-      const newest = installedEdges()
-        .map((name) => ({ name, time: statSync(bundleDir(name)).mtimeMs }))
-        .sort((a, b) => b.time - a.time)[0]
-      if (!edge || !newest) throw error
-      if (animate) spinner.stop('Could not check for a newer edge build', 1)
-      p.log.warn(`Could not check for a newer edge build, using the one downloaded earlier (${newest.name}).`)
-      return bundleDir(newest.name)
-    }
+    const expected = parseChecksum(await (await get(`${url}.sha256`, 'the checksum', version)).text())
     if (!/^[0-9a-f]{64}$/.test(expected)) throw new UnavailableError(`${url}.sha256 does not hold a SHA-256 checksum.`)
 
     // A release is named by its version. The edge build is replaced on every push, so it is named by its checksum:

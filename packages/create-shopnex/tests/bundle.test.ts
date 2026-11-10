@@ -85,10 +85,9 @@ test('a build of another version is refused', async () => {
   assert.equal(isInstalled('1.0.0'), false)
 })
 
-test('a version that was never released says so, and points at --from', async () => {
+test('a version that was never released says so', async () => {
   await assert.rejects(resolveBundle({ version: '1.0.0' }), (error: Error) => {
     assert.match(error.message, /no packaged build/)
-    assert.match(error.message, /--from/)
     return true
   })
 })
@@ -140,15 +139,7 @@ test('edge: a new build downloads again and the old one is removed', async () =>
   assert.deepEqual(readdirSync(process.env.SHOPNEX_APP_DIR as string), [keyOf(second)])
 })
 
-test('edge: without a connection it runs the build it has, and says so', async () => {
-  const build = fixture(EDGE)
-  publish(build)
-  await resolveBundle({ version: EDGE })
-  process.env.SHOPNEX_BUNDLE_URL = 'http://127.0.0.1:1/shopnex.tgz'
-  assert.equal(await resolveBundle({ version: EDGE }), bundleDir(keyOf(build)))
-})
-
-test('edge: without a connection and nothing downloaded it is the usual error', async () => {
+test('edge: without a connection it is the usual error', async () => {
   process.env.SHOPNEX_BUNDLE_URL = 'http://127.0.0.1:1/shopnex.tgz'
   await assert.rejects(resolveBundle({ version: EDGE }), /Could not download the checksum/)
 })

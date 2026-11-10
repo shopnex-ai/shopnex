@@ -9,7 +9,7 @@
 // Contents: admin/ (the admin, API and checkout server, bundled into a few files; the embedded database is the one
 // package left as a real dependency, because it loads its WebAssembly from next to itself), storefront/ (the built
 // Astro server and the themes), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
-// every OS and CPU. The file layout is what packages/create-shopnex/src/checkout.ts (planFromBundle) runs.
+// every OS and CPU. The file layout is what packages/create-shopnex/src/plan.ts (planFromBundle) runs.
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

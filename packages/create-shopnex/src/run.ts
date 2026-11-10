@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { connect } from 'node:net'
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
-import type { Plan } from './checkout'
+import type { Plan } from './plan'
 import { UsageError } from './errors'
 import { brand } from './theme'
 
@@ -22,7 +22,7 @@ export function portInUse(port: number) {
 }
 
 /** Before starting anything: a taken port would make a server quit or move to another port, and the printed addresses would be wrong */
-export async function assertPortsFree(ports: Plan['ports']) {
+export async function assertPortsFree(ports: { port: number; flag: string }[]) {
   for (const { port, flag } of ports) {
     if (await portInUse(port)) {
       throw new UsageError(`Port ${port} is already in use. Stop what is using it, or pick another with ${flag}.`)

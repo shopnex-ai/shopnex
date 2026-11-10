@@ -3,11 +3,10 @@ import * as p from '@clack/prompts'
 import { parse } from './args'
 import { pickApp } from './apps'
 import { bundleDir, isEdge, isInstalled, resolveBundle } from './bundle'
-import { checkCheckout, type Plan } from './checkout'
+import type { Plan } from './plan'
 import { UnavailableError, UsageError } from './errors'
 import { assertNode } from './node-version'
 import { ensureSecret, resolveDataDir } from './paths'
-import { resetData } from './reset'
 import { brandBadge } from './theme'
 import { assertPortsFree, runPlan } from './run'
 
@@ -32,10 +31,8 @@ Options
   --port <n>               admin, API and checkout (default 3000)
   --storefront-port <n>    storefront (default 4321)
   --no-open                do not open the browser
-  --reset --yes            delete the data folder and start from an empty shop
   --app <name>             what to start (default shop; a picker appears once there is more than one)
   --verbose                show the output of the servers while they start
-  --from <folder>          run from a ShopNex checkout in development mode, instead of the downloaded build
   --dry-run                show what would run and exit
   -h, --help               this text
   -v, --version            the version
@@ -58,37 +55,29 @@ async function run(argv: string[]) {
   p.intro(brandBadge(` create-shopnex ${pkg.version} `))
 
   const dataDir = resolveDataDir(options.data)
-  if (options.reset) {
-    if (options.dryRun) return p.outro(`--reset would delete ${dataDir} (needs --yes).`)
-    p.log.info(resetData(dataDir, { yes: options.yes }))
-    if (!options.from) return
-  }
+  // A taken port is checked before anything is downloaded
+  const ports = [
+    { port: options.port, flag: '--port' },
+    { port: options.storefrontPort, flag: '--storefront-port' },
+  ]
+  if (!options.dryRun) await assertPortsFree(ports)
 
   // A dry run never downloads: it shows where the build would be unpacked
-  const source = options.from ? 'checkout' : 'bundle'
-  const root = options.from
-    ? checkCheckout(options.from)
-    : options.dryRun
-      ? bundleDir(pkg.version)
-      : await resolveBundle({ version: pkg.version })
-  const sourceLabel = options.from
-    ? `checkout ${root}`
-    : isEdge(pkg.version)
-      ? 'ShopNex edge (the latest build from main, checked on every run)'
-      : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
+  const root = options.dryRun ? bundleDir(pkg.version) : await resolveBundle({ version: pkg.version })
+  const source = isEdge(pkg.version)
+    ? 'ShopNex edge (the latest build from main, checked on every run)'
+    : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
   const app = await pickApp(options.app, { interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY) })
   const plan = app.plan({
-    source,
     root,
     dataDir,
     port: options.port,
     storefrontPort: options.storefrontPort,
-    secret: source === 'bundle' && !options.dryRun ? ensureSecret(dataDir) : '',
+    secret: options.dryRun ? '' : ensureSecret(dataDir),
   })
 
-  p.note(describe({ dataDir, plan, source: sourceLabel }), app.label)
+  p.note(describe({ dataDir, plan, source }), app.label)
   if (options.dryRun) return p.outro('Dry run: nothing was started.')
-  await assertPortsFree(plan.ports)
   p.log.warn('This is a trial database: it is not for production.')
   process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose })
 }
