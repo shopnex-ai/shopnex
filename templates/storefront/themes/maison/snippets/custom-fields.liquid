@@ -1,0 +1,37 @@
+{%- comment -%}
+  The custom fields the shop shows on the storefront (Settings → Custom fields, "Show on the storefront"), as a list:
+  the label is the key ("care_guide" → "Care guide"), booleans read Yes / No, a value that is a link (an uploaded
+  file) becomes one. Fields without a value are not listed; nothing is printed when there is none.
+  Use: {% render 'custom-fields', fields: product.custom_fields %}
+{%- endcomment -%}
+{%- capture rows -%}
+  {%- for field in fields -%}
+    {%- assign value = field[1] -%}
+    {%- capture shown -%}
+      {%- if value == true -%}
+        Yes
+      {%- elsif value == false -%}
+        No
+      {%- elsif value != blank -%}
+        {%- assign text = value | append: '' -%}
+        {%- assign start = text | slice: 0, 4 -%}
+        {%- assign first = text | slice: 0, 1 -%}
+        {%- if start == 'http' or first == '/' -%}
+          <a href="{{ text }}" class="underline" rel="noopener">View file</a>
+        {%- else -%}
+          {{ text }}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- if shown != blank -%}
+      <div class="flex gap-6 border-b border-line py-2.5"><dt class="eti w-40 flex-none text-muted">{{ field[0] | replace: '_', ' ' | capitalize }}</dt><dd class="m-0 text-[14.5px] text-soft">{{ shown }}</dd></div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if rows != blank -%}
+<section class="border-t border-line pt-10 pb-6">
+  <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">Specifications</h2>
+  <dl class="m-0 max-w-[68ch]">{{ rows }}
+  </dl>
+</section>
+{%- endif -%}

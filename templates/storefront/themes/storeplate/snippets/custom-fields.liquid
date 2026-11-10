@@ -1,0 +1,43 @@
+{%- comment -%}
+  The custom fields the shop shows on the storefront (Settings → Custom fields, "Show on the storefront"), as a list:
+  the label is the key ("care_guide" → "Care guide"), booleans read Yes / No, a value that is a link (an uploaded
+  file) becomes one. Fields without a value are not listed; nothing is printed when there is none.
+  Use: {% render 'custom-fields', fields: product.custom_fields %}
+{%- endcomment -%}
+{%- capture rows -%}
+  {%- for field in fields -%}
+    {%- assign value = field[1] -%}
+    {%- capture shown -%}
+      {%- if value == true -%}
+        Yes
+      {%- elsif value == false -%}
+        No
+      {%- elsif value != blank -%}
+        {%- assign text = value | append: '' -%}
+        {%- assign start = text | slice: 0, 4 -%}
+        {%- assign first = text | slice: 0, 1 -%}
+        {%- if start == 'http' or first == '/' -%}
+          <a href="{{ text }}" class="underline" rel="noopener">View file</a>
+        {%- else -%}
+          {{ text }}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- if shown != blank -%}
+      <div class="flex justify-between gap-6 border-b border-border py-2"><dt class="font-bold">{{ field[0] | replace: '_', ' ' | capitalize }}</dt><dd class="m-0 text-right">{{ shown }}</dd></div>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if rows != blank -%}
+<section>
+  <div class="container">
+    <div class="row">
+      <div class="col-10 mx-auto mt-12 lg:col-11">
+        <h2 class="h4 mb-4 border-b-2 border-border pb-3">Details</h2>
+        <dl class="m-0">{{ rows }}
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+{%- endif -%}
