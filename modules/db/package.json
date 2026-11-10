@@ -16,6 +16,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "drizzle-orm": "catalog:",
     "pg": "^8.23.1"
   },
