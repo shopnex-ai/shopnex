@@ -136,6 +136,12 @@
       "info": "Defaults to © year and the shop name"
     },
     {
+      "id": "favicon",
+      "label": "Favicon",
+      "type": "image",
+      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
+    },
+    {
       "id": "custom_css",
       "label": "Custom CSS",
       "info": "Added after the theme styles on every page",
