@@ -13,7 +13,12 @@ export type EnvVar = {
 }
 
 export const ENV_VARS: EnvVar[] = [
-  { name: 'DATABASE_URL', required: true, description: 'PostgreSQL connection string.' },
+  {
+    name: 'DATABASE_URL',
+    required: true,
+    description:
+      'PostgreSQL connection string. `pglite:<directory>` (or `pglite:memory`) runs an embedded PGlite database inside the server instead, migrated at start: for trying ShopNex out on one machine, not for production.',
+  },
   {
     name: 'SHOPNEX_SECRET',
     required: true,
