@@ -79,9 +79,9 @@ export function DataTable<TData extends RowData>({
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id}>
-                <TableHead className="w-10">
+                <TableHead className="w-10 min-w-10">
                   <div
-                    className="-m-2 flex min-h-10 cursor-pointer items-center justify-center"
+                    className="-m-2 flex min-h-10 min-w-10 cursor-pointer items-center justify-center"
                     onClick={(event) => {
                       event.stopPropagation()
                       if ((event.target as HTMLElement).tagName !== 'INPUT') table.toggleAllPageRowsSelected()
@@ -148,13 +148,13 @@ export function DataTable<TData extends RowData>({
                   className={rowLink ? 'cursor-pointer' : undefined}
                 >
                   <TableCell
-                    className="w-10 cursor-pointer"
+                    className="w-10 min-w-10 cursor-pointer"
                     onClick={(event) => {
                       event.stopPropagation()
                       if ((event.target as HTMLElement).tagName !== 'INPUT') row.toggleSelected()
                     }}
                   >
-                    <div className="-m-2 flex min-h-10 cursor-pointer items-center justify-center">
+                    <div className="-m-2 flex min-h-10 min-w-10 cursor-pointer items-center justify-center">
                       <input
                         type="checkbox"
                         aria-label={`Select row ${row.id}`}
