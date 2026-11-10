@@ -40,14 +40,28 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - { image: shopnex, suffix: '', file: Dockerfile, arch: amd64, runner: ubuntu-latest }
-          - { image: shopnex, suffix: '', file: Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: amd64, runner: ubuntu-latest }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: arm64, runner: ubuntu-24.04-arm }
+          - { image: shopnex, suffix: '', file: deploy/Dockerfile, arch: amd64, runner: ubuntu-latest }
+          - { image: shopnex, suffix: '', file: deploy/Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
+          - {
+              image: stripe,
+              suffix: -stripe,
+              file: deploy/Dockerfile.app,
+              app: stripe,
+              arch: amd64,
+              runner: ubuntu-latest,
+            }
+          - {
+              image: stripe,
+              suffix: -stripe,
+              file: deploy/Dockerfile.app,
+              app: stripe,
+              arch: arm64,
+              runner: ubuntu-24.04-arm,
+            }
           - {
               image: cj-dropshipping,
               suffix: -cj-dropshipping,
-              file: Dockerfile.app,
+              file: deploy/Dockerfile.app,
               app: cj-dropshipping,
               arch: amd64,
               runner: ubuntu-latest,
@@ -55,13 +69,27 @@ jobs:
           - {
               image: cj-dropshipping,
               suffix: -cj-dropshipping,
-              file: Dockerfile.app,
+              file: deploy/Dockerfile.app,
               app: cj-dropshipping,
               arch: arm64,
               runner: ubuntu-24.04-arm,
             }
-          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: amd64, runner: ubuntu-latest }
-          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: arm64, runner: ubuntu-24.04-arm }
+          - {
+              image: shippo,
+              suffix: -shippo,
+              file: deploy/Dockerfile.app,
+              app: shippo,
+              arch: amd64,
+              runner: ubuntu-latest,
+            }
+          - {
+              image: shippo,
+              suffix: -shippo,
+              file: deploy/Dockerfile.app,
+              app: shippo,
+              arch: arm64,
+              runner: ubuntu-24.04-arm,
+            }
     steps:
       - uses: actions/checkout@v7
 

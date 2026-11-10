@@ -55,6 +55,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
+          file: deploy/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
@@ -66,7 +67,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=stripe
           platforms: linux/amd64
           push: true
@@ -79,7 +80,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=cj-dropshipping
           platforms: linux/amd64
           push: true
@@ -92,7 +93,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=shippo
           platforms: linux/amd64
           push: true
