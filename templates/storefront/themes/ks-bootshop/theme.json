@@ -890,15 +890,6 @@
         "font_headings": "Poppins",
         "font_body": "Inter"
       }
-    },
-    "forest": {
-      "name": "Forest",
-      "description": "Green accent, Montserrat headings",
-      "settings": {
-        "color_primary": "#198754",
-        "font_headings": "Montserrat",
-        "font_body": "Open Sans"
-      }
     }
   }
 }
