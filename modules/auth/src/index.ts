@@ -8,7 +8,7 @@ import { sessionSecret } from '@shopnex/db/secrets'
 import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
-import { assertSignUpAllowed } from './sign-up-policy'
+import { assertSignUpAllowed, createShopForNewAccount } from './sign-up-policy'
 import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
@@ -73,7 +73,10 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       // Invitation only (see sign-up-policy). Invitees join their shop by accepting the invitation.
-      create: { before: async (user) => void (await assertSignUpAllowed(user.email)) },
+      create: {
+        before: async (user) => void (await assertSignUpAllowed(user.email)),
+        after: async (user) => createShopForNewAccount(user),
+      },
     },
   },
   plugins: [

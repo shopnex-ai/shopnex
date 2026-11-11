@@ -5,6 +5,9 @@ import { db, schema, type Conn } from '@shopnex/db'
 
 const DEFAULT_CURRENCY = 'USD'
 
+// Named like the single-store shop until the owner names it in /admin/welcome
+export const NEW_SHOP_NAME = 'My Shop'
+
 // A shop's slug is its subdomain and never changes, so it is a random handle ("shop-4f2a9c1e"), not made from the name
 // the owner may change. A clash is not expected; the unique index still decides if two sign-ups race.
 async function randomSlug(conn: Pick<typeof db, 'select'>) {
