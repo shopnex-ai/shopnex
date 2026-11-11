@@ -2,6 +2,7 @@
 
 // Hosts an app in an iframe and answers its @shopnex/app-bridge messages (protocol: packages/app-bridge).
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useTheme } from 'next-themes'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
@@ -10,12 +11,21 @@ import { AppIcon, UninstallButton } from '../installed-apps-card'
 
 type Props = { installationId: string; src: string; name: string; iconUrl: string | null }
 // AdminMessage without the envelope (Omit on the union would collapse it)
-type Reply = { type: 'session-token'; token: string } | { type: 'error'; message: string } | { type: 'ok' }
+type Reply =
+  | { type: 'session-token'; token: string }
+  | { type: 'theme'; theme: 'light' | 'dark' }
+  | { type: 'error'; message: string }
+  | { type: 'ok' }
 
 export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const appOrigin = new URL(src).origin
   const navigate = useNavigate()
+  // The theme the admin shows, which the app follows (instead of the OS setting)
+  const { resolvedTheme } = useTheme()
+  const theme: 'light' | 'dark' = resolvedTheme === 'dark' ? 'dark' : 'light'
+  const themeRef = useRef(theme)
+  themeRef.current = theme
 
   useEffect(() => {
     async function onMessage(event: MessageEvent) {
@@ -36,6 +46,9 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
             reply({ type: 'session-token', token })
             break
           }
+          case 'theme':
+            reply({ type: 'theme', theme: themeRef.current })
+            break
           case 'toast':
             if (message.isError) toast.error(String(message.message).slice(0, 300))
             else toast.success(String(message.message).slice(0, 300))
@@ -61,6 +74,12 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [appOrigin, installationId])
+
+  // Tell the app when the theme changes (it asks once when it loads)
+  useEffect(() => {
+    const message: AdminMessage = { source: 'shopnex-admin', v: 1, id: '', type: 'theme', theme }
+    frame.current?.contentWindow?.postMessage(message, appOrigin)
+  }, [theme, appOrigin])
 
   return (
     // Full-bleed: cancel the layout's padding, fill the height below the header (h-12)

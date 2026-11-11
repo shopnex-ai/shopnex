@@ -17,12 +17,17 @@ export function createAppBridge(options = {}) {
 
   /** @type {Map<string, (message: AdminMessage) => void>} */
   const waiting = new Map()
+  /** @type {Set<(theme: import('./protocol').Theme) => void>} */
+  const themeListeners = new Set()
   window.addEventListener('message', (event) => {
     // Only the admin window we're embedded in, on the instance's origin
     if (event.source !== window.parent || event.origin !== origin) return
     /** @type {AdminMessage} */
     const message = event.data
     if (message?.source !== 'shopnex-admin') return
+    // The admin's theme changed (not an answer to a request)
+    if (message.type === 'theme' && !waiting.has(message.id))
+      return themeListeners.forEach((listener) => listener(message.theme))
     waiting.get(message.id)?.(message)
   })
 
@@ -59,6 +64,15 @@ export function createAppBridge(options = {}) {
       const headers = new Headers(init.headers)
       headers.set('authorization', `Bearer ${await bridge.getSessionToken()}`)
       return fetch(input, { ...init, headers })
+    },
+    async getTheme() {
+      const reply = await send({ type: 'theme' })
+      if (reply.type !== 'theme') throw new Error('Unexpected reply')
+      return reply.theme
+    },
+    onThemeChange(listener) {
+      themeListeners.add(listener)
+      return () => themeListeners.delete(listener)
     },
     async toast(message, { isError = false } = {}) {
       await send({ type: 'toast', message, isError })
