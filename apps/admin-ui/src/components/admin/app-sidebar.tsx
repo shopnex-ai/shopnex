@@ -13,7 +13,7 @@ import {
   SunIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useLocation } from '@tanstack/react-router'
+import { Link, useLocation, useRouteContext } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 import { GlobalSearch } from '@/components/admin/global-search'
@@ -254,11 +254,15 @@ function NavGroup({
 function InstalledApps() {
   const pathname = useLocation({ select: (location) => location.pathname })
   const { isMobile, setOpenMobile } = useSidebar()
-  const { data } = useQuery(orpc.admin.apps.list.queryOptions())
-  if (!data?.length) return null
+  // Loaded with the layout (beforeLoad), so the list is there on the first paint, also after a full page load
+  // (the setup, login and signup pages skip it, hence the fallback)
+  const initial = useRouteContext({ from: '/admin' }).installedApps ?? []
+  const { data } = useQuery({ ...orpc.admin.apps.list.queryOptions(), initialData: initial })
+  const apps = data ?? initial
+  if (!apps.length) return null
   return (
     <SidebarMenuSub>
-      {data.map((i) => (
+      {apps.map((i) => (
         <SidebarMenuSubItem key={i.id}>
           <SidebarMenuSubButton
             render={

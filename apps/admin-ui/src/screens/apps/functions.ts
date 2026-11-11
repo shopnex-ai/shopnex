@@ -18,3 +18,6 @@ export const getEmbeddedApp = adminFn
     src.searchParams.set('embedded', '1')
     return { installation, src: src.toString() }
   })
+
+// The sidebar's installed apps, loaded with the admin layout so the first render already has them
+export const getInstalledApps = adminFn.handler(({ context: { shopId } }) => appService.listInstallations(shopId))

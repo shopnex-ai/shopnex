@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
+import { isShopManager } from '@/lib/admin-access'
 import { NoAccess } from '@/components/admin/no-access'
 import { PageHeader } from '@/components/admin/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -30,7 +31,7 @@ function AppsPage() {
   const tenant = Route.useRouteContext().access.tenant
   if (pathname !== '/admin/apps') return <Outlet />
   if (!tenant) return null
-  const canManage = tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin'
+  const canManage = isShopManager(tenant)
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
