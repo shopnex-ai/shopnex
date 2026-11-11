@@ -53,7 +53,7 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
                 {form.formState.isSubmitting ? 'Creating your store…' : 'Create store'}
               </Button>
             </Field>
-            <SocialButtons providers={providers} mode="sign-up" />
+            <SocialButtons providers={providers} mode="sign-up" callbackURL="/admin/create-shop" />
           </FieldGroup>
         </form>
       </CardContent>

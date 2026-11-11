@@ -14,6 +14,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAppsRouteRouteImport } from './routes/admin/apps/route'
 import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collections/route'
+import { Route as AdminCreateShopRouteImport } from './routes/admin/create-shop'
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminDiscountsRouteImport } from './routes/admin/discounts'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -86,6 +87,11 @@ const AdminAppsRouteRoute = AdminAppsRouteRouteImport.update({
 const AdminCollectionsRouteRoute = AdminCollectionsRouteRouteImport.update({
   id: '/collections',
   path: '/collections',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCreateShopRoute = AdminCreateShopRouteImport.update({
+  id: '/create-shop',
+  path: '/create-shop',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCustomersRouteRoute = AdminCustomersRouteRouteImport.update({
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
+  '/admin/create-shop': typeof AdminCreateShopRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
+  '/admin/create-shop': typeof AdminCreateShopRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
@@ -461,6 +469,7 @@ export interface FileRoutesById {
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
+  '/admin/create-shop': typeof AdminCreateShopRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
@@ -518,6 +527,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
+    | '/admin/create-shop'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/platform'
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
+    | '/admin/create-shop'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/platform'
@@ -627,6 +638,7 @@ export interface FileRouteTypes {
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
+    | '/admin/create-shop'
     | '/admin/discounts'
     | '/admin/login'
     | '/admin/platform'
@@ -716,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/collections'
       fullPath: '/admin/collections'
       preLoaderRoute: typeof AdminCollectionsRouteRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/create-shop': {
+      id: '/admin/create-shop'
+      path: '/create-shop'
+      fullPath: '/admin/create-shop'
+      preLoaderRoute: typeof AdminCreateShopRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/customers': {
@@ -1247,6 +1266,7 @@ interface AdminRouteRouteChildren {
   AdminOrdersRouteRoute: typeof AdminOrdersRouteRouteWithChildren
   AdminProductsRouteRoute: typeof AdminProductsRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
+  AdminCreateShopRoute: typeof AdminCreateShopRoute
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPlatformRoute: typeof AdminPlatformRoute
@@ -1267,6 +1287,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminOrdersRouteRoute: AdminOrdersRouteRouteWithChildren,
   AdminProductsRouteRoute: AdminProductsRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
+  AdminCreateShopRoute: AdminCreateShopRoute,
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminPlatformRoute: AdminPlatformRoute,
