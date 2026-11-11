@@ -58,18 +58,12 @@ export const Route = createFileRoute('/admin')({
 
 function AdminLayout() {
   const { access } = Route.useRouteContext()
-  // The page that is on screen, not the one being navigated to: `location` changes the moment a navigation starts, while
-  // the old page stays until the next route's beforeLoad (the admin context fetch) is done. Following it made the
-  // sidebar vanish on sign-out, and left a blank page on sign-in, until the server answered.
-  const pathname = useRouterState({ select: (state) => (state.resolvedLocation ?? state.location).pathname })
-  if (
-    pathname === '/admin/setup' ||
-    pathname === '/admin/login' ||
-    pathname === '/admin/signup' ||
-    pathname === '/admin/welcome' ||
-    pathname.startsWith('/admin/invite/')
-  )
-    return <Outlet />
+  // Decide from the page that is actually rendered (the router's matches, which is what <Outlet /> shows), never from
+  // a location: `location` changes the moment a navigation starts and `resolvedLocation` is updated separately from the
+  // matches, so either can disagree with the page on screen and wrap it in the wrong chrome (the welcome step inside
+  // the sidebar). Routes opt out of the chrome with `staticData: { standalone: true }`.
+  const standalone = useRouterState({ select: (state) => state.matches.some((match) => match.staticData?.standalone) })
+  if (standalone) return <Outlet />
   const { session, tenant } = access
   // No session: beforeLoad is redirecting. The context is stale for a moment while navigating
   // from /admin/login, so render nothing instead of flashing a message.

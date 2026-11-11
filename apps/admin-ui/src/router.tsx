@@ -14,6 +14,11 @@ export function getRouter() {
 }
 
 declare module '@tanstack/react-router' {
+  // Routes under /admin that render on their own, without the sidebar and header (login, setup, welcome...)
+  interface StaticDataRouteOption {
+    standalone?: boolean
+  }
+
   interface Register {
     router: ReturnType<typeof getRouter>
   }
