@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import * as p from '@clack/prompts'
 import { parse } from './args'
 import { pickApp } from './apps'
+import { loadAppKeys } from './app-keys'
 import { pickExtras, type Extra } from './extras'
 import { bundleDir, isEdge, isInstalled, resolveBundle } from './bundle'
 import type { Plan } from './plan'
@@ -106,6 +107,7 @@ async function run(argv: string[]) {
     port: options.port,
     storefrontPort: options.storefrontPort,
     secret: shopEnv.secret,
+    appKeys: loadAppKeys(shopDir, extras, { write: !options.dryRun }),
   })
 
   p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras }), app.label)

@@ -38,12 +38,13 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 
 /** Sends the CJ lines of a paid order to CJ. Orders without CJ products are left alone. */
 export async function forwardOrder(shop: ShopContext, tables: Tables, order: PaidOrder) {
-  const lines = order.items.flatMap((item) => {
-    const mapped = item.sku ? tables.findVariant(shop, item.sku) : undefined
-    return mapped ? [{ vid: mapped.vid, quantity: item.quantity }] : []
-  })
+  const lines: { vid: string; quantity: number }[] = []
+  for (const item of order.items) {
+    const mapped = item.sku ? await tables.findVariant(shop, item.sku) : undefined
+    if (mapped) lines.push({ vid: mapped.vid, quantity: item.quantity })
+  }
   if (lines.length === 0) return
-  if (!tables.claimOrder(shop, order.id, order.orderNumber)) return
+  if (!(await tables.claimOrder(shop, order.id, order.orderNumber))) return
 
   try {
     const to = order.shippingAddress
@@ -83,16 +84,16 @@ export async function forwardOrder(shop: ShopContext, tables: Tables, order: Pai
       products: lines,
     })
     if (!created.data) throw new Error(created.error ?? 'CJ did not create the order')
-    tables.setOrder(shop, order.id, 'created', { cjOrderId: created.data.orderId })
+    await tables.setOrder(shop, order.id, 'created', { cjOrderId: created.data.orderId })
   } catch (error) {
     console.error(`[cj] order ${order.orderNumber}:`, message(error))
-    tables.setOrder(shop, order.id, 'failed', { error: message(error) })
+    await tables.setOrder(shop, order.id, 'failed', { error: message(error) })
   }
 }
 
 /** Marks the shop's CJ orders fulfilled once CJ has a tracking number for them */
 export async function syncTracking(shop: ShopContext, tables: Tables) {
-  const open = tables.awaitingTracking(shop)
+  const open = await tables.awaitingTracking(shop)
   if (open.length === 0) return
   const { cj } = await cjFor(shop)
   for (const { order_id, cj_order_id } of open) {
@@ -104,7 +105,7 @@ export async function syncTracking(shop: ShopContext, tables: Tables) {
         params: { path: { id: order_id } },
         body: { trackingNumber, trackingCompany: result.data?.logisticName },
       })
-      tables.setOrder(shop, order_id, 'fulfilled', { trackingNumber })
+      await tables.setOrder(shop, order_id, 'fulfilled', { trackingNumber })
     } catch (error) {
       console.error(`[cj] tracking for ${cj_order_id}:`, message(error))
     }

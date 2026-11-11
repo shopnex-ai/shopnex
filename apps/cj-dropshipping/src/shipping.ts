@@ -66,7 +66,7 @@ export async function quoteRates(shop: ShopContext, tables: Tables, request: Rat
   // Every item must be a CJ variant the app knows; the same variant twice adds up
   const quantities = new Map<string, number>()
   for (const item of request.items) {
-    const mapped = item.sku ? tables.findVariant(shop, item.sku) : undefined
+    const mapped = item.sku ? await tables.findVariant(shop, item.sku) : undefined
     if (!mapped) return []
     quantities.set(mapped.vid, (quantities.get(mapped.vid) ?? 0) + item.quantity)
   }

@@ -8,6 +8,7 @@ playwright-report
 test-results
 pnpm-lock.yaml
 **/migrations/meta
+apps/*/drizzle/meta
 next-env.d.ts
 *.tsbuildinfo
 templates/storefront/themes/*/assets/theme.*

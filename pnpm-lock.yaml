@@ -275,6 +275,9 @@ importers:
       '@shopnex/cj-sdk':
         specifier: workspace:*
         version: link:../../packages/cj-sdk
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
       hono:
         specifier: 'catalog:'
         version: 4.13.14
@@ -282,6 +285,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -980,18 +986,27 @@ importers:
 
   packages/app:
     dependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.5.16
+        version: 0.5.16
       '@shopnex/app-bridge':
         specifier: workspace:*
         version: link:../app-bridge
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../marketplace-sdk
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
       hono:
         specifier: 'catalog:'
         version: 4.13.14
       openapi-fetch:
         specifier: ^0.17.0
         version: 0.17.0
+      pg:
+        specifier: ^8.23.1
+        version: 8.23.1
     devDependencies:
       '@orpc/openapi':
         specifier: ^1.16.1
@@ -1005,6 +1020,12 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      '@types/pg':
+        specifier: ^8.23.1
+        version: 8.23.1
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@5.9.3)

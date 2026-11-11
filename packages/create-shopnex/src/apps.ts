@@ -5,7 +5,7 @@ import type { Extra } from './extras'
 
 export type PlanInput = {
   root: string
-  /** The shop's folder: optional apps keep their data in <shopDir>/apps/<name> */
+  /** The shop's folder: optional apps keep their key (and, with the embedded database, their data) in <shopDir>/apps/<name> */
   shopDir: string
   /** Optional apps to start next to the shop (--with) */
   extras: Extra[]
@@ -17,6 +17,8 @@ export type PlanInput = {
   secret: string
   /** The other settings of the shop's .env, passed to the admin */
   env: Record<string, string>
+  /** The private key of each optional app, by name */
+  appKeys: Record<string, string>
 }
 
 /** One thing create-shopnex can start. Add an entry to `apps` to make it pickable (--app <name>, or the picker) */
