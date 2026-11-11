@@ -41,7 +41,11 @@ export const Route = createFileRoute('/admin')({
   },
   // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
   loader: () => getAnalyticsConfig(),
-  head: ({ loaderData }) => ({ scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [] }),
+  // Login, signup, setup and the whole admin stay out of search results. noindex (not a robots.txt block) so crawlers can still read it.
+  head: ({ loaderData }) => ({
+    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [],
+  }),
   component: AdminLayout,
 })
 
