@@ -5,6 +5,7 @@ import { adminContextQuery } from '@/lib/admin-context'
 import { LoginForm } from '@/screens/auth/login-form'
 
 export const Route = createFileRoute('/admin/login')({
+  staticData: { standalone: true },
   validateSearch: (search: Record<string, unknown>): { error?: string; next?: string; demo?: boolean } => ({
     error: typeof search.error === 'string' ? search.error : undefined,
     next: typeof search.next === 'string' ? search.next : undefined,
