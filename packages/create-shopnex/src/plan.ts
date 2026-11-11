@@ -1,6 +1,5 @@
 import { join } from 'node:path'
 import type { Extra } from './extras'
-import { databaseUrl } from './paths'
 
 export type ProcessPlan = {
   name: string
@@ -25,13 +24,14 @@ export type Plan = {
 export function planFromBundle(input: {
   root: string
   shopDir: string
-  dataDir: string
+  databaseUrl: string
   port: number
   storefrontPort: number
   secret: string
+  env: Record<string, string>
   extras: Extra[]
 }): Plan {
-  const { root, shopDir, dataDir, port, storefrontPort, secret, extras } = input
+  const { root, shopDir, databaseUrl, port, storefrontPort, secret, env, extras } = input
   const extraUrl = (extra: Extra) => `http://localhost:${extra.port}`
   const appUrl = `http://localhost:${port}`
   return {
@@ -44,11 +44,15 @@ export function planFromBundle(input: {
         command: process.execPath,
         args: ['server.mjs'],
         env: {
+          // The shop's .env first: what the CLI decides (address, ports, the build's files) wins over it
+          ...env,
           NODE_ENV: 'production',
           HOST: '127.0.0.1',
           PORT: String(port),
-          DATABASE_URL: databaseUrl(dataDir),
+          DATABASE_URL: databaseUrl,
           SHOPNEX_MIGRATIONS_DIR: join(root, 'migrations'),
+          // PostgreSQL from the shop's .env is migrated at start, like the embedded database
+          SHOPNEX_AUTO_MIGRATE: 'true',
           SHOPNEX_SECRET: secret,
           BETTER_AUTH_URL: appUrl,
           APP_URL: appUrl,

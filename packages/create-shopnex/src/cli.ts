@@ -7,7 +7,8 @@ import { bundleDir, isEdge, isInstalled, resolveBundle } from './bundle'
 import type { Plan } from './plan'
 import { UnavailableError, UsageError } from './errors'
 import { assertNode } from './node-version'
-import { dataDirOf, ensureSecret, resolveShopDir } from './paths'
+import { loadShopEnv, redactUrl } from './env'
+import { resolveShopDir } from './paths'
 import { brandBadge } from './theme'
 import { assertPortsFree, runPlan } from './run'
 
@@ -24,7 +25,8 @@ const HELP = `create-shopnex ${pkg.version}: try ShopNex on this machine with on
 Usage
   create-shopnex [name] [options]   (name defaults to shopnex)
 
-Creates the folder <name> (shopnex when you leave it out) and keeps the shop's database in it.
+Creates the folder <name> (shopnex when you leave it out) with the shop's settings (.env) and, by default, its
+database. Change DATABASE_URL in the .env to use PostgreSQL.
 Starts the admin (with the API and checkout) and the storefront on an embedded database. Nothing else to install.
 This is for trying ShopNex out: one process owns the data. For a real shop use Docker or PostgreSQL.
 
@@ -42,11 +44,13 @@ Options
 
 export function describe({
   shopDir,
+  database,
   plan,
   source,
   extras = [],
 }: {
   shopDir: string
+  database: string
   plan: Plan
   source: string
   extras?: Extra[]
@@ -54,6 +58,7 @@ export function describe({
   const rows = [
     ['Source', source],
     ['Folder', shopDir],
+    ['Database', redactUrl(database)],
     ['Admin', `${plan.appUrl}/admin`],
     ['Storefront', plan.storefrontUrl],
     ...extras.map((extra) => [extra.label, `http://localhost:${extra.port} (install it from the admin)`]),
@@ -75,8 +80,9 @@ async function run(argv: string[]) {
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY)
   const name = options.name ?? DEFAULT_SHOP_NAME
   const shopDir = resolveShopDir(name)
-  const dataDir = dataDirOf(shopDir)
   const extras = pickExtras(options.with)
+  // The shop's .env (made on the first run): its DATABASE_URL decides which database is used
+  const shopEnv = loadShopEnv(shopDir, { write: !options.dryRun })
   // A taken port is checked before anything is downloaded
   const ports = [
     { port: options.port, flag: '--port' },
@@ -95,13 +101,14 @@ async function run(argv: string[]) {
     root,
     shopDir,
     extras,
-    dataDir,
+    databaseUrl: shopEnv.databaseUrl,
+    env: shopEnv.rest,
     port: options.port,
     storefrontPort: options.storefrontPort,
-    secret: options.dryRun ? '' : ensureSecret(dataDir),
+    secret: shopEnv.secret,
   })
 
-  p.note(describe({ shopDir, plan, source, extras }), app.label)
+  p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras }), app.label)
   if (options.dryRun) return p.outro('Dry run: nothing was started.')
   p.log.warn('This is a trial database: it is not for production.')
   process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose })

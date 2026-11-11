@@ -14,10 +14,10 @@
 
 <p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases" alt="Release"></a>
+  <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases&sort=semver" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shopnex-ai/shopnex" alt="License: MIT"></a>
   <a href=".node-version"><img src="https://img.shields.io/badge/node-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white" alt="Node"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
+  <a href=".github/CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
 </p>
 
 <p align="center">
@@ -70,12 +70,13 @@ ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for wh
 Requires [Node](https://nodejs.org) 22.22 or newer.
 
 ```sh
-npx create-shopnex
+npx create-shopnex                                  # ./shopnex
+npx create-shopnex my-shop --with stripe,cj,shippo  # ./my-shop, plus the optional apps
 ```
 
-It downloads ShopNex once (about 15 MB, checked against its SHA-256), starts the admin and the storefront on an embedded
-database and opens the setup wizard. It listens on `127.0.0.1` only and is for trying ShopNex out, not for a real shop:
-one process owns the data.
+- Admin and API on `:3000`, storefront on `:4321` (`--port`, `--storefront-port`), apps on `:4600` `:4700` `:4900`; all on `127.0.0.1`.
+- State lives in the folder: `.env` (`DATABASE_URL`, `SHOPNEX_SECRET`), `data/` (embedded PGlite), `apps/<name>/`. Set `DATABASE_URL` in the `.env` to use PostgreSQL. Delete the folder to start over.
+- Trial only: one process owns the database. [All options](packages/create-shopnex/README.md).
 
 ### Run it for real (Docker)
 
@@ -116,7 +117,7 @@ Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer r
 | [Apps and marketplace](docs/apps.md)     | API tokens, building apps with `@shopnex/app`, embedded apps, marketplace   |
 | [Webhooks](docs/webhooks.md)             | Topics, signatures, delivery and retries                                    |
 | [Roadmap](docs/roadmap.md)               | What's done and what's next                                                 |
-| [Releasing](RELEASING.md)                | How to cut a release                                                        |
+| [Releasing](docs/RELEASING.md)           | How to cut a release                                                        |
 
 ## Community
 
@@ -125,8 +126,8 @@ Chat with the team and other users on [Discord](https://discord.gg/xQ8xKV6MdF), 
 
 ## Contributing
 
-Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
-as described in [SECURITY.md](SECURITY.md).
+Issues and pull requests are welcome: see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Report security issues privately,
+as described in [SECURITY.md](.github/SECURITY.md).
 
 See [`@shopnex/app`](packages/app) for building apps with no database or OAuth code: authenticate,
 Admin API, per-shop data, signed requests (`@shopnex/app/store`), and admin-styled UI (`@shopnex/app/ui`).
