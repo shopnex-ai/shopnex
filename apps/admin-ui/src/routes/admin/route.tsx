@@ -6,7 +6,8 @@ import { AppSidebar } from '@/components/admin/app-sidebar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
-import { adminContextQuery } from '@/lib/admin-context'
+import { isShopManager } from '@/lib/admin-access'
+import { adminContextQuery, installedAppsQuery } from '@/lib/admin-context'
 import { analyticsScript } from '@/lib/analytics'
 import { getAnalyticsConfig } from '@/lib/session.functions'
 import { CreateShopForm } from '@/screens/signup/create-shop-form'
@@ -37,7 +38,13 @@ export const Route = createFileRoute('/admin')({
       const next = `${location.pathname}${location.searchStr}`
       throw redirect({ to: '/admin/login', search: { next } })
     }
-    return { access }
+    // Only owners and admins see installed apps in the sidebar
+    const canManageApps = isShopManager(access.tenant)
+    // 'static': use what is cached (the sidebar and invalidations keep it fresh), like ensureQueryData did
+    const installedApps = canManageApps
+      ? await context.queryClient.query({ ...installedAppsQuery, staleTime: 'static' })
+      : []
+    return { access, installedApps }
   },
   // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
   loader: () => getAnalyticsConfig(),
@@ -90,7 +97,7 @@ function AdminLayout() {
           id: tenant.shop.id,
           name: tenant.shop.name,
           superAdmin: tenant.superAdmin,
-          canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',
+          canManageApps: isShopManager(tenant),
         }}
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
       />
