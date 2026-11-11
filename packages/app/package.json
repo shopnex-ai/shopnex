@@ -14,16 +14,21 @@
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@shopnex/app-bridge": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
+    "drizzle-orm": "catalog:",
     "hono": "catalog:",
-    "openapi-fetch": "^0.17.0"
+    "openapi-fetch": "^0.17.0",
+    "pg": "^8.23.1"
   },
   "devDependencies": {
     "@orpc/openapi": "^1.16.1",
     "@orpc/zod": "^1.16.1",
     "@shopnex/api": "workspace:^",
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
     "openapi-typescript": "^7.13.0",
     "tsx": "^4.23.15"
   }

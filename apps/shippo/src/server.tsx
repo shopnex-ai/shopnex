@@ -1,5 +1,5 @@
 // Shippo for ShopNex: a bundled carrier app on @shopnex/app. Runs next to ShopNex (its own process) and keeps its
-// data in DATA_DIR (SQLite): each shop's Shippo token is stored there, encrypted with this app's key. It registers
+// data in Postgres (a schema of its own): each shop's Shippo token is stored there, encrypted with this app's key. It registers
 // one carrier service per shop; at checkout it asks Shippo for rates.
 //
 //   GET  /                 Embedded settings page (session token)
@@ -20,9 +20,9 @@ const APP_URL = (process.env.SHIPPO_APP_URL || 'http://localhost:4900').replace(
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4900)
 
-// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). ShopNex reads the public key
+// The shops' settings live in the app's Postgres schema; its identity key in DATA_DIR (a volume in Docker). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore()
+const store = await openLocalStore({ schema: 'app_shippo' })
 const shopnex = createShopnexApp({
   clientId: 'app_shippo',
   appUrl: APP_URL,

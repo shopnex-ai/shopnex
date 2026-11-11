@@ -1,11 +1,12 @@
 # One bundled app (apps/<name>, built on @shopnex/app) as its own small image: the app is bundled into a single
-# file, so the runtime image holds only Node and that file.
+# file (plus its SQL migrations), so the runtime image holds only Node and that.
 #
 #   docker build -f deploy/Dockerfile.app --build-arg APP=stripe -t shopnex-app-stripe .
-#   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -v stripe_data:/data shopnex-app-stripe
+#   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -e APP_DATABASE_URL=postgres://… -v stripe_data:/data shopnex-app-stripe
 #
-# The app reads <NAME>_APP_URL (its public origin; give ShopNex the same) and keeps its identity key and data in
-# /data: mount a volume there, or it is a new app after every recreate.
+# The app reads <NAME>_APP_URL (its public origin; give ShopNex the same) and keeps its data in Postgres, in a schema
+# of its own: set APP_DATABASE_URL (or DATABASE_URL). Its identity key lives in /data: mount a volume there (or set
+# APP_KEY), or it is a new app after every recreate.
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
@@ -19,7 +20,7 @@ RUN pnpm install --frozen-lockfile --filter . --filter "{./apps/${APP}}..." \
 FROM node:22-alpine
 ARG APP
 WORKDIR /app
-COPY --from=build /app/apps/${APP}/dist/server.mjs ./server.mjs
+COPY --from=build /app/apps/${APP}/dist/ ./
 RUN mkdir /data && chown node:node /data
 USER node
 VOLUME /data

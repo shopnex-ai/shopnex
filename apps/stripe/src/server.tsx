@@ -1,5 +1,5 @@
 // Stripe for ShopNex: a bundled payments app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
-// its data in DATA_DIR (SQLite): the merchant's Stripe keys are stored there, encrypted with this app's key.
+// its data in Postgres (a schema of its own): the merchant's Stripe keys are stored there, encrypted with this app's key.
 //
 //   GET  /                      Embedded settings page (session token)
 //   POST /api/settings          Save the Stripe key (+ webhook secret when local), register "Credit card"
@@ -20,9 +20,9 @@ const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 
-// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). ShopNex reads the public key
+// The shops' settings live in the app's Postgres schema; its identity key in DATA_DIR (a volume in Docker). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore()
+const store = await openLocalStore({ schema: 'app_stripe' })
 const shopnex = createShopnexApp({
   clientId: 'app_stripe',
   appUrl: APP_URL,

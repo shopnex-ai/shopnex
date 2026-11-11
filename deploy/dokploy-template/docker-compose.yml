@@ -51,9 +51,12 @@ services:
     restart: unless-stopped
     volumes:
       - stripe_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       DATA_DIR: /data
 
 volumes:

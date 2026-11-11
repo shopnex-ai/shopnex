@@ -76,6 +76,8 @@ while (
   pglite = dirname(pglite)
 }
 cpSync(pglite, join(stage, 'admin/node_modules/@electric-sql/pglite'), { recursive: true, dereference: true })
+// The optional apps keep their data in the embedded database too (when no Postgres is set): one copy they share
+cpSync(pglite, join(stage, 'node_modules/@electric-sql/pglite'), { recursive: true, dereference: true })
 
 // Storefront: Astro's standalone server, inlined. It reads themes/ from the folder it runs in.
 await build({
@@ -96,6 +98,10 @@ for (const app of ['stripe', 'cj-dropshipping', 'shippo']) {
   if (bundled.status !== 0) process.exit(bundled.status ?? 1)
   mkdirSync(join(stage, 'apps', app), { recursive: true })
   cpSync(join(root, 'apps', app, 'dist/server.mjs'), join(stage, 'apps', app, 'server.mjs'))
+  // Its SQL migrations, read from next to server.mjs
+  if (existsSync(join(root, 'apps', app, 'dist/drizzle'))) {
+    cpSync(join(root, 'apps', app, 'dist/drizzle'), join(stage, 'apps', app, 'drizzle'), { recursive: true })
+  }
 }
 
 cpSync(join(root, 'modules/db/migrations'), join(stage, 'migrations'), { recursive: true })

@@ -69,9 +69,12 @@ services:
       - '4600:4600'
     volumes:
       - stripe_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       STRIPE_APP_URL: ${STRIPE_APP_URL:-${DOMAIN:+https://stripe.}${DOMAIN:-http://localhost:4600}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       DATA_DIR: /data
 
   cj-dropshipping:
@@ -83,10 +86,13 @@ services:
       - '4700:4700'
     volumes:
       - cj_dropshipping_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       CJ_DROPSHIPPING_APP_URL: ${CJ_DROPSHIPPING_APP_URL:-${DOMAIN:+https://cj.}${DOMAIN:-http://localhost:4700}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4700
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       DATA_DIR: /data
 
   shippo:
@@ -98,10 +104,13 @@ services:
       - '4900:4900'
     volumes:
       - shippo_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       SHIPPO_APP_URL: ${SHIPPO_APP_URL:-${DOMAIN:+https://shippo.}${DOMAIN:-http://localhost:4900}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4900
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       DATA_DIR: /data
 
 volumes:
