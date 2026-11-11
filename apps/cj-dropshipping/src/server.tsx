@@ -1,5 +1,5 @@
 // CJ Dropshipping for ShopNex: a bundled app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
-// its data in Postgres (a schema of its own): the shop's CJ key is stored there, encrypted with this app's key.
+// its tables in Postgres (a schema of its own, APP_DATABASE_URL); the shop's settings and CJ key are in ShopNex (shop.data), encrypted with this app's key.
 //
 //   GET  /                          Embedded settings page (session token)
 //   GET  /api/products              My Products cards (HTML), loaded by the settings page after it opens
@@ -15,7 +15,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { createShopnexApp, type ShopContext } from '@shopnex/app'
-import { openLocalStore } from '@shopnex/app/store'
+import { openAppDatabase } from '@shopnex/app/store'
 import { connect, cjFor, isConnected, settingsOf } from './cj'
 import { openTables } from './db'
 import { migrationsFolder } from './migrations'
@@ -44,16 +44,15 @@ const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 
-// The shops' settings live in the app's Postgres schema (APP_DATABASE_URL); its identity is CJ_DROPSHIPPING_APP_KEY, kept with the app's settings, not in the database. ShopNex reads the public key
+// Its identity is CJ_DROPSHIPPING_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore({ schema: SCHEMA, appKeyEnv: 'CJ_DROPSHIPPING_APP_KEY' })
-await store.migrate(migrationsFolder())
-const tables = openTables(store.db)
+const database = await openAppDatabase({ schema: SCHEMA })
+await database.migrate(migrationsFolder())
+const tables = openTables(database.db)
 const shopnex = createShopnexApp({
   clientId: CLIENT_ID,
   appUrl: APP_URL,
-  appKey: store.appKey,
-  data: store.dataFor,
+  appKey: process.env.CJ_DROPSHIPPING_APP_KEY,
 })
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))

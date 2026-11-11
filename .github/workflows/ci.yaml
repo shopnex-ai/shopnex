@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [stripe]
+        app: [stripe, cj-dropshipping]
     steps:
       - uses: actions/checkout@v7
 

@@ -50,10 +50,10 @@ test('the plan starts an app per extra, on its port, with its data in the shop f
   assert.equal(stripe?.env.PORT, '4600')
   assert.equal(stripe?.env.HOST, '127.0.0.1')
   assert.equal(stripe?.env.SHOPNEX_INTERNAL_URL, 'http://localhost:3000')
-  // Each app has its own identity, and its own embedded database in the shop folder
+  // Each app has its own identity; only CJ has tables of its own, in an embedded database in the shop folder
   assert.equal(stripe?.env.STRIPE_APP_KEY, 'snxk_stripe')
   assert.equal(cj?.env.CJ_DROPSHIPPING_APP_KEY, 'snxk_cj')
-  assert.match(stripe?.env.APP_DATABASE_URL ?? '', /^pglite:.*shop[\\/]apps[\\/]stripe[\\/]pglite$/)
+  assert.equal(stripe?.env.APP_DATABASE_URL, undefined)
   assert.match(cj?.env.APP_DATABASE_URL ?? '', /^pglite:.*shop[\\/]apps[\\/]cj-dropshipping[\\/]pglite$/)
   assert.equal(stripe?.env.DATA_DIR, undefined)
   assert.equal(stripe?.readyUrl, 'http://127.0.0.1:4600/shopnex/app.js')
@@ -64,7 +64,7 @@ test('shippo is an extra on port 4900', () => {
   assert.deepEqual([shippo?.port, shippo?.urlEnv, shippo?.dir], [4900, 'SHIPPO_APP_URL', 'shippo'])
 })
 
-test('with a PostgreSQL shop the apps share its server, each in a schema of its own (their own)', () => {
+test('with a PostgreSQL shop the app with tables of its own shares its server, in a schema of its own', () => {
   const plan = planFromBundle({
     root: '/r',
     shopDir: '/shop',
@@ -73,8 +73,8 @@ test('with a PostgreSQL shop the apps share its server, each in a schema of its 
     port: 3000,
     storefrontPort: 4321,
     secret: 's',
-    extras: pickExtras(['stripe']),
-    appKeys: { stripe: 'snxk_stripe' },
+    extras: pickExtras(['cj']),
+    appKeys: { cj: 'snxk_cj' },
   })
   assert.equal(plan.processes.at(-1)?.env.APP_DATABASE_URL, 'postgres://u:p@db:5432/shopnex')
 })

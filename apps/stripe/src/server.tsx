@@ -1,5 +1,5 @@
 // Stripe for ShopNex: a bundled payments app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
-// its data in Postgres (a schema of its own): the merchant's Stripe keys are stored there, encrypted with this app's key.
+// its data in ShopNex (shop.data): the merchant's Stripe keys are stored there, encrypted with this app's key.
 //
 //   GET  /                      Embedded settings page (session token)
 //   POST /api/settings          Save the Stripe key (+ webhook secret when local), register "Credit card"
@@ -11,7 +11,6 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import Stripe from 'stripe'
 import { createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
-import { openLocalStore } from '@shopnex/app/store'
 import { icon, SettingsPage } from './settings'
 import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
@@ -20,14 +19,12 @@ const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 
-// The shops' settings live in the app's Postgres schema (APP_DATABASE_URL); its identity is STRIPE_APP_KEY, kept with the app's settings, not in the database. ShopNex reads the public key
+// Its identity is STRIPE_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore({ schema: 'app_stripe', appKeyEnv: 'STRIPE_APP_KEY' })
 const shopnex = createShopnexApp({
   clientId: 'app_stripe',
   appUrl: APP_URL,
-  appKey: store.appKey,
-  data: store.dataFor,
+  appKey: process.env.STRIPE_APP_KEY,
   // Installed from the discovery page or Settings → Payments: list "Credit card" (Setup needed) right away
   onInstalled: async (shop) => void (await configure(shop, (await view(shop)).ready)),
 })

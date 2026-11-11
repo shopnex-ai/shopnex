@@ -11,6 +11,8 @@ export type Extra = {
   urlEnv: string
   /** The variable that holds the app's private key, next to its address: the app's identity */
   keyEnv: string
+  /** Keeps tables of its own: gets a schema in the shop's PostgreSQL (APP_DATABASE_URL) */
+  database?: boolean
 }
 
 export const extras: Extra[] = [
@@ -22,6 +24,7 @@ export const extras: Extra[] = [
     port: 4700,
     urlEnv: 'CJ_DROPSHIPPING_APP_URL',
     keyEnv: 'CJ_DROPSHIPPING_APP_KEY',
+    database: true,
   },
   { name: 'shippo', label: 'Shippo', dir: 'shippo', port: 4900, urlEnv: 'SHIPPO_APP_URL', keyEnv: 'SHIPPO_APP_KEY' },
 ]

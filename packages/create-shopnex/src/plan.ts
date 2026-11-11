@@ -93,10 +93,12 @@ export function planFromBundle(input: {
           SHOPNEX_INTERNAL_URL: appUrl,
           // Its identity, kept with the shop so the same shop stays connected
           [extra.keyEnv]: appKeys[extra.name] ?? '',
-          // Its shops' settings: a schema of its own in the shop's PostgreSQL, or its own embedded database
-          APP_DATABASE_URL: databaseUrl.startsWith('pglite:')
-            ? `pglite:${join(shopDir, 'apps', extra.dir, 'pglite')}`
-            : databaseUrl,
+          // Tables of its own: a schema in the shop's PostgreSQL, or its own embedded database
+          ...(extra.database && {
+            APP_DATABASE_URL: databaseUrl.startsWith('pglite:')
+              ? `pglite:${join(shopDir, 'apps', extra.dir, 'pglite')}`
+              : databaseUrl,
+          }),
         },
         readyUrl: `http://127.0.0.1:${extra.port}/shopnex/app.js`,
       })),

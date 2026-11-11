@@ -74,7 +74,7 @@ export type ShopnexAppOptions = {
    * ShopNex instance). Default: SHOPNEX_MARKETPLACE_URL; unset, any instance that installed the app is served.
    */
   marketplaceUrl?: string
-  /** Where the app keeps a shop's data. Default: the shop's storage in ShopNex; see `openLocalStore` for Postgres */
+  /** Where the app keeps a shop's data. Default: the shop's storage in ShopNex. Pass your own to keep it elsewhere */
   data?: (instance: string, shopId: string) => AppData
   /** Instances allowed over plain http (default: localhost only) */
   allowHttp?: JwksResolverOptions['allowHttp']

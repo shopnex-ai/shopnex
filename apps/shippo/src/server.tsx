@@ -1,5 +1,5 @@
 // Shippo for ShopNex: a bundled carrier app on @shopnex/app. Runs next to ShopNex (its own process) and keeps its
-// data in Postgres (a schema of its own): each shop's Shippo token is stored there, encrypted with this app's key. It registers
+// data in ShopNex (shop.data): each shop's Shippo token is stored there, encrypted with this app's key. It registers
 // one carrier service per shop; at checkout it asks Shippo for rates.
 //
 //   GET  /                 Embedded settings page (session token)
@@ -10,7 +10,6 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { createShopnexApp, type ShopContext } from '@shopnex/app'
-import { openLocalStore } from '@shopnex/app/store'
 import { getToken, isReady, loadConfig, saveConfig, setToken, type Config, type Origin } from './config'
 import { icon, SettingsPage } from './settings'
 import { quoteRates, verifyKey } from './shippo'
@@ -20,14 +19,12 @@ const APP_URL = (process.env.SHIPPO_APP_URL || 'http://localhost:4900').replace(
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4900)
 
-// The shops' settings live in the app's Postgres schema (APP_DATABASE_URL); its identity is SHIPPO_APP_KEY, kept with the app's settings, not in the database. ShopNex reads the public key
+// Its identity is SHIPPO_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore({ schema: 'app_shippo', appKeyEnv: 'SHIPPO_APP_KEY' })
 const shopnex = createShopnexApp({
   clientId: 'app_shippo',
   appUrl: APP_URL,
-  appKey: store.appKey,
-  data: store.dataFor,
+  appKey: process.env.SHIPPO_APP_KEY,
   // Installed from Settings → Shipping or the discovery page: list the carrier service (not ready yet) right away
   onInstalled: async (shop) => void (await registerCarrier(shop)),
 })

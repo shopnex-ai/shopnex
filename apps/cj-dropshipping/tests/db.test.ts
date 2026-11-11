@@ -5,18 +5,18 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import type { ShopContext } from '@shopnex/app'
-import { openLocalStore, type LocalStore } from '@shopnex/app/store'
+import { openAppDatabase, type AppDatabase } from '@shopnex/app/store'
 import { openTables, type Tables } from '../src/db'
 import { migrationsFolder } from '../src/migrations'
 import { SCHEMA } from '../src/schema'
 
 const dir = mkdtempSync(join(tmpdir(), 'cj-db-'))
 const shop = (shopId: string) => ({ instance: 'https://a.example', shopId }) as ShopContext
-let store: LocalStore
+let store: AppDatabase
 let tables: Tables
 
 before(async () => {
-  store = await openLocalStore({ appKey: 'snxk_test', databaseUrl: 'pglite:memory', schema: SCHEMA })
+  store = await openAppDatabase({ databaseUrl: 'pglite:memory', schema: SCHEMA })
   await store.migrate(migrationsFolder())
   await store.migrate(migrationsFolder()) // applying twice is a no-op
   tables = openTables(store.db)

@@ -10,8 +10,9 @@
 # Each app has its own private key: set STRIPE_APP_KEY=snxk_… in .env (CJ_DROPSHIPPING_APP_KEY and
 # SHIPPO_APP_KEY for those profiles). Make one with:
 #   node -e "crypto.subtle.generateKey('Ed25519',true,['sign']).then(async k=>console.log('snxk_'+Buffer.from(await crypto.subtle.exportKey('pkcs8',k.privateKey)).toString('base64url')))"
-# Keep it with your other secrets: it seals the keys merchants save in the app (a copy of the database alone cannot
-# unseal them), and a new key makes it a new app, so merchants reconnect. The apps keep nothing else outside Postgres.
+# Keep it with your other secrets: it seals the keys merchants save in the app (ShopNex stores them sealed, so a copy of
+# its database alone cannot unseal them), and a new key makes it a new app, so merchants reconnect. Only CJ
+# Dropshipping has tables of its own (a schema in this Postgres); no app writes to a volume.
 name: shopnex
 
 services:
@@ -80,12 +81,9 @@ services:
     pull_policy: always
     restart: unless-stopped
     networks: [default, dokploy-network]
-    depends_on:
-      db: { condition: service_healthy }
     environment:
       STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
-      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       STRIPE_APP_KEY: '${STRIPE_APP_KEY:?Set STRIPE_APP_KEY in .env, the private key of the Stripe app (see the top of this file)}'
 
   cj-dropshipping:
@@ -109,13 +107,10 @@ services:
     pull_policy: always
     restart: unless-stopped
     networks: [default, dokploy-network]
-    depends_on:
-      db: { condition: service_healthy }
     environment:
       SHIPPO_APP_URL: ${SHIPPO_APP_URL:-http://localhost:4900}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 4900
-      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       SHIPPO_APP_KEY: ${SHIPPO_APP_KEY:-}
 
 networks:
