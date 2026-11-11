@@ -12,6 +12,11 @@ import { createAppBridge } from './app-bridge.js'
 const bridge = createAppBridge()
 window.shopnex = bridge
 
+// Look like the admin around the iframe: its theme (not the OS setting), now and when it changes
+const applyTheme = (theme) => (document.documentElement.dataset.theme = theme)
+bridge.getTheme().then(applyTheme).catch(() => {})
+bridge.onThemeChange(applyTheme)
+
 // The page URL's session token expires in a minute: reload with a fresh one
 bridge.reload = async () => {
   const url = new URL(location.href)
