@@ -22,8 +22,8 @@ export function ConsentPage() {
       const url = approve ? await approveConsent({ data: data.request }) : await denyConsent({ data: data.request })
       if (url.startsWith('/admin')) {
         // Inside this admin (a managed app's page, or back to Apps): navigate without reloading, so the layout stays
-        // on screen and the sidebar picks up the new app from a refetch
-        await queryClient.invalidateQueries({ queryKey: orpc.admin.apps.key() })
+        // on screen and the sidebar picks up the new app from a refetch (not awaited: the page shouldn't wait for it)
+        void queryClient.invalidateQueries({ queryKey: orpc.admin.apps.key() })
         await router.navigate({ href: url })
         return
       }
