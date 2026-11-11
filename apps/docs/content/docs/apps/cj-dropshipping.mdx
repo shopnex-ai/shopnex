@@ -1,0 +1,58 @@
+---
+title: CJ Dropshipping
+description: Import CJ Dropshipping products into your shop and send paid orders to CJ automatically.
+---
+
+CJ Dropshipping is a bundled app. It imports products from your CJ **My Products** list into the shop as drafts, quotes CJ's shipping price at checkout, forwards paid orders to CJ and copies CJ's tracking numbers back to the order. It replaces the old CJ Dropshipping plugin.
+
+## Turn it on
+
+The app runs as its own process next to ShopNex and is off by default in Docker.
+
+- **Docker Compose:** set `COMPOSE_PROFILES=cj`. For a public domain also set `CJ_DROPSHIPPING_APP_URL` (for example `https://cj.example.com`) and route that domain to port `4700` of the `cj-dropshipping` service. See [Dokploy & similar platforms](/docs/self-hosting/dokploy).
+- **Local development:** it listens on port `4700` (`CJ_DROPSHIPPING_APP_URL` defaults to `http://localhost:4700`).
+
+Then install it from **Admin → Apps** and open it.
+
+## Connect CJ
+
+1. In CJ, open **Authorization → API → Generate API key**.
+2. Paste the key into **Connect CJ** in the app and save. It is stored encrypted in your shop. To change it later, use **Change API key**.
+
+Connecting also subscribes the app to paid orders and turns on CJ shipping prices at checkout.
+
+## Pricing and orders
+
+| Setting                         | What it does                                                                                             |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Markup (%)**                  | Added to CJ's price when you import a product. The default is `100`, which doubles it. Range 0 to 1000.  |
+| **Pay CJ orders automatically** | Pays the CJ order from your CJ balance as soon as it is sent. Off: orders wait in CJ until you pay them. |
+
+## Import products
+
+**Import from My Products** lists the products you added to My Products in CJ. Click **Import** on a card, or paste a CJ product ID. Products arrive as **drafts**, so you can review them before they go live.
+
+If a product's SKUs are already in your shop, the app links the existing product to CJ instead of creating a duplicate, so its orders are still sent to CJ. A product CJ no longer sells is shown greyed out and can't be imported.
+
+## Orders
+
+When an order is paid, the app sends the CJ products in it to CJ. **Orders sent to CJ** shows each order's status, the CJ order ID and the tracking number. A failed order has a **Retry** button.
+
+Tracking numbers are copied back to the order as fulfillments, checked every 15 minutes.
+
+## Shipping at checkout
+
+Once the buyer enters an address, checkout shows CJ's shipping price as **Standard shipping**. This is a [carrier service](/docs/apps/carrier-services) and only applies when:
+
+- the cart contains only CJ products,
+- the shop sells in USD,
+- CJ ships to the buyer's country.
+
+Otherwise buyers get your own shipping rates from **Settings → Shipping**. If you have none, checkout says it can't ship to that address. You can switch CJ's prices off under **Settings → Shipping → Carrier services**.
+
+## Troubleshooting
+
+- **"Not connected":** add your CJ API key.
+- **"CJ rejected this key":** generate a new key in CJ (Authorization → API) and paste it again.
+- **Shipping prices "Not on yet":** the message says why. After fixing it, uninstall the app and install it again.
+- **A product won't import:** CJ no longer sells it.
