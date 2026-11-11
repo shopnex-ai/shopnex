@@ -11,7 +11,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { clearAdminContext } from '@/lib/admin-context'
 import { oauthErrorMessage } from './oauth-errors'
-import { SocialButtons } from './social-buttons'
+import { SocialButtons } from '@/components/auth/social-buttons'
 
 // Only same-app admin paths, so ?next= can't be used to send people elsewhere
 const safeNext = (next?: string) => (next?.startsWith('/admin/') && !next.startsWith('//') ? next : '/admin')
