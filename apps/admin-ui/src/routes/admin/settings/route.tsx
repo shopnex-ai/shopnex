@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { isShopManager } from '@/lib/admin-access'
 import { NoAccess } from '@/components/admin/no-access'
 
 // Each settings page is its own route; the admin layout swaps in the settings sidebar under /admin/settings
@@ -12,7 +13,7 @@ function SettingsLayout() {
   const { access } = Route.useRouteContext()
   const tenant = access.tenant
   if (!tenant) return null
-  const canManage = tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin'
+  const canManage = isShopManager(tenant)
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {canManage ? <Outlet /> : <NoAccess message="Only shop owners and admins can change settings." />}
