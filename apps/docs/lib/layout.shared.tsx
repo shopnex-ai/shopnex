@@ -1,4 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared'
+import { VersionThemeSwitch } from '@/components/version-theme-switch'
 
 // The ShopNex mark, drawn in currentColor so it follows the theme.
 function Logo() {
@@ -22,5 +23,6 @@ export function baseOptions(): BaseLayoutProps {
     },
     links: [{ text: 'API reference', url: '/reference', external: true }],
     githubUrl: 'https://github.com/shopnex-ai/shopnex',
+    slots: { themeSwitch: VersionThemeSwitch },
   }
 }
