@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
@@ -58,7 +58,10 @@ export const Route = createFileRoute('/admin')({
 
 function AdminLayout() {
   const { access } = Route.useRouteContext()
-  const pathname = useLocation({ select: (location) => location.pathname })
+  // The page that is on screen, not the one being navigated to: `location` changes the moment a navigation starts, while
+  // the old page stays until the next route's beforeLoad (the admin context fetch) is done. Following it made the
+  // sidebar vanish on sign-out, and left a blank page on sign-in, until the server answered.
+  const pathname = useRouterState({ select: (state) => (state.resolvedLocation ?? state.location).pathname })
   if (
     pathname === '/admin/setup' ||
     pathname === '/admin/login' ||

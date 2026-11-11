@@ -51,11 +51,12 @@ export function LoginForm({
       email: String(form.get('email')),
       password: String(form.get('password')),
     })
-    setPending(false)
     if (error) {
+      setPending(false)
       toast.error(error.message ?? 'Could not sign in')
       return
     }
+    // Stay on "Logging in…" until the admin is on screen, so the form can't be submitted twice or look like it failed
     clearAdminContext(router)
     await navigate({ href: destination, replace: true })
     await router.invalidate()
