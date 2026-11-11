@@ -13,7 +13,7 @@ The app runs as its own process next to ShopNex. The Docker and Dokploy setups i
 - Route that domain to port `4600` of the `stripe` service. See [Dokploy & similar platforms](/docs/self-hosting/dokploy).
 - To skip it in local development, run `STRIPE=none pnpm dev`.
 
-Install it from **Admin → Apps** or **Settings → Payments**. "Credit card" is listed right away as *Setup needed* until you connect Stripe.
+Install it from **Admin → Apps** or **Settings → Payments**. "Credit card" is listed right away as _Setup needed_ until you connect Stripe.
 
 ## Connect Stripe
 
@@ -22,9 +22,10 @@ Install it from **Admin → Apps** or **Settings → Payments**. "Credit card" i
    - **read** access to Account
 
    A secret key (`sk_…`) also works, but a restricted key (`rk_…`) limits the damage if it leaks.
+
 2. Paste the key into **Connect Stripe** in the app and save. The app checks it with Stripe. The key is stored encrypted in your shop.
 
-A test-mode key (`rk_test_…`) lets you try checkout without real money; the app then shows *(test mode)*. Use the [test cards](https://docs.stripe.com/testing), for example `4242 4242 4242 4242`.
+A test-mode key (`rk_test_…`) lets you try checkout without real money; the app then shows _(test mode)_. Use the [test cards](https://docs.stripe.com/testing), for example `4242 4242 4242 4242`.
 
 ## Webhook
 
