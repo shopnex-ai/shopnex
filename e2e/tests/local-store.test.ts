@@ -10,6 +10,8 @@ import { sql } from 'drizzle-orm'
 import { openLocalStore } from '@shopnex/app/store'
 
 const dir = mkdtempSync(join(tmpdir(), 'local-store-'))
+// An app's identity comes from its environment (its <NAME>_APP_KEY), not from a file
+const APP_KEY = `snxk_${randomBytes(16).toString('hex')}`
 after(() => rmSync(dir, { recursive: true, force: true }))
 
 const postgres = /^postgres(ql)?:/.test(process.env.DATABASE_URL ?? '') ? process.env.DATABASE_URL : undefined
@@ -22,7 +24,7 @@ for (const target of targets) {
   describe(`openLocalStore on ${target.name}`, () => {
     // A schema per run: the shared database is left as it was found
     const schema = `app_test_${randomBytes(4).toString('hex')}`
-    const open = () => openLocalStore({ dir, databaseUrl: target.url, schema })
+    const open = () => openLocalStore({ appKey: APP_KEY, databaseUrl: target.url, schema })
     after(async () => {
       if (target.url.startsWith('pglite:')) return
       const store = await open()
@@ -30,9 +32,9 @@ for (const target of targets) {
       await store.close()
     })
 
-    test('keeps its identity and data across restarts', async () => {
+    test('keeps its data across restarts and takes its identity from the key it is given', async () => {
       const first = await open()
-      assert.match(first.appKey, /^snxk_/)
+      assert.equal(first.appKey, APP_KEY)
       await first.dataFor('https://a.example', 's1').set('config', { mode: 'test' })
       await first.close()
 
@@ -68,3 +70,50 @@ for (const target of targets) {
     })
   })
 }
+
+describe('openLocalStore without its settings', () => {
+  const saved = { key: process.env.SHOPNEX_APP_KEY, url: process.env.APP_DATABASE_URL, db: process.env.DATABASE_URL }
+  after(() => {
+    for (const [name, value] of [
+      ['SHOPNEX_APP_KEY', saved.key],
+      ['STRIPE_APP_KEY', undefined],
+      ['APP_DATABASE_URL', saved.url],
+      ['DATABASE_URL', saved.db],
+    ] as const) {
+      if (value === undefined) delete process.env[name]
+      else process.env[name] = value
+    }
+  })
+
+  test('refuses to start without the app key, and says how to make one', async () => {
+    delete process.env.SHOPNEX_APP_KEY
+    await assert.rejects(openLocalStore({ databaseUrl: 'pglite:memory' }), /SHOPNEX_APP_KEY is not set.*app-keygen/)
+    await assert.rejects(openLocalStore({ appKey: 'not-a-key', databaseUrl: 'pglite:memory' }), /SHOPNEX_APP_KEY/)
+  })
+
+  test('an app takes its key from its own variable, and a shared SHOPNEX_APP_KEY is only the fallback', async () => {
+    delete process.env.SHOPNEX_APP_KEY
+    delete process.env.STRIPE_APP_KEY
+    await assert.rejects(
+      openLocalStore({ databaseUrl: 'pglite:memory', appKeyEnv: 'STRIPE_APP_KEY' }),
+      /STRIPE_APP_KEY is not set/,
+    )
+    process.env.SHOPNEX_APP_KEY = `snxk_${randomBytes(8).toString('hex')}`
+    process.env.STRIPE_APP_KEY = `snxk_${randomBytes(8).toString('hex')}`
+    const own = await openLocalStore({ databaseUrl: 'pglite:memory', appKeyEnv: 'STRIPE_APP_KEY' })
+    assert.equal(own.appKey, process.env.STRIPE_APP_KEY)
+    await own.close()
+    delete process.env.STRIPE_APP_KEY
+    const shared = await openLocalStore({ databaseUrl: 'pglite:memory', appKeyEnv: 'STRIPE_APP_KEY' })
+    assert.equal(shared.appKey, process.env.SHOPNEX_APP_KEY)
+    await shared.close()
+  })
+
+  test("refuses to start without a database, and does not share the shop's embedded one", async () => {
+    delete process.env.APP_DATABASE_URL
+    delete process.env.DATABASE_URL
+    await assert.rejects(openLocalStore({ appKey: APP_KEY }), /APP_DATABASE_URL is not set/)
+    process.env.DATABASE_URL = 'pglite:/some/shop/data'
+    await assert.rejects(openLocalStore({ appKey: APP_KEY }), /APP_DATABASE_URL is not set/)
+  })
+})

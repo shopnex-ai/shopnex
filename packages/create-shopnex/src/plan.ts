@@ -30,8 +30,10 @@ export function planFromBundle(input: {
   secret: string
   env: Record<string, string>
   extras: Extra[]
+  /** The private key of each optional app, by name (see app-keys.ts) */
+  appKeys?: Record<string, string>
 }): Plan {
-  const { root, shopDir, databaseUrl, port, storefrontPort, secret, env, extras } = input
+  const { root, shopDir, databaseUrl, port, storefrontPort, secret, env, extras, appKeys = {} } = input
   const extraUrl = (extra: Extra) => `http://localhost:${extra.port}`
   const appUrl = `http://localhost:${port}`
   return {
@@ -89,8 +91,12 @@ export function planFromBundle(input: {
           PORT: String(extra.port),
           [extra.urlEnv]: extraUrl(extra),
           SHOPNEX_INTERNAL_URL: appUrl,
-          // Its identity key and the shops' settings: kept with the shop, so the same shop stays connected
-          DATA_DIR: join(shopDir, 'apps', extra.dir),
+          // Its identity, kept with the shop so the same shop stays connected
+          [extra.keyEnv]: appKeys[extra.name] ?? '',
+          // Its shops' settings: a schema of its own in the shop's PostgreSQL, or its own embedded database
+          APP_DATABASE_URL: databaseUrl.startsWith('pglite:')
+            ? `pglite:${join(shopDir, 'apps', extra.dir, 'pglite')}`
+            : databaseUrl,
         },
         readyUrl: `http://127.0.0.1:${extra.port}/shopnex/app.js`,
       })),

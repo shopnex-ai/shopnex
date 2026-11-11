@@ -2,11 +2,11 @@
 # file (plus its SQL migrations), so the runtime image holds only Node and that.
 #
 #   docker build -f deploy/Dockerfile.app --build-arg APP=stripe -t shopnex-app-stripe .
-#   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -e APP_DATABASE_URL=postgres://… -v stripe_data:/data shopnex-app-stripe
+#   docker run -p 4600:4600 -e STRIPE_APP_URL=https://stripe.example.com -e APP_DATABASE_URL=postgres://… -e STRIPE_APP_KEY=snxk_… shopnex-app-stripe
 #
-# The app reads <NAME>_APP_URL (its public origin; give ShopNex the same) and keeps its data in Postgres, in a schema
-# of its own: set APP_DATABASE_URL (or DATABASE_URL). Its identity key lives in /data: mount a volume there (or set
-# APP_KEY), or it is a new app after every recreate.
+# The app reads <NAME>_APP_URL (its public origin; give ShopNex the same), keeps its data in Postgres in a schema of
+# its own (APP_DATABASE_URL, or DATABASE_URL), and takes its identity from <NAME>_APP_KEY (STRIPE_APP_KEY: a snxk_… private key; a new
+# key is a new app). Nothing is written to the container: it needs no volume.
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
@@ -21,10 +21,8 @@ FROM node:22-alpine
 ARG APP
 WORKDIR /app
 COPY --from=build /app/apps/${APP}/dist/ ./
-RUN mkdir /data && chown node:node /data
 USER node
-VOLUME /data
-ENV NODE_ENV=production PORT=4600 DATA_DIR=/data
+ENV NODE_ENV=production PORT=4600
 EXPOSE 4600
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/shopnex/app.js" || exit 1

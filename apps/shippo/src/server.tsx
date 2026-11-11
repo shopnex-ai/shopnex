@@ -20,9 +20,9 @@ const APP_URL = (process.env.SHIPPO_APP_URL || 'http://localhost:4900').replace(
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4900)
 
-// The shops' settings live in the app's Postgres schema; its identity key in DATA_DIR (a volume in Docker). ShopNex reads the public key
+// The shops' settings live in the app's Postgres schema (APP_DATABASE_URL); its identity is SHIPPO_APP_KEY, kept with the app's settings, not in the database. ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore({ schema: 'app_shippo' })
+const store = await openLocalStore({ schema: 'app_shippo', appKeyEnv: 'SHIPPO_APP_KEY' })
 const shopnex = createShopnexApp({
   clientId: 'app_shippo',
   appUrl: APP_URL,

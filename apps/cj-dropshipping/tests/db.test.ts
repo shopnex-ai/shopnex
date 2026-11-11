@@ -16,7 +16,7 @@ let store: LocalStore
 let tables: Tables
 
 before(async () => {
-  store = await openLocalStore({ dir, databaseUrl: 'pglite:memory', schema: SCHEMA })
+  store = await openLocalStore({ appKey: 'snxk_test', databaseUrl: 'pglite:memory', schema: SCHEMA })
   await store.migrate(migrationsFolder())
   await store.migrate(migrationsFolder()) // applying twice is a no-op
   tables = openTables(store.db)

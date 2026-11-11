@@ -1,30 +1,30 @@
-// For apps that keep their own data: a Postgres schema of their own plus a small folder with the app's identity.
+// For apps that keep their own data: a Postgres schema of their own, holding the shops' data. Configured by env only,
+// no folder and no files, so a container needs no volume:
 //
-//   const store = await openLocalStore({ schema: 'app_stripe' })   // DATA_DIR (default ./.data) holds the key
+//   <NAME>_APP_KEY      the app's private key (snxk_…), named like its <NAME>_APP_URL (STRIPE_APP_KEY); or
+//                        SHOPNEX_APP_KEY for a single app. `node scripts/app-keygen.mjs` makes one. Seals the secrets
+//                        the app saves and proves its identity to ShopNex: lose it and the app is a new app
+//                        (merchants reconnect). Keep it out of the database, so a copy of the database alone can't
+//                        unseal them.
+//   APP_DATABASE_URL     `postgres://…`, or DATABASE_URL when that is a Postgres URL (the app gets a schema of its
+//                        own next to ShopNex's tables). `pglite:<directory>` is the embedded database (PostgreSQL in
+//                        WebAssembly) for trying ShopNex out: one process owns it.
+//
+//   const store = await openLocalStore({ schema: 'app_stripe', appKeyEnv: 'STRIPE_APP_KEY' })
 //   const shopnex = createShopnexApp({ clientId: 'app_x', appKey: store.appKey, data: store.dataFor })
 //
 // `dataFor` is `shop.data` (settings, encrypted secrets) in the app's schema instead of in ShopNex; `store.db` is a
 // Drizzle database on the same connection for the app's own tables (declare them with `pgSchema(store.schema)` and
 // run their migrations with `store.migrate`).
-//
-// The database is APP_DATABASE_URL, or DATABASE_URL when that is a Postgres URL (the app gets a schema of its own
-// next to ShopNex's tables). With neither, the app uses an embedded PGlite database in DATA_DIR, so it runs with no
-// setup while trying ShopNex out.
-//
-// The identity key stays out of the database on purpose, so a dump of the database alone can't unseal its secrets:
-// it is `APP_KEY` when set, else a file in DATA_DIR created on first start. Back it up; lose it and the app is a
-// new app (merchants reconnect).
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdirSync } from 'node:fs'
 import { and, eq, sql } from 'drizzle-orm'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { pgSchema, text } from 'drizzle-orm/pg-core'
 import { Pool } from 'pg'
-import { generateKeyPair } from '@shopnex/marketplace-sdk/keys'
 import { createAppData, deriveDataKey, type AppData, type KeyValue } from './admin'
 
 export type LocalStore = {
-  /** The app's private key (snxk_…); it never goes into the database */
+  /** The app's private key (snxk_…), from the environment. It never goes into the database */
   appKey: string
   /** The schema this app owns (its `kv` table is here; put your own tables here too) */
   schema: string
@@ -41,28 +41,33 @@ export type LocalStore = {
 }
 
 export type LocalStoreOptions = {
-  /**
-   * `postgres://…`, or `pglite:<directory>` for the embedded database (PostgreSQL in WebAssembly, for trying things
-   * out: one process owns it). Default: APP_DATABASE_URL, else DATABASE_URL when that is a Postgres URL, else an
-   * embedded database in DATA_DIR.
-   */
+  /** The app's private key. Default: the variable named by `appKeyEnv`, else SHOPNEX_APP_KEY */
+  appKey?: string
+  /** The variable that holds this app's key, next to its <NAME>_APP_URL: STRIPE_APP_KEY */
+  appKeyEnv?: string
+  /** `postgres://…` or `pglite:<directory>`. Default: APP_DATABASE_URL, else DATABASE_URL when that is a Postgres URL */
   databaseUrl?: string
   /** The schema the app owns, created when missing. Default: `app` */
   schema?: string
-  /** Where the identity key file lives. Default: DATA_DIR, else ./.data */
-  dir?: string
 }
 
 export async function openLocalStore(options: LocalStoreOptions = {}): Promise<LocalStore> {
   const schema = options.schema ?? 'app'
   if (!/^[a-z_][a-z0-9_]*$/.test(schema))
     throw new Error(`Invalid schema name "${schema}": use lowercase letters, digits and _`)
-  const dir = options.dir ?? process.env.DATA_DIR ?? '.data'
-  const appKey = await readAppKey(dir)
+  const keyEnv = options.appKeyEnv ?? 'SHOPNEX_APP_KEY'
+  const appKey = (options.appKey ?? process.env[keyEnv] ?? process.env.SHOPNEX_APP_KEY)?.trim()
+  if (!appKey?.startsWith('snxk_'))
+    throw new Error(
+      `${keyEnv} is not set (or is not a snxk_… key): it is the app's private key. Make one with \`node scripts/app-keygen.mjs\` and keep it with the app's settings`,
+    )
+  const url = options.databaseUrl ?? databaseUrlFromEnv()
+  if (!url)
+    throw new Error(
+      'APP_DATABASE_URL is not set: apps keep their data in Postgres (postgres://…), or pglite:<directory> to try things out',
+    )
 
-  const { db, pool, migrate, close } = await connect(
-    options.databaseUrl ?? databaseUrlFromEnv() ?? `pglite:${join(dir, 'pglite')}`,
-  )
+  const { db, pool, migrate, close } = await connect(url)
   // Tables are always schema-qualified, so this works behind a connection pooler (no search_path needed)
   await db.execute(sql.raw(`CREATE SCHEMA IF NOT EXISTS "${schema}"`))
   await db.execute(
@@ -107,20 +112,10 @@ export async function openLocalStore(options: LocalStoreOptions = {}): Promise<L
   }
 }
 
-async function readAppKey(dir: string) {
-  if (process.env.APP_KEY) return process.env.APP_KEY.trim()
-  mkdirSync(dir, { recursive: true })
-  const keyFile = join(dir, 'app-key')
-  if (!existsSync(keyFile)) {
-    writeFileSync(keyFile, (await generateKeyPair()).privateKey, { mode: 0o600, flag: 'wx' })
-  }
-  chmodSync(keyFile, 0o600)
-  return readFileSync(keyFile, 'utf8').trim()
-}
-
 const databaseUrlFromEnv = () => {
-  const url = process.env.APP_DATABASE_URL ?? process.env.DATABASE_URL
-  // ShopNex itself may run on the embedded database, which only one process can open: apps get their own
+  if (process.env.APP_DATABASE_URL) return process.env.APP_DATABASE_URL
+  // ShopNex itself may run on the embedded database, which only one process can open: it is not shared with apps
+  const url = process.env.DATABASE_URL
   return url && !url.startsWith('pglite:') ? url : undefined
 }
 

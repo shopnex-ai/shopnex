@@ -44,9 +44,9 @@ const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 
-// The shops' settings live in the app's Postgres schema; its identity key in DATA_DIR (a volume in Docker). ShopNex reads the public key
+// The shops' settings live in the app's Postgres schema (APP_DATABASE_URL); its identity is CJ_DROPSHIPPING_APP_KEY, kept with the app's settings, not in the database. ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore({ schema: SCHEMA })
+const store = await openLocalStore({ schema: SCHEMA, appKeyEnv: 'CJ_DROPSHIPPING_APP_KEY' })
 await store.migrate(migrationsFolder())
 const tables = openTables(store.db)
 const shopnex = createShopnexApp({
