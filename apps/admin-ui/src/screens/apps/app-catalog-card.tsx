@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { scopeSummary } from '@/lib/scopes'
-import { AppIcon, installLink } from './installed-apps-card'
+import { AppIcon, InstallButton } from './installed-apps-card'
 
 type CatalogApp = Outputs['admin']['apps']['catalog']['apps'][number]
 type Origin = CatalogApp['origin']
@@ -96,9 +96,7 @@ function CatalogItem({ app, shopId, instanceUrl }: { app: CatalogApp; shopId: st
       </div>
       <div className="truncate text-xs text-muted-foreground">{scopeSummary(app.scopes)}</div>
       <div className="mt-auto flex items-center gap-2">
-        <Button size="sm" render={<a href={installLink(app, shopId, instanceUrl)} />}>
-          Install
-        </Button>
+        <InstallButton app={app} shopId={shopId} instanceUrl={instanceUrl} />
         {app.listingUrl && (
           <Button variant="ghost" size="sm" render={<a href={app.listingUrl} target="_blank" rel="noreferrer" />}>
             Details
