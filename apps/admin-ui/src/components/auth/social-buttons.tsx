@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { authClient } from '@shopnex/auth/client'
 import type { SocialProvider } from '@shopnex/auth/providers'
@@ -43,6 +43,16 @@ export function SocialButtons({
   callbackURL?: string
 }) {
   const [pending, setPending] = useState<SocialProvider | null>(null)
+
+  // Success redirects away and never clears `pending`. If they cancel at the provider and press Back, the browser
+  // restores this page as it was (from its back/forward cache), buttons still disabled: enable them again.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setPending(null)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   if (providers.length === 0) return null
 
