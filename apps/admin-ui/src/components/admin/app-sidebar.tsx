@@ -257,8 +257,7 @@ function InstalledApps() {
   // Loaded with the layout (beforeLoad), so the list is there on the first paint, also after a full page load
   // (the setup, login and signup pages skip it, hence the fallback)
   const initial = useRouteContext({ from: '/admin' }).installedApps ?? []
-  const { data } = useQuery({ ...orpc.admin.apps.list.queryOptions(), initialData: initial })
-  const apps = data ?? initial
+  const { data: apps } = useQuery({ ...orpc.admin.apps.list.queryOptions(), initialData: initial })
   if (!apps.length) return null
   return (
     <SidebarMenuSub>
