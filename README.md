@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/storefront.png" alt="ShopNex storefront product page with variants and add to cart" width="900">
+  <img src="docs/images/storefront.webp" alt="ShopNex storefront home page with a hero banner and a Shop now button" width="900">
 </p>
 
 <!-- TODO: add a ~15s GIF: docker compose up -> setup wizard -> first order, e.g. docs/images/quickstart.gif -->
