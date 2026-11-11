@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Field, FieldGroup } from '@/components/ui/field'
 import { orpc, type Outputs } from '@/lib/orpc'
-import { AppIcon, installLink } from '../apps/installed-apps-card'
+import { AppIcon, InstallButton } from '../apps/installed-apps-card'
 
 type Method = Outputs['admin']['paymentMethods']['list'][number]
 
@@ -227,9 +227,7 @@ export function PaymentAppsCard({ shopId }: { shopId: string }) {
                 <div className="font-medium">{app.name}</div>
                 {app.description && <div className="text-sm text-muted-foreground">{app.description}</div>}
               </div>
-              <Button size="sm" render={<a href={installLink(app, shopId, data.instanceUrl)} />}>
-                Install
-              </Button>
+              <InstallButton app={app} shopId={shopId} instanceUrl={data.instanceUrl} />
             </li>
           ))}
         </ul>

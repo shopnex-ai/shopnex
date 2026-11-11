@@ -1,5 +1,5 @@
 // CJ Dropshipping for ShopNex: a bundled app on @shopnex/app. Runs next to ShopNex (its own process) and keeps
-// its data in DATA_DIR (SQLite): the shop's CJ key is stored there, encrypted with this app's key.
+// its tables in Postgres (a schema of its own, APP_DATABASE_URL); the shop's settings and CJ key are in ShopNex (shop.data), encrypted with this app's key.
 //
 //   GET  /                          Embedded settings page (session token)
 //   GET  /api/products              My Products cards (HTML), loaded by the settings page after it opens
@@ -15,9 +15,11 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { createShopnexApp, type ShopContext } from '@shopnex/app'
-import { openLocalStore } from '@shopnex/app/store'
+import { openAppDatabase } from '@shopnex/app/store'
 import { connect, cjFor, isConnected, settingsOf } from './cj'
 import { openTables } from './db'
+import { migrationsFolder } from './migrations'
+import { SCHEMA } from './schema'
 import {
   checkAvailability,
   foregroundTask,
@@ -42,15 +44,15 @@ const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4700)
 
-// The app's identity and the shops' settings live in DATA_DIR (a volume in Docker). ShopNex reads the public key
+// Its identity is CJ_DROPSHIPPING_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
-const store = await openLocalStore()
-const tables = openTables(store.db)
+const database = await openAppDatabase({ schema: SCHEMA })
+await database.migrate(migrationsFolder())
+const tables = openTables(database.db)
 const shopnex = createShopnexApp({
   clientId: CLIENT_ID,
   appUrl: APP_URL,
-  appKey: store.appKey,
-  data: store.dataFor,
+  appKey: process.env.CJ_DROPSHIPPING_APP_KEY,
 })
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
@@ -93,7 +95,7 @@ async function registerCarrier(shop: ShopContext) {
 /** One time per shop: mark the products the app already ships as fulfilled by CJ (see markFulfilled) */
 async function backfillFulfilledBy(shop: ShopContext) {
   if (await shop.data.get('fulfilled_by_marked')) return
-  const skus = new Set([...tables.linkedSkus(shop).values()].flat())
+  const skus = new Set([...(await tables.linkedSkus(shop)).values()].flat())
   if (skus.size) await markFulfilled(shop, skus)
   await shop.data.set('fulfilled_by_marked', true)
 }
@@ -128,7 +130,7 @@ app.get('/', async (c) => {
       settings={await settingsOf(shop)}
       shippingError={shippingError}
       shippingOff={shippingOff}
-      orders={tables.orders(shop)}
+      orders={await tables.orders(shop)}
     />,
   )
 })
@@ -144,9 +146,9 @@ app.get('/api/products', async (c) => {
     const result = await cj.products.getMyProducts()
     if (result.error) productsError = result.error
     else {
-      const known = tables.availability(shop)
+      const known = await tables.availability(shop)
       const skus = await shopSkus(shop).catch(() => null)
-      const linked = tables.linkedSkus(shop)
+      const linked = await tables.linkedSkus(shop)
       products = myProducts(result.data).map((p) => ({
         ...p,
         available: known.get(p.pid)?.available ?? null,
@@ -202,7 +204,8 @@ app.post('/api/import', async (c) => {
   const shop = await shopnex.authenticate(c)
   const { pid } = (await c.req.json().catch(() => ({}))) as { pid?: string }
   if (!pid?.trim()) return c.json({ error: 'Enter a CJ product ID' }, 400)
-  if (tables.availability(shop).get(pid.trim())?.available === false) return c.json({ error: OFF_SALE_MESSAGE }, 422)
+  if ((await tables.availability(shop)).get(pid.trim())?.available === false)
+    return c.json({ error: OFF_SALE_MESSAGE }, 422)
   try {
     const product = await foregroundTask(() => importProduct(shop, tables, pid.trim()))
     return c.json({ message: `Imported "${product.title}" as a draft` })
@@ -217,7 +220,7 @@ app.post('/api/import', async (c) => {
       }
     }
     if (isOffSale(error)) {
-      tables.setAvailable(shop, pid.trim(), false)
+      await tables.setAvailable(shop, pid.trim(), false)
       return c.json({ error: OFF_SALE_MESSAGE }, 422)
     }
     return c.json({ error: message(error) }, 502)
@@ -275,7 +278,7 @@ app.onError((error, c) => {
 // --- CJ → ShopNex: CJ pushes order changes only for some order kinds, so poll for tracking numbers ---
 
 async function pollTracking() {
-  for (const { instance, shop_id } of tables.shopsAwaitingTracking()) {
+  for (const { instance, shop_id } of await tables.shopsAwaitingTracking()) {
     let shop: ShopContext
     try {
       shop = await shopnex.forShop(instance, shop_id)

@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [stripe]
+        app: [stripe, cj-dropshipping]
     steps:
       - uses: actions/checkout@v7
 
@@ -162,10 +162,18 @@ jobs:
       # Same tests as `pnpm e2e`, plus a JUnit file for the public test report
       - run: pnpm --filter @shopnex/e2e test:ci
 
-      - name: Browser tests
+      # The browser comes from Playwright's own CDN. `install-deps` then runs apt for the system packages the runner lacks
+      # (in practice only fonts), and when Ubuntu's mirrors stopped resolving it hung for many minutes and failed the whole
+      # job before any test ran. It is now limited to 3 minutes and only warns: if a library really were missing, the
+      # browser tests fail with that error instead.
+      - name: Install the browser
         run: |
-          pnpm --dir e2e exec playwright install --with-deps chromium
-          pnpm --dir e2e test:browser
+          pnpm --dir e2e exec playwright install chromium
+          timeout -k 10 180 pnpm --dir e2e exec playwright install-deps chromium \
+            || echo "::warning::Could not install the system packages (apt unreachable?); using what the runner has"
+
+      - name: Browser tests
+        run: pnpm --dir e2e test:browser
 
       - name: Browser test report
         if: always()

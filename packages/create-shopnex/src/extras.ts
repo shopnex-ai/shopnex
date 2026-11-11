@@ -9,12 +9,24 @@ export type Extra = {
   port: number
   /** The variable that holds the app's public address, for the app and for the admin (which registers it when it is set) */
   urlEnv: string
+  /** The variable that holds the app's private key, next to its address: the app's identity */
+  keyEnv: string
+  /** Keeps tables of its own: gets a schema in the shop's PostgreSQL (APP_DATABASE_URL) */
+  database?: boolean
 }
 
 export const extras: Extra[] = [
-  { name: 'stripe', label: 'Stripe', dir: 'stripe', port: 4600, urlEnv: 'STRIPE_APP_URL' },
-  { name: 'cj', label: 'CJ Dropshipping', dir: 'cj-dropshipping', port: 4700, urlEnv: 'CJ_DROPSHIPPING_APP_URL' },
-  { name: 'shippo', label: 'Shippo', dir: 'shippo', port: 4900, urlEnv: 'SHIPPO_APP_URL' },
+  { name: 'stripe', label: 'Stripe', dir: 'stripe', port: 4600, urlEnv: 'STRIPE_APP_URL', keyEnv: 'STRIPE_APP_KEY' },
+  {
+    name: 'cj',
+    label: 'CJ Dropshipping',
+    dir: 'cj-dropshipping',
+    port: 4700,
+    urlEnv: 'CJ_DROPSHIPPING_APP_URL',
+    keyEnv: 'CJ_DROPSHIPPING_APP_KEY',
+    database: true,
+  },
+  { name: 'shippo', label: 'Shippo', dir: 'shippo', port: 4900, urlEnv: 'SHIPPO_APP_URL', keyEnv: 'SHIPPO_APP_KEY' },
 ]
 
 /** --with stripe,cj (and --with stripe --with cj) → the apps, once each; unknown names are usage errors */

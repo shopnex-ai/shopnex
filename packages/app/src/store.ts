@@ -1,68 +1,97 @@
-// For apps that keep their own data: one folder (mount it as a volume) with the app's identity and a SQLite database.
+// For an app that needs real tables of its own (CJ Dropshipping's orders): a Postgres schema of its own, next to
+// ShopNex's tables. Most apps don't: their settings and secrets go through `shop.data`, which ShopNex stores.
+// Configured by env only, no folder and no files, so a container needs no volume:
 //
-//   const store = await openLocalStore()                       // DATA_DIR, default ./.data
-//   const shopnex = createShopnexApp({ clientId: 'app_x', appKey: store.appKey, data: store.dataFor })
+//   APP_DATABASE_URL   `postgres://…`, or DATABASE_URL when that is a Postgres URL. `pglite:<directory>` is the
+//                      embedded database (PostgreSQL in WebAssembly) for trying ShopNex out: one process owns it.
 //
-// `dataFor` is `shop.data` (settings, encrypted secrets) on SQLite instead of ShopNex; `store.db` is the same
-// database for the app's own tables. Back up the folder; lose it and the app is a new app (merchants reconnect).
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
-import { generateKeyPair } from '@shopnex/marketplace-sdk/keys'
-import { createAppData, deriveDataKey, type AppData, type KeyValue } from './admin'
+//   const database = await openAppDatabase({ schema: 'app_cj' })
+//   await database.migrate(migrationsFolder) // a folder made by `drizzle-kit generate`
+//   // declare tables with pgSchema('app_cj') and query them with database.db (Drizzle)
+import { mkdirSync } from 'node:fs'
+import { sql } from 'drizzle-orm'
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
 
-export type LocalStore = {
-  /** The app's private key (snxk_…), created on first start. It never leaves this folder. */
-  appKey: string
-  /** app.db: `kv` is the shop data below; add your own tables */
-  db: DatabaseSync
-  /** `shop.data` for one shop of one instance */
-  dataFor(instance: string, shopId: string): AppData
+export type AppDatabase = {
+  /** The schema this app owns */
+  schema: string
+  /** Drizzle on the app's database */
+  db: NodePgDatabase
+  /** The plain `pg` pool, for anything Drizzle doesn't cover. Not there on the embedded database */
+  pool?: Pool
+  /** Applies your Drizzle migrations and records them in the app's schema */
+  migrate(migrationsFolder: string): Promise<void>
+  /** Closes the database */
+  close(): Promise<void>
 }
 
-export async function openLocalStore(options: { dir?: string } = {}): Promise<LocalStore> {
-  const dir = options.dir ?? process.env.DATA_DIR ?? '.data'
-  mkdirSync(dir, { recursive: true })
+export type AppDatabaseOptions = {
+  /** `postgres://…` or `pglite:<directory>`. Default: APP_DATABASE_URL, else DATABASE_URL when that is a Postgres URL */
+  databaseUrl?: string
+  /** The schema the app owns, created when missing. Default: `app` */
+  schema?: string
+}
 
-  // Kept apart from the database so a copy of app.db alone can't unseal its secrets
-  const keyFile = join(dir, 'app-key')
-  if (!existsSync(keyFile)) {
-    writeFileSync(keyFile, (await generateKeyPair()).privateKey, { mode: 0o600, flag: 'wx' })
-  }
-  chmodSync(keyFile, 0o600)
-  const appKey = readFileSync(keyFile, 'utf8').trim()
+export async function openAppDatabase(options: AppDatabaseOptions = {}): Promise<AppDatabase> {
+  const schema = options.schema ?? 'app'
+  if (!/^[a-z_][a-z0-9_]*$/.test(schema))
+    throw new Error(`Invalid schema name "${schema}": use lowercase letters, digits and _`)
+  const url = options.databaseUrl ?? databaseUrlFromEnv()
+  if (!url)
+    throw new Error(
+      'APP_DATABASE_URL is not set: this app keeps its data in Postgres (postgres://…), or pglite:<directory> to try things out',
+    )
 
-  const db = new DatabaseSync(join(dir, 'app.db'))
-  db.exec(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS kv (
-      scope TEXT NOT NULL,
-      key TEXT NOT NULL,
-      value TEXT NOT NULL,
-      PRIMARY KEY (scope, key)
-    ) WITHOUT ROWID;
-  `)
-  const read = db.prepare('SELECT value FROM kv WHERE scope = ? AND key = ?')
-  const write = db.prepare('INSERT OR REPLACE INTO kv (scope, key, value) VALUES (?, ?, ?)')
-  const remove = db.prepare('DELETE FROM kv WHERE scope = ? AND key = ?')
-  const cipher = deriveDataKey(appKey)
-
-  const kvFor = (scope: string): KeyValue => ({
-    async get<T>(key: string) {
-      const row = read.get(scope, key) as { value: string } | undefined
-      return row ? (JSON.parse(row.value) as T) : null
-    },
-    async set(key, value) {
-      write.run(scope, key, JSON.stringify(value))
-    },
-    async delete(key) {
-      remove.run(scope, key)
-    },
-  })
-
+  const { db, pool, migrate, close } = await connect(url)
+  await db.execute(sql.raw(`CREATE SCHEMA IF NOT EXISTS "${schema}"`))
   return {
-    appKey,
+    schema,
     db,
-    dataFor: (instance, shopId) => createAppData(kvFor(`${instance}|${shopId}`), cipher),
+    pool,
+    migrate: (migrationsFolder) => migrate({ migrationsFolder, migrationsSchema: schema }),
+    close,
   }
+}
+
+const databaseUrlFromEnv = () => {
+  if (process.env.APP_DATABASE_URL) return process.env.APP_DATABASE_URL
+  // ShopNex itself may run on the embedded database, which only one process can open: it is not shared with apps
+  const url = process.env.DATABASE_URL
+  return url && !url.startsWith('pglite:') ? url : undefined
+}
+
+type Migration = { migrationsFolder: string; migrationsSchema: string }
+
+async function connect(url: string): Promise<{
+  db: NodePgDatabase
+  pool?: Pool
+  migrate: (config: Migration) => Promise<void>
+  close: () => Promise<void>
+}> {
+  if (url.startsWith('pglite:')) {
+    const [{ PGlite }, { drizzle: drizzlePglite }, { migrate }] = await Promise.all([
+      import('@electric-sql/pglite'),
+      import('drizzle-orm/pglite'),
+      import('drizzle-orm/pglite/migrator'),
+    ]).catch((error) => {
+      throw new Error(
+        `The embedded database is not available here (${error.message}): set APP_DATABASE_URL to a Postgres URL`,
+      )
+    })
+    const location = url.slice('pglite:'.length).replace(/^\/\/(?=\/)/, '')
+    if (location !== 'memory') mkdirSync(location, { recursive: true })
+    const client = new PGlite(location === 'memory' ? undefined : location)
+    const db = drizzlePglite({ client })
+    // Same query API as node-postgres; only the result type of execute differs
+    return {
+      db: db as unknown as NodePgDatabase,
+      migrate: (config) => migrate(db, config),
+      close: () => client.close(),
+    }
+  }
+  const { migrate } = await import('drizzle-orm/node-postgres/migrator')
+  const pool = new Pool({ connectionString: url })
+  const db = drizzle(pool)
+  return { db, pool, migrate: (config) => migrate(db, config), close: () => pool.end() }
 }

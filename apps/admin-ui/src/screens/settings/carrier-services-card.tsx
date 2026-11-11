@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc } from '@/lib/orpc'
-import { AppIcon, installLink } from '../apps/installed-apps-card'
+import { AppIcon, InstallButton } from '../apps/installed-apps-card'
 
 // Carrier services: apps that quote live shipping rates at checkout. They register themselves; staff only switch
 // them on and off here (uninstalling the app removes its service). Hidden while no app has registered one.
@@ -90,9 +90,7 @@ export function CarrierAppsCard({ shopId }: { shopId: string }) {
                 <div className="font-medium">{app.name}</div>
                 {app.description && <div className="text-sm text-muted-foreground">{app.description}</div>}
               </div>
-              <Button size="sm" render={<a href={installLink(app, shopId, data.instanceUrl)} />}>
-                Install
-              </Button>
+              <InstallButton app={app} shopId={shopId} instanceUrl={data.instanceUrl} />
             </li>
           ))}
         </ul>
