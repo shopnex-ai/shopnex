@@ -76,8 +76,13 @@ while (
   pglite = dirname(pglite)
 }
 cpSync(pglite, join(stage, 'admin/node_modules/@electric-sql/pglite'), { recursive: true, dereference: true })
-// The optional apps keep their data in the embedded database too (when no Postgres is set): one copy they share
+// The optional apps keep their data in the embedded database too (when no Postgres is set): one copy they share,
+// with the Drizzle driver for it (their bundles leave both out)
 cpSync(pglite, join(stage, 'node_modules/@electric-sql/pglite'), { recursive: true, dereference: true })
+cpSync(join(root, 'packages/app/node_modules/drizzle-orm'), join(stage, 'node_modules/drizzle-orm'), {
+  recursive: true,
+  dereference: true,
+})
 
 // Storefront: Astro's standalone server, inlined. It reads themes/ from the folder it runs in.
 await build({

@@ -4,7 +4,7 @@
 //   node scripts/bundle-app.mjs apps/stripe        → apps/stripe/dist/server.mjs
 //
 // Everything is inlined (no node_modules at runtime), except the embedded database (PGlite ships its WebAssembly as
-// files; only used when no Postgres URL is set) and an app's drizzle/ migrations folder, which is copied next to the
+// files, and is only used when no Postgres URL is set; its Drizzle driver would import it at startup) and an app's drizzle/ migrations folder, which is copied next to the
 // bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that one read is replaced by
 // the file's contents.
 import { build } from 'esbuild'
@@ -37,7 +37,8 @@ await build({
   entryPoints: [entry],
   outfile: join(dir, 'dist/server.mjs'),
   bundle: true,
-  external: ['@electric-sql/pglite', 'pg-native'],
+  // PGlite and Drizzle's driver for it stay out: they are only loaded when no Postgres URL is set
+  external: ['@electric-sql/pglite', 'drizzle-orm/pglite', 'drizzle-orm/pglite/migrator', 'pg-native'],
   platform: 'node',
   format: 'esm',
   target: 'node22',
