@@ -87,6 +87,9 @@ export async function startPayment(
   orderId: string,
   opts: { returnUrl: string; paymentMethodId?: string },
 ): Promise<PaymentSession> {
+  // Read before the transaction opens: it queries through `db`, and on the embedded database (one connection) a query
+  // that doesn't use `tx` waits for the transaction, which waits for it, so the whole shop freezes
+  const instance = await instanceUrl()
   const prepared = await db.transaction(async (tx) => {
     const [order] = await tx
       .select()
@@ -166,7 +169,7 @@ export async function startPayment(
     const request: PaymentSessionRequest = {
       kind: 'payment',
       id: session!.id,
-      instance: await instanceUrl(),
+      instance,
       shopId,
       orderId,
       orderNumber: order.orderNumber,
