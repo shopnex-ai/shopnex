@@ -1,7 +1,7 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, eq, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type {
   CustomFieldDefinition,
   CustomFieldResource,
@@ -11,7 +11,7 @@ import type {
 } from '@shopnex/db/schema'
 import { CustomFieldError } from './errors'
 
-export type CustomFieldInput = {
+export interface CustomFieldInput {
   resource: CustomFieldResource
   key: string
   label: string
@@ -36,7 +36,7 @@ const tables = {
   customer: schema.customers,
 } as const
 
-export async function list(shopId: string, resource?: CustomFieldResource, conn: Conn = db) {
+export async function list(shopId: string, resource: CustomFieldResource | undefined, conn: Conn) {
   return conn
     .select()
     .from(schema.customFieldDefinitions)
@@ -66,7 +66,7 @@ function cleanOptions(type: CustomFieldType, options: string[] | undefined) {
   return clean
 }
 
-export async function create(shopId: string, input: CustomFieldInput, conn: Conn = db) {
+export async function create(shopId: string, input: CustomFieldInput, conn: Conn) {
   const existing = await list(shopId, input.resource, conn)
   const [row] = await conn
     .insert(schema.customFieldDefinitions)
@@ -84,7 +84,7 @@ export async function create(shopId: string, input: CustomFieldInput, conn: Conn
 }
 
 // Null when not found
-export async function update(shopId: string, id: string, patch: CustomFieldPatch, conn: Conn = db) {
+export async function update(shopId: string, id: string, patch: CustomFieldPatch, conn: Conn) {
   if (patch.options) {
     const [current] = await conn
       .select()
@@ -104,8 +104,8 @@ export async function update(shopId: string, id: string, patch: CustomFieldPatch
 }
 
 // Deletes the definition and the values stored under its key. Null when not found.
-export async function remove(shopId: string, id: string) {
-  return db.transaction(async (tx) => {
+export async function remove(shopId: string, id: string, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const [row] = await tx
       .delete(schema.customFieldDefinitions)
       .where(and(eq(schema.customFieldDefinitions.shopId, shopId), eq(schema.customFieldDefinitions.id, id)))
@@ -125,7 +125,7 @@ function check(def: CustomFieldDefinition, value: CustomFieldValue): CustomField
   switch (def.type) {
     case 'text': {
       if (typeof value !== 'string') throw bad('expected text')
-      if (value.length > MAX_TEXT) throw bad(`at most ${MAX_TEXT} characters`)
+      if (value.length > MAX_TEXT) throw bad(`at most ${String(MAX_TEXT)} characters`)
       return value
     }
     case 'number': {
@@ -142,19 +142,22 @@ function check(def: CustomFieldDefinition, value: CustomFieldValue): CustomField
       }
       return value
     }
-    case 'file': {
-      // The URL an upload (Admin API: files) answers with
-      if (typeof value !== 'string' || value.length > 2000) throw bad('expected the URL of an uploaded file')
-      let url: URL
-      try {
-        url = new URL(value)
-      } catch {
-        throw bad('expected an absolute http(s) URL')
-      }
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') throw bad('expected an absolute http(s) URL')
-      return value
-    }
+    case 'file':
+      return checkFile(value, bad)
   }
+}
+
+// The URL an upload (Admin API: files) answers with
+function checkFile(value: CustomFieldValue, bad: (why: string) => CustomFieldError): string {
+  if (typeof value !== 'string' || value.length > 2000) throw bad('expected the URL of an uploaded file')
+  let url: URL
+  try {
+    url = new URL(value)
+  } catch {
+    throw bad('expected an absolute http(s) URL')
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw bad('expected an absolute http(s) URL')
+  return value
 }
 
 /**
@@ -166,30 +169,36 @@ export async function merge(
   resource: CustomFieldResource,
   updates: CustomFieldUpdates,
   current: CustomFieldValues = {},
-  conn: Conn = db,
+  conn: Conn,
 ): Promise<CustomFieldValues> {
   const keys = Object.keys(updates)
   if (!keys.length) return current
   const defs = new Map((await list(shopId, resource, conn)).map((d) => [d.key, d]))
-  const next = { ...current }
+  const next = new Map(Object.entries(current))
   for (const key of keys) {
     const def = defs.get(key)
     if (!def) throw new CustomFieldError('INVALID_VALUE', `There is no ${resource} custom field "${key}"`)
     const value = updates[key]
-    if (value === null || value === undefined) delete next[key]
-    else next[key] = check(def, value)
+    if (value === null || value === undefined) next.delete(key)
+    else next.set(key, check(def, value))
   }
-  return next
+  return Object.fromEntries(next)
 }
 
 /** The fields themes and the Storefront API may show for `resource`: storefront-visible definitions, non-empty values */
 export async function storefrontView(
   shopId: string,
   resource: CustomFieldResource,
-  conn: Conn = db,
+  conn: Conn,
 ): Promise<(values: CustomFieldValues) => CustomFieldValues> {
   const keys = (await list(shopId, resource, conn)).filter((d) => d.storefront).map((d) => d.key)
-  return (values) => Object.fromEntries(keys.flatMap((k) => (values[k] === undefined ? [] : [[k, values[k]!]])))
+  return (values) =>
+    Object.fromEntries(
+      keys.flatMap((key) => {
+        const value = values[key]
+        return value === undefined ? [] : [[key, value]]
+      }),
+    )
 }
 
 /**
@@ -201,7 +210,7 @@ export async function parseFilters(
   resource: CustomFieldResource,
   pairs: string[],
   opts: { storefrontOnly?: boolean } = {},
-  conn: Conn = db,
+  conn: Conn,
 ): Promise<Record<string, string>> {
   if (!pairs.length) return {}
   const defs = new Map(

@@ -97,4 +97,4 @@ passing.
   an open transaction) from the caller, so nothing in it can query outside the transaction it was given. That mistake
   freezes the embedded database (see `modules/db/src/embedded-guard.ts`) and is invisible on PostgreSQL.
 
-Today both lists hold `modules/drafts`.
+Today both lists hold `modules/custom-fields`.
