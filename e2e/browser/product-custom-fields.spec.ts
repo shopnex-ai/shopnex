@@ -1,6 +1,6 @@
 // Product page: custom fields are saved by the page's own Save bar together with the other fields, and
 // Discard drops them too (they used to have a separate Save that the page's Save ignored).
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, PASSWORD, call, ok, requireApp } from '../lib'

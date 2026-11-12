@@ -2,7 +2,7 @@
 // the delay the running app's email worker sends it through the shop's SMTP (a tiny server in this process); a
 // shopper who finishes the order is never emailed, nobody is emailed twice, and an unsubscribed address is skipped.
 // The delay is a shop setting, so the test sets it to the shortest and ages the carts instead of waiting.
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './test'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, SHOP, requireApp, sellableVariants } from '../lib'
@@ -98,6 +98,8 @@ const reminders = () =>
     .filter((m) => m.includes('You left something'))
 
 test('an abandoned checkout gets one reminder after the delay, with a way back and a way out', async ({ page }) => {
+  // Two waits for the worker (up to 30s each) and two of 8s: more than the default 60s
+  test.setTimeout(120_000)
   const cart = await openCheckout(page)
   await giveEmail(page, cart.id)
 

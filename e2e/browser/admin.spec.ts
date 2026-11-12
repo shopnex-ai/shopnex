@@ -1,5 +1,5 @@
 // Signing in to the admin and the header's "View store" link.
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test'
 import { Fixtures, PASSWORD, requireApp } from '../lib'
 
 const fx = new Fixtures()
