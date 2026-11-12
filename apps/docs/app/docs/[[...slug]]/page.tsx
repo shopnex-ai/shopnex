@@ -12,11 +12,13 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
   if (!page) notFound()
 
   const MDX = page.data.body
+  const isHome = !slug?.length
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
+    <DocsPage toc={isHome ? [] : page.data.toc} full={isHome || page.data.full}>
+      {/* The home page draws its own heading (components/home.tsx) */}
+      {!isHome && <DocsTitle>{page.data.title}</DocsTitle>}
+      {!isHome && <DocsDescription>{page.data.description}</DocsDescription>}
       <DocsBody>
         <MDX components={getMDXComponents()} />
         <PageFeedback

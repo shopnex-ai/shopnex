@@ -8,7 +8,7 @@
 
 <h1 align="center">ShopNex</h1>
 
-<p align="center"><b>Self-hosted Shopify alternative. Run <code>docker compose up</code>, open the setup wizard, start selling.</b></p>
+<p align="center"><b>Self-hosted Shopify alternative. Run <code>npx create-shopnex@latest</code>, open the setup wizard, start selling.</b></p>
 
 <p align="center"><a href="https://demo.shopnex.ai/admin/signup?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
@@ -28,16 +28,30 @@
   <img src="docs/images/storefront.webp" alt="ShopNex storefront home page with a hero banner and a Shop now button" width="900">
 </p>
 
-<!-- TODO: add a ~15s GIF: docker compose up -> setup wizard -> first order, e.g. docs/images/quickstart.gif -->
+## Quick start
 
-Run your own shop with an admin, a themeable storefront, hosted checkout, a typed API and webhooks, and extend it with
-out-of-process apps. No code or CLI needed for day-to-day selling.
+Requires [Node](https://nodejs.org) 22.22+. No Docker, no clone, no database to install.
+
+```sh
+npx create-shopnex@latest my-shop
+```
+
+Open http://localhost:3000, follow the setup wizard, and your storefront is on http://localhost:4321.
+
+- Add optional apps: `--with stripe,cj,shippo`.
+- Everything lives in the `my-shop` folder (`.env`, embedded database in `.pglite/`). Delete it to start over.
+- It's a trial setup. For production, set `DATABASE_URL` to PostgreSQL or see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
+
+## What you get
 
 - **Admin**: products, collections, orders, discounts, shipping, taxes, staff and settings in the browser
-- **Storefront**: a bundled Astro storefront with Liquid themes (Shopify-style object names, but themes are ported to ShopNex's format, not drop-in), or bring your own through the typed REST Storefront API (Shopify-style naming, not GraphQL)
+- **Storefront**: a bundled Astro storefront with Liquid themes, or bring your own through the typed REST Storefront API
 - **Hosted checkout**: shipping rates, payment methods, discount codes, order confirmation
 - **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
-- **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
+- **Multi-tenant**: one shop by default, many with `TENANCY_MODE`
+- **Yours**: MIT licensed, no platform fees, all data in your own PostgreSQL
+
+ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) and [releases](https://github.com/shopnex-ai/shopnex/releases).
 
 ## Why I built this
 
@@ -47,52 +61,6 @@ without affecting the core.
 
 In ShopNex I set a clear contract between the core and applications. Apps talk to it through an SDK and a bridge, with
 scoped API tokens and signed webhooks.
-
-## Why ShopNex
-
-- **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
-- **You own your data.** Everything lives in your PostgreSQL database on your server.
-- **Built for merchants, not just developers.** Day-to-day selling happens in the browser admin; `.env` holds infrastructure only.
-- **One command to try, one to run.** `npx create-shopnex@latest` starts a trial on your machine with nothing to install; `docker compose up` runs the real thing: the admin, storefront and migrations.
-- **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to ShopNex's format rather than drop-in, so check the bundled ones for the structure.
-- **Agency friendly.** Run many shops from one install with `TENANCY_MODE`.
-- **Extend without forking.** Apps run out of process through scoped API tokens and signed webhooks.
-
-## Status
-
-ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for what's done and what's next, and the
-[releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
-
-## Quick start
-
-### Try it on your machine (no Docker, no clone)
-
-Requires [Node](https://nodejs.org) 22.22 or newer.
-
-```sh
-npx create-shopnex                                  # ./shopnex
-npx create-shopnex my-shop --with stripe,cj,shippo  # ./my-shop, plus the optional apps
-```
-
-- Admin and API on `:3000`, storefront on `:4321` (`--port`, `--storefront-port`), apps on `:4600` `:4700` `:4900`; all on `127.0.0.1`.
-- State lives in the folder: `.env` (`DATABASE_URL`, `SHOPNEX_SECRET`), `data/` (embedded PGlite), `apps/<name>/`. Set `DATABASE_URL` in the `.env` to use PostgreSQL. Delete the folder to start over.
-- Trial only: one process owns the database. [All options](packages/create-shopnex/README.md).
-
-### Run it for real (Docker)
-
-Requires [Docker](https://docs.docker.com/get-docker/).
-
-```sh
-curl -fsSLO https://raw.githubusercontent.com/shopnex-ai/shopnex/main/deploy/docker-compose.yml
-docker compose up
-```
-
-Open http://localhost:3000 once the logs settle and follow the setup wizard to create the owner account.
-Ctrl+C stops it; add `-d` (`docker compose up -d`) to keep it running in the background.
-Anyone who reaches a fresh install can claim it, so finish setup right after deploying.
-
-No `.env` needed. For a public server, set `DOMAIN` (HTTPS for the shop, plus `stripe.` and `cj.` subdomains for the
-apps, all pointing at the server) and pin `SHOPNEX_VERSION` to a release tag; see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
 
 ## Development
 
