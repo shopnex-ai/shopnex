@@ -10,8 +10,9 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import Stripe from 'stripe'
-import { createShopnexApp, type RefundSessionRequest, type ShopContext } from '@shopnex/app'
+import { createShopnexApp, type ShopContext } from '@shopnex/app'
 import { icon, SettingsPage } from './settings'
+import { paymentRoutes } from './payments'
 import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
 // Public origin ShopNex, the admin (iframe) and Stripe reach this app at
@@ -173,94 +174,9 @@ app.post('/api/settings', async (c) => {
   return c.json({ ready, message: ready ? 'Stripe is ready to take payments' : 'Saved' })
 })
 
-// --- ShopNex → app: payment / refund sessions (signed with the instance's key) ---
+// --- ShopNex → app: payment / refund sessions (signed with the instance's key), see payments.ts ---
 
-// Stripe Checkout sessions last 30 minutes to 24 hours
-const checkoutExpiry = (expiresAt: string) => {
-  const now = Math.floor(Date.now() / 1000)
-  const wanted = Math.floor(new Date(expiresAt).getTime() / 1000)
-  return Math.min(Math.max(wanted, now + 30 * 60 + 60), now + 24 * 3600 - 60)
-}
-
-app.post('/payments/session', async (c) => {
-  const { request, shop } = await shopnex.verifyPaymentsRequest(c, 'payment')
-  try {
-    const metadata = {
-      shopnex_session_id: request.id,
-      shopnex_instance: shop.instance,
-      shopnex_shop_id: shop.shopId,
-      shopnex_order_id: request.orderId,
-      // What this session must collect: the webhook checks Stripe's amount against it before marking the order paid
-      shopnex_amount_cents: String(request.amount.cents),
-      shopnex_currency: request.amount.currency.toLowerCase(),
-    }
-    const session = await (
-      await stripeFor(shop)
-    ).checkout.sessions.create(
-      {
-        mode: 'payment',
-        // Tags ShopNex checkouts in the Stripe Dashboard
-        integration_identifier: 'shopnex_checkout_qmvkzrtd',
-        client_reference_id: request.id,
-        customer_email: request.customer.email,
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: request.amount.currency.toLowerCase(),
-              unit_amount: request.amount.cents,
-              product_data: { name: `Order #${request.orderNumber}` },
-            },
-          },
-        ],
-        success_url: request.returnUrl,
-        cancel_url: request.returnUrl,
-        expires_at: checkoutExpiry(request.expiresAt),
-        metadata,
-        payment_intent_data: { metadata },
-      },
-      // ShopNex retrying the same session gets the same Checkout Session
-      { idempotencyKey: `shopnex-payment-${request.id}` },
-    )
-    return c.json({ redirectUrl: session.url })
-  } catch (error) {
-    console.error(`[stripe] payment session ${request.id}:`, message(error))
-    return c.json({ error: message(error) }, 502)
-  }
-})
-
-// Answers right away; the refund is made and reported to ShopNex in the background
-app.post('/payments/refund', async (c) => {
-  const { request, shop } = await shopnex.verifyPaymentsRequest(c, 'refund')
-  void refund(shop, request)
-  return c.body(null, 202)
-})
-
-async function refund(shop: ShopContext, request: RefundSessionRequest) {
-  try {
-    if (!request.payment.externalId) throw new Error('No Stripe payment to refund')
-    const result = await (
-      await stripeFor(shop)
-    ).refunds.create(
-      {
-        payment_intent: request.payment.externalId,
-        amount: request.amount.cents,
-        metadata: { shopnex_session_id: request.id, shopnex_order_id: request.orderId },
-      },
-      { idempotencyKey: `shopnex-refund-${request.id}` },
-    )
-    if (result.status === 'failed' || result.status === 'canceled') {
-      await shop.payments.reject(request.id, `Stripe refund ${result.status}`)
-    } else {
-      await shop.payments.resolve(request.id, result.id)
-    }
-  } catch (error) {
-    console.error(`[stripe] refund ${request.id}:`, message(error))
-    await shop.payments
-      .reject(request.id, message(error))
-      .catch((e) => console.error(`[stripe] reject refund ${request.id}:`, message(e)))
-  }
-}
+app.route('/', paymentRoutes({ verify: shopnex.verifyPaymentsRequest, stripeFor }))
 
 // --- Stripe → app ---
 

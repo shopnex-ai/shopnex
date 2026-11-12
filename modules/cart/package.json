@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/apps": "workspace:*",
@@ -21,6 +22,7 @@
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }
