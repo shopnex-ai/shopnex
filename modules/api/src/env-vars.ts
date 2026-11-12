@@ -13,7 +13,25 @@ export type EnvVar = {
 }
 
 export const ENV_VARS: EnvVar[] = [
-  { name: 'DATABASE_URL', required: true, description: 'PostgreSQL connection string.' },
+  {
+    name: 'DATABASE_URL',
+    required: true,
+    description:
+      'PostgreSQL connection string. `pglite:<directory>` (or `pglite:memory`) runs an embedded PGlite database inside the server instead, migrated at start: for trying ShopNex out on one machine, not for production.',
+  },
+  {
+    name: 'SHOPNEX_MIGRATIONS_DIR',
+    required: false,
+    description:
+      'Folder with the database migrations (the one that holds `meta/_journal.json`). Read when the server migrates the database itself at start: the embedded database (`pglite:`), or PostgreSQL with `SHOPNEX_AUTO_MIGRATE`. Found automatically when the server runs from the repository.',
+  },
+  {
+    name: 'SHOPNEX_AUTO_MIGRATE',
+    required: false,
+    default: 'false',
+    description:
+      "Set to `true` to apply the database migrations at start on PostgreSQL, as the embedded database always does. Run one server at a time with it (there is no lock between servers). `npx create-shopnex` sets it. Otherwise migrate with `pnpm db:migrate` or the deploy's migration step.",
+  },
   {
     name: 'SHOPNEX_SECRET',
     required: true,

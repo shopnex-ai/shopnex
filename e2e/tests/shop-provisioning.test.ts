@@ -68,7 +68,9 @@ describe('createShop', () => {
   test('sample products are active, scoped to the shop and on its Online Store', async () => {
     const shop = await createShop({ ownerId: owner.id, name: 'E2E Samples' })
     created.push(shop.id)
-    await seedSampleProducts(shop.id)
+    assert.equal(await seedSampleProducts(shop.id), 4)
+    // Asking again adds nothing
+    assert.equal(await seedSampleProducts(shop.id), 0)
     const products = await db.select().from(schema.products).where(eq(schema.products.shopId, shop.id))
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))

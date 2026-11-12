@@ -19,3 +19,6 @@ APP_URL = "https://${main_domain}"
 STRIPE_APP_URL = "https://${stripe_domain}"
 SHOPNEX_VERSION = "latest"
 SHOPNEX_SECRET = "${shopnex_secret}"
+# The Stripe app's private key (snxk_…). Dokploy cannot make one: see the top of docker-compose.yml for the command, then
+# fill it in before the first deploy. Keep it: a new key makes it a new app, so merchants reconnect.
+STRIPE_APP_KEY = ""

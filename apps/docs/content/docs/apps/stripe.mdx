@@ -1,0 +1,57 @@
+---
+title: Stripe
+description: Take card, Apple Pay and Google Pay payments with the bundled Stripe app.
+---
+
+Stripe is a bundled payments app. It offers **Credit card** at checkout (Apple Pay and Google Pay included) through Stripe Checkout. ShopNex never calls Stripe itself: the app starts the payment, receives Stripe's events and tells ShopNex when an order is paid. It replaces the old Stripe plugin.
+
+## Turn it on
+
+The app runs as its own process next to ShopNex. The Docker and Dokploy setups include it. In local development it listens on port `4600`.
+
+- Set `STRIPE_APP_URL` to the app's public origin (for example `https://stripe.example.com`). The default is `http://localhost:4600`.
+- Route that domain to port `4600` of the `stripe` service. See [Dokploy & similar platforms](/docs/self-hosting/dokploy).
+- To skip it in local development, run `STRIPE=none pnpm dev`.
+
+Install it from **Admin → Apps** or **Settings → Payments**. "Credit card" is listed right away as _Setup needed_ until you connect Stripe.
+
+## Connect Stripe
+
+1. In the Stripe Dashboard, go to **Developers → API keys → Create restricted key**. Give it:
+   - **write** access to Checkout Sessions, Refunds and Webhook Endpoints
+   - **read** access to Account
+
+   A secret key (`sk_…`) also works, but a restricted key (`rk_…`) limits the damage if it leaks.
+
+2. Paste the key into **Connect Stripe** in the app and save. The app checks it with Stripe. The key is stored encrypted in your shop.
+
+A test-mode key (`rk_test_…`) lets you try checkout without real money; the app then shows _(test mode)_. Use the [test cards](https://docs.stripe.com/testing), for example `4242 4242 4242 4242`.
+
+## Webhook
+
+Stripe has to tell the app when a payment completes, otherwise orders are never marked paid. The badge reads **Almost there** until this is set up.
+
+- **Public https URL:** the app creates the webhook endpoint in Stripe by itself and stores its signing secret.
+- **Local or non-https URL:** Stripe can't reach the app. Forward events with the Stripe CLI and paste the signing secret (`whsec_…`) it prints:
+
+  ```sh
+  stripe listen --forward-to '<webhook URL shown in the app>'
+  ```
+
+When both the key and the webhook are set, the badge turns to **Taking payments**.
+
+## How a payment works
+
+1. The buyer picks **Credit card** and ShopNex asks the app to start a payment session.
+2. The app creates a Stripe Checkout session and the buyer pays on Stripe's page.
+3. Stripe's webhook reports the result. The app checks that the amount and currency match what the order needed, then marks the order paid, or rejects it if the checkout expired or the payment failed.
+4. Refunds from the admin go through the app to Stripe.
+
+See the source in `apps/stripe` if you are building your own payment app.
+
+## Troubleshooting
+
+- **"Stripe rejected this key":** check that the key is complete and from the right account and mode.
+- **"Almost there":** the webhook secret is missing. Use a public https `STRIPE_APP_URL`, or run `stripe listen`.
+- **Orders stay unpaid after paying:** the webhook isn't reaching the app. Check `STRIPE_APP_URL` and the endpoint in the Stripe Dashboard.
+- **Checkout links point at `localhost`:** `APP_URL` or `STRIPE_APP_URL` is unset.

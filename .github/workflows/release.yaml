@@ -40,14 +40,28 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          - { image: shopnex, suffix: '', file: Dockerfile, arch: amd64, runner: ubuntu-latest }
-          - { image: shopnex, suffix: '', file: Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: amd64, runner: ubuntu-latest }
-          - { image: stripe, suffix: -stripe, file: Dockerfile.app, app: stripe, arch: arm64, runner: ubuntu-24.04-arm }
+          - { image: shopnex, suffix: '', file: deploy/Dockerfile, arch: amd64, runner: ubuntu-latest }
+          - { image: shopnex, suffix: '', file: deploy/Dockerfile, arch: arm64, runner: ubuntu-24.04-arm }
+          - {
+              image: stripe,
+              suffix: -stripe,
+              file: deploy/Dockerfile.app,
+              app: stripe,
+              arch: amd64,
+              runner: ubuntu-latest,
+            }
+          - {
+              image: stripe,
+              suffix: -stripe,
+              file: deploy/Dockerfile.app,
+              app: stripe,
+              arch: arm64,
+              runner: ubuntu-24.04-arm,
+            }
           - {
               image: cj-dropshipping,
               suffix: -cj-dropshipping,
-              file: Dockerfile.app,
+              file: deploy/Dockerfile.app,
               app: cj-dropshipping,
               arch: amd64,
               runner: ubuntu-latest,
@@ -55,13 +69,27 @@ jobs:
           - {
               image: cj-dropshipping,
               suffix: -cj-dropshipping,
-              file: Dockerfile.app,
+              file: deploy/Dockerfile.app,
               app: cj-dropshipping,
               arch: arm64,
               runner: ubuntu-24.04-arm,
             }
-          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: amd64, runner: ubuntu-latest }
-          - { image: shippo, suffix: -shippo, file: Dockerfile.app, app: shippo, arch: arm64, runner: ubuntu-24.04-arm }
+          - {
+              image: shippo,
+              suffix: -shippo,
+              file: deploy/Dockerfile.app,
+              app: shippo,
+              arch: amd64,
+              runner: ubuntu-latest,
+            }
+          - {
+              image: shippo,
+              suffix: -shippo,
+              file: deploy/Dockerfile.app,
+              app: shippo,
+              arch: arm64,
+              runner: ubuntu-24.04-arm,
+            }
     steps:
       - uses: actions/checkout@v7
 
@@ -234,3 +262,79 @@ jobs:
             exit 0
           fi
           curl --fail --silent --show-error -X POST "$HOOK"
+
+  # What `npx create-shopnex` downloads: the admin, the storefront and the migrations in one file, plain JavaScript
+  # and WebAssembly, so a single asset serves every OS and CPU (scripts/build-node-bundle.mjs).
+  node-bundle:
+    name: Attach the npx bundle
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - name: Build and attach
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          node scripts/build-node-bundle.mjs "${TAG#v}" "$RUNNER_TEMP/bundle"
+          gh release upload "$TAG" "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz.sha256 --clobber
+
+  # Publishes create-shopnex to npm once the release and its bundle are attached (it downloads the bundle of its own
+  # version, so it must never be published before that). It uses npm trusted publishing, so there is no npm token:
+  # create-shopnex's Trusted Publisher settings on npmjs.com name this repository and this file (release.yaml).
+  # Pre-releases (v1.0.0-rc.1) go to the `next` dist-tag and leave `latest` alone.
+  npm:
+    name: Publish create-shopnex to npm
+    needs: node-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Publish
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Trusted publishing needs npm 11.5.1 or newer
+          npm --version
+          version="${TAG#v}"
+          package="$(node -p "require('./packages/create-shopnex/package.json').version")"
+          if [ "$package" != "$version" ]; then
+            echo "packages/create-shopnex is $package but the tag is $version: run pnpm bump before tagging" >&2
+            exit 1
+          fi
+          # A re-run of a tag that already published
+          if npm view "create-shopnex@$version" version > /dev/null 2>&1; then
+            echo "create-shopnex@$version is already on npm"
+            exit 0
+          fi
+          dist_tag=latest
+          if [[ "$version" == *-* ]]; then dist_tag=next; fi
+          cd packages/create-shopnex
+          npm publish --provenance --access public --tag "$dist_tag"

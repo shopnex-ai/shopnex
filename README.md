@@ -14,10 +14,10 @@
 
 <p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases" alt="Release"></a>
+  <a href="https://github.com/shopnex-ai/shopnex/releases"><img src="https://img.shields.io/github/v/release/shopnex-ai/shopnex?include_prereleases&sort=semver" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shopnex-ai/shopnex" alt="License: MIT"></a>
   <a href=".node-version"><img src="https://img.shields.io/badge/node-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white" alt="Node"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
+  <a href="https://discord.gg/xQ8xKV6MdF"><img src="https://img.shields.io/badge/Discord-join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the ShopNex Discord"></a>
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/storefront.png" alt="ShopNex storefront product page with variants and add to cart" width="900">
+  <img src="docs/images/storefront.webp" alt="ShopNex storefront home page with a hero banner and a Shop now button" width="900">
 </p>
 
 <!-- TODO: add a ~15s GIF: docker compose up -> setup wizard -> first order, e.g. docs/images/quickstart.gif -->
@@ -39,12 +39,21 @@ out-of-process apps. No code or CLI needed for day-to-day selling.
 - **Extensible**: scoped API tokens, signed webhooks, embedded apps and an app marketplace. No third-party code in the core
 - **Multi-tenant underneath**: one shop by default, many shops by flipping `TENANCY_MODE`
 
+## Why I built this
+
+I worked for two years at YUM Brands and learned how easy it is to build a system that's hard to manage, and how complex
+e-commerce can get. We integrated with systems like DoorDash, and without a clear contract it was hard to make changes
+without affecting the core.
+
+In ShopNex I set a clear contract between the core and applications. Apps talk to it through an SDK and a bridge, with
+scoped API tokens and signed webhooks.
+
 ## Why ShopNex
 
 - **No platform fees.** MIT licensed, with no monthly plan and no cut of your sales. You pay your host and your payment processor.
 - **You own your data.** Everything lives in your PostgreSQL database on your server.
 - **Built for merchants, not just developers.** Day-to-day selling happens in the browser admin; `.env` holds infrastructure only.
-- **One command to run.** `docker compose up` starts the admin, storefront and migrations.
+- **One command to try, one to run.** `npx create-shopnex@latest` starts a trial on your machine with nothing to install; `docker compose up` runs the real thing: the admin, storefront and migrations.
 - **Familiar themes.** Liquid templates with Shopify-style object names. Themes are ported to ShopNex's format rather than drop-in, so check the bundled ones for the structure.
 - **Agency friendly.** Run many shops from one install with `TENANCY_MODE`.
 - **Extend without forking.** Apps run out of process through scoped API tokens and signed webhooks.
@@ -55,6 +64,21 @@ ShopNex is pre-1.0 and releases often. See the [roadmap](docs/roadmap.md) for wh
 [releases](https://github.com/shopnex-ai/shopnex/releases) for what changed. Pin `SHOPNEX_VERSION` in production.
 
 ## Quick start
+
+### Try it on your machine (no Docker, no clone)
+
+Requires [Node](https://nodejs.org) 22.22 or newer.
+
+```sh
+npx create-shopnex                                  # ./shopnex
+npx create-shopnex my-shop --with stripe,cj,shippo  # ./my-shop, plus the optional apps
+```
+
+- Admin and API on `:3000`, storefront on `:4321` (`--port`, `--storefront-port`), apps on `:4600` `:4700` `:4900`; all on `127.0.0.1`.
+- State lives in the folder: `.env` (`DATABASE_URL`, `SHOPNEX_SECRET`), `data/` (embedded PGlite), `apps/<name>/`. Set `DATABASE_URL` in the `.env` to use PostgreSQL. Delete the folder to start over.
+- Trial only: one process owns the database. [All options](packages/create-shopnex/README.md).
+
+### Run it for real (Docker)
 
 Requires [Docker](https://docs.docker.com/get-docker/).
 
@@ -93,7 +117,7 @@ Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer r
 | [Apps and marketplace](docs/apps.md)     | API tokens, building apps with `@shopnex/app`, embedded apps, marketplace   |
 | [Webhooks](docs/webhooks.md)             | Topics, signatures, delivery and retries                                    |
 | [Roadmap](docs/roadmap.md)               | What's done and what's next                                                 |
-| [Releasing](RELEASING.md)                | How to cut a release                                                        |
+| [Releasing](docs/RELEASING.md)           | How to cut a release                                                        |
 
 ## Community
 
@@ -102,8 +126,8 @@ Chat with the team and other users on [Discord](https://discord.gg/xQ8xKV6MdF), 
 
 ## Contributing
 
-Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately,
-as described in [SECURITY.md](SECURITY.md).
+Issues and pull requests are welcome: see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Report security issues privately,
+as described in [SECURITY.md](.github/SECURITY.md).
 
 See [`@shopnex/app`](packages/app) for building apps with no database or OAuth code: authenticate,
 Admin API, per-shop data, signed requests (`@shopnex/app/store`), and admin-styled UI (`@shopnex/app/ui`).

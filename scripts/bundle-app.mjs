@@ -3,10 +3,12 @@
 //
 //   node scripts/bundle-app.mjs apps/stripe        → apps/stripe/dist/server.mjs
 //
-// Everything is inlined (no node_modules at runtime). @shopnex/app reads the app-bridge file from disk, which a
-// bundle can't do, so that one read is replaced by the file's contents.
+// Everything is inlined (no node_modules at runtime), except the embedded database (PGlite ships its WebAssembly as
+// files, and is only used when no Postgres URL is set; its Drizzle driver would import it at startup) and an app's drizzle/ migrations folder, which is copied next to the
+// bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that one read is replaced by
+// the file's contents.
 import { build } from 'esbuild'
-import { existsSync, readFileSync } from 'node:fs'
+import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -35,6 +37,8 @@ await build({
   entryPoints: [entry],
   outfile: join(dir, 'dist/server.mjs'),
   bundle: true,
+  // PGlite and Drizzle's driver for it stay out: they are only loaded when no Postgres URL is set
+  external: ['@electric-sql/pglite', 'drizzle-orm/pglite', 'drizzle-orm/pglite/migrator', 'pg-native'],
   platform: 'node',
   format: 'esm',
   target: 'node22',
@@ -45,3 +49,7 @@ await build({
   plugins: [inlineAppBridge],
   logLevel: 'info',
 })
+
+// Migrations are read from disk: ship them with the bundle
+rmSync(join(dir, 'dist/drizzle'), { recursive: true, force: true })
+if (existsSync(join(dir, 'drizzle'))) cpSync(join(dir, 'drizzle'), join(dir, 'dist/drizzle'), { recursive: true })

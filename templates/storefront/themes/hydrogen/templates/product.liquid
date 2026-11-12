@@ -99,6 +99,7 @@
               <div class="rte pt-4 pb-4">{{ product.description }}</div>
             </details>
           {%- endif %}
+          {%- render 'custom-fields', fields: product.custom_fields -%}
           {%- if shipping.size > 0 and settings.shipping_title != blank %}
             <details class="tab mb-10">
               <summary>

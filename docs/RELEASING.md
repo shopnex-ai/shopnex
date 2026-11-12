@@ -54,9 +54,19 @@ Ship a stable release every one to two weeks, on a fixed weekday (Tuesday or Wed
 
 ## Notes
 
+- The release also attaches `shopnex-v<version>-node.tgz` and its `.sha256` (the `node-bundle` job). That is the
+  build `npx create-shopnex` downloads, so the version `pnpm bump` sets in `packages/create-shopnex` must be the
+  tag's version: the CLI asks for exactly its own (the `npm` job fails the release's last step if they differ).
+  After the bundle is attached, the `npm` job publishes `create-shopnex` to npm (`latest`, or `next` for a
+  pre-release) with provenance. It uses npm trusted publishing (no token): the package's Trusted Publisher settings on npmjs.com
+  must name this repository and `release.yaml` (and `edge.yaml` for the edge build), with `npm publish` allowed.
+- `create-shopnex@edge` is the rolling build of `main` (`.github/workflows/edge.yaml`): each push replaces the file of
+  the `edge` pre-release, and the CLI is published to the `edge` dist-tag only when `packages/create-shopnex`
+  changed. The `edge` release is created once and must not be edited by hand or by a workflow: an edit rebuilds the
+  landing (`landing-rebuild.yaml`), and the changelog is built from GitHub Releases.
 - The release workflow puts the first image from each pull request's description under its entry in the
   generated notes (`scripts/release-notes-images.mjs`). PRs without an image just list their title, and a failure
-  there never fails the release. Ask contributors for a screenshot on visible changes (see `CONTRIBUTING.md`).
+  there never fails the release. Ask contributors for a screenshot on visible changes (see `.github/CONTRIBUTING.md`).
 - Tags with a suffix (e.g. `v0.8.0-rc.1`) are published as pre-releases.
 - Stable releases also move the `latest` GHCR tag, and `docker save` archives of
   both images are attached to the release as assets.

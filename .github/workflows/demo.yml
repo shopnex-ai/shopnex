@@ -1,4 +1,4 @@
-name: Demo image
+name: Deploy demo
 
 # Builds the Docker image and pushes it to GHCR (ghcr.io/<owner>/<repo>:edge) for the demo, plus the
 # Stripe, CJ Dropshipping and Shippo app images (<repo>-stripe:edge, <repo>-cj-dropshipping:edge, <repo>-shippo:edge).
@@ -6,6 +6,10 @@ name: Demo image
 # The Dokploy app uses Provider "Docker" with :edge. If the DOKPLOY_WEBHOOK_URL secret (the app's deploy
 # webhook from Dokploy: Deployments > Webhook URL) is set, a redeploy is triggered after the push; otherwise
 # it only pushes. This never touches the app's environment in Dokploy.
+#
+# The job runs in the "Production" environment, so the repository's Deployments list shows the latest demo
+# deploy (https://demo.shopnex.ai) as active. The status means the image was pushed and the redeploy was
+# triggered; it does not wait for Dokploy to finish rolling out.
 
 on:
   push:
@@ -30,6 +34,9 @@ permissions:
 jobs:
   image:
     runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: https://demo.shopnex.ai
     steps:
       - uses: actions/checkout@v7
 
@@ -48,6 +55,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
+          file: deploy/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |
@@ -59,7 +67,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=stripe
           platforms: linux/amd64
           push: true
@@ -72,7 +80,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=cj-dropshipping
           platforms: linux/amd64
           push: true
@@ -85,7 +93,7 @@ jobs:
       - uses: docker/build-push-action@v7
         with:
           context: .
-          file: Dockerfile.app
+          file: deploy/Dockerfile.app
           build-args: APP=shippo
           platforms: linux/amd64
           push: true

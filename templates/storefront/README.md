@@ -32,7 +32,8 @@ src/
 scripts/     themes.mjs builds themes' CSS and scripts; dev.mjs runs it in watch mode beside astro dev
 themes/
   index.json           the included themes; the first is the default
-  storeplate/          the default theme; its cart is a React island
+  ks-bootshop/         the default theme: Bootstrap 5, a cart drawer; plain scripts
+  storeplate/          its cart is a React island
   maison/              a printed, editorial theme (serif type, hairline rules); plain scripts, no islands
   shopco/              a bold fashion store (wide uppercase type, pill buttons, rounded cards); plain scripts
   hydrogen/            a quiet store in Shopify Hydrogen's style (system type, 4:5 photos, sticky gallery); plain scripts

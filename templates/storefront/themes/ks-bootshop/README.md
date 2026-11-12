@@ -8,7 +8,7 @@ storefront on [Bootstrap](https://getbootstrap.com/) 5, with no JavaScript frame
 - Product page with option pickers, gallery and structured data; catalog pages with sorting and paging
 - Cart drawer on the Storefront API, announcement bar, main and footer menus from Online store → Navigation
 - Theme settings: primary, background and text colors, heading and body fonts, corner radius, custom CSS and
-  head code. Three styles: BootShop, Ocean, Forest.
+  head code. Styles: Original (the green Forest look, Montserrat and Open Sans), BootShop (pink), Ocean.
 
 See [Writing a theme](../../../../apps/docs/content/docs/storefronts/themes.mdx) for the folder layout.
 

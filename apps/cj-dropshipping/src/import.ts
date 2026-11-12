@@ -42,10 +42,10 @@ export async function checkAvailability(shop: ShopContext, tables: Tables, pids:
       while (foreground > 0) await new Promise((resolve) => setTimeout(resolve, 500))
       try {
         await cj.products.getProductDetails({ pid })
-        tables.setAvailable(shop, pid, true)
+        await tables.setAvailable(shop, pid, true)
       } catch (error) {
         // Anything else (rate limit, CJ down) says nothing about the product
-        if (isOffSale(error)) tables.setAvailable(shop, pid, false)
+        if (isOffSale(error)) await tables.setAvailable(shop, pid, false)
       }
     }
   } catch (error) {
@@ -55,7 +55,7 @@ export async function checkAvailability(shop: ShopContext, tables: Tables, pids:
   }
 }
 
-export const needsCheck = (known: ReturnType<Tables['availability']>, pid: string) => {
+export const needsCheck = (known: Awaited<ReturnType<Tables['availability']>>, pid: string) => {
   const status = known.get(pid)
   return !status || Date.now() - status.checkedAt > STALE_MS
 }
@@ -126,8 +126,8 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
     },
   })
 
-  cjVariants.forEach((v) => tables.saveVariant(shop, v.variantSku, pid, v.vid))
-  tables.setAvailable(shop, pid, true)
+  for (const v of cjVariants) await tables.saveVariant(shop, v.variantSku, pid, v.vid)
+  await tables.setAvailable(shop, pid, true)
   return created
 }
 
@@ -162,8 +162,8 @@ export async function linkProduct(shop: ShopContext, tables: Tables, pid: string
   const details = await cj.products.getProductDetails({ pid })
   const variants = details.data?.variants ?? []
   if (variants.length === 0) throw new Error(details.error ?? 'This CJ product has no variants')
-  variants.forEach((v) => tables.saveVariant(shop, v.variantSku, pid, v.vid))
-  tables.setAvailable(shop, pid, true)
+  for (const v of variants) await tables.saveVariant(shop, v.variantSku, pid, v.vid)
+  await tables.setAvailable(shop, pid, true)
   await markFulfilled(shop, new Set(variants.map((v) => v.variantSku))).catch((error) =>
     console.warn('[cj] marking the product as fulfilled by CJ:', error instanceof Error ? error.message : error),
   )

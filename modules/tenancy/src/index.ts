@@ -33,7 +33,7 @@ export {
   withStorefrontUrl,
 } from './shops'
 export { getOpenInvitation, userExists } from './invitations'
-export { createShop, seedDefaultMenu } from './provisioning'
+export { createShop, NEW_SHOP_NAME, seedDefaultMenu } from './provisioning'
 export * as staffService from './staff'
 export { StaffError, type StaffErrorCode } from './staff'
 export * as platformService from './platform'

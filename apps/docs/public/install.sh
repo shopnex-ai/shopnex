@@ -36,6 +36,10 @@ DOMAIN="${SHOPNEX_DOMAIN:-$(old DOMAIN)}"
 LEGACY_SECRET="$(old BETTER_AUTH_SECRET)"
 SNX_SECRET="$(old SHOPNEX_SECRET)"
 [ -n "$SNX_SECRET" ] || SNX_SECRET="$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+# The Stripe app's identity (a snxk_ private key), made once and kept like the secret: a new one is a new app, so the
+# merchants' saved keys could not be read. An Ed25519 key in PKCS#8 is a fixed 16-byte header plus 32 random bytes.
+STRIPE_KEY="$(old STRIPE_APP_KEY)"
+[ -n "$STRIPE_KEY" ] || STRIPE_KEY="snxk_$({ printf '\060\056\002\001\000\060\005\006\003\053\145\160\004\042\004\040'; head -c 32 /dev/urandom; } | base64 | tr -d '\n=' | tr '+/' '-_')"
 if [ -n "$DOMAIN" ]; then
   APP_URL="https://$DOMAIN"; STRIPE_URL="https://stripe.$DOMAIN"
 else
@@ -43,8 +47,8 @@ else
   APP_URL="http://$IP:3000"; STRIPE_URL="http://$IP:4600"
 fi
 # chmod first: a umask does not apply under a default ACL, and `>` keeps the mode of an existing file
-touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nSHOPNEX_SECRET=%s\n' \
-  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SNX_SECRET" > .env
+touch .env && chmod 600 .env && printf 'SHOPNEX_VERSION=%s\nDOMAIN=%s\nAPP_URL=%s\nSTRIPE_APP_URL=%s\nSHOPNEX_SECRET=%s\nSTRIPE_APP_KEY=%s\n' \
+  "$VERSION" "$DOMAIN" "$APP_URL" "$STRIPE_URL" "$SNX_SECRET" "$STRIPE_KEY" > .env
 [ -z "$LEGACY_SECRET" ] || printf 'BETTER_AUTH_SECRET=%s\n' "$LEGACY_SECRET" >> .env
 
 docker compose pull -q

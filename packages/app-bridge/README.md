@@ -33,13 +33,17 @@ await bridge.toast('Failed to update settings', { isError: true })
 // Retrieve a fresh session token (JWT, valid for 60s) directly
 const token = await bridge.getSessionToken()
 
+// Match the admin's theme ('light' | 'dark'), now and when it changes, instead of the OS setting
+document.documentElement.dataset.theme = await bridge.getTheme()
+const stop = bridge.onThemeChange((theme) => (document.documentElement.dataset.theme = theme))
+
 // Redirect the parent admin window (e.g. to restart OAuth when framed)
 await bridge.redirect('https://example.com/oauth/authorize')
 ```
 
 ## Entry points
 
-- `@shopnex/app-bridge`: `createAppBridge`, `AppBridge`, `AdminMessage`, `AppMessage`, and `AppRequest`.
+- `@shopnex/app-bridge`: `createAppBridge`, `AppBridge`, `AdminMessage`, `AppMessage`, `AppRequest` and `Theme`.
 
 ## Documentation
 

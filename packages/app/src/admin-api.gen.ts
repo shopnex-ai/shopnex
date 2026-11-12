@@ -17,6 +17,22 @@ export interface paths {
         patch: operations["admin.shop.update"];
         trace?: never;
     };
+    "/products/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.products.addSamples"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/products/bulk": {
         parameters: {
             query?: never;
@@ -1949,6 +1965,26 @@ export interface operations {
                         createdAt: string;
                         storefrontUrlManaged: boolean;
                     };
+                };
+            };
+        };
+    };
+    "admin.products.addSamples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
                 };
             };
         };

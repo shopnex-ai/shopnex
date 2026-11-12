@@ -1,0 +1,87 @@
+name: create-shopnex@edge
+
+# The rolling build behind `npx create-shopnex@edge`: every push to main rebuilds the packaged ShopNex
+# (scripts/build-node-bundle.mjs) and replaces the one file of the `edge` pre-release, which create-shopnex@edge
+# downloads. The CLI finds that file by its checksum, not by its version, so it does not need a new npm version
+# per push: create-shopnex@edge is published again only when packages/create-shopnex itself changed.
+#
+# The `edge` release is created once, as a pre-release (never `latest`, so the admin's update badge ignores it) and is
+# never edited afterwards (an edit would rebuild the landing, see landing-rebuild.yaml). Only its file is replaced.
+# Publishes with npm trusted publishing, so there is no npm token: create-shopnex's Trusted Publisher settings on
+# npmjs.com name this repository and this file (edge.yaml), and the job's id-token permission proves the run.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'apps/docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+# One at a time, and never cancel one mid-upload
+concurrency:
+  group: edge
+  cancel-in-progress: false
+
+permissions:
+  contents: write # the edge release and its tag
+  id-token: write # npm provenance
+
+jobs:
+  edge:
+    name: Build and publish edge
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # to see whether packages/create-shopnex changed since the previous push
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm --dir templates/storefront build
+
+      - name: Build the bundle
+        run: node scripts/build-node-bundle.mjs "0.0.0-edge.${GITHUB_SHA::7}" "$RUNNER_TEMP/bundle" shopnex-edge-node
+
+      - name: Replace the edge release's file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view edge > /dev/null 2>&1; then
+            gh release create edge --prerelease --latest=false --target "$GITHUB_SHA" --title edge \
+              --notes 'Rolling build of main for `npx create-shopnex@edge`. Replaced on every push; not a release to install from.'
+          fi
+          gh release upload edge "$RUNNER_TEMP/bundle/shopnex-edge-node.tgz" "$RUNNER_TEMP/bundle/shopnex-edge-node.tgz.sha256" --clobber
+          # Keep the tag on the commit the file was built from (a tag push by the workflow starts no other workflow)
+          git tag -f edge "$GITHUB_SHA"
+          git push -f origin refs/tags/edge
+
+      - name: Publish create-shopnex@edge
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # Trusted publishing needs npm 11.5.1 or newer
+          npm --version
+          # Publish when the CLI or this workflow changed, when the edge tag does not exist yet, or on a manual run
+          publish=false
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || ! npm view create-shopnex@edge version > /dev/null 2>&1; then
+            publish=true
+          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex .github/workflows/edge.yaml 2> /dev/null; then
+            publish=true
+          fi
+          if [ "$publish" != true ]; then
+            echo "packages/create-shopnex did not change: the published edge CLI downloads the new bundle by itself"
+            exit 0
+          fi
+          cd packages/create-shopnex
+          npm pkg set version="0.0.0-edge.${GITHUB_SHA::7}"
+          npm publish --provenance --access public --tag edge

@@ -29,6 +29,7 @@
     "demo:reset": "pnpm --filter @shopnex/api demo:reset"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@eslint/js": "^10.0.1",
     "esbuild": "0.28.2",
     "eslint": "^10.13.0",

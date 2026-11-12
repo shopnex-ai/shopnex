@@ -11,7 +11,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { clearAdminContext } from '@/lib/admin-context'
 import { oauthErrorMessage } from './oauth-errors'
-import { SocialButtons } from './social-buttons'
+import { SocialButtons } from '@/components/auth/social-buttons'
 
 // Only same-app admin paths, so ?next= can't be used to send people elsewhere
 const safeNext = (next?: string) => (next?.startsWith('/admin/') && !next.startsWith('//') ? next : '/admin')
@@ -51,11 +51,12 @@ export function LoginForm({
       email: String(form.get('email')),
       password: String(form.get('password')),
     })
-    setPending(false)
     if (error) {
+      setPending(false)
       toast.error(error.message ?? 'Could not sign in')
       return
     }
+    // Stay on "Logging in…" until the admin is on screen, so the form can't be submitted twice or look like it failed
     clearAdminContext(router)
     await navigate({ href: destination, replace: true })
     await router.invalidate()

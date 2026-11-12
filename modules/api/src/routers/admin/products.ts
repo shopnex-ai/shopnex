@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { publicationService } from '@shopnex/channels'
-import { productService, variantService } from '@shopnex/catalog'
+import { productService, seedSampleProducts, variantService } from '@shopnex/catalog'
 import { customFieldService } from '@shopnex/custom-fields'
 import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
@@ -37,6 +37,11 @@ async function withPublications<T extends { id: string }>(shopId: string, items:
 }
 
 export const products = {
+  addSamples: write
+    .route({ method: 'POST', path: '/admin/products/samples' })
+    .output(countOutput)
+    .handler(({ context }) => seedSampleProducts(context.shop.id)),
+
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/products/bulk' })
     .output(countOutput)

@@ -1,11 +1,19 @@
 # ShopNex with its database and the Stripe app, each in its own container:
 #
-#   docker compose up --build            # add --profile cj / --profile shippo for the CJ Dropshipping / Shippo apps
+#   docker compose -f deploy/docker-compose.dev.yml up --build   # --profile cj / --profile shippo adds those apps
+#
+# (run from the repo root)
 # For contributors who build from source; to just run ShopNex use
 # deploy/docker-compose.yml, which pulls prebuilt GHCR images and needs no setup.
 #
 # The apps are separate containers on their own public URL (a subdomain each), because browsers and Stripe
 # reach them directly. Put a reverse proxy / platform routing in front of 3000 (ShopNex) and 4600 (Stripe).
+# Each app has its own private key: set STRIPE_APP_KEY=snxk_… in .env (CJ_DROPSHIPPING_APP_KEY and
+# SHIPPO_APP_KEY for those profiles). Make one with:
+#   node -e "crypto.subtle.generateKey('Ed25519',true,['sign']).then(async k=>console.log('snxk_'+Buffer.from(await crypto.subtle.exportKey('pkcs8',k.privateKey)).toString('base64url')))"
+# Keep it with your other secrets: it seals the keys merchants save in the app (ShopNex stores them sealed, so a copy of
+# its database alone cannot unseal them), and a new key makes it a new app, so merchants reconnect. Only CJ
+# Dropshipping has tables of its own (a schema in this Postgres); no app writes to a volume.
 name: shopnex
 
 services:
@@ -22,7 +30,9 @@ services:
       retries: 10
 
   admin:
-    build: .
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     depends_on:
       db: { condition: service_healthy }
     ports:
@@ -39,53 +49,47 @@ services:
 
   stripe:
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: stripe }
     ports:
       - '4600:4600'
-    volumes:
-      - stripe_data:/data # the app's identity and its shops' settings: keep it
     environment:
       STRIPE_APP_URL: '${STRIPE_APP_URL:-http://localhost:4600}'
       SHOPNEX_INTERNAL_URL: http://admin:3000
-      DATA_DIR: /data
+      STRIPE_APP_KEY: '${STRIPE_APP_KEY:?Set STRIPE_APP_KEY in .env, the private key of the Stripe app (see the top of this file)}'
 
   cj-dropshipping:
     profiles: [cj]
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: cj-dropshipping }
     ports:
       - '4700:4700'
-    volumes:
-      - cj_dropshipping_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       CJ_DROPSHIPPING_APP_URL: '${CJ_DROPSHIPPING_APP_URL:-http://localhost:4700}'
       SHOPNEX_INTERNAL_URL: http://admin:3000
       PORT: 4700
-      DATA_DIR: /data
+      APP_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/shopnex
+      CJ_DROPSHIPPING_APP_KEY: ${CJ_DROPSHIPPING_APP_KEY:-}
 
   shippo:
     profiles: [shippo]
     build:
-      context: .
-      dockerfile: Dockerfile.app
+      context: ..
+      dockerfile: deploy/Dockerfile.app
       args: { APP: shippo }
     ports:
       - '4900:4900'
-    volumes:
-      - shippo_data:/data
     environment:
       SHIPPO_APP_URL: '${SHIPPO_APP_URL:-http://localhost:4900}'
       SHOPNEX_INTERNAL_URL: http://admin:3000
       PORT: 4900
-      DATA_DIR: /data
+      SHIPPO_APP_KEY: ${SHIPPO_APP_KEY:-}
 
 volumes:
   db:
   data:
-  stripe_data:
-  cj_dropshipping_data:
-  shippo_data:

@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { BlocksIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -27,6 +28,42 @@ export function installLink(
 ) {
   if (app.redirectUrls.length === 0) return `/admin/oauth/authorize?${new URLSearchParams({ client_id: app.clientId })}`
   return appLink(app.appUrl, shopId, instanceUrl).toString()
+}
+
+// Install button. A managed app installs on this admin's consent screen: navigate inside the admin, because a full
+// page load makes the whole layout (sidebar, header) disappear and redraw. An OAuth app starts at its own site.
+export function InstallButton({
+  app,
+  shopId,
+  instanceUrl,
+}: {
+  app: { appUrl: string; clientId: string; redirectUrls: string[] }
+  shopId: string
+  instanceUrl: string
+}) {
+  return (
+    <Button
+      size="sm"
+      render={
+        app.redirectUrls.length === 0 ? (
+          <Link
+            to="/admin/oauth/authorize"
+            search={{
+              client_id: app.clientId,
+              redirect_uri: undefined,
+              scope: undefined,
+              state: undefined,
+              response_type: undefined,
+            }}
+          />
+        ) : (
+          <a href={installLink(app, shopId, instanceUrl)} />
+        )
+      }
+    >
+      Install
+    </Button>
+  )
 }
 
 // The app's own URL with the shop and this instance, as Install and Open send them
