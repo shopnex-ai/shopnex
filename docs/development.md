@@ -82,3 +82,19 @@ pnpm demo:orders --replace   # remove the earlier sample data first
 Fills the dashboard analytics with a rising sales trend, returning customers, unpaid, cancelled and discounted
 orders. Sample customers use `@demo.shopnex.test` addresses, which is how `--replace` finds them. Orders are inserted
 directly, so stock, webhooks and emails are untouched. `pnpm demo:seed` (public demo database) runs it as its last step.
+
+### Lint
+
+`pnpm lint` (ESLint) and `pnpm format:check` (Prettier) run in CI; `pnpm lint:fix` and `pnpm format` fix what they can.
+
+Most of the repo uses the recommended TypeScript rules. Two lists in `eslint.config.mjs` opt modules into more. A module
+joins a list once it passes: add its folder, run `pnpm lint`, and fix what it reports. New code in it then has to keep
+passing.
+
+- `strictModules`: the strict, type-aware TypeScript rules (no `any`, no floating or misused promises, no `!`, and so
+  on), as errors.
+- `connectionBoundModules`: the module never imports the shared `db`. Its functions take a `conn` (the shared handle or
+  an open transaction) from the caller, so nothing in it can query outside the transaction it was given. That mistake
+  freezes the embedded database (see `modules/db/src/embedded-guard.ts`) and is invisible on PostgreSQL.
+
+Today both lists hold `modules/custom-fields`.

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { publicationService } from '@shopnex/channels'
 import { productService, seedSampleProducts, variantService } from '@shopnex/catalog'
 import { customFieldService } from '@shopnex/custom-fields'
+import { db } from '@shopnex/db'
 import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
@@ -61,7 +62,7 @@ export const products = {
     .handler(async ({ input: { customField, ...input }, context }) => {
       const filtered = {
         ...input,
-        customFields: await customFieldService.parseFilters(context.shop.id, 'product', customField ?? []),
+        customFields: await customFieldService.parseFilters(context.shop.id, 'product', customField ?? [], {}, db),
       }
       const [rows, total] = await Promise.all([
         productService.list(context.shop.id, filtered),

@@ -26,6 +26,7 @@ import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem }
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
 import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
+import { db } from '@shopnex/db'
 import type { Customer as CustomerRow } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
@@ -60,7 +61,7 @@ function priceRange(prices: number[], currency: string) {
 // Keeps only the custom fields the shop shows on the storefront
 type FieldsView = (values: CustomFieldValues) => CustomFieldValues
 const fieldsView = (shopId: string, resource: CustomFieldResource) =>
-  customFieldService.storefrontView(shopId, resource)
+  customFieldService.storefrontView(shopId, resource, db)
 
 function toProduct(p: ProductWithDetails, currency: string, fields: FieldsView): Product {
   const images = p.images.map(image)
@@ -291,9 +292,13 @@ async function productFilters(
   },
 ) {
   return {
-    customFields: await customFieldService.parseFilters(shopId, 'product', input.customField ?? [], {
-      storefrontOnly: true,
-    }),
+    customFields: await customFieldService.parseFilters(
+      shopId,
+      'product',
+      input.customField ?? [],
+      { storefrontOnly: true },
+      db,
+    ),
     search: input.query,
     vendors: input.vendor,
     productTypes: input.productType,
