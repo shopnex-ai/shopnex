@@ -45,7 +45,7 @@ node scripts/db-snapshot.mjs snapshot "$work/before.json"
 # 3. The build in this checkout
 if [ -z "${CURRENT_IMAGE:-}" ]; then
   echo "::group::Build the current image"
-  docker build -t "$current" .
+  docker build -f deploy/Dockerfile -t "$current" .
   echo "::endgroup::"
 fi
 
