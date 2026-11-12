@@ -54,7 +54,7 @@ test('the plan starts an app per extra, on its port, with its data in the shop f
   assert.equal(stripe?.env.STRIPE_APP_KEY, 'snxk_stripe')
   assert.equal(cj?.env.CJ_DROPSHIPPING_APP_KEY, 'snxk_cj')
   assert.equal(stripe?.env.APP_DATABASE_URL, undefined)
-  assert.match(cj?.env.APP_DATABASE_URL ?? '', /^pglite:.*shop[\\/]apps[\\/]cj-dropshipping[\\/]pglite$/)
+  assert.match(cj?.env.APP_DATABASE_URL ?? '', /^pglite:.*shop[\\/]apps[\\/]cj-dropshipping[\\/]\.pglite$/)
   assert.equal(stripe?.env.DATA_DIR, undefined)
   assert.equal(stripe?.readyUrl, 'http://127.0.0.1:4600/shopnex/app.js')
 })

@@ -68,16 +68,21 @@ your keys there. Stripe cannot reach a `localhost` address, so card payments nee
 The first run writes `<name>/.env` (readable by you only) with the two settings a shop needs, and every run reads it:
 
 ```sh
-DATABASE_URL=pglite:./data        # embedded database in the shop folder (a relative path is relative to it)
+DATABASE_URL=pglite:./.pglite     # embedded database in the shop folder (a relative path is relative to it)
 SHOPNEX_SECRET=<generated once>   # encrypts the provider keys saved in the admin and signs sessions: keep it
 ```
 
 - **PostgreSQL:** set `DATABASE_URL=postgres://user:password@host:5432/shopnex` and start again. The migrations are applied
-  on start (`SHOPNEX_AUTO_MIGRATE`). The data in `data/` is not moved (there is no tool for that yet).
+  on start (`SHOPNEX_AUTO_MIGRATE`). The data in `.pglite/` is not moved (there is no tool for that yet).
 - **Other settings** in the file (SMTP, and so on) are passed to the admin. The address, the ports and the build's own
   files are set by the CLI and its flags and win over the file.
 - Do not commit or share it. Without `SHOPNEX_SECRET` the saved provider keys cannot be read: a lost one means a new
   shop.
+
+The first run also writes a `.gitignore` (keeps `.env`, `.pglite/` and the apps' keys out of git) and the
+`docker-compose.yml` (fetched from the repository, the file the [self-hosting docs](https://shopnex.ai/docs/self-hosting/docker) describe: ShopNex, the Stripe
+app and PostgreSQL from prebuilt images), for when the shop should run in Docker instead. Existing files are never
+overwritten.
 
 To start over, delete the shop folder.
 

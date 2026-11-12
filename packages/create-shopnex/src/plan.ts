@@ -96,7 +96,7 @@ export function planFromBundle(input: {
           // Tables of its own: a schema in the shop's PostgreSQL, or its own embedded database
           ...(extra.database && {
             APP_DATABASE_URL: databaseUrl.startsWith('pglite:')
-              ? `pglite:${join(shopDir, 'apps', extra.dir, 'pglite')}`
+              ? `pglite:${join(shopDir, 'apps', extra.dir, '.pglite')}`
               : databaseUrl,
           }),
         },
