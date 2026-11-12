@@ -33,6 +33,13 @@ export const ENV_VARS: EnvVar[] = [
       "Set to `true` to apply the database migrations at start on PostgreSQL, as the embedded database always does. Run one server at a time with it (there is no lock between servers). `npx create-shopnex` sets it. Otherwise migrate with `pnpm db:migrate` or the deploy's migration step.",
   },
   {
+    name: 'SHOPNEX_DB_GUARD',
+    required: false,
+    default: 'throw',
+    description:
+      'Only for the embedded database (`pglite:`), which has one connection. A query sent on the shared database handle while a transaction is open would wait for that transaction for ever and freeze the shop. `throw` (the default) fails that query at once with an error that says where the transaction was opened, `warn` logs it and carries on, `off` turns the check off. Report such an error as a bug; PostgreSQL is not affected.',
+  },
+  {
     name: 'SHOPNEX_SECRET',
     required: true,
     description:

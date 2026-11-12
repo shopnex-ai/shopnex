@@ -666,6 +666,9 @@ importers:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
     devDependencies:
+      '@shopnex/email':
+        specifier: workspace:*
+        version: link:../email
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

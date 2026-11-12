@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import { guardEmbeddedClient } from './embedded-guard'
 import * as schema from './schema'
 
 // DATABASE_URL is a PostgreSQL connection string, or `pglite:<directory>` / `pglite:memory` for the embedded
@@ -42,7 +43,8 @@ async function createEmbedded(): Promise<Created> {
   ])
   const location = databaseUrl.slice(EMBEDDED_PREFIX.length).replace(/^\/\/(?=\/)/, '')
   console.log(`[db] embedded PGlite (${location === 'memory' ? 'in memory, lost on exit' : location})`)
-  const client = new PGlite(location === 'memory' ? undefined : location)
+  // One connection: see embedded-guard.ts
+  const client = guardEmbeddedClient(new PGlite(location === 'memory' ? undefined : location))
   const embedded = drizzlePglite({ client, schema })
   return {
     // Same query API as node-postgres (select, insert, transaction, execute); only the result type of execute differs

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db, schema, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
 
@@ -8,14 +8,16 @@ import { isSubdomainSlug, subdomainUrl } from './subdomains'
 // - Multi mode: derived, never chosen. The shop's first verified domain (domains prove ownership), else its
 //   <slug>.ROOT_DOMAIN address (when ROOT_DOMAIN is set), otherwise nothing is guessed. The stored column is ignored.
 // - Single mode: the saved Storefront URL, else STOREFRONT_URL (`pnpm dev` sets it to the bundled storefront).
-export async function withStorefrontUrl<T extends schema.Shop | null>(shop: T): Promise<T> {
+// `conn`: pass the transaction when called inside one. The multi mode reads the shop's domains, and a read on `db` inside
+// a transaction waits for it for ever on the embedded database (one connection)
+export async function withStorefrontUrl<T extends schema.Shop | null>(shop: T, conn: Conn = db): Promise<T> {
   if (!shop) return shop
   if (!isMultiTenant) {
     if (shop.storefrontUrl) return shop
     const fallback = process.env.STOREFRONT_URL?.trim().replace(/\/$/, '')
     return fallback ? { ...shop, storefrontUrl: fallback } : shop
   }
-  const [domain] = await db
+  const [domain] = await conn
     .select({ domain: schema.shopDomains.domain })
     .from(schema.shopDomains)
     .where(and(eq(schema.shopDomains.shopId, shop.id), isNotNull(schema.shopDomains.verifiedAt)))
