@@ -1,5 +1,6 @@
 // Expires payment sessions and cancels abandoned unpaid orders. Runs in the app process (started from
 // apps/admin-ui/src/server.ts); sessions are claimed with SKIP LOCKED, so several app instances can run it.
+import { log } from './log'
 import { expireDue } from './sessions'
 
 const POLL_MS = 30_000
@@ -15,7 +16,7 @@ export function startPaymentsWorker() {
     try {
       await expireDue()
     } catch (error) {
-      console.error('[payments] expiry worker:', error)
+      log.error({ err: error }, 'expiry worker failed')
     }
     if (!stopped) timer = setTimeout(loop, POLL_MS)
   }

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
+    "@shopnex/log": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
