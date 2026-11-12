@@ -1,5 +1,0 @@
-# ShopNex: secrets and local data stay out of git
-.env
-.pglite/
-apps/*/.pglite/
-apps/*/app-key
