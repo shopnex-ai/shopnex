@@ -1,6 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { CUSTOM_FIELD_RESOURCES, customFieldService } from '@shopnex/custom-fields'
+import { db } from '@shopnex/db'
 import { adminOrToken, shopManager } from '../../orpc'
 import { customFieldInput, customFieldPatch } from './schemas'
 import { customFieldOutput } from './outputs'
@@ -14,20 +15,20 @@ export const customFields = {
     .route({ method: 'GET', path: '/admin/custom-fields' })
     .output(z.array(customFieldOutput))
     .input(z.object({ resource: z.enum(CUSTOM_FIELD_RESOURCES).optional() }))
-    .handler(({ input, context }) => customFieldService.list(context.shop.id, input.resource)),
+    .handler(({ input, context }) => customFieldService.list(context.shop.id, input.resource, db)),
 
   create: shopManager
     .route({ method: 'POST', path: '/admin/custom-fields' })
     .output(customFieldOutput)
     .input(customFieldInput)
-    .handler(({ input, context }) => customFieldService.create(context.shop.id, input)),
+    .handler(({ input, context }) => customFieldService.create(context.shop.id, input, db)),
 
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/custom-fields/{id}' })
     .output(customFieldOutput)
     .input(id.extend(customFieldPatch.shape))
     .handler(async ({ input: { id, ...patch }, context }) => {
-      const field = await customFieldService.update(context.shop.id, id, patch)
+      const field = await customFieldService.update(context.shop.id, id, patch, db)
       if (!field) throw new ORPCError('NOT_FOUND')
       return field
     }),
@@ -38,7 +39,7 @@ export const customFields = {
     .output(customFieldOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const field = await customFieldService.remove(context.shop.id, input.id)
+      const field = await customFieldService.remove(context.shop.id, input.id, db)
       if (!field) throw new ORPCError('NOT_FOUND')
       return field
     }),
