@@ -65,4 +65,6 @@ export function checkSignupRate(headers: Headers, now = Date.now()) {
 export const takeGlobalSignup = (now = Date.now()) => take('global', signupsGlobal(), now)
 
 /** For tests */
-export const resetSignupLimits = () => buckets.clear()
+export const resetSignupLimits = () => {
+  buckets.clear()
+}
