@@ -5,7 +5,7 @@
 // is no longer `active`), and the worker checks again right before sending.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, asc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db, schema, type Conn } from '@shopnex/db'
 import { isSuppressed, unsubscribeToken } from './abandoned-settings'
 import {
   appUrl,
@@ -22,8 +22,10 @@ const BATCH = 20
 // every old checkout at once
 const GRACE_MS = 24 * 3600_000
 
-async function linesOf(cartId: string): Promise<CheckoutLine[]> {
-  const rows = await db
+// On the connection it is called with: inside queueOne's transaction that is `tx`, and a query on `db` there would
+// wait for the transaction for ever on the embedded database (one connection)
+async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
+  const rows = await conn
     .select({ line: schema.cartLines, variant: schema.productVariants, product: schema.products })
     .from(schema.cartLines)
     .innerJoin(schema.productVariants, eq(schema.productVariants.id, schema.cartLines.variantId))
@@ -32,7 +34,7 @@ async function linesOf(cartId: string): Promise<CheckoutLine[]> {
     .orderBy(asc(schema.cartLines.createdAt), asc(schema.cartLines.id))
   const productIds = [...new Set(rows.map((r) => r.product.id))]
   const images = productIds.length
-    ? await db
+    ? await conn
         .select({ productId: schema.productImages.productId, url: schema.productImages.url })
         .from(schema.productImages)
         .where(and(inArray(schema.productImages.productId, productIds), eq(schema.productImages.position, 0)))
@@ -93,9 +95,9 @@ async function queueOne(cartId: string) {
         .onConflictDoNothing()
     }
     if (await isSuppressed(tx, cart.shopId, cart.email)) return skip('Unsubscribed')
-    const lines = await linesOf(cart.id)
+    const lines = await linesOf(tx, cart.id)
     if (lines.length === 0) return skip('Nothing left in the cart')
-    const shop = await withStorefrontUrl(row)
+    const shop = await withStorefrontUrl(row, tx)
     const [templates, [customer]] = await Promise.all([
       templateRows(tx, cart.shopId, ['abandoned_cart', 'layout']),
       tx

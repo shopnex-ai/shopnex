@@ -327,7 +327,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
         templateRows(tx, shopId, [...notifications, 'layout']),
       ])
       if (!row) return
-      const shop = await withStorefrontUrl(row)
+      const shop = await withStorefrontUrl(row, tx)
       const scope = scopeOf(shop, order)
       const layout = sourceOf('layout', templates.get('layout')).body
       for (const notification of notifications) {
