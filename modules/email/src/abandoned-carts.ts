@@ -16,6 +16,7 @@ import {
   templateRows,
   type CheckoutLine,
 } from './notifications'
+import { log } from './log'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -119,7 +120,8 @@ async function queueOne(cartId: string) {
       scope,
       { fallback: true },
     )
-    if (email.problem) console.warn(`[email] abandoned_cart for shop ${cart.shopId}: ${email.problem.message}`)
+    if (email.problem)
+      log.warn({ notification: 'abandoned_cart', shopId: cart.shopId }, 'template problem: %s', email.problem.message)
     await tx
       .insert(schema.emailDeliveries)
       .values({ ...base, subject: email.subject, html: email.html })
@@ -134,7 +136,7 @@ export async function queueDue() {
     try {
       await queueOne(id)
     } catch (error) {
-      console.error(`[email] abandoned cart ${id}:`, error)
+      log.error({ err: error, cartId: id }, 'abandoned cart failed')
     }
   }
   return due.length

@@ -17,6 +17,10 @@ const strictModules = ['modules/drafts', 'modules/custom-fields']
 // A module joins once none of its functions needs the global; it can still import the `Conn` type and the `schema`.
 const connectionBoundModules = ['modules/drafts', 'modules/custom-fields']
 
+// Logging goes through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), not console.*. A module joins
+// this list once it has no console calls left.
+const noConsoleModules = ['modules/payments', 'modules/email']
+
 export default defineConfig(
   globalIgnores([
     '**/node_modules/',
@@ -101,6 +105,14 @@ export default defineConfig(
             'Import what you need by name (`schema`, `Conn`): a namespace import would bring the shared `db` in.',
         },
       ],
+    },
+  },
+
+  {
+    // Modules that log through @shopnex/log (modules/log is the one place that writes to the console)
+    files: noConsoleModules.map((dir) => `${dir}/src/**/*.ts`),
+    rules: {
+      'no-console': ['error'],
     },
   },
 

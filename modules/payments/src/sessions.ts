@@ -16,6 +16,7 @@ import { notify } from '@shopnex/email'
 import { orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
 import { PaymentError } from './errors'
+import { log } from './log'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released
 const PAYMENT_TTL_MS = 60 * 60_000
@@ -194,7 +195,7 @@ export async function startPayment(
       .returning()
     return updated!
   } catch (error) {
-    console.error(`[payments] payment session ${session.id}:`, message(error))
+    log.error({ err: error, sessionId: session.id }, 'payment session failed')
     await close(db, session.id, 'rejected', `Payments app unavailable: ${message(error)}`)
     throw new PaymentError('PROVIDER_UNAVAILABLE', "Payment couldn't be started. Please try again in a moment.")
   }
@@ -290,7 +291,7 @@ export async function startRefunds(shopId: string, orderId: string) {
         expiresAt: session!.expiresAt.toISOString(),
       })
     } catch (error) {
-      console.error(`[payments] refund session ${session!.id}:`, message(error))
+      log.error({ err: error, sessionId: session!.id }, 'refund session failed')
       // The app may have resolved it while answering: only close what's still open
       const [current] = await db
         .select({ status: schema.paymentSessions.status })
@@ -307,7 +308,7 @@ export async function startRefunds(shopId: string, orderId: string) {
 /** orderService.cancel, then refunds through the payments app when the order was paid through one */
 export async function cancelOrder(shopId: string, orderId: string, input: CancelInput) {
   const order = await orderService.cancel(shopId, orderId, input)
-  await startRefunds(shopId, orderId).catch((error) => console.error('[payments] refunds:', error))
+  await startRefunds(shopId, orderId).catch((error: unknown) => log.error({ err: error, orderId }, 'refunds failed'))
   return order
 }
 
@@ -489,7 +490,7 @@ export async function expireDue(limit = 50) {
   for (const { shopId, orderId } of abandoned) {
     await orderService
       .cancel(shopId, orderId, { reason: 'declined', restock: true })
-      .catch((error) => console.error(`[payments] cancel unpaid order ${orderId}:`, message(error)))
+      .catch((error: unknown) => log.error({ err: error, orderId }, 'cancelling the unpaid order failed'))
   }
   return expired + abandoned.length
 }

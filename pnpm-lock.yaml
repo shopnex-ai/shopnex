@@ -816,6 +816,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/storefront-sdk':
         specifier: workspace:*
         version: link:../../packages/storefront-sdk
@@ -860,6 +863,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+
+  modules/log:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/orders:
     dependencies:
@@ -909,6 +921,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
