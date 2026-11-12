@@ -1,6 +1,6 @@
 // Settings → Shipping: the "Free from" money input must keep what the owner types (junk is flagged, never
 // rewritten to "NaN"), and a valid amount saves as minor units.
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test'
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, requireApp } from '../lib'

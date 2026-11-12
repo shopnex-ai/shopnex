@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './test'
 import { and, eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
