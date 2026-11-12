@@ -1,6 +1,6 @@
 // A shopper buys through the bundled storefront and the hosted checkout, then the shop owner finds the order in
 // the admin. Drives the real pages; setup (payment method, shipping rate, owner account) goes through Fixtures.
-import { expect, test } from '@playwright/test'
+import { expect, test } from './test'
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, requireApp } from '../lib'
