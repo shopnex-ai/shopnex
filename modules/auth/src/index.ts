@@ -37,9 +37,9 @@ const socialProviders = {
 
 export const enabledSocialProviders = Object.keys(socialProviders) as SocialProvider[]
 
-// The public origin: APP_URL, or BETTER_AUTH_URL on installs that still set it. Empty counts as unset (a docker
-// compose variable that is not set is an empty string), so this is not `??`
-const baseURL = [process.env.APP_URL, process.env.BETTER_AUTH_URL].find((url) => url)
+// The public origin. Left out when APP_URL is unset or empty (a docker compose variable that is not set is an empty
+// string): Better Auth then reads the old BETTER_AUTH_URL itself, or works it out from the request
+const baseURL = process.env.APP_URL
 
 export const auth = betterAuth({
   basePath: '/api/auth',
