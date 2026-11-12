@@ -1,6 +1,6 @@
 {
   "name": "create-shopnex",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Try ShopNex with one command: npx create-shopnex starts the admin and the storefront on an embedded database, nothing else to install",
   "license": "MIT",
   "homepage": "https://shopnex.ai",
