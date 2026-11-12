@@ -23,8 +23,8 @@
     "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@orpc/openapi": "^1.16.1",
-    "@orpc/zod": "^1.16.1",
+    "@orpc/openapi": "^1.16.2",
+    "@orpc/zod": "^1.16.2",
     "@shopnex/api": "workspace:^",
     "@types/node": "catalog:",
     "@types/pg": "^8.23.1",
