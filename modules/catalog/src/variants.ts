@@ -7,6 +7,7 @@ import { and, asc, eq, inArray, min, ne, notInArray, sql } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { ProductVariant } from '@shopnex/db/schema'
+import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './errors'
 // Cycle with ./products is fine: only used inside functions
 import { emitProductEvent } from './products'
@@ -440,8 +441,38 @@ export async function update(
       .returning()
     await syncPriceCache(shopId, variant.productId, tx)
     await emitProductEvent(tx, shopId, variant.productId, 'product.updated')
+    if (updated!.inventoryQuantity !== variant.inventoryQuantity) {
+      await emitInventoryEvent(
+        tx,
+        shopId,
+        updated!,
+        'edit',
+        stockChange(variant.inventoryQuantity, updated!.inventoryQuantity),
+      )
+    }
     return { ...updated!, available: isAvailable(updated!) }
   })
+}
+
+type StockRow = Pick<ProductVariant, 'id' | 'productId' | 'sku' | 'inventoryQuantity'>
+type StockReason = 'order' | 'restock' | 'edit'
+
+// null when either side isn't tracked: there is no meaningful difference to report
+const stockChange = (before: number | null, after: number | null) =>
+  before == null || after == null ? null : after - before
+
+// Queues `inventory.updated`: the variant's stock after the change, so a receiver can set it without replaying deltas.
+// `inventoryQuantity` is null when an edit stops tracking the variant. Call it with the transaction that changed the stock.
+function emitInventoryEvent(conn: Conn, shopId: string, row: StockRow, reason: StockReason, change: number | null) {
+  return emit(conn, shopId, 'inventory.updated', () => ({
+    variantId: row.id,
+    productId: row.productId,
+    sku: row.sku,
+    inventoryQuantity: row.inventoryQuantity,
+    change,
+    reason,
+    updatedAt: new Date().toISOString(),
+  }))
 }
 
 // Atomically takes stock for an order line. Untracked variants always succeed.
@@ -451,8 +482,16 @@ export async function reserveStock(shopId: string, variantId: string, quantity: 
     .update(schema.productVariants)
     .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} - ${quantity}` })
     .where(and(mine, sql`${schema.productVariants.inventoryQuantity} >= ${quantity}`))
-    .returning({ id: schema.productVariants.id })
-  if (row) return true
+    .returning({
+      id: schema.productVariants.id,
+      productId: schema.productVariants.productId,
+      sku: schema.productVariants.sku,
+      inventoryQuantity: schema.productVariants.inventoryQuantity,
+    })
+  if (row) {
+    await emitInventoryEvent(conn, shopId, row, 'order', -quantity)
+    return true
+  }
   const [untracked] = await conn
     .select({ id: schema.productVariants.id })
     .from(schema.productVariants)
@@ -462,7 +501,7 @@ export async function reserveStock(shopId: string, variantId: string, quantity: 
 
 // Gives stock back (e.g. order cancelled). No-op for untracked or deleted variants.
 export async function restock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
-  await conn
+  const [row] = await conn
     .update(schema.productVariants)
     .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} + ${quantity}` })
     .where(
@@ -472,4 +511,11 @@ export async function restock(shopId: string, variantId: string, quantity: numbe
         sql`${schema.productVariants.inventoryQuantity} is not null`,
       ),
     )
+    .returning({
+      id: schema.productVariants.id,
+      productId: schema.productVariants.productId,
+      sku: schema.productVariants.sku,
+      inventoryQuantity: schema.productVariants.inventoryQuantity,
+    })
+  if (row) await emitInventoryEvent(conn, shopId, row, 'restock', quantity)
 }
