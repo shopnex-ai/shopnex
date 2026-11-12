@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, appendFileSync, writeFileSync } fr
 import { isAbsolute, join, resolve } from 'node:path'
 import { parseEnv } from 'node:util'
 
-export const DEFAULT_DATABASE_URL = 'pglite:./data'
+export const DEFAULT_DATABASE_URL = 'pglite:./.pglite'
 
 export type ShopEnv = {
   /** DATABASE_URL, with a relative pglite: path resolved against the shop folder */
@@ -17,9 +17,10 @@ export type ShopEnv = {
 
 const template = (secret: string) => `# ShopNex: the settings of this shop. Edit, then start it again.
 #
-# Where the data lives. The default is an embedded database in ./data (PGlite): one process owns it, for trying
+# Where the data lives. The default is an embedded database in ./.pglite (PGlite): one process owns it, for trying
 # ShopNex out. For a real database use PostgreSQL, for example:
 # DATABASE_URL=postgres://user:password@localhost:5432/shopnex
+# (docker-compose.yml runs ShopNex and PostgreSQL in Docker)
 DATABASE_URL=${DEFAULT_DATABASE_URL}
 
 # Encrypts the provider keys saved in the admin and signs sessions. Keep it: a new one logs everyone out and makes the

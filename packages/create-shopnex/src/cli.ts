@@ -9,6 +9,7 @@ import type { Plan } from './plan'
 import { UnavailableError, UsageError } from './errors'
 import { assertNode } from './node-version'
 import { loadShopEnv, redactUrl } from './env'
+import { writeScaffold } from './scaffold'
 import { resolveShopDir } from './paths'
 import { brandBadge } from './theme'
 import { assertPortsFree, runPlan } from './run'
@@ -84,6 +85,8 @@ async function run(argv: string[]) {
   const extras = pickExtras(options.with)
   // The shop's .env (made on the first run): its DATABASE_URL decides which database is used
   const shopEnv = loadShopEnv(shopDir, { write: !options.dryRun })
+  const scaffoldWarning = options.dryRun ? undefined : await writeScaffold(shopDir, pkg.version)
+  if (scaffoldWarning) p.log.warn(scaffoldWarning)
   // A taken port is checked before anything is downloaded
   const ports = [
     { port: options.port, flag: '--port' },
