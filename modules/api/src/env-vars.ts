@@ -37,7 +37,7 @@ export const ENV_VARS: EnvVar[] = [
     required: false,
     default: 'throw',
     description:
-      'Only for the embedded database (`pglite:`), which has one connection. A query sent on the shared database handle while a transaction is open would wait for that transaction for ever and freeze the shop. `throw` (the default) fails that query at once with an error that says where the transaction was opened, `warn` logs it and carries on, `off` turns the check off. Report such an error as a bug; PostgreSQL is not affected.',
+      'Only for the embedded database (`pglite:`), which has one connection. A query, or a new transaction, sent on the shared database handle while a transaction is open would wait for that transaction for ever and freeze the shop. `throw` (the default) fails it at once with an error that says where the outer transaction was opened, `warn` logs it and carries on, `off` turns the check off. Report such an error as a bug; PostgreSQL is not affected.',
   },
   {
     name: 'SHOPNEX_SECRET',

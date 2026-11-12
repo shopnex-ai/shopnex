@@ -142,8 +142,98 @@ describe('guard on (the default)', () => {
     assert.equal(Number(rows[0]!.n), 1)
   })
 
-  test('raw client calls made inside the transaction are caught too (query, exec, sql)', async () => {
-    for (const run of [() => client.query('select 1'), () => client.exec('select 1'), () => client.sql`select 1`]) {
+  test('a new transaction opened on the shared handle inside a transaction fails at once instead of freezing', async () => {
+    await assert.rejects(
+      within(
+        5000,
+        db.transaction(async (tx) => {
+          await tx.execute(sql`insert into item (name) values ('outer')`)
+          await db.transaction(async () => {})
+        }),
+      ),
+      (error: Error) => {
+        const cause = rootCause(error)
+        assert.ok(cause instanceof SharedHandleInTransactionError, String(cause))
+        assert.match(cause.message, /A new transaction was opened on the shared database handle inside a transaction/)
+        assert.match(cause.message, /tx\.transaction\(\.\.\.\) makes a savepoint/)
+        assert.match(cause.message, /transaction was opened at/)
+        return true
+      },
+    )
+    // The outer transaction rolled back, and the database is usable
+    assert.equal(await within(5000, count(db)), 0)
+  })
+
+  test('also when a helper the transaction calls opens its own transaction', async () => {
+    const removeSomething = async () => db.transaction(async (tx) => tx.execute(sql`select 1`))
+    await assert.rejects(
+      within(
+        5000,
+        db.transaction(async () => {
+          await removeSomething()
+        }),
+      ),
+      (error: Error) => rootCause(error) instanceof SharedHandleInTransactionError,
+    )
+  })
+
+  test('the error names the outer transaction, not the one that was refused', async () => {
+    const error = await within(
+      5000,
+      db
+        .transaction(async () => {
+          await db.transaction(async () => {})
+        })
+        .then(
+          () => null,
+          (e: Error) => e,
+        ),
+    )
+    assert.match(rootCause(error)?.message ?? '', /embedded-guard\.test\.ts/)
+  })
+
+  test('another request opening its own transaction at the same time is not blamed: it waits its turn', async () => {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const first = db.transaction(async (tx) => {
+      await tx.execute(sql`insert into item (name) values ('first')`)
+      await held
+    })
+    // Started from outside the first transaction's call chain, while it is open
+    const second = db.transaction(async (tx) => {
+      await tx.execute(sql`insert into item (name) values ('second')`)
+    })
+    release()
+    await within(5000, first)
+    await within(5000, second)
+    assert.equal(await count(db), 2)
+  })
+
+  test('a savepoint (tx.transaction) is still fine, and so is a transaction opened after the first ended', async () => {
+    await within(
+      5000,
+      db.transaction(async (tx) => {
+        await tx.transaction(async (inner) => {
+          await inner.execute(sql`insert into item (name) values ('saved')`)
+        })
+      }),
+    )
+    await within(
+      5000,
+      db.transaction(async (tx) => {
+        await tx.execute(sql`insert into item (name) values ('again')`)
+      }),
+    )
+    assert.equal(await count(db), 2)
+  })
+
+  test('raw client calls made inside the transaction are caught too (query, exec, sql, transaction)', async () => {
+    for (const run of [
+      () => client.query('select 1'),
+      () => client.exec('select 1'),
+      () => client.sql`select 1`,
+      () => client.transaction(async () => {}),
+    ]) {
       await assert.rejects(
         within(
           5000,
@@ -175,6 +265,32 @@ describe('guard in warn mode', () => {
     await within(5000, late!)
     assert.equal(logged.mock.callCount(), 1)
     assert.match(String(logged.mock.calls[0]!.arguments[0]), /shared database handle inside a transaction/)
+  })
+})
+
+describe('guard in warn mode, nested transaction', () => {
+  beforeEach(() => open('warn'))
+
+  test('logs it and lets a transaction that is not awaited run after the outer one ends', async () => {
+    const logged = mock.method(console, 'error', () => {})
+    let late: Promise<unknown> | undefined
+    await within(
+      5000,
+      db.transaction(async (tx) => {
+        await tx.execute(sql`insert into item (name) values ('outer')`)
+        // Started but not awaited: it queues behind the outer transaction instead of deadlocking with it
+        late = db.transaction(async (inner) => {
+          await inner.execute(sql`insert into item (name) values ('late')`)
+        })
+      }),
+    )
+    await within(5000, late!)
+    assert.equal(logged.mock.callCount(), 1)
+    assert.match(
+      String(logged.mock.calls[0]!.arguments[0]),
+      /A new transaction was opened on the shared database handle/,
+    )
+    assert.equal(await count(db), 2)
   })
 })
 
