@@ -118,7 +118,7 @@ describe('order notifications', () => {
     const staff = deliveries.find((d) => d.notification === 'staff_order')
     if (staff) {
       assert.match(staff.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/, 'customer input is escaped')
-      assert.doesNotMatch(staff.html, /<script>/)
+      assert.doesNotMatch(staff.html, /<script/i)
     }
 
     // The same event again (e.g. a retried request) doesn't queue a second copy
