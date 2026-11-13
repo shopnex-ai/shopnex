@@ -7,13 +7,16 @@ import { afterEach, beforeEach, describe, mock, test } from 'node:test'
 import type Stripe from 'stripe'
 import { HTTPException } from 'hono/http-exception'
 import type { PaymentSessionRequest, RefundSessionRequest, ShopContext } from '@shopnex/app'
-import { checkoutExpiry, paymentRoutes, refund, type PaymentDeps } from '../src/payments'
+import { checkoutExpiry, expireReplaced, paymentRoutes, refund, type PaymentDeps } from '../src/payments'
 import { amountMismatch } from '../src/webhook'
 
 const INSTANCE = 'https://shop.example.com'
 const SHOP_ID = 'shop_1'
 
 let sessionCalls: { params: Stripe.Checkout.SessionCreateParams; options: Stripe.RequestOptions }[]
+let openSessions: { id: string; metadata: Record<string, string> }[]
+let expired: string[]
+let listBroken: boolean
 let refundCalls: { params: Stripe.RefundCreateParams; options: Stripe.RequestOptions }[]
 let stripeError: Error | null
 let refundResult: { id: string; status: string }
@@ -41,6 +44,15 @@ const stripe = {
         sessionCalls.push({ params, options })
         if (stripeError) throw stripeError
         return { id: 'cs_test_1', url: 'https://checkout.stripe.com/c/pay/cs_test_1' }
+      },
+      async *list() {
+        if (listBroken) throw new Error('Stripe is down')
+        yield* openSessions
+      },
+      async expire(id: string) {
+        if (id === 'cs_paying') throw new Error('Checkout is being paid')
+        expired.push(id)
+        return { id }
       },
     },
   },
@@ -99,6 +111,9 @@ const post = (path: string, body: unknown) =>
 beforeEach(() => {
   sessionCalls = []
   refundCalls = []
+  openSessions = []
+  expired = []
+  listBroken = false
   outcomes = []
   stripeError = null
   refundResult = { id: 're_1', status: 'succeeded' }
@@ -125,6 +140,51 @@ describe('checkoutExpiry', () => {
   test('lowers one that is too far to just under 24 hours (Stripe refuses more)', () => {
     const got = checkoutExpiry(new Date(Date.now() + 72 * 3600_000).toISOString())
     assert.ok(got < now() + 24 * 3600 && got > now() + 23 * 3600, `got ${got - now()}s from now`)
+  })
+})
+
+describe('POST /payments/session replacing an earlier attempt', () => {
+  const open = (id: string, orderId: string, sessionId: string) => ({
+    id,
+    metadata: { shopnex_order_id: orderId, shopnex_session_id: sessionId },
+  })
+
+  test("ends the order's other open Checkout Sessions before creating the new one", async () => {
+    openSessions = [
+      open('cs_old', 'order_1', 'ps_0'),
+      open('cs_other', 'order_2', 'ps_9'),
+      { id: 'cs_bare', metadata: {} },
+    ]
+    const res = await post('/payments/session', paymentRequest())
+    assert.equal(res.status, 200)
+    assert.deepEqual(expired, ['cs_old'], 'only the same order, and only ours')
+    assert.equal(sessionCalls.length, 1)
+  })
+
+  test('a retry of the same ShopNex session leaves its own Checkout Session alone', async () => {
+    openSessions = [open('cs_same', 'order_1', 'ps_1')]
+    await post('/payments/session', paymentRequest())
+    assert.deepEqual(expired, [])
+  })
+
+  test('one that is being paid cannot be ended, and the new payment still starts', async () => {
+    openSessions = [open('cs_paying', 'order_1', 'ps_0'), open('cs_old', 'order_1', 'ps_00')]
+    const res = await post('/payments/session', paymentRequest())
+    assert.equal(res.status, 200)
+    assert.deepEqual(expired, ['cs_old'])
+  })
+
+  test('Stripe failing to list does not stop the new payment', async () => {
+    listBroken = true
+    const res = await post('/payments/session', paymentRequest())
+    assert.equal(res.status, 200)
+    assert.equal(sessionCalls.length, 1)
+  })
+
+  test('expireReplaced can be called on its own', async () => {
+    openSessions = [open('cs_old', 'order_1', 'ps_0')]
+    await expireReplaced(stripe, paymentRequest())
+    assert.deepEqual(expired, ['cs_old'])
   })
 })
 

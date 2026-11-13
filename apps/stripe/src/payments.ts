@@ -23,6 +23,27 @@ export const checkoutExpiry = (expiresAt: string) => {
   return Math.min(Math.max(wanted, now + 30 * 60 + 60), now + 24 * 3600 - 60)
 }
 
+// ShopNex keeps one open payment attempt per order: a new session replaces the old one. Stripe doesn't know that, and
+// the buyer may still have the old Checkout page open and pay it as well as the new one (charged twice). So the old
+// open Checkout Sessions of the order are ended first. One that is being paid right now can't be expired, and that is
+// fine: it is the buyer's payment in flight, and the order shows it if both go through.
+export async function expireReplaced(stripe: Stripe, request: PaymentSessionRequest) {
+  const dayAgo = Math.floor(Date.now() / 1000) - 24 * 3600
+  try {
+    // Stripe can't filter Checkout Sessions by metadata; open ones are few and all newer than the longest expiry
+    for await (const open of stripe.checkout.sessions.list({ status: 'open', created: { gte: dayAgo }, limit: 100 })) {
+      const { shopnex_order_id: orderId, shopnex_session_id: sessionId } = open.metadata ?? {}
+      if (orderId !== request.orderId || sessionId === request.id) continue
+      await stripe.checkout.sessions.expire(open.id).catch((error: unknown) => {
+        console.error(`[stripe] expire replaced checkout ${open.id}:`, message(error))
+      })
+    }
+  } catch (error) {
+    // Starting the new payment matters more than cleaning up the old one
+    console.error(`[stripe] list open checkouts of order ${request.orderId}:`, message(error))
+  }
+}
+
 export function paymentRoutes(deps: PaymentDeps) {
   const routes = new Hono()
 
@@ -38,9 +59,9 @@ export function paymentRoutes(deps: PaymentDeps) {
         shopnex_amount_cents: String(request.amount.cents),
         shopnex_currency: request.amount.currency.toLowerCase(),
       }
-      const session = await (
-        await deps.stripeFor(shop)
-      ).checkout.sessions.create(
+      const stripe = await deps.stripeFor(shop)
+      await expireReplaced(stripe, request)
+      const session = await stripe.checkout.sessions.create(
         {
           mode: 'payment',
           // Tags ShopNex checkouts in the Stripe Dashboard
