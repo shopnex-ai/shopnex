@@ -6,12 +6,13 @@
 //   POST /api/token        Save the Shippo token (checked with Shippo)
 //   POST /api/origin       Ship-from address and the default parcel
 //   POST /shipping/rates   ShopNex: rates for this cart and address (carrier service)
+import { readFileSync } from 'node:fs'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { createShopnexApp, type ShopContext } from '@shopnex/app'
 import { getToken, isReady, loadConfig, saveConfig, setToken, type Config, type Origin } from './config'
-import { icon, SettingsPage } from './settings'
+import { SettingsPage } from './settings'
 import { quoteRates, verifyKey } from './shippo'
 
 // Public origin ShopNex and the admin (iframe) reach this app at
@@ -22,6 +23,8 @@ const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4900)
 // Its identity is SHIPPO_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const shopnex = createShopnexApp({
+  // Shippo's hippo mark (their favicon, which they publish only as a PNG) on a white tile
+  icon: readFileSync(new URL('./icon.svg', import.meta.url), 'utf8'),
   clientId: 'app_shippo',
   appUrl: APP_URL,
   appKey: process.env.SHIPPO_APP_KEY,
@@ -43,7 +46,6 @@ async function registerCarrier(shop: ShopContext, config?: Config) {
 
 const app = new Hono()
 app.route('/', shopnex.routes)
-app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }))
 
 // --- settings (embedded page) ---
 
