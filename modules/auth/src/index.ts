@@ -37,8 +37,9 @@ const socialProviders = {
 
 export const enabledSocialProviders = Object.keys(socialProviders) as SocialProvider[]
 
-// The public origin: APP_URL, or BETTER_AUTH_URL on installs that still set it
-const baseURL = process.env.APP_URL || process.env.BETTER_AUTH_URL
+// The public origin. Left out when APP_URL is unset or empty (a docker compose variable that is not set is an empty
+// string): Better Auth then reads the old BETTER_AUTH_URL itself, or works it out from the request
+const baseURL = process.env.APP_URL
 
 export const auth = betterAuth({
   basePath: '/api/auth',
@@ -62,6 +63,8 @@ export const auth = betterAuth({
   ...(process.env.CLIENT_IP_HEADER && { advanced: { ipAddress: { ipAddressHeaders: clientIpHeaders() } } }),
   hooks: {
     // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
+    // Better Auth's hook type returns a promise, and a throw here has to reject it, so this stays async without an await
+    // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
       if (isOtpPath(ctx.path) && !currentOtpSender()) throw new APIError('FORBIDDEN', { message: 'Not available' })
       // Open sign-up: the per address cap (signup-limit.ts). Server calls have no request and are not counted.
@@ -74,7 +77,9 @@ export const auth = betterAuth({
     user: {
       // Invitation only (see sign-up-policy). Invitees join their shop by accepting the invitation.
       create: {
-        before: async (user) => void (await assertSignUpAllowed(user.email)),
+        before: async (user) => {
+          await assertSignUpAllowed(user.email)
+        },
         after: async (user) => createShopForNewAccount(user),
       },
     },
@@ -125,4 +130,6 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
+export { takeRate } from './rate-limit'
+export { clientIp } from './signup-limit'
 export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

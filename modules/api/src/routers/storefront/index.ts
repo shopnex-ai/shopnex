@@ -1,4 +1,5 @@
 import { ORPCError } from '@orpc/server'
+import { clientIp } from '@shopnex/auth'
 import { cartService, checkoutService, type CartView } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
 import {
@@ -26,6 +27,7 @@ import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem }
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
 import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
+import { db } from '@shopnex/db'
 import type { Customer as CustomerRow } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
@@ -60,7 +62,7 @@ function priceRange(prices: number[], currency: string) {
 // Keeps only the custom fields the shop shows on the storefront
 type FieldsView = (values: CustomFieldValues) => CustomFieldValues
 const fieldsView = (shopId: string, resource: CustomFieldResource) =>
-  customFieldService.storefrontView(shopId, resource)
+  customFieldService.storefrontView(shopId, resource, db)
 
 function toProduct(p: ProductWithDetails, currency: string, fields: FieldsView): Product {
   const images = p.images.map(image)
@@ -291,9 +293,13 @@ async function productFilters(
   },
 ) {
   return {
-    customFields: await customFieldService.parseFilters(shopId, 'product', input.customField ?? [], {
-      storefrontOnly: true,
-    }),
+    customFields: await customFieldService.parseFilters(
+      shopId,
+      'product',
+      input.customField ?? [],
+      { storefrontOnly: true },
+      db,
+    ),
     search: input.query,
     vendors: input.vendor,
     productTypes: input.productType,
@@ -519,11 +525,13 @@ export const storefrontRouter = storefront.router({
   },
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
-      await accountService.requestLoginCode(context.shop.id, input.email)
+      await accountService.requestLoginCode(context.shop.id, input.email, { ip: clientIp(context.headers) })
       return { success: true as const }
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
-      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code)
+      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code, {
+        ip: clientIp(context.headers),
+      })
       return { token, customer: toCustomer(customer, await fieldsView(context.shop.id, 'customer')) }
     }),
     signOut: storefront.customer.signOut.handler(async ({ context }) => {

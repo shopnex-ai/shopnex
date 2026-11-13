@@ -15,6 +15,7 @@
     "@shopnex/apps": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
+    "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/orders": "workspace:*",
     "@shopnex/webhooks": "workspace:*",

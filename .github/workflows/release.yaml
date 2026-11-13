@@ -126,7 +126,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/digests"
           touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.image }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*
@@ -145,7 +145,7 @@ jobs:
           - { image: cj-dropshipping, suffix: -cj-dropshipping }
           - { image: shippo, suffix: -shippo }
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: digests-${{ matrix.image }}-*
           path: ${{ runner.temp }}/digests

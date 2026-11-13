@@ -6,7 +6,9 @@ for (const archive of document.querySelectorAll<HTMLElement>('[data-archive]')) 
     archive.querySelector<HTMLElement>('[data-pieces]')?.setAttribute('data-view', b.dataset.viewBtn!)
     archive.querySelectorAll<HTMLElement>('[data-view-btn]').forEach((x) => x.classList.toggle('on', x === b))
   })
-  archive
-    .querySelector<HTMLSelectElement>('[data-sort]')
-    ?.addEventListener('change', (e) => (location.href = (e.target as HTMLSelectElement).value))
+  archive.querySelector<HTMLSelectElement>('[data-sort]')?.addEventListener('change', (e) => {
+    // The options are links on this shop: never follow one that leaves it (or a javascript: URL)
+    const url = new URL((e.target as HTMLSelectElement).value, location.href)
+    if (url.origin === location.origin) location.href = url.href
+  })
 }

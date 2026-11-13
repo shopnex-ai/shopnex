@@ -1,0 +1,17 @@
+{
+  "name": "@shopnex/log",
+  "description": "Server logging with the shape of pino: levels, child loggers, JSON or readable output, safe errors",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

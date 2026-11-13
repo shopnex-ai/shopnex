@@ -97,4 +97,28 @@ passing.
   an open transaction) from the caller, so nothing in it can query outside the transaction it was given. That mistake
   freezes the embedded database (see `modules/db/src/embedded-guard.ts`) and is invisible on PostgreSQL.
 
-Today both lists hold `modules/drafts`.
+Today `modules/drafts` and `modules/custom-fields` are in both lists, and `modules/auth` is in the strict one only (it
+builds the Better Auth instance with `db` and its functions are entry points, so the no-`db` rule would only add
+parameters).
+
+### Logging
+
+Server code logs through `@shopnex/log` (`modules/log`), a small logger with the shape of [pino](https://getpino.io):
+
+```ts
+import { createLogger } from '@shopnex/log'
+
+const log = createLogger('payments')
+log.info('payment started')
+log.error({ err, sessionId }, 'payment session failed') // the object first, then the message, like pino
+const orderLog = log.child({ orderId }) // every entry carries orderId
+```
+
+- Always pass the error object (`{ err }`), not just its message: the output keeps the type, message, stack, `code` and
+  `cause`. It does not copy the error's other properties, because a database error holds the query parameters there.
+- Fields with a key that looks sensitive (`password`, `token`, `secret`, `authorization`, `cookie`, `apiKey`, ...) are
+  written as `[Redacted]`. Still, never log request bodies, credentials or customer data you don't need.
+- `LOG_LEVEL` (default `info`) and `LOG_FORMAT=json` are described in the environment variables reference.
+- `modules/payments` and `modules/email` use it, and ESLint refuses `console.*` there (`noConsoleModules` in
+  `eslint.config.mjs`). Other modules still log with `console` and move over one at a time.
+- Because the call shape is pino's, moving to pino later means changing the import in `modules/log`, not the call sites.

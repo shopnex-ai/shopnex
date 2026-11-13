@@ -40,6 +40,20 @@ export const ENV_VARS: EnvVar[] = [
       'Only for the embedded database (`pglite:`), which has one connection. A query, or a new transaction, sent on the shared database handle while a transaction is open would wait for that transaction for ever and freeze the shop. `throw` (the default) fails it at once with an error that says where the outer transaction was opened, `warn` logs it and carries on, `off` turns the check off. Report such an error as a bug; PostgreSQL is not affected.',
   },
   {
+    name: 'LOG_LEVEL',
+    required: false,
+    default: 'info',
+    description:
+      'How much the server logs: `trace`, `debug`, `info`, `warn`, `error`, `fatal` or `silent`. Modules that log through `@shopnex/log` (payments and email so far) follow it; the others still write straight to the console.',
+  },
+  {
+    name: 'LOG_FORMAT',
+    required: false,
+    default: 'text',
+    description:
+      'Set to `json` to write one JSON line per log entry, with the keys of pino (`level` as a number, `time` in milliseconds, `pid`, `hostname`, `name`, `msg` and your fields), for a log collector. Otherwise entries are readable text like `[payments] ERROR message key=value`.',
+  },
+  {
     name: 'SHOPNEX_SECRET',
     required: true,
     description:

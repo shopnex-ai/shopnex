@@ -11,6 +11,7 @@
 //   POST /shopnex/webhook           ShopNex: order.paid → CJ order
 //   POST /shipping/rates            ShopNex: what CJ shipping costs for this cart and address (carrier service)
 //   (every 15 minutes)              CJ tracking numbers → ShopNex fulfillments
+import { readFileSync } from 'node:fs'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -37,7 +38,7 @@ import {
 import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
 import { ensureOrderWebhook } from './webhook'
-import { icon, ProductList, SettingsPage, type MyProduct } from './settings'
+import { ProductList, SettingsPage, type MyProduct } from './settings'
 
 // Public origin ShopNex and the admin (iframe) reach this app at
 const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
@@ -50,6 +51,7 @@ const database = await openAppDatabase({ schema: SCHEMA })
 await database.migrate(migrationsFolder())
 const tables = openTables(database.db)
 const shopnex = createShopnexApp({
+  icon: readFileSync(new URL('./icon.svg', import.meta.url), 'utf8'),
   clientId: CLIENT_ID,
   appUrl: APP_URL,
   appKey: process.env.CJ_DROPSHIPPING_APP_KEY,
@@ -102,7 +104,6 @@ async function backfillFulfilledBy(shop: ShopContext) {
 
 const app = new Hono()
 app.route('/', shopnex.routes)
-app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }))
 
 // --- settings (embedded page) ---
 

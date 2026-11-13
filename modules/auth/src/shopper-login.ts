@@ -18,9 +18,7 @@ export const withOtpSender = <T>(send: OtpSender, fn: () => Promise<T>) => sende
 
 /** Runs `fn` (checking a code and signing in) as customer sign-in; sending a code is not part of it */
 export const withOtpSignIn = <T>(fn: () => Promise<T>) =>
-  senders.run(async () => {
-    throw new Error('A code is not sent while signing in')
-  }, fn)
+  senders.run(() => Promise.reject(new Error('A code is not sent while signing in')), fn)
 
 export const currentOtpSender = () => senders.getStore()
 
