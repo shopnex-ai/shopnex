@@ -3,20 +3,7 @@ title: Architecture
 description: How the modules fit together.
 ---
 
-```txt
-modules/
-  api         Hono app + oRPC router (mounted by admin-ui at /api)
-  catalog     products, collections, options → values → variants
-  customers   shop-scoped customers; guests matched by email
-  cart        server-side carts + checkout → order (one transaction, idempotent)
-  orders      orders, line items with price snapshots, status transitions
-  tenancy     TENANCY_MODE, default shop, current shop resolution
-  auth        Better Auth integration
-  db          drizzle client, schemas, migrations
-  theme       themes + component definitions
-  apps        installable apps, OAuth codes, installations, marketplace sync
-  webhooks    outbound webhooks: endpoints, outbox, delivery worker
-```
+<Modules />
 
 ## Rules
 

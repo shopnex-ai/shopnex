@@ -27,6 +27,7 @@
 
 - /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
+- /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService)
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
@@ -40,7 +41,31 @@
 
 Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
-one way (orders → catalog, customers); domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`.
+one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`. Today's graph
+(a module imports only what is on its right):
+
+```text
+db        →
+channels  → db
+pricing   → db
+drafts    → db
+webhooks  → db
+theme     → db, drafts
+tenancy   → db, channels
+auth      → db, tenancy
+files     → db, tenancy, webhooks
+email     → db, tenancy, webhooks
+custom-fields → db
+catalog   → db, channels, custom-fields, webhooks
+content   → db, catalog
+customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
+orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
+payments  → db, apps, orders, email, webhooks
+cart      → db, apps, catalog, channels, orders, payments, pricing
+apps      → db, tenancy
+ai        → db, apps, catalog, tenancy
+api       → everything above (transport only)
+```
 
 ## API layout
 
@@ -82,7 +107,7 @@ Always multi-tenant underneath (every tenant table has `shop_id`); `TENANCY_MODE
 | Admin      | default shop               | session's active shop, else the user's first shop |
 | New users  | invited from Admin → Staff | invited, or create their own shop                 |
 
-- Accounts are invitation-only unless `OPEN_SIGNUP=true` (multi mode only): then `/admin/signup` creates an account plus its own shop (owner, a main menu, the Online Store channel, sample products published on it; the first theme appears on first use), and an account without a shop (e.g. OAuth sign-up) is asked to create one. Provisioning lives in `modules/tenancy/src/provisioning.ts`. Otherwise: the setup wizard creates the first one, everyone else needs a pending invitation (`modules/auth/src/sign-up-policy.ts`, covers email and OAuth). Invite links are copied from Admin → Staff and expire after 7 days
+- Accounts are invitation-only unless `OPEN_SIGNUP=true` (multi mode only): then `/admin/signup` creates an account plus its own shop (owner, a main menu, the Online Store channel; the empty Products page offers an "Add sample products" button; the first theme appears on first use), and an account without a shop (e.g. OAuth sign-up) is asked to create one. Provisioning lives in `modules/tenancy/src/provisioning.ts`. Otherwise: the setup wizard creates the first one, everyone else needs a pending invitation (`modules/auth/src/sign-up-policy.ts`, covers email and OAuth). Invite links are copied from Admin → Staff and expire after 7 days
 - Shops are Better Auth organizations (`shops`, `shop_members`, `shop_invitations`) — `authClient.organization.*` for switching, invites, roles
 - API: `storefront` / `admin` middlewares in `modules/api/src/orpc.ts` put `context.shop` on every procedure
 - Super admin (platform role `superadmin`, Better Auth admin plugin): can act in every shop without membership, manage users (`/api/auth/admin/*`, `authClient.admin.*`). The account created by the setup wizard is one; to create or promote another (or recover access):

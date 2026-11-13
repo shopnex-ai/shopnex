@@ -1,5 +1,5 @@
 import { channelService } from '@shopnex/channels'
-import type { Shop } from '@shopnex/db/schema'
+import type { Shop, ShopRole } from '@shopnex/db/schema'
 import { ROOT_DOMAIN, isMultiTenant } from './config'
 import { getShopByStorefrontKey } from './keys'
 import {
@@ -13,7 +13,7 @@ import {
 } from './shops'
 import { subdomainSlug } from './subdomains'
 
-export type ShopRole = 'owner' | 'admin' | 'member'
+export type { ShopRole }
 
 // superAdmin: platform super admin acting in this shop (may not be a member; acts as owner)
 export type AdminTenant = { shop: Shop; role: ShopRole; superAdmin: boolean }

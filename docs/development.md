@@ -82,3 +82,41 @@ pnpm demo:orders --replace   # remove the earlier sample data first
 Fills the dashboard analytics with a rising sales trend, returning customers, unpaid, cancelled and discounted
 orders. Sample customers use `@demo.shopnex.test` addresses, which is how `--replace` finds them. Orders are inserted
 directly, so stock, webhooks and emails are untouched. `pnpm demo:seed` (public demo database) runs it as its last step.
+
+### Lint
+
+`pnpm lint` (ESLint) and `pnpm format:check` (Prettier) run in CI; `pnpm lint:fix` and `pnpm format` fix what they can.
+
+Most of the repo uses the recommended TypeScript rules. Two lists in `eslint.config.mjs` opt modules into more. A module
+joins a list once it passes: add its folder, run `pnpm lint`, and fix what it reports. New code in it then has to keep
+passing.
+
+- `strictModules`: the strict, type-aware TypeScript rules (no `any`, no floating or misused promises, no `!`, and so
+  on), as errors.
+- `connectionBoundModules`: the module never imports the shared `db`. Its functions take a `conn` (the shared handle or
+  an open transaction) from the caller, so nothing in it can query outside the transaction it was given. That mistake
+  freezes the embedded database (see `modules/db/src/embedded-guard.ts`) and is invisible on PostgreSQL.
+
+Today both lists hold `modules/custom-fields`.
+
+### Logging
+
+Server code logs through `@shopnex/log` (`modules/log`), a small logger with the shape of [pino](https://getpino.io):
+
+```ts
+import { createLogger } from '@shopnex/log'
+
+const log = createLogger('payments')
+log.info('payment started')
+log.error({ err, sessionId }, 'payment session failed') // the object first, then the message, like pino
+const orderLog = log.child({ orderId }) // every entry carries orderId
+```
+
+- Always pass the error object (`{ err }`), not just its message: the output keeps the type, message, stack, `code` and
+  `cause`. It does not copy the error's other properties, because a database error holds the query parameters there.
+- Fields with a key that looks sensitive (`password`, `token`, `secret`, `authorization`, `cookie`, `apiKey`, ...) are
+  written as `[Redacted]`. Still, never log request bodies, credentials or customer data you don't need.
+- `LOG_LEVEL` (default `info`) and `LOG_FORMAT=json` are described in the environment variables reference.
+- `modules/payments` and `modules/email` use it, and ESLint refuses `console.*` there (`noConsoleModules` in
+  `eslint.config.mjs`). Other modules still log with `console` and move over one at a time.
+- Because the call shape is pino's, moving to pino later means changing the import in `modules/log`, not the call sites.

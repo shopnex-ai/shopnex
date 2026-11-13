@@ -1,13 +1,16 @@
 {
   "name": "@shopnex/api",
+  "description": "Hono app and oRPC router: the admin, storefront and OpenAPI endpoints",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./router": "./src/router.ts",
+    "./reference": "./src/reference.ts",
     "./schemas": "./src/routers/admin/schemas.ts"
   },
   "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc",
     "demo:seed": "tsx --env-file-if-exists=../../.env scripts/demo-seed.ts",
     "demo:products": "tsx --env-file-if-exists=../../.env scripts/demo-products.ts",
@@ -15,15 +18,16 @@
     "demo:reset": "tsx scripts/demo-reset.ts"
   },
   "dependencies": {
-    "@orpc/openapi": "^1.16.1",
+    "@orpc/openapi": "^1.16.2",
     "@orpc/server": "catalog:",
-    "@orpc/zod": "^1.16.1",
+    "@orpc/zod": "^1.16.2",
     "@shopnex/ai": "workspace:*",
     "@shopnex/apps": "workspace:*",
     "@shopnex/auth": "workspace:*",
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/content": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/channels": "workspace:*",
     "@shopnex/db": "workspace:*",

@@ -22,6 +22,7 @@ import {
 import { publicationService, type PublicationInput } from '@shopnex/channels'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
+import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './errors'
 import { sanitizeHtml } from './html'
@@ -52,6 +53,8 @@ export type ProductInput = {
   productType?: string
   tags?: string[]
   seo?: { title?: string | null; description?: string | null }
+  /** Custom field values by key; null clears one (see @shopnex/custom-fields) */
+  customFields?: CustomFieldUpdates
   /** Simple product (one default variant). Use options + variants instead for products with variants. */
   priceCents?: number
   options?: OptionInput[]
@@ -124,6 +127,8 @@ export type ListOptions = {
   available?: boolean
   /** Only products published on this channel now. Storefronts pass their channel (with status 'active'). */
   channelId?: string
+  /** Custom field values the product must have, by key (see customFieldService.parseFilters) */
+  customFields?: Record<string, string>
 }
 
 function ordering(opts: ListOptions): SQL[] {
@@ -158,6 +163,7 @@ export type FilterOptions = Pick<
   | 'minPriceCents'
   | 'maxPriceCents'
   | 'available'
+  | 'customFields'
 >
 
 const likeAny = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
@@ -199,6 +205,9 @@ function filters(shopId: string, opts: FilterOptions) {
           opts.maxPriceCents !== undefined ? lte(productVariants.priceCents, opts.maxPriceCents) : undefined,
         )
       : undefined,
+    ...Object.entries(opts.customFields ?? {}).map(
+      ([key, value]) => sql`${products.customFields} ->> ${key} = ${value}`,
+    ),
     opts.available
       ? someVariant(or(isNull(productVariants.inventoryQuantity), sql`${productVariants.inventoryQuantity} > 0`))
       : undefined,
@@ -381,6 +390,7 @@ export async function create(shopId: string, input: ProductInput) {
       .insert(schema.products)
       .values({
         ...contentColumns(input),
+        customFields: await customFieldService.merge(shopId, 'product', input.customFields ?? {}, {}, tx),
         shopId,
         slug,
         title: input.title,
@@ -455,9 +465,15 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
       throw new CatalogError('SLUG_TAKEN', `Slug "${patch.slug}" is already used by another product`)
     }
     const { images, priceCents, slug } = patch
-    const fields = { ...contentColumns(patch), ...(slug !== undefined && { slug }) }
+    const fields = {
+      ...contentColumns(patch),
+      ...(slug !== undefined && { slug }),
+      ...(patch.customFields && {
+        customFields: await customFieldService.merge(shopId, 'product', patch.customFields, existing.customFields, tx),
+      }),
+    }
     if (priceCents !== undefined) {
-      const variants = await listByProduct(id, tx)
+      const variants = await listByProduct(shopId, id, tx)
       if (variants.length !== 1 || variants[0]!.optionsKey !== '') {
         throw new CatalogError('HAS_VARIANTS', 'This product has variants: update the price on each variant')
       }
@@ -465,7 +481,7 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
         .update(schema.productVariants)
         .set({ priceCents, updatedAt: new Date() })
         .where(eq(schema.productVariants.id, variants[0]!.id))
-      await syncPriceCache(tx, id)
+      await syncPriceCache(shopId, id, tx)
     }
     if (Object.keys(fields).length) {
       await tx

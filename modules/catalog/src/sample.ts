@@ -1,4 +1,4 @@
-import { create } from './products'
+import { count, create } from './products'
 
 // Free-to-use photos from Burst by Shopify (https://burst.shopify.com/photos/<name>), cropped square by its CDN.
 // Free for commercial use, no attribution required; the photos may not be sold as digital files.
@@ -10,7 +10,7 @@ const image = (name: string, alt: string) => [
   { url: `https://burst.shopifycdn.com/photos/${name}.jpg?width=900&height=900&crop=center`, alt },
 ]
 
-// A few products so a new shop's storefront isn't empty (demo / self-serve signup). Prices are in minor units.
+// A few products to try the shop with, added on request from the empty Products page. Prices are in minor units.
 const SAMPLES = [
   {
     title: 'Classic Tee',
@@ -43,7 +43,9 @@ const SAMPLES = [
   },
 ]
 
+// Only into an empty shop (so a double click or a second tab can't add them twice); returns how many were added
 export async function seedSampleProducts(shopId: string) {
+  if ((await count(shopId, {})) > 0) return 0
   for (const sample of SAMPLES) {
     await create(shopId, {
       ...sample,
@@ -51,4 +53,5 @@ export async function seedSampleProducts(shopId: string) {
       description: 'A sample product. Edit or delete it in Products.',
     })
   }
+  return SAMPLES.length
 }

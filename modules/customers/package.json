@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/customers",
+  "description": "Shop-scoped customers and storefront accounts",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,6 +11,7 @@
   },
   "dependencies": {
     "@shopnex/auth": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/webhooks": "workspace:*",

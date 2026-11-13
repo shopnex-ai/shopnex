@@ -133,6 +133,29 @@ const LOGIN_CODE = `<h1 style="font-size:22px;margin:0 0 8px;">Your sign-in code
 <p style="margin:0;${MUTED}font-size:13px;">If you didn't ask for this code, you can ignore this email.</p>
 `
 
+const ABANDONED_CART = `<h1 style="font-size:22px;margin:0 0 8px;">You left something behind</h1>
+<p style="margin:0 0 24px;">Hi{% if checkout.first_name %} {{ checkout.first_name }}{% endif %}, your cart at {{ shop.name }} is waiting for you.</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 16px;">
+  {% for line in checkout.line_items %}
+  <tr>
+    <td style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;">
+      {% if line.image_url %}<img src="{{ line.image_url }}" alt="" width="48" height="48" style="border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:12px;">{% endif %}
+      {{ line.title }}{% if line.variant_title %} <span style="${MUTED}">· {{ line.variant_title }}</span>{% endif %} × {{ line.quantity }}
+    </td>
+    <td align="right" style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;white-space:nowrap;">{{ line.line_price | money }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<p style="margin:0 0 24px;"><a href="{{ checkout.url }}" style="${BUTTON}">Complete your order</a></p>
+
+<p style="margin:0;${MUTED}font-size:12px;">
+  You're getting this because you started a checkout at {{ shop.name }}.
+  <a href="{{ unsubscribe_url }}" style="${MUTED}">Unsubscribe</a>
+</p>
+`
+
 export const DEFAULTS: Record<Notification, { subject: string; body: string }> = {
   order_confirmation: { subject: 'Order {{ order.name }} confirmed', body: ORDER_CONFIRMATION },
   shipping_confirmation: { subject: 'Order {{ order.name }} is on its way', body: SHIPPING_CONFIRMATION },
@@ -142,6 +165,7 @@ export const DEFAULTS: Record<Notification, { subject: string; body: string }> =
     body: STAFF_ORDER,
   },
   login_code: { subject: '{{ code }} is your {{ shop.name }} sign-in code', body: LOGIN_CODE },
+  abandoned_cart: { subject: 'You left something in your cart at {{ shop.name }}', body: ABANDONED_CART },
   // Its "subject" is never sent: the layout only wraps the other notifications
   layout: { subject: '', body: LAYOUT },
 }

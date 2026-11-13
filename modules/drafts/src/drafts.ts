@@ -6,7 +6,7 @@
 // router), merge the draft over the live data when it's previewed (`applyChanges`), and pass `publish` a
 // function that writes the changes to the entity. Delete its drafts with it (`remove`).
 import { and, eq, sql, type AnyColumn, type SQL } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { DraftChanges } from '@shopnex/db/schema'
 
 const t = schema.entityDrafts
@@ -23,25 +23,25 @@ export class DraftConflictError extends Error {
 
 /** A draft over its live data: a key set to null is removed */
 export function applyChanges<T>(live: Record<string, T>, changes: DraftChanges): Record<string, T> {
-  const merged = { ...live }
+  const merged = new Map(Object.entries(live))
   for (const [key, value] of Object.entries(changes)) {
-    if (value === null) delete merged[key]
-    else merged[key] = value as T
+    if (value === null) merged.delete(key)
+    else merged.set(key, value as T)
   }
-  return merged
+  return Object.fromEntries(merged)
 }
 
 /** The entity's draft; empty (rev 0) when it has none */
-export async function get(shopId: string, type: string, id: string, conn: Conn = db) {
+export async function get(shopId: string, type: string, id: string, conn: Conn) {
   const [row] = await conn
     .select({ changes: t.changes, rev: t.rev })
     .from(t)
     .where(byEntity(shopId, type, id))
-  return row ?? { changes: {} as DraftChanges, rev: 0 }
+  return row ?? { changes: {}, rev: 0 }
 }
 
 /** Merges `changes` into the draft, key by key, so concurrent saves of different keys don't overwrite each other */
-export async function patch(shopId: string, type: string, id: string, changes: DraftChanges, conn: Conn = db) {
+export async function patch(shopId: string, type: string, id: string, changes: DraftChanges, conn: Conn) {
   const [row] = await conn
     .insert(t)
     .values({ shopId, entityType: type, entityId: id, changes, rev: 1 })
@@ -50,11 +50,12 @@ export async function patch(shopId: string, type: string, id: string, changes: D
       set: { changes: sql`${t.changes} || excluded.changes`, rev: sql`${t.rev} + 1`, updatedAt: new Date() },
     })
     .returning({ rev: t.rev })
-  return row!.rev
+  if (!row) throw new Error('The draft was not saved')
+  return row.rev
 }
 
 /** Throws the draft away. Returns its new rev. */
-export async function discard(shopId: string, type: string, id: string, conn: Conn = db) {
+export async function discard(shopId: string, type: string, id: string, conn: Conn) {
   const [row] = await conn
     .update(t)
     .set({ changes: {}, rev: sql`${t.rev} + 1`, updatedAt: new Date() })
@@ -74,10 +75,14 @@ export async function publish<T>(
   id: string,
   apply: (tx: Conn, changes: DraftChanges) => Promise<T>,
   options: { expectedRev?: number } = {},
-  conn: Conn = db,
+  conn: Conn,
 ) {
   return conn.transaction(async (tx) => {
-    const [row] = await tx.select().from(t).where(byEntity(shopId, type, id)).for('update')
+    const [row] = await tx
+      .select()
+      .from(t)
+      .where(byEntity(shopId, type, id))
+      .for('update')
     if (!row) return { published: false as const, rev: 0 }
     if (options.expectedRev !== undefined && options.expectedRev !== row.rev) throw new DraftConflictError(row.rev)
     if (!Object.keys(row.changes).length) return { published: false as const, rev: row.rev }
@@ -87,18 +92,19 @@ export async function publish<T>(
       .set({ changes: {}, rev: sql`${t.rev} + 1`, updatedAt: new Date() })
       .where(byEntity(shopId, type, id))
       .returning({ rev: t.rev })
-    return { published: true as const, rev: cleared!.rev, value }
+    if (!cleared) throw new Error('The draft disappeared while it was being published')
+    return { published: true as const, rev: cleared.rev, value }
   })
 }
 
 /** Gives another entity (a duplicate) the same draft */
-export async function copy(shopId: string, type: string, fromId: string, toId: string, conn: Conn = db) {
+export async function copy(shopId: string, type: string, fromId: string, toId: string, conn: Conn) {
   const { changes } = await get(shopId, type, fromId, conn)
   if (Object.keys(changes).length) await patch(shopId, type, toId, changes, conn)
 }
 
 /** For when the entity is deleted */
-export async function remove(shopId: string, type: string, id: string, conn: Conn = db) {
+export async function remove(shopId: string, type: string, id: string, conn: Conn) {
   await conn.delete(t).where(byEntity(shopId, type, id))
 }
 

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useController } from 'react-hook-form'
 import { useId } from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { productFields } from '@shopnex/api/schemas'
 import {
   FormError,
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CustomFieldsFormCard, draftOf, toValue } from '@/components/admin/custom-fields-card'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
 import { ProductChannelsCard } from './channels-card'
@@ -30,16 +32,21 @@ import { VariantsCard } from './variants-card'
 
 export type Product = Outputs['admin']['products']['get']
 
-const productForm = productFields.pick({
-  title: true,
-  status: true,
-  descriptionHtml: true,
-  vendor: true,
-  productType: true,
-  tags: true,
-  slug: true,
-  seo: true,
-})
+const productForm = productFields
+  .pick({
+    title: true,
+    status: true,
+    descriptionHtml: true,
+    vendor: true,
+    productType: true,
+    tags: true,
+    slug: true,
+    seo: true,
+  })
+  .extend({
+    // The custom fields as the inputs hold them (text), by key; a field that is not set is absent
+    customFields: z.record(z.string(), z.string().optional()),
+  })
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -60,7 +67,11 @@ function plainTextToHtml(text: string | null) {
     .join('')
 }
 
-const toValues = (p: Product) => ({
+type CustomFieldDefinition = Outputs['admin']['customFields']['list'][number]
+
+// Every defined custom field has a key (undefined when the product has no value), so the form's own comparison
+// with its defaults sees "not set" and "cleared" as the same thing
+const toValues = (p: Product, definitions: CustomFieldDefinition[]) => ({
   title: p.title,
   status: p.status,
   descriptionHtml: p.descriptionHtml ?? plainTextToHtml(p.description),
@@ -69,12 +80,17 @@ const toValues = (p: Product) => ({
   tags: p.tags,
   slug: p.slug,
   seo: { title: p.seoTitle, description: p.seoDescription },
+  customFields: Object.fromEntries(
+    definitions.map((f) => [f.key, p.customFields[f.key] === undefined ? undefined : draftOf(p.customFields[f.key]!)]),
+  ),
 })
 
 export function ProductDetail({ id, currency }: { id: string; currency: string }) {
   const product = useQuery(orpc.admin.products.get.queryOptions({ input: { id } }))
+  // Needed for the form's defaults, so the editor waits for it
+  const definitions = useQuery(orpc.admin.customFields.list.queryOptions({ input: { resource: 'product' } }))
 
-  if (product.isPending) {
+  if (product.isPending || definitions.isPending) {
     return (
       <div className="space-y-4">
         <PageHeader back={back} title={<Skeleton className="h-8 w-64" />} />
@@ -96,13 +112,28 @@ export function ProductDetail({ id, currency }: { id: string; currency: string }
     )
   }
   // key: fresh form defaults if another product loads into this view
-  return <ProductEditor key={product.data.id} product={product.data} currency={currency} />
+  return (
+    <ProductEditor
+      key={product.data.id}
+      product={product.data}
+      definitions={definitions.data ?? []}
+      currency={currency}
+    />
+  )
 }
 
-function ProductEditor({ product, currency }: { product: Product; currency: string }) {
+function ProductEditor({
+  product,
+  definitions,
+  currency,
+}: {
+  product: Product
+  definitions: CustomFieldDefinition[]
+  currency: string
+}) {
   const queryClient = useQueryClient()
   const descriptionId = useId()
-  const form = useZodForm(productForm, { defaultValues: toValues(product) })
+  const form = useZodForm(productForm, { defaultValues: toValues(product, definitions) })
   const description = useController({ control: form.control, name: 'descriptionHtml' })
   const update = useMutation(orpc.admin.products.update.mutationOptions())
   const addToCollection = useMutation(orpc.admin.collections.addProduct.mutationOptions())
@@ -130,17 +161,26 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
     }
   }
 
-  const onSubmit = form.handleSubmit(async ({ descriptionHtml, ...values }) => {
+  const onSubmit = form.handleSubmit(async ({ descriptionHtml, customFields: drafts, ...values }) => {
+    // Only the custom fields that changed are sent (null clears one)
+    const changed = definitions.filter((f) => dirtyFields.customFields?.[f.key])
+    const badNumber = changed.find(
+      (f) => f.type === 'number' && drafts[f.key]?.trim() && !Number.isFinite(Number(drafts[f.key])),
+    )
+    if (badNumber) return void toast.error(`${badNumber.label} must be a number`)
     try {
       const saved = await update.mutateAsync({
         id: product.id,
         ...values,
+        ...(changed.length && {
+          customFields: Object.fromEntries(changed.map((f) => [f.key, toValue(f, drafts[f.key] ?? '')])),
+        }),
         // Only replace the stored description when the rich-text field was edited.
         ...(dirtyFields.descriptionHtml && { descriptionHtml: descriptionHtml || null, description: null }),
       })
       queryClient.setQueryData(orpc.admin.products.get.queryKey({ input: { id: product.id } }), saved)
       await queryClient.invalidateQueries({ queryKey: orpc.admin.products.list.key() })
-      form.reset(toValues(saved))
+      form.reset(toValues(saved, definitions))
       toast.success('Product saved')
     } catch (error) {
       setServerError(form, error, { CONFLICT: 'slug' })
@@ -257,6 +297,8 @@ function ProductEditor({ product, currency }: { product: Product; currency: stri
                 </FieldGroup>
               </CardContent>
             </Card>
+
+            <CustomFieldsFormCard resource="product" control={form.control} />
 
             <Card>
               <CardHeader>

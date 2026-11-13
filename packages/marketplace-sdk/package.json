@@ -1,6 +1,6 @@
 {
   "name": "@shopnex/marketplace-sdk",
-  "version": "0.13.1",
+  "version": "0.15.0",
   "description": "ShopNex App Marketplace API contract + typed clients, and the keys, tokens and signatures apps and instances exchange",
   "type": "module",
   "exports": {
@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@orpc/client": "catalog:",
-    "@orpc/contract": "^1.16.1",
-    "@orpc/openapi-client": "^1.16.1",
+    "@orpc/contract": "^1.16.2",
+    "@orpc/openapi-client": "^1.16.2",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -26,6 +26,7 @@ import {
   UsersIcon,
   WebhookIcon,
   type LucideIcon,
+  ListPlusIcon,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -103,6 +104,7 @@ export const settingsNav: { label: string; items: (NavItem | ExternalNavItem)[] 
   {
     label: 'Developers',
     items: [
+      { href: '/admin/settings/custom-fields', label: 'Custom fields', icon: ListPlusIcon },
       { href: '/admin/settings/channels', label: 'Sales channels', icon: Share2Icon },
       { href: '/admin/settings/marketplace', label: 'Marketplace', icon: BlocksIcon, superAdminOnly: true },
       { href: '/admin/settings/storefront-keys', label: 'Storefront keys', icon: KeyRoundIcon },

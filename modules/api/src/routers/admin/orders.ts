@@ -4,7 +4,7 @@ import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES, orderService } from '@shopnex
 import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
-import { cancelOrderInput, fulfillOrderInput } from './schemas'
+import { cancelOrderInput, customFieldUpdates, fulfillOrderInput } from './schemas'
 import { countOutput, orderCreatedOutput, orderDetailOutput, orderListItemOutput, orderOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
@@ -104,6 +104,16 @@ export const orders = {
       const order = await orderService.getById(context.shop.id, input.id)
       if (!order) throw new ORPCError('NOT_FOUND')
       return order
+    }),
+
+  // Only the custom fields change; the order itself is a record of what was sold
+  update: write
+    .route({ method: 'PATCH', path: '/admin/orders/{id}' })
+    .output(orderDetailOutput)
+    .input(id.extend({ customFields: customFieldUpdates }))
+    .handler(async ({ input, context }) => {
+      await orderService.setCustomFields(context.shop.id, input.id, input.customFields)
+      return (await orderService.getById(context.shop.id, input.id))!
     }),
 
   // Manual order from the admin (no shipping or payment method; mark it as paid when the money arrives)

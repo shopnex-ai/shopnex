@@ -17,6 +17,22 @@ export interface paths {
         patch: operations["admin.shop.update"];
         trace?: never;
     };
+    "/products/samples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.products.addSamples"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/products/bulk": {
         parameters: {
             query?: never;
@@ -209,6 +225,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/custom-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.customFields.list"];
+        put?: never;
+        post: operations["admin.customFields.create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/custom-fields/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin.customFields.delete"];
+        options?: never;
+        head?: never;
+        patch: operations["admin.customFields.update"];
+        trace?: never;
+    };
     "/customers/bulk": {
         parameters: {
             query?: never;
@@ -318,7 +366,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["admin.orders.update"];
         trace?: never;
     };
     "/orders/{id}/mark-as-paid": {
@@ -1055,6 +1103,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/notifications/abandoned-cart/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.notifications.abandonedCartSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["admin.notifications.updateAbandonedCartSettings"];
         trace?: never;
     };
     "/notifications/{notification}": {
@@ -1849,6 +1913,7 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        unpaidOrderExpiryHours: number | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -1874,6 +1939,7 @@ export interface operations {
                     seoDescription?: string | null;
                     taxesIncluded?: boolean;
                     taxShipping?: boolean;
+                    unpaidOrderExpiryHours?: (number | null) | null;
                 };
             };
         };
@@ -1897,10 +1963,31 @@ export interface operations {
                         nextOrderNumber: number;
                         taxesIncluded: boolean;
                         taxShipping: boolean;
+                        unpaidOrderExpiryHours: number | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
                     };
+                };
+            };
+        };
+    };
+    "admin.products.addSamples": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
                 };
             };
         };
@@ -1937,6 +2024,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 search?: string;
+                customField?: string[];
             };
             header?: never;
             path?: never;
@@ -1967,6 +2055,9 @@ export interface operations {
                             tags: string[];
                             seoTitle: string | null;
                             seoDescription: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
                             priceCents: number;
                             /** Format: date-time */
                             createdAt: string;
@@ -2046,6 +2137,10 @@ export interface operations {
                         title?: string | null;
                         description?: string | null;
                     };
+                    /** @description Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields. */
+                    customFields?: {
+                        [key: string]: string | number | boolean | null;
+                    };
                     priceCents?: number;
                     images?: {
                         /** Format: uri */
@@ -2092,6 +2187,9 @@ export interface operations {
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         priceCents: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2172,6 +2270,9 @@ export interface operations {
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         priceCents: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2245,6 +2346,10 @@ export interface operations {
                         title?: string | null;
                         description?: string | null;
                     };
+                    /** @description Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields. */
+                    customFields?: {
+                        [key: string]: string | number | boolean | null;
+                    };
                     priceCents?: number;
                     images?: {
                         /** Format: uri */
@@ -2277,6 +2382,9 @@ export interface operations {
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         priceCents: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2440,6 +2548,9 @@ export interface operations {
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         priceCents: number;
                         /** Format: date-time */
                         createdAt: string;
@@ -2925,6 +3036,182 @@ export interface operations {
             };
         };
     };
+    "admin.customFields.list": {
+        parameters: {
+            query?: {
+                resource?: "product" | "order" | "customer";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        /** @enum {string} */
+                        resource: "product" | "order" | "customer";
+                        key: string;
+                        label: string;
+                        /** @enum {string} */
+                        type: "text" | "number" | "boolean" | "choice" | "file";
+                        options: string[];
+                        storefront: boolean;
+                        position: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    "admin.customFields.create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    resource: "product" | "order" | "customer";
+                    key: string;
+                    label: string;
+                    /** @enum {string} */
+                    type: "text" | "number" | "boolean" | "choice" | "file";
+                    options?: string[];
+                    storefront?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        /** @enum {string} */
+                        resource: "product" | "order" | "customer";
+                        key: string;
+                        label: string;
+                        /** @enum {string} */
+                        type: "text" | "number" | "boolean" | "choice" | "file";
+                        options: string[];
+                        storefront: boolean;
+                        position: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.customFields.delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        /** @enum {string} */
+                        resource: "product" | "order" | "customer";
+                        key: string;
+                        label: string;
+                        /** @enum {string} */
+                        type: "text" | "number" | "boolean" | "choice" | "file";
+                        options: string[];
+                        storefront: boolean;
+                        position: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.customFields.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    label?: string;
+                    storefront?: boolean;
+                    options?: string[];
+                    position?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        /** @enum {string} */
+                        resource: "product" | "order" | "customer";
+                        key: string;
+                        label: string;
+                        /** @enum {string} */
+                        type: "text" | "number" | "boolean" | "choice" | "file";
+                        options: string[];
+                        storefront: boolean;
+                        position: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
     "admin.customers.deleteMany": {
         parameters: {
             query?: never;
@@ -2979,6 +3266,9 @@ export interface operations {
                             email: string;
                             name: string | null;
                             phone: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
                             /** Format: date-time */
                             createdAt: string;
                             /** Format: date-time */
@@ -3004,6 +3294,10 @@ export interface operations {
                     email: string;
                     name?: string | null;
                     phone?: string | null;
+                    /** @description Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields. */
+                    customFields?: {
+                        [key: string]: string | number | boolean | null;
+                    };
                 };
             };
         };
@@ -3022,6 +3316,9 @@ export interface operations {
                         email: string;
                         name: string | null;
                         phone: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3056,6 +3353,9 @@ export interface operations {
                         email: string;
                         name: string | null;
                         phone: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3081,6 +3381,10 @@ export interface operations {
                     email?: string;
                     name?: string | null;
                     phone?: string | null;
+                    /** @description Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields. */
+                    customFields?: {
+                        [key: string]: string | number | boolean | null;
+                    };
                 };
             };
         };
@@ -3099,6 +3403,9 @@ export interface operations {
                         email: string;
                         name: string | null;
                         phone: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3225,6 +3532,9 @@ export interface operations {
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
                             /** Format: date-time */
                             createdAt: string;
                             /** Format: date-time */
@@ -3323,6 +3633,9 @@ export interface operations {
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
                             /** Format: date-time */
                             createdAt: string;
                             /** Format: date-time */
@@ -3407,6 +3720,9 @@ export interface operations {
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3496,6 +3812,9 @@ export interface operations {
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3561,6 +3880,153 @@ export interface operations {
                             email: string;
                             name: string | null;
                             phone: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    "admin.orders.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields. */
+                    customFields: {
+                        [key: string]: string | number | boolean | null;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        orderNumber: number;
+                        /** Format: uuid */
+                        channelId: string;
+                        customerId: string | null;
+                        email: string;
+                        phone: string | null;
+                        /** @enum {string} */
+                        financialStatus: "pending" | "authorized" | "partially_paid" | "paid" | "partially_refunded" | "refunded" | "voided";
+                        /** @enum {string} */
+                        fulfillmentStatus: "unfulfilled" | "partially_fulfilled" | "fulfilled";
+                        cancelledAt: string | null;
+                        cancelReason: ("customer" | "declined" | "fraud" | "inventory" | "staff" | "other") | null;
+                        currency: string;
+                        subtotalCents: number;
+                        shippingCents: number;
+                        taxCents: number;
+                        discountCents: number;
+                        totalCents: number;
+                        taxesIncluded: boolean;
+                        taxLines: (string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[];
+                        discountCodes: string[];
+                        shippingAddress: ((string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[]) | null;
+                        billingAddress: ((string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[]) | null;
+                        paymentGateway: string | null;
+                        paymentMethodName: string | null;
+                        paymentInstructions: string | null;
+                        note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            orderId: string;
+                            productId: string | null;
+                            variantId: string | null;
+                            title: string;
+                            variantTitle: string | null;
+                            sku: string | null;
+                            vendor: string | null;
+                            imageUrl: string | null;
+                            unitPriceCents: number;
+                            quantity: number;
+                            discountCents: number;
+                        }[];
+                        shippingLines: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            orderId: string;
+                            title: string;
+                            code: string | null;
+                            priceCents: number;
+                            discountCents: number;
+                        }[];
+                        transactions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            orderId: string;
+                            kind: string;
+                            status: string;
+                            gateway: string;
+                            amountCents: number;
+                            currency: string;
+                            externalId: string | null;
+                            errorMessage: string | null;
+                            /** Format: date-time */
+                            processedAt: string;
+                        }[];
+                        fulfillments: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            orderId: string;
+                            status: string;
+                            trackingCompany: string | null;
+                            trackingNumber: string | null;
+                            trackingUrl: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                        customer: {
+                            /** Format: uuid */
+                            id: string;
+                            shopId: string;
+                            userId: string | null;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
                             /** Format: date-time */
                             createdAt: string;
                             /** Format: date-time */
@@ -3625,6 +4091,9 @@ export interface operations {
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3696,6 +4165,9 @@ export interface operations {
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -3767,6 +4239,9 @@ export interface operations {
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -6168,7 +6643,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6197,7 +6672,7 @@ export interface operations {
                         /** Format: uuid */
                         id: string;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         orderId: string | null;
                         to: string;
                         subject: string;
@@ -6212,12 +6687,67 @@ export interface operations {
             };
         };
     };
+    "admin.notifications.abandonedCartSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        delayMinutes: number;
+                        emailOn: boolean;
+                    };
+                };
+            };
+        };
+    };
+    "admin.notifications.updateAbandonedCartSettings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled?: boolean;
+                    delayMinutes?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        delayMinutes: number;
+                        emailOn: boolean;
+                    };
+                };
+            };
+        };
+    };
     "admin.notifications.get": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6233,7 +6763,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6254,7 +6784,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6278,7 +6808,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6299,7 +6829,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6315,7 +6845,7 @@ export interface operations {
                         enabled: boolean;
                         customized: boolean;
                         /** @enum {string} */
-                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                        notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
                         title: string;
                         description: string;
                         /** @enum {string} */
@@ -6336,7 +6866,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -6373,7 +6903,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "layout";
+                notification: "order_confirmation" | "shipping_confirmation" | "order_cancelled" | "staff_order" | "login_code" | "abandoned_cart" | "layout";
             };
             cookie?: never;
         };
@@ -7636,7 +8166,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -7664,7 +8194,7 @@ export interface operations {
                     /** Format: uri */
                     url: string;
                     description?: string | null;
-                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                     active?: boolean;
                 };
             };
@@ -7682,7 +8212,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -7718,7 +8248,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -7746,7 +8276,7 @@ export interface operations {
                     /** Format: uri */
                     url?: string;
                     description?: string | null;
-                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                     active?: boolean;
                 };
             };
@@ -7764,7 +8294,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -7800,7 +8330,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "product.created" | "product.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;

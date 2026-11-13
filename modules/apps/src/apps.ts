@@ -30,7 +30,7 @@ import { instanceUrl, reportInstallationsSoon } from './marketplace'
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const random = (bytes: number) => randomBytes(bytes).toString('base64url')
 
-const CODE_TTL_MS = 10 * 60_000
+export const CODE_TTL_MS = 10 * 60_000
 const ACCESS_TOKEN_TTL_S = 3600
 const ACCESS_TOKEN_TYP = 'at+jwt'
 

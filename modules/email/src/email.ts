@@ -9,6 +9,7 @@ import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
 import { EmailError } from './errors'
+import { log } from './log'
 
 /** Omit password to keep the one already saved */
 export type SmtpInput = SmtpConfig & { password?: string }
@@ -131,7 +132,7 @@ const activeRow = async (shopId: string): Promise<EmailSettings | null> => {
 export async function send(shopId: string, email: EmailMessage) {
   const row = await activeRow(shopId)
   if (!row) {
-    console.info(`[email] off for shop ${shopId}, not sent: "${email.subject}" to ${email.to}`)
+    log.info({ shopId, subject: email.subject, to: email.to }, 'email is off, not sent')
     return { sent: false }
   }
   const transport = await transportFor(row.config, row.password === null ? null : decryptSecret(row.password))

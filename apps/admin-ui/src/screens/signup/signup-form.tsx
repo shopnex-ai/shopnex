@@ -1,6 +1,6 @@
 'use client'
 
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { MIN_PASSWORD, setupInput } from '@shopnex/api/schemas'
 import { authClient } from '@shopnex/auth/client'
 import type { SocialProvider } from '@shopnex/auth/providers'
@@ -9,10 +9,11 @@ import { FormError, TextField, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup } from '@/components/ui/field'
-import { useCreateShop } from './use-create-shop'
+import { clearAdminContext } from '@/lib/admin-context'
 
 export function SignupForm({ providers }: { providers: SocialProvider[] }) {
-  const createShop = useCreateShop()
+  const navigate = useNavigate()
+  const router = useRouter()
   const form = useZodForm(setupInput, { defaultValues: { email: '', password: '' } })
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -22,9 +23,10 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
       form.setError('root', { message: signUp.error.message ?? 'Sign-up failed' })
       return
     }
-    // If this fails the account still exists: "Create your shop" shows on the next visit
-    const error = await createShop()
-    if (error) form.setError('root', { message: error })
+    // Signing up made the shop too (createShopForNewAccount in @shopnex/auth)
+    clearAdminContext(router)
+    await navigate({ to: '/admin/welcome', replace: true })
+    await router.invalidate()
   })
 
   return (

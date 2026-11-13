@@ -1,18 +1,21 @@
 {
   "name": "@shopnex/drafts",
+  "description": "Drafts of changes to an entity, applied to it when published",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

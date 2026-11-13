@@ -6,14 +6,12 @@ spec:
       git:
         repo_clone_url: https://github.com/shopnex-ai/shopnex.git
         branch: main
-      dockerfile_path: Dockerfile
+      dockerfile_path: deploy/Dockerfile
       http_port: 3000
       instance_size_slug: apps-s-1vcpu-2gb
       envs:
         - { key: DATABASE_URL, scope: RUN_TIME, value: '${db.DATABASE_URL}' }
-        - { key: BETTER_AUTH_SECRET, scope: RUN_TIME, type: SECRET }
         - { key: SHOPNEX_SECRET, scope: RUN_TIME, type: SECRET }
-        - { key: BETTER_AUTH_URL, scope: RUN_TIME, value: '${APP_URL}' }
         - { key: APP_URL, scope: RUN_TIME, value: '${APP_URL}' }
         - { key: TENANCY_MODE, scope: RUN_TIME, value: single }
   databases:

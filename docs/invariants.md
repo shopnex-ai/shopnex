@@ -1,0 +1,97 @@
+# Rules that must always hold
+
+A checklist, not a spec. Each rule is something that must be true however the code changes, however many people use
+the shop at once, and whatever an outside service sends us. For each one: what breaks if it doesn't hold, and whether a
+test would notice.
+
+It exists because edge cases are found one at a time, and the useful question is "which rules have nothing guarding
+them?". Comparing with other platforms (Saleor, Vendure) gave a good share of these, but comparison only finds what
+others already hit. Rules that are specific to ShopNex (apps, the marketplace, multi-shop) have to come from reading our
+own code.
+
+**Status key**
+
+| Status     | Meaning                                                             |
+| ---------- | ------------------------------------------------------------------- |
+| Tested     | A test fails if the rule breaks. The name of the test is given.     |
+| Partly     | Some cases are tested, others are not. The gap is said.             |
+| Not tested | The code looks right to a reader, but nothing would catch a change. |
+| Known gap  | The rule is broken today.                                           |
+| Open PR    | A pull request covers it and has not merged yet.                    |
+
+_Last checked against `main` after #229 and #230 merged; #231 to #234 were open. "Not tested" means no test turned up
+when searching the test names and keywords, which is not proof that none exists._
+
+## Checkout and orders
+
+| #   | Rule                                                                                                           | If it breaks                                               | Status                                                                                                                                            |
+| --- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | A price comes from the catalog (or the carrier app's answer at that moment), never from the buyer.             | Buyers set their own price.                                | Partly. The API has no price field to tamper with, and `pricing` and `carrier-services` tests check totals. No test sends a forged one.           |
+| 2   | An order's total is worked out once, when it is placed, and does not change if the catalog changes afterwards. | Old orders silently re-price.                              | Not tested for a later price change.                                                                                                              |
+| 3   | A cart becomes at most one order, however many times or how fast it is completed.                              | Double orders from a double click or a retry.              | Partly. Completing again hands back the same session (`payments`). The cart is locked in code, but nothing completes it concurrently.             |
+| 4   | Two buyers racing for the last unit: one wins, and stock is never negative.                                    | Overselling.                                               | **Not tested.** There are no stock tests at all.                                                                                                  |
+| 5   | Stock an order took goes back when it is cancelled with restock.                                               | Stock slowly disappears.                                   | Partly. Covered for expiry in #231; the plain cancel path is not asserted directly.                                                               |
+| 6   | An unpaid, abandoned order does not hold stock forever.                                                        | A product can be held off sale by anyone, with no account. | App-paid: Tested (`an abandoned payment cancels the order once it expires`). Bank transfer: Open PR #231 (a per-shop time limit, off by default). |
+| 7   | Items that are no longer for sale (unpublished, archived, draft, off the channel) cannot be bought.            | Selling things the merchant withdrew.                      | Tested (`channels`: a cart takes only what is live; unpublishing before checkout blocks it).                                                      |
+| 8   | A discount cannot be used more than allowed, even at the same moment.                                          | Over-redeemed codes.                                       | Partly. Once per customer, minimum subtotal and expiry are tested. A usage limit under concurrent checkouts is locked in code and not tested.     |
+| 9   | Order numbers are unique and sequential per shop.                                                              | A checkout fails with a duplicate-number error.            | **Not tested, and the test helpers can break it:** see rule 34.                                                                                   |
+| 10  | An address with no available shipping method is refused, not shipped free.                                     | Free shipping by accident.                                 | Tested (`carrier-services`: no rate offered for the address).                                                                                     |
+| 11  | A fulfilled order cannot be cancelled, and a cancelled order cannot be paid or shipped.                        | Inconsistent order states.                                 | Not tested. The guards are in the code.                                                                                                           |
+
+## Payments
+
+| #   | Rule                                                                                                                | If it breaks                                               | Status                                                                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 12  | A payment event is recorded once, however often the provider repeats it.                                            | Duplicate sales on the books.                              | Tested (`payments`: resolve marks the order paid, once).                                                                                                                                        |
+| 13  | A payment that arrives late on a closed session is recorded, not lost.                                              | A real payment disappears.                                 | Tested (`payments`: a rejected session still resolves).                                                                                                                                         |
+| 14  | An order never takes more money than it should without anyone being told.                                           | A buyer is charged twice and nobody knows.                 | **Known gap, Open PR #234** (shown as "Overpaid", announced once as `order.overpaid`).                                                                                                          |
+| 15  | What the provider says it collected matches what we asked for (amount and currency) before an order is marked paid. | A shortfall booked as a full payment.                      | Tested for Stripe (`apps/stripe` webhook tests, #229). Other payments apps are not checked.                                                                                                     |
+| 16  | A provider event is authentic and belongs to the right shop.                                                        | Forged "paid" events.                                      | Tested (`apps/stripe` webhook tests: signature, replay, other shop).                                                                                                                            |
+| 17  | A refund never exceeds what a payment took, and each payment is refunded against itself.                            | A refund the provider refuses, so the buyer is not repaid. | **Known gap.** Cancelling a double-paid order books one refund for both payments and sends it against one. With #234 the order shows "Overpaid" again so a person notices, but it is not fixed. |
+| 18  | An automatic cancellation never refunds an order that was paid at the last moment.                                  | A paying customer's order is cancelled and refunded.       | Open PR #231 (tested there).                                                                                                                                                                    |
+| 19  | Cancelling a paid order refunds what was paid, and it shows as refunded only after the provider confirms.           | The books and the provider disagree.                       | Tested (`payments`: cancelling a paid order refunds through the app).                                                                                                                           |
+
+## Who can do what
+
+| #   | Rule                                                                                                                  | If it breaks                                     | Status                                                                                                                                                                        |
+| --- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 20  | Every admin route refuses a caller with no valid credentials.                                                         | Anyone can change a shop.                        | `auth` tests the basics. The sweep of every route is Open PR #232.                                                                                                            |
+| 21  | A token can only do what its scopes allow.                                                                            | An app reads or changes more than it was given.  | Partly. Scopes not crossing resources is tested (`auth`); no sweep of every route against every scope.                                                                        |
+| 22  | One shop cannot read or change another shop's data by id.                                                             | A data breach between merchants.                 | Partly. `tenant-isolation` covers 26 of the 98 routes that take an id; the other 72 are listed in the test and the check fails if a new route is added without being covered. |
+| 23  | A request cannot link another shop's objects by naming their ids in the body (a product, variant, customer, channel). | One shop attaches itself to another's data.      | Not tested. The code checks it.                                                                                                                                               |
+| 24  | A customer sees only their own orders.                                                                                | Customers see each other's orders and addresses. | Tested (`customer-accounts`).                                                                                                                                                 |
+| 25  | Staff roles hold: members cannot change settings, tokens or staff.                                                    | Privilege escalation.                            | Tested (`auth`, `staff`).                                                                                                                                                     |
+| 26  | Sign-in codes are limited, single use, and limited in how often they can be guessed.                                  | Mail bombing, or guessing a code.                | Partly. Sending is tested. The fuller limits are Open PR #233.                                                                                                                |
+| 27  | An app cannot get scopes the platform did not register, and uninstalling revokes its tokens at once.                  | A removed app keeps access.                      | Tested (`apps`).                                                                                                                                                              |
+| 28  | A token can subscribe to a webhook event only with the matching scope.                                                | An app reads events it has no access to.         | Partly. The positive case is tested; nothing checks that a token without the scope is refused.                                                                                |
+
+## Data and safety
+
+| #   | Rule                                                                                        | If it breaks                                        | Status                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 29  | Uploads cannot carry scripts: images only, recognised by content, served sandboxed.         | A script runs in the admin.                         | Not tested.                                                                                                 |
+| 30  | Rich text is cleaned before it is stored (products, pages, collections).                    | Stored cross-site scripting.                        | Partly. AI-written text is tested (`ai`); I found no test that saves a product or page with a script in it. |
+| 31  | A webhook cannot be pointed at a private network or the cloud metadata address.             | A merchant can reach the server's internal network. | Not tested. The guard is in the code.                                                                       |
+| 32  | Webhook deliveries are signed, and a failing endpoint is retried without blocking anything. | Lost events, or unverifiable ones.                  | Partly. The signature is tested (`apps`); the retry schedule is not.                                        |
+| 33  | Secrets are encrypted at rest and never written to logs.                                    | A leaked key.                                       | Partly. At rest is tested (`local-store`); logs are not checked.                                            |
+
+## Test hygiene
+
+| #   | Rule                                                           | If it breaks                 | Status                                                                                                                                                                                        |
+| --- | -------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 34  | Running the e2e tests leaves the dev database as it was found. | Test runs cause real errors. | **Known gap.** The helpers reset a shop's order counter to its earlier value, which reuses numbers of orders a test left behind. That is how a duplicate order number appeared in a checkout. |
+
+## Where to look next
+
+By how much a break would cost, and how little guards it today:
+
+1. **Rule 4, stock under concurrent checkouts**, with 3 and 9 next to it. Untested, and it is money.
+2. **Rule 17, refund per payment.** A real gap, now visible but not fixed.
+3. **Rule 22, the other 72 routes**, starting with the public storefront ones.
+4. **Rules 29 and 31.** Nothing guards them, and both are about the server being reached.
+5. **Rule 23, foreign ids in bodies**, the same class as rule 22 but not covered by it.
+
+## Adding a rule
+
+Say what must always be true in one sentence. Say what goes wrong if it breaks. Point at the test, or mark it not
+tested. A rule that nothing can break does not need to be here; a rule with no test is the useful kind.

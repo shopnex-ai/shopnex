@@ -14,7 +14,10 @@ import {
   type UseFormProps,
   type UseFormReturn,
 } from 'react-hook-form'
+import { CircleHelpIcon } from 'lucide-react'
 import type { z } from 'zod'
+import { cn } from 'cn'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -75,6 +78,8 @@ function FieldShell({
 type TextFieldProps<T extends FieldValues> = BaseFieldProps<T> & {
   /** Empty input becomes null (for nullable columns) instead of '' */
   nullable?: boolean
+  /** A "?" inside the field that explains it on hover or focus */
+  hint?: string
 } & Omit<ComponentProps<'input'>, 'name' | 'value' | 'defaultValue' | 'onChange' | 'onBlur'>
 
 export function TextField<T extends FieldValues>({
@@ -84,23 +89,50 @@ export function TextField<T extends FieldValues>({
   description,
   nullable,
   required,
+  hint,
   ...inputProps
 }: TextFieldProps<T>) {
   const id = useId()
   const { field, fieldState } = useController({ control, name })
+  const input = (
+    <Input
+      {...inputProps}
+      className={hint ? cn('pr-9', inputProps.className) : inputProps.className}
+      required={required}
+      id={id}
+      ref={field.ref}
+      name={field.name}
+      value={field.value ?? ''}
+      onBlur={field.onBlur}
+      onChange={(e) => field.onChange(nullable && e.target.value === '' ? null : e.target.value)}
+      aria-invalid={fieldState.invalid || undefined}
+    />
+  )
   return (
     <FieldShell id={id} label={label} description={description} error={fieldState.error} required={required}>
-      <Input
-        {...inputProps}
-        required={required}
-        id={id}
-        ref={field.ref}
-        name={field.name}
-        value={field.value ?? ''}
-        onBlur={field.onBlur}
-        onChange={(e) => field.onChange(nullable && e.target.value === '' ? null : e.target.value)}
-        aria-invalid={fieldState.invalid || undefined}
-      />
+      {hint ? (
+        <div className="relative">
+          {input}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label="More information"
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                />
+              }
+            >
+              <CircleHelpIcon className="size-4" />
+            </TooltipTrigger>
+            <TooltipContent side="top" align="end">
+              {hint}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      ) : (
+        input
+      )}
     </FieldShell>
   )
 }

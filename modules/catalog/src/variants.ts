@@ -7,6 +7,7 @@ import { and, asc, eq, inArray, min, ne, notInArray, sql } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { ProductVariant } from '@shopnex/db/schema'
+import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './errors'
 // Cycle with ./products is fine: only used inside functions
 import { emitProductEvent } from './products'
@@ -132,16 +133,16 @@ async function assertSkusFree(conn: Conn, shopId: string, productId: string, sku
 }
 
 // products.price_cents := lowest variant price (deprecated cache, see schema)
-export async function syncPriceCache(conn: Conn, productId: string) {
+export async function syncPriceCache(shopId: string, productId: string, conn: Conn = db) {
   const [{ lowest } = { lowest: null }] = await conn
     .select({ lowest: min(schema.productVariants.priceCents) })
     .from(schema.productVariants)
-    .where(eq(schema.productVariants.productId, productId))
+    .where(and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.productId, productId)))
   if (lowest != null) {
     await conn
       .update(schema.products)
       .set({ priceCents: lowest, updatedAt: new Date() })
-      .where(eq(schema.products.id, productId))
+      .where(and(eq(schema.products.shopId, shopId), eq(schema.products.id, productId)))
   }
 }
 
@@ -251,7 +252,7 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
   )
   if (links.length) await conn.insert(schema.variantOptionValues).values(links)
 
-  await syncPriceCache(conn, productId)
+  await syncPriceCache(shopId, productId, conn)
 }
 
 // Batch-load options + variants for many products (4 queries, no N+1)
@@ -359,11 +360,11 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
   return { options, variants }
 }
 
-export async function listByProduct(productId: string, conn: Conn = db) {
+export async function listByProduct(shopId: string, productId: string, conn: Conn = db) {
   return conn
     .select()
     .from(schema.productVariants)
-    .where(eq(schema.productVariants.productId, productId))
+    .where(and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.productId, productId)))
     .orderBy(asc(schema.productVariants.position))
 }
 
@@ -438,33 +439,83 @@ export async function update(
       .set({ ...patch, ...(sku !== undefined && { sku }), updatedAt: new Date() })
       .where(eq(schema.productVariants.id, id))
       .returning()
-    await syncPriceCache(tx, variant.productId)
+    await syncPriceCache(shopId, variant.productId, tx)
     await emitProductEvent(tx, shopId, variant.productId, 'product.updated')
+    if (updated!.inventoryQuantity !== variant.inventoryQuantity) {
+      await emitInventoryEvent(
+        tx,
+        shopId,
+        updated!,
+        'edit',
+        stockChange(variant.inventoryQuantity, updated!.inventoryQuantity),
+      )
+    }
     return { ...updated!, available: isAvailable(updated!) }
   })
 }
 
+type StockRow = Pick<ProductVariant, 'id' | 'productId' | 'sku' | 'inventoryQuantity'>
+type StockReason = 'order' | 'restock' | 'edit'
+
+// null when either side isn't tracked: there is no meaningful difference to report
+const stockChange = (before: number | null, after: number | null) =>
+  before == null || after == null ? null : after - before
+
+// Queues `inventory.updated`: the variant's stock after the change, so a receiver can set it without replaying deltas.
+// `inventoryQuantity` is null when an edit stops tracking the variant. Call it with the transaction that changed the stock.
+function emitInventoryEvent(conn: Conn, shopId: string, row: StockRow, reason: StockReason, change: number | null) {
+  return emit(conn, shopId, 'inventory.updated', () => ({
+    variantId: row.id,
+    productId: row.productId,
+    sku: row.sku,
+    inventoryQuantity: row.inventoryQuantity,
+    change,
+    reason,
+    updatedAt: new Date().toISOString(),
+  }))
+}
+
 // Atomically takes stock for an order line. Untracked variants always succeed.
-export async function reserveStock(conn: Conn, variantId: string, quantity: number) {
+export async function reserveStock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
+  const mine = and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.id, variantId))
   const [row] = await conn
     .update(schema.productVariants)
     .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} - ${quantity}` })
-    .where(
-      and(eq(schema.productVariants.id, variantId), sql`${schema.productVariants.inventoryQuantity} >= ${quantity}`),
-    )
-    .returning({ id: schema.productVariants.id })
-  if (row) return true
+    .where(and(mine, sql`${schema.productVariants.inventoryQuantity} >= ${quantity}`))
+    .returning({
+      id: schema.productVariants.id,
+      productId: schema.productVariants.productId,
+      sku: schema.productVariants.sku,
+      inventoryQuantity: schema.productVariants.inventoryQuantity,
+    })
+  if (row) {
+    await emitInventoryEvent(conn, shopId, row, 'order', -quantity)
+    return true
+  }
   const [untracked] = await conn
     .select({ id: schema.productVariants.id })
     .from(schema.productVariants)
-    .where(and(eq(schema.productVariants.id, variantId), sql`${schema.productVariants.inventoryQuantity} is null`))
+    .where(and(mine, sql`${schema.productVariants.inventoryQuantity} is null`))
   return !!untracked
 }
 
 // Gives stock back (e.g. order cancelled). No-op for untracked or deleted variants.
-export async function restock(conn: Conn, variantId: string, quantity: number) {
-  await conn
+export async function restock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
+  const [row] = await conn
     .update(schema.productVariants)
     .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} + ${quantity}` })
-    .where(and(eq(schema.productVariants.id, variantId), sql`${schema.productVariants.inventoryQuantity} is not null`))
+    .where(
+      and(
+        eq(schema.productVariants.shopId, shopId),
+        eq(schema.productVariants.id, variantId),
+        sql`${schema.productVariants.inventoryQuantity} is not null`,
+      ),
+    )
+    .returning({
+      id: schema.productVariants.id,
+      productId: schema.productVariants.productId,
+      sku: schema.productVariants.sku,
+      inventoryQuantity: schema.productVariants.inventoryQuantity,
+    })
+  if (row) await emitInventoryEvent(conn, shopId, row, 'restock', quantity)
 }

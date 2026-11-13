@@ -17,6 +17,7 @@ const found = <T>(row: T | null) => {
 const TOPIC_SCOPE: Record<string, ApiScope> = {
   order: 'read_orders',
   product: 'read_products',
+  inventory: 'read_products',
   customer: 'read_customers',
 }
 

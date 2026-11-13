@@ -1,0 +1,5 @@
+# Cloudflare Pages: real 301s for pages that moved (the site is a static export, so Next can't do this itself)
+/plugins/cj-dropshipping /docs/apps/cj-dropshipping 301
+/plugins/stripe /docs/apps/stripe 301
+/getting-started /docs/quickstart 301
+/docs/getting-started /docs/quickstart 301

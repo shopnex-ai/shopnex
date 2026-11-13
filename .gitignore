@@ -11,3 +11,5 @@ next-env.d.ts
 apps/*/dist
 
 .DS_Store
+report-site/
+.vscode/

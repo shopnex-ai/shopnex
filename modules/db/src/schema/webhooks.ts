@@ -9,14 +9,31 @@ export const WEBHOOK_TOPICS = [
   'order.paid',
   'order.fulfilled',
   'order.cancelled',
+  'order.updated',
   'product.created',
   'product.updated',
+  'inventory.updated',
   'customer.created',
   'customer.updated',
 ] as const
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]
 // Sent by "Send test" in the admin; not subscribable
 export const WEBHOOK_TEST_TOPIC = 'webhook.test'
+
+// When each topic fires. The docs are generated from this, and a new topic without a description fails typecheck.
+export const WEBHOOK_TOPIC_DESCRIPTIONS: Record<WebhookTopic, string> = {
+  'order.created': 'An order was placed (checkout or the admin)',
+  'order.paid': 'An order was paid in full',
+  'order.fulfilled': 'An order was fulfilled',
+  'order.cancelled': 'An order was cancelled',
+  'order.updated': "An order's custom fields changed",
+  'product.created': 'A product was created',
+  'product.updated': 'A product changed (stock changes from checkout do not count, see inventory.updated)',
+  'inventory.updated':
+    "A tracked variant's stock changed (checkout, cancel with restock, or a stock edit in the admin or API)",
+  'customer.created': 'A customer was created',
+  'customer.updated': 'A customer changed',
+}
 
 // timestamptz: the worker compares these with JS dates, which must not depend on the DB's time zone
 export const webhookEndpoints = pgTable(

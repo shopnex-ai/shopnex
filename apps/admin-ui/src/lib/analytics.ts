@@ -5,18 +5,21 @@
 //
 // The admin shows customer names, emails and orders, so this is deliberately narrow: pageviews plus autocapture of
 // opted-in elements only (mark an element with data-ph-capture; everything else is ignored because autocapture records
-// element text), no session replay, no person profiles.
+// element text), no person profiles, and no session replay, except on the public demo (DEMO_MODE=true), where the data
+// is fake and replay shows where visitors get stuck. Even there every input is masked, so nothing typed is recorded.
 
 export interface AnalyticsConfig {
   key: string
   host: string
+  /** Session replay: the public demo only. Never true for a real shop. */
+  replay?: boolean
 }
 
 // The official PostHog loader stub: queues calls until the library arrives from the CDN.
 const LOADER =
   '!function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);'
 
-export function analyticsScript({ key, host }: AnalyticsConfig) {
+export function analyticsScript({ key, host, replay = false }: AnalyticsConfig) {
   return `${LOADER}
 posthog.init(${JSON.stringify(key)}, {
   api_host: ${JSON.stringify(host)},
@@ -29,7 +32,7 @@ posthog.init(${JSON.stringify(key)}, {
     capture_copied_text: false,
   },
   mask_all_element_attributes: true,
-  disable_session_recording: true,
+  disable_session_recording: ${replay ? 'false' : 'true'},${replay ? '\n  session_recording: { maskAllInputs: true },' : ''}
   capture_pageview: 'history_change',
 });
 posthog.register({ site: 'app' });`

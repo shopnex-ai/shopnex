@@ -1,7 +1,9 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { publicationService } from '@shopnex/channels'
-import { productService, variantService } from '@shopnex/catalog'
+import { productService, seedSampleProducts, variantService } from '@shopnex/catalog'
+import { customFieldService } from '@shopnex/custom-fields'
+import { db } from '@shopnex/db'
 import { appService } from '@shopnex/apps'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
@@ -36,6 +38,11 @@ async function withPublications<T extends { id: string }>(shopId: string, items:
 }
 
 export const products = {
+  addSamples: write
+    .route({ method: 'POST', path: '/admin/products/samples' })
+    .output(countOutput)
+    .handler(({ context }) => seedSampleProducts(context.shop.id)),
+
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/products/bulk' })
     .output(countOutput)
@@ -45,11 +52,21 @@ export const products = {
   list: read
     .route({ method: 'GET', path: '/admin/products' })
     .output(productListOutput)
-    .input(pagination.extend({ search: z.string().trim().max(200).optional() }))
-    .handler(async ({ input, context }) => {
+    .input(
+      pagination.extend({
+        search: z.string().trim().max(200).optional(),
+        /** Only products with these custom field values, as `key:value` (e.g. `material:Linen`); all must match */
+        customField: z.array(z.string().max(300)).max(10).optional(),
+      }),
+    )
+    .handler(async ({ input: { customField, ...input }, context }) => {
+      const filtered = {
+        ...input,
+        customFields: await customFieldService.parseFilters(context.shop.id, 'product', customField ?? [], {}, db),
+      }
       const [rows, total] = await Promise.all([
-        productService.list(context.shop.id, input),
-        productService.count(context.shop.id, input),
+        productService.list(context.shop.id, filtered),
+        productService.count(context.shop.id, filtered),
       ])
       return { items: await withPublications(context.shop.id, await productService.withDetails(rows)), total }
     }),

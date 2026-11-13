@@ -5,9 +5,11 @@
   "scripts": {
     "test": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 'tests/**/*.test.ts'",
     "typecheck": "tsc",
+    "test:ci": "tsx --env-file-if-exists=../.env --test --test-concurrency=1 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=api-results.xml 'tests/**/*.test.ts'",
     "test:browser": "node --env-file-if-exists=../.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
+    "@shopnex/api": "workspace:*",
     "@shopnex/app": "workspace:*",
     "@shopnex/apps": "workspace:*",
     "@shopnex/auth": "workspace:*",
@@ -21,10 +23,11 @@
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

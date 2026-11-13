@@ -4,7 +4,9 @@
 import { and, eq, inArray, lt, lte, ne, sql } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import type { EmailDelivery } from '@shopnex/db/schema'
+import { queueDue, reasonToSkip } from './abandoned-carts'
 import { send } from './email'
+import { log } from './log'
 
 // Wait after the nth failed attempt; one more failure after the last is final (6 attempts over ~6h)
 const RETRY_DELAYS_S = [60, 5 * 60, 30 * 60, 2 * 3600, 3 * 3600]
@@ -44,6 +46,15 @@ async function attempt(delivery: EmailDelivery) {
   let status: EmailDelivery['status'] = 'sent'
   let lastError: string | null = null
   try {
+    // A reminder for a checkout that was completed (or unsubscribed from) since it was queued is dropped
+    const reason = await reasonToSkip(delivery)
+    if (reason) {
+      await db
+        .update(schema.emailDeliveries)
+        .set({ status: 'skipped', lastError: reason, attempts, lastAttemptAt: now })
+        .where(eq(schema.emailDeliveries.id, delivery.id))
+      return
+    }
     // Email turned off since it was queued: dropped, not retried
     const { sent } = await send(delivery.shopId, { to: delivery.to, subject: delivery.subject, html: delivery.html })
     if (!sent) {
@@ -98,13 +109,15 @@ export function startEmailWorker() {
   const loop = async () => {
     let handled = 0
     try {
+      // Reminders for abandoned checkouts are queued here, then sent by the same pass
+      await queueDue()
       handled = await processDue()
       if (Date.now() - lastPrune > 3600_000) {
         lastPrune = Date.now()
         await pruneFinished()
       }
     } catch (error) {
-      console.error('[email] delivery worker:', error)
+      log.error({ err: error }, 'delivery worker failed')
     }
     // A full batch means more may be due: go again right away
     if (!stopped) timer = setTimeout(loop, handled === BATCH ? 0 : POLL_MS)

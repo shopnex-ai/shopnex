@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/auth",
+  "description": "Better Auth setup: sessions, invitations, OAuth sign-in, shopper login codes, sign-up limits",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,7 +18,7 @@
   "dependencies": {
     "@shopnex/db": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
-    "better-auth": "^1.7.14",
+    "better-auth": "^1.7.18",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

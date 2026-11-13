@@ -35,6 +35,9 @@ export const shops = pgTable('shops', {
   taxesIncluded: boolean('taxes_included').notNull().default(false),
   // Shopify "Charge tax on shipping rates"
   taxShipping: boolean('tax_shipping').notNull().default(false),
+  // Hours after which an unpaid order with no payment attempt open (bank transfer, or a payments app that was
+  // unreachable at checkout) is cancelled and its stock put back on sale. null = never: the merchant cancels by hand.
+  unpaidOrderExpiryHours: integer('unpaid_order_expiry_hours'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
@@ -91,6 +94,17 @@ export type ShopDomain = typeof shopDomains.$inferSelect
 // Roles staff can be given (invitation or role change). 'owner' exists but isn't handed out.
 export const STAFF_ROLES = ['admin', 'member'] as const
 export type StaffRole = (typeof STAFF_ROLES)[number]
+
+// Every role a member can have in a shop. 'owner' is the first account to join it and can't be changed from Staff.
+export const SHOP_ROLES = ['owner', 'admin', 'member'] as const
+export type ShopRole = (typeof SHOP_ROLES)[number]
+// The docs' roles table is generated from this; a new role without a description fails typecheck.
+export const SHOP_ROLE_DESCRIPTIONS: Record<ShopRole, string> = {
+  owner: 'The first account to join the shop. Full access, including creating and changing admins.',
+  admin:
+    'Manages API tokens, webhooks, storefront keys and shop settings, and staff with the member role. Only an owner can create or change admins.',
+  member: 'Works with products, orders and customers. Cannot manage API tokens, webhooks or storefront keys.',
+}
 export type ShopMember = typeof shopMembers.$inferSelect
 
 // Where a shop sells (Shopify: sales channels): the Online Store, a headless storefront, later POS and the like.
@@ -165,6 +179,27 @@ export const API_SCOPES = [
   'write_shipping',
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
+
+// What each scope allows. The docs table is generated from this (apps/docs/scripts/generate-reference.ts), and
+// being a Record, a new scope without a description fails typecheck.
+export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
+  read_products: 'Products, variants and collections',
+  write_products: 'Products, variants and collections',
+  read_orders: 'Orders',
+  write_orders: 'Orders',
+  read_customers: 'Customers',
+  write_customers: 'Customers',
+  read_discounts: 'Discounts',
+  write_discounts: 'Discounts',
+  read_publications: 'What is published on each sales channel',
+  write_publications: 'What is published on each sales channel',
+  read_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',
+  write_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',
+  read_ai_capabilities: 'The AI capabilities an app provides (apps only)',
+  write_ai_capabilities: 'The AI capabilities an app provides (apps only)',
+  read_shipping: 'Carrier services (apps only)',
+  write_shipping: 'Register a carrier service (apps only)',
+}
 
 // Secret admin API tokens (Authorization: Bearer sk_…) for apps and integrations, scoped to one shop.
 // Only a SHA-256 hash is stored: the token is shown once, when it's created.

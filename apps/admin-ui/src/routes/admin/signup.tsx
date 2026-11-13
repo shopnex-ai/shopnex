@@ -4,6 +4,7 @@ import { getSocialProviders } from '@/lib/session.functions'
 import { SignupForm } from '@/screens/signup/signup-form'
 
 export const Route = createFileRoute('/admin/signup')({
+  staticData: { standalone: true },
   loader: () => getSocialProviders(),
   component: SignupPage,
 })

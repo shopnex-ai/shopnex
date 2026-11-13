@@ -32,7 +32,7 @@ export const carts = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
-  (t) => [index('carts_shop_idx').on(t.shopId)],
+  (t) => [index('carts_shop_idx').on(t.shopId), index('carts_status_updated_idx').on(t.status, t.updatedAt)],
 )
 
 export const cartLines = pgTable(

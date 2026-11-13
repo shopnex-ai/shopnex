@@ -50,6 +50,8 @@ const ProductFilterArgs = {
   /** A variant priced within this range, in minor units of the shop's currency (cents for USD) */
   minPrice: z.coerce.number().int().min(0).optional(),
   maxPrice: z.coerce.number().int().min(0).optional(),
+  /** Custom fields the shop shows on the storefront, as `key:value` (e.g. `material:Linen`); all must match */
+  customField: z.array(z.string().max(300)).max(10).optional(),
   /** Only products with a variant that can be bought */
   available: z.stringbool().or(z.boolean()).optional(),
 }

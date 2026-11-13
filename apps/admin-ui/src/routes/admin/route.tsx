@@ -1,13 +1,13 @@
-import { createFileRoute, Outlet, redirect, useLocation } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
-import { adminContextQuery } from '@/lib/admin-context'
+import { isShopManager } from '@/lib/admin-access'
+import { adminContextQuery, installedAppsQuery } from '@/lib/admin-context'
 import { analyticsScript } from '@/lib/analytics'
 import { getAnalyticsConfig } from '@/lib/session.functions'
 import { CreateShopForm } from '@/screens/signup/create-shop-form'
@@ -38,25 +38,32 @@ export const Route = createFileRoute('/admin')({
       const next = `${location.pathname}${location.searchStr}`
       throw redirect({ to: '/admin/login', search: { next } })
     }
-    return { access }
+    // Only owners and admins see installed apps in the sidebar
+    const canManageApps = isShopManager(access.tenant)
+    // 'static': use what is cached (the sidebar and invalidations keep it fresh), like ensureQueryData did
+    const installedApps = canManageApps
+      ? await context.queryClient.query({ ...installedAppsQuery, staleTime: 'static' })
+      : []
+    return { access, installedApps }
   },
   // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
   loader: () => getAnalyticsConfig(),
-  head: ({ loaderData }) => ({ scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [] }),
+  // Login, signup, setup and the whole admin stay out of search results. noindex (not a robots.txt block) so crawlers can still read it.
+  head: ({ loaderData }) => ({
+    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+    scripts: loaderData ? [{ children: analyticsScript(loaderData) }] : [],
+  }),
   component: AdminLayout,
 })
 
 function AdminLayout() {
   const { access } = Route.useRouteContext()
-  const pathname = useLocation({ select: (location) => location.pathname })
-  if (
-    pathname === '/admin/setup' ||
-    pathname === '/admin/login' ||
-    pathname === '/admin/signup' ||
-    pathname === '/admin/welcome' ||
-    pathname.startsWith('/admin/invite/')
-  )
-    return <Outlet />
+  // Decide from the page that is actually rendered (the router's matches, which is what <Outlet /> shows), never from
+  // a location: `location` changes the moment a navigation starts and `resolvedLocation` is updated separately from the
+  // matches, so either can disagree with the page on screen and wrap it in the wrong chrome (the welcome step inside
+  // the sidebar). Routes opt out of the chrome with `staticData: { standalone: true }`.
+  const standalone = useRouterState({ select: (state) => state.matches.some((match) => match.staticData?.standalone) })
+  if (standalone) return <Outlet />
   const { session, tenant } = access
   // No session: beforeLoad is redirecting. The context is stale for a moment while navigating
   // from /admin/login, so render nothing instead of flashing a message.
@@ -87,15 +94,13 @@ function AdminLayout() {
           id: tenant.shop.id,
           name: tenant.shop.name,
           superAdmin: tenant.superAdmin,
-          canManageApps: tenant.superAdmin || tenant.role === 'owner' || tenant.role === 'admin',
+          canManageApps: isShopManager(tenant),
         }}
         user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
       />
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />
-          <span className="text-sm text-muted-foreground">{tenant.shop.name}</span>
           {tenant.shop.storefrontUrl && (
             <Button
               variant="ghost"

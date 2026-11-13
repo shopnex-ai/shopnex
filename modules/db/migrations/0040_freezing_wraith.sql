@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "unpaid_order_expiry_hours" integer;

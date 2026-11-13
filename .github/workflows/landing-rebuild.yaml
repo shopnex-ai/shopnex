@@ -1,13 +1,12 @@
 name: Rebuild landing
 
-# shopnex.ai/roadmap is prerendered from docs/roadmap.yml and shopnex.ai/changelog from GitHub Releases,
-# so the site must rebuild when either changes.
+# shopnex.ai/roadmap is prerendered from the public GitHub project https://github.com/orgs/shopnex-ai/projects/8 and
+# shopnex.ai/changelog from GitHub Releases, so the site must rebuild when either changes. Project edits send no
+# repository event, so the roadmap is picked up by the hourly schedule.
 # Needs the LANDING_DEPLOY_HOOK repo secret (a Cloudflare deploy hook URL for the landing project).
 on:
-  push:
-    branches: [main]
-    paths:
-      - docs/roadmap.yml
+  schedule:
+    - cron: '17 * * * *'
   release:
     types: [published, edited]
   workflow_dispatch:

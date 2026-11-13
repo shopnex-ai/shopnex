@@ -1,0 +1,63 @@
+name: Upgrade test
+
+# Installs the latest release, seeds data, upgrades to this build and fails if any data is lost or changed
+# (scripts/upgrade-test.sh). CI's e2e job only migrates an empty database, so nothing else covers upgrades.
+on:
+  pull_request:
+    paths:
+      - 'modules/db/**'
+      - 'scripts/upgrade-test.sh'
+      - 'scripts/db-snapshot.mjs'
+      - '.github/workflows/upgrade.yaml'
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      previous_version:
+        description: 'Release tag to upgrade from (default: the latest release)'
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upgrade-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  upgrade:
+    name: Upgrade from the previous release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shopnex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      # The e2e smoke subset runs from the checkout; the app under test runs from the image
+      - run: pnpm install --frozen-lockfile
+
+      - name: Upgrade test
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnex
+          PREVIOUS_VERSION: ${{ inputs.previous_version }}
+        run: scripts/upgrade-test.sh

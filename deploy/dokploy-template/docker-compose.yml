@@ -27,7 +27,6 @@ services:
     environment:
       DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       APP_URL: ${APP_URL:-http://localhost:3000}
-      BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       SHOPNEX_SECRET: ${SHOPNEX_SECRET:-}
       # Multi-shop (a public demo or SaaS): TENANCY_MODE=multi, OPEN_SIGNUP=true lets anyone create a shop, ROOT_DOMAIN
@@ -50,14 +49,11 @@ services:
     image: ghcr.io/shopnex-ai/shopnex-stripe:${SHOPNEX_VERSION:-latest}
     pull_policy: always
     restart: unless-stopped
-    volumes:
-      - stripe_data:/data
     environment:
       STRIPE_APP_URL: ${STRIPE_APP_URL:-http://localhost:4600}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
-      DATA_DIR: /data
+      STRIPE_APP_KEY: '${STRIPE_APP_KEY:?Set STRIPE_APP_KEY in .env, the private key of the Stripe app (see the top of this file)}'
 
 volumes:
   db:
   shopnex_data:
-  stripe_data:

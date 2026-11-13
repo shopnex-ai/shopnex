@@ -57,7 +57,7 @@ another model provider, and staff can pick them in the Generate dialog.
 Register the app with the `write_ai_capabilities` scope. Once the merchant has entered a provider key, tell
 ShopNex what you provide:
 
-```ts
+```ts setup=app
 await shop.ai.configure({
   'product.description': `${APP_URL}/ai/run`,
   'product.seo': `${APP_URL}/ai/run`,
@@ -70,7 +70,7 @@ ShopNex then POSTs a signed `AiRunRequest` containing the capability, the staff'
 product (title, description as text, options, variants with prices, tags, images, collections). The app never
 needs `read_products`. Answer within 60 seconds:
 
-```ts
+```ts setup=app
 app.post('/ai/run', async (c) => {
   const { request, shop } = await shopnex.verifyAiRequest(c)
   const apiKey = await shop.data.getSecret('provider_key')

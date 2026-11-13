@@ -1,5 +1,6 @@
 {
   "name": "@shopnex/ai",
+  "description": "AI providers, settings and text generation (built-in or through installed apps)",
   "private": true,
   "type": "module",
   "exports": {
@@ -9,14 +10,14 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.3.0",
+    "@anthropic-ai/sdk": "^1.6.0",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "drizzle-orm": "catalog:",
-    "openai": "^7.45.1",
+    "openai": "^7.54.0",
     "zod": "catalog:"
   },
   "devDependencies": {

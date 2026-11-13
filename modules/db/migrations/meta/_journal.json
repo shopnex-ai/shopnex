@@ -271,8 +271,29 @@
     {
       "idx": 38,
       "version": "7",
-      "when": 1794123345481,
-      "tag": "0038_soft_patch",
+      "when": 1794227328007,
+      "tag": "0038_abandoned_cart_emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794229965351,
+      "tag": "0039_custom_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794560488815,
+      "tag": "0040_freezing_wraith",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794574490197,
+      "tag": "0041_rate_limits",
       "breakpoints": true
     }
   ]

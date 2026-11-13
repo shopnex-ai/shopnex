@@ -15,10 +15,12 @@ import type {
   OrderShippingLine,
   Shop,
 } from '@shopnex/db/schema'
+import { getSettings as getAbandonedSettings, updateSettings as updateAbandonedSettings } from './abandoned-settings'
 import { DEFAULTS } from './defaults'
 import { send } from './email'
 import { EmailError } from './errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
+import { log } from './log'
 
 export type NotificationInfo = {
   notification: Notification
@@ -57,6 +59,12 @@ export const NOTIFICATION_INFO: NotificationInfo[] = [
     notification: 'login_code',
     title: 'Customer sign-in code',
     description: 'Sent when a customer asks to sign in to their account on the storefront. Keep {{ code }} in it.',
+    audience: 'customer',
+  },
+  {
+    notification: 'abandoned_cart',
+    title: 'Abandoned cart',
+    description: 'Sent to a shopper who gave their email at checkout and did not finish. Off until you turn it on.',
     audience: 'customer',
   },
   {
@@ -103,10 +111,43 @@ const addressScope = (a: MailingAddress | null) =>
     phone: a.phone,
   }
 
-const adminUrl = (orderId: string) =>
-  `${(process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/admin/orders/${orderId}`
+export const appUrl = () => (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
-function shopScope(shop: Shop) {
+const adminUrl = (orderId: string) => `${appUrl()}/admin/orders/${orderId}`
+
+export type CheckoutLine = {
+  title: string
+  variantTitle: string | null
+  quantity: number
+  unitPriceCents: number
+  imageUrl: string | null
+}
+
+/** The `checkout` and `unsubscribe_url` variables of the abandoned cart email */
+export function checkoutScope(
+  { token, firstName, lines }: { token: string; firstName: string | null; lines: CheckoutLine[] },
+  unsubscribeUrl: string,
+) {
+  return {
+    unsubscribe_url: unsubscribeUrl,
+    checkout: {
+      url: `${appUrl()}/checkout/${token}`,
+      first_name: firstName,
+      item_count: lines.reduce((sum, l) => sum + l.quantity, 0),
+      subtotal_price: lines.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0),
+      line_items: lines.map((l) => ({
+        title: l.title,
+        variant_title: l.variantTitle,
+        quantity: l.quantity,
+        price: l.unitPriceCents,
+        line_price: l.unitPriceCents * l.quantity,
+        image_url: l.imageUrl,
+      })),
+    },
+  }
+}
+
+export function shopScope(shop: Shop) {
   return { name: shop.name, url: shop.storefrontUrl, logo_url: shop.logo, currency: shop.currency }
 }
 
@@ -182,12 +223,12 @@ function scopeOf(shop: Shop, order: OrderView) {
 
 // --- templates ---
 
-const sourceOf = (notification: Notification, row: EmailTemplate | undefined) => ({
+export const sourceOf = (notification: Notification, row: EmailTemplate | undefined) => ({
   subject: row?.subject ?? DEFAULTS[notification].subject,
   body: row?.body ?? DEFAULTS[notification].body,
 })
 
-async function templateRows(conn: Conn, shopId: string, notifications: Notification[]) {
+export async function templateRows(conn: Conn, shopId: string, notifications: Notification[]) {
   const rows = await conn
     .select()
     .from(schema.emailTemplates)
@@ -201,7 +242,7 @@ export type Rendered = { subject: string; html: string }
  * Subject and full HTML (the body inside the layout). With `fallback`, a part that fails to render (a merchant's
  * edit) uses the default instead, so a typo never stops an order email. Either way `problem` says what failed.
  */
-async function renderEmail(
+export async function renderEmail(
   notification: Exclude<Notification, 'layout'>,
   source: { subject: string; body: string },
   layout: string,
@@ -287,7 +328,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
         templateRows(tx, shopId, [...notifications, 'layout']),
       ])
       if (!row) return
-      const shop = await withStorefrontUrl(row)
+      const shop = await withStorefrontUrl(row, tx)
       const scope = scopeOf(shop, order)
       const layout = sourceOf('layout', templates.get('layout')).body
       for (const notification of notifications) {
@@ -303,7 +344,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
             fallback: true,
           },
         )
-        if (email.problem) console.warn(`[email] ${notification} for shop ${shopId}: ${email.problem.message}`)
+        if (email.problem) log.warn({ notification, shopId }, 'template problem: %s', email.problem.message)
         await tx
           .insert(schema.emailDeliveries)
           .values(
@@ -320,7 +361,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
       }
     })
   } catch (error) {
-    console.error(`[email] queueing ${event} for shop ${shopId}:`, error)
+    log.error({ err: error, event, shopId }, 'queueing the notification failed')
   }
 }
 
@@ -357,9 +398,11 @@ export async function list(shopId: string) {
     shopId,
     NOTIFICATION_INFO.map((n) => n.notification),
   )
+  const abandoned = await getAbandonedSettings(shopId)
   return NOTIFICATION_INFO.map((info) => {
     const row = rows.get(info.notification)
-    return { ...info, enabled: row?.enabled ?? true, customized: isCustomized(row) }
+    const enabled = info.notification === 'abandoned_cart' ? abandoned.enabled : (row?.enabled ?? true)
+    return { ...info, enabled, customized: isCustomized(row) }
   })
 }
 
@@ -371,7 +414,8 @@ export async function get(shopId: string, notification: Notification) {
     ...infoOf(notification),
     ...sourceOf(notification, row),
     defaults: DEFAULTS[notification],
-    enabled: row?.enabled ?? true,
+    // Abandoned cart emails are switched in their own settings (off until the shop turns them on)
+    enabled: notification === 'abandoned_cart' ? (await getAbandonedSettings(shopId)).enabled : (row?.enabled ?? true),
     customized: isCustomized(row),
   }
 }
@@ -400,10 +444,13 @@ export async function update(
   const current = await get(shopId, notification)
   const next = { subject: input.subject ?? current.subject, body: input.body ?? current.body }
   assertValid(next)
+  if (notification === 'abandoned_cart' && input.enabled !== undefined)
+    await updateAbandonedSettings(shopId, { enabled: input.enabled })
   const values = {
     subject: next.subject === DEFAULTS[notification].subject ? null : next.subject,
     body: next.body === DEFAULTS[notification].body ? null : next.body,
-    enabled: notification === 'layout' ? true : (input.enabled ?? current.enabled),
+    // The template row's switch isn't used by abandoned cart emails (see get)
+    enabled: notification === 'layout' || notification === 'abandoned_cart' ? true : (input.enabled ?? current.enabled),
     updatedAt: new Date(),
   }
   await db
@@ -492,6 +539,7 @@ function sampleOrder(shop: Shop): OrderView {
     paymentMethodName: 'Bank transfer',
     paymentInstructions: null,
     note: null,
+    customFields: {},
     createdAt: now,
     updatedAt: now,
     items: [item('Classic T-shirt', 'M / Black', 2400, 2), item('Canvas tote bag', null, 2000, 1)],
@@ -535,7 +583,22 @@ export async function preview(shopId: string, notification: Notification, input:
           input.body,
         ] as const)
       : ([notification, input, sourceOf('layout', templates.get('layout')).body] as const)
-  const email = await renderEmail(target, source, layout, scopeOf(shop, order), { fallback: false })
+  // The abandoned cart email previews with the same products as the order, as if they were still in a cart
+  const checkout = checkoutScope(
+    {
+      token: 'preview',
+      firstName: order.customer?.name?.split(' ')[0] ?? 'Jamie',
+      lines: order.items.map((i) => ({
+        title: i.title,
+        variantTitle: i.variantTitle,
+        quantity: i.quantity,
+        unitPriceCents: i.unitPriceCents,
+        imageUrl: i.imageUrl,
+      })),
+    },
+    `${appUrl()}/unsubscribe/preview`,
+  )
+  const email = await renderEmail(target, source, layout, { ...scopeOf(shop, order), ...checkout }, { fallback: false })
   return { ...email, sample }
 }
 

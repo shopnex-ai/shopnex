@@ -28,6 +28,7 @@ import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminWelcomeRouteImport } from './routes/admin/welcome'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
+import { Route as UnsubscribeTokenRouteImport } from './routes/unsubscribe/$token'
 import { Route as AdminAppsIdRouteImport } from './routes/admin/apps/$id'
 import { Route as AdminCollectionsIdRouteImport } from './routes/admin/collections/$id'
 import { Route as AdminCollectionsNewRouteImport } from './routes/admin/collections/new'
@@ -42,6 +43,7 @@ import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
 import { Route as AdminSettingsChannelsRouteImport } from './routes/admin/settings/channels'
+import { Route as AdminSettingsCustomFieldsRouteImport } from './routes/admin/settings/custom-fields'
 import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
@@ -156,6 +158,11 @@ const CheckoutTokenRoute = CheckoutTokenRouteImport.update({
   path: '/checkout/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UnsubscribeTokenRoute = UnsubscribeTokenRouteImport.update({
+  id: '/unsubscribe/$token',
+  path: '/unsubscribe/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAppsIdRoute = AdminAppsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -229,6 +236,12 @@ const AdminSettingsChannelsRoute = AdminSettingsChannelsRouteImport.update({
   path: '/channels',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsCustomFieldsRoute =
+  AdminSettingsCustomFieldsRouteImport.update({
+    id: '/custom-fields',
+    path: '/custom-fields',
+    getParentRoute: () => AdminSettingsRouteRoute,
+  } as any)
 const AdminSettingsDomainsRoute = AdminSettingsDomainsRouteImport.update({
   id: '/domains',
   path: '/domains',
@@ -347,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -363,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -399,6 +414,7 @@ export interface FileRoutesByTo {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -415,6 +431,7 @@ export interface FileRoutesByTo {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -453,6 +470,7 @@ export interface FileRoutesById {
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
+  '/unsubscribe/$token': typeof UnsubscribeTokenRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
@@ -469,6 +487,7 @@ export interface FileRoutesById {
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
   '/admin/settings/channels': typeof AdminSettingsChannelsRoute
+  '/admin/settings/custom-fields': typeof AdminSettingsCustomFieldsRoute
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
@@ -508,6 +527,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -524,6 +544,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -560,6 +581,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -576,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -613,6 +636,7 @@ export interface FileRouteTypes {
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
+    | '/unsubscribe/$token'
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
@@ -629,6 +653,7 @@ export interface FileRouteTypes {
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
     | '/admin/settings/channels'
+    | '/admin/settings/custom-fields'
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
@@ -653,6 +678,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
   CheckoutTokenRoute: typeof CheckoutTokenRoute
+  UnsubscribeTokenRoute: typeof UnsubscribeTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -790,6 +816,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/unsubscribe/$token': {
+      id: '/unsubscribe/$token'
+      path: '/unsubscribe/$token'
+      fullPath: '/unsubscribe/$token'
+      preLoaderRoute: typeof UnsubscribeTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/apps/$id': {
       id: '/admin/apps/$id'
       path: '/$id'
@@ -886,6 +919,13 @@ declare module '@tanstack/react-router' {
       path: '/channels'
       fullPath: '/admin/settings/channels'
       preLoaderRoute: typeof AdminSettingsChannelsRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/custom-fields': {
+      id: '/admin/settings/custom-fields'
+      path: '/custom-fields'
+      fullPath: '/admin/settings/custom-fields'
+      preLoaderRoute: typeof AdminSettingsCustomFieldsRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/domains': {
@@ -1162,6 +1202,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsAiRoute: typeof AdminSettingsAiRoute
   AdminSettingsApiTokensRoute: typeof AdminSettingsApiTokensRoute
   AdminSettingsChannelsRoute: typeof AdminSettingsChannelsRoute
+  AdminSettingsCustomFieldsRoute: typeof AdminSettingsCustomFieldsRoute
   AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
@@ -1181,6 +1222,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsAiRoute: AdminSettingsAiRoute,
   AdminSettingsApiTokensRoute: AdminSettingsApiTokensRoute,
   AdminSettingsChannelsRoute: AdminSettingsChannelsRoute,
+  AdminSettingsCustomFieldsRoute: AdminSettingsCustomFieldsRoute,
   AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
@@ -1246,6 +1288,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
   CheckoutTokenRoute: CheckoutTokenRoute,
+  UnsubscribeTokenRoute: UnsubscribeTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

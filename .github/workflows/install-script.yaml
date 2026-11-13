@@ -1,11 +1,11 @@
 name: Install script
 
-# Runs the documented install command on a clean runner against the images the Demo image workflow just pushed:
+# Runs the documented install command on a clean runner against the images the Deploy demo workflow just pushed:
 # SHOPNEX_VERSION is the commit SHA, which pins both the images and the compose file to that build. Run it by hand
 # (optionally with a release tag as the version) to test a release. HTTPS is not covered: it needs a public domain.
 on:
   workflow_run:
-    workflows: [Demo image]
+    workflows: [Deploy demo]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -47,12 +47,9 @@ jobs:
           curl -fsS -o /dev/null http://localhost:3000/admin/setup
           mode=$(sudo stat -c %a /opt/shopnex/.env)
           [ "$mode" = 600 ] || { echo ".env mode is $mode, expected 600" >&2; exit 1; }
-          sudo grep -qE '^BETTER_AUTH_SECRET=.{64}$' /opt/shopnex/.env || {
-            echo "BETTER_AUTH_SECRET is not 64 characters:" >&2
-            sudo sed -n 's/^BETTER_AUTH_SECRET=//p' /opt/shopnex/.env | awk '{ print length($0) " characters" }' >&2
-            exit 1
-          }
+          ! sudo grep -q '^BETTER_AUTH_SECRET=' /opt/shopnex/.env || { echo "A new install should not set BETTER_AUTH_SECRET" >&2; exit 1; }
           sudo grep -qE '^SHOPNEX_SECRET=.{64}$' /opt/shopnex/.env || { echo "SHOPNEX_SECRET is not 64 characters" >&2; exit 1; }
+          sudo grep -qE '^STRIPE_APP_KEY=snxk_[A-Za-z0-9_-]{64}$' /opt/shopnex/.env || { echo "STRIPE_APP_KEY is missing or not a snxk_ key" >&2; exit 1; }
           sudo grep -q '^SHOPNEX_VERSION=.' /opt/shopnex/.env || { echo "SHOPNEX_VERSION is missing from .env" >&2; exit 1; }
 
       - name: Storefront, Stripe app and containers are up
@@ -63,12 +60,14 @@ jobs:
           bad=$(cd /opt/shopnex && sudo docker compose ps -a --format '{{.Service}} {{.State}}' | grep -vE ' running$' || true)
           [ -z "$bad" ] || { echo "Containers not running:" >&2; echo "$bad" >&2; exit 1; }
 
-      - name: Re-running keeps the secret
+      - name: Re-running keeps the secret and the Stripe app key
         run: |
-          secret() { sudo sed -n -e 's/^BETTER_AUTH_SECRET=//p' -e 's/^SHOPNEX_SECRET=//p' /opt/shopnex/.env; }
-          before=$(secret)
+          secret() { sudo sed -n -e 's/^SHOPNEX_SECRET=//p' /opt/shopnex/.env; }
+          appkey() { sudo sed -n -e 's/^STRIPE_APP_KEY=//p' /opt/shopnex/.env; }
+          before=$(secret) key=$(appkey)
           cat apps/docs/public/install.sh | sudo --preserve-env=SHOPNEX_VERSION sh
           [ "$before" = "$(secret)" ] || { echo "A secret changed on re-run" >&2; exit 1; }
+          [ "$key" = "$(appkey)" ] || { echo "The Stripe app key changed on re-run" >&2; exit 1; }
           for i in $(seq 90); do
             curl -fsS -o /dev/null http://localhost:3000/admin/login && exit 0
             sleep 2

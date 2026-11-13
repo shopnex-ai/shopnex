@@ -1,0 +1,77 @@
+---
+title: Custom fields
+description: Add your own fields to products, orders and customers, and read them from themes, the APIs and apps.
+---
+
+In **Settings → Custom fields** (owners and admins), define a field for products, orders or customers: a **key**, a **label** and a **type**. Then fill in its value on the product, order or customer screen.
+
+| Type      | Stored as                                                          |
+| --------- | ------------------------------------------------------------------ |
+| `text`    | a string (up to <Value name="textMaxLength" /> characters)         |
+| `number`  | a number                                                           |
+| `boolean` | `true` or `false`, shown as yes / no                               |
+| `choice`  | one of the field's options (you can add options later, not remove) |
+| `file`    | the URL of a file uploaded to the shop (images today)              |
+
+The key (`material`, `care_guide`) is how code addresses the field. It uses lowercase letters, digits and underscores, and it can't change once the field exists, nor can its type. The label and the storefront switch can.
+
+<Callout type="warn">
+  A field is private until you turn on **Show on the storefront**. Only those fields reach themes and the Storefront
+  API; everything else stays in the admin, the Admin API, webhooks and apps. Don't store secrets in a field either way.
+</Callout>
+
+Deleting a field also deletes the values stored under its key.
+
+## Themes
+
+The bundled themes list every field shown on the storefront on the product page, under a **Details** or **Specifications** heading: the label comes from the key (`care_guide` becomes "Care guide"), booleans read Yes or No, and a file shows as a link. Fields without a value are left out.
+
+To place one field yourself, or to render fields in a theme of your own, read them from `product.custom_fields` (empty unless a value is set):
+
+```liquid
+{% if product.custom_fields.material %}
+  <p>Material: {{ product.custom_fields.material }}</p>
+{% endif %}
+```
+
+## Storefront API
+
+`customFields` is a `{ [key]: string | number | boolean }` map on `Product`, `Customer` (the signed-in customer) and `CustomerOrder`:
+
+```ts setup=storefront
+const product = await shopnex.products.getByHandle({ handle: 'linen-shirt' })
+product.customFields.material // 'Linen'
+```
+
+## Admin API
+
+Needs the `read_` or `write_` scope of the resource. Definitions: `GET /admin/custom-fields` (any token; filter with `?resource=product|order|customer`) and, for staff, `POST`, `PATCH` and `DELETE /admin/custom-fields/{id}`.
+
+Products, customers and orders return all their fields as `customFields`. Send values when you create or update a record. A value sets the field, `null` clears it, and keys you leave out stay as they are:
+
+```sh
+curl -X PATCH https://shop.example.com/api/v1/admin/products/$ID \
+  -H "Authorization: Bearer sk_…" -H "Content-Type: application/json" \
+  -d '{ "customFields": { "material": "Linen", "care_guide": null } }'
+```
+
+A key without a definition, or a value of the wrong type (or a choice that isn't an option), is a `400`. Orders are the record of a sale, so `PATCH /admin/orders/{id}` takes only `customFields`.
+
+## Filtering
+
+Filter products by value with `customField` entries of the form `key:value`; all of them must match:
+
+```sh
+curl "https://shop.example.com/api/v1/admin/products?customField[0]=material:Linen&customField[1]=size:L" \
+  -H "Authorization: Bearer sk_…"
+```
+
+The Storefront API takes the same parameter on `products.list` (`customField: ['material:Linen']`), limited to fields shown on the storefront. Any other key is a `400`, so private values can't be probed.
+
+## Scope
+
+Fields belong to one shop. Another shop's token or storefront never sees them.
+
+## Webhooks
+
+`product.*`, `customer.*` and `order.*` payloads include `customFields`. Changing an order's fields sends `order.updated`.

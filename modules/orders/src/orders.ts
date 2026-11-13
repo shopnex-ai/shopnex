@@ -7,6 +7,7 @@ import { variantService } from '@shopnex/catalog'
 import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
+import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { notify } from '@shopnex/email'
 import { calculate, discountService, taxService } from '@shopnex/pricing'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
@@ -345,7 +346,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     const quantities = new Map<string, number>()
     for (const l of lines) quantities.set(l.variantId, (quantities.get(l.variantId) ?? 0) + l.quantity)
     for (const [variantId, quantity] of quantities) {
-      if (!(await variantService.reserveStock(tx, variantId, quantity))) {
+      if (!(await variantService.reserveStock(shopId, variantId, quantity, tx))) {
         const available =
           variants.get(variantId)?.variant.inventoryQuantity ??
           productVariants.get(lines.find((l) => l.variantId === variantId)!.productId)?.[0]?.variant
@@ -453,6 +454,17 @@ const touch = (tx: Conn, id: string, patch: Partial<typeof schema.orders.$inferI
     .returning()
     .then((rows) => rows[0]!)
 
+// Sets the order's custom field values (null clears one); throws ORDER_NOT_FOUND
+export async function setCustomFields(shopId: string, id: string, updates: CustomFieldUpdates) {
+  return db.transaction(async (tx) => {
+    const order = await lockOrder(tx, shopId, id)
+    const customFields = await customFieldService.merge(shopId, 'order', updates, order.customFields, tx)
+    await touch(tx, id, { customFields })
+    await emit(tx, shopId, 'order.updated', () => getById(shopId, id, tx))
+    return (await getById(shopId, id, tx))!
+  })
+}
+
 // Manual payment received (Shopify "Mark as paid"): records a successful sale for the outstanding amount
 export async function markAsPaid(shopId: string, id: string) {
   return db.transaction(async (tx) => {
@@ -509,7 +521,12 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
   })
 }
 
-export type CancelInput = { reason: CancelReason; restock: boolean }
+export type CancelInput = {
+  reason: CancelReason
+  restock: boolean
+  /** Automatic cancellations: give up (INVALID_STATUS_TRANSITION) when the order was paid since it was picked, instead of refunding it */
+  onlyIfUnpaid?: boolean
+}
 
 // Shopify-style cancel: unpaid → voided; paid → refunded (manual methods: money goes back outside ShopNex,
 // recorded as a refund transaction). Paid through a payments app: the refund transaction stays pending and the
@@ -522,10 +539,13 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     if (order.fulfillmentStatus !== 'unfulfilled') {
       throw new OrderError('INVALID_STATUS_TRANSITION', "Fulfilled orders can't be cancelled")
     }
+    if (input.onlyIfUnpaid && order.financialStatus !== 'pending') {
+      throw new OrderError('INVALID_STATUS_TRANSITION', 'The order is no longer unpaid')
+    }
     if (input.restock) {
       const items = await tx.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id))
       for (const item of items) {
-        if (item.variantId) await variantService.restock(tx, item.variantId, item.quantity)
+        if (item.variantId) await variantService.restock(shopId, item.variantId, item.quantity, tx)
       }
     }
     let financialStatus = order.financialStatus

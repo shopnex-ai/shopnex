@@ -20,15 +20,21 @@ import { raw } from 'hono/html'
 
 type Tone = 'default' | 'subdued' | 'success' | 'warning' | 'critical'
 
+// The admin's own colours (apps/admin-ui/src/styles.css), so an embedded page blends into the page around it. The
+// admin sends its theme through the app bridge (data-theme, set by /shopnex/app.js); before that arrives, or when
+// the page is opened on its own, the OS setting decides.
+const light = `--bg:oklch(.982 .002 95);--fg:oklch(.18 .005 95);--card:oklch(1 0 0);--muted:oklch(.955 .003 95);
+--muted-fg:oklch(.52 .008 95);--border:oklch(.915 .004 95);--primary:oklch(.22 .006 95);--primary-fg:oklch(.985 .002 95);
+--critical:oklch(.577 .245 27.325);--success:oklch(.52 .14 150);--warning:oklch(.62 .15 70);--ring:oklch(.6 .15 155)`
+const dark = `--bg:oklch(.165 .003 95);--fg:oklch(.97 .002 95);--card:oklch(.205 .004 95);--muted:oklch(.27 .005 95);
+--muted-fg:oklch(.71 .006 95);--border:oklch(1 0 0/9%);--primary:oklch(.95 .003 95);--primary-fg:oklch(.2 .005 95);
+--critical:oklch(.704 .191 22.216);--success:oklch(.72 .15 150);--warning:oklch(.8 .14 80);--ring:oklch(.7 .15 155)`
+
 const styles = `
-:root{color-scheme:light dark;--bg:oklch(1 0 0);--fg:oklch(.145 0 0);--card:oklch(1 0 0);--muted:oklch(.97 0 0);
---muted-fg:oklch(.556 0 0);--border:oklch(.922 0 0);--primary:oklch(.205 0 0);--primary-fg:oklch(.985 0 0);
---critical:oklch(.577 .245 27.325);--success:oklch(.52 .14 150);--warning:oklch(.62 .15 70);--ring:oklch(.708 0 0);
---radius:.625rem}
-@media (prefers-color-scheme:dark){:root{--bg:oklch(.145 0 0);--fg:oklch(.985 0 0);--card:oklch(.205 0 0);
---muted:oklch(.269 0 0);--muted-fg:oklch(.708 0 0);--border:oklch(1 0 0/10%);--primary:oklch(.922 0 0);
---primary-fg:oklch(.205 0 0);--critical:oklch(.704 .191 22.216);--success:oklch(.72 .15 150);--warning:oklch(.8 .14 80);
---ring:oklch(.556 0 0)}}
+:root{color-scheme:light dark;${light};--radius:.625rem}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark;${dark}}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){${dark}}}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.5 ui-sans-serif,system-ui,sans-serif;color:var(--fg);background:var(--bg);-webkit-font-smoothing:antialiased}
 .sx-page{max-width:56rem;margin:0 auto;padding:1.5rem 1rem 3rem}
