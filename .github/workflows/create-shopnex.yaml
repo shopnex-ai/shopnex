@@ -52,7 +52,7 @@ jobs:
           cp -R packages/create-shopnex/bin packages/create-shopnex/dist packages/create-shopnex/package.json "$RUNNER_TEMP/out/cli/"
           echo "$version" > "$RUNNER_TEMP/out/version"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: create-shopnex
           path: ${{ runner.temp }}/out
@@ -74,7 +74,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: create-shopnex
           path: ${{ runner.temp }}/out
