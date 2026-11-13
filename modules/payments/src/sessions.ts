@@ -312,6 +312,13 @@ export async function cancelOrder(shopId: string, orderId: string, input: Cancel
   return order
 }
 
+/** orderService.refund (part of what the order took), then sends it to the payments app when paid through one */
+export async function refundOrder(shopId: string, orderId: string, input: { amountCents: number }) {
+  const order = await orderService.refund(shopId, orderId, input)
+  await startRefunds(shopId, orderId).catch((error: unknown) => log.error({ err: error, orderId }, 'refunds failed'))
+  return order
+}
+
 // --- app side: resolve / reject ---
 
 async function lockSession(tx: Conn, shopId: string, appId: string, id: string) {
@@ -374,9 +381,11 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
           .set({ status: 'success', externalId: input.externalId ?? null, processedAt: now })
           .where(eq(schema.orderTransactions.id, session.transactionId))
       }
+      // Refunded once everything taken is back; until then the order shows what part
+      const money = await orderService.moneyOf(tx, session.orderId)
       await tx
         .update(schema.orders)
-        .set({ financialStatus: 'refunded', updatedAt: now })
+        .set({ financialStatus: money.refunded >= money.taken ? 'refunded' : 'partially_refunded', updatedAt: now })
         .where(eq(schema.orders.id, session.orderId))
     }
     const [updated] = await tx

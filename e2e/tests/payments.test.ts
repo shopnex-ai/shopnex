@@ -280,6 +280,51 @@ describe('payments app: refunds and expiry', () => {
     refundResolve = null
   })
 
+  test('a partial refund through the app leaves the order open and shows partially refunded once the app confirms', async () => {
+    const placed = await checkout()
+    const { id } = sessionOf(placed.orderId)
+    ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_partial' }, auth))
+    const total = (await order(placed.orderId)).totalCents
+
+    const sent: PaymentsAppRequest[] = []
+    const next = () =>
+      new Promise<PaymentsAppRequest>((resolve) => {
+        refundResolve = async (request) => {
+          sent.push(request)
+          ok(
+            await call(
+              'POST',
+              `/admin/payment-sessions/${request.id}/resolve`,
+              { externalId: `re_${sent.length}` },
+              auth,
+            ),
+          )
+          resolve(request)
+        }
+      })
+
+    const first = next()
+    await paymentService.refundOrder(SHOP, placed.orderId, { amountCents: 100 })
+    assert.equal((await order(placed.orderId)).financialStatus, 'paid', 'paid until the app confirms')
+    const request = await first
+    assert.equal(request.kind === 'refund' && request.amount.cents, 100)
+    assert.equal(request.kind === 'refund' && request.payment.externalId, 'pi_partial')
+    const afterFirst = await order(placed.orderId)
+    assert.equal(afterFirst.financialStatus, 'partially_refunded')
+    assert.equal(afterFirst.cancelledAt, null)
+
+    // More than is left is refused
+    await assert.rejects(paymentService.refundOrder(SHOP, placed.orderId, { amountCents: total }))
+
+    // Cancelling gives back only the rest
+    const second = next()
+    await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true })
+    const rest = await second
+    assert.equal(rest.kind === 'refund' && rest.amount.cents, total - 100)
+    assert.equal((await order(placed.orderId)).financialStatus, 'refunded')
+    refundResolve = null
+  })
+
   // The refund is not lost when sending it fails: it stays pending with no session, and sending again picks it up
   // (nothing calls startRefunds on a timer yet, see rule 38 in docs/invariants.md)
   test('a refund left pending without a session is sent when startRefunds runs again', async () => {

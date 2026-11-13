@@ -25,9 +25,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
-import { formatMoney } from '@/lib/money'
+import { formatCentsInput, formatMoney, toCents } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
 
 type Order = Outputs['admin']['orders']['get']
@@ -327,15 +328,28 @@ function useOrderAction() {
   }
 }
 
+// What the order took and has not given back (a refund on its way is already spoken for)
+function refundableCents(order: Order) {
+  let left = 0
+  for (const t of order.transactions) {
+    if (t.status === 'success' && (t.kind === 'sale' || t.kind === 'capture')) left += t.amountCents
+    if ((t.status === 'success' || t.status === 'pending') && t.kind === 'refund') left -= t.amountCents
+  }
+  return Math.max(0, left)
+}
+
 function OrderActions({ order }: { order: Order }) {
   const run = useOrderAction()
   const markAsPaid = useMutation(orpc.admin.orders.markAsPaid.mutationOptions())
-  if (order.cancelledAt) return null
+  const refundable = refundableCents(order)
+  // A cancelled order can still hold money (a payment that arrived late): it is refunded the same way
+  if (order.cancelledAt) return refundable > 0 ? <RefundButton order={order} refundable={refundable} /> : null
 
   const canPay = order.financialStatus === 'pending' || order.financialStatus === 'partially_paid'
   const canFulfill = order.fulfillmentStatus !== 'fulfilled'
   return (
     <>
+      {refundable > 0 && <RefundButton order={order} refundable={refundable} />}
       {order.fulfillmentStatus === 'unfulfilled' && <CancelButton order={order} />}
       {canPay && (
         <Button
@@ -400,6 +414,67 @@ function FulfillButton({ order }: { order: Order }) {
             </Field>
           </FieldGroup>
         </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function RefundButton({ order, refundable }: { order: Order; refundable: number }) {
+  const run = useOrderAction()
+  const [open, setOpen] = useState(false)
+  const [amount, setAmount] = useState(formatCentsInput(refundable))
+  const refund = useMutation(orpc.admin.orders.refund.mutationOptions())
+  const money = (cents: number) => formatMoney(cents, order.currency)
+  const cents = toCents(amount)
+  const invalid = cents === null || Number.isNaN(cents) || cents <= 0 || cents > refundable
+  const manual = (order.paymentGateway ?? 'manual') === 'manual'
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next) setAmount(formatCentsInput(refundable))
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" />}>Refund</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Refund {orderName(order.orderNumber)}</DialogTitle>
+          <DialogDescription>
+            {manual
+              ? 'The refund is recorded here. Send the money back to the customer the way they paid.'
+              : `The refund is sent to ${order.paymentMethodName ?? order.paymentGateway}; the order shows it once it confirms.`}{' '}
+            The order stays open and stock is not changed.
+          </DialogDescription>
+        </DialogHeader>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="refund-amount">Amount ({order.currency})</FieldLabel>
+            <Input
+              id="refund-amount"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              aria-invalid={invalid || undefined}
+            />
+            <p className="text-sm text-muted-foreground">Up to {money(refundable)} can be refunded.</p>
+          </Field>
+        </FieldGroup>
+        <DialogFooter>
+          <DialogClose render={<Button variant="ghost" />}>Close</DialogClose>
+          <Button
+            disabled={refund.isPending || invalid}
+            onClick={async () => {
+              if (cents === null || invalid) return
+              if (await run(refund.mutateAsync({ id: order.id, amountCents: cents }), `Refunded ${money(cents)}`)) {
+                setOpen(false)
+              }
+            }}
+          >
+            {invalid ? 'Refund' : `Refund ${money(cents)}`}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
