@@ -38,6 +38,11 @@ export const shops = pgTable('shops', {
   // Hours after which an unpaid order with no payment attempt open (bank transfer, or a payments app that was
   // unreachable at checkout) is cancelled and its stock put back on sale. null = never: the merchant cancels by hand.
   unpaidOrderExpiryHours: integer('unpaid_order_expiry_hours'),
+  // Who issues the invoices (Settings → General → Business details): the legal name (the shop name when empty), a
+  // postal address (one line per row) and the VAT or tax number. An EU invoice has to carry all three.
+  legalName: text('legal_name'),
+  businessAddress: text('business_address'),
+  taxId: text('tax_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
