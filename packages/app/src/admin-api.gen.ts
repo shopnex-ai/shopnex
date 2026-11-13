@@ -417,6 +417,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.orders.refund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/analytics/overview": {
         parameters: {
             query?: never;
@@ -4192,6 +4208,78 @@ export interface operations {
                     /** @enum {string} */
                     reason: "customer" | "declined" | "fraud" | "inventory" | "staff" | "other";
                     restock: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        orderNumber: number;
+                        /** Format: uuid */
+                        channelId: string;
+                        customerId: string | null;
+                        email: string;
+                        phone: string | null;
+                        /** @enum {string} */
+                        financialStatus: "pending" | "authorized" | "partially_paid" | "paid" | "partially_refunded" | "refunded" | "voided";
+                        /** @enum {string} */
+                        fulfillmentStatus: "unfulfilled" | "partially_fulfilled" | "fulfilled";
+                        cancelledAt: string | null;
+                        cancelReason: ("customer" | "declined" | "fraud" | "inventory" | "staff" | "other") | null;
+                        currency: string;
+                        subtotalCents: number;
+                        shippingCents: number;
+                        taxCents: number;
+                        discountCents: number;
+                        totalCents: number;
+                        taxesIncluded: boolean;
+                        taxLines: (string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[];
+                        discountCodes: string[];
+                        shippingAddress: ((string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[]) | null;
+                        billingAddress: ((string | number | boolean | null) | {
+                            [key: string]: unknown;
+                        } | (unknown | null)[]) | null;
+                        paymentGateway: string | null;
+                        paymentMethodName: string | null;
+                        paymentInstructions: string | null;
+                        note: string | null;
+                        customFields: {
+                            [key: string]: string | number | boolean;
+                        };
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.orders.refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amountCents: number;
                 };
             };
         };

@@ -4,7 +4,7 @@ import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES, orderService } from '@shopnex
 import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
-import { cancelOrderInput, customFieldUpdates, fulfillOrderInput } from './schemas'
+import { cancelOrderInput, customFieldUpdates, fulfillOrderInput, refundOrderInput } from './schemas'
 import { countOutput, orderCreatedOutput, orderDetailOutput, orderListItemOutput, orderOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
@@ -161,4 +161,14 @@ export const orders = {
     .input(id.extend(cancelOrderInput.shape))
     // Paid through a payments app: the refund is sent to it and the order shows refunded once it confirms
     .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options)),
+
+  refund: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/refund' })
+    .output(orderOutput)
+    .input(id.extend(refundOrderInput.shape))
+    // Part of what the order took goes back and the order stays open. Paid through a payments app: the refund is sent
+    // to it and the order shows partially refunded (or refunded) once it confirms
+    .handler(({ input: { id, amountCents }, context }) =>
+      paymentService.refundOrder(context.shop.id, id, { amountCents }),
+    ),
 }

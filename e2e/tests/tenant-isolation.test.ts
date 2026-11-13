@@ -286,6 +286,14 @@ describe('shop B cannot reach shop A by id', () => {
       }),
       'cancel',
     )
+    assertRefused(
+      await attack('/admin/orders/{id}/refund', {
+        method: 'POST',
+        path: `/admin/orders/${orderId}/refund`,
+        body: { amountCents: 100 },
+      }),
+      'refund',
+    )
     covered.add('DELETE /admin/orders/bulk')
     const bulk = await call('DELETE', '/admin/orders/bulk', { ids: [orderId] }, b)
     assert.equal(bulk.status, 200, JSON.stringify(bulk.body))

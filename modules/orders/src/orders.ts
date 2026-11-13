@@ -549,26 +549,24 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
       }
     }
     let financialStatus = order.financialStatus
-    if (order.financialStatus === 'paid' || order.financialStatus === 'partially_paid') {
-      const [paid] = await tx
-        .select({ cents: sql<number>`coalesce(sum(${schema.orderTransactions.amountCents}), 0)::int` })
-        .from(schema.orderTransactions)
-        .where(
-          and(
-            eq(schema.orderTransactions.orderId, id),
-            eq(schema.orderTransactions.kind, 'sale'),
-            eq(schema.orderTransactions.status, 'success'),
-          ),
-        )
+    if (
+      order.financialStatus === 'paid' ||
+      order.financialStatus === 'partially_paid' ||
+      order.financialStatus === 'partially_refunded'
+    ) {
+      // Gives back what is still with the shop: earlier partial refunds, sent or on their way, are not repeated
+      const money = await moneyOf(tx, id)
       const manual = (order.paymentGateway ?? 'manual') === 'manual'
-      await tx.insert(schema.orderTransactions).values({
-        orderId: id,
-        kind: 'refund',
-        status: manual ? 'success' : 'pending',
-        gateway: order.paymentGateway ?? 'manual',
-        amountCents: paid?.cents ?? order.totalCents,
-        currency: order.currency,
-      })
+      if (money.left > 0) {
+        await tx.insert(schema.orderTransactions).values({
+          orderId: id,
+          kind: 'refund',
+          status: manual ? 'success' : 'pending',
+          gateway: order.paymentGateway ?? 'manual',
+          amountCents: money.left,
+          currency: order.currency,
+        })
+      }
       if (manual) financialStatus = 'refunded'
     } else if (order.financialStatus === 'pending' || order.financialStatus === 'authorized') {
       financialStatus = 'voided'
@@ -577,5 +575,62 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     await emit(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
     await notify(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
     return updated
+  })
+}
+
+/**
+ * What the shop took for an order and has given back. `left` is what can still be refunded: taken, minus refunds that
+ * went through, minus refunds on their way (a pending one is already spoken for).
+ */
+export async function moneyOf(tx: Conn, orderId: string) {
+  const rows = await tx
+    .select({
+      kind: schema.orderTransactions.kind,
+      status: schema.orderTransactions.status,
+      cents: sql<number>`coalesce(sum(${schema.orderTransactions.amountCents}), 0)::int`,
+    })
+    .from(schema.orderTransactions)
+    .where(eq(schema.orderTransactions.orderId, orderId))
+    .groupBy(schema.orderTransactions.kind, schema.orderTransactions.status)
+  const sum = (kind: string[], status: string) =>
+    rows.filter((r) => kind.includes(r.kind) && r.status === status).reduce((n, r) => n + r.cents, 0)
+  const taken = sum(['sale', 'capture'], 'success')
+  const refunded = sum(['refund'], 'success')
+  const refunding = sum(['refund'], 'pending')
+  return { taken, refunded, refunding, left: Math.max(0, taken - refunded - refunding) }
+}
+
+/**
+ * Gives back part of what an order took, and leaves the order as it is (stock and fulfilment are not touched).
+ * Manual payment methods: recorded as refunded at once, staff send the money back themselves. Paid through a payments
+ * app: a pending refund is booked and the order changes only when the app confirms (@shopnex/payments sends it).
+ */
+export async function refund(shopId: string, id: string, input: { amountCents: number }) {
+  if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
+    throw new OrderError('INVALID_REFUND', 'Refund an amount above zero, in whole cents')
+  }
+  return db.transaction(async (tx) => {
+    const order = await lockOrder(tx, shopId, id)
+    const money = await moneyOf(tx, id)
+    if (money.left <= 0) throw new OrderError('INVALID_REFUND', 'Nothing is left to refund on this order')
+    if (input.amountCents > money.left) {
+      throw new OrderError(
+        'INVALID_REFUND',
+        `At most ${(money.left / 100).toFixed(2)} ${order.currency} can be refunded`,
+      )
+    }
+    const manual = (order.paymentGateway ?? 'manual') === 'manual'
+    await tx.insert(schema.orderTransactions).values({
+      orderId: id,
+      kind: 'refund',
+      status: manual ? 'success' : 'pending',
+      gateway: order.paymentGateway ?? 'manual',
+      amountCents: input.amountCents,
+      currency: order.currency,
+    })
+    if (!manual) return order
+    return touch(tx, id, {
+      financialStatus: money.refunded + input.amountCents >= money.taken ? 'refunded' : 'partially_refunded',
+    })
   })
 }

@@ -310,6 +310,11 @@ export const cancelOrderInput = z.object({
   restock: z.boolean(),
 })
 
+export const refundOrderInput = z.object({
+  // In the smallest unit of the order's currency (cents), above zero and at most what is left to refund
+  amountCents: z.number().int().positive(),
+})
+
 export const fulfillOrderInput = z.object({
   trackingCompany: z.string().trim().max(100).optional(),
   trackingNumber: z.string().trim().max(100).optional(),

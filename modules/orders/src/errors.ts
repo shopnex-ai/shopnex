@@ -9,6 +9,8 @@ export type OrderErrorCode =
   | 'ORDER_NOT_FOUND'
   | 'ORDER_CANCELLED'
   | 'INVALID_STATUS_TRANSITION'
+  // A refund of nothing, of a fraction of a cent, or of more than is left to give back
+  | 'INVALID_REFUND'
   // Unknown, inactive, used up, already used by this customer, or the subtotal is below its minimum
   | 'DISCOUNT_NOT_APPLICABLE'
 
