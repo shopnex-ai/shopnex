@@ -9,6 +9,7 @@
     "test:browser": "node --env-file-if-exists=../.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
+    "@shopnex/api": "workspace:*",
     "@shopnex/app": "workspace:*",
     "@shopnex/apps": "workspace:*",
     "@shopnex/auth": "workspace:*",
@@ -22,7 +23,8 @@
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
