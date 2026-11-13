@@ -34,9 +34,11 @@ for (const carousel of document.querySelectorAll<HTMLElement>('[data-carousel]')
 }
 
 // ── sort (templates/collection.liquid) ──
-document
-  .querySelector<HTMLSelectElement>('[data-sort]')
-  ?.addEventListener('change', (e) => (location.href = (e.target as HTMLSelectElement).value))
+document.querySelector<HTMLSelectElement>('[data-sort]')?.addEventListener('change', (e) => {
+  // The options are links on this shop: never follow one that leaves it (or a javascript: URL)
+  const url = new URL((e.target as HTMLSelectElement).value, location.href)
+  if (url.origin === location.origin) location.href = url.href
+})
 
 // ── tabs (templates/product.liquid) ──
 for (const tabs of document.querySelectorAll<HTMLElement>('[data-tabs]')) {
