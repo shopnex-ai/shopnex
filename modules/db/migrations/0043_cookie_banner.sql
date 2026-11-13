@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "cookie_banner" boolean DEFAULT false NOT NULL;

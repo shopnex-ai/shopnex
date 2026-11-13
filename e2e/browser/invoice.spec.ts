@@ -134,7 +134,12 @@ test('business details are saved from Settings and show on the invoice', async (
   await page.goto('/admin/settings/general')
   await page.getByLabel('Legal business name').fill('Changed Name Ltd')
   await page.getByLabel('VAT or tax number').fill('GB999999999')
-  await page.getByRole('button', { name: 'Save' }).last().click()
+  // The card's own Save: the General page has one per card
+  await page
+    .locator('form')
+    .filter({ has: page.getByLabel('Legal business name') })
+    .getByRole('button', { name: 'Save' })
+    .click()
   await expect(page.getByText('Business details saved')).toBeVisible()
   await page.goto(`/admin/orders/${order.id}/invoice`)
   await expect(page.getByText('Changed Name Ltd')).toBeVisible()

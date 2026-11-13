@@ -56,6 +56,11 @@ export const Shop = z.object({
   currencyCode: z.string().length(3),
   /** The homepage's title and meta description (Shopify: Online store → Preferences) */
   seo: Seo,
+  /**
+   * The shop asks visitors for consent before scripts that need it run (Settings → General → Cookie banner). A custom
+   * storefront decides for itself how to ask; the bundled one does it for every theme.
+   */
+  cookieBanner: z.boolean(),
 })
 
 // ── catalog ───────────────────────────────────────────────────────────────────
