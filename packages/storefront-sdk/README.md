@@ -46,4 +46,4 @@ The client works in browsers, Node.js, Astro, Next.js server components, and edg
 
 ## Documentation
 
-See the [Storefront API documentation](https://github.com/shopnex-ai/shopnex/blob/main/docs/storefront-api.md) for API details and usage guidance.
+See the [Storefront API documentation](https://docs.shopnex.ai/docs/api/storefront) for API details and usage guidance.
