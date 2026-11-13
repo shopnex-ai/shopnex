@@ -3,7 +3,7 @@
 // who ordered before get their orders back. The session token is opaque to the storefront, which keeps it in a
 // cookie and sends it back with each request.
 import { and, eq } from 'drizzle-orm'
-import { auth, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
+import { auth, takeRate, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
 import { db, schema } from '@shopnex/db'
 import { sendLoginCode } from '@shopnex/email'
 import type { Customer } from '@shopnex/db/schema'
@@ -27,28 +27,27 @@ const normalize = (email: string) => email.trim().toLowerCase()
 
 const bearer = (token: string) => new Headers({ authorization: `Bearer ${token}` })
 
-// Codes per mailbox and per shop in a window. In memory, so per process: enough to stop a page from mailing
-// someone over and over or a script from draining the shop's SMTP quota, not a distributed limiter.
+// Limits on emailed sign-in codes, counted in the database (takeRate): every server process shares them and a restart
+// doesn't clear them. Each is a fixed window of 15 minutes. They stop a page from mailing one person over and over, one
+// visitor from mailing many people, a script from draining the shop's SMTP quota, and guessing a code by asking for new
+// ones. Keys carry the shop; the address and the email are hashed before they are stored. `ip` is the visitor's address
+// (null when there is none worth trusting: only the other limits apply).
 const WINDOW_MS = 15 * 60_000
-const MAX_PER_EMAIL = 4
-const MAX_PER_SHOP = 200
-const sends = new Map<string, number[]>()
+const SEND_PER_EMAIL = 4
+const SEND_PER_IP = 20
+const SEND_PER_SHOP = 200
+const CHECK_PER_EMAIL = 10
+const CHECK_PER_IP = 30
 
-function throttle(key: string, max: number, now: number) {
-  const recent = (sends.get(key) ?? []).filter((t) => now - t < WINDOW_MS)
-  if (recent.length >= max) {
-    sends.set(key, recent)
-    return false
+type Visitor = { ip?: string | null }
+
+/** Counts one use of each limit in order and stops at the first one that is used up: the seconds to wait, or null */
+async function overLimit(limits: [key: string, max: number][]) {
+  for (const [key, max] of limits) {
+    const waitS = await takeRate(key, max, WINDOW_MS)
+    if (waitS !== null) return waitS
   }
-  recent.push(now)
-  sends.set(key, recent)
-  return true
-}
-
-function allowSend(shopId: string, email: string) {
-  const now = Date.now()
-  if (sends.size > 10_000) for (const [key, times] of sends) if (now - times.at(-1)! >= WINDOW_MS) sends.delete(key)
-  return throttle(`shop:${shopId}`, MAX_PER_SHOP, now) && throttle(`${shopId}:${email}`, MAX_PER_EMAIL, now)
+  return null
 }
 
 // Better Auth's emailOTP "promotes" an existing user whose email was never verified by deleting their
@@ -66,10 +65,15 @@ async function isUnverifiedAccount(email: string) {
  * Emails a sign-in code. Says nothing about whether the address has an account (a new customer gets one on
  * sign-in). Throws EMAIL_OFF (EmailError) when the shop can't send email.
  */
-export async function requestLoginCode(shopId: string, rawEmail: string) {
+export async function requestLoginCode(shopId: string, rawEmail: string, visitor: Visitor = {}) {
   const email = normalize(rawEmail)
   if (!EMAIL.test(email) || email.length > 254) throw new AccountError('INVALID_EMAIL', 'Enter a valid email address')
-  if (!allowSend(shopId, email)) {
+  const wait = await overLimit([
+    [`login-code:email:${shopId}:${email}`, SEND_PER_EMAIL],
+    ...(visitor.ip ? [[`login-code:ip:${shopId}:${visitor.ip}`, SEND_PER_IP] as [string, number]] : []),
+    [`login-code:shop:${shopId}`, SEND_PER_SHOP],
+  ])
+  if (wait !== null) {
     throw new AccountError('TOO_MANY_REQUESTS', 'Too many codes requested. Wait a few minutes and try again.')
   }
   if (await isUnverifiedAccount(email)) {
@@ -110,8 +114,17 @@ async function linkCustomer(shopId: string, user: { id: string; email: string; n
 }
 
 /** Checks the code and starts a session. `token` is what the storefront sends back as the customer token. */
-export async function verifyLoginCode(shopId: string, rawEmail: string, code: string) {
+export async function verifyLoginCode(shopId: string, rawEmail: string, code: string, visitor: Visitor = {}) {
   const email = normalize(rawEmail)
+  // Every attempt counts, right or wrong: each new code gives five more guesses, so this caps guessing as well
+  if (EMAIL.test(email)) {
+    const wait = await overLimit([
+      [`login-check:email:${shopId}:${email}`, CHECK_PER_EMAIL],
+      ...(visitor.ip ? [[`login-check:ip:${shopId}:${visitor.ip}`, CHECK_PER_IP] as [string, number]] : []),
+    ])
+    if (wait !== null)
+      throw new AccountError('TOO_MANY_REQUESTS', 'Too many attempts. Wait a few minutes and try again.')
+  }
   if (!EMAIL.test(email) || (await isUnverifiedAccount(email))) {
     throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
   }

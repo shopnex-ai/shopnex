@@ -9,7 +9,7 @@ export function slugify(input: string, fallback = 'item'): string {
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-|-$/g, '')
   return slug || fallback
 }
 

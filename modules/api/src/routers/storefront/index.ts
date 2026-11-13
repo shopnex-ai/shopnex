@@ -1,4 +1,5 @@
 import { ORPCError } from '@orpc/server'
+import { clientIp } from '@shopnex/auth'
 import { cartService, checkoutService, type CartView } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
 import {
@@ -524,11 +525,13 @@ export const storefrontRouter = storefront.router({
   },
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
-      await accountService.requestLoginCode(context.shop.id, input.email)
+      await accountService.requestLoginCode(context.shop.id, input.email, { ip: clientIp(context.headers) })
       return { success: true as const }
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
-      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code)
+      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code, {
+        ip: clientIp(context.headers),
+      })
       return { token, customer: toCustomer(customer, await fieldsView(context.shop.id, 'customer')) }
     }),
     signOut: storefront.customer.signOut.handler(async ({ context }) => {

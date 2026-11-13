@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "@orpc/client": "catalog:",
-    "@orpc/contract": "^1.16.1",
-    "@orpc/openapi-client": "^1.16.1",
+    "@orpc/contract": "^1.16.2",
+    "@orpc/openapi-client": "^1.16.2",
     "zod": "catalog:"
   },
   "devDependencies": {

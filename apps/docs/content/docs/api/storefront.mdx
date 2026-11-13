@@ -60,7 +60,7 @@ await me.customer.signOut()
 
 - Without the SDK, send the token in the `x-shopnex-customer-token` header.
 - A customer only ever sees their own orders (someone else's order id is `NOT_FOUND`). A token only ever resolves to the customer record of the shop it is used in, and reaches nothing in the admin API.
-- A code has <Value name="loginCodeLength" /> digits and is valid for <Value name="loginCodeMinutes" /> minutes. Codes are limited per address and per shop (`TOO_MANY_REQUESTS`), and each code allows <Value name="loginCodeAttempts" /> attempts and works once.
+- A code has <Value name="loginCodeLength" /> digits and is valid for <Value name="loginCodeMinutes" /> minutes. Each code allows <Value name="loginCodeAttempts" /> attempts and works once. On top of that, every 15 minutes: `requestCode` is limited to 4 per email address, 20 per visitor and 200 per shop, and `signIn` to 10 attempts per email address and 30 per visitor, right or wrong. Past a limit both answer `TOO_MANY_REQUESTS` (HTTP 429). The counters are kept in the database, so they hold across restarts and several server replicas. The visitor is told apart by the address in `CLIENT_IP_HEADER` (see the sign-up limits); without one only the per-address and per-shop limits apply.
 - An address that belongs to a staff account gets no code: staff sign in to the admin. Use another address to try the storefront login.
 - The email is the "Customer sign-in code" notification (Settings → Notifications). Without email set up, `requestCode` fails with `CUSTOMER_LOGIN_UNAVAILABLE`.
 - The bundled storefront has the pages: `/account/login`, `/account` (orders, details) and `/account/orders/{id}`, shown in the live theme's layout. Themes link to them with `{{ routes.account_url }}`.

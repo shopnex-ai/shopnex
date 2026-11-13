@@ -20,6 +20,7 @@ import { DEFAULTS } from './defaults'
 import { send } from './email'
 import { EmailError } from './errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
+import { log } from './log'
 
 export type NotificationInfo = {
   notification: Notification
@@ -343,7 +344,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
             fallback: true,
           },
         )
-        if (email.problem) console.warn(`[email] ${notification} for shop ${shopId}: ${email.problem.message}`)
+        if (email.problem) log.warn({ notification, shopId }, 'template problem: %s', email.problem.message)
         await tx
           .insert(schema.emailDeliveries)
           .values(
@@ -360,7 +361,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
       }
     })
   } catch (error) {
-    console.error(`[email] queueing ${event} for shop ${shopId}:`, error)
+    log.error({ err: error, event, shopId }, 'queueing the notification failed')
   }
 }
 

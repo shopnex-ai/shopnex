@@ -130,4 +130,6 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
+export { takeRate } from './rate-limit'
+export { clientIp } from './signup-limit'
 export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

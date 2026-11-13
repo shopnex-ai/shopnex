@@ -6,6 +6,7 @@ import { db, schema } from '@shopnex/db'
 import type { EmailDelivery } from '@shopnex/db/schema'
 import { queueDue, reasonToSkip } from './abandoned-carts'
 import { send } from './email'
+import { log } from './log'
 
 // Wait after the nth failed attempt; one more failure after the last is final (6 attempts over ~6h)
 const RETRY_DELAYS_S = [60, 5 * 60, 30 * 60, 2 * 3600, 3 * 3600]
@@ -116,7 +117,7 @@ export function startEmailWorker() {
         await pruneFinished()
       }
     } catch (error) {
-      console.error('[email] delivery worker:', error)
+      log.error({ err: error }, 'delivery worker failed')
     }
     // A full batch means more may be due: go again right away
     if (!stopped) timer = setTimeout(loop, handled === BATCH ? 0 : POLL_MS)

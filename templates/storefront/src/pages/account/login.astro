@@ -26,11 +26,11 @@ if (field('step') === 'code') {
     shopnexFor(undefined).customer.signIn({ email, code: field('code').replace(/\s+/g, '') }),
   )
   if (error) {
-    const invalid = isDefinedError(error) && error.code === 'INVALID_CODE'
+    const code = isDefinedError(error) ? error.code : null
     return page(
       'Check your email',
       loginCodeForm({ email, next: target, error: messageFor(error) }),
-      invalid ? 400 : 503,
+      code === 'INVALID_CODE' ? 400 : code === 'TOO_MANY_REQUESTS' ? 429 : 503,
     )
   }
   startSession(cookies, url, signedIn.token)
@@ -40,7 +40,8 @@ if (field('step') === 'code') {
 const [error] = await safe(shopnex.customer.requestCode({ email }))
 if (error) {
   // A malformed address is a validation error from the API; the rest are the defined ones
-  return page('Sign in', loginEmailForm({ email, next: target, error: messageFor(error) }), 400)
+  const tooMany = isDefinedError(error) && error.code === 'TOO_MANY_REQUESTS'
+  return page('Sign in', loginEmailForm({ email, next: target, error: messageFor(error) }), tooMany ? 429 : 400)
 }
 return page('Check your email', loginCodeForm({ email, next: target }))
 ---
