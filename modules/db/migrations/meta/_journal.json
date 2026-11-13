@@ -288,6 +288,13 @@
       "when": 1794560488815,
       "tag": "0040_freezing_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794574490197,
+      "tag": "0041_rate_limits",
+      "breakpoints": true
     }
   ]
 }

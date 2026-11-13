@@ -45,7 +45,8 @@ export const safeNext = (value: string | null | undefined) =>
 export function messageFor(error: unknown) {
   if (error instanceof ORPCError) {
     if (error.code === 'INVALID_CODE') return 'That code is wrong or has expired. Check it or ask for a new one.'
-    if (error.code === 'TOO_MANY_REQUESTS') return 'Too many codes requested. Wait a few minutes and try again.'
+    // Asking for codes and trying them are limited separately; either way the shopper just waits
+    if (error.code === 'TOO_MANY_REQUESTS') return 'Too many attempts. Wait a few minutes and try again.'
     if (error.code === 'CUSTOMER_LOGIN_UNAVAILABLE')
       return 'Signing in is not available right now. Please try again later.'
     if (error.status === 400) return 'Enter a valid email address.'

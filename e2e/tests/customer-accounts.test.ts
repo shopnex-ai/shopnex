@@ -2,8 +2,10 @@
 // process), see your orders (guest orders with the same email included), sign out. The shop's email settings are
 // put back as they were afterwards.
 import assert from 'node:assert/strict'
+import { createHash, randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
+import { takeRate } from '@shopnex/auth'
 import { db, schema } from '@shopnex/db'
 import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
@@ -62,7 +64,28 @@ async function codeSentTo(email: string) {
 const requestCode = (email: string) => call('POST', '/storefront/customer/code', { email })
 const signIn = (email: string, code: string) => call('POST', '/storefront/customer/sign-in', { email, code })
 
+// The limits live in the rate_limits table under a hash of their key (see accounts.ts): the test finds its rows by it
+const limitRow = (key: string) => eq(schema.rateLimits.key, createHash('sha256').update(key).digest('hex'))
+const touched = new Set<string>()
+/** A visitor's or mailbox's limit rows are removed after the run: the keys of everything a test asks about */
+const watch = (...keys: string[]) => keys.forEach((k) => touched.add(k))
+const person = (label = 'shopper') => {
+  const email = fx.shopper(label)
+  watch(`login-code:email:${SHOP}:${email}`, `login-check:email:${SHOP}:${email}`)
+  return email
+}
+const clearLimits = async () => {
+  for (const key of touched) await db.delete(schema.rateLimits).where(limitRow(key))
+  touched.clear()
+}
+const fromIp = (ip: string) => ({ 'x-forwarded-for': ip })
+// A visitor address of its own, from the IPv6 documentation range with 32 random bits: never one a past run used
+const visitor = () => `2001:db8:${randomBytes(2).toString('hex')}:${randomBytes(2).toString('hex')}::1`
+
 before(async () => {
+  watch(`login-code:shop:${SHOP}`)
+  await clearLimits() // a full allowance, whatever ran in the last 15 minutes
+  watch(`login-code:shop:${SHOP}`)
   await fx.init()
   ;[variant] = (await sellableVariants(1)) as [typeof variant]
   settingsBefore = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
@@ -70,6 +93,7 @@ before(async () => {
 })
 
 after(async () => {
+  await clearLimits()
   await sink.stop()
   await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
   if (settingsBefore.length) await db.insert(schema.emailSettings).values(settingsBefore)
@@ -79,7 +103,7 @@ after(async () => {
 
 describe('customer accounts', () => {
   test('without email set up, signing in is unavailable', async () => {
-    const r = await requestCode(fx.shopper('off'))
+    const r = await requestCode(person('off'))
     assert.equal(r.status, 503, JSON.stringify(r.body))
     assert.equal(r.body.code, 'CUSTOMER_LOGIN_UNAVAILABLE')
   })
@@ -98,7 +122,7 @@ describe('customer accounts', () => {
     })
 
     test('a guest signs in with the code and finds the order they placed before', async () => {
-      const email = fx.shopper()
+      const email = person()
       const guestOrder = await placeOrder(email)
       const [guest] = await db.select().from(schema.customers).where(eq(schema.customers.email, email))
       assert.equal(guest?.userId, null, 'a guest has no login yet')
@@ -149,7 +173,7 @@ describe('customer accounts', () => {
     })
 
     test('a new customer gets an account on first sign-in, and sees only their own orders', async () => {
-      const [alice, bob] = [fx.shopper('alice'), fx.shopper('bob')]
+      const [alice, bob] = [person('alice'), person('bob')]
       const bobsOrder = await placeOrder(bob)
       ok(await requestCode(alice))
       const aliceSession = ok(await signIn(alice, await codeSentTo(alice)))
@@ -187,7 +211,7 @@ describe('customer accounts', () => {
     })
 
     test("Better Auth's own sign-in endpoints can't be used to send mail or create accounts", async () => {
-      const email = fx.shopper('direct')
+      const email = person('direct')
       await authCall('/email-otp/send-verification-otp', { email, type: 'sign-in' })
       await new Promise((resolve) => setTimeout(resolve, 300))
       assert.equal(mailsTo(email).length, 0)
@@ -196,7 +220,7 @@ describe('customer accounts', () => {
     })
 
     test('an existing customer cannot turn a code into a Better Auth session cookie', async () => {
-      const email = fx.shopper('cookie')
+      const email = person('cookie')
       ok(await requestCode(email))
       ok(await signIn(email, await codeSentTo(email))) // the account now exists
       ok(await requestCode(email))
@@ -210,11 +234,95 @@ describe('customer accounts', () => {
     })
 
     test('asking for codes over and over is limited', async () => {
-      const email = fx.shopper('spam')
+      const email = person('spam')
       const statuses: number[] = []
       for (let i = 0; i < 6; i++) statuses.push((await requestCode(email)).status)
       assert.deepEqual(statuses.slice(0, 4), [200, 200, 200, 200])
       assert.equal(statuses.at(-1), 429)
+    })
+
+    describe('limits shared through the database', () => {
+      test('one visitor cannot send codes to many people', async () => {
+        const ip = visitor()
+        watch(`login-code:ip:${SHOP}:${ip}`)
+        const statuses: number[] = []
+        for (let i = 0; i < 22; i++) {
+          statuses.push(
+            (await call('POST', '/storefront/customer/code', { email: person(`ip${i}`) }, fromIp(ip))).status,
+          )
+        }
+        assert.deepEqual(statuses.slice(0, 20), Array(20).fill(200), 'twenty different people, all within the cap')
+        assert.deepEqual(statuses.slice(20), [429, 429])
+        // Somebody else, from another address, is not affected
+        const otherIp = visitor()
+        watch(`login-code:ip:${SHOP}:${otherIp}`)
+        assert.equal(
+          (await call('POST', '/storefront/customer/code', { email: person('other-ip') }, fromIp(otherIp))).status,
+          200,
+        )
+      })
+
+      test('a count made by another process is honoured: the limit is not held in memory', async () => {
+        const email = person('shared')
+        // This test process stands in for a second server replica that already used up this mailbox's allowance
+        const key = `login-code:email:${SHOP}:${email}`
+        for (let i = 0; i < 4; i++) assert.equal(await takeRate(key, 4, 15 * 60_000), null)
+
+        const r = await requestCode(email)
+        assert.equal(r.status, 429, JSON.stringify(r.body))
+        assert.equal(r.body.code, 'TOO_MANY_REQUESTS')
+        assert.equal(mailsTo(email).length, 0, 'and no mail was sent')
+      })
+
+      test('trying codes over and over is limited per mailbox, even for wrong ones', async () => {
+        const email = person('guess')
+        const statuses: number[] = []
+        for (let i = 0; i < 12; i++) statuses.push((await signIn(email, String(100000 + i))).status)
+        assert.deepEqual(statuses.slice(0, 10), Array(10).fill(400), 'ten wrong guesses are just wrong')
+        assert.deepEqual(statuses.slice(10), [429, 429])
+        const blocked = await signIn(email, '123456')
+        assert.equal(blocked.body.code, 'TOO_MANY_REQUESTS')
+      })
+
+      test('one visitor cannot check codes for many people', async () => {
+        const ip = visitor()
+        watch(`login-check:ip:${SHOP}:${ip}`)
+        const statuses: number[] = []
+        for (let i = 0; i < 32; i++) {
+          statuses.push(
+            (
+              await call(
+                'POST',
+                '/storefront/customer/sign-in',
+                { email: person(`chk${i}`), code: '111111' },
+                fromIp(ip),
+              )
+            ).status,
+          )
+        }
+        assert.deepEqual(statuses.slice(0, 30), Array(30).fill(400))
+        assert.deepEqual(statuses.slice(30), [429, 429])
+      })
+
+      test('a right code still works while the limit has room', async () => {
+        const email = person('works')
+        ok(await requestCode(email))
+        const code = await codeSentTo(email)
+        assert.equal((await signIn(email, '000000')).status, 400)
+        ok(await signIn(email, code))
+      })
+
+      test('nothing readable is kept: the table has no email address or visitor address in it', async () => {
+        const email = person('private')
+        const privateIp = visitor()
+        watch(`login-code:ip:${SHOP}:${privateIp}`)
+        ok(await call('POST', '/storefront/customer/code', { email }, fromIp(privateIp)))
+        const rows = await db.select().from(schema.rateLimits)
+        const readable = rows.filter(
+          (r) => r.key.includes('@') || r.key.includes('2001:db8:') || !/^[0-9a-f]{64}$/.test(r.key),
+        )
+        assert.deepEqual(readable, [], 'every key is a 64-character hash')
+      })
     })
   })
 })
