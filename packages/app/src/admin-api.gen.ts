@@ -1933,6 +1933,7 @@ export interface operations {
                         legalName: string | null;
                         businessAddress: string | null;
                         taxId: string | null;
+                        cookieBanner: boolean;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -1962,6 +1963,7 @@ export interface operations {
                     legalName?: string | null;
                     businessAddress?: string | null;
                     taxId?: string | null;
+                    cookieBanner?: boolean;
                 };
             };
         };
@@ -1989,6 +1991,7 @@ export interface operations {
                         legalName: string | null;
                         businessAddress: string | null;
                         taxId: string | null;
+                        cookieBanner: boolean;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
