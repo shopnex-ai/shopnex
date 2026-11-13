@@ -210,6 +210,8 @@ export const shopInput = createInsertSchema(shops, {
   // The homepage's <title> and meta description; empty = the shop name, none
   seoTitle: (s) => s.trim().max(200),
   seoDescription: (s) => s.trim().max(500),
+  // Hours until an unpaid order nobody is paying is cancelled and restocked; null = never (up to a year)
+  unpaidOrderExpiryHours: () => z.number().int().min(1).max(8760).nullable(),
 }).pick({
   name: true,
   currency: true,
@@ -218,6 +220,7 @@ export const shopInput = createInsertSchema(shops, {
   seoDescription: true,
   taxesIncluded: true,
   taxShipping: true,
+  unpaidOrderExpiryHours: true,
 })
 
 export const MIN_PASSWORD = 8

@@ -2,7 +2,7 @@
 // Payment sessions: ShopNex decides the amount, the app reports the outcome, ShopNex changes the order.
 // Calls to apps happen after the transaction that created the session commits: no row lock is held while
 // waiting on the network, and the app may call resolve before it even answers.
-import { and, desc, eq, gt, isNull, lte, notExists, or } from 'drizzle-orm'
+import { and, desc, eq, gt, isNotNull, isNull, lte, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { PaymentSession } from '@shopnex/db/schema'
@@ -13,7 +13,7 @@ import {
 } from '@shopnex/marketplace-sdk/payments'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { notify } from '@shopnex/email'
-import { orderService, type CancelInput } from '@shopnex/orders'
+import { OrderError, orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
 import { PaymentError } from './errors'
 import { log } from './log'
@@ -492,5 +492,49 @@ export async function expireDue(limit = 50) {
       .cancel(shopId, orderId, { reason: 'declined', restock: true })
       .catch((error: unknown) => log.error({ err: error, orderId }, 'cancelling the unpaid order failed'))
   }
-  return expired + abandoned.length
+
+  // Unpaid orders with no payment attempt open (bank transfer, or a payments app that was down at checkout) have no
+  // session to expire, so they would hold their stock until the merchant cancels them by hand. A shop can set a
+  // number of hours (Settings → Payments → Unpaid orders) after which they are cancelled and restocked. Orders
+  // being worked on (partly or fully fulfilled) are left alone, and an order paid since it was picked is skipped.
+  const open = alias(schema.paymentSessions, 'open')
+  const stale = await db
+    .select({ shopId: schema.orders.shopId, orderId: schema.orders.id })
+    .from(schema.orders)
+    .innerJoin(schema.shops, eq(schema.shops.id, schema.orders.shopId))
+    .where(
+      and(
+        isNotNull(schema.shops.unpaidOrderExpiryHours),
+        isNull(schema.orders.cancelledAt),
+        eq(schema.orders.financialStatus, 'pending'),
+        eq(schema.orders.fulfillmentStatus, 'unfulfilled'),
+        // created_at is written by the database clock (default now()), so compare it with the database clock
+        sql`${schema.orders.createdAt} <= now() - make_interval(hours => ${schema.shops.unpaidOrderExpiryHours})`,
+        notExists(
+          db
+            .select({ id: open.id })
+            .from(open)
+            .where(
+              and(
+                eq(open.orderId, schema.orders.id),
+                eq(open.kind, 'payment'),
+                eq(open.status, 'pending'),
+                gt(open.expiresAt, now),
+              ),
+            ),
+        ),
+      ),
+    )
+    .limit(limit)
+  let cancelled = 0
+  for (const { shopId, orderId } of stale) {
+    try {
+      await orderService.cancel(shopId, orderId, { reason: 'other', restock: true, onlyIfUnpaid: true })
+      cancelled++
+    } catch (error) {
+      // Paid, cancelled or fulfilled since it was picked: nothing to do
+      if (!(error instanceof OrderError)) log.error({ err: error, orderId }, 'cancelling the stale unpaid order failed')
+    }
+  }
+  return expired + abandoned.length + cancelled
 }

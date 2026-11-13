@@ -35,6 +35,9 @@ export const shops = pgTable('shops', {
   taxesIncluded: boolean('taxes_included').notNull().default(false),
   // Shopify "Charge tax on shipping rates"
   taxShipping: boolean('tax_shipping').notNull().default(false),
+  // Hours after which an unpaid order with no payment attempt open (bank transfer, or a payments app that was
+  // unreachable at checkout) is cancelled and its stock put back on sale. null = never: the merchant cancels by hand.
+  unpaidOrderExpiryHours: integer('unpaid_order_expiry_hours'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
