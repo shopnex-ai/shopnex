@@ -15,6 +15,7 @@ import { client, orpc, type Inputs, type Outputs } from '@/lib/orpc'
 import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { ExportOrdersDialog } from './export-orders'
 import { ImportOrdersDialog } from './import-orders'
+import { PrintSelectedButton } from './print-selected'
 
 type Order = Outputs['admin']['orders']['list']['items'][number]
 
@@ -126,15 +127,18 @@ export function OrderList() {
         empty={search ? `No orders match “${search}”.` : view.empty}
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
         selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'order' : 'orders'}
-            remove={(selected) => client.admin.orders.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.key() })
-            }}
-          />
+          <>
+            <PrintSelectedButton ids={ids} />
+            <DeleteSelectedButton
+              ids={ids}
+              entity={ids.length === 1 ? 'order' : 'orders'}
+              remove={(selected) => client.admin.orders.deleteMany({ ids: selected })}
+              onDeleted={async () => {
+                clearSelection()
+                await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.key() })
+              }}
+            />
+          </>
         )}
       />
     </div>

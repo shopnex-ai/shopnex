@@ -2,7 +2,7 @@
 
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, PrinterIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { Fragment, useState } from 'react'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -104,12 +105,24 @@ export function OrderDetail({ id }: { id: string }) {
         description={`Placed ${formatDate(o.createdAt)}${o.cancelledAt ? ` · Cancelled ${formatDate(o.cancelledAt)}${o.cancelReason ? ` (${reasonLabel[o.cancelReason].toLowerCase()})` : ''}` : ''}`}
         actions={
           <>
-            <Button
-              variant="outline"
-              render={<Link to="/admin/orders/$id/invoice" params={{ id: o.id }} target="_blank" />}
-            >
-              Invoice
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" />}>
+                <PrinterIcon />
+                Print
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  render={<Link to="/admin/orders/$id/invoice" params={{ id: o.id }} target="_blank" />}
+                >
+                  Invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  render={<Link to="/admin/orders/$id/packing-slip" params={{ id: o.id }} target="_blank" />}
+                >
+                  Packing slip
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <OrderActions order={o} />
           </>
         }

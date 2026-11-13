@@ -39,6 +39,7 @@ import { Route as AdminOnlineStoreNavigationRouteRouteImport } from './routes/ad
 import { Route as AdminOnlineStorePagesRouteRouteImport } from './routes/admin/online-store/pages/route'
 import { Route as AdminOnlineStoreThemesRouteRouteImport } from './routes/admin/online-store/themes/route'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
+import { Route as AdminOrdersPrintRouteImport } from './routes/admin/orders/print'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
 import { Route as AdminSettingsApiTokensRouteImport } from './routes/admin/settings/api-tokens'
@@ -61,6 +62,7 @@ import { Route as AdminOnlineStorePagesIdRouteImport } from './routes/admin/onli
 import { Route as AdminOnlineStoreThemesIdRouteImport } from './routes/admin/online-store/themes/$id'
 import { Route as AdminOnlineStoreThemesSelectRouteImport } from './routes/admin/online-store/themes/select'
 import { Route as AdminOrdersIdInvoiceRouteImport } from './routes/admin/orders/$id_.invoice'
+import { Route as AdminOrdersIdPackingSlipRouteImport } from './routes/admin/orders/$id_.packing-slip'
 import { Route as AdminSettingsNotificationsNotificationRouteImport } from './routes/admin/settings/notifications/$notification'
 import { Route as AdminOnlineStoreThemesIdCodeRouteImport } from './routes/admin/online-store/themes/$id_.code'
 
@@ -217,6 +219,11 @@ const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminOrdersRouteRoute,
 } as any)
+const AdminOrdersPrintRoute = AdminOrdersPrintRouteImport.update({
+  id: '/print',
+  path: '/print',
+  getParentRoute: () => AdminOrdersRouteRoute,
+} as any)
 const AdminProductsIdRoute = AdminProductsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -334,6 +341,12 @@ const AdminOrdersIdInvoiceRoute = AdminOrdersIdInvoiceRouteImport.update({
   path: '/$id/invoice',
   getParentRoute: () => AdminOrdersRouteRoute,
 } as any)
+const AdminOrdersIdPackingSlipRoute =
+  AdminOrdersIdPackingSlipRouteImport.update({
+    id: '/$id_/packing-slip',
+    path: '/$id/packing-slip',
+    getParentRoute: () => AdminOrdersRouteRoute,
+  } as any)
 const AdminSettingsNotificationsNotificationRoute =
   AdminSettingsNotificationsNotificationRouteImport.update({
     id: '/$notification',
@@ -379,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/print': typeof AdminOrdersPrintRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
@@ -400,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
+  '/admin/orders/$id/packing-slip': typeof AdminOrdersIdPackingSlipRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -434,6 +449,7 @@ export interface FileRoutesByTo {
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/print': typeof AdminOrdersPrintRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
@@ -455,6 +471,7 @@ export interface FileRoutesByTo {
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
+  '/admin/orders/$id/packing-slip': typeof AdminOrdersIdPackingSlipRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -491,6 +508,7 @@ export interface FileRoutesById {
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/print': typeof AdminOrdersPrintRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
   '/admin/settings/api-tokens': typeof AdminSettingsApiTokensRoute
@@ -512,6 +530,7 @@ export interface FileRoutesById {
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id_/invoice': typeof AdminOrdersIdInvoiceRoute
+  '/admin/orders/$id_/packing-slip': typeof AdminOrdersIdPackingSlipRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id_/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -549,6 +568,7 @@ export interface FileRouteTypes {
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
+    | '/admin/orders/print'
     | '/admin/products/$id'
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
@@ -570,6 +590,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
     | '/admin/orders/$id/invoice'
+    | '/admin/orders/$id/packing-slip'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id/code'
   fileRoutesByTo: FileRoutesByTo
@@ -604,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
+    | '/admin/orders/print'
     | '/admin/products/$id'
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
@@ -625,6 +647,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
     | '/admin/orders/$id/invoice'
+    | '/admin/orders/$id/packing-slip'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id/code'
   id:
@@ -660,6 +683,7 @@ export interface FileRouteTypes {
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
     | '/admin/orders/$id'
+    | '/admin/orders/print'
     | '/admin/products/$id'
     | '/admin/settings/ai'
     | '/admin/settings/api-tokens'
@@ -681,6 +705,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
     | '/admin/orders/$id_/invoice'
+    | '/admin/orders/$id_/packing-slip'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id_/code'
   fileRoutesById: FileRoutesById
@@ -905,6 +930,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersIdRouteImport
       parentRoute: typeof AdminOrdersRouteRoute
     }
+    '/admin/orders/print': {
+      id: '/admin/orders/print'
+      path: '/print'
+      fullPath: '/admin/orders/print'
+      preLoaderRoute: typeof AdminOrdersPrintRouteImport
+      parentRoute: typeof AdminOrdersRouteRoute
+    }
     '/admin/products/$id': {
       id: '/admin/products/$id'
       path: '/$id'
@@ -1059,6 +1091,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersIdInvoiceRouteImport
       parentRoute: typeof AdminOrdersRouteRoute
     }
+    '/admin/orders/$id_/packing-slip': {
+      id: '/admin/orders/$id_/packing-slip'
+      path: '/$id/packing-slip'
+      fullPath: '/admin/orders/$id/packing-slip'
+      preLoaderRoute: typeof AdminOrdersIdPackingSlipRouteImport
+      parentRoute: typeof AdminOrdersRouteRoute
+    }
     '/admin/settings/notifications/$notification': {
       id: '/admin/settings/notifications/$notification'
       path: '/$notification'
@@ -1181,12 +1220,16 @@ const AdminOnlineStoreRouteRouteWithChildren =
 
 interface AdminOrdersRouteRouteChildren {
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
+  AdminOrdersPrintRoute: typeof AdminOrdersPrintRoute
   AdminOrdersIdInvoiceRoute: typeof AdminOrdersIdInvoiceRoute
+  AdminOrdersIdPackingSlipRoute: typeof AdminOrdersIdPackingSlipRoute
 }
 
 const AdminOrdersRouteRouteChildren: AdminOrdersRouteRouteChildren = {
   AdminOrdersIdRoute: AdminOrdersIdRoute,
+  AdminOrdersPrintRoute: AdminOrdersPrintRoute,
   AdminOrdersIdInvoiceRoute: AdminOrdersIdInvoiceRoute,
+  AdminOrdersIdPackingSlipRoute: AdminOrdersIdPackingSlipRoute,
 }
 
 const AdminOrdersRouteRouteWithChildren =

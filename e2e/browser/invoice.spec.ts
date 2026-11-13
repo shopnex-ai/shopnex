@@ -9,6 +9,7 @@ import { Fixtures, PASSWORD, SHOP, requireApp, sellableVariants } from '../lib'
 const fx = new Fixtures()
 let owner: Awaited<ReturnType<Fixtures['account']>>
 let order: Awaited<ReturnType<typeof orderService.create>>
+let second: Awaited<ReturnType<typeof orderService.create>>
 let before: NonNullable<Awaited<ReturnType<typeof getShopById>>>
 
 const DETAILS = {
@@ -46,6 +47,24 @@ test.beforeAll(async () => {
     },
   })
   fx.order(order.id)
+  second = await orderService.create(SHOP, {
+    email: fx.email,
+    items: [{ variantId: variant!.id, quantity: 1 }],
+    note: 'Please ring the bell',
+    shippingAddress: {
+      firstName: 'Hans',
+      lastName: 'Beispiel',
+      company: null,
+      address1: 'Zweiter Weg 2',
+      address2: null,
+      city: 'Munich',
+      province: null,
+      countryCode: 'HM',
+      zip: '80331',
+      phone: null,
+    },
+  })
+  fx.order(second.id)
 })
 
 test.afterAll(async () => {
@@ -119,14 +138,79 @@ test('without business details the invoice uses the shop name and says what is m
   }
 })
 
-test('the order page links to its invoice', async ({ page }) => {
+test('the order page prints its invoice and its packing slip from the Print menu', async ({ page }) => {
   await signIn(page)
   await page.goto(`/admin/orders/${order.id}`)
-  const popup = page.waitForEvent('popup')
-  await page.getByRole('link', { name: 'Invoice' }).click()
-  const invoice = await popup
+
+  await page.getByRole('button', { name: 'Print' }).click()
+  const invoicePopup = page.waitForEvent('popup')
+  await page.getByRole('menuitem', { name: 'Invoice' }).click()
+  const invoice = await invoicePopup
   await expect(invoice).toHaveURL(new RegExp(`/admin/orders/${order.id}/invoice$`))
   await expect(invoice.getByText(`INV-${order.orderNumber}`)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Print' }).click()
+  const slipPopup = page.waitForEvent('popup')
+  await page.getByRole('menuitem', { name: 'Packing slip' }).click()
+  const slip = await slipPopup
+  await expect(slip).toHaveURL(new RegExp(`/admin/orders/${order.id}/packing-slip$`))
+  await expect(slip.getByRole('heading', { name: 'Packing slip' })).toBeVisible()
+})
+
+test('the packing slip says where it goes and what is in the box, without prices or the admin', async ({ page }) => {
+  await signIn(page)
+  await page.goto(`/admin/orders/${order.id}/packing-slip`)
+
+  await expect(page.getByRole('heading', { name: 'Packing slip' })).toBeVisible()
+  await expect(page.getByText(`#${order.orderNumber}`).first()).toBeVisible()
+  await expect(page.getByText('E2E standard')).toBeVisible()
+  await expect(page.getByText('Erika Mustermann')).toBeVisible()
+  await expect(page.getByText('Kundenweg 7')).toBeVisible()
+  await expect(page.getByText('Items in this parcel')).toBeVisible()
+  // It travels with the parcel: no money on it, and no admin menu around it
+  await expect(page.getByText(money(order.totalCents))).toHaveCount(0)
+  await expect(page.getByText('Total')).toHaveCount(0)
+  await expect(page.getByText('This invoice has')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Orders', exact: true })).toHaveCount(0)
+})
+
+test('orders selected in the list are printed together, one document each, and a packing slip carries the note', async ({
+  page,
+}) => {
+  await signIn(page)
+  await page.goto('/admin/orders')
+  await page.getByPlaceholder('Search by order number, email or customer').fill(fx.email)
+  // Wait for the search to narrow the list: selecting before that would select the unfiltered page
+  await expect(page.getByText('1–2 of 2')).toBeVisible()
+  await expect(page.getByLabel(`Select row ${order.id}`)).toBeVisible()
+  await expect(page.getByLabel(`Select row ${second.id}`)).toBeVisible()
+  await page.getByLabel('Select all rows on this page').check()
+  await expect(page.getByText('2 selected')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Print' }).click()
+  const popup = page.waitForEvent('popup')
+  await page.getByRole('menuitem', { name: 'Packing slips' }).click()
+  const slips = await popup
+  await expect(slips).toHaveURL(/\/admin\/orders\/print\?type=packing-slip&ids=/)
+  await expect(slips.getByRole('heading', { name: 'Packing slip' })).toHaveCount(2)
+  await expect(slips.getByText('2 packing slips')).toBeVisible()
+  await expect(slips.getByText('Erika Mustermann')).toBeVisible()
+  await expect(slips.getByText('Hans Beispiel')).toBeVisible()
+  await expect(slips.getByText('Please ring the bell')).toBeVisible()
+
+  // The same selection as invoices
+  const invoices = await slips.context().newPage()
+  await invoices.goto(`/admin/orders/print?type=invoice&ids=${order.id},${second.id}`)
+  await expect(invoices.getByRole('heading', { name: 'Invoice' })).toHaveCount(2)
+  await expect(invoices.getByText(`INV-${order.orderNumber}`)).toBeVisible()
+  await expect(invoices.getByText(`INV-${second.orderNumber}`)).toBeVisible()
+})
+
+test('more than 50 orders are not printed at once', async ({ page }) => {
+  await signIn(page)
+  const many = Array.from({ length: 51 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`)
+  await page.goto(`/admin/orders/print?type=invoice&ids=${many.join(',')}`)
+  await expect(page.getByText('Print up to 50 orders at a time')).toBeVisible()
 })
 
 test('business details are saved from Settings and show on the invoice', async ({ page }) => {
