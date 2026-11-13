@@ -15,6 +15,7 @@ export const WEBHOOK_TOPICS = [
   'inventory.updated',
   'customer.created',
   'customer.updated',
+  'customer.erased',
 ] as const
 export type WebhookTopic = (typeof WEBHOOK_TOPICS)[number]
 // Sent by "Send test" in the admin; not subscribable
@@ -33,6 +34,8 @@ export const WEBHOOK_TOPIC_DESCRIPTIONS: Record<WebhookTopic, string> = {
     "A tracked variant's stock changed (checkout, cancel with restock, or a stock edit in the admin or API)",
   'customer.created': 'A customer was created',
   'customer.updated': 'A customer changed',
+  'customer.erased':
+    "A customer's personal data was erased at the shop's request. Delete your own copy: the payload names the customer (id and email) so you can find it, and is itself kept for 30 days",
 }
 
 // timestamptz: the worker compares these with JS dates, which must not depend on the DB's time zone
