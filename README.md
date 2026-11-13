@@ -77,15 +77,15 @@ pnpm dev                    # admin on :3000, storefront on :4321
 
 Guides live in `apps/docs` (`pnpm dev:docs`, http://localhost:3400). Developer reference is in [`docs/`](docs):
 
-| Doc                                      | Covers                                                                      |
-| ---------------------------------------- | --------------------------------------------------------------------------- |
-| [Development](docs/development.md)       | Env setup, `pnpm dev` options, local ports, OAuth sign-in, end-to-end tests |
-| [Architecture](docs/architecture.md)     | Repository layout, API layout, admin routes, tenancy                        |
-| [Storefront API](docs/storefront-api.md) | Building an external storefront with `@shopnex/storefront-sdk`              |
-| [Apps and marketplace](docs/apps.md)     | API tokens, building apps with `@shopnex/app`, embedded apps, marketplace   |
-| [Webhooks](docs/webhooks.md)             | Topics, signatures, delivery and retries                                    |
-| [Roadmap](docs/roadmap.md)               | What's done and what's next                                                 |
-| [Releasing](docs/RELEASING.md)           | How to cut a release                                                        |
+| Doc                                                           | Covers                                                                      |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [Development](docs/development.md)                            | Env setup, `pnpm dev` options, local ports, OAuth sign-in, end-to-end tests |
+| [Architecture](docs/architecture.md)                          | Repository layout, API layout, admin routes, tenancy                        |
+| [Storefront API](https://docs.shopnex.ai/docs/api/storefront) | Building an external storefront with `@shopnex/storefront-sdk`              |
+| [Apps and marketplace](docs/apps.md)                          | API tokens, building apps with `@shopnex/app`, embedded apps, marketplace   |
+| [Webhooks](https://docs.shopnex.ai/docs/api/webhooks)         | Topics, signatures, delivery and retries                                    |
+| [Roadmap](docs/roadmap.md)                                    | What's done and what's next                                                 |
+| [Releasing](docs/RELEASING.md)                                | How to cut a release                                                        |
 
 ## Community
 
