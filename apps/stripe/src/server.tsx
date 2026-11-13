@@ -6,12 +6,13 @@
 //   POST /payments/session      ShopNex: start paying a session → Stripe Checkout URL
 //   POST /payments/refund       ShopNex: refund a session's payment
 //   POST /stripe/webhook        Stripe: checkout completed / expired, async payments → resolve / reject
+import { readFileSync } from 'node:fs'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import Stripe from 'stripe'
 import { createShopnexApp, type ShopContext } from '@shopnex/app'
-import { icon, SettingsPage } from './settings'
+import { SettingsPage } from './settings'
 import { paymentRoutes } from './payments'
 import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
 
@@ -23,6 +24,7 @@ const PORT = Number(process.env.PORT || new URL(APP_URL).port || 4600)
 // Its identity is STRIPE_APP_KEY (env only); ShopNex stores the shops' settings and sealed secrets (shop.data). ShopNex reads the public key
 // from /.well-known/shopnex-app.json (bundled app): see registerBundledApps in @shopnex/apps
 const shopnex = createShopnexApp({
+  icon: readFileSync(new URL('./icon.svg', import.meta.url), 'utf8'),
   clientId: 'app_stripe',
   appUrl: APP_URL,
   appKey: process.env.STRIPE_APP_KEY,
@@ -82,7 +84,6 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 
 const app = new Hono()
 app.route('/', shopnex.routes)
-app.get('/icon.svg', (c) => c.body(icon, 200, { 'content-type': 'image/svg+xml', 'cache-control': 'max-age=86400' }))
 
 // --- settings (embedded page) ---
 

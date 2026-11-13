@@ -90,6 +90,11 @@ export type ShopnexAppOptions = {
    * repeat, so keep it idempotent; an app that misses it should still set up when first opened.
    */
   onInstalled?: (shop: ShopContext, request: AppInstalledRequest) => Promise<void> | void
+  /**
+   * The app's icon as SVG markup, served at /icon.svg (where ShopNex looks for it). Keep it in a file and read it:
+   * `icon: readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` (scripts/bundle-app.mjs inlines that read)
+   */
+  icon?: string
   /** The app's own public URL. Bundled apps announce it in /.well-known/shopnex-app.json so ShopNex needs no setting */
   appUrl?: string
 }
@@ -389,6 +394,18 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   routes.get('/shopnex/app.js', (c) =>
     c.body(clientScript, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
   )
+  if (options.icon) {
+    const icon = options.icon
+    // The CSP keeps a script in the SVG from running if someone opens the URL itself; <img> never runs it
+    routes.get('/icon.svg', (c) =>
+      c.body(icon, 200, {
+        'content-type': 'image/svg+xml',
+        'cache-control': 'max-age=86400',
+        'content-security-policy': "default-src 'none'; sandbox",
+        'x-content-type-options': 'nosniff',
+      }),
+    )
+  }
   if (options.onInstalled) {
     routes.post(APP_INSTALLED_PATH, async (c) => {
       const body = await c.req.text()
