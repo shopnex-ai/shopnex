@@ -14,3 +14,6 @@ catalog:
   zod: ^4.6.7
 patchedDependencies:
   '@codemirror/lang-liquid@6.3.3': patches/@codemirror__lang-liquid@6.3.3.patch
+overrides:
+  '@tailwindcss/typography>postcss-selector-parser': ^6.1.5
+  '@esbuild-kit/core-utils>esbuild': ^0.25.0
