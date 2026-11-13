@@ -97,10 +97,36 @@ function filled(value: unknown, prefix = '', out = new Set<string>()): Set<strin
   return out
 }
 
-// A delivery's body is JSON, so its dates arrive as ISO strings; the schema describes them as dates
+// The fields a payload carries that its schema does not declare: zod strips unknown keys when it parses, so
+// `safeParse` alone would let a new or leaked field through. Free-JSON fields are one entry, not descended into.
+function undeclared(value: unknown, known: Record<string, string>, prefix = '', out: string[] = []): string[] {
+  if (!isObject(value)) return out
+  for (const [key, v] of Object.entries(value)) {
+    const path = prefix + key
+    if (!(path in known)) {
+      out.push(path)
+      continue
+    }
+    for (const item of Array.isArray(v) ? v : [v]) {
+      const next = `${path}${Array.isArray(v) ? '[].' : '.'}`
+      if (Object.keys(known).some((k) => k.startsWith(next))) undeclared(item, known, next, out)
+    }
+  }
+  return out
+}
+
+// A delivery's body is JSON, so its dates arrive as ISO strings; the schema describes them as dates. Only the
+// fields the schemas type as dates are turned back, so a note or a custom field that looks like a date stays text.
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/
-const revive = (_key: string, value: unknown) =>
-  typeof value === 'string' && ISO.test(value) ? new Date(value) : value
+const dateFields = new Set(
+  WEBHOOK_TOPICS.flatMap((topic) =>
+    Object.entries(schemaFields(topic))
+      .filter(([, type]) => type.includes('ISO date'))
+      .map(([path]) => path.slice(path.lastIndexOf('.') + 1)),
+  ),
+)
+const revive = (key: string, value: unknown) =>
+  typeof value === 'string' && dateFields.has(key) && ISO.test(value) ? new Date(value) : value
 
 before(async () => {
   await requireApp()
@@ -199,6 +225,9 @@ describe('webhook payload contract', () => {
 
   if (updating) {
     after(() => {
+      // A broken setup must not rewrite the baseline: every topic needs a payload from this run
+      const missing = WEBHOOK_TOPICS.filter((topic) => !payloads.has(topic))
+      assert.deepEqual(missing, [], `snapshot not updated: no payload was queued for ${missing.join(', ')}`)
       const next = Object.fromEntries(WEBHOOK_TOPICS.map((topic) => [topic, schemaFields(topic)]))
       writeFileSync(SNAPSHOT, `${JSON.stringify(next, null, 2)}\n`)
     })
@@ -222,6 +251,12 @@ describe('webhook payload contract', () => {
       for (const payload of payloads.get(topic)!) {
         const parsed = webhookPayloads[topic].safeParse(payload)
         assert.ok(parsed.success, `${topic} payload does not match its schema: ${parsed.error?.message}`)
+        const extra = undeclared(payload, schemaFields(topic))
+        assert.deepEqual(
+          extra,
+          [],
+          `${topic} payload carries fields its schema does not declare (${extra.join(', ')}): declare them in webhookPayloads`,
+        )
       }
       if (updating) return
 
