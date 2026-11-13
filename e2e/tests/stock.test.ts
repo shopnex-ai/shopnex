@@ -6,6 +6,7 @@ import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
 import { db, schema } from '@shopnex/db'
+import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
 const fx = new Fixtures()
@@ -14,6 +15,8 @@ const run = Date.now().toString(36)
 let admin: Record<string, string>
 let shippingRateId: string
 const productIds: string[] = []
+// Orders placed straight through the service (not a cart), removed at the end
+const directOrders: string[] = []
 
 /** A product with one tracked variant holding `stock` units */
 async function tracked(stock: number) {
@@ -50,6 +53,8 @@ before(async () => {
 })
 
 after(async () => {
+  for (const id of directOrders) await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
+  if (directOrders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, directOrders))
   await fx.cleanup()
   if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
   await closeDb()
@@ -121,6 +126,28 @@ describe('stock', () => {
     ])
     assert.equal(results.filter((r) => r.status === 200).length, 1, JSON.stringify(results.map((r) => r.status)))
     assert.equal(await stockOf(variantId), 0)
+  })
+
+  // Other platforms oversold here: each line was checked against the same untouched stock, so two lines for one
+  // variant each passed and together took more than there was (Medusa #16502, #17032)
+  test('two lines for one variant are checked together: they cannot take more than is left', async () => {
+    const variantId = await tracked(3)
+    const order = (lines: number[]) =>
+      orderService.create(SHOP, {
+        email: fx.email,
+        items: lines.map((quantity) => ({ variantId, quantity })),
+      })
+
+    await assert.rejects(
+      order([2, 2]),
+      (error) => error instanceof OrderError && error.code === 'OUT_OF_STOCK',
+      'two lines of 2 against 3 in stock',
+    )
+    assert.equal(await stockOf(variantId), 3, 'a refused order takes nothing')
+
+    const placed = await order([1, 2])
+    directOrders.push(placed.id)
+    assert.equal(await stockOf(variantId), 0, 'lines that fit together take exactly their sum')
   })
 
   test('another shop’s variant id takes and gives back nothing', async () => {
