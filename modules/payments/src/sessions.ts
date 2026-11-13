@@ -533,8 +533,7 @@ export async function expireDue(limit = 50) {
       cancelled++
     } catch (error) {
       // Paid, cancelled or fulfilled since it was picked: nothing to do
-      if (!(error instanceof OrderError))
-        console.error(`[payments] cancel stale unpaid order ${orderId}:`, message(error))
+      if (!(error instanceof OrderError)) log.error({ err: error, orderId }, 'cancelling the stale unpaid order failed')
     }
   }
   return expired + abandoned.length + cancelled
