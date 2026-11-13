@@ -206,6 +206,18 @@ describe('shop B cannot reach shop A by id', () => {
       }),
       'PATCH',
     )
+    assertRefused(
+      await attack('/admin/customers/{id}/data-export', {
+        method: 'GET',
+        path: `/admin/customers/${c.id}/data-export`,
+      }),
+      'data-export',
+    )
+    // Erasing needs a staff session (owners and admins), never a token: shop B's owner is the one to turn away
+    assertRefused(
+      await attack('/admin/customers/{id}/erase', { method: 'POST', path: `/admin/customers/${c.id}/erase` }, ownerB),
+      'erase',
+    )
     covered.add('DELETE /admin/customers/bulk')
     const bulk = await call('DELETE', '/admin/customers/bulk', { ids: [c.id] }, b)
     assert.equal(bulk.status, 200, JSON.stringify(bulk.body))

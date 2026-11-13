@@ -1,3 +1,5 @@
 export * as customerService from './customers'
 export * as accountService from './accounts'
 export { AccountError, type AccountErrorCode } from './accounts'
+export * as privacyService from './privacy'
+export { PrivacyError, type PrivacyErrorCode } from './privacy'
