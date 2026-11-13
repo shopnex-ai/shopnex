@@ -97,7 +97,9 @@ passing.
   an open transaction) from the caller, so nothing in it can query outside the transaction it was given. That mistake
   freezes the embedded database (see `modules/db/src/embedded-guard.ts`) and is invisible on PostgreSQL.
 
-Today both lists hold `modules/custom-fields`.
+Today `modules/drafts` and `modules/custom-fields` are in both lists, and `modules/auth` is in the strict one only (it
+builds the Better Auth instance with `db` and its functions are entry points, so the no-`db` rule would only add
+parameters).
 
 ### Logging
 

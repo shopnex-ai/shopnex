@@ -9,12 +9,14 @@ import tseslint from 'typescript-eslint'
 
 // Strict, type-aware rules, one module at a time. A module joins this list once it passes them; new code in it then has
 // to keep passing. (Most of the rest of the repo reports hundreds of findings under these rules today.)
-const strictModules = ['modules/drafts', 'modules/custom-fields']
+const strictModules = ['modules/drafts', 'modules/custom-fields', 'modules/auth']
 
 // Connection-bound modules: their code never imports the shared `db`. Every function that queries takes the `conn`
 // (the shared handle or an open transaction) from its caller, so nothing in it can reach `db` by accident. A query on
 // `db` inside a transaction waits for that transaction for ever on the embedded database (see modules/db/src/embedded-guard.ts).
 // A module joins once none of its functions needs the global; it can still import the `Conn` type and the `schema`.
+// (modules/auth is strict but not here: its index.ts hands `db` to Better Auth's adapter, and its setup and sign-up
+// functions are entry points called from a form action and from Better Auth's hooks, outside any transaction of ours.)
 const connectionBoundModules = ['modules/drafts', 'modules/custom-fields']
 
 // Logging goes through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), not console.*. A module joins

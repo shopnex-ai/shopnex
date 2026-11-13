@@ -13,7 +13,8 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "create-super-admin": "tsx --env-file=../../.env scripts/create-super-admin.ts"
+    "create-super-admin": "tsx --env-file=../../.env scripts/create-super-admin.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",

@@ -35,7 +35,8 @@ export async function takeRate(key: string, max: number, windowMs: number): Prom
     void db
       .delete(schema.rateLimits)
       .where(lt(schema.rateLimits.resetAt, sql`now() - interval '1 hour'`))
-      .catch(() => {})
+      .catch(() => undefined)
   }
-  return row!.count <= max ? null : row!.waitS
+  if (!row) throw new Error('rate limit upsert returned no row')
+  return row.count <= max ? null : row.waitS
 }

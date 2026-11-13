@@ -8,7 +8,7 @@ import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
 import { withSignUpAllowed } from './sign-up-policy'
 
-export type SetupInput = {
+export interface SetupInput {
   email: string
   password: string
 }
@@ -42,7 +42,8 @@ export async function completeSetup(input: SetupInput) {
     await seedDefaultMenu(db, DEFAULT_SHOP_ID)
 
     // No name field on the setup form: use the part of the email before the @ (editable in the profile)
-    const name = input.email.split('@')[0]!.slice(0, 100)
+    const [local = ''] = input.email.split('@')
+    const name = local.slice(0, 100)
     const { user } = await withSignUpAllowed(() =>
       auth.api.signUpEmail({ body: { name, email: input.email, password: input.password } }),
     )
