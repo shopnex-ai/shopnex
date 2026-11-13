@@ -295,6 +295,13 @@
       "when": 1794574490197,
       "tag": "0041_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1794582185910,
+      "tag": "0042_invoice_business_details",
+      "breakpoints": true
     }
   ]
 }

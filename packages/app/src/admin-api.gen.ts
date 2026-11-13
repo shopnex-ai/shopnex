@@ -1930,6 +1930,9 @@ export interface operations {
                         taxesIncluded: boolean;
                         taxShipping: boolean;
                         unpaidOrderExpiryHours: number | null;
+                        legalName: string | null;
+                        businessAddress: string | null;
+                        taxId: string | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -1956,6 +1959,9 @@ export interface operations {
                     taxesIncluded?: boolean;
                     taxShipping?: boolean;
                     unpaidOrderExpiryHours?: (number | null) | null;
+                    legalName?: string | null;
+                    businessAddress?: string | null;
+                    taxId?: string | null;
                 };
             };
         };
@@ -1980,6 +1986,9 @@ export interface operations {
                         taxesIncluded: boolean;
                         taxShipping: boolean;
                         unpaidOrderExpiryHours: number | null;
+                        legalName: string | null;
+                        businessAddress: string | null;
+                        taxId: string | null;
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;

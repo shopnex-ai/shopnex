@@ -102,7 +102,17 @@ export function OrderDetail({ id }: { id: string }) {
           </span>
         }
         description={`Placed ${formatDate(o.createdAt)}${o.cancelledAt ? ` · Cancelled ${formatDate(o.cancelledAt)}${o.cancelReason ? ` (${reasonLabel[o.cancelReason].toLowerCase()})` : ''}` : ''}`}
-        actions={<OrderActions order={o} />}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              render={<Link to="/admin/orders/$id/invoice" params={{ id: o.id }} target="_blank" />}
+            >
+              Invoice
+            </Button>
+            <OrderActions order={o} />
+          </>
+        }
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
         <div className="space-y-6">

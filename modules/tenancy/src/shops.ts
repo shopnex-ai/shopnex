@@ -62,6 +62,9 @@ export async function updateShop(
       | 'taxesIncluded'
       | 'taxShipping'
       | 'unpaidOrderExpiryHours'
+      | 'legalName'
+      | 'businessAddress'
+      | 'taxId'
     >
   >,
 ) {

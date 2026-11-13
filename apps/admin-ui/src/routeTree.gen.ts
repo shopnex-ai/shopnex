@@ -60,6 +60,7 @@ import { Route as AdminOnlineStoreNavigationIdRouteImport } from './routes/admin
 import { Route as AdminOnlineStorePagesIdRouteImport } from './routes/admin/online-store/pages/$id'
 import { Route as AdminOnlineStoreThemesIdRouteImport } from './routes/admin/online-store/themes/$id'
 import { Route as AdminOnlineStoreThemesSelectRouteImport } from './routes/admin/online-store/themes/select'
+import { Route as AdminOrdersIdInvoiceRouteImport } from './routes/admin/orders/$id_.invoice'
 import { Route as AdminSettingsNotificationsNotificationRouteImport } from './routes/admin/settings/notifications/$notification'
 import { Route as AdminOnlineStoreThemesIdCodeRouteImport } from './routes/admin/online-store/themes/$id_.code'
 
@@ -328,6 +329,11 @@ const AdminOnlineStoreThemesSelectRoute =
     path: '/select',
     getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
   } as any)
+const AdminOrdersIdInvoiceRoute = AdminOrdersIdInvoiceRouteImport.update({
+  id: '/$id_/invoice',
+  path: '/$id/invoice',
+  getParentRoute: () => AdminOrdersRouteRoute,
+} as any)
 const AdminSettingsNotificationsNotificationRoute =
   AdminSettingsNotificationsNotificationRouteImport.update({
     id: '/$notification',
@@ -393,6 +399,7 @@ export interface FileRoutesByFullPath {
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
+  '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -447,6 +454,7 @@ export interface FileRoutesByTo {
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
+  '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -503,6 +511,7 @@ export interface FileRoutesById {
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
   '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
   '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
+  '/admin/orders/$id_/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
   '/admin/online-store/themes/$id_/code': typeof AdminOnlineStoreThemesIdCodeRoute
 }
@@ -560,6 +569,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/pages/$id'
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
+    | '/admin/orders/$id/invoice'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id/code'
   fileRoutesByTo: FileRoutesByTo
@@ -614,6 +624,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/pages/$id'
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
+    | '/admin/orders/$id/invoice'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id/code'
   id:
@@ -669,6 +680,7 @@ export interface FileRouteTypes {
     | '/admin/online-store/pages/$id'
     | '/admin/online-store/themes/$id'
     | '/admin/online-store/themes/select'
+    | '/admin/orders/$id_/invoice'
     | '/admin/settings/notifications/$notification'
     | '/admin/online-store/themes/$id_/code'
   fileRoutesById: FileRoutesById
@@ -1040,6 +1052,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOnlineStoreThemesSelectRouteImport
       parentRoute: typeof AdminOnlineStoreThemesRouteRoute
     }
+    '/admin/orders/$id_/invoice': {
+      id: '/admin/orders/$id_/invoice'
+      path: '/$id/invoice'
+      fullPath: '/admin/orders/$id/invoice'
+      preLoaderRoute: typeof AdminOrdersIdInvoiceRouteImport
+      parentRoute: typeof AdminOrdersRouteRoute
+    }
     '/admin/settings/notifications/$notification': {
       id: '/admin/settings/notifications/$notification'
       path: '/$notification'
@@ -1162,10 +1181,12 @@ const AdminOnlineStoreRouteRouteWithChildren =
 
 interface AdminOrdersRouteRouteChildren {
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
+  AdminOrdersIdInvoiceRoute: typeof AdminOrdersIdInvoiceRoute
 }
 
 const AdminOrdersRouteRouteChildren: AdminOrdersRouteRouteChildren = {
   AdminOrdersIdRoute: AdminOrdersIdRoute,
+  AdminOrdersIdInvoiceRoute: AdminOrdersIdInvoiceRoute,
 }
 
 const AdminOrdersRouteRouteWithChildren =

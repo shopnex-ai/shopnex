@@ -212,6 +212,10 @@ export const shopInput = createInsertSchema(shops, {
   seoDescription: (s) => s.trim().max(500),
   // Hours until an unpaid order nobody is paying is cancelled and restocked; null = never (up to a year)
   unpaidOrderExpiryHours: () => z.number().int().min(1).max(8760).nullable(),
+  // Printed on invoices; empty = not set (the invoice falls back to the shop name and says what is missing)
+  legalName: (s) => s.trim().max(150),
+  businessAddress: (s) => s.trim().max(500),
+  taxId: (s) => s.trim().max(50),
 }).pick({
   name: true,
   currency: true,
@@ -221,6 +225,9 @@ export const shopInput = createInsertSchema(shops, {
   taxesIncluded: true,
   taxShipping: true,
   unpaidOrderExpiryHours: true,
+  legalName: true,
+  businessAddress: true,
+  taxId: true,
 })
 
 export const MIN_PASSWORD = 8
