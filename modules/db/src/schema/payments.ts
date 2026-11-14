@@ -26,9 +26,8 @@ export const paymentSessions = pgTable(
     orderId: uuid('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    appId: uuid('app_id')
-      .notNull()
-      .references(() => apps.id, { onDelete: 'cascade' }),
+    // Null for a built-in provider (paystack): ShopNex owns the session, no app to notify
+    appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }),
     // The method the buyer chose (retrying a payment sends it to the same app)
     paymentMethodId: uuid('payment_method_id').references(() => paymentMethods.id, { onDelete: 'set null' }),
     kind: text('kind').$type<PaymentSessionKind>().notNull(),

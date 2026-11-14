@@ -1,5 +1,6 @@
 // What a shop offers at checkout. Modeled on Shopify's delivery method definitions (one zone for now:
 // rates apply to every address), manual payment methods and payments apps.
+import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { apps } from './apps'
 import { shops } from './tenancy'
@@ -27,8 +28,14 @@ export const shippingRates = pgTable(
 // 'manual': paid outside ShopNex (bank transfer, cash on delivery…) and marked as paid by staff.
 // 'app': a payments app (Stripe…) takes the payment; it registers the method itself (Shopify paymentsAppConfigure)
 // and resolves payment sessions through the Admin API.
-export const PAYMENT_PROVIDERS = ['manual', 'app'] as const
+// 'paystack': ShopNex talks to Paystack directly with the shop's own keys (shop_integrations); no app row.
+export const PAYMENT_PROVIDERS = ['manual', 'app', 'paystack'] as const
 export type PaymentProvider = (typeof PAYMENT_PROVIDERS)[number]
+
+// 'app': an app quotes the rates over HTTP (Shopify CarrierService).
+// 'bobgo': ShopNex quotes them itself through the shop's BobGo account (shop_integrations); no app row.
+export const CARRIER_PROVIDERS = ['app', 'bobgo'] as const
+export type CarrierProvider = (typeof CARRIER_PROVIDERS)[number]
 
 export const paymentMethods = pgTable(
   'payment_methods',
@@ -66,6 +73,7 @@ export const paymentMethods = pgTable(
 
 // Apps that quote shipping rates at checkout (Shopify CarrierService). One per app and shop; uninstalling the
 // app removes it. Staff switch it off with `active`; the app with `ready`.
+// A built-in provider (bobgo) has no app row and no rates URL: the partial unique index below covers it.
 export const carrierServices = pgTable(
   'carrier_services',
   {
@@ -73,18 +81,25 @@ export const carrierServices = pgTable(
     shopId: text('shop_id')
       .notNull()
       .references(() => shops.id, { onDelete: 'cascade' }),
-    appId: uuid('app_id')
-      .notNull()
-      .references(() => apps.id, { onDelete: 'cascade' }),
+    provider: text('provider').$type<CarrierProvider>().notNull().default('app'),
+    // Null for a built-in provider
+    appId: uuid('app_id').references(() => apps.id, { onDelete: 'cascade' }),
     // Shown at checkout next to the rates it quotes, e.g. "CJ Dropshipping"
     name: text('name').notNull(),
-    ratesUrl: text('rates_url').notNull(),
+    // Null for a built-in provider: ShopNex computes the rates itself
+    ratesUrl: text('rates_url'),
     active: boolean('active').notNull().default(true),
     ready: boolean('ready').notNull().default(true),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('carrier_services_shop_app_idx').on(t.shopId, t.appId)],
+  (t) => [
+    uniqueIndex('carrier_services_shop_app_idx').on(t.shopId, t.appId),
+    // One row per built-in provider and shop (app rows are unique by app above)
+    uniqueIndex('carrier_services_shop_provider_idx')
+      .on(t.shopId, t.provider)
+      .where(sql`app_id is null`),
+  ],
 )
 
 export type ShippingRate = typeof shippingRates.$inferSelect
