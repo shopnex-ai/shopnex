@@ -17,3 +17,6 @@ patchedDependencies:
 overrides:
   '@tailwindcss/typography>postcss-selector-parser': ^6.1.5
   '@esbuild-kit/core-utils>esbuild': ^0.25.0
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
