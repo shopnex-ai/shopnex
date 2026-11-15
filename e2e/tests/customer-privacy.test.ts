@@ -146,7 +146,7 @@ describe('export', () => {
     assert.equal(order.orderNumber, finished.orderNumber)
     assert.equal(order.shippingAddress.address1, 'Privatweg 7')
     assert.equal(order.billingAddress.city, 'Hamburg')
-    assert.equal(order.note, "Leave with export's neighbour".replace('export', 'export'))
+    assert.equal(order.note, "Leave with export's neighbour")
     assert.equal(order.items[0].quantity, 2)
     assert.ok(
       order.transactions.some((t: { kind: string }) => t.kind === 'sale'),
