@@ -65,7 +65,10 @@ function activate() {
     held.replaceWith(script)
   }
   for (const held of document.querySelectorAll<HTMLIFrameElement>('iframe[data-consent][data-src]')) {
-    if (ready(held)) held.src = held.getAttribute('data-src')!
+    if (!ready(held)) continue
+    // Only a web address: a `javascript:` URL in data-src would run as script in the page
+    const src = new URL(held.getAttribute('data-src')!, location.href)
+    if (src.protocol === 'https:' || src.protocol === 'http:') held.src = src.href
   }
 }
 
