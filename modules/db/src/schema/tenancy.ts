@@ -43,6 +43,10 @@ export const shops = pgTable('shops', {
   legalName: text('legal_name'),
   businessAddress: text('business_address'),
   taxId: text('tax_id'),
+  // Settings -> General -> Cookie banner. The storefront asks visitors before it runs scripts a merchant marked as needing
+  // consent (analytics, marketing). Off: nothing is asked and those scripts run. The default storefront sets no such
+  // cookies itself, so this only matters once scripts are added.
+  cookieBanner: boolean('cookie_banner').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

@@ -302,6 +302,13 @@
       "when": 1794582185910,
       "tag": "0042_invoice_business_details",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794584937921,
+      "tag": "0043_cookie_banner",
+      "breakpoints": true
     }
   ]
 }

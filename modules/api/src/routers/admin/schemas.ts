@@ -228,6 +228,7 @@ export const shopInput = createInsertSchema(shops, {
   legalName: true,
   businessAddress: true,
   taxId: true,
+  cookieBanner: true,
 })
 
 export const MIN_PASSWORD = 8

@@ -1,0 +1,73 @@
+---
+title: Cookie consent
+description: Ask visitors before analytics and marketing scripts run.
+---
+
+## Do you need it?
+
+The bundled storefront sets **no analytics or marketing cookies** and loads no trackers. The only things it keeps in a
+visitor's browser are what it needs to work: the sign-in session (an `httpOnly` cookie, only after someone signs in) and
+the cart id. These are strictly necessary and don't need consent.
+
+You need consent once **you add** something that tracks visitors: Google Analytics, a Meta pixel, a chat widget, an
+embedded video. In the EU and the UK you have to ask first, and the answer has to be as easy to refuse as to give.
+
+## Turn it on
+
+**Settings → General → Cookie banner → Show a cookie banner.** Visitors then see a banner with **Accept all** and
+**Reject all**, side by side and the same size, until they choose. It works with every theme, and nothing in the theme
+has to change.
+
+## Hold a script back until the visitor agrees
+
+Add the script to your theme as `type="text/plain"` with a category. The browser ignores it until the visitor agrees,
+then ShopNex turns it into a real script.
+
+```html
+<script type="text/plain" data-consent="analytics" src="https://example.com/tag.js"></script>
+
+<script type="text/plain" data-consent="marketing">
+  // inline code works too
+</script>
+
+<iframe data-consent="marketing" data-src="https://example.com/video"></iframe>
+```
+
+`data-consent` is `analytics`, `marketing`, or both separated by a comma (`analytics,marketing`: both are needed).
+A script without `data-consent` is not held back.
+
+**With the banner off, nobody is asked and these scripts run at once.** Turn it off only if you handle consent another
+way, or don't need it.
+
+## Let visitors change their mind
+
+Put a link where visitors can find it, for example in the footer:
+
+```html
+<a href="#" data-shopnex-consent-settings>Cookie settings</a>
+```
+
+It opens the banner again. If a visitor withdraws consent, the page reloads, because a script that already ran can't be
+taken back.
+
+## Read the choice from your own code
+
+```js
+window.shopnexConsent.get() // { analytics: true, marketing: false }: what may run now
+window.shopnexConsent.choice() // null until the visitor has chosen
+window.shopnexConsent.accept() // or .reject(), or .set({ analytics: true, marketing: false })
+window.shopnexConsent.open() // show the banner again
+
+document.addEventListener('shopnex:consent', (event) => console.log(event.detail)) // the new choice
+```
+
+The choice is kept in the browser's `localStorage` under `shopnex_consent`: **no cookie is set to remember a "no"**.
+
+## Good to know
+
+- The banner text is in English, and there are two categories (analytics and marketing) chosen together. For anything
+  more, build your own banner on `window.shopnexConsent`, or use a consent platform.
+- The theme editor's preview doesn't run it.
+- A custom (headless) storefront gets the setting from the Storefront API, `shop.get()` → `cookieBanner`, and asks
+  visitors itself.
+- This is a tool, not legal advice. What you need to ask depends on where your visitors are and what you add.
