@@ -305,6 +305,38 @@ export interface paths {
         patch: operations["admin.customers.update"];
         trace?: never;
     };
+    "/customers/{id}/data-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.customers.exportData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/{id}/erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.customers.erase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/import": {
         parameters: {
             query?: never;
@@ -3438,6 +3470,95 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.customers.exportData": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        schemaVersion: 1;
+                        /** Format: date-time */
+                        exportedAt: string;
+                        customer: {
+                            /** Format: uuid */
+                            id: string;
+                            email: string;
+                            name: string | null;
+                            phone: string | null;
+                            customFields: {
+                                [key: string]: string | number | boolean;
+                            };
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        };
+                        loginAccount: {
+                            name: string;
+                            email: string;
+                            emailVerified: boolean;
+                            /** Format: date-time */
+                            createdAt: string;
+                            sessions: {
+                                [key: string]: unknown;
+                            }[];
+                        } | null;
+                        orders: {
+                            [key: string]: unknown;
+                        }[];
+                        carts: {
+                            [key: string]: unknown;
+                        }[];
+                        emails: {
+                            [key: string]: unknown;
+                        }[];
+                        unsubscribedFromReminders: boolean;
+                    };
+                };
+            };
+        };
+    };
+    "admin.customers.erase": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ordersAnonymized: number;
+                        cartsCleared: number;
+                        emailsRedacted: number;
+                        webhookDeliveriesDeleted: number;
+                        loginAccountDeleted: boolean;
                     };
                 };
             };
@@ -8266,7 +8387,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8294,7 +8415,7 @@ export interface operations {
                     /** Format: uri */
                     url: string;
                     description?: string | null;
-                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                    topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                     active?: boolean;
                 };
             };
@@ -8312,7 +8433,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8348,7 +8469,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8376,7 +8497,7 @@ export interface operations {
                     /** Format: uri */
                     url?: string;
                     description?: string | null;
-                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                    topics?: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                     active?: boolean;
                 };
             };
@@ -8394,7 +8515,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
@@ -8430,7 +8551,7 @@ export interface operations {
                         shopId: string;
                         url: string;
                         description: string | null;
-                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated")[];
+                        topics: ("order.created" | "order.paid" | "order.fulfilled" | "order.cancelled" | "order.updated" | "product.created" | "product.updated" | "inventory.updated" | "customer.created" | "customer.updated" | "customer.erased")[];
                         secret: string;
                         active: boolean;
                         apiTokenId: string | null;
