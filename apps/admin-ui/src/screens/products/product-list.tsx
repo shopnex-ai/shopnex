@@ -106,8 +106,8 @@ export function ProductList({ currency }: { currency: string }) {
         title="Products"
         actions={
           <div className="flex items-center gap-2">
-            <ImportProductsDialog />
-            <ExportProductsDialog />
+            <ImportProductsDialog currency={currency} />
+            <ExportProductsDialog currency={currency} />
             <NewProductButton currency={currency} />
           </div>
         }

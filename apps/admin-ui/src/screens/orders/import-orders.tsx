@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FormatSelect, ImportDialog, platformOptions, type ImportOutcome } from '@/components/admin/import-dialog'
 import { parseCsv, requireColumns, type CsvRow } from '@/lib/csv'
+import { formatMoney, minorPerUnit } from '@/lib/money'
 import { client, orpc } from '@/lib/orpc'
 
 type ImportedAddress = {
@@ -111,11 +112,11 @@ function address(row: CsvRow, prefix: 'Billing' | 'Shipping'): ImportedAddress |
   }
 }
 
-function cents(value: string, label: string, orderName: string, optional = false) {
+function cents(value: string, label: string, orderName: string, currency: string, optional = false) {
   if (!value && optional) return 0
   const amount = Number(value)
   if (!Number.isFinite(amount) || amount < 0) throw new Error(`${orderName}: invalid ${label}.`)
-  return Math.round(amount * 100)
+  return Math.round(amount * minorPerUnit(currency))
 }
 
 function parseShopifyOrders(rows: CsvRow[]): ImportedOrder[] {
@@ -170,9 +171,9 @@ function parseShopifyOrders(rows: CsvRow[]): ImportedOrder[] {
           sku: row['Lineitem SKU'] || null,
           vendor: row.Vendor || null,
           imageUrl: null,
-          unitPriceCents: cents(row['Lineitem price'] || '', 'line item price', orderName),
+          unitPriceCents: cents(row['Lineitem price'] || '', 'line item price', orderName, currency),
           quantity,
-          discountCents: cents(row['Lineitem discount'] || '', 'line item discount', orderName, true),
+          discountCents: cents(row['Lineitem discount'] || '', 'line item discount', orderName, currency, true),
         }
       })
     if (!items.length) throw new Error(`${orderName}: no line items were found.`)
@@ -188,11 +189,11 @@ function parseShopifyOrders(rows: CsvRow[]): ImportedOrder[] {
       cancelledAt: cancelledRaw ? new Date(cancelledRaw).toISOString() : null,
       fulfilledAt: fulfilledRaw ? new Date(fulfilledRaw).toISOString() : null,
       currency,
-      subtotalCents: cents(firstValue('Subtotal'), 'subtotal', orderName),
-      shippingCents: cents(firstValue('Shipping'), 'shipping', orderName, true),
-      taxCents: cents(firstValue('Taxes'), 'taxes', orderName, true),
-      discountCents: cents(firstValue('Discount Amount'), 'discount amount', orderName, true),
-      totalCents: cents(firstValue('Total'), 'total', orderName),
+      subtotalCents: cents(firstValue('Subtotal'), 'subtotal', orderName, currency),
+      shippingCents: cents(firstValue('Shipping'), 'shipping', orderName, currency, true),
+      taxCents: cents(firstValue('Taxes'), 'taxes', orderName, currency, true),
+      discountCents: cents(firstValue('Discount Amount'), 'discount amount', orderName, currency, true),
+      totalCents: cents(firstValue('Total'), 'total', orderName, currency),
       discountCodes: firstValue('Discount Code')
         .split(/\s+\+\s+|,\s*/)
         .filter(Boolean),
@@ -273,16 +274,16 @@ function parseWooOrders(rows: CsvRow[]): ImportedOrder[] {
           sku: fields.sku || null,
           vendor: null,
           imageUrl: null,
-          unitPriceCents: cents(fields.price || '', 'line item price', name),
+          unitPriceCents: cents(fields.price || '', 'line item price', name, currency),
           quantity,
           discountCents: 0,
         }
       })
     if (!items.length) throw new Error(`${name}: no line items were found.`)
-    const shippingCents = cents(row.shipping_total || '', 'shipping_total', name, true)
-    const taxCents = cents(row.tax_total || '', 'tax_total', name, true)
-    const discountCents = cents(row.discount_total || '', 'discount_total', name, true)
-    const totalCents = cents(row.order_total || '', 'order_total', name)
+    const shippingCents = cents(row.shipping_total || '', 'shipping_total', name, currency, true)
+    const taxCents = cents(row.tax_total || '', 'tax_total', name, currency, true)
+    const discountCents = cents(row.discount_total || '', 'discount_total', name, currency, true)
+    const totalCents = cents(row.order_total || '', 'order_total', name, currency)
     return {
       sourceOrderName: name,
       email,
@@ -365,9 +366,7 @@ export function ImportOrdersDialog() {
         order.sourceOrderName,
         order.email,
         order.items.length,
-        new Intl.NumberFormat(undefined, { style: 'currency', currency: order.currency }).format(
-          order.totalCents / 100,
-        ),
+        formatMoney(order.totalCents, order.currency),
         new Date(order.createdAt).toLocaleDateString(),
       ]}
       run={run}

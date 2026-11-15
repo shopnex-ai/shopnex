@@ -2,6 +2,7 @@
 // the server on import) so it can be tested with a fake Stripe and a fake ShopNex.
 import { Hono, type Context } from 'hono'
 import type Stripe from 'stripe'
+import { toStripeAmount } from './amount'
 import type { PaymentSessionRequest, RefundSessionRequest, ShopContext } from '@shopnex/app'
 
 export type PaymentDeps = {
@@ -50,13 +51,15 @@ export function paymentRoutes(deps: PaymentDeps) {
   routes.post('/payments/session', async (c) => {
     const { request, shop } = await deps.verify(c, 'payment')
     try {
+      // In the unit Stripe takes, which is also the unit its webhook reports back
+      const amount = toStripeAmount(request.amount.cents, request.amount.currency)
       const metadata = {
         shopnex_session_id: request.id,
         shopnex_instance: shop.instance,
         shopnex_shop_id: shop.shopId,
         shopnex_order_id: request.orderId,
         // What this session must collect: the webhook checks Stripe's amount against it before marking the order paid
-        shopnex_amount_cents: String(request.amount.cents),
+        shopnex_amount_cents: String(amount),
         shopnex_currency: request.amount.currency.toLowerCase(),
       }
       const stripe = await deps.stripeFor(shop)
@@ -73,7 +76,7 @@ export function paymentRoutes(deps: PaymentDeps) {
               quantity: 1,
               price_data: {
                 currency: request.amount.currency.toLowerCase(),
-                unit_amount: request.amount.cents,
+                unit_amount: amount,
                 product_data: { name: `Order #${request.orderNumber}` },
               },
             },
@@ -112,7 +115,7 @@ export async function refund(deps: PaymentDeps, shop: ShopContext, request: Refu
     ).refunds.create(
       {
         payment_intent: request.payment.externalId,
-        amount: request.amount.cents,
+        amount: toStripeAmount(request.amount.cents, request.amount.currency),
         metadata: { shopnex_session_id: request.id, shopnex_order_id: request.orderId },
       },
       { idempotencyKey: `shopnex-refund-${request.id}` },

@@ -5,12 +5,12 @@ import { discountsCsv, type DiscountSource } from './discount-formats'
 
 const formats = platformOptions<DiscountSource>(['shopify', 'woocommerce', 'shopnex'], 'Discounts CSV')
 
-export function ExportDiscountsDialog() {
+export function ExportDiscountsDialog({ currency }: { currency: string }) {
   const [source, setSource] = useState<DiscountSource>('shopify')
 
   async function build() {
     const discounts = await client.admin.discounts.list()
-    return { csv: discountsCsv(source, discounts), count: discounts.length }
+    return { csv: discountsCsv(source, discounts, currency), count: discounts.length }
   }
 
   return (

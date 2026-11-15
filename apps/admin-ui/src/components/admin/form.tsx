@@ -22,7 +22,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { formatCentsInput, toCents } from '@/lib/money'
+import { formatMinorInput, toMinor } from '@/lib/money'
 import '@/lib/zod-messages'
 
 export function useZodForm<TInput extends FieldValues, TOutput extends FieldValues>(
@@ -228,7 +228,7 @@ const split = (text: string) =>
     .filter(Boolean)
 
 /**
- * Integer minor units (cents) edited as a decimal amount ("19.99").
+ * Integer minor units edited as a decimal amount in the currency's own digits ("19.99", "1000" for yen).
  * `nullable`: empty means null (e.g. no compare-at price).
  */
 export function MoneyField<T extends FieldValues>({
@@ -245,12 +245,12 @@ export function MoneyField<T extends FieldValues>({
   // number is formatted back into the input, otherwise "abc" would be overwritten with "NaN".
   const value = field.value as number | string | null | undefined
   const cents = typeof value === 'number' && Number.isFinite(value) ? value : null
-  const formatted = formatCentsInput(cents)
+  const formatted = formatMinorInput(cents, currency)
   const [text, setText] = useState(formatted)
   useEffect(() => {
     if (typeof value === 'string') return
-    setText((current) => (toCents(current) === cents ? current : formatted))
-  }, [value, cents, formatted])
+    setText((current) => (toMinor(current, currency) === cents ? current : formatted))
+  }, [value, cents, formatted, currency])
   return (
     <FieldShell id={id} label={label} description={description} error={fieldState.error}>
       <div className="relative">
@@ -265,7 +265,7 @@ export function MoneyField<T extends FieldValues>({
           className="pl-12 tabular-nums"
           onChange={(e) => {
             setText(e.target.value)
-            const next = toCents(e.target.value)
+            const next = toMinor(e.target.value, currency)
             if (next === null)
               field.onChange(nullable ? null : undefined) // empty: null, or "required"
             else if (Number.isNaN(next))
@@ -273,7 +273,7 @@ export function MoneyField<T extends FieldValues>({
             else field.onChange(next)
           }}
           onBlur={() => {
-            if (Number.isFinite(toCents(text)) && toCents(text) !== null) setText(formatted)
+            if (Number.isFinite(toMinor(text, currency)) && toMinor(text, currency) !== null) setText(formatted)
             field.onBlur()
           }}
           aria-invalid={fieldState.invalid || undefined}
