@@ -12,6 +12,7 @@ import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { CustomerForm } from '../customer-form'
+import { PrivacyCard } from './privacy-card'
 
 type Order = Outputs['admin']['orders']['list']['items'][number]
 
@@ -31,7 +32,8 @@ const orderColumns = [
 
 const back = { to: '/admin/customers', label: 'Customers' } as const
 
-export function CustomerDetail({ id }: { id: string }) {
+/** `canManage`: owners and admins, who may export and erase a customer's personal data */
+export function CustomerDetail({ id, canManage }: { id: string; canManage: boolean }) {
   const queryClient = useQueryClient()
   const customer = useQuery(orpc.admin.customers.get.queryOptions({ input: { id } }))
   const update = useMutation(orpc.admin.customers.update.mutationOptions())
@@ -89,6 +91,7 @@ export function CustomerDetail({ id }: { id: string }) {
               await queryClient.invalidateQueries({ queryKey: orpc.admin.customers.key() })
             }}
           />
+          {canManage && <PrivacyCard id={c.id} email={c.email} />}
         </div>
         <Card>
           <CardHeader>

@@ -519,5 +519,9 @@
     "customFields": "object",
     "createdAt": "string (ISO date)",
     "updatedAt": "string (ISO date)"
+  },
+  "customer.erased": {
+    "id": "string",
+    "email": "string"
   }
 }

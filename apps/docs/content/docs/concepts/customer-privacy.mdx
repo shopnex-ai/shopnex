@@ -1,0 +1,62 @@
+---
+title: Customer privacy
+description: What ShopNex stores about a customer, and how to hand it over or erase it on request.
+---
+
+A customer can ask a shop for a copy of the personal data it holds, and to have it erased (GDPR articles 15 and 17). You
+answer from the customer's page in the admin: **Customers → the customer → Privacy**. Only owners and admins see it.
+
+## What is stored about a customer
+
+| Where            | What                                                        | Export | Erase                       |
+| ---------------- | ----------------------------------------------------------- | ------ | --------------------------- |
+| Customer record  | email, name, phone, custom field values                     | yes    | deleted                     |
+| Orders           | email, phone, shipping and billing address, order note      | yes    | anonymized, the order stays |
+| Carts            | the email a checkout was started with                       | yes    | cleared                     |
+| Stored emails    | recipient, subject and body of notifications sent           | yes    | blanked                     |
+| Storefront login | name, email, and the sessions (IP address, browser)         | yes    | deleted                     |
+| Webhook history  | payloads of events that mention the customer (kept 30 days) | no     | deleted                     |
+| Unsubscribe list | the email, if they unsubscribed                             | yes    | kept on purpose             |
+
+Anything the customer entered into a custom field on an **order** is also exported, and is **not** erased: it is yours
+to clear if it holds personal data. Apps you installed (a shipping app, a marketing app) keep their own data, which
+ShopNex can't reach.
+
+## Export
+
+**Export data** downloads one JSON file with everything in the table above for that customer. From the API:
+
+```
+GET /admin/customers/{id}/data-export
+```
+
+It needs a staff session (owner or admin), or an API token with both `read_customers` and `read_orders`, so an app can
+answer a data request for you.
+
+## Erase
+
+**Erase personal data** removes the customer's personal data and keeps what your books need. Orders stay, with their
+number, date, items, totals, tax, payments and the **delivery country and region** (tax is reported by place of
+delivery), and lose who they were for: name, email, phone, street, postcode and note. The order shows `(erased)` where
+the buyer was.
+
+- You have to type the customer's email to confirm. It can't be undone.
+- It is refused while the customer has an order that is still to be delivered or paid, because that order needs their
+  address. Fulfil or cancel it first. The message names the orders.
+- **Invoices for the erased orders will no longer show the buyer.** If tax law in your country requires you to keep the
+  invoices as issued, print or export them first.
+- Erasing is done by a staff session only, never an API token.
+
+```
+POST /admin/customers/{id}/erase
+```
+
+### Tell your apps: `customer.erased`
+
+After an erasure ShopNex sends the `customer.erased` webhook with the customer's `id` and `email`, so an app can find
+and delete its own copy. That payload names the person, so it is itself kept in the delivery log for the usual 30 days.
+
+## Keeping this true
+
+A test fails when a column that looks like personal data (an email, a phone number, an address, an IP address) is added
+to the database without being handled by the export and the erasure, or listed with the reason it is left alone.
