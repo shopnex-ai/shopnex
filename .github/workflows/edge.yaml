@@ -1,14 +1,15 @@
 name: create-shopnex@edge
 
-# The rolling build behind `npx create-shopnex@edge`: every push to main rebuilds the packaged ShopNex
+# The rolling build behind `npx create-shopnex@edge` and `npx shopnex@edge`: every push to main rebuilds the packaged ShopNex
 # (scripts/build-node-bundle.mjs) and replaces the one file of the `edge` pre-release, which create-shopnex@edge
-# downloads. The CLI finds that file by its checksum, not by its version, so it does not need a new npm version
-# per push: create-shopnex@edge is published again only when packages/create-shopnex or packages/cli-core (bundled into it) changed.
+# downloads. The CLIs find that file by its checksum, not by its version, so they do not need a new npm version
+# per push: create-shopnex@edge is published again only when packages/create-shopnex or packages/cli-core (bundled into
+# it) changed, and shopnex@edge only when packages/cli or packages/cli-core did.
 #
 # The `edge` release is created once, as a pre-release (never `latest`, so the admin's update badge ignores it) and is
 # never edited afterwards (an edit would rebuild the landing, see landing-rebuild.yaml). Only its file is replaced.
-# Publishes with npm trusted publishing, so there is no npm token: create-shopnex's Trusted Publisher settings on
-# npmjs.com name this repository and this file (edge.yaml), and the job's id-token permission proves the run.
+# Publishes with npm trusted publishing, so there is no npm token: the Trusted Publisher settings of create-shopnex and
+# shopnex on npmjs.com name this repository and this file (edge.yaml), and the job's id-token permission proves the run.
 on:
   push:
     branches: [main]
@@ -33,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # to see whether packages/create-shopnex or packages/cli-core changed since the previous push
+          fetch-depth: 0 # to see whether a CLI or packages/cli-core changed since the previous push
 
       - uses: pnpm/action-setup@v6
 
@@ -65,23 +66,29 @@ jobs:
           git tag -f edge "$GITHUB_SHA"
           git push -f origin refs/tags/edge
 
-      - name: Publish create-shopnex@edge
+      - name: Publish the CLIs as @edge
         env:
           BEFORE: ${{ github.event.before }}
         run: |
           # Trusted publishing needs npm 11.5.1 or newer
           npm --version
-          # Publish when the CLI or this workflow changed, when the edge tag does not exist yet, or on a manual run
-          publish=false
-          if [ "${{ github.event_name }}" = workflow_dispatch ] || ! npm view create-shopnex@edge version > /dev/null 2>&1; then
-            publish=true
-          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex packages/cli-core .github/workflows/edge.yaml 2> /dev/null; then
-            publish=true
-          fi
-          if [ "$publish" != true ]; then
-            echo "packages/create-shopnex and packages/cli-core did not change: the published edge CLI downloads the new bundle by itself"
-            exit 0
-          fi
-          cd packages/create-shopnex
-          npm pkg set version="0.0.0-edge.${GITHUB_SHA::7}"
-          npm publish --provenance --access public --tag edge
+          # A CLI is published when it or packages/cli-core (bundled into both) or this workflow changed, when its edge
+          # tag does not exist yet, or on a manual run
+          publish_edge() {
+            local name="$1" dir="$2" publish=false
+            if [ "${{ github.event_name }}" = workflow_dispatch ] || ! npm view "$name@edge" version > /dev/null 2>&1; then
+              publish=true
+            elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- "$dir" packages/cli-core .github/workflows/edge.yaml 2> /dev/null; then
+              publish=true
+            fi
+            if [ "$publish" != true ]; then
+              echo "$dir and packages/cli-core did not change: the published $name@edge downloads the new bundle by itself"
+              return 0
+            fi
+            (cd "$dir" && npm pkg set version="0.0.0-edge.${GITHUB_SHA::7}" && npm publish --provenance --access public --tag edge)
+          }
+          # One failing does not stop the other
+          status=0
+          publish_edge create-shopnex packages/create-shopnex || status=1
+          publish_edge shopnex packages/cli || status=1
+          exit $status
