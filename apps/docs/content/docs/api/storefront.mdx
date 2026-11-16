@@ -12,7 +12,7 @@ The `x-shopnex-key` header selects that key's shop (an invalid or revoked key re
 ## Catalog
 
 ```ts setup=storefront
-const shop = await shopnex.shop.get() // { name, handle, currencyCode }
+const shop = await shopnex.shop.get() // { name, handle, currencyCode, seo, cookieBanner }
 const page = await shopnex.products.list({ first: 20, collection: 'summer', sortKey: 'PRICE' })
 const next = await shopnex.products.list({ first: 20, after: page.pageInfo.endCursor! })
 ```

@@ -306,8 +306,15 @@
     {
       "idx": 43,
       "version": "7",
-      "when": 1794582186910,
-      "tag": "0043_minor_units",
+      "when": 1794584937921,
+      "tag": "0043_cookie_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1794584997921,
+      "tag": "0044_minor_units",
       "breakpoints": true
     }
   ]

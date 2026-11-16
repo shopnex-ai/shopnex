@@ -65,6 +65,7 @@ export async function updateShop(
       | 'legalName'
       | 'businessAddress'
       | 'taxId'
+      | 'cookieBanner'
     >
   >,
 ) {

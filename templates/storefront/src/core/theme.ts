@@ -44,6 +44,7 @@ import {
   shopObject,
 } from './drops'
 import { RENDER, createLiquid, type RenderData } from './liquid'
+import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
@@ -296,10 +297,10 @@ function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<str
 const adminOrigin = new URL(browserConfig.baseUrl).origin
 
 /**
- * What the storefront adds to every page's head: Storefront API settings for theme scripts, the preview, and
- * the page's SEO tags (core/seo)
+ * What the storefront adds to every page's head: Storefront API settings for theme scripts, the preview, the consent
+ * runtime and the page's SEO tags (core/seo)
  */
-function contentForHeader(preview: boolean, seo: string[] = []) {
+function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = false) {
   const attr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
   return [
     `<meta name="shopnex-url" content="${attr(browserBaseUrl())}">`,
@@ -307,6 +308,10 @@ function contentForHeader(preview: boolean, seo: string[] = []) {
     // In the theme editor's preview iframe: reload after a save, highlight the picked section
     preview && `<meta name="shopnex-admin-origin" content="${attr(adminOrigin)}">`,
     preview && `<script type="module" src="${previewScriptUrl()}"></script>`,
+    // Holds back scripts marked data-consent until the visitor agrees; with the banner off it lets them run. Not in the
+    // editor's preview, where a banner would be in the way of the page being edited
+    !preview && `<meta name="shopnex-consent" content="${cookieBanner ? 'banner' : 'off'}">`,
+    !preview && `<script type="module" src="${consentScriptUrl()}"></script>`,
     ...seo,
   ]
     .filter(Boolean)
@@ -381,7 +386,9 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     request: { path: url.pathname, origin: url.origin, page_type: page.template, design_mode: loaded.preview },
     template: { name: page.template },
     theme: { id: theme.id, name: theme.definition.name, version: theme.definition.version ?? null },
-    content_for_header: new SafeHtml(contentForHeader(loaded.preview, seoTags(page, url, shop, loaded.preview))),
+    content_for_header: new SafeHtml(
+      contentForHeader(loaded.preview, seoTags(page, url, shop, loaded.preview), Boolean(shop?.cookieBanner)),
+    ),
     [RENDER]: renderData,
   }
 

@@ -1,5 +1,5 @@
 {
-  "id": "23ddae1c-b496-4100-8f9a-8945e9b3e1bd",
+  "id": "44fe6f66-966b-4c01-b5f7-972268c11871",
   "prevId": "bda7f37c-3cc8-4f35-a5e3-1dcb2bda0bce",
   "version": "7",
   "dialect": "postgresql",
@@ -957,6 +957,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "cookie_banner": {
+          "name": "cookie_banner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",

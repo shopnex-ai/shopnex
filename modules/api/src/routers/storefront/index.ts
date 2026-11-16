@@ -339,6 +339,7 @@ export const storefrontRouter = storefront.router({
       handle: context.shop.slug,
       currencyCode: context.shop.currency,
       seo: { title: context.shop.seoTitle || null, description: context.shop.seoDescription || null },
+      cookieBanner: context.shop.cookieBanner,
     })),
   },
   products: {

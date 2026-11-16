@@ -5,6 +5,8 @@
 //   themes/{id}/src/theme.ts  → themes/{id}/assets/theme.js    esbuild: TypeScript, npm packages, React islands
 //   src/runtime/preview.ts    → built/preview.js               the theme editor's preview connector (served by
 //                                                              src/pages/shopnex/preview.js.ts)
+//   src/runtime/consent.ts    → built/consent.js               what holds back scripts until a visitor agrees (served
+//                                                              by src/pages/shopnex/consent.js.ts)
 //
 // A theme without src/theme.css or src/theme.ts skips that step. The server never runs theme code: these are
 // only the files a theme's pages link to.
@@ -25,6 +27,7 @@ export async function buildThemes({ watch = false } = {}) {
   const { themes } = JSON.parse(readFileSync(join(themesDir, 'index.json'), 'utf8'))
   const scripts = [
     { name: 'preview', entry: join(root, 'src/runtime/preview.ts'), out: join(root, 'built/preview.js') },
+    { name: 'consent', entry: join(root, 'src/runtime/consent.ts'), out: join(root, 'built/consent.js') },
   ]
   const styles = []
   for (const id of themes) {
