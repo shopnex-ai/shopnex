@@ -9,7 +9,8 @@
 // Contents: admin/ (the admin, API and checkout server, bundled into a few files; the embedded database is the one
 // package left as a real dependency, because it loads its WebAssembly from next to itself), storefront/ (the built
 // Astro server and the themes), apps/ (the optional Stripe, CJ Dropshipping and Shippo servers, one file each), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
-// every OS and CPU. The file layout is what packages/create-shopnex/src/plan.ts (planFromBundle) runs.
+// every OS and CPU. The file layout is what packages/create-shopnex/src/plan.ts (planFromBundle) runs, and what
+// packages/cli (shopnex migrate-db) finds admin/migrate-db.mjs in.
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -67,6 +68,15 @@ await build({
   external: ['@electric-sql/pglite', 'pg-native'],
 })
 cpSync(join(root, 'apps/admin-ui/dist/client'), join(stage, 'admin/dist/client'), { recursive: true })
+// `shopnex migrate-db` (packages/cli) runs this to move the embedded database to PostgreSQL. It sits beside the schema
+// and the migrations it matches, and is one file of its own (no shared chunks with the server)
+await build({
+  ...common,
+  splitting: false,
+  entryPoints: [join(root, 'modules/db/src/migrate-db.ts')],
+  outdir: join(stage, 'admin'),
+  external: ['@electric-sql/pglite', 'pg-native'],
+})
 // The package's root folder: its package.json is not an export, so walk up from the entry file
 let pglite = dirname(createRequire(join(root, 'modules/db/package.json')).resolve('@electric-sql/pglite'))
 while (

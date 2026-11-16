@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, appendFileSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { parseEnv } from 'node:util'
+import { UsageError } from './errors'
 
 export const DEFAULT_DATABASE_URL = 'pglite:./.pglite'
 
@@ -65,4 +66,25 @@ export function loadShopEnv(shopDir: string, { write }: { write: boolean }): Sho
     }
   }
   return { databaseUrl: resolveDatabaseUrl(databaseUrl, shopDir), secret, rest: rest as Record<string, string>, file }
+}
+
+/**
+ * Points the shop at another database: the DATABASE_URL line of the .env becomes `url`, and the old line stays above
+ * it as a comment so going back is one edit. Everything else in the file is left as it is.
+ */
+export function switchDatabaseUrl(file: string, url: string, now = new Date()) {
+  if (/[\s#"'`]/.test(url)) {
+    throw new UsageError(
+      'The database address has a space, #, quote or backtick in it: percent-encode those characters.',
+    )
+  }
+  const text = readFileSync(file, 'utf8')
+  const line = /^[ \t]*DATABASE_URL[ \t]*=.*$/m
+  const old = line.exec(text)?.[0].trim()
+  const stamp = now.toISOString().slice(0, 10)
+  const replacement = `${old ? `# ${redactUrl(old)}   (before shopnex migrate-db, ${stamp})\n` : ''}DATABASE_URL=${url}`
+  writeFileSync(
+    file,
+    old ? text.replace(line, () => replacement) : `${text}${text.endsWith('\n') ? '' : '\n'}${replacement}\n`,
+  )
 }

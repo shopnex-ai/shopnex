@@ -293,14 +293,23 @@ jobs:
           node scripts/build-node-bundle.mjs "${TAG#v}" "$RUNNER_TEMP/bundle"
           gh release upload "$TAG" "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz "$RUNNER_TEMP"/bundle/shopnex-*-node.tgz.sha256 --clobber
 
-  # Publishes create-shopnex to npm once the release and its bundle are attached (it downloads the bundle of its own
-  # version, so it must never be published before that). It uses npm trusted publishing, so there is no npm token:
-  # create-shopnex's Trusted Publisher settings on npmjs.com name this repository and this file (release.yaml).
+  # Publishes the two CLIs to npm once the release and its bundle are attached (each downloads the bundle of its own
+  # version, so neither may be published before that): create-shopnex (try it) and shopnex (look after a shop, see
+  # packages/cli). It uses npm trusted publishing, so there is no npm token: each package's Trusted Publisher settings
+  # on npmjs.com name this repository and this file (release.yaml). One failing does not stop the other.
   # Pre-releases (v1.0.0-rc.1) go to the `next` dist-tag and leave `latest` alone.
   npm:
-    name: Publish create-shopnex to npm
+    name: Publish ${{ matrix.package }} to npm
     needs: node-bundle
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: create-shopnex
+            dir: packages/create-shopnex
+          - package: shopnex
+            dir: packages/cli
     permissions:
       contents: read
       id-token: write # npm provenance
@@ -320,21 +329,23 @@ jobs:
       - name: Publish
         env:
           TAG: ${{ github.ref_name }}
+          PACKAGE: ${{ matrix.package }}
+          DIR: ${{ matrix.dir }}
         run: |
           # Trusted publishing needs npm 11.5.1 or newer
           npm --version
           version="${TAG#v}"
-          package="$(node -p "require('./packages/create-shopnex/package.json').version")"
-          if [ "$package" != "$version" ]; then
-            echo "packages/create-shopnex is $package but the tag is $version: run pnpm bump before tagging" >&2
+          current="$(node -p "require('./$DIR/package.json').version")"
+          if [ "$current" != "$version" ]; then
+            echo "$DIR is $current but the tag is $version: run pnpm bump before tagging" >&2
             exit 1
           fi
           # A re-run of a tag that already published
-          if npm view "create-shopnex@$version" version > /dev/null 2>&1; then
-            echo "create-shopnex@$version is already on npm"
+          if npm view "$PACKAGE@$version" version > /dev/null 2>&1; then
+            echo "$PACKAGE@$version is already on npm"
             exit 0
           fi
           dist_tag=latest
           if [[ "$version" == *-* ]]; then dist_tag=next; fi
-          cd packages/create-shopnex
+          cd "$DIR"
           npm publish --provenance --access public --tag "$dist_tag"

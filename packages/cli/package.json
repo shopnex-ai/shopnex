@@ -1,0 +1,46 @@
+{
+  "name": "shopnex",
+  "version": "0.15.0",
+  "description": "Look after a ShopNex shop made with create-shopnex: npx shopnex migrate-db moves the embedded database to PostgreSQL",
+  "license": "MIT",
+  "homepage": "https://shopnex.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shopnex-ai/shopnex.git",
+    "directory": "packages/cli"
+  },
+  "keywords": [
+    "shopnex",
+    "ecommerce",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "bin": {
+    "shopnex": "./bin/shopnex.mjs"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "node scripts/build.mjs",
+    "dev": "tsx src/main.ts",
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@shopnex/cli-core": "workspace:*",
+    "@types/node": "catalog:",
+    "esbuild": "0.28.2",
+    "picocolors": "^1.1.1",
+    "tsx": "^4.23.15"
+  }
+}
