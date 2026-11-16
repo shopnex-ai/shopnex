@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { pickApp, type AppDef } from '../src/apps'
-import { UsageError } from '../src/errors'
+import { UsageError } from '@shopnex/cli-core/errors'
 
 const app = (name: string): AppDef => ({ name, label: name, hint: '', plan: () => ({}) as never })
 

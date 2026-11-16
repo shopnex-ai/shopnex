@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { parse } from '../src/args'
-import { UsageError } from '../src/errors'
+import { UsageError } from '@shopnex/cli-core/errors'
 
 test('defaults: the ports and the browser opens', () => {
   const options = parse([])

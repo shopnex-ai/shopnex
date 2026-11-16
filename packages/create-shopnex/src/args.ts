@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util'
-import { UsageError } from './errors'
+import { UsageError } from '@shopnex/cli-core/errors'
 
 export const DEFAULT_PORT = 3000
 export const DEFAULT_STOREFRONT_PORT = 4321

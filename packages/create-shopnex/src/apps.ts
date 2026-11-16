@@ -1,6 +1,6 @@
 import * as p from '@clack/prompts'
 import { planFromBundle, type Plan } from './plan'
-import { UsageError } from './errors'
+import { UsageError } from '@shopnex/cli-core/errors'
 import type { Extra } from './extras'
 
 export type PlanInput = {
