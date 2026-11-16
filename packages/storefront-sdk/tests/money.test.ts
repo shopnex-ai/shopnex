@@ -1,7 +1,7 @@
 import test, { describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { formatMoney, moneyAmount } from '../src/money'
+import { currencyDigits, formatMoney, moneyAmount, parseMoney } from '../src/money'
 
 describe('Storefront SDK Money Helpers', () => {
   describe('formatMoney', () => {
@@ -136,5 +136,19 @@ describe('Storefront SDK Money Helpers', () => {
       assert.equal(formatMoney({ amountMinor: 100, currencyCode: 'USD' }), '$1.00')
       assert.equal(moneyAmount({ amountMinor: 1000, currencyCode: 'BHD' }), '1.000')
     })
+  })
+})
+
+describe('parseMoney and currencyDigits', () => {
+  test('digits follow the currency', () => {
+    assert.deepEqual([currencyDigits('USD'), currencyDigits('JPY'), currencyDigits('BHD')], [2, 0, 3])
+  })
+  test('text becomes minor units in the currency’s own digits', () => {
+    assert.equal(parseMoney('19.99', 'USD'), 1999)
+    assert.equal(parseMoney('1000', 'JPY'), 1000)
+    assert.equal(parseMoney('1.234', 'BHD'), 1234)
+    assert.equal(parseMoney('', 'USD'), null)
+    assert.ok(Number.isNaN(parseMoney('1.5', 'JPY')))
+    assert.ok(Number.isNaN(parseMoney('1.234', 'USD')))
   })
 })

@@ -18,6 +18,7 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/pricing": "workspace:*",
+    "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:"
   },

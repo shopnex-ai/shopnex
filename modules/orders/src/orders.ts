@@ -11,6 +11,7 @@ import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fie
 import { notify } from '@shopnex/email'
 import { calculate, discountService, taxService } from '@shopnex/pricing'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
+import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './errors'
 
@@ -382,7 +383,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     if (!totals.discountApplicable) {
       throw new OrderError(
         'DISCOUNT_NOT_APPLICABLE',
-        `Discount code "${discount!.discount!.code}" needs a subtotal of at least ${new Intl.NumberFormat('en', { style: 'currency', currency: shop!.currency }).format(discount!.discount!.minSubtotalCents! / 100)}`,
+        `Discount code "${discount!.discount!.code}" needs a subtotal of at least ${formatMoney({ amountMinor: discount!.discount!.minSubtotalCents!, currencyCode: shop!.currency })}`,
       )
     }
 
@@ -616,7 +617,7 @@ export async function refund(shopId: string, id: string, input: { amountCents: n
     if (input.amountCents > money.left) {
       throw new OrderError(
         'INVALID_REFUND',
-        `At most ${(money.left / 100).toFixed(2)} ${order.currency} can be refunded`,
+        `At most ${formatMoney({ amountMinor: money.left, currencyCode: order.currency })} can be refunded`,
       )
     }
     const manual = (order.paymentGateway ?? 'manual') === 'manual'

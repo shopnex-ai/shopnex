@@ -1,4 +1,5 @@
 import { csvTable, type CsvRow } from '@/lib/csv'
+import { formatMinorInput, minorPerUnit } from '@/lib/money'
 
 export type DiscountSource = 'shopify' | 'woocommerce' | 'shopnex'
 
@@ -17,8 +18,9 @@ export type DiscountRecord = {
 
 const yes = (value: string | undefined, fallback: boolean) =>
   value ? ['true', '1', 'yes', 'active'].includes(value.toLowerCase()) : fallback
-const toCents = (value: string | undefined) => (value ? Math.round(Number(value) * 100) : 0)
-const money = (cents: number | null) => ((cents ?? 0) / 100).toFixed(2)
+const toMinor = (value: string | undefined, currency: string) =>
+  value ? Math.round(Number(value) * minorPerUnit(currency)) : 0
+const money = (minor: number | null, currency: string) => formatMinorInput(minor ?? 0, currency)
 const iso = (value: Date | string | null) => (value ? new Date(value).toISOString() : '')
 
 export type ExportableDiscount = Omit<DiscountRecord, 'startsAt' | 'endsAt' | 'minSubtotalCents'> & {
@@ -32,8 +34,9 @@ type Format = {
   headers: string[]
   read: (
     row: CsvRow,
+    currency: string,
   ) => Omit<DiscountRecord, 'startsAt' | 'endsAt' | 'type'> & { startsAt: string; endsAt: string; type: string }
-  write: (d: ExportableDiscount) => unknown[]
+  write: (d: ExportableDiscount, currency: string) => unknown[]
 }
 
 // WooCommerce coupons (percent / fixed_cart) and Shopify discount-code sheets carry amounts in currency units
@@ -87,14 +90,14 @@ export const formats: Record<DiscountSource, Format> = {
       'Start date',
       'End date',
     ],
-    read: (r) => {
+    read: (r, currency) => {
       const kind = (r.Type ?? '').toLowerCase()
       const percentage = kind.startsWith('percent')
       return {
         code: r['Discount Code'] ?? '',
         type: kind.includes('shipping') ? 'free_shipping' : percentage ? 'percentage' : 'fixed_amount',
-        value: kind.includes('shipping') ? 0 : percentage ? Number(r.Value) : toCents(r.Value),
-        minSubtotalCents: toCents(r['Minimum purchase amount']),
+        value: kind.includes('shipping') ? 0 : percentage ? Number(r.Value) : toMinor(r.Value, currency),
+        minSubtotalCents: toMinor(r['Minimum purchase amount'], currency),
         usageLimit: r['Usage limit'] ? Number(r['Usage limit']) : null,
         oncePerCustomer: yes(r['One use per customer'], false),
         active: yes(r.Status, true),
@@ -102,11 +105,11 @@ export const formats: Record<DiscountSource, Format> = {
         endsAt: r['End date'] ?? '',
       }
     },
-    write: (d) => [
+    write: (d, currency) => [
       d.code,
       d.type === 'percentage' ? 'Percentage' : d.type === 'free_shipping' ? 'Free shipping' : 'Fixed amount',
-      d.type === 'percentage' ? d.value : money(d.value),
-      money(d.minSubtotalCents),
+      d.type === 'percentage' ? d.value : money(d.value, currency),
+      money(d.minSubtotalCents, currency),
       d.usageLimit,
       d.oncePerCustomer ? 'TRUE' : 'FALSE',
       d.active ? 'Active' : 'Disabled',
@@ -128,14 +131,14 @@ export const formats: Record<DiscountSource, Format> = {
       'date_starts',
       'date_expires',
     ],
-    read: (r) => {
+    read: (r, currency) => {
       const percentage = (r.discount_type ?? '').toLowerCase() === 'percent'
       const freeShipping = yes(r.free_shipping, false) && !Number(r.amount)
       return {
         code: r.code ?? '',
         type: freeShipping ? 'free_shipping' : percentage ? 'percentage' : 'fixed_amount',
-        value: freeShipping ? 0 : percentage ? Number(r.amount) : toCents(r.amount),
-        minSubtotalCents: toCents(r.minimum_amount),
+        value: freeShipping ? 0 : percentage ? Number(r.amount) : toMinor(r.amount, currency),
+        minSubtotalCents: toMinor(r.minimum_amount, currency),
         usageLimit: r.usage_limit ? Number(r.usage_limit) : null,
         oncePerCustomer: r.usage_limit_per_user === '1',
         active: (r.status || 'publish').toLowerCase() === 'publish',
@@ -143,12 +146,12 @@ export const formats: Record<DiscountSource, Format> = {
         endsAt: r.date_expires ?? '',
       }
     },
-    write: (d) => [
+    write: (d, currency) => [
       d.code,
       d.type === 'percentage' ? 'percent' : 'fixed_cart',
-      d.type === 'percentage' ? d.value : money(d.value),
+      d.type === 'percentage' ? d.value : money(d.value, currency),
       d.type === 'free_shipping' ? 1 : '',
-      money(d.minSubtotalCents),
+      money(d.minSubtotalCents, currency),
       d.usageLimit,
       d.oncePerCustomer ? 1 : '',
       d.active ? 'publish' : 'draft',
@@ -158,9 +161,9 @@ export const formats: Record<DiscountSource, Format> = {
   },
 }
 
-export function discountsCsv(source: DiscountSource, discounts: ExportableDiscount[]) {
+export function discountsCsv(source: DiscountSource, discounts: ExportableDiscount[], currency: string) {
   return csvTable(
     formats[source].headers,
-    discounts.map((discount) => formats[source].write(discount)),
+    discounts.map((discount) => formats[source].write(discount, currency)),
   )
 }

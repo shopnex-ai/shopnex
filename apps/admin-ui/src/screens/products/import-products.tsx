@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { FormatSelect, ImportDialog, platformOptions, createEach } from '@/components/admin/import-dialog'
 import { parseCsv, type CsvRow } from '@/lib/csv'
+import { minorPerUnit } from '@/lib/money'
 import { client, orpc } from '@/lib/orpc'
 
 type ImportSource = 'shopify' | 'woocommerce' | 'magento'
@@ -24,13 +25,13 @@ type ImportProduct = {
   }[]
 }
 
-function money(value: string, row: number) {
+function money(value: string, row: number, currency: string) {
   const amount = Number(value)
   if (!Number.isFinite(amount) || amount < 0) throw new Error(`Row ${row}: invalid Variant Price.`)
-  return Math.round(amount * 100)
+  return Math.round(amount * minorPerUnit(currency))
 }
 
-function toProducts(rows: CsvRow[]): ImportProduct[] {
+function toProducts(rows: CsvRow[], currency: string): ImportProduct[] {
   const groups = new Map<
     string,
     {
@@ -95,8 +96,8 @@ function toProducts(rows: CsvRow[]): ImportProduct[] {
       const inventory = row['Variant Inventory Qty']
       product.variants.push({
         sku: row['Variant SKU'] || null,
-        priceCents: money(variantPrice, index + 2),
-        compareAtPriceCents: compare ? money(compare, index + 2) : null,
+        priceCents: money(variantPrice, index + 2, currency),
+        compareAtPriceCents: compare ? money(compare, index + 2, currency) : null,
         inventoryQuantity:
           inventory !== '' && Number.isFinite(Number(inventory)) ? Math.max(0, Number(inventory)) : null,
         imageUrl: null,
@@ -139,7 +140,7 @@ function toProducts(rows: CsvRow[]): ImportProduct[] {
   })
 }
 
-function toWooCommerceProducts(rows: CsvRow[]): ImportProduct[] {
+function toWooCommerceProducts(rows: CsvRow[], currency: string): ImportProduct[] {
   const products: ImportProduct[] = []
   const byReference = new Map<string, ImportProduct>()
   const variableRows = new Map<ImportProduct, CsvRow>()
@@ -169,7 +170,10 @@ function toWooCommerceProducts(rows: CsvRow[]): ImportProduct[] {
     const regular = row['Regular price'] || row.Price
     if (!regular) throw new Error(`Row ${index}: product has no regular price.`)
     const sale = row['Sale price']
-    return { priceCents: money(sale || regular, index), compareAtPriceCents: sale ? money(regular, index) : null }
+    return {
+      priceCents: money(sale || regular, index, currency),
+      compareAtPriceCents: sale ? money(regular, index, currency) : null,
+    }
   }
 
   rows.forEach((row, index) => {
@@ -237,13 +241,13 @@ function toWooCommerceProducts(rows: CsvRow[]): ImportProduct[] {
   return products
 }
 
-function toMagentoProducts(rows: CsvRow[]): ImportProduct[] {
+function toMagentoProducts(rows: CsvRow[], currency: string): ImportProduct[] {
   const bySku = new Map(rows.filter((row) => row.sku).map((row) => [row.sku!, row]))
   const linkedSkus = new Set<string>()
   const products: ImportProduct[] = []
   const amount = (value: string, row: number) => {
     if (!value) throw new Error(`Row ${row}: product has no price.`)
-    return money(value, row)
+    return money(value, row, currency)
   }
   const isActive = (row: CsvRow) => (row.product_online ?? row.status ?? '1') === '1'
   const productFromRow = (row: CsvRow, index: number): ImportProduct => {
@@ -364,31 +368,31 @@ function toMagentoProducts(rows: CsvRow[]): ImportProduct[] {
   return products
 }
 
-function parseProducts(text: string, source: ImportSource) {
+function parseProducts(text: string, source: ImportSource, currency: string) {
   const rows = parseCsv(text, 'product')
   const headers = Object.keys(rows[0] ?? {})
   if (source === 'shopify') {
     if (!headers.includes('Title') || !headers.includes('Variant Price')) {
       throw new Error('Use a Shopify product export CSV with Title and Variant Price columns.')
     }
-    return toProducts(rows)
+    return toProducts(rows, currency)
   }
   if (source === 'magento') {
     if (!headers.includes('sku') || !headers.includes('product_type') || !headers.includes('price')) {
       throw new Error('Use a Magento product export CSV with sku, product_type, and price columns.')
     }
-    return toMagentoProducts(rows)
+    return toMagentoProducts(rows, currency)
   }
   if (!headers.includes('Name') || !headers.includes('Regular price')) {
     throw new Error('Use a WooCommerce product export CSV with Name and Regular price columns.')
   }
-  return toWooCommerceProducts(rows)
+  return toWooCommerceProducts(rows, currency)
 }
 
 const sources = platformOptions<ImportSource>(['shopify', 'woocommerce', 'magento'], 'Products CSV')
 const sourceNames = { shopify: 'Shopify', woocommerce: 'WooCommerce', magento: 'Magento / Adobe Commerce' }
 
-export function ImportProductsDialog() {
+export function ImportProductsDialog({ currency }: { currency: string }) {
   const queryClient = useQueryClient()
   const [source, setSource] = useState<ImportSource>('shopify')
 
@@ -400,7 +404,7 @@ export function ImportProductsDialog() {
       resetKey={source}
       hint={`Export products from ${sourceNames[source]} and upload the CSV. Names, variants, prices, stock and image links are imported.`}
       options={<FormatSelect label="Import from" value={source} options={sources} onChange={setSource} />}
-      parse={(text) => parseProducts(text, source)}
+      parse={(text) => parseProducts(text, source, currency)}
       previewHeaders={['Product', 'Variants', 'Status']}
       previewRow={(product) => [
         product.title,

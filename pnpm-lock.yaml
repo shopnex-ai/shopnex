@@ -909,6 +909,9 @@ importers:
       '@shopnex/pricing':
         specifier: workspace:*
         version: link:../pricing
+      '@shopnex/storefront-sdk':
+        specifier: workspace:*
+        version: link:../../packages/storefront-sdk
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks

@@ -110,7 +110,7 @@ export function DiscountList({ currency }: { currency: string }) {
         actions={
           <div className="flex gap-2">
             <ImportDiscountsDialog currency={currency} />
-            <ExportDiscountsDialog />
+            <ExportDiscountsDialog currency={currency} />
             <DiscountDialog currency={currency} />
           </div>
         }

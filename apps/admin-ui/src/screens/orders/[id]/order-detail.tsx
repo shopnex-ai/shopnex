@@ -28,7 +28,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
-import { formatCentsInput, formatMoney, toCents } from '@/lib/money'
+import { formatMinorInput, formatMoney, toMinor } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
 
 type Order = Outputs['admin']['orders']['get']
@@ -432,10 +432,10 @@ function FulfillButton({ order }: { order: Order }) {
 function RefundButton({ order, refundable }: { order: Order; refundable: number }) {
   const run = useOrderAction()
   const [open, setOpen] = useState(false)
-  const [amount, setAmount] = useState(formatCentsInput(refundable))
+  const [amount, setAmount] = useState(formatMinorInput(refundable, order.currency))
   const refund = useMutation(orpc.admin.orders.refund.mutationOptions())
   const money = (cents: number) => formatMoney(cents, order.currency)
-  const cents = toCents(amount)
+  const cents = toMinor(amount, order.currency)
   const invalid = cents === null || Number.isNaN(cents) || cents <= 0 || cents > refundable
   const manual = (order.paymentGateway ?? 'manual') === 'manual'
 
@@ -444,7 +444,7 @@ function RefundButton({ order, refundable }: { order: Order; refundable: number 
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (next) setAmount(formatCentsInput(refundable))
+        if (next) setAmount(formatMinorInput(refundable, order.currency))
       }}
     >
       <DialogTrigger render={<Button variant="outline" />}>Refund</DialogTrigger>

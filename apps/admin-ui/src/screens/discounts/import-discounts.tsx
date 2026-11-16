@@ -7,14 +7,14 @@ import { formats, type DiscountRecord, type DiscountSource } from './discount-fo
 
 const sources = platformOptions<DiscountSource>(['shopify', 'woocommerce', 'shopnex'], 'Discounts CSV')
 
-function parseDiscounts(text: string, source: DiscountSource): DiscountRecord[] {
+function parseDiscounts(text: string, source: DiscountSource, currency: string): DiscountRecord[] {
   const rows = parseCsv(text, 'discount')
   const format = formats[source]
   requireColumns(rows, format.required, `${sources.find((option) => option.value === source)!.label} discounts`)
   const seen = new Set<string>()
   return rows.flatMap((row, index) => {
     const line = `Row ${index + 2}`
-    const raw = format.read(row)
+    const raw = format.read(row, currency)
     if (!raw.code) return []
     if (/\s/.test(raw.code)) throw new Error(`${line}: code “${raw.code}” can't contain spaces.`)
     if (seen.has(raw.code.toLowerCase())) throw new Error(`${line}: code “${raw.code}” appears twice in this file.`)
@@ -59,7 +59,7 @@ export function ImportDiscountsDialog({ currency }: { currency: string }) {
       resetKey={source}
       hint="One row per code, with its type, amount, and optional limits and dates."
       options={<FormatSelect label="Import from" value={source} options={sources} onChange={setSource} />}
-      parse={(text) => parseDiscounts(text, source)}
+      parse={(text) => parseDiscounts(text, source, currency)}
       previewHeaders={['Code', 'Discount', 'Limit', 'Active']}
       previewRow={(d) => [
         d.code,

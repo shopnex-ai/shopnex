@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { platformOptions, ExportDialog, FormatSelect } from '@/components/admin/import-dialog'
 import { fetchAll } from '@/lib/csv'
+import { formatMinorInput } from '@/lib/money'
 import { client, type Outputs } from '@/lib/orpc'
 
 type ExportSource = 'shopify' | 'woocommerce' | 'magento'
@@ -11,7 +12,6 @@ const csvCell = (value: unknown) => {
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 const row = (values: unknown[]) => values.map(csvCell).join(',')
-const money = (cents: number) => (cents / 100).toFixed(2)
 const stock = (quantity: number | null) => (quantity == null ? '' : String(quantity))
 const attributeCode = (name: string) =>
   name
@@ -20,7 +20,8 @@ const attributeCode = (name: string) =>
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
 
-function shopifyCsv(products: Product[]) {
+function shopifyCsv(products: Product[], currency: string) {
+  const money = (minor: number) => formatMinorInput(minor, currency)
   const headers = [
     'Handle',
     'Title',
@@ -100,7 +101,8 @@ function shopifyCsv(products: Product[]) {
   return output.join('\r\n')
 }
 
-function wooCommerceCsv(products: Product[]) {
+function wooCommerceCsv(products: Product[], currency: string) {
+  const money = (minor: number) => formatMinorInput(minor, currency)
   const headers = [
     'Type',
     'SKU',
@@ -177,7 +179,8 @@ function wooCommerceCsv(products: Product[]) {
   return output.join('\r\n')
 }
 
-function magentoCsv(products: Product[]) {
+function magentoCsv(products: Product[], currency: string) {
+  const money = (minor: number) => formatMinorInput(minor, currency)
   const headers = [
     'sku',
     'store_view_code',
@@ -292,7 +295,7 @@ function magentoCsv(products: Product[]) {
   return output.join('\r\n')
 }
 
-const exporters: Record<ExportSource, (products: Product[]) => string> = {
+const exporters: Record<ExportSource, (products: Product[], currency: string) => string> = {
   shopify: shopifyCsv,
   woocommerce: wooCommerceCsv,
   magento: magentoCsv,
@@ -300,12 +303,12 @@ const exporters: Record<ExportSource, (products: Product[]) => string> = {
 
 const formats = platformOptions<ExportSource>(['shopify', 'woocommerce', 'magento'], 'Products CSV')
 
-export function ExportProductsDialog() {
+export function ExportProductsDialog({ currency }: { currency: string }) {
   const [source, setSource] = useState<ExportSource>('shopify')
 
   async function build() {
     const products = await fetchAll((page) => client.admin.products.list(page))
-    return { csv: exporters[source](products), count: products.length }
+    return { csv: exporters[source](products, currency), count: products.length }
   }
 
   return (

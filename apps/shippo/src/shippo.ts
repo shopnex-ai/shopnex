@@ -9,10 +9,12 @@ const auth = (key: string) => ({ authorization: `ShippoToken ${key}` })
 // ShopNex waits 5 seconds for the whole answer
 const TIMEOUT_MS = 4500
 
-/** "12.50" → 1250; null for anything that isn't a price */
-export function toCents(value: unknown): number | null {
+/** "12.50" → 1250 for USD, "1250" → 1250 for JPY (the currency's smallest unit); null for anything that isn't a price */
+export function toMinor(value: unknown, currency: string): number | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' && value.trim() ? Number(value) : NaN
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : null
+  const digits =
+    new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 10 ** digits) : null
 }
 
 /** A rate code part: lowercase letters, digits and dashes */
@@ -105,7 +107,7 @@ export async function quoteRates(key: string, origin: Origin, parcel: Parcel, re
   const seen = new Set<string>()
   const rates: Rate[] = []
   for (const r of shipment?.rates ?? []) {
-    const priceCents = toCents(r.amount)
+    const priceCents = toMinor(r.amount, request.currency)
     if (priceCents === null || r.currency?.toUpperCase() !== request.currency.toUpperCase()) continue
     const level = r.servicelevel
     const code = `${slug(r.provider)}:${slug(level?.token ?? level?.name ?? '')}`

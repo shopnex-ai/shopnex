@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ExportDialog, FormatSelect, platformOptions } from '@/components/admin/import-dialog'
 import { csvTable, fetchAll, mapPool } from '@/lib/csv'
+import { formatMinorInput } from '@/lib/money'
 import { client } from '@/lib/orpc'
 
 const shopifyHeaders = [
@@ -51,7 +52,6 @@ const shopifyHeaders = [
 type Order = Awaited<ReturnType<typeof client.admin.orders.get>>
 type Address = Order['shippingAddress']
 
-const amount = (cents: number) => (cents / 100).toFixed(2)
 const iso = (date: Date | string | null | undefined) => (date ? new Date(date).toISOString() : '')
 
 function addressColumns(address: Address) {
@@ -71,6 +71,7 @@ function addressColumns(address: Address) {
 
 // Shopify-style: order-level columns on the first row, then one row per extra line item
 function shopifyRows(order: Order) {
+  const amount = (minor: number) => formatMinorInput(minor, order.currency)
   return order.items.map((item, index) => {
     const first = index === 0
     return [
@@ -156,6 +157,7 @@ function wooStatus(order: Order) {
 }
 
 function wooRows(order: Order) {
+  const amount = (minor: number) => formatMinorInput(minor, order.currency)
   return [
     [
       order.orderNumber,

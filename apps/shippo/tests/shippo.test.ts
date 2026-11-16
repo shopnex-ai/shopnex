@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { afterEach, describe, test } from 'node:test'
 import type { RatesRequest } from '@shopnex/app'
 import { DEFAULT_PARCEL } from '../src/config'
-import { ownItems, parcelWeightOz, quoteRates, slug, toCents, verifyKey } from '../src/shippo'
+import { ownItems, parcelWeightOz, quoteRates, slug, toMinor, verifyKey } from '../src/shippo'
 
 const request = (currency = 'USD'): RatesRequest => ({
   kind: 'rates',
@@ -36,9 +36,9 @@ function mockFetch(answer: unknown, status = 200) {
 
 describe('helpers', () => {
   test('prices', () => {
-    assert.equal(toCents('12.50'), 1250)
-    assert.equal(toCents('x'), null)
-    assert.equal(toCents('-1'), null)
+    assert.equal(toMinor('12.50', 'USD'), 1250)
+    assert.equal(toMinor('x', 'USD'), null)
+    assert.equal(toMinor('-1', 'USD'), null)
   })
   test('slug and weight', () => {
     assert.equal(slug('UPS Ground Saver®'), 'ups-ground-saver')

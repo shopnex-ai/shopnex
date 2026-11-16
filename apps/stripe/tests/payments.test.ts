@@ -328,3 +328,48 @@ describe('refund', () => {
     await assert.doesNotReject(refund(deps, shop, refundRequest()))
   })
 })
+
+describe('currencies that are not two-decimal', () => {
+  /** What Stripe is asked to collect for a ShopNex amount, and whether its webhook would accept what Stripe then reports */
+  async function checkout(cents: number, currency: string) {
+    const res = await post('/payments/session', paymentRequest({ amount: { cents, currency } }))
+    return { res, params: sessionCalls[0]?.params }
+  }
+
+  test('yen are sent as yen: 1000 is ¥1,000, not ¥100,000', async () => {
+    const { res, params } = await checkout(1000, 'JPY')
+    assert.equal(res.status, 200)
+    assert.deepEqual(params!.line_items![0]!.price_data!.unit_amount, 1000)
+    assert.equal(params!.line_items![0]!.price_data!.currency, 'jpy')
+    assert.equal(params!.metadata!.shopnex_amount_cents, '1000')
+    assert.equal(amountMismatch({ metadata: params!.metadata, amount_total: 1000, currency: 'jpy' } as never), null)
+  })
+
+  test('fils are sent as fils: 1230 is BHD 1.230', async () => {
+    const { params } = await checkout(1230, 'BHD')
+    assert.equal(params!.line_items![0]!.price_data!.unit_amount, 1230)
+  })
+
+  test('a three-decimal amount Stripe cannot take is refused before Stripe is called', async () => {
+    const { res } = await checkout(1234, 'BHD')
+    assert.equal(res.status, 502)
+    assert.equal(sessionCalls.length, 0)
+  })
+
+  test('ISK is sent as a two-decimal value ending in 00, and the webhook check expects the same figure', async () => {
+    const { params } = await checkout(5, 'ISK')
+    assert.equal(params!.line_items![0]!.price_data!.unit_amount, 500)
+    assert.equal(params!.metadata!.shopnex_amount_cents, '500')
+    assert.equal(amountMismatch({ metadata: params!.metadata, amount_total: 500, currency: 'isk' } as never), null)
+  })
+
+  test('a refund of ¥400 asks Stripe for 400', async () => {
+    await refund(deps, shop, refundRequest({ amount: { cents: 400, currency: 'JPY' } }))
+    assert.equal(refundCalls[0]!.params.amount, 400)
+  })
+
+  test('a refund in ISK is sent the way the payment was', async () => {
+    await refund(deps, shop, refundRequest({ amount: { cents: 3, currency: 'ISK' } }))
+    assert.equal(refundCalls[0]!.params.amount, 300)
+  })
+})
