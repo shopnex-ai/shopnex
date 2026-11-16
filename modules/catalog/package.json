@@ -15,7 +15,7 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",
-    "sanitize-html": "^2.18.1"
+    "sanitize-html": "^2.18.2"
   },
   "devDependencies": {
     "@types/sanitize-html": "^2.16.2"
