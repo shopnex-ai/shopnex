@@ -3,7 +3,7 @@ name: create-shopnex@edge
 # The rolling build behind `npx create-shopnex@edge`: every push to main rebuilds the packaged ShopNex
 # (scripts/build-node-bundle.mjs) and replaces the one file of the `edge` pre-release, which create-shopnex@edge
 # downloads. The CLI finds that file by its checksum, not by its version, so it does not need a new npm version
-# per push: create-shopnex@edge is published again only when packages/create-shopnex itself changed.
+# per push: create-shopnex@edge is published again only when packages/create-shopnex or packages/cli-core (bundled into it) changed.
 #
 # The `edge` release is created once, as a pre-release (never `latest`, so the admin's update badge ignores it) and is
 # never edited afterwards (an edit would rebuild the landing, see landing-rebuild.yaml). Only its file is replaced.
@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # to see whether packages/create-shopnex changed since the previous push
+          fetch-depth: 0 # to see whether packages/create-shopnex or packages/cli-core changed since the previous push
 
       - uses: pnpm/action-setup@v6
 
@@ -75,11 +75,11 @@ jobs:
           publish=false
           if [ "${{ github.event_name }}" = workflow_dispatch ] || ! npm view create-shopnex@edge version > /dev/null 2>&1; then
             publish=true
-          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex .github/workflows/edge.yaml 2> /dev/null; then
+          elif ! git diff --quiet "$BEFORE" "$GITHUB_SHA" -- packages/create-shopnex packages/cli-core .github/workflows/edge.yaml 2> /dev/null; then
             publish=true
           fi
           if [ "$publish" != true ]; then
-            echo "packages/create-shopnex did not change: the published edge CLI downloads the new bundle by itself"
+            echo "packages/create-shopnex and packages/cli-core did not change: the published edge CLI downloads the new bundle by itself"
             exit 0
           fi
           cd packages/create-shopnex

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { isEdge } from './bundle'
+import { isEdge } from '@shopnex/cli-core/bundle'
 
 const GITIGNORE = `# ShopNex: secrets and local data stay out of git
 .env

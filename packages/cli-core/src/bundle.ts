@@ -47,7 +47,7 @@ export const isInstalled = (key: string) => existsSync(join(bundleDir(key), 'man
 const installedEdges = () =>
   existsSync(appCacheDir()) ? readdirSync(appCacheDir()).filter((name) => /^edge-[0-9a-f]{12}$/.test(name)) : []
 
-async function get(url: string, what: string, version: string) {
+async function get(url: string, what: string, version: string, cli: string) {
   let response: Response
   try {
     response = await fetch(url)
@@ -57,7 +57,7 @@ async function get(url: string, what: string, version: string) {
   }
   if (response.status === 404) {
     throw new UnavailableError(
-      `ShopNex ${version} has no packaged build to download (404 for ${url}).\nUse a released version of create-shopnex.`,
+      `ShopNex ${version} has no packaged build to download (404 for ${url}).\nUse a released version of ${cli}.`,
     )
   }
   if (!response.ok) {
@@ -93,7 +93,7 @@ async function download(response: Response, file: string, onProgress: (bytes: nu
  * unpacking it into the cache folder) and returns the folder to run from. Nothing is left behind half-done: it is
  * unpacked next to the final place and moved into it as the last step.
  */
-export async function resolveBundle({ version }: { version: string }) {
+export async function resolveBundle({ version, cli = 'create-shopnex' }: { version: string; cli?: string }) {
   const edge = isEdge(version)
   if (!edge && isInstalled(version)) return bundleDir(version)
 
@@ -107,7 +107,7 @@ export async function resolveBundle({ version }: { version: string }) {
   let work: string | undefined
   try {
     const url = bundleUrl(version)
-    const expected = parseChecksum(await (await get(`${url}.sha256`, 'the checksum', version)).text())
+    const expected = parseChecksum(await (await get(`${url}.sha256`, 'the checksum', version, cli)).text())
     if (!/^[0-9a-f]{64}$/.test(expected)) throw new UnavailableError(`${url}.sha256 does not hold a SHA-256 checksum.`)
 
     // A release is named by its version. The edge build is replaced on every push, so it is named by its checksum:
@@ -123,7 +123,7 @@ export async function resolveBundle({ version }: { version: string }) {
 
     work = mkdtempSync(join(appCacheDir(), `${key}.tmp-`))
     const file = join(work, 'bundle.tgz')
-    const actual = await download(await get(url, 'ShopNex', version), file, (bytes) =>
+    const actual = await download(await get(url, 'ShopNex', version, cli), file, (bytes) =>
       say(`Downloading ${label}: ${(bytes / 1e6).toFixed(1)} MB`),
     )
     if (actual !== expected) {

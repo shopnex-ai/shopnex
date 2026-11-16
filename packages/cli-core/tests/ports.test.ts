@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { createServer, type AddressInfo, type Server } from 'node:net'
 import { test } from 'node:test'
 import { UsageError } from '../src/errors'
-import { assertPortsFree, portInUse } from '../src/run'
+import { assertPortsFree, portInUse } from '../src/ports'
 
 const listen = () =>
   new Promise<Server>((resolve) => {

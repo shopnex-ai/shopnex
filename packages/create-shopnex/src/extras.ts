@@ -1,4 +1,4 @@
-import { UsageError } from './errors'
+import { UsageError } from '@shopnex/cli-core/errors'
 
 /** An optional app create-shopnex can start next to the shop (--with <name>): its own server, in the bundle's apps/ folder */
 export type Extra = {

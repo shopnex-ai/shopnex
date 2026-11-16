@@ -37,6 +37,7 @@
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "devDependencies": {
+    "@shopnex/cli-core": "workspace:*",
     "@clack/prompts": "^0.7.0",
     "@types/node": "catalog:",
     "esbuild": "0.28.2",
