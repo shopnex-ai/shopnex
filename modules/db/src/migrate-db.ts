@@ -83,10 +83,10 @@ async function run() {
 run().then(
   () => process.exit(0),
   (error: Error) => {
-    // The stack only for a bug report: a refused insert or a lost connection is explained by the message
-    console.error(
-      error instanceof MoveDataError || !process.env.DEBUG ? error.message : `${error.message}\n${error.stack ?? ''}`,
-    )
+    // A refused insert or a lost connection carries a code (SQLSTATE, ECONNREFUSED) and is explained by its message.
+    // An error without one is a bug in this script, and its stack is what a bug report needs.
+    const explained = error instanceof MoveDataError || 'code' in error
+    console.error(explained ? error.message : `${error.message}\n${error.stack ?? ''}`)
     process.exit(1)
   },
 )
