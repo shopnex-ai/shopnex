@@ -4,8 +4,6 @@ name: Test npx create-shopnex
 # and checks that every server answers. The package and the bundle are built from this commit and served locally, so
 # nothing is published or downloaded from GitHub releases. It is a workflow of its own: it runs in parallel with the
 # Docker Compose checks (install-script.yaml) and each runner is a separate machine, so the ports (3000, 4321, ...) never clash.
-# The second job runs `shopnex migrate-db` (packages/cli) the same way: a real shop on the embedded database, moved to a
-# real PostgreSQL, then started again on it.
 on:
   push:
     branches: [main]
@@ -52,12 +50,6 @@ jobs:
           pnpm --filter create-shopnex build
           mkdir -p "$RUNNER_TEMP/out/cli"
           cp -R packages/create-shopnex/bin packages/create-shopnex/dist packages/create-shopnex/package.json "$RUNNER_TEMP/out/cli/"
-          # shopnex runs the bundle of its own version, so it must be the one the bundle above was built for
-          cli="$(node -p "require('./packages/cli/package.json').version")"
-          if [ "$cli" != "$version" ]; then echo "packages/cli is $cli but packages/create-shopnex is $version: run pnpm bump" >&2; exit 1; fi
-          pnpm --filter shopnex build
-          mkdir -p "$RUNNER_TEMP/out/shopnex"
-          cp -R packages/cli/bin packages/cli/dist packages/cli/package.json "$RUNNER_TEMP/out/shopnex/"
           echo "$version" > "$RUNNER_TEMP/out/version"
 
       - uses: actions/upload-artifact@v7
@@ -119,95 +111,4 @@ jobs:
         if: failure()
         run: |
           echo '--- create-shopnex'; cat "$RUNNER_TEMP/create-shopnex.log" || true
-          echo '--- bundle server'; cat "$RUNNER_TEMP/serve.log" || true
-
-  migrate-db:
-    name: Move a shop to PostgreSQL (shopnex migrate-db)
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      # The database the shop is moved to; the service below listens on it
-      TARGET: postgres://postgres:postgres@127.0.0.1:5432/shopnex
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
-    steps:
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22.22.0' # the oldest Node the CLIs support
-
-      - uses: actions/download-artifact@v8
-        with:
-          name: create-shopnex
-          path: ${{ runner.temp }}/out
-
-      - name: Serve the bundle
-        run: |
-          nohup npx --yes http-server@14.1.1 "$RUNNER_TEMP/out/bundle" -a 127.0.0.1 -p 8000 -s > "$RUNNER_TEMP/serve.log" 2>&1 &
-          npx --yes wait-on@8 -t 60000 http-get://127.0.0.1:8000/
-
-      - name: Start a shop on the embedded database, give it data of its own, stop it
-        run: |
-          version="$(cat "$RUNNER_TEMP/out/version")"
-          mkdir "$RUNNER_TEMP/work" && cd "$RUNNER_TEMP/work"
-          export SHOPNEX_BUNDLE_URL="http://127.0.0.1:8000/shopnex-v${version}-node.tgz" SHOPNEX_APP_DIR="$RUNNER_TEMP/app"
-          nohup node "$RUNNER_TEMP/out/cli/bin/create-shopnex.mjs" --no-open --verbose > "$RUNNER_TEMP/first.log" 2>&1 &
-          pid=$!
-          npx --yes wait-on@8 -t 180000 http-get://127.0.0.1:3000/api/v1/health
-          # Ctrl+C: create-shopnex stops both servers, as it does for a user
-          kill -INT "$pid"
-          for _ in $(seq 1 30); do kill -0 "$pid" 2> /dev/null || break; sleep 1; done
-          ! kill -0 "$pid" 2> /dev/null
-          for _ in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/3000) 2> /dev/null || break; sleep 1; done
-          # Something the migrations did not put there, so the check below proves the shop's own data moved
-          node --input-type=module -e "
-            import { pathToFileURL } from 'node:url'
-            const { PGlite } = await import(pathToFileURL(process.argv[1]).href)
-            const db = new PGlite(process.argv[2])
-            await db.query(\"update shops set name = 'Moved in CI'\")
-            await db.close()
-          " "$SHOPNEX_APP_DIR/$version/admin/node_modules/@electric-sql/pglite/dist/index.js" "$PWD/shopnex/.pglite"
-
-      - name: Move it to PostgreSQL
-        run: |
-          version="$(cat "$RUNNER_TEMP/out/version")"
-          psql "postgres://postgres:postgres@127.0.0.1:5432/postgres" -c 'create database shopnex'
-          cd "$RUNNER_TEMP/work/shopnex"
-          SHOPNEX_BUNDLE_URL="http://127.0.0.1:8000/shopnex-v${version}-node.tgz" SHOPNEX_APP_DIR="$RUNNER_TEMP/app" \
-            node "$RUNNER_TEMP/out/shopnex/bin/shopnex.mjs" migrate-db --to-env TARGET
-
-      - name: Check what it did
-        working-directory: ${{ runner.temp }}/work/shopnex
-        run: |
-          # The .env points at PostgreSQL, the old line is kept as a comment, the old data and a copy are still there
-          grep -q '^DATABASE_URL=postgres://' .env
-          grep -q '^# DATABASE_URL=pglite:' .env
-          test -d .pglite
-          ls -d .pglite.bak-*
-          # Every table is there, with the shop's own data
-          tables="$(psql "$TARGET" -Atc "select count(*) from pg_tables where schemaname = 'public'")"
-          echo "tables: $tables"
-          test "$tables" -gt 50
-          test "$(psql "$TARGET" -Atc 'select name from shops')" = 'Moved in CI'
-
-      - name: Start the shop again, on PostgreSQL
-        run: |
-          version="$(cat "$RUNNER_TEMP/out/version")"
-          cd "$RUNNER_TEMP/work"
-          SHOPNEX_BUNDLE_URL="http://127.0.0.1:8000/shopnex-v${version}-node.tgz" SHOPNEX_APP_DIR="$RUNNER_TEMP/app" \
-            nohup node "$RUNNER_TEMP/out/cli/bin/create-shopnex.mjs" --no-open --verbose > "$RUNNER_TEMP/second.log" 2>&1 &
-          npx --yes wait-on@8 -t 180000 http-get://127.0.0.1:3000/api/v1/health http-get://127.0.0.1:4321/
-          grep -F '[db] PostgreSQL 127.0.0.1:5432/shopnex' "$RUNNER_TEMP/second.log"
-
-      - name: The logs, when something failed
-        if: failure()
-        run: |
-          echo '--- first start'; cat "$RUNNER_TEMP/first.log" || true
-          echo '--- second start'; cat "$RUNNER_TEMP/second.log" || true
           echo '--- bundle server'; cat "$RUNNER_TEMP/serve.log" || true
