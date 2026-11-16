@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from '
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { loadShopEnv, redactUrl } from '../src/env'
+import { loadShopEnv, redactUrl, switchDatabaseUrl } from '../src/env'
 
 const shop = () => join(mkdtempSync(join(tmpdir(), 'create-shopnex-env-')), 'shop')
 
@@ -54,4 +54,39 @@ test('a dry run writes nothing', () => {
 test('the password of a connection string is not shown', () => {
   assert.equal(redactUrl('postgres://u:pw@db:5432/shop'), 'postgres://u:***@db:5432/shop')
   assert.equal(redactUrl('pglite:/a/b'), 'pglite:/a/b')
+})
+
+test('switching the database keeps the old line as a comment and everything else as it was', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'shopnex-env-'))
+  const file = join(dir, '.env')
+  writeFileSync(
+    file,
+    '# my shop\n# DATABASE_URL=postgres://example\nDATABASE_URL=pglite:./.pglite\nSHOPNEX_SECRET=abc\n',
+  )
+  switchDatabaseUrl(file, 'postgres://u:p@db.example.com:5432/shop', new Date('2026-11-16T10:00:00Z'))
+  assert.equal(
+    readFileSync(file, 'utf8'),
+    '# my shop\n# DATABASE_URL=postgres://example\n# DATABASE_URL=pglite:./.pglite   (before shopnex migrate-db, 2026-11-16)\nDATABASE_URL=postgres://u:p@db.example.com:5432/shop\nSHOPNEX_SECRET=abc\n',
+  )
+  assert.equal(loadShopEnv(dir, { write: false }).databaseUrl, 'postgres://u:p@db.example.com:5432/shop')
+})
+
+test('switching adds the line when there is none, and a password in the old line is not copied into the comment', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'shopnex-env-'))
+  const file = join(dir, '.env')
+  writeFileSync(file, 'SHOPNEX_SECRET=abc')
+  switchDatabaseUrl(file, 'postgres://db/shop')
+  assert.equal(readFileSync(file, 'utf8'), 'SHOPNEX_SECRET=abc\nDATABASE_URL=postgres://db/shop\n')
+
+  writeFileSync(file, 'DATABASE_URL=postgres://u:secret@old/shop\n')
+  switchDatabaseUrl(file, 'postgres://new/shop')
+  assert.doesNotMatch(readFileSync(file, 'utf8'), /secret/)
+})
+
+test('an address the .env cannot hold is refused instead of being written wrongly', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'shopnex-env-'))
+  const file = join(dir, '.env')
+  writeFileSync(file, 'DATABASE_URL=pglite:./.pglite\n')
+  assert.throws(() => switchDatabaseUrl(file, 'postgres://u:pa ss@db/shop'), /percent-encode/)
+  assert.equal(readFileSync(file, 'utf8'), 'DATABASE_URL=pglite:./.pglite\n')
 })
