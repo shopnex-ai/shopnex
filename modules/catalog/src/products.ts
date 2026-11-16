@@ -26,6 +26,7 @@ import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fie
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './errors'
 import { sanitizeHtml } from './html'
+import { record as recordRedirect } from './redirects'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
 import {
   applyVariants,
@@ -488,6 +489,9 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
         .update(schema.products)
         .set({ ...fields, updatedAt: new Date() })
         .where(eq(schema.products.id, id))
+    }
+    if (slug !== undefined && slug !== existing.slug) {
+      await recordRedirect(tx, shopId, `/products/${existing.slug}`, `/products/${slug}`)
     }
     if (images) await replaceImages(tx, id, images)
     return withDetailsAndEmit(tx, shopId, id, 'product.updated')

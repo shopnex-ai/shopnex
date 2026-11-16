@@ -27,6 +27,7 @@ import { files as adminFiles } from './routers/admin/files'
 import { menus as adminMenus } from './routers/admin/menus'
 import { notifications as adminNotifications } from './routers/admin/notifications'
 import { pages as adminPages } from './routers/admin/pages'
+import { redirects as adminRedirects } from './routers/admin/redirects'
 import {
   paymentApps as adminPaymentApps,
   paymentSessions as adminPaymentSessions,
@@ -71,6 +72,7 @@ export const router = {
     themes: tagged('Admin · Themes').router(adminThemes),
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
+    redirects: tagged('Admin · URL redirects').router(adminRedirects),
     files: tagged('Admin · Files').router(adminFiles),
     channels: tagged('Admin · Channels').router(adminChannels),
     domains: tagged('Admin · Domains').router(adminDomains),

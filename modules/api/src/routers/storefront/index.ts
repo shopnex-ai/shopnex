@@ -7,6 +7,7 @@ import {
   escapeHtml,
   htmlToText,
   productService,
+  redirectService,
   type Collection as CollectionRow,
   type ProductWithDetails,
 } from '@shopnex/catalog'
@@ -444,6 +445,13 @@ export const storefrontRouter = storefront.router({
         title: menu.title,
         items: toMenuItems(await menuService.resolve(context.shop.id, menu.items)),
       }
+    }),
+  },
+  redirects: {
+    resolve: storefront.redirects.resolve.handler(async ({ input, context }) => {
+      const target = await redirectService.resolve(context.shop.id, input.path)
+      if (!target) throw new ORPCError('NOT_FOUND')
+      return { target }
     }),
   },
   theme: {

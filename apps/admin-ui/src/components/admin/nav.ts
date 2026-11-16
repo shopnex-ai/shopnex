@@ -27,6 +27,7 @@ import {
   WebhookIcon,
   type LucideIcon,
   ListPlusIcon,
+  CornerDownRightIcon,
 } from 'lucide-react'
 
 export type NavItem = {
@@ -62,6 +63,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/online-store/themes', label: 'Online store', icon: StoreIcon },
       { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
       { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
+      { href: '/admin/online-store/redirects', label: 'URL redirects', icon: CornerDownRightIcon },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },

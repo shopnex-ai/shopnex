@@ -6,6 +6,7 @@ import { db, schema, type Conn } from '@shopnex/db'
 import { CatalogError } from './errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
+import { record as recordRedirect } from './redirects'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
 
 export type CollectionInput = {
@@ -127,6 +128,9 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
       })
       .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
       .returning()
+    if (row && patch.slug !== undefined && patch.slug !== existing.slug) {
+      await recordRedirect(tx, shopId, `/collections/${existing.slug}`, `/collections/${patch.slug}`)
+    }
     return row ?? null
   })
 }

@@ -72,9 +72,9 @@ const domainErrors = base.middleware(async ({ next }) => {
     }
     if (error instanceof CatalogError) {
       const status =
-        error.code === 'SLUG_TAKEN' || error.code === 'SKU_TAKEN'
+        error.code === 'SLUG_TAKEN' || error.code === 'SKU_TAKEN' || error.code === 'REDIRECT_TAKEN'
           ? 'CONFLICT'
-          : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS'
+          : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS' || error.code === 'REDIRECT_INVALID'
             ? 'BAD_REQUEST'
             : 'NOT_FOUND'
       throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })

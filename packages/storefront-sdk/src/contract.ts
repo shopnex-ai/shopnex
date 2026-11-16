@@ -145,6 +145,16 @@ export const storefrontContract = {
       .output(Menu),
   }),
 
+  // Where a storefront path with no page goes now (the merchant's URL redirects, and the old handle of a product,
+  // collection or page that was renamed). Call it when a path would be a 404. Shopify: urlRedirects in the Admin API
+  redirects: oc.tag('Storefront · Redirects').router({
+    resolve: oc
+      .route({ method: 'GET', path: '/storefront/redirects/resolve' })
+      .input(z.object({ path: z.string().min(1).max(2000) }))
+      .errors(notFound)
+      .output(z.object({ target: z.string() })),
+  }),
+
   // Shopify-style names: cartCreate / cartLinesAdd / cartLinesUpdate / cartLinesRemove
   cart: oc.tag('Storefront · Cart').router({
     create: oc

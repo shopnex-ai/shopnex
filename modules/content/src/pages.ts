@@ -2,7 +2,7 @@
 // scoped by shopId. Bodies are sanitized on write, since storefronts render them as is.
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
-import { sanitizeHtml, slugify } from '@shopnex/catalog'
+import { redirectService, sanitizeHtml, slugify } from '@shopnex/catalog'
 import { ContentError } from './errors'
 
 export type PageInput = {
@@ -117,6 +117,9 @@ export async function update(shopId: string, id: string, patch: Partial<PageInpu
       })
       .where(eq(schema.pages.id, id))
       .returning()
+    if (patch.handle !== undefined && patch.handle !== current.handle) {
+      await redirectService.record(tx, shopId, `/pages/${current.handle}`, `/pages/${patch.handle}`)
+    }
     return row!
   })
 }

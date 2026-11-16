@@ -66,3 +66,22 @@ export const menus = pgTable(
 )
 
 export type Menu = typeof menus.$inferSelect
+
+// A path that sends visitors somewhere else (Online store → Navigation → URL redirects). Created by the merchant,
+// by an import, or when a product, collection or page changes its handle. `fromPath` is a path on the storefront
+// ("/products/old"), `toPath` a path or a full URL. The storefront answers 301 when it would otherwise show a 404.
+export const redirects = pgTable(
+  'redirects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    fromPath: text('from_path').notNull(),
+    toPath: text('to_path').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('redirects_shop_from_idx').on(t.shopId, t.fromPath)],
+)
+
+export type Redirect = typeof redirects.$inferSelect

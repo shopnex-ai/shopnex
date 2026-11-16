@@ -2,6 +2,9 @@
 
 ## Unreleased (additive)
 
+- `redirects.resolve` (`GET /storefront/redirects/resolve?path=/products/old`): the `target` (a path or a full URL) a
+  merchant's URL redirect sends `path` to, or `NOT_FOUND`. Call it when a path would show a 404; answer with a 301.
+  Product, collection and page handle changes add their own redirect. ≠ Shopify: redirects are in the Admin API there.
 - Customer accounts (`customer.*`, `/storefront/customer/…`): `requestCode` emails a sign-in code, `signIn` checks it and
   returns a `token` (a first sign-in creates the account; guest orders with the same email join it), `signOut`,
   `get`, `update`, `orders` (cursor-paged) and `order` (the signed-in customer's own orders, with items, totals,

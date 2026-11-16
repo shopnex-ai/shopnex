@@ -3,6 +3,8 @@ export type CatalogErrorCode =
   | 'SKU_TAKEN'
   | 'PRODUCT_NOT_FOUND'
   | 'COLLECTION_NOT_FOUND'
+  | 'REDIRECT_INVALID'
+  | 'REDIRECT_TAKEN'
   | 'INVALID_VARIANTS'
   // Price lives on variants: a product with several variants can't take a single priceCents
   | 'HAS_VARIANTS'

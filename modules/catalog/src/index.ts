@@ -1,6 +1,7 @@
 export * as productService from './products'
 export * as collectionService from './collections'
 export * as variantService from './variants'
+export * as redirectService from './redirects'
 export type {
   Facets,
   FilterOptions,

@@ -430,6 +430,12 @@ export const pageInput = z.object({
   published: z.boolean().optional(),
 })
 
+// Online store → URL redirects. Normalised and checked by redirectService (paths start with /, targets may be URLs).
+export const redirectInput = z.object({
+  fromPath: z.string().trim().min(1, 'Enter the old URL').max(2000),
+  toPath: z.string().trim().min(1, 'Enter the new URL').max(2000),
+})
+
 // Settings → Storage: an S3-compatible bucket (AWS S3, Cloudflare R2, Spaces, B2, MinIO…)
 const httpUrl = z.url({ protocol: /^https?$/ }).max(500)
 export const s3Input = z.object({

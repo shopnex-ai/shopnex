@@ -27,6 +27,7 @@ import {
   files,
   menus,
   pages,
+  redirects,
   paymentMethods,
   shippingRates,
   shopThemes,
@@ -221,6 +222,7 @@ export const discountOutput = createSelectSchema(discounts, {
   type: z.enum(['percentage', 'fixed_amount', 'free_shipping']),
 })
 export const pageOutput = createSelectSchema(pages)
+export const redirectOutput = createSelectSchema(redirects)
 export const menuOutput = createSelectSchema(menus).extend({ items: z.custom<StoredMenuItem[]>() })
 
 // Orders
