@@ -1,5 +1,5 @@
 export * as customFieldService from './custom-fields'
-export { CustomFieldError, type CustomFieldErrorCode } from './errors'
+export { CustomFieldError, type CustomFieldErrorCode } from './custom-fields.errors'
 export type { CustomFieldInput, CustomFieldPatch, CustomFieldUpdates } from './custom-fields'
 export {
   CUSTOM_FIELD_KEY_PATTERN,

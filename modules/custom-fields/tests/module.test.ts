@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { ORPCError } from '@orpc/server'
 import { is } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 
@@ -27,6 +28,26 @@ describe('custom-fields manifest', () => {
 
   test('the name is the folder', () => {
     assert.equal(customFieldsModule.name, 'custom-fields')
+  })
+
+  // The statuses the Admin API answered with before they were declared in custom-fields.errors.ts
+  test('each error code answers with the status it always did', async () => {
+    const { CustomFieldError } = await import('../src/custom-fields.errors')
+    const expected = { FIELD_NOT_FOUND: 'NOT_FOUND', KEY_TAKEN: 'CONFLICT', INVALID_VALUE: 'BAD_REQUEST' } as const
+    for (const [code, status] of Object.entries(expected)) {
+      const cause = new CustomFieldError(code as keyof typeof expected, `message of ${code}`)
+      const mapped = customFieldsModule.errors(cause)
+      assert.ok(mapped instanceof ORPCError, code)
+      assert.equal(mapped.code, status, code)
+      assert.equal(mapped.message, `message of ${code}`)
+      assert.deepEqual(mapped.data, { code })
+      assert.equal(mapped.cause, cause)
+    }
+  })
+
+  test('an error that is not this module is left alone', () => {
+    assert.equal(customFieldsModule.errors(new Error('boom')), undefined)
+    assert.equal(customFieldsModule.errors('text'), undefined)
   })
 
   test('the routes and the error mapper are there', () => {

@@ -3,7 +3,7 @@
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { schema, type Conn } from '@shopnex/db'
 import type { CustomFieldValue, CustomFieldValues } from '@shopnex/db/schema'
-import { CustomFieldError } from './errors'
+import { CustomFieldError } from './custom-fields.errors'
 import {
   customFieldDefinitions,
   type CustomFieldDefinition,

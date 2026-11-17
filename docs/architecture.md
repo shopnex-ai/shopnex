@@ -70,6 +70,36 @@ ai        → db, apps, catalog, tenancy
 api       → everything above (transport only)
 ```
 
+## Writing a module
+
+`modules/custom-fields` is the worked example. A module's own code sits in `modules/<name>/src`, one file per concern,
+named `<name>.<concern>.ts`:
+
+| File                      | What it holds                                                                                              | Rules                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `<name>.schema.ts`        | Its tables (Drizzle). `pnpm db:generate` and the privacy test find them by this name.                      | Tables and constants only.                                   |
+| `<name>.errors.ts`        | Its errors, with the HTTP status of each code (`defineError`, below).                                      | No HTTP or oRPC imports.                                     |
+| `<name>.ts` (the service) | Business logic: every function takes `shopId` first and a `conn`.                                          | No HTTP, oRPC or Hono imports; never import the shared `db`. |
+| `<name>.contract.ts`      | The Zod shapes of its API: inputs and outputs. The admin UI uses them for its forms.                       | Must stay free of server code: the browser bundles it.       |
+| `<name>.router.ts`        | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.    |
+| `<name>.module.ts`        | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                      |
+
+Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
+
+```ts
+// custom-fields.errors.ts
+export const CustomFieldError = defineError('CustomFieldError', {
+  FIELD_NOT_FOUND: 'NOT_FOUND',
+  KEY_TAKEN: 'CONFLICT',
+  INVALID_VALUE: 'BAD_REQUEST',
+})
+// custom-fields.module.ts: errors: mapperFor(CustomFieldError)
+```
+
+An error that needs more than a status per code (typed data for the storefront, a status that depends on the data) keeps a
+mapper of its own; `modules/api/src/orpc.ts` still maps the modules that have not moved. `pnpm modules:check` verifies
+the manifest against the imports and `package.json`.
+
 ## API layout
 
 ```
