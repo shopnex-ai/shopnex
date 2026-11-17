@@ -8,6 +8,7 @@
     "build": "pnpm --filter @shopnex/admin-ui build",
     "typecheck": "pnpm -r --workspace-concurrency=4 typecheck",
     "modules:check": "node scripts/modules-check.mjs",
+    "bundle:check": "node scripts/check-browser-bundles.mjs",
     "db:generate": "pnpm --filter @shopnex/db generate",
     "db:migrate": "pnpm --filter @shopnex/db migrate",
     "create-super-admin": "pnpm --filter @shopnex/auth create-super-admin",
