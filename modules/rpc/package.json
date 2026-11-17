@@ -1,0 +1,22 @@
+{
+  "name": "@shopnex/rpc",
+  "description": "Procedure builders for routes: callers, shop, scopes, and the per-module error mapping",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@shopnex/apps": "workspace:*",
+    "@shopnex/auth": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/tenancy": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:"
+  }
+}

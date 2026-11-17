@@ -100,6 +100,8 @@ export default defineConfig(
 
   {
     files: connectionBoundModules.map((dir) => `${dir}/src/**/*.ts`),
+    // A module's router (src/<name>.router.ts) is the caller that hands the shared `db` to the services
+    ignores: ['modules/*/src/*.router.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
