@@ -148,16 +148,9 @@ export async function listSwitchableShops(userId: string, superAdmin: boolean) {
     .limit(SWITCHER_LIMIT)
 }
 
-// Makes `shopId` the session's active shop. False when the user may not act in it (not a member, and not a
-// super admin) or it doesn't exist. Written to the session directly, since Better Auth's setActive requires
-// membership and super admins act in shops they aren't members of.
-export async function setActiveShop(input: { sessionId: string; userId: string; superAdmin: boolean; shopId: string }) {
-  if (!isMultiTenant) return false
+// Whether the user may act in the shop: a member, or a super admin (who acts in shops they aren't members of). False when the
+// shop doesn't exist. Switching a session to it is @shopnex/auth's setActiveShop, which asks this.
+export async function canActInShop(input: { userId: string; superAdmin: boolean; shopId: string }) {
   const allowed = input.superAdmin ? await getShopById(input.shopId) : await getMembership(input.shopId, input.userId)
-  if (!allowed) return false
-  await db
-    .update(schema.session)
-    .set({ activeOrganizationId: input.shopId })
-    .where(and(eq(schema.session.id, input.sessionId), eq(schema.session.userId, input.userId)))
-  return true
+  return Boolean(allowed)
 }

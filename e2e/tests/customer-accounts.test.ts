@@ -7,6 +7,7 @@ import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { takeRate } from '@shopnex/auth'
 import { db, schema } from '@shopnex/db'
+import { rateLimits } from '@shopnex/auth/schema'
 import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, sellableVariants } from '../lib'
@@ -65,7 +66,7 @@ const requestCode = (email: string) => call('POST', '/storefront/customer/code',
 const signIn = (email: string, code: string) => call('POST', '/storefront/customer/sign-in', { email, code })
 
 // The limits live in the rate_limits table under a hash of their key (see accounts.ts): the test finds its rows by it
-const limitRow = (key: string) => eq(schema.rateLimits.key, createHash('sha256').update(key).digest('hex'))
+const limitRow = (key: string) => eq(rateLimits.key, createHash('sha256').update(key).digest('hex'))
 const touched = new Set<string>()
 /** A visitor's or mailbox's limit rows are removed after the run: the keys of everything a test asks about */
 const watch = (...keys: string[]) => keys.forEach((k) => touched.add(k))
@@ -75,7 +76,7 @@ const person = (label = 'shopper') => {
   return email
 }
 const clearLimits = async () => {
-  for (const key of touched) await db.delete(schema.rateLimits).where(limitRow(key))
+  for (const key of touched) await db.delete(rateLimits).where(limitRow(key))
   touched.clear()
 }
 const fromIp = (ip: string) => ({ 'x-forwarded-for': ip })
@@ -317,7 +318,7 @@ describe('customer accounts', () => {
         const privateIp = visitor()
         watch(`login-code:ip:${SHOP}:${privateIp}`)
         ok(await call('POST', '/storefront/customer/code', { email }, fromIp(privateIp)))
-        const rows = await db.select().from(schema.rateLimits)
+        const rows = await db.select().from(rateLimits)
         const readable = rows.filter(
           (r) => r.key.includes('@') || r.key.includes('2001:db8:') || !/^[0-9a-f]{64}$/.test(r.key),
         )
