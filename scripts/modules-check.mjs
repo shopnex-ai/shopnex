@@ -6,8 +6,9 @@
 // Reported only (what moving tables into modules will have to solve): tables a module reaches into that belong to
 // another module, and foreign keys that point against the dependency graph. `--report` prints the lists in full.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import ts from 'typescript'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const modulesDir = join(root, 'modules')
@@ -67,21 +68,58 @@ for (const [name, m] of mods) {
       notes.push(`${name}: lists @shopnex/${dep} but src never imports it`)
 }
 
-// ── the manifests
+// ── the manifests, read as code (the TypeScript parser), not matched as text: a comment, a line break or a trailing comma
+// cannot make it pass or fail wrongly, and a manifest that is not a literal `defineModule({ name: '…', dependsOn: ['…'] })`
+// is reported instead of guessed at
+function readManifest(file) {
+  const source = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true)
+  let found
+  const visit = (node) => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'defineModule') {
+      found = node.arguments[0]
+    }
+    if (!found) ts.forEachChild(node, visit)
+  }
+  visit(source)
+  if (!found || !ts.isObjectLiteralExpression(found))
+    return { problem: 'has no defineModule({ ... }) with an object literal' }
+  const property = (key) =>
+    found.properties.find((p) => ts.isPropertyAssignment(p) && ts.isIdentifier(p.name) && p.name.text === key)
+      ?.initializer
+  const name = property('name')
+  const depends = property('dependsOn')
+  if (!name || !ts.isStringLiteralLike(name)) return { problem: 'has no string literal `name`' }
+  if (!depends || !ts.isArrayLiteralExpression(depends) || !depends.elements.every((e) => ts.isStringLiteralLike(e))) {
+    return { problem: 'has no `dependsOn` that is an array of string literals' }
+  }
+  return { name: name.text, dependsOn: new Set(depends.elements.map((e) => e.text)) }
+}
+
 for (const [name, m] of mods) {
   if (!m.manifestFile) continue
-  const text = read(join(m.dir, 'src', m.manifestFile))
-  const declaredName = text.match(/name:\s*'([^']+)'/)?.[1]
-  const depends = text.match(/dependsOn:\s*\[([^\]]*)\]/)?.[1]
-  if (declaredName !== name) errors.push(`${name}: ${m.manifestFile} says name ${declaredName}`)
-  if (depends === undefined) {
-    errors.push(`${name}: ${m.manifestFile} has no dependsOn`)
+  const manifest = readManifest(join(m.dir, 'src', m.manifestFile))
+  if (manifest.problem) {
+    errors.push(`${name}: ${m.manifestFile} ${manifest.problem}`)
     continue
   }
-  const listed = new Set([...depends.matchAll(/'([^']+)'/g)].map((x) => x[1]))
+  if (manifest.name !== name) errors.push(`${name}: ${m.manifestFile} says name ${manifest.name}`)
   const actual = new Set([...m.declared].filter((d) => !INFRA.has(d)))
-  for (const d of listed) if (!actual.has(d)) errors.push(`${name}: dependsOn lists ${d}, package.json does not`)
-  for (const d of actual) if (!listed.has(d)) errors.push(`${name}: package.json lists ${d}, dependsOn does not`)
+  for (const d of manifest.dependsOn)
+    if (!actual.has(d)) errors.push(`${name}: dependsOn lists ${d}, package.json does not`)
+  for (const d of actual)
+    if (!manifest.dependsOn.has(d)) errors.push(`${name}: package.json lists ${d}, dependsOn does not`)
+}
+
+// ── tables must be where drizzle-kit, the privacy test and this report look for them: modules/db/src/schema/*.ts, or a
+// module's own src/*.schema.ts. A table in any other file would get no migration (so the migration check, finding no change,
+// would pass) and would be missing from the privacy check.
+for (const [name, m] of mods) {
+  for (const file of m.files) {
+    const where = relative(root, file)
+    const allowed = /^modules\/db\/src\/schema\//.test(where) || /^modules\/[^/]+\/src\/[^/]+\.schema\.ts$/.test(where)
+    if (!allowed && /\bpgTable\(/.test(read(file)))
+      errors.push(`${name}: ${where} defines a table but is not a *.schema.ts file, so it would get no migration`)
+  }
 }
 
 // ── cycles, and the transitive closure used below
