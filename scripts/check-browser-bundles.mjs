@@ -63,7 +63,22 @@ for (const [label, contents] of [...entries].sort(([a], [b]) => a.localeCompare(
   }
 }
 
-console.log(`${entries.size} browser entries checked.`)
+// A bare `import '@shopnex/x'` (no names) in the admin UI's own code. Server-function files (.ts) are imported by client code; the
+// framework strips a handler, and the imports only it uses, from the browser bundle, but it keeps an import that has no names.
+// That is how `import '@shopnex/content'` once took server code into the page and made every browser test time out. Load a
+// module for its side effect inside the handler instead: `await import('@shopnex/x')`. (The server entry is not client code.)
+const bare = /^import\s+'(@shopnex\/[^']+)'/gm
+let bareImports = 0
+for (const file of walk(join(adminUi, 'src')).filter((f) => /\.tsx?$/.test(f) && !f.endsWith('/src/server.ts'))) {
+  for (const match of readFileSync(file, 'utf8').matchAll(bare)) {
+    bareImports++
+    problems.push(
+      `${relative(root, file)} has a bare \`import '${match[1]}'\`, which stays in the browser bundle: use \`await import()\` inside the server function`,
+    )
+  }
+}
+
+console.log(`${entries.size} browser entries checked, ${bareImports} bare workspace imports in the admin UI's code.`)
 if (problems.length) {
   console.error(
     `\n${problems.length} with server code in the browser bundle:\n${problems.map((p) => `  ${p}`).join('\n')}`,
