@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
@@ -16,6 +17,7 @@
     "liquidjs": "10.30.1"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }
