@@ -1,5 +1,6 @@
 // The printable invoice of an order: who issues it, who it is for, the lines, the tax by rate and the total, shown
 // without the admin around it. Uses its own order and tax rate, and puts the shop's business details back.
+import { db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { taxService } from '@shopnex/pricing'
 import { getShopById, updateShop } from '@shopnex/tenancy'
@@ -25,7 +26,9 @@ test.beforeAll(async () => {
   before = (await getShopById(SHOP))!
   owner = await fx.account('owner')
   // Heard Island and McDonald Islands: a country no other test charges tax in
-  fx.taxRate((await taxService.create(SHOP, { countryCode: 'HM', province: null, name: 'VAT', ratePercent: 19 })).id)
+  fx.taxRate(
+    (await taxService.create(SHOP, { countryCode: 'HM', province: null, name: 'VAT', ratePercent: 19 }, db)).id,
+  )
   await updateShop(SHOP, { taxesIncluded: true, taxShipping: false, ...DETAILS })
   const [variant] = await sellableVariants(1)
   order = await orderService.create(SHOP, {

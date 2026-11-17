@@ -1,7 +1,7 @@
 // Discount codes (admin: Discounts). Business logic only; every query is scoped by shopId.
 // One code per order. Usage is recorded when an order is placed (see redeem), under the discount's row lock.
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { Discount, NewDiscount } from '@shopnex/db/schema'
 import { PricingError } from './errors'
 
@@ -13,7 +13,7 @@ export type DiscountInput = Pick<
 const byCode = (shopId: string, code: string) =>
   and(eq(schema.discounts.shopId, shopId), sql`lower(${schema.discounts.code}) = ${code.trim().toLowerCase()}`)
 
-export async function list(shopId: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
   return conn
     .select()
     .from(schema.discounts)
@@ -21,7 +21,7 @@ export async function list(shopId: string, conn: Conn = db) {
     .orderBy(desc(schema.discounts.createdAt))
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(schema.discounts)
@@ -30,7 +30,7 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
 }
 
 // Case-insensitive; null when the shop has no such code
-export async function findByCode(shopId: string, code: string, conn: Conn = db) {
+export async function findByCode(shopId: string, code: string, conn: Conn) {
   const [row] = await conn.select().from(schema.discounts).where(byCode(shopId, code))
   return row ?? null
 }
@@ -56,21 +56,22 @@ async function assertCodeFree(conn: Conn, shopId: string, code: string, exceptId
   }
 }
 
-export async function create(shopId: string, input: DiscountInput) {
+export async function create(shopId: string, input: DiscountInput, conn: Conn) {
   const values = normalize(input)
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     await assertCodeFree(tx, shopId, values.code)
     const [row] = await tx
       .insert(schema.discounts)
       .values({ ...values, shopId })
       .returning()
-    return row!
+    if (!row) throw new Error('The discount was not saved')
+    return row
   })
 }
 
 // Returns null when the discount isn't in this shop
-export async function update(shopId: string, id: string, patch: Partial<DiscountInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<DiscountInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const current = await getById(shopId, id, tx)
     if (!current) return null
     const values = normalize({ ...current, ...patch })
@@ -91,22 +92,22 @@ export async function update(shopId: string, id: string, patch: Partial<Discount
       })
       .where(eq(schema.discounts.id, id))
       .returning()
-    return row!
+    return row ?? null
   })
 }
 
 // Orders keep the code (discountCodes snapshot); their redemption rows go with the discount
-export async function remove(shopId: string, id: string) {
-  const [row] = await db
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [row] = await conn
     .delete(schema.discounts)
     .where(and(eq(schema.discounts.shopId, shopId), eq(schema.discounts.id, id)))
     .returning()
   return row ?? null
 }
 
-export async function removeMany(shopId: string, ids: string[]) {
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
-  const deleted = await db
+  const deleted = await conn
     .delete(schema.discounts)
     .where(and(eq(schema.discounts.shopId, shopId), inArray(schema.discounts.id, ids)))
     .returning({ id: schema.discounts.id })

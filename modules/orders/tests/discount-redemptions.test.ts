@@ -62,7 +62,7 @@ async function order(conn: Parameters<typeof discountService.redeem>[0], custome
 }
 
 async function discount(patch: { code: string; oncePerCustomer?: boolean; usageLimit?: number }) {
-  return discountService.create(SHOP, { type: 'percentage', value: 10, ...patch, code: `${patch.code}-${run}` })
+  return discountService.create(SHOP, { type: 'percentage', value: 10, ...patch, code: `${patch.code}-${run}` }, db)
 }
 
 /** What placing an order does with a discount: lock and check it, place the order, record the use, in one transaction */
