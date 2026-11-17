@@ -1,7 +1,9 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // Outbound webhooks (Settings → Webhooks). Domain services write deliveries in the same transaction as
 // the change (outbox), and a worker sends them, signed per the Standard Webhooks spec, with retries.
 import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { apiTokens, shops } from './tenancy'
+import { apiTokens, shops } from '@shopnex/db/schema'
 
 // Topics a shop can subscribe to (`resource.event`, as in the payload's `type`)
 export const WEBHOOK_TOPICS = [

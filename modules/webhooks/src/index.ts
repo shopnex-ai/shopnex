@@ -1,3 +1,4 @@
+import './webhooks.hooks'
 export * as webhookService from './endpoints'
 export type { EndpointInput, ListDeliveriesInput } from './endpoints'
 export { emit } from './emit'
@@ -12,4 +13,4 @@ export {
   type WebhookDeliveryStatus,
   type WebhookEndpoint,
   type WebhookTopic,
-} from '@shopnex/db/schema'
+} from './webhooks.schema'

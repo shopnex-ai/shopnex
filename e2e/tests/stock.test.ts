@@ -6,6 +6,7 @@ import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
 import { db, schema } from '@shopnex/db'
+import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -63,10 +64,10 @@ after(async () => {
 /** The `inventory.updated` payloads queued for these variants (outbox rows, read straight from the database) */
 async function inventoryEvents(variantIds: string[]) {
   const rows = await db
-    .select({ body: schema.webhookDeliveries.body })
-    .from(schema.webhookDeliveries)
-    .where(eq(schema.webhookDeliveries.topic, 'inventory.updated'))
-    .orderBy(schema.webhookDeliveries.createdAt)
+    .select({ body: webhookDeliveries.body })
+    .from(webhookDeliveries)
+    .where(eq(webhookDeliveries.topic, 'inventory.updated'))
+    .orderBy(webhookDeliveries.createdAt)
   return rows
     .map((r) => JSON.parse(r.body).data as Record<string, unknown>)
     .filter((d) => variantIds.includes(d.variantId as string))
