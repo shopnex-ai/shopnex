@@ -19,6 +19,7 @@
     "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
+    "@shopnex/content": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",

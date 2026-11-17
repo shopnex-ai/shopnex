@@ -89,7 +89,9 @@ describe('members', () => {
 })
 
 describe('createShop, for a new account', () => {
-  test('makes the shop with a random slug, the account as owner, the two menus and the Online Store', async () => {
+  test('makes the shop with a random slug, the account as owner and the Online Store, and tells the shopCreated listeners', async () => {
+    const seen: unknown[] = []
+    tenancy.shopCreated.on('test.records', (_conn, payload) => void seen.push(payload))
     const owner = await fx.user()
     const s = await tenancy.createShop({ ownerId: owner.id, name: '  Café  ' })
     assert.equal(s.name, 'Café', 'the name is trimmed')
@@ -100,8 +102,8 @@ describe('createShop, for a new account', () => {
       members.map((m) => [m.userId, m.role]),
       [[owner.id, 'owner']],
     )
-    const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, s.id))
-    assert.deepEqual(menus.map((m) => m.handle).sort(), ['footer', 'main-menu'])
+    assert.deepEqual(seen, [{ shopId: s.id }])
+    tenancy.shopCreated.on('test.records', () => undefined)
     const channels = await db.select().from(schema.channels).where(eq(schema.channels.shopId, s.id))
     assert.deepEqual(
       channels.map((c) => c.handle),
@@ -117,25 +119,25 @@ describe('createShop, for a new account', () => {
     await db.delete(schema.shops).where(eq(schema.shops.id, s.id))
   })
 
-  test('is all or nothing: an owner that does not exist leaves no shop, menu or channel behind', async () => {
+  test('is all or nothing: an owner that does not exist leaves no shop or channel behind', async () => {
     const shopsBefore = (await db.select().from(schema.shops)).length
     await assert.rejects(tenancy.createShop({ ownerId: 'nobody', name: 'Ghost' }))
     assert.equal((await db.select().from(schema.shops)).length, shopsBefore)
   })
 
-  test('seedDefaultMenu never replaces a menu the merchant already has', async () => {
-    const s = await fx.shop()
-    await db.insert(schema.menus).values({ shopId: s.id, handle: 'main-menu', title: 'Mine', items: [] })
-    await tenancy.seedDefaultMenu(db, s.id)
-    await tenancy.seedDefaultMenu(db, s.id)
-    const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, s.id))
-    assert.equal(menus.length, 2)
-    assert.equal(menus.find((m) => m.handle === 'main-menu')?.title, 'Mine')
-    const footer = menus.find((m) => m.handle === 'footer')!
-    assert.deepEqual(
-      footer.items.map((i) => i.type),
-      ['search'],
-    )
+  test('a shopCreated listener that fails undoes the whole shop: no shop, owner membership or channel is left', async () => {
+    const owner = await fx.user()
+    const shopsBefore = (await db.select().from(schema.shops)).length
+    tenancy.shopCreated.on('test.fails', () => {
+      throw new Error('could not seed')
+    })
+    try {
+      await assert.rejects(tenancy.createShop({ ownerId: owner.id, name: 'Doomed' }), /could not seed/)
+    } finally {
+      tenancy.shopCreated.on('test.fails', () => undefined)
+    }
+    assert.equal((await db.select().from(schema.shops)).length, shopsBefore)
+    assert.equal((await db.select().from(shopMembers).where(eq(shopMembers.userId, owner.id))).length, 0)
   })
 })
 

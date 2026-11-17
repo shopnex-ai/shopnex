@@ -3,9 +3,11 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { menus } from '../src/content.schema'
 
 const { db, schema, eq, menuService, pageService, item, SHOP, OTHER_SHOP } = fx
-const { ContentError, MENU_MAX_DEPTH, MENU_ITEM_TYPES } = await import('../src')
+const { ContentError, MENU_MAX_DEPTH, MENU_ITEM_TYPES, seedDefaultMenu } = await import('../src')
+const { createShop } = await import('@shopnex/tenancy')
 
 const refused = (code: string) => (e: unknown) => e instanceof ContentError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
@@ -40,13 +42,13 @@ describe('creating and reading menus', () => {
     const a = await menuService.create(SHOP, { handle: 'a', title: 'A', items: [] })
     const b = await menuService.create(SHOP, { handle: 'b', title: 'B', items: [] })
     await db
-      .update(schema.menus)
+      .update(menus)
       .set({ createdAt: new Date('2026-01-01') })
-      .where(eq(schema.menus.id, a.id))
+      .where(eq(menus.id, a.id))
     await db
-      .update(schema.menus)
+      .update(menus)
       .set({ createdAt: new Date('2026-01-02') })
-      .where(eq(schema.menus.id, b.id))
+      .where(eq(menus.id, b.id))
     await menuService.create(OTHER_SHOP, { handle: 'c', title: 'C', items: [] })
     assert.deepEqual(
       (await menuService.list(SHOP)).map((m) => m.id),
@@ -222,5 +224,43 @@ describe('resolve: the stored tree as addresses', () => {
   test('it only sees this shop’s collections, products and pages', async () => {
     const theirs = await fx.collection({ shopId: OTHER_SHOP, slug: 'theirs' })
     assert.deepEqual(await menuService.resolve(SHOP, [item('collection', { resourceId: theirs.id })], db), [])
+  })
+})
+
+describe('the menus a new shop starts with', () => {
+  test('a header and a footer menu with links that need no content, made once and never replacing a menu the merchant has', async () => {
+    const s = await fx.shop()
+    await menuService.create(s.id, { handle: 'main-menu', title: 'Mine', items: [] })
+    await seedDefaultMenu(db, s.id)
+    await seedDefaultMenu(db, s.id)
+    const menus = await menuService.list(s.id)
+    assert.equal(menus.length, 2)
+    assert.equal(menus.find((m) => m.handle === 'main-menu')?.title, 'Mine', 'the merchant’s menu is kept')
+    const footer = menus.find((m) => m.handle === 'footer')!
+    assert.deepEqual(
+      footer.items.map((i) => [i.type, i.title]),
+      [['search', 'Search']],
+    )
+  })
+
+  test('on a fresh shop the header has Home and Shop all', async () => {
+    const s = await fx.shop()
+    await seedDefaultMenu(db, s.id)
+    const main = await menuService.getByHandle(s.id, 'main-menu')
+    assert.deepEqual(
+      main?.items.map((i) => [i.type, i.title]),
+      [
+        ['frontpage', 'Home'],
+        ['catalog', 'Shop all'],
+      ],
+    )
+    assert.equal(main?.title, 'Main menu')
+  })
+
+  test('createShop in tenancy gives a new shop both menus, through the shopCreated hook, in the same transaction', async () => {
+    const owner = await fx.user()
+    const s = await createShop({ ownerId: owner.id, name: 'Fresh' })
+    assert.deepEqual((await menuService.list(s.id)).map((m) => m.handle).sort(), ['footer', 'main-menu'])
+    await db.delete(schema.shops).where(eq(schema.shops.id, s.id))
   })
 })

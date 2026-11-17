@@ -4,3 +4,6 @@ import { defineHook } from '@shopnex/kit'
 
 /** An API token was revoked. Runs inside the revoking transaction: a listener that throws undoes the revoke. */
 export const apiTokenRevoked = defineHook<{ shopId: string; tokenId: string }, Conn>('api-token.revoked')
+
+/** A shop was created for an account. Runs inside the creating transaction: a listener that throws undoes the shop. content makes its menus. */
+export const shopCreated = defineHook<{ shopId: string }, Conn>('shop.created')

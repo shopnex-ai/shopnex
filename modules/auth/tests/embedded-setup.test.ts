@@ -10,6 +10,7 @@ process.env.SHOPNEX_SECRET ??= 'embedded-setup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { menus } = await import('@shopnex/content/schema')
 const { shopMembers } = await import('@shopnex/tenancy/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
@@ -63,12 +64,8 @@ describe('first-run setup on the embedded database', () => {
   })
 
   test('seeds the default menu of the default shop once', { timeout: 20_000 }, async () => {
-    const menus = await within(
-      5_000,
-      'reading the menus',
-      db.select().from(schema.menus).where(eq(schema.menus.shopId, 'default')),
-    )
-    assert.ok(menus.length > 0, 'the shop has its default menu')
+    const rows = await within(5_000, 'reading the menus', db.select().from(menus).where(eq(menus.shopId, 'default')))
+    assert.ok(rows.length > 0, 'the shop has its default menu')
   })
 
   test('is complete afterwards, and a second setup is refused', { timeout: 40_000 }, async () => {
