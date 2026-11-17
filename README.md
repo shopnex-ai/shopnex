@@ -103,3 +103,5 @@ Admin API, per-shop data, signed requests (`@shopnex/app/store`), and admin-styl
 ## License
 
 [MIT](LICENSE)
+
+<!-- test: docs-only change, the API check must pass without building anything -->
