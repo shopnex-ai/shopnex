@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema": "./src/ai.schema.ts",
+    "./contract": "./src/ai.contract.ts",
+    "./router": "./src/ai.router.ts",
+    "./module": "./src/ai.module.ts"
   },
   "scripts": {
     "test": "tsx --test \"tests/**/*.test.ts\"",
@@ -12,13 +16,16 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
+    "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
     "openai": "^7.54.0",
     "zod": "catalog:"
   },

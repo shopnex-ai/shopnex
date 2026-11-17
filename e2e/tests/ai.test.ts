@@ -10,7 +10,7 @@ import { after, before, describe, test } from 'node:test'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
-import type { AiSettings } from '@shopnex/db/schema'
+import { aiGenerations, aiProviders, aiSettings, type AiSettings } from '@shopnex/ai/schema'
 import { encryptSecret } from '@shopnex/db/secrets'
 import { verifyAiRequest, type AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
@@ -38,7 +38,7 @@ let answer: (request: AiRunRequest) => unknown = () => ({})
 before(async () => {
   await requireApp()
   await fx.init()
-  ;[shopSettings] = await db.delete(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP)).returning()
+  ;[shopSettings] = await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP)).returning()
 
   server = createServer(async (req, res) => {
     let body = ''
@@ -86,16 +86,16 @@ before(async () => {
 })
 
 after(async () => {
-  await db.delete(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP))
-  if (shopSettings) await db.insert(schema.aiSettings).values(shopSettings)
+  await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP))
+  if (shopSettings) await db.insert(aiSettings).values(shopSettings)
   if (productId) {
-    await db.delete(schema.aiGenerations).where(eq(schema.aiGenerations.subjectId, productId))
+    await db.delete(aiGenerations).where(eq(aiGenerations.subjectId, productId))
     await db.delete(schema.products).where(eq(schema.products.id, productId))
   }
   await fx.cleanup()
   // The app owns its providers, installation and token; its generations stay (app id set null): remove ours
   if (appId) {
-    await db.delete(schema.aiGenerations).where(eq(schema.aiGenerations.appId, appId))
+    await db.delete(aiGenerations).where(eq(aiGenerations.appId, appId))
     await db.delete(schema.apps).where(eq(schema.apps.id, appId))
   }
   server?.close()
@@ -115,7 +115,7 @@ const capabilities = async () =>
     .map((c) => c.capability)
 const run = (body: object) => call('POST', '/admin/ai/run', { productId, providerId: appId, ...body }, staff)
 const generation = async (id: string) => {
-  const [row] = await db.select().from(schema.aiGenerations).where(eq(schema.aiGenerations.id, id))
+  const [row] = await db.select().from(aiGenerations).where(eq(aiGenerations.id, id))
   return row!
 }
 
@@ -235,7 +235,7 @@ describe('Built-in AI (Settings → AI)', () => {
   test('when on, it answers by default; an app is still used when asked for', async () => {
     // Saved directly (a working key would cost money): OpenAI is really called and refuses it
     await db
-      .insert(schema.aiSettings)
+      .insert(aiSettings)
       .values({ shopId: SHOP, provider: 'openai', model: 'gpt-6.1-sol', apiKey: encryptSecret(FAKE_KEY) })
     const all = ok(await call('GET', '/admin/ai/capabilities', undefined, staff))
     const seo = all.find((c: { capability: string }) => c.capability === 'product.seo')
@@ -247,9 +247,9 @@ describe('Built-in AI (Settings → AI)', () => {
     assert.match(r.body.message, /^OpenAI couldn't do this: OpenAI rejected the API key/)
     const [row] = await db
       .select()
-      .from(schema.aiGenerations)
-      .where(and(eq(schema.aiGenerations.subjectId, productId), isNull(schema.aiGenerations.appId)))
-      .orderBy(desc(schema.aiGenerations.createdAt))
+      .from(aiGenerations)
+      .where(and(eq(aiGenerations.subjectId, productId), isNull(aiGenerations.appId)))
+      .orderBy(desc(aiGenerations.createdAt))
       .limit(1)
     assert.equal(row?.status, 'failed')
 
@@ -260,7 +260,7 @@ describe('Built-in AI (Settings → AI)', () => {
   test('turning it off keeps the key but stops answering', async () => {
     const off = ok(await call('POST', '/admin/ai/settings/off', undefined, admin))
     assert.equal(off.settings.enabled, false)
-    const [kept] = await db.select().from(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP))
+    const [kept] = await db.select().from(aiSettings).where(eq(aiSettings.shopId, SHOP))
     assert.ok(kept?.apiKey)
     const all = ok(await call('GET', '/admin/ai/capabilities', undefined, staff))
     const seo = all.find((c: { capability: string }) => c.capability === 'product.seo')
@@ -295,7 +295,7 @@ describe('AI app: image alt text, classification, collections and pages', () => 
 
   after(async () => {
     if (collectionId) {
-      await db.delete(schema.aiGenerations).where(eq(schema.aiGenerations.subjectId, collectionId))
+      await db.delete(aiGenerations).where(eq(aiGenerations.subjectId, collectionId))
       await db.delete(schema.collections).where(eq(schema.collections.id, collectionId))
     }
   })
@@ -364,7 +364,7 @@ describe('AI app: removing capabilities', () => {
   test('uninstalling the app removes them', async () => {
     await appService.uninstall(SHOP, installationId)
     assert.deepEqual(await capabilities(), [])
-    const [left] = await db.select().from(schema.aiProviders).where(eq(schema.aiProviders.appId, appId))
+    const [left] = await db.select().from(aiProviders).where(eq(aiProviders.appId, appId))
     assert.equal(left, undefined)
   })
 })

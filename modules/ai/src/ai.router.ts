@@ -1,11 +1,24 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
-import { AI_FEEDBACK, aiProviderService, aiService, aiSettingsService } from '@shopnex/ai'
 import { db } from '@shopnex/db'
+import { createProcedures } from '@shopnex/rpc'
 import { hasScope } from '@shopnex/tenancy'
-import { adminOrToken, aiApp, scoped, shopManager } from '../../orpc'
-import { aiAppConfigureInput, aiRunInput, aiSettingsInput } from './schemas'
-import { aiAppConfigureOutput, aiCapabilitiesOutput, aiFeedbackOutput, aiRunOutput, aiSettingsOutput } from './outputs'
+import {
+  aiAppConfigureInput,
+  aiAppConfigureOutput,
+  aiCapabilitiesOutput,
+  aiFeedbackOutput,
+  aiRunInput,
+  aiRunOutput,
+  aiSettingsInput,
+  aiSettingsOutput,
+} from './ai.contract'
+import { AI_FEEDBACK } from './ai.schema'
+import * as aiService from './generations'
+import * as aiProviderService from './providers'
+import * as aiSettingsService from './builtin'
+
+const { adminOrToken, aiApp, scoped, shopManager } = createProcedures()
 
 // AI apps (see @shopnex/marketplace-sdk/ai): register the capabilities they provide for the shop. App tokens only.
 export const aiAppApi = {
@@ -76,17 +89,7 @@ export const aiSettings = {
     .route({ method: 'PUT', path: '/admin/ai/settings' })
     .output(aiSettingsOutput)
     .input(aiSettingsInput)
-    .handler(({ input, context }) =>
-      aiSettingsService.save(
-        context.shop.id,
-        {
-          ...input,
-          apiKey: input.apiKey || undefined,
-          model: input.model || undefined,
-        },
-        db,
-      ),
-    ),
+    .handler(({ input, context }) => aiSettingsService.save(context.shop.id, input, db)),
   turnOff: shopManager
     .route({ method: 'POST', path: '/admin/ai/settings/off' })
     .output(aiSettingsOutput)

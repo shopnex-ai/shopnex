@@ -1,11 +1,11 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // AI capabilities (see @shopnex/marketplace-sdk/ai). They come from the provider built into ShopNex (Settings →
 // AI, with the shop's own key) or from installed apps that register what they provide. Staff ask ShopNex, ShopNex
 // sends only the data the capability needs and returns the answer as a suggestion. Every run is kept as a
 // generation: what was asked, what came back, and whether staff used it.
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { user } from './auth'
-import { apps } from './apps'
-import { shops } from './tenancy'
+import { apps, shops, user } from '@shopnex/db/schema'
 
 // One row per (shop, app, capability): several apps may provide the same capability, staff pick one
 export const aiProviders = pgTable(

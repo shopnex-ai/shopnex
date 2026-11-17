@@ -1,6 +1,6 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
-import { ai as adminAi, aiAppApi as adminAiApp, aiSettings as adminAiSettings } from './routers/admin/ai'
+import { aiModule } from '@shopnex/ai/module'
 import { apiTokens as adminApiTokens } from './routers/admin/api-tokens'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
 import {
@@ -79,9 +79,9 @@ export const router = {
     paymentsApp: tagged('Admin · Payments apps').router(paymentsModule.router.paymentsApp),
     paymentSessions: tagged('Admin · Payments apps').router(paymentsModule.router.paymentSessions),
     taxRates: tagged('Admin · Taxes').router(pricingModule.router.taxRates),
-    ai: tagged('Admin · AI').router(adminAi),
-    aiSettings: tagged('Admin · AI').router(adminAiSettings),
-    aiApp: tagged('Admin · AI apps').router(adminAiApp),
+    ai: tagged('Admin · AI').router(aiModule.router.ai),
+    aiSettings: tagged('Admin · AI').router(aiModule.router.aiSettings),
+    aiApp: tagged('Admin · AI apps').router(aiModule.router.aiApp),
     webhooks: tagged('Admin · Webhooks').router(adminWebhooks),
     apiTokens: tagged('Admin · API tokens').router(adminApiTokens),
     apps: tagged('Admin · Apps').router(adminApps),

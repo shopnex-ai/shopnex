@@ -66,7 +66,7 @@ orders    → db, catalog, channels, custom-fields, customers, email, pricing, w
 payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing
 apps      → db, tenancy, theme
-ai        → db, apps, catalog, tenancy
+ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
 api       → everything above (transport only)
 ```
 

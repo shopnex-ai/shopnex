@@ -9,6 +9,7 @@
     "test:browser": "node --env-file-if-exists=../.env node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
+    "@shopnex/ai": "workspace:*",
     "@shopnex/api": "workspace:*",
     "@shopnex/app": "workspace:*",
     "@shopnex/apps": "workspace:*",

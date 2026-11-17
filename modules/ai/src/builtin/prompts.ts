@@ -1,7 +1,7 @@
 // What we ask for, whichever provider answers: the same instructions, facts and output shapes for every model.
 // ShopNex checks the answer against the capability's own schema; these only tell the model what to write.
 import { z } from 'zod'
-import type { AiBuiltinProvider } from '@shopnex/db/schema'
+import type { AiBuiltinProvider } from '../ai.schema'
 import type { AiCollection, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 
 export interface Settings {

@@ -7,7 +7,6 @@ import { and, eq } from 'drizzle-orm'
 import { instanceSigner, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
 import { schema, type Conn } from '@shopnex/db'
-import type { AiFeedback } from '@shopnex/db/schema'
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import {
   aiCapabilities,
@@ -21,6 +20,7 @@ import {
 } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
 import { AiError } from './ai.errors'
+import { aiGenerations, type AiFeedback } from './ai.schema'
 import { BUILTIN, providers } from './providers'
 import * as subjects from './subjects'
 
@@ -198,13 +198,13 @@ export async function run<C extends AiCapability>(
   } catch (error) {
     const errorMessage = message(error).slice(0, 500)
     await conn
-      .insert(schema.aiGenerations)
+      .insert(aiGenerations)
       .values({ ...record, status: 'failed', errorMessage, durationMs: Date.now() - started })
     throw new AiError('PROVIDER_FAILED', `${provider.name} couldn't do this: ${errorMessage}`)
   }
 
   const output = clean<C>(runRequest, result.output)
-  await conn.insert(schema.aiGenerations).values({
+  await conn.insert(aiGenerations).values({
     ...record,
     status: 'succeeded',
     output,
@@ -217,16 +217,10 @@ export async function run<C extends AiCapability>(
 /** Staff used the suggestion or dismissed it */
 export async function feedback(shopId: string, id: string, value: AiFeedback, conn: Conn) {
   const [row] = await conn
-    .update(schema.aiGenerations)
+    .update(aiGenerations)
     .set({ feedback: value })
-    .where(
-      and(
-        eq(schema.aiGenerations.shopId, shopId),
-        eq(schema.aiGenerations.id, id),
-        eq(schema.aiGenerations.status, 'succeeded'),
-      ),
-    )
-    .returning({ id: schema.aiGenerations.id, feedback: schema.aiGenerations.feedback })
+    .where(and(eq(aiGenerations.shopId, shopId), eq(aiGenerations.id, id), eq(aiGenerations.status, 'succeeded')))
+    .returning({ id: aiGenerations.id, feedback: aiGenerations.feedback })
   if (!row) throw new AiError('GENERATION_NOT_FOUND', 'Generation not found')
   return row
 }

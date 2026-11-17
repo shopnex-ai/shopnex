@@ -2,11 +2,12 @@
 // checks the key can use the model first, so a broken setup never saves. The provider SDKs are only loaded when a
 // shop uses one: ShopNex starts (and checks out) the same without them.
 import { eq } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { AiBuiltinProvider } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
+import type { AiBuiltinProvider } from '../ai.schema'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import type { AiRunRequest, AiRunResponse } from '@shopnex/marketplace-sdk/ai'
 import { AiError } from '../ai.errors'
+import { aiSettings } from '../ai.schema'
 import type { Settings } from './prompts'
 
 export { GenerationError } from './prompts'
@@ -36,7 +37,7 @@ const load = (provider: AiBuiltinProvider) => (provider === 'anthropic' ? import
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 async function settingsRow(shopId: string, conn: Conn) {
-  const [row] = await conn.select().from(schema.aiSettings).where(eq(schema.aiSettings.shopId, shopId))
+  const [row] = await conn.select().from(aiSettings).where(eq(aiSettings.shopId, shopId))
   return row ?? null
 }
 
@@ -79,18 +80,15 @@ export async function save(shopId: string, input: SettingsInput, conn: Conn) {
     enabled: true,
   }
   await conn
-    .insert(schema.aiSettings)
+    .insert(aiSettings)
     .values({ shopId, ...values })
-    .onConflictDoUpdate({ target: schema.aiSettings.shopId, set: { ...values, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: aiSettings.shopId, set: { ...values, updatedAt: new Date() } })
   return getSettings(shopId, conn)
 }
 
 /** Built-in AI off: it stops answering, the saved key stays for when it's turned back on */
 export async function turnOff(shopId: string, conn: Conn) {
-  await conn
-    .update(schema.aiSettings)
-    .set({ enabled: false, updatedAt: new Date() })
-    .where(eq(schema.aiSettings.shopId, shopId))
+  await conn.update(aiSettings).set({ enabled: false, updatedAt: new Date() }).where(eq(aiSettings.shopId, shopId))
   return getSettings(shopId, conn)
 }
 

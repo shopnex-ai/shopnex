@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP } = fx
+const { db, schema, SHOP, aiSettings } = fx
 const { bindConn } = await import('@shopnex/kit')
 const aiSettingsService = bindConn((await import('../src')).aiSettingsService, db)
 const { AiError } = await import('../src/ai.errors')
@@ -12,9 +12,9 @@ const { decryptSecret, encryptSecret } = await import('@shopnex/db/secrets')
 const { eq } = await import('drizzle-orm')
 
 const refused = (code: string) => (e: unknown) => e instanceof AiError && e.code === code
-const row = async () => (await db.select().from(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP)))[0]
-const saved = (patch: Partial<typeof schema.aiSettings.$inferInsert> = {}) =>
-  db.insert(schema.aiSettings).values({
+const row = async () => (await db.select().from(aiSettings).where(eq(aiSettings.shopId, SHOP)))[0]
+const saved = (patch: Partial<typeof aiSettings.$inferInsert> = {}) =>
+  db.insert(aiSettings).values({
     shopId: SHOP,
     provider: 'anthropic',
     model: 'claude-sonnet-5-5',
@@ -64,6 +64,12 @@ describe('settings', () => {
     await saved()
     await assert.rejects(aiSettingsService.save(SHOP, { provider: 'openai' }), refused('KEY_REQUIRED'))
     assert.equal((await row())!.provider, 'anthropic', 'nothing changed')
+  })
+
+  test('an empty key from the form means none given, not a key', async () => {
+    await assert.rejects(aiSettingsService.save(SHOP, { provider: 'anthropic', apiKey: '' }), refused('KEY_REQUIRED'))
+    await saved()
+    await assert.rejects(aiSettingsService.save(SHOP, { provider: 'openai', apiKey: '' }), refused('KEY_REQUIRED'))
   })
 
   test('turning it off keeps the key and the rest, and stops it answering', async () => {

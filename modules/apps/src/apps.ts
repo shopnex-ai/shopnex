@@ -542,12 +542,9 @@ export async function uninstall(shopId: string, installationId: string) {
       .for('update')
     if (!installation) return null
     if (installation.apiTokenId) await revokeTokenById(shopId, installation.apiTokenId, tx)
-    // A payments app's method leaves checkout with it (payments listens: orders keep their gateway snapshot)
+    // What other modules keep for the app goes with it: a payments app's method leaves checkout (orders keep their gateway
+    // snapshot), an AI app's capabilities stop being offered (its generations stay in the shop's history)
     await appUninstalled.run(tx, { shopId, appId: installation.appId })
-    // So do an AI app's capabilities (its generations stay in the shop's history)
-    await tx
-      .delete(schema.aiProviders)
-      .where(and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, installation.appId)))
     // So does a carrier app's service: its rates stop being offered at checkout
     await tx
       .delete(schema.carrierServices)

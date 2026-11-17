@@ -15,7 +15,6 @@ import {
   CHANNEL_TYPES,
   NOTIFICATIONS,
   SMTP_PRESETS,
-  AI_BUILTIN_PROVIDERS,
   type StoredMenuItem,
   apiTokens,
   appInstallations,
@@ -28,8 +27,6 @@ import {
   shopInvitations,
   storefrontKeys,
   webhookDeliveries,
-  aiGenerations,
-  aiSettings,
   carrierServices,
   emailDeliveries,
   marketplaceConnection,
@@ -352,46 +349,6 @@ export const staffListOutput = z.object({
 })
 export const invitationOutput = createSelectSchema(shopInvitations)
 export const memberOutput = createSelectSchema(shopMembers)
-
-// AI
-const aiCapability = z.enum(AI_CAPABILITIES)
-const providerRef = z.object({ id: z.string(), name: z.string() })
-export const aiAppConfigureOutput = z.object({ capabilities: z.record(z.string(), z.string()) })
-export const aiCapabilitiesOutput = z.array(
-  z.object({ capability: aiCapability, providers: z.array(providerRef.extend({ iconUrl: z.string().nullable() })) }),
-)
-const aiOutputs = Object.values(aiCapabilities).map((c) => c.output) as unknown as [
-  z.ZodType,
-  z.ZodType,
-  ...z.ZodType[],
-]
-export const aiRunOutput = z.object({
-  id: z.uuid(),
-  capability: aiCapability,
-  provider: providerRef,
-  output: z.union(aiOutputs),
-  usage: z
-    .object({
-      model: z.string().optional(),
-      inputTokens: z.number().int().optional(),
-      outputTokens: z.number().int().optional(),
-    })
-    .nullable(),
-})
-export const aiFeedbackOutput = createSelectSchema(aiGenerations, {
-  feedback: z.enum(['rejected', 'accepted']).nullable(),
-}).pick({
-  id: true,
-  feedback: true,
-})
-export const aiSettingsOutput = z.object({
-  settings: createSelectSchema(aiSettings, { provider: z.enum(AI_BUILTIN_PROVIDERS) })
-    .pick({ provider: true, model: true, brandVoice: true, enabled: true })
-    .nullable(),
-  providers: z.array(
-    z.object({ id: z.enum(AI_BUILTIN_PROVIDERS), name: z.string(), keyHint: z.string(), models: z.array(z.string()) }),
-  ),
-})
 
 // Analytics
 const totals = z.object({
