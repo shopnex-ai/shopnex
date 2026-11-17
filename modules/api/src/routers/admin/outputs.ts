@@ -7,6 +7,8 @@ export { customFieldOutput } from '@shopnex/custom-fields/contract'
 export { discountOutput, taxRateOutput } from '@shopnex/pricing/contract'
 export { fileListOutput, fileOutput, storageSettingsOutput } from '@shopnex/files/contract'
 export { paymentMethodOutput, paymentSessionOutput, paymentsAppOutput } from '@shopnex/payments/contract'
+export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
+import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
@@ -27,7 +29,6 @@ import {
   shippingRates,
   shopInvitations,
   storefrontKeys,
-  webhookDeliveries,
   aiGenerations,
   aiSettings,
   carrierServices,
@@ -39,8 +40,6 @@ import {
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
-  WEBHOOK_TOPICS,
-  type WebhookTopic,
   customers,
   fulfillments,
   orderItems,
@@ -50,21 +49,11 @@ import {
   productVariants,
   products,
   shops,
-  webhookEndpoints,
 } from '@shopnex/db/schema'
 
 export const shopOutput = createSelectSchema(shops).extend({
   /** True when the Storefront URL is derived from the shop's domains and can't be set (multi-tenant mode) */
   storefrontUrlManaged: z.boolean(),
-})
-
-export const webhookOutput = createSelectSchema(webhookEndpoints, { topics: z.array(z.enum(WEBHOOK_TOPICS)) })
-
-// The list also says who created each one
-export const webhookListItemOutput = webhookOutput.extend({
-  /** Name of the API token that created it, when one did */
-  apiTokenName: z.string().nullable(),
-  createdByApp: z.boolean(),
 })
 
 const variantOutput = createSelectSchema(productVariants)
@@ -212,9 +201,6 @@ export const orderCreatedOutput = orderOutput.extend({
   items: z.array(createSelectSchema(orderItems)),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
 })
-
-// Webhooks
-export const webhookDeliveryOutput = createSelectSchema(webhookDeliveries)
 
 // Apps and tokens
 export const apiTokenOutput = createSelectSchema(apiTokens, { scopes }).omit({ tokenHash: true })

@@ -6,6 +6,7 @@ import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
 import { db, schema } from '@shopnex/db'
+import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { createStorefrontKey, revokeStorefrontKey } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -202,8 +203,7 @@ describe('consistency', () => {
     )
     try {
       const count = async () =>
-        (await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.endpointId, endpoint.id)))
-          .length
+        (await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpoint.id))).length
       assert.equal(await count(), 0)
       await publish(`/admin/products/${product.id}/publications`, [{ channelId: online.id }])
       assert.equal(await count(), 1)

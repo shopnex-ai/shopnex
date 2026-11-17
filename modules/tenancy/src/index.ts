@@ -7,6 +7,7 @@ export {
   type ShopRole,
   type StorefrontResolution,
 } from './resolve'
+export { apiTokenRevoked } from './tenancy.hooks'
 export { createStorefrontKey, listStorefrontKeys, revokeStorefrontKey } from './keys'
 export {
   API_TOKEN_PREFIX,
