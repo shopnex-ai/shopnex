@@ -125,39 +125,27 @@ export function unavailableReason(d: Discount, now = new Date()): string | null 
 
 // For placing an order: locks the discount row (concurrent orders using the code queue here, so the
 // usage limit and "once per customer" hold), then checks it. Returns the discount or why it can't be used.
+// `hasRedeemed` answers "did this customer already use it": the record of a use belongs to orders, not to pricing.
 export async function checkForOrder(
   tx: Conn,
   shopId: string,
   code: string,
   customerId: string | null,
+  hasRedeemed: (discountId: string, customerId: string) => Promise<boolean>,
 ): Promise<{ discount: Discount; error: null } | { discount: null; error: string }> {
   const [discount] = await tx.select().from(schema.discounts).where(byCode(shopId, code)).for('update')
   if (!discount) return { discount: null, error: `Discount code "${code.trim()}" isn't valid` }
   const reason = unavailableReason(discount)
   if (reason) return { discount: null, error: reason }
-  if (discount.oncePerCustomer && customerId) {
-    const [used] = await tx
-      .select({ id: schema.discountRedemptions.id })
-      .from(schema.discountRedemptions)
-      .where(
-        and(
-          eq(schema.discountRedemptions.discountId, discount.id),
-          eq(schema.discountRedemptions.customerId, customerId),
-        ),
-      )
-      .limit(1)
-    if (used) return { discount: null, error: `Discount code "${discount.code}" was already used` }
-  }
+  if (discount.oncePerCustomer && customerId && (await hasRedeemed(discount.id, customerId)))
+    return { discount: null, error: `Discount code "${discount.code}" was already used` }
   return { discount, error: null }
 }
 
-// Records the use, in the order's transaction (after checkForOrder locked the row)
-export async function redeem(tx: Conn, discount: Discount, order: { id: string; customerId: string | null }) {
+// Counts the use, in the order's transaction (after checkForOrder locked the row). Orders records who used it.
+export async function redeem(tx: Conn, discount: Discount) {
   await tx
     .update(schema.discounts)
     .set({ usageCount: sql`${schema.discounts.usageCount} + 1` })
     .where(eq(schema.discounts.id, discount.id))
-  await tx
-    .insert(schema.discountRedemptions)
-    .values({ discountId: discount.id, orderId: order.id, customerId: order.customerId })
 }

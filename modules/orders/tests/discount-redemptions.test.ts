@@ -9,6 +9,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 
 const { db, schema, prepareDatabase } = await import('@shopnex/db')
 const { discountService } = await import('@shopnex/pricing')
+const { checkDiscount, redeemDiscount } = await import('../src/discount-redemptions')
 const { eq, sql } = await import('drizzle-orm')
 
 const SHOP = 'default'
@@ -64,20 +65,13 @@ async function discount(patch: { code: string; oncePerCustomer?: boolean; usageL
   return discountService.create(SHOP, { type: 'percentage', value: 10, ...patch, code: `${patch.code}-${run}` })
 }
 
-// The one function that changes when the table moves: how the use of a discount is recorded
-const redeemOrder = (
-  tx: Parameters<typeof discountService.redeem>[0],
-  discount: Parameters<typeof discountService.redeem>[1],
-  placed: { id: string; customerId: string | null },
-) => discountService.redeem(tx, discount, placed)
-
 /** What placing an order does with a discount: lock and check it, place the order, record the use, in one transaction */
 async function place(code: string, customerId: string | null) {
   return db.transaction(async (tx) => {
-    const checked = await discountService.checkForOrder(tx, SHOP, `${code}-${run}`, customerId)
-    if (checked.error) return { error: checked.error, order: null }
+    const checked = await checkDiscount(tx, SHOP, `${code}-${run}`, customerId)
+    if (!checked.discount) return { error: checked.error, order: null }
     const placed = await order(tx, customerId)
-    await redeemOrder(tx, checked.discount, placed)
+    await redeemDiscount(tx, checked.discount, placed)
     return { error: null, order: placed }
   })
 }

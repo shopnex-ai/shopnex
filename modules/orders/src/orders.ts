@@ -9,7 +9,8 @@ import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { notify } from '@shopnex/email'
-import { calculate, discountService, taxService } from '@shopnex/pricing'
+import { calculate, taxService } from '@shopnex/pricing'
+import { checkDiscount, redeemDiscount } from './discount-redemptions'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
@@ -338,9 +339,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     const shippingCents = input.shipping ? shippingPrice(input.shipping, subtotalCents) : 0
 
     // Locks the discount row until commit (usage limit / once per customer under concurrency)
-    const discount = input.discountCode
-      ? await discountService.checkForOrder(tx, shopId, input.discountCode, customer.id)
-      : null
+    const discount = input.discountCode ? await checkDiscount(tx, shopId, input.discountCode, customer.id) : null
     if (discount?.error) throw new OrderError('DISCOUNT_NOT_APPLICABLE', discount.error)
 
     // Take stock (per variant, summed across lines); any shortfall rolls back the whole order
@@ -429,7 +428,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
           })
           .returning()
       : []
-    if (discount?.discount) await discountService.redeem(tx, discount.discount, order!)
+    if (discount?.discount) await redeemDiscount(tx, discount.discount, order!)
     await emit(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
     await notify(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
     return { ...order!, items, shippingLines }
