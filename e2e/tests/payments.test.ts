@@ -8,6 +8,7 @@ import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
+import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentsAppRequest } from '@shopnex/marketplace-sdk/payments'
 import { orderService } from '@shopnex/orders'
@@ -360,9 +361,9 @@ describe('payments app: refunds and expiry', () => {
       const first = sessionOf(placed.orderId)
       // The buyer comes back late: a session with under ten minutes left is not handed out again, a new one replaces it
       await db
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({ expiresAt: new Date(Date.now() + 5 * 60_000) })
-        .where(eq(schema.paymentSessions.id, first.id))
+        .where(eq(paymentSessions.id, first.id))
       // Both pages stay open at the provider and the buyer pays both
       await paymentService.startPayment(SHOP, placed.orderId, { returnUrl: 'http://127.0.0.1/return' }, db)
       const second = sessionOf(placed.orderId)
@@ -403,14 +404,14 @@ describe('payments app: refunds and expiry', () => {
     const placed = await checkout()
     const { id } = sessionOf(placed.orderId)
     await db
-      .update(schema.paymentSessions)
+      .update(paymentSessions)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.paymentSessions.id, id))
+      .where(eq(paymentSessions.id, id))
     await paymentService.expireDue(undefined, db)
     const o = await order(placed.orderId)
     assert.ok(o.cancelledAt, 'cancelled')
     assert.equal(o.financialStatus, 'voided')
-    const [session] = await db.select().from(schema.paymentSessions).where(eq(schema.paymentSessions.id, id))
+    const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.id, id))
     assert.equal(session!.status, 'expired')
   })
 })

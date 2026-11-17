@@ -5,6 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP, behavior, received } = fx
+const { paymentMethods, paymentSessions } = await import('../src/payments.schema')
 const { bindConn } = await import('@shopnex/kit')
 const sessions = bindConn(await import('../src/sessions'), db)
 const { PaymentError } = await import('../src/payments.errors')
@@ -86,9 +87,9 @@ describe('starting a payment', () => {
     assert.equal(old?.errorMessage, 'Replaced by a new payment attempt')
 
     await db
-      .update(schema.paymentSessions)
+      .update(paymentSessions)
       .set({ expiresAt: new Date(Date.now() + 5 * 60_000) })
-      .where(eq(schema.paymentSessions.id, second.id))
+      .where(eq(paymentSessions.id, second.id))
     const third = await sessions.startPayment(SHOP, o.id, { returnUrl })
     assert.notEqual(third.id, second.id)
     assert.equal(third.paymentMethodId, b.method.id, 'the method of the last attempt is the default')
@@ -113,7 +114,7 @@ describe('starting a payment', () => {
     const notReady = await fx.paymentsApp({ ready: false })
     const uninstalled = await fx.paymentsApp({ installed: false })
     const [manual] = await db
-      .insert(schema.paymentMethods)
+      .insert(paymentMethods)
       .values({ shopId: SHOP, provider: 'manual', name: 'Bank transfer' })
       .returning()
     for (const id of [
@@ -192,7 +193,7 @@ describe('the app resolving a payment', () => {
   test('a late provider event still counts: an expired or rejected session resolves and the order is paid', async () => {
     for (const status of ['expired', 'rejected'] as const) {
       const { app, o, session } = await started()
-      await db.update(schema.paymentSessions).set({ status }).where(eq(schema.paymentSessions.id, session.id))
+      await db.update(paymentSessions).set({ status }).where(eq(paymentSessions.id, session.id))
       const resolved = await sessions.resolve(SHOP, app.id, session.id, {})
       assert.equal(resolved.status, 'resolved')
       assert.equal((await orderRow(o.id)).financialStatus, 'paid', status)
@@ -268,10 +269,7 @@ describe('refunds', () => {
     assert.equal(received[0]!.body.kind, 'refund')
     assert.deepEqual(received[0]!.body.amount, { cents: 1000, currency: 'USD' })
     assert.deepEqual(received[0]!.body.payment, { sessionId: payment.id, externalId: 'pi_paid' })
-    const [session] = await db
-      .select()
-      .from(schema.paymentSessions)
-      .where(eq(schema.paymentSessions.transactionId, refund.id))
+    const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.transactionId, refund.id))
     assert.equal(session?.kind, 'refund')
     assert.equal(session?.status, 'pending')
     // Sent once: asking again does not send it twice
@@ -286,10 +284,7 @@ describe('refunds', () => {
       .set({ amountCents: 2500 })
       .where(eq(schema.orderTransactions.id, refund.id))
     await sessions.startRefunds(SHOP, o.id)
-    const [session] = await db
-      .select()
-      .from(schema.paymentSessions)
-      .where(eq(schema.paymentSessions.transactionId, refund.id))
+    const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.transactionId, refund.id))
     await sessions.resolve(SHOP, app.id, session!.id, { externalId: 're_1' })
     const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund.id))
     assert.equal(after?.status, 'success')
@@ -308,8 +303,8 @@ describe('refunds', () => {
     assert.match(failed?.errorMessage ?? '', /^Payments app unavailable: /)
     const [refundSession] = await db
       .select()
-      .from(schema.paymentSessions)
-      .where(eq(schema.paymentSessions.transactionId, down.refund.id))
+      .from(paymentSessions)
+      .where(eq(paymentSessions.transactionId, down.refund.id))
     assert.equal(refundSession?.status, 'rejected')
 
     behavior.refund = 'ok'
@@ -331,10 +326,7 @@ describe('refunds', () => {
   test('the app rejecting a refund marks its transaction failed with the reason', async () => {
     const { app, o, refund } = await paidOrder()
     await sessions.startRefunds(SHOP, o.id)
-    const [session] = await db
-      .select()
-      .from(schema.paymentSessions)
-      .where(eq(schema.paymentSessions.transactionId, refund.id))
+    const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.transactionId, refund.id))
     await sessions.reject(SHOP, app.id, session!.id, { reason: 'Refund window closed' })
     const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund.id))
     assert.equal(after?.status, 'failure')
@@ -349,10 +341,7 @@ describe('expiry', () => {
     const fresh = await fx.order()
     const lateSession = await sessions.startPayment(SHOP, late.id, { returnUrl, paymentMethodId: method.id })
     const freshSession = await sessions.startPayment(SHOP, fresh.id, { returnUrl, paymentMethodId: method.id })
-    await db
-      .update(schema.paymentSessions)
-      .set({ expiresAt: inThePast() })
-      .where(eq(schema.paymentSessions.id, lateSession.id))
+    await db.update(paymentSessions).set({ expiresAt: inThePast() }).where(eq(paymentSessions.id, lateSession.id))
 
     const handled = await sessions.expireDue(undefined)
     assert.ok(handled >= 2, `a session and an order were handled, got ${handled}`)
@@ -382,9 +371,9 @@ describe('expiry', () => {
       .returning()
     await sessions.startRefunds(SHOP, o.id)
     await db
-      .update(schema.paymentSessions)
+      .update(paymentSessions)
       .set({ expiresAt: inThePast() })
-      .where(eq(schema.paymentSessions.transactionId, refund!.id))
+      .where(eq(paymentSessions.transactionId, refund!.id))
     await sessions.expireDue(undefined)
     const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund!.id))
     assert.equal(after?.status, 'error')

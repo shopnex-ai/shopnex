@@ -6,13 +6,13 @@ import { eq } from 'drizzle-orm'
 import { all, db, schema } from '@shopnex/db'
 import type { MailingAddress } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
-import { PaymentError, paymentService } from '@shopnex/payments'
+import { PaymentError, paymentMethodService, paymentService } from '@shopnex/payments'
 import { calculate, taxRateFor, taxService } from '@shopnex/pricing'
 import * as cartService from './cart'
 import type { CartView } from './cart'
 import * as carrierService from './carrier-services'
 import type { QuoteInput } from './carrier-services'
-import { listPaymentMethods, listShippingRates } from './checkout-settings'
+import { listShippingRates } from './checkout-settings'
 import { CartError } from './cart.errors'
 
 export type CheckoutInput = {
@@ -101,7 +101,7 @@ export async function options(
 ) {
   const [rates, methods, carrierServices, carrierRates] = await Promise.all([
     listShippingRates(shopId, { activeOnly: true }),
-    listPaymentMethods(shopId, { activeOnly: true }),
+    paymentMethodService.list(shopId, { activeOnly: true }, db),
     carrierService.list(shopId, { usableOnly: true }),
     quote?.address?.countryCode
       ? carrierService.quote(shopId, quoteInput(quote.cart, quote.address))
@@ -298,7 +298,7 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
 
     const [rates, methods] = await all(tx, [
       () => listShippingRates(shopId, { activeOnly: true }, tx),
-      () => listPaymentMethods(shopId, { activeOnly: true }, tx),
+      () => paymentMethodService.list(shopId, { activeOnly: true }, tx),
     ])
     const rate = carrierRate
       ? { name: carrierRate.title, id: carrierRate.id, priceCents: carrierRate.priceCents, freeAboveCents: null }

@@ -10,7 +10,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { checkoutSettings } from '@shopnex/cart'
 import { db, schema } from '@shopnex/db'
 import { OrderError, orderService } from '@shopnex/orders'
-import { paymentService } from '@shopnex/payments'
+import { paymentMethodService, paymentService } from '@shopnex/payments'
 import { getShopById, updateShop } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -34,12 +34,16 @@ before(async () => {
   admin = await fx.token(['read_products', 'write_products', 'read_orders', 'write_orders'], shopId)
   storefront = { 'x-shopnex-key': (await fx.storefrontKey(shopId)).token }
   methodId = (
-    await checkoutSettings.createPaymentMethod(shopId, {
-      name: 'E2E bank transfer',
-      additionalDetails: null,
-      instructions: 'Transfer the total to IBAN E2E-0000',
-      active: true,
-    })
+    await paymentMethodService.create(
+      shopId,
+      {
+        name: 'E2E bank transfer',
+        additionalDetails: null,
+        instructions: 'Transfer the total to IBAN E2E-0000',
+        active: true,
+      },
+      db,
+    )
   ).id
   rateId = (
     await checkoutSettings.createShippingRate(shopId, {

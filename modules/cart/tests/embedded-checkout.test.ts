@@ -17,6 +17,7 @@ process.env.SHOPNEX_SECRET ??= 'embedded-checkout-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { paymentMethods } = await import('@shopnex/payments/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { appService } = await import('@shopnex/apps')
@@ -108,7 +109,7 @@ before(async () => {
     },
     db,
   )
-  const [method] = await db.select().from(schema.paymentMethods).where(eq(schema.paymentMethods.appId, app.id))
+  const [method] = await db.select().from(paymentMethods).where(eq(paymentMethods.appId, app.id))
   methodId = method!.id
 })
 

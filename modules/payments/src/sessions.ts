@@ -5,7 +5,6 @@
 import { and, desc, eq, gt, isNotNull, isNull, lte, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { schema, type Conn } from '@shopnex/db'
-import type { PaymentSession } from '@shopnex/db/schema'
 import {
   signPaymentsRequest,
   type PaymentSessionRequest,
@@ -18,6 +17,7 @@ import { emit } from '@shopnex/webhooks'
 import { PaymentError } from './payments.errors'
 import { log } from './log'
 import { only } from './rows'
+import { paymentSessions, paymentMethods, type PaymentSession } from './payments.schema'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released
 const PAYMENT_TTL_MS = 60 * 60_000
@@ -72,9 +72,9 @@ export const isHttpUrl = (value: unknown): value is string => {
 
 async function close(conn: Conn, id: string, status: 'rejected' | 'expired', errorMessage: string) {
   await conn
-    .update(schema.paymentSessions)
+    .update(paymentSessions)
     .set({ status, errorMessage, updatedAt: new Date() })
-    .where(eq(schema.paymentSessions.id, id))
+    .where(eq(paymentSessions.id, id))
 }
 
 /** The previous attempt when it can be handed out again: pending, with a redirect URL, for the method asked for (or any), and time left to pay */
@@ -116,9 +116,9 @@ export async function startPayment(
 
     const [last] = await tx
       .select()
-      .from(schema.paymentSessions)
-      .where(and(eq(schema.paymentSessions.orderId, orderId), eq(schema.paymentSessions.kind, 'payment')))
-      .orderBy(desc(schema.paymentSessions.createdAt))
+      .from(paymentSessions)
+      .where(and(eq(paymentSessions.orderId, orderId), eq(paymentSessions.kind, 'payment')))
+      .orderBy(desc(paymentSessions.createdAt))
       .limit(1)
     // Submitted twice, or back from the provider without paying: the same session still works
     const reuse = reusable(last, opts.paymentMethodId)
@@ -128,8 +128,8 @@ export async function startPayment(
     const [method] = methodId
       ? await tx
           .select()
-          .from(schema.paymentMethods)
-          .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.id, methodId)))
+          .from(paymentMethods)
+          .where(and(eq(paymentMethods.shopId, shopId), eq(paymentMethods.id, methodId)))
       : []
     if (method?.provider !== 'app' || !method.appId || !method.paymentSessionUrl || !method.active || !method.ready) {
       throw new PaymentError('NOT_PAYABLE', 'This payment method is no longer available')
@@ -139,18 +139,18 @@ export async function startPayment(
 
     // One open attempt at a time
     await tx
-      .update(schema.paymentSessions)
+      .update(paymentSessions)
       .set({ status: 'expired', errorMessage: 'Replaced by a new payment attempt', updatedAt: new Date() })
       .where(
         and(
-          eq(schema.paymentSessions.orderId, orderId),
-          eq(schema.paymentSessions.kind, 'payment'),
-          eq(schema.paymentSessions.status, 'pending'),
+          eq(paymentSessions.orderId, orderId),
+          eq(paymentSessions.kind, 'payment'),
+          eq(paymentSessions.status, 'pending'),
         ),
       )
     const session = only(
       await tx
-        .insert(schema.paymentSessions)
+        .insert(paymentSessions)
         .values({
           shopId,
           orderId,
@@ -192,9 +192,9 @@ export async function startPayment(
     if (!isHttpUrl(redirectUrl)) throw new Error('The app answered without a redirectUrl')
     const updated = only(
       await conn
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({ redirectUrl, updatedAt: new Date() })
-        .where(eq(schema.paymentSessions.id, session.id))
+        .where(eq(paymentSessions.id, session.id))
         .returning(),
     )
     return updated
@@ -209,15 +209,15 @@ export async function startPayment(
 export async function latestPayment(shopId: string, orderId: string, conn: Conn) {
   const [session] = await conn
     .select()
-    .from(schema.paymentSessions)
+    .from(paymentSessions)
     .where(
       and(
-        eq(schema.paymentSessions.shopId, shopId),
-        eq(schema.paymentSessions.orderId, orderId),
-        eq(schema.paymentSessions.kind, 'payment'),
+        eq(paymentSessions.shopId, shopId),
+        eq(paymentSessions.orderId, orderId),
+        eq(paymentSessions.kind, 'payment'),
       ),
     )
-    .orderBy(desc(schema.paymentSessions.createdAt))
+    .orderBy(desc(paymentSessions.createdAt))
     .limit(1)
   return session ?? null
 }
@@ -233,29 +233,29 @@ export async function startRefunds(shopId: string, orderId: string, conn: Conn) 
     .select({ transaction: schema.orderTransactions, order: schema.orders })
     .from(schema.orderTransactions)
     .innerJoin(schema.orders, eq(schema.orders.id, schema.orderTransactions.orderId))
-    .leftJoin(schema.paymentSessions, eq(schema.paymentSessions.transactionId, schema.orderTransactions.id))
+    .leftJoin(paymentSessions, eq(paymentSessions.transactionId, schema.orderTransactions.id))
     .where(
       and(
         eq(schema.orders.shopId, shopId),
         eq(schema.orderTransactions.orderId, orderId),
         eq(schema.orderTransactions.kind, 'refund'),
         eq(schema.orderTransactions.status, 'pending'),
-        isNull(schema.paymentSessions.id),
+        isNull(paymentSessions.id),
       ),
     )
   for (const { transaction, order } of pending) {
     const [paid] = await conn
-      .select({ session: schema.paymentSessions, method: schema.paymentMethods })
-      .from(schema.paymentSessions)
-      .leftJoin(schema.paymentMethods, eq(schema.paymentMethods.id, schema.paymentSessions.paymentMethodId))
+      .select({ session: paymentSessions, method: paymentMethods })
+      .from(paymentSessions)
+      .leftJoin(paymentMethods, eq(paymentMethods.id, paymentSessions.paymentMethodId))
       .where(
         and(
-          eq(schema.paymentSessions.orderId, orderId),
-          eq(schema.paymentSessions.kind, 'payment'),
-          eq(schema.paymentSessions.status, 'resolved'),
+          eq(paymentSessions.orderId, orderId),
+          eq(paymentSessions.kind, 'payment'),
+          eq(paymentSessions.status, 'resolved'),
         ),
       )
-      .orderBy(desc(schema.paymentSessions.resolvedAt))
+      .orderBy(desc(paymentSessions.resolvedAt))
       .limit(1)
     const url = paid?.method?.refundSessionUrl
     const live = paid && (await installed(conn, shopId, paid.session.appId))
@@ -270,7 +270,7 @@ export async function startRefunds(shopId: string, orderId: string, conn: Conn) 
     }
     const session = only(
       await conn
-        .insert(schema.paymentSessions)
+        .insert(paymentSessions)
         .values({
           shopId,
           orderId,
@@ -300,9 +300,9 @@ export async function startRefunds(shopId: string, orderId: string, conn: Conn) 
       log.error({ err: error, sessionId: session.id }, 'refund session failed')
       // The app may have resolved it while answering: only close what's still open
       const [current] = await conn
-        .select({ status: schema.paymentSessions.status })
-        .from(schema.paymentSessions)
-        .where(eq(schema.paymentSessions.id, session.id))
+        .select({ status: paymentSessions.status })
+        .from(paymentSessions)
+        .where(eq(paymentSessions.id, session.id))
       if (current?.status === 'pending') {
         await close(conn, session.id, 'rejected', `Payments app unavailable: ${message(error)}`)
         await fail(`Payments app unavailable: ${message(error)}`)
@@ -334,14 +334,8 @@ export async function refundOrder(shopId: string, orderId: string, input: { amou
 async function lockSession(tx: Conn, shopId: string, appId: string, id: string) {
   const [session] = await tx
     .select()
-    .from(schema.paymentSessions)
-    .where(
-      and(
-        eq(schema.paymentSessions.shopId, shopId),
-        eq(schema.paymentSessions.appId, appId),
-        eq(schema.paymentSessions.id, id),
-      ),
-    )
+    .from(paymentSessions)
+    .where(and(eq(paymentSessions.shopId, shopId), eq(paymentSessions.appId, appId), eq(paymentSessions.id, id)))
     .for('update')
   if (!session) throw new PaymentError('SESSION_NOT_FOUND', 'Payment session not found')
   return session
@@ -403,7 +397,7 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
     }
     const updated = only(
       await tx
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({
           status: 'resolved',
           externalId: input.externalId ?? null,
@@ -412,7 +406,7 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
           resolvedAt: now,
           updatedAt: now,
         })
-        .where(eq(schema.paymentSessions.id, id))
+        .where(eq(paymentSessions.id, id))
         .returning(),
     )
     return updated
@@ -433,9 +427,9 @@ export async function reject(shopId: string, appId: string, id: string, input: {
     }
     const updated = only(
       await tx
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({ status: 'rejected', errorMessage: input.reason, updatedAt: new Date() })
-        .where(eq(schema.paymentSessions.id, id))
+        .where(eq(paymentSessions.id, id))
         .returning(),
     )
     return updated
@@ -452,9 +446,9 @@ export async function attemptFailed(shopId: string, appId: string, id: string, i
     if (session.status !== 'pending' || session.kind !== 'payment') return session
     const updated = only(
       await tx
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({ errorMessage: input.reason, updatedAt: new Date() })
-        .where(eq(schema.paymentSessions.id, id))
+        .where(eq(paymentSessions.id, id))
         .returning(),
     )
     return updated
@@ -474,8 +468,8 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
   const expired = await conn.transaction(async (tx) => {
     const due = await tx
       .select()
-      .from(schema.paymentSessions)
-      .where(and(eq(schema.paymentSessions.status, 'pending'), lte(schema.paymentSessions.expiresAt, now)))
+      .from(paymentSessions)
+      .where(and(eq(paymentSessions.status, 'pending'), lte(paymentSessions.expiresAt, now)))
       .limit(limit)
       .for('update', { skipLocked: true })
     for (const session of due) {
@@ -490,15 +484,15 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
     return due.length
   })
 
-  const later = alias(schema.paymentSessions, 'later')
+  const later = alias(paymentSessions, 'later')
   const abandoned = await conn
     .selectDistinct({ shopId: schema.orders.shopId, orderId: schema.orders.id })
-    .from(schema.paymentSessions)
-    .innerJoin(schema.orders, eq(schema.orders.id, schema.paymentSessions.orderId))
+    .from(paymentSessions)
+    .innerJoin(schema.orders, eq(schema.orders.id, paymentSessions.orderId))
     .where(
       and(
-        eq(schema.paymentSessions.kind, 'payment'),
-        lte(schema.paymentSessions.expiresAt, now),
+        eq(paymentSessions.kind, 'payment'),
+        lte(paymentSessions.expiresAt, now),
         isNull(schema.orders.cancelledAt),
         eq(schema.orders.financialStatus, 'pending'),
         notExists(
@@ -526,7 +520,7 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
   // session to expire, so they would hold their stock until the merchant cancels them by hand. A shop can set a
   // number of hours (Settings → Payments → Unpaid orders) after which they are cancelled and restocked. Orders
   // being worked on (partly or fully fulfilled) are left alone, and an order paid since it was picked is skipped.
-  const open = alias(schema.paymentSessions, 'open')
+  const open = alias(paymentSessions, 'open')
   const stale = await conn
     .select({ shopId: schema.orders.shopId, orderId: schema.orders.id })
     .from(schema.orders)

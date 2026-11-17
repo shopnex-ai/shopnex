@@ -4,6 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { schema, type Conn } from '@shopnex/db'
 import { PaymentError } from './payments.errors'
 import { only } from './rows'
+import { paymentMethods } from './payments.schema'
 
 export interface ConfigureInput {
   /** Shown at checkout on first configure, e.g. "Credit card" (staff can rename it) */
@@ -41,8 +42,8 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
   return conn.transaction(async (tx) => {
     const [existing] = await tx
       .select()
-      .from(schema.paymentMethods)
-      .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, appId)))
+      .from(paymentMethods)
+      .where(and(eq(paymentMethods.shopId, shopId), eq(paymentMethods.appId, appId)))
       .for('update')
     // `active` is staff's switch; `ready` is the app's
     const urls = {
@@ -54,21 +55,21 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
     if (existing) {
       const method = only(
         await tx
-          .update(schema.paymentMethods)
+          .update(paymentMethods)
           .set({ ...urls, updatedAt: new Date() })
-          .where(eq(schema.paymentMethods.id, existing.id))
+          .where(eq(paymentMethods.id, existing.id))
           .returning(),
       )
       return method
     }
     // New card methods go first: most buyers pay by card
     const [first] = await tx
-      .select({ position: sql<number>`coalesce(min(${schema.paymentMethods.position}), 0)::int` })
-      .from(schema.paymentMethods)
-      .where(eq(schema.paymentMethods.shopId, shopId))
+      .select({ position: sql<number>`coalesce(min(${paymentMethods.position}), 0)::int` })
+      .from(paymentMethods)
+      .where(eq(paymentMethods.shopId, shopId))
     const method = only(
       await tx
-        .insert(schema.paymentMethods)
+        .insert(paymentMethods)
         .values({ ...urls, shopId, appId, provider: 'app', name: input.name, position: (first?.position ?? 0) - 1 })
         .returning(),
     )

@@ -1,15 +1,31 @@
+import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { marketplaceService } from '@shopnex/apps'
 import { db } from '@shopnex/db'
-import { paymentService, paymentsAppService } from '@shopnex/payments'
-import { paymentsApp, shopManager } from '../../orpc'
-import { paymentsAppConfigureInput } from './schemas'
-import { availableAppsOutput, paymentSessionOutput, paymentsAppOutput } from './outputs'
+import { createProcedures } from '@shopnex/rpc'
+import {
+  availableAppsOutput,
+  paymentMethodInput,
+  paymentMethodOutput,
+  paymentSessionOutput,
+  paymentsAppConfigureInput,
+  paymentsAppOutput,
+} from './payments.contract'
+import * as paymentMethodService from './payment-methods'
+import * as paymentsAppService from './methods'
+import type { PaymentSession } from './payments.schema'
+import * as paymentService from './sessions'
+
+const { paymentsApp, shopManager } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
+const found = <T>(row: T | null) => {
+  if (!row) throw new ORPCError('NOT_FOUND')
+  return row
+}
 
 // What an app sees of a session (amounts are ShopNex's: the app reports outcomes, never amounts)
-const view = (s: Awaited<ReturnType<typeof paymentService.get>>) => ({
+const view = (s: PaymentSession) => ({
   id: s.id,
   kind: s.kind,
   status: s.status,
@@ -85,4 +101,29 @@ export const paymentApps = {
       ])
       return { instanceUrl, apps }
     }),
+}
+
+// Settings → Payments: manual payment methods (bank transfer, cash on delivery…)
+export const paymentMethods = {
+  list: shopManager
+    .route({ method: 'GET', path: '/admin/payment-methods' })
+    .output(z.array(paymentMethodOutput))
+    .handler(({ context }) => paymentMethodService.list(context.shop.id, {}, db)),
+  create: shopManager
+    .route({ method: 'POST', path: '/admin/payment-methods' })
+    .output(paymentMethodOutput)
+    .input(paymentMethodInput)
+    .handler(({ input, context }) => paymentMethodService.create(context.shop.id, input, db)),
+  update: shopManager
+    .route({ method: 'PATCH', path: '/admin/payment-methods/{id}' })
+    .output(paymentMethodOutput)
+    .input(id.extend(paymentMethodInput.partial().shape))
+    .handler(async ({ input: { id, ...patch }, context }) =>
+      found(await paymentMethodService.update(context.shop.id, id, patch, db)),
+    ),
+  delete: shopManager
+    .route({ method: 'DELETE', path: '/admin/payment-methods/{id}' })
+    .output(paymentMethodOutput)
+    .input(id)
+    .handler(async ({ input, context }) => found(await paymentMethodService.remove(context.shop.id, input.id, db))),
 }
