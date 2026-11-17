@@ -10,7 +10,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { checkoutSettings } from '@shopnex/cart'
 import { db, schema } from '@shopnex/db'
 import { OrderError, orderService } from '@shopnex/orders'
-import { paymentService } from '@shopnex/payments'
+import { paymentMethodService, paymentService } from '@shopnex/payments'
 import { getShopById, updateShop } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -34,12 +34,16 @@ before(async () => {
   admin = await fx.token(['read_products', 'write_products', 'read_orders', 'write_orders'], shopId)
   storefront = { 'x-shopnex-key': (await fx.storefrontKey(shopId)).token }
   methodId = (
-    await checkoutSettings.createPaymentMethod(shopId, {
-      name: 'E2E bank transfer',
-      additionalDetails: null,
-      instructions: 'Transfer the total to IBAN E2E-0000',
-      active: true,
-    })
+    await paymentMethodService.create(
+      shopId,
+      {
+        name: 'E2E bank transfer',
+        additionalDetails: null,
+        instructions: 'Transfer the total to IBAN E2E-0000',
+        active: true,
+      },
+      db,
+    )
   ).id
   rateId = (
     await checkoutSettings.createShippingRate(shopId, {
@@ -126,7 +130,7 @@ describe('with no limit set (the default)', () => {
     assert.equal(await stock(), STOCK - 2, 'the order took its stock')
 
     await age(id, 24 * 30)
-    await paymentService.expireDue()
+    await paymentService.expireDue(undefined, db)
 
     const state = await orderState(id)
     assert.equal(state.financialStatus, 'pending')
@@ -142,7 +146,7 @@ describe('with a limit set', () => {
     assert.equal(await stock(), STOCK - 3)
 
     await age(id, 25)
-    assert.ok((await paymentService.expireDue()) >= 1, 'the worker handled it')
+    assert.ok((await paymentService.expireDue(undefined, db)) >= 1, 'the worker handled it')
 
     const state = await orderState(id)
     assert.ok(state.cancelledAt, 'cancelled')
@@ -156,7 +160,7 @@ describe('with a limit set', () => {
     const id = await place(2)
 
     await age(id, 23)
-    await paymentService.expireDue()
+    await paymentService.expireDue(undefined, db)
 
     assert.equal((await orderState(id)).cancelledAt, null)
     assert.equal(await stock(), STOCK - 2)
@@ -168,7 +172,7 @@ describe('with a limit set', () => {
     await orderService.markAsPaid(shopId, id)
 
     await age(id, 100)
-    await paymentService.expireDue()
+    await paymentService.expireDue(undefined, db)
 
     const state = await orderState(id)
     assert.equal(state.financialStatus, 'paid')
@@ -182,7 +186,7 @@ describe('with a limit set', () => {
     await orderService.fulfill(shopId, id)
 
     await age(id, 100)
-    await paymentService.expireDue()
+    await paymentService.expireDue(undefined, db)
 
     assert.equal((await orderState(id)).cancelledAt, null)
     assert.equal(await stock(), STOCK - 2)

@@ -8,6 +8,7 @@ import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
+import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentsAppRequest } from '@shopnex/marketplace-sdk/payments'
 import { orderService } from '@shopnex/orders'
@@ -271,7 +272,7 @@ describe('payments app: refunds and expiry', () => {
         resolve(request)
       }
     })
-    await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true })
+    await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
     assert.equal((await order(placed.orderId)).financialStatus, 'paid', 'paid until the app confirms')
     const request = await refunded
     assert.equal(request.kind, 'refund')
@@ -304,7 +305,7 @@ describe('payments app: refunds and expiry', () => {
       })
 
     const first = next()
-    await paymentService.refundOrder(SHOP, placed.orderId, { amountCents: 100 })
+    await paymentService.refundOrder(SHOP, placed.orderId, { amountCents: 100 }, db)
     assert.equal((await order(placed.orderId)).financialStatus, 'paid', 'paid until the app confirms')
     const request = await first
     assert.equal(request.kind === 'refund' && request.amount.cents, 100)
@@ -314,11 +315,11 @@ describe('payments app: refunds and expiry', () => {
     assert.equal(afterFirst.cancelledAt, null)
 
     // More than is left is refused
-    await assert.rejects(paymentService.refundOrder(SHOP, placed.orderId, { amountCents: total }))
+    await assert.rejects(paymentService.refundOrder(SHOP, placed.orderId, { amountCents: total }, db))
 
     // Cancelling gives back only the rest
     const second = next()
-    await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true })
+    await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
     const rest = await second
     assert.equal(rest.kind === 'refund' && rest.amount.cents, total - 100)
     assert.equal((await order(placed.orderId)).financialStatus, 'refunded')
@@ -343,7 +344,7 @@ describe('payments app: refunds and expiry', () => {
         resolve(request)
       }
     })
-    await paymentService.startRefunds(SHOP, placed.orderId)
+    await paymentService.startRefunds(SHOP, placed.orderId, db)
     const request = await refunded
     assert.equal(request.kind === 'refund' && request.payment.externalId, 'pi_left_pending')
     assert.equal((await order(placed.orderId)).financialStatus, 'refunded')
@@ -360,11 +361,11 @@ describe('payments app: refunds and expiry', () => {
       const first = sessionOf(placed.orderId)
       // The buyer comes back late: a session with under ten minutes left is not handed out again, a new one replaces it
       await db
-        .update(schema.paymentSessions)
+        .update(paymentSessions)
         .set({ expiresAt: new Date(Date.now() + 5 * 60_000) })
-        .where(eq(schema.paymentSessions.id, first.id))
+        .where(eq(paymentSessions.id, first.id))
       // Both pages stay open at the provider and the buyer pays both
-      await paymentService.startPayment(SHOP, placed.orderId, { returnUrl: 'http://127.0.0.1/return' })
+      await paymentService.startPayment(SHOP, placed.orderId, { returnUrl: 'http://127.0.0.1/return' }, db)
       const second = sessionOf(placed.orderId)
       assert.notEqual(second.id, first.id)
       ok(await call('POST', `/admin/payment-sessions/${first.id}/resolve`, { externalId: 'pi_first' }, auth))
@@ -382,7 +383,7 @@ describe('payments app: refunds and expiry', () => {
           ),
         )
       }
-      await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true })
+      await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
       await new Promise((resolve) => setTimeout(resolve, 400))
       refundResolve = null
 
@@ -403,14 +404,14 @@ describe('payments app: refunds and expiry', () => {
     const placed = await checkout()
     const { id } = sessionOf(placed.orderId)
     await db
-      .update(schema.paymentSessions)
+      .update(paymentSessions)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.paymentSessions.id, id))
-    await paymentService.expireDue()
+      .where(eq(paymentSessions.id, id))
+    await paymentService.expireDue(undefined, db)
     const o = await order(placed.orderId)
     assert.ok(o.cancelledAt, 'cancelled')
     assert.equal(o.financialStatus, 'voided')
-    const [session] = await db.select().from(schema.paymentSessions).where(eq(schema.paymentSessions.id, id))
+    const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.id, id))
     assert.equal(session!.status, 'expired')
   })
 })

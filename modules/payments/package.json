@@ -5,6 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./schema": "./src/payments.schema.ts",
+    "./contract": "./src/payments.contract.ts",
+    "./router": "./src/payments.router.ts",
+    "./module": "./src/payments.module.ts",
     "./worker": "./src/worker.ts"
   },
   "scripts": {
@@ -12,6 +16,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
@@ -19,8 +24,11 @@
     "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/orders": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

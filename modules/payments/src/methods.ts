@@ -1,10 +1,12 @@
 // Payments apps register their payment method for a shop (Shopify paymentsAppConfigure). Staff then see it in
 // Settings → Payments, where they can rename, reorder or deactivate it; uninstalling the app removes it.
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import { PaymentError } from './payments.errors'
+import { only } from './rows'
+import { paymentMethods } from './payments.schema'
 
-export type ConfigureInput = {
+export interface ConfigureInput {
   /** Shown at checkout on first configure, e.g. "Credit card" (staff can rename it) */
   name: string
   /** Snapshotted on orders as paymentGateway, e.g. "stripe" */
@@ -28,20 +30,20 @@ export const origin = (url: string) => {
  * Creates or updates the app's payment method in this shop. Session URLs must be on the app's own origin (its
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and position stay.
  */
-export async function configure(shopId: string, appId: string, input: ConfigureInput) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
+export async function configure(shopId: string, appId: string, input: ConfigureInput, conn: Conn) {
+  const [app] = await conn.select().from(schema.apps).where(eq(schema.apps.id, appId))
   if (!app) throw new PaymentError('NOT_A_PAYMENTS_APP', 'Only an installed app can configure a payment method')
   const appOrigin = origin(app.appUrl)
   for (const url of [input.paymentSessionUrl, input.refundSessionUrl]) {
     if (!appOrigin || origin(url) !== appOrigin) {
-      throw new PaymentError('INVALID_SESSION_URL', `Session URLs must be on the app's origin (${appOrigin})`)
+      throw new PaymentError('INVALID_SESSION_URL', `Session URLs must be on the app's origin (${String(appOrigin)})`)
     }
   }
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     const [existing] = await tx
       .select()
-      .from(schema.paymentMethods)
-      .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, appId)))
+      .from(paymentMethods)
+      .where(and(eq(paymentMethods.shopId, shopId), eq(paymentMethods.appId, appId)))
       .for('update')
     // `active` is staff's switch; `ready` is the app's
     const urls = {
@@ -51,29 +53,33 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
       ready: input.ready,
     }
     if (existing) {
-      const [method] = await tx
-        .update(schema.paymentMethods)
-        .set({ ...urls, updatedAt: new Date() })
-        .where(eq(schema.paymentMethods.id, existing.id))
-        .returning()
-      return method!
+      const method = only(
+        await tx
+          .update(paymentMethods)
+          .set({ ...urls, updatedAt: new Date() })
+          .where(eq(paymentMethods.id, existing.id))
+          .returning(),
+      )
+      return method
     }
     // New card methods go first: most buyers pay by card
     const [first] = await tx
-      .select({ position: sql<number>`coalesce(min(${schema.paymentMethods.position}), 0)::int` })
-      .from(schema.paymentMethods)
-      .where(eq(schema.paymentMethods.shopId, shopId))
-    const [method] = await tx
-      .insert(schema.paymentMethods)
-      .values({ ...urls, shopId, appId, provider: 'app', name: input.name, position: (first?.position ?? 0) - 1 })
-      .returning()
-    return method!
+      .select({ position: sql<number>`coalesce(min(${paymentMethods.position}), 0)::int` })
+      .from(paymentMethods)
+      .where(eq(paymentMethods.shopId, shopId))
+    const method = only(
+      await tx
+        .insert(paymentMethods)
+        .values({ ...urls, shopId, appId, provider: 'app', name: input.name, position: (first?.position ?? 0) - 1 })
+        .returning(),
+    )
+    return method
   })
 }
 
 /** Apps that can take payments (allowed write_payment_sessions) and aren't installed in this shop yet */
-export async function availableApps(shopId: string) {
-  const rows = await db
+export async function availableApps(shopId: string, conn: Conn) {
+  const rows = await conn
     .select({ app: schema.apps, installationId: schema.appInstallations.id })
     .from(schema.apps)
     .leftJoin(

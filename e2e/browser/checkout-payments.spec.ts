@@ -9,6 +9,7 @@ import { expect, test, type Page } from './test'
 import { and, eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
+import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
 import { Fixtures, SHOP, appToken, call, ok, requireApp } from '../lib'
@@ -148,7 +149,7 @@ test('a declined card keeps the order open; the buyer comes back, retries on the
 
   // Declined at the provider: ShopNex hears why, the session stays open
   await decline(session.id)
-  const [open] = await db.select().from(schema.paymentSessions).where(eq(schema.paymentSessions.id, session.id))
+  const [open] = await db.select().from(paymentSessions).where(eq(paymentSessions.id, session.id))
   expect(open!.status).toBe('pending')
   expect(open!.errorMessage).toBe('Your card was declined.')
 

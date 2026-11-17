@@ -10,6 +10,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
+import { appUninstalled } from './apps.hooks'
 import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
 import {
   decodeJwt,
@@ -541,10 +542,8 @@ export async function uninstall(shopId: string, installationId: string) {
       .for('update')
     if (!installation) return null
     if (installation.apiTokenId) await revokeTokenById(shopId, installation.apiTokenId, tx)
-    // A payments app's method leaves checkout with it (orders keep their gateway snapshot)
-    await tx
-      .delete(schema.paymentMethods)
-      .where(and(eq(schema.paymentMethods.shopId, shopId), eq(schema.paymentMethods.appId, installation.appId)))
+    // A payments app's method leaves checkout with it (payments listens: orders keep their gateway snapshot)
+    await appUninstalled.run(tx, { shopId, appId: installation.appId })
     // So do an AI app's capabilities (its generations stay in the shop's history)
     await tx
       .delete(schema.aiProviders)

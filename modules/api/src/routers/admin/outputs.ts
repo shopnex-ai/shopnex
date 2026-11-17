@@ -6,6 +6,7 @@ import { z } from 'zod'
 export { customFieldOutput } from '@shopnex/custom-fields/contract'
 export { discountOutput, taxRateOutput } from '@shopnex/pricing/contract'
 export { fileListOutput, fileOutput, storageSettingsOutput } from '@shopnex/files/contract'
+export { paymentMethodOutput, paymentSessionOutput, paymentsAppOutput } from '@shopnex/payments/contract'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
@@ -23,7 +24,6 @@ import {
   collections,
   menus,
   pages,
-  paymentMethods,
   shippingRates,
   shopInvitations,
   storefrontKeys,
@@ -150,7 +150,6 @@ export const publicationsOutput = publications
 // Channels, checkout settings
 export const channelOutput = createSelectSchema(channels, { type: z.enum(CHANNEL_TYPES) })
 export const shippingRateOutput = createSelectSchema(shippingRates)
-export const paymentMethodOutput = createSelectSchema(paymentMethods, { provider: z.enum(['manual', 'app']) })
 
 // Catalog
 export const collectionOutput = createSelectSchema(collections)
@@ -271,26 +270,6 @@ export const availableAppsOutput = z.object({
   ),
 })
 export const storefrontKeyOutput = createSelectSchema(storefrontKeys)
-
-// Payments
-export const paymentSessionOutput = z.object({
-  id: z.uuid(),
-  kind: z.enum(['refund', 'payment']),
-  status: z.enum(['pending', 'resolved', 'rejected', 'expired']),
-  orderId: z.uuid(),
-  amount: z.object({ cents: z.number().int(), currency: z.string() }),
-  externalId: z.string().nullable(),
-  errorMessage: z.string().nullable(),
-  expiresAt: z.date(),
-  resolvedAt: z.date().nullable(),
-})
-export const paymentsAppOutput = createSelectSchema(paymentMethods).pick({
-  id: true,
-  name: true,
-  gateway: true,
-  ready: true,
-  active: true,
-})
 
 // Domains, email, storage, files, notifications
 const domainOutput = createSelectSchema(shopDomains)

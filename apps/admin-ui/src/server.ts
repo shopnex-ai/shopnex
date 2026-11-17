@@ -19,7 +19,8 @@ if (!startupGlobal.shopnexRejectionLogger) {
 function startBackgroundServices() {
   startupGlobal.shopnexBackgroundServices ??= (async () => {
     // The embedded database (DATABASE_URL=pglite:…) is migrated here, before anything queries it
-    await (await import('@shopnex/db')).prepareDatabase()
+    const { db, prepareDatabase } = await import('@shopnex/db')
+    await prepareDatabase()
     const [
       { startDeliveryWorker },
       { startPaymentsWorker },
@@ -34,7 +35,7 @@ function startBackgroundServices() {
       import('@shopnex/apps'),
     ])
     startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature, resolveUrl: serverUrl })
-    startPaymentsWorker()
+    startPaymentsWorker(db)
     startEmailWorker()
     marketplaceService.startMarketplaceSync()
     appService.registerBundledApps()
