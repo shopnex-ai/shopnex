@@ -22,7 +22,7 @@ import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { pricingModule } from '@shopnex/pricing/module'
 import { email as adminEmail } from './routers/admin/email'
-import { files as adminFiles } from './routers/admin/files'
+import { filesModule } from '@shopnex/files/module'
 import { menus as adminMenus } from './routers/admin/menus'
 import { notifications as adminNotifications } from './routers/admin/notifications'
 import { pages as adminPages } from './routers/admin/pages'
@@ -36,7 +36,6 @@ import { products as adminProducts } from './routers/admin/products'
 import { shop as adminShop } from './routers/admin/shop'
 import { platform as adminPlatform } from './routers/admin/platform'
 import { staff as adminStaff } from './routers/admin/staff'
-import { storage as adminStorage } from './routers/admin/storage'
 import { channels as adminChannels } from './routers/admin/channels'
 import { domains as adminDomains } from './routers/admin/domains'
 import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
@@ -70,13 +69,13 @@ export const router = {
     themes: tagged('Admin · Themes').router(adminThemes),
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
-    files: tagged('Admin · Files').router(adminFiles),
+    files: tagged('Admin · Files').router(filesModule.router.files),
     channels: tagged('Admin · Channels').router(adminChannels),
     domains: tagged('Admin · Domains').router(adminDomains),
     storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
     staff: tagged('Admin · Staff').router(adminStaff),
     platform: tagged('Admin · Platform').router(adminPlatform),
-    storage: tagged('Admin · Storage').router(adminStorage),
+    storage: tagged('Admin · Storage').router(filesModule.router.storage),
     email: tagged('Admin · Email').router(adminEmail),
     notifications: tagged('Admin · Email').router(adminNotifications),
     shippingRates: tagged('Admin · Shipping').router(adminShippingRates),

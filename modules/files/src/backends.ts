@@ -2,12 +2,12 @@
 // bucket. Saving a bucket runs the connection test first, so a broken setup never receives uploads.
 import { randomUUID } from 'node:crypto'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
-import type { S3Config, StorageBackend } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
-import { FilesError } from './errors'
+import { FilesError } from './files.errors'
+import { storageBackends, type S3Config, type StorageBackend } from './files.schema'
 import { publicFileUrl, s3Provider } from './s3'
 import { localDisk, type StorageProvider } from './storage'
 
@@ -17,41 +17,41 @@ export type S3Input = S3Config & { secretAccessKey?: string }
 const providerOf = (row: StorageBackend) => s3Provider(row.id, row.config, decryptSecret(row.secretAccessKey))
 
 // Most recent bucket setup (active or not): the form starts from it after switching back to the disk
-async function latest(shopId: string) {
-  const [row] = await db
+async function latest(shopId: string, conn: Conn) {
+  const [row] = await conn
     .select()
-    .from(schema.storageBackends)
-    .where(eq(schema.storageBackends.shopId, shopId))
-    .orderBy(desc(schema.storageBackends.createdAt))
+    .from(storageBackends)
+    .where(eq(storageBackends.shopId, shopId))
+    .orderBy(desc(storageBackends.createdAt))
     .limit(1)
   return row ?? null
 }
 
 // Never returns the secret, only whether one is saved
-export async function getSettings(shopId: string) {
-  const row = await latest(shopId)
+export async function getSettings(shopId: string, conn: Conn) {
+  const row = await latest(shopId, conn)
   return {
     provider: row?.active ? ('s3' as const) : ('local' as const),
     s3: row ? { ...row.config, hasSecret: true } : null,
   }
 }
 
-export async function activeStorage(shopId: string): Promise<StorageProvider> {
-  const [row] = await db
+export async function activeStorage(shopId: string, conn: Conn): Promise<StorageProvider> {
+  const [row] = await conn
     .select()
-    .from(schema.storageBackends)
-    .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
+    .from(storageBackends)
+    .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
   return row ? providerOf(row) : localDisk
 }
 
 /** Providers for the backends files point at, by file.storage */
-export async function providersFor(shopId: string, names: string[]) {
+export async function providersFor(shopId: string, names: string[], conn: Conn) {
   const ids = [...new Set(names)].filter((n) => n !== localDisk.name)
   const rows = ids.length
-    ? await db
+    ? await conn
         .select()
-        .from(schema.storageBackends)
-        .where(and(eq(schema.storageBackends.shopId, shopId), inArray(schema.storageBackends.id, ids)))
+        .from(storageBackends)
+        .where(and(eq(storageBackends.shopId, shopId), inArray(storageBackends.id, ids)))
     : []
   return new Map<string, StorageProvider>([
     [localDisk.name, localDisk],
@@ -59,23 +59,27 @@ export async function providersFor(shopId: string, names: string[]) {
   ])
 }
 
-async function secretFor(shopId: string, input: S3Input) {
+async function secretFor(shopId: string, input: S3Input, conn: Conn) {
   if (input.secretAccessKey) return input.secretAccessKey
-  const row = await latest(shopId)
+  const row = await latest(shopId, conn)
   if (!row) throw new FilesError('SECRET_REQUIRED', 'Enter the secret access key')
   return decryptSecret(row.secretAccessKey)
 }
 
 const configOf = ({ secretAccessKey: _, ...config }: S3Input): S3Config => config
 
-export type TestStep = { step: 'upload' | 'public' | 'delete'; ok: boolean; error?: string }
+export interface TestStep {
+  step: 'upload' | 'public' | 'delete'
+  ok: boolean
+  error?: string
+}
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 // Uploads a small file, loads it from the public URL like a storefront would, then deletes it
-export async function testS3(shopId: string, input: S3Input) {
+export async function testS3(shopId: string, input: S3Input, conn: Conn) {
   const config = configOf(input)
-  const provider = s3Provider('test', config, await secretFor(shopId, input))
+  const provider = s3Provider('test', config, await secretFor(shopId, input, conn))
   const key = `${shopId}/shopnex-connection-test-${randomUUID()}.txt`
   const steps: TestStep[] = []
   const run = async (step: TestStep['step'], fn: () => Promise<void>) => {
@@ -97,7 +101,8 @@ export async function testS3(shopId: string, input: S3Input) {
         redirect: isMultiTenant ? 'manual' : 'follow',
         signal: AbortSignal.timeout(15_000),
       })
-      if (!res.ok) throw new Error(`${url.origin} answered HTTP ${res.status}. Is public access on for this bucket?`)
+      if (!res.ok)
+        throw new Error(`${url.origin} answered HTTP ${String(res.status)}. Is public access on for this bucket?`)
     })
     await run('delete', () => provider.delete(key))
   }
@@ -113,36 +118,40 @@ const sameLocation = (a: S3Config, b: S3Config) =>
 
 // New uploads go to this bucket. Same bucket as before (e.g. rotated keys): that row is updated; otherwise
 // a new row, so files already uploaded keep the setup that matches where they are.
-export async function useS3(shopId: string, input: S3Input) {
-  const result = await testS3(shopId, input)
+export async function useS3(shopId: string, input: S3Input, conn: Conn) {
+  const result = await testS3(shopId, input, conn)
   const failed = result.steps.find((s) => !s.ok)
-  if (failed) throw new FilesError('STORAGE_FAILED', `Connection test failed (${failed.step}): ${failed.error}`)
+  if (failed)
+    throw new FilesError(
+      'STORAGE_FAILED',
+      `Connection test failed (${failed.step}): ${failed.error ?? 'unknown error'}`,
+    )
 
   const config = configOf(input)
-  const secretAccessKey = encryptSecret(await secretFor(shopId, input))
-  const previous = await latest(shopId)
-  await db.transaction(async (tx) => {
+  const secretAccessKey = encryptSecret(await secretFor(shopId, input, conn))
+  const previous = await latest(shopId, conn)
+  await conn.transaction(async (tx) => {
     await tx
-      .update(schema.storageBackends)
+      .update(storageBackends)
       .set({ active: false, updatedAt: new Date() })
-      .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
+      .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
     if (previous && sameLocation(previous.config, config)) {
       await tx
-        .update(schema.storageBackends)
+        .update(storageBackends)
         .set({ config, secretAccessKey, active: true, updatedAt: new Date() })
-        .where(eq(schema.storageBackends.id, previous.id))
+        .where(eq(storageBackends.id, previous.id))
     } else {
-      await tx.insert(schema.storageBackends).values({ shopId, config, secretAccessKey, active: true })
+      await tx.insert(storageBackends).values({ shopId, config, secretAccessKey, active: true })
     }
   })
-  return getSettings(shopId)
+  return getSettings(shopId, conn)
 }
 
 // Back to the server's disk for new uploads; files in the bucket stay there and keep working
-export async function useLocal(shopId: string) {
-  await db
-    .update(schema.storageBackends)
+export async function useLocal(shopId: string, conn: Conn) {
+  await conn
+    .update(storageBackends)
     .set({ active: false, updatedAt: new Date() })
-    .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
-  return getSettings(shopId)
+    .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
+  return getSettings(shopId, conn)
 }

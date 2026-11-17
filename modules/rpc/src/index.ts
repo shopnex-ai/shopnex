@@ -2,6 +2,7 @@
 // scopes it needs. Every module that exposes routes builds its procedures from here, and `modules/api` does too.
 // Nothing here knows a module: a module's own errors are turned into HTTP errors by the `ErrorMapper` it hands in.
 import { ORPCError, os } from '@orpc/server'
+import { z } from 'zod'
 import type { DomainErrorClass, ErrorMapper } from '@shopnex/kit'
 import { appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
@@ -189,3 +190,9 @@ export function createProcedures(mapError: ErrorMapper) {
     superAdminOnly,
   }
 }
+
+/** `?limit=&offset=` of a list route; routes of any module use the same one */
+export const pagination = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+})

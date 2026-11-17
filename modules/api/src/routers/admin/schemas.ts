@@ -6,6 +6,7 @@ import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { customFieldUpdates, customFieldValues } from '@shopnex/custom-fields/contract'
 export { discountCreateInput, discountInput, taxRateInput } from '@shopnex/pricing/contract'
+export { s3Input, storageInput } from '@shopnex/files/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
 export {
   customFieldInput,
@@ -36,7 +37,6 @@ import {
   webhookEndpoints,
   API_SCOPES,
   MENU_ITEM_TYPES,
-  S3_PRESETS,
   SMTP_PRESETS,
   NOTIFICATIONS,
   type StoredMenuItem,
@@ -356,29 +356,6 @@ export const pageInput = z.object({
   seo: seoInput.optional(),
   published: z.boolean().optional(),
 })
-
-// Settings → Storage: an S3-compatible bucket (AWS S3, Cloudflare R2, Spaces, B2, MinIO…)
-const httpUrl = z.url({ protocol: /^https?$/ }).max(500)
-export const s3Input = z.object({
-  preset: z.enum(S3_PRESETS),
-  endpoint: httpUrl,
-  region: z.string().trim().min(1).max(64),
-  bucket: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]{1,62}$/, 'Use the bucket name exactly as your provider shows it'),
-  accessKeyId: z.string().trim().min(1).max(256),
-  // Optional when a key is already saved: leaving it empty keeps that one
-  secretAccessKey: z.string().trim().max(512).optional(),
-  publicUrl: httpUrl,
-  forcePathStyle: z.boolean(),
-  publicAcl: z.boolean(),
-})
-
-export const storageInput = z.discriminatedUnion('provider', [
-  z.object({ provider: z.literal('local') }),
-  z.object({ provider: z.literal('s3'), s3: s3Input }),
-])
 
 export const smtpInput = z.object({
   preset: z.enum(SMTP_PRESETS),

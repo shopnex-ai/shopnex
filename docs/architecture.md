@@ -55,7 +55,7 @@ webhooks  → db
 theme     → db, drafts
 tenancy   → db, channels
 auth      → db, tenancy
-files     → db, tenancy, webhooks
+files     → db, rpc, tenancy, webhooks
 email     → db, tenancy, webhooks
 rpc       → db, apps, auth, tenancy   (the route building blocks; only modules that expose routes use it)
 custom-fields → db, rpc

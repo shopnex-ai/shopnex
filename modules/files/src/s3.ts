@@ -2,10 +2,10 @@
 // signed with aws4fetch (SigV4) rather than the AWS SDK, which also avoids the SDK's default upload
 // checksums that several S3-compatible services reject.
 import { AwsClient } from 'aws4fetch'
-import type { S3Config } from '@shopnex/db/schema'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
-import { FilesError } from './errors'
+import { FilesError } from './files.errors'
+import type { S3Config } from './files.schema'
 import type { StorageProvider } from './storage'
 
 const trimSlash = (url: string) => url.replace(/\/+$/, '')
@@ -22,9 +22,9 @@ export const publicFileUrl = (config: S3Config, key: string) => `${trimSlash(con
 // S3 errors are XML: <Error><Code>AccessDenied</Code><Message>…</Message></Error>
 async function describeError(res: Response) {
   const body = await res.text().catch(() => '')
-  const code = body.match(/<Code>([^<]+)<\/Code>/)?.[1]
-  const message = body.match(/<Message>([^<]+)<\/Message>/)?.[1]
-  return [`HTTP ${res.status}`, code, message].filter(Boolean).join(': ')
+  const code = /<Code>([^<]+)<\/Code>/.exec(body)?.[1]
+  const message = /<Message>([^<]+)<\/Message>/.exec(body)?.[1]
+  return [`HTTP ${String(res.status)}`, code, message].filter(Boolean).join(': ')
 }
 
 export function s3Provider(name: string, config: S3Config, secretAccessKey: string): StorageProvider {
