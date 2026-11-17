@@ -637,6 +637,9 @@ importers:
       '@shopnex/tenancy':
         specifier: workspace:*
         version: link:../tenancy
+      '@shopnex/theme':
+        specifier: workspace:*
+        version: link:../theme
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -1113,22 +1116,43 @@ importers:
 
   modules/theme:
     dependencies:
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
       '@shopnex/drafts':
         specifier: workspace:*
         version: link:../drafts
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@shopnex/storefront-sdk':
+        specifier: workspace:*
+        version: link:../../packages/storefront-sdk
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(zod@4.6.7)
       liquidjs:
         specifier: 10.30.1
         version: 10.30.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/webhooks:
     dependencies:

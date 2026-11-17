@@ -5,6 +5,7 @@ import type { AnyPgTable } from 'drizzle-orm/pg-core'
 import type { ErrorMapper } from './errors'
 
 export * from './errors'
+export * from './conn'
 
 export interface ModuleManifest {
   /** The folder name under modules/ (`custom-fields`) */

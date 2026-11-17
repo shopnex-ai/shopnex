@@ -52,7 +52,7 @@ channels  → db
 pricing   → db, rpc
 drafts    → db
 webhooks  → db
-theme     → db, drafts
+theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
 tenancy   → db, channels
 auth      → db, tenancy
 files     → db, rpc, tenancy, webhooks
@@ -65,7 +65,7 @@ customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a l
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
 payments  → db, apps, orders, email, webhooks
 cart      → db, apps, catalog, channels, orders, payments, pricing
-apps      → db, tenancy
+apps      → db, tenancy, theme
 ai        → db, apps, catalog, tenancy
 api       → everything above (transport only)
 ```

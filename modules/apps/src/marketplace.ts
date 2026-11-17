@@ -8,6 +8,7 @@ import { ORPCError, createMarketplaceClient } from '@shopnex/marketplace-sdk'
 import { SCOPES, type Scope } from '@shopnex/marketplace-sdk/contract'
 import { ThemeDocument } from '@shopnex/storefront-sdk/theme'
 import { db, schema, type Tx } from '@shopnex/db'
+import { themeService } from '@shopnex/theme'
 import { normalizeScopes } from '@shopnex/tenancy'
 import { AppError } from './errors'
 import { log } from './log'
@@ -100,7 +101,7 @@ export async function disconnect() {
   await db.transaction(async (tx) => {
     await tx.delete(schema.marketplaceConnection).where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
     // Copies shops already added stay in their libraries
-    await tx.delete(schema.marketplaceThemes)
+    await themeService.clearStore(tx)
     await tx
       .update(schema.apps)
       .set({ delistedAt: new Date() })
@@ -200,20 +201,7 @@ async function syncThemes(tx: Tx, themes: CatalogThemes) {
       },
     ]
   })
-  for (const row of rows) {
-    await tx
-      .insert(schema.marketplaceThemes)
-      .values(row)
-      .onConflictDoUpdate({ target: schema.marketplaceThemes.id, set: row })
-  }
-  await tx.delete(schema.marketplaceThemes).where(
-    rows.length
-      ? notInArray(
-          schema.marketplaceThemes.id,
-          rows.map((r) => r.id),
-        )
-      : undefined,
-  )
+  await themeService.replaceStore(rows, tx)
 }
 
 /** Sends the full list of live marketplace-app installations (every shop). Call after install/uninstall. */

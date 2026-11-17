@@ -15,7 +15,6 @@ import { OrderError } from '@shopnex/orders'
 import { PaymentError } from '@shopnex/payments'
 import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from '@shopnex/storefront-sdk/contract'
 import type { z } from 'zod'
-import type { Shop } from '@shopnex/db/schema'
 import {
   DomainError,
   StaffError,
@@ -23,9 +22,6 @@ import {
   resolveAdminShop,
   resolveApiToken,
   resolveStorefrontShop,
-  type ApiScope,
-  type ApiToken,
-  type ShopRole,
 } from '@shopnex/tenancy'
 import { log } from './log'
 

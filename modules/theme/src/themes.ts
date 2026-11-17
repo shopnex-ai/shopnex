@@ -4,12 +4,18 @@
 // and makes that copy the shop's live theme (at most one). Code edits (Edit code) have their own draft and
 // publish, apart from the document's (see "Code" below). Storefronts render the live copy: one with
 // several themes renders its theme (`getLive`), a single-theme storefront only when it's a copy of its own.
-import { and, desc, eq, ne, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { and, desc, eq, ne, notInArray, sql } from 'drizzle-orm'
+import type { Conn } from '@shopnex/db'
 import { applyChanges, draftJoin, draftService, entityDrafts, hasDraft } from '@shopnex/drafts'
-import type { ShopTheme, StoredThemeDocument } from '@shopnex/db/schema'
+import {
+  marketplaceThemes,
+  shopThemes,
+  type NewMarketplaceTheme,
+  type ShopTheme,
+  type StoredThemeDocument,
+} from './theme.schema'
 
-const t = schema.shopThemes
+const t = shopThemes
 
 /** The entity type of a copy's code draft (entity_drafts) */
 export const CODE_DRAFT = 'theme_code'
@@ -23,7 +29,7 @@ const lockShop = (tx: Conn, shopId: string) =>
   tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`shop_themes:${shopId}`}))`)
 
 /** The library without documents, live copy first */
-export async function list(shopId: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
   return conn
     .select({
       id: t.id,
@@ -43,13 +49,13 @@ export async function list(shopId: string, conn: Conn = db) {
     .orderBy(sql`${t.role} = 'live' desc`, desc(t.updatedAt))
 }
 
-export async function get(shopId: string, id: string, conn: Conn = db) {
+export async function get(shopId: string, id: string, conn: Conn) {
   const [row] = await conn.select().from(t).where(byId(shopId, id))
   return row ?? null
 }
 
 /** For storefronts: the live copy's theme and what it published (null until then). Null without themes. */
-export async function getLive(shopId: string, conn: Conn = db) {
+export async function getLive(shopId: string, conn: Conn) {
   const [row] = await conn
     .select({ id: t.id, themeId: t.themeId, published: t.published, filesVersion: t.filesVersion, hasFiles })
     .from(t)
@@ -57,7 +63,12 @@ export async function getLive(shopId: string, conn: Conn = db) {
   return row ?? null
 }
 
-type NewTheme = { themeId: string; name: string; draft: StoredThemeDocument; marketplaceThemeId?: string }
+interface NewTheme {
+  themeId: string
+  name: string
+  draft: StoredThemeDocument
+  marketplaceThemeId?: string
+}
 
 // The shop's first theme goes live right away (it shows the theme's defaults until published)
 async function insert(tx: Conn, shopId: string, theme: NewTheme) {
@@ -69,10 +80,11 @@ async function insert(tx: Conn, shopId: string, theme: NewTheme) {
     .insert(t)
     .values({ shopId, ...theme, role: live ? 'unpublished' : 'live' })
     .returning()
-  return row!
+  if (!row) throw new Error('The theme was not saved')
+  return row
 }
 
-export async function create(shopId: string, theme: NewTheme, conn: Conn = db) {
+export async function create(shopId: string, theme: NewTheme, conn: Conn) {
   return conn.transaction(async (tx) => {
     await lockShop(tx, shopId)
     return insert(tx, shopId, theme)
@@ -83,7 +95,7 @@ export async function create(shopId: string, theme: NewTheme, conn: Conn = db) {
  * Adds a copy of a theme when the shop has none: the storefront's default theme for a new shop (so it can
  * be customized right away), or a theme the merchant adds. Null when there already is one.
  */
-export async function ensure(shopId: string, theme: NewTheme, conn: Conn = db) {
+export async function ensure(shopId: string, theme: NewTheme, conn: Conn) {
   return conn.transaction(async (tx) => {
     await lockShop(tx, shopId)
     const [existing] = await tx
@@ -95,13 +107,13 @@ export async function ensure(shopId: string, theme: NewTheme, conn: Conn = db) {
   })
 }
 
-export async function saveDraft(shopId: string, id: string, draft: StoredThemeDocument, conn: Conn = db) {
+export async function saveDraft(shopId: string, id: string, draft: StoredThemeDocument, conn: Conn) {
   const [row] = await conn.update(t).set({ draft, updatedAt: new Date() }).where(byId(shopId, id)).returning()
   return row ?? null
 }
 
 // The copy's draft goes live, replacing the shop's live theme. Null when there's no such copy.
-export async function publish(shopId: string, id: string, conn: Conn = db) {
+export async function publish(shopId: string, id: string, conn: Conn) {
   return conn.transaction(async (tx) => {
     await lockShop(tx, shopId)
     if (!(await get(shopId, id, tx))) return null
@@ -114,12 +126,12 @@ export async function publish(shopId: string, id: string, conn: Conn = db) {
       .set({ role: 'live', published: sql`${t.draft}`, publishedAt: new Date(), updatedAt: new Date() })
       .where(byId(shopId, id))
       .returning()
-    return row!
+    return row ?? null
   })
 }
 
 // Throws away unpublished changes (back to the published copy). Null when never published.
-export async function discardDraft(shopId: string, id: string, conn: Conn = db) {
+export async function discardDraft(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .update(t)
     .set({ draft: sql`${t.published}`, updatedAt: new Date() })
@@ -129,7 +141,7 @@ export async function discardDraft(shopId: string, id: string, conn: Conn = db) 
 }
 
 // An unpublished copy of the draft, to try changes without touching the live theme
-export async function duplicate(shopId: string, id: string, name?: string, conn: Conn = db) {
+export async function duplicate(shopId: string, id: string, name: string | undefined, conn: Conn) {
   const source = await get(shopId, id, conn)
   if (!source) return null
   const [row] = await conn
@@ -142,19 +154,16 @@ export async function duplicate(shopId: string, id: string, name?: string, conn:
       files: source.files,
     })
     .returning()
-  await draftService.copy(shopId, CODE_DRAFT, id, row!.id, conn)
-  return row!
+  if (!row) throw new Error('The copy was not saved')
+  await draftService.copy(shopId, CODE_DRAFT, id, row.id, conn)
+  return row
 }
 
 // --- Code (Edit code): the copy's Liquid files. Edits go to a draft (autosaved, read by the preview);
 // publishing them writes `files`, which buyers get when the copy is live. Apart from the document's draft. ---
 
 /** The files as the preview shows them: the copy's, with the draft over them */
-export async function codeDraft(
-  shopId: string,
-  copy: Pick<ShopTheme, 'id' | 'files' | 'filesVersion'>,
-  conn: Conn = db,
-) {
+export async function codeDraft(shopId: string, copy: Pick<ShopTheme, 'id' | 'files' | 'filesVersion'>, conn: Conn) {
   const { changes, rev } = await draftService.get(shopId, CODE_DRAFT, copy.id, conn)
   return {
     files: applyChanges(copy.files, changes),
@@ -166,13 +175,13 @@ export async function codeDraft(
 }
 
 /** Adds or replaces one file in the draft; a null source puts the theme's own file back (or removes a snippet). Null when there's no such copy. */
-export async function saveFile(shopId: string, id: string, path: string, source: string | null, conn: Conn = db) {
+export async function saveFile(shopId: string, id: string, path: string, source: string | null, conn: Conn) {
   if (!(await get(shopId, id, conn))) return null
   return { rev: await draftService.patch(shopId, CODE_DRAFT, id, { [path]: source }, conn) }
 }
 
 /** Writes the draft to the copy's files. `published` is false when there was nothing to publish. Null when there's no such copy. */
-export async function publishCode(shopId: string, id: string, expectedRev?: number, conn: Conn = db) {
+export async function publishCode(shopId: string, id: string, expectedRev: number | undefined, conn: Conn) {
   if (!(await get(shopId, id, conn))) return null
   return draftService.publish(
     shopId,
@@ -180,10 +189,11 @@ export async function publishCode(shopId: string, id: string, expectedRev?: numb
     id,
     async (tx, changes) => {
       const [row] = await tx.select({ files: t.files }).from(t).where(byId(shopId, id)).for('update')
+      if (!row) throw new Error('The theme was deleted while its code was being published')
       await tx
         .update(t)
         .set({
-          files: applyChanges(row!.files, changes),
+          files: applyChanges(row.files, changes),
           filesVersion: sql`${t.filesVersion} + 1`,
           updatedAt: new Date(),
         })
@@ -195,18 +205,18 @@ export async function publishCode(shopId: string, id: string, expectedRev?: numb
 }
 
 /** Back to the published files. Null when there's no such copy. */
-export async function discardCode(shopId: string, id: string, conn: Conn = db) {
+export async function discardCode(shopId: string, id: string, conn: Conn) {
   if (!(await get(shopId, id, conn))) return null
   return { rev: await draftService.discard(shopId, CODE_DRAFT, id, conn) }
 }
 
-export async function rename(shopId: string, id: string, name: string, conn: Conn = db) {
+export async function rename(shopId: string, id: string, name: string, conn: Conn) {
   const [row] = await conn.update(t).set({ name, updatedAt: new Date() }).where(byId(shopId, id)).returning()
   return row ?? null
 }
 
 // The live theme can't be deleted (publish another one first). Null when there's no such unpublished copy.
-export async function remove(shopId: string, id: string, conn: Conn = db) {
+export async function remove(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .delete(t)
     .where(and(byId(shopId, id), ne(t.role, 'live')))
@@ -215,12 +225,35 @@ export async function remove(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
-// --- Theme Store (styles synced from the marketplace by @shopnex/apps; the same for every shop) ---
+// --- Theme Store (styles synced from the marketplace by @shopnex/apps, which calls the two functions below; the same for every shop) ---
 
-const store = schema.marketplaceThemes
+/**
+ * The catalog the marketplace sync read: inserts or updates each style, and deletes the ones that are gone from it (all of them
+ * when the catalog is empty). Copies shops already added stay in their libraries: they have no foreign key to a style.
+ */
+export async function replaceStore(rows: NewMarketplaceTheme[], conn: Conn) {
+  for (const row of rows) {
+    await conn.insert(marketplaceThemes).values(row).onConflictDoUpdate({ target: marketplaceThemes.id, set: row })
+  }
+  await conn.delete(marketplaceThemes).where(
+    rows.length
+      ? notInArray(
+          marketplaceThemes.id,
+          rows.map((r) => r.id),
+        )
+      : undefined,
+  )
+}
+
+/** Empties the Theme Store (the marketplace was disconnected). Copies shops already added stay in their libraries. */
+export async function clearStore(conn: Conn) {
+  await conn.delete(marketplaceThemes)
+}
+
+const store = marketplaceThemes
 
 /** The Theme Store's styles, without documents */
-export async function listStore(conn: Conn = db) {
+export async function listStore(conn: Conn) {
   return conn
     .select({
       id: store.id,
@@ -237,7 +270,7 @@ export async function listStore(conn: Conn = db) {
     .orderBy(store.name)
 }
 
-export async function getStoreTheme(id: string, conn: Conn = db) {
+export async function getStoreTheme(id: string, conn: Conn) {
   const [row] = await conn.select().from(store).where(eq(store.id, id))
   return row ?? null
 }

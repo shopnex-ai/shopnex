@@ -4,7 +4,7 @@
 // drizzle-zod re-applies the column's nullable/optional on top of each refinement.
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { customFieldUpdates, customFieldValues } from '@shopnex/custom-fields/contract'
+import { customFieldUpdates } from '@shopnex/custom-fields/contract'
 export { discountCreateInput, discountInput, taxRateInput } from '@shopnex/pricing/contract'
 export { s3Input, storageInput } from '@shopnex/files/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'

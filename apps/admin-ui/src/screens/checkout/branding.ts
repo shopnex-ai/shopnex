@@ -7,6 +7,7 @@ import {
   resolveSettings,
   type ThemeDefinition,
 } from '@shopnex/storefront-sdk/theme'
+import { db } from '@shopnex/db'
 import { themeService } from '@shopnex/theme'
 
 export type CheckoutBranding = {
@@ -59,7 +60,7 @@ const httpUrl = (value: unknown) => {
 export async function checkoutBranding(shopId: string, storefrontUrl: string | null): Promise<CheckoutBranding | null> {
   if (!storefrontUrl) return null
   try {
-    const live = await themeService.getLive(shopId)
+    const live = await themeService.getLive(shopId, db)
     if (!live) return null
     const definition = (await storefrontThemes(storefrontUrl)).find((theme) => theme.id === live.themeId)
     const map = definition?.checkout

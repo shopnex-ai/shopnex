@@ -11,10 +11,15 @@ import {
   themeSourcePath,
   withoutCodeSettings,
 } from '@shopnex/storefront-sdk/theme'
+import { db } from '@shopnex/db'
 import { DraftConflictError } from '@shopnex/drafts'
-import { checkLiquid, createPreviewToken, themeService, type ShopTheme } from '@shopnex/theme'
+import { bindConn } from '@shopnex/kit'
+import { createProcedures } from '@shopnex/rpc'
 import { z } from 'zod'
-import { admin } from '../../orpc'
+import { checkLiquid } from './code'
+import { createPreviewToken } from './preview'
+import * as themeLibrary from './themes'
+import type { ShopTheme } from './theme.schema'
 import {
   idOutput,
   previewTokenOutput,
@@ -28,7 +33,13 @@ import {
   themeStoreOutput,
   themeSummaryOutput,
   updatedAtOutput,
-} from './outputs'
+} from './theme.contract'
+
+// The routes run on the shared connection; the service takes it as its last argument, so a caller in a transaction can pass its own
+const themeService = bindConn(themeLibrary, db)
+
+// A module with no errors of its own to map
+const { admin } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 const themeId = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/)
@@ -92,7 +103,9 @@ async function storefrontSource(storefrontUrl: string | null, shopId: string, co
   }
   const parsed = res.ok ? ThemeSource.safeParse(await res.json().catch(() => null)) : null
   if (!parsed?.success) {
-    throw new ORPCError('PRECONDITION_FAILED', { message: `Your storefront answered ${res.status} for its code` })
+    throw new ORPCError('PRECONDITION_FAILED', {
+      message: `Your storefront answered ${String(res.status)} for its code`,
+    })
   }
   return parsed.data.files
 }
@@ -147,7 +160,9 @@ export const themes = {
       if (input.source !== null) {
         const { files } = await themeService.codeDraft(context.shop.id, copy)
         if (!(input.path in files) && Object.keys(files).length >= MAX_THEME_FILES) {
-          throw new ORPCError('BAD_REQUEST', { message: `A theme can have at most ${MAX_THEME_FILES} edited files` })
+          throw new ORPCError('BAD_REQUEST', {
+            message: `A theme can have at most ${String(MAX_THEME_FILES)} edited files`,
+          })
         }
         const problem = checkLiquid(input.source)
         if (problem) {
@@ -260,7 +275,8 @@ export const themes = {
     .input(id)
     .handler(async ({ input, context }) => {
       const row = found(await themeService.publish(context.shop.id, input.id))
-      return { publishedAt: row.publishedAt! }
+      if (!row.publishedAt) throw new Error('A published theme has no publish date')
+      return { publishedAt: row.publishedAt }
     }),
   discardDraft: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/discard' })
