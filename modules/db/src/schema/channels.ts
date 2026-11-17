@@ -2,7 +2,7 @@
 // at it: a table in this package cannot import from a module that imports this package. It moves to @shopnex/channels once
 // orders and cart are modules. What a channel shows (resource_publications) and its storefront keys are @shopnex/channels'.
 import { boolean, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/core/schema'
 
 // Where a shop sells (Shopify: sales channels): the Online Store, a headless storefront, later POS and the like.
 // What a channel shows is decided by resource_publications; storefront keys, carts and orders belong to one.

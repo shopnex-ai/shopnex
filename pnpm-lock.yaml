@@ -869,6 +869,22 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  modules/core:
+    dependencies:
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   modules/custom-fields:
     dependencies:
       '@orpc/server':
@@ -932,6 +948,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.5.16
         version: 0.5.16
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log

@@ -35,7 +35,8 @@
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
 - /auth # Better Auth integration
-- /db # drizzle client + the core table schemas (src/schema/<domain>.ts) + migrations (one history for all tables). A module may own its tables in `modules/<name>/src/<name>.schema.ts` (custom-fields does): `pnpm db:generate` and the privacy test find them by that name, and CI fails when the schema and the migrations disagree
+- /core # the tables every module points at: `user`, `shops`, `apps`, `api_tokens`, with the API scopes. No logic and no routes; it depends on `kit` and `drizzle-orm` only (`modules:check` enforces it), so `db` can depend on it without a cycle
+- /db # drizzle client + the schemas of the tables not yet in a module (src/schema/<domain>.ts; it re-exports @shopnex/core's) + migrations (one history for all tables). A module may own its tables in `modules/<name>/src/<name>.schema.ts` (custom-fields does): `pnpm db:generate` and the privacy test find them by that name, and CI fails when the schema and the migrations disagree
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker
@@ -47,7 +48,8 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 (a module imports only what is on its right):
 
 ```text
-db        →
+core      →
+db        → core
 channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there)
 pricing   → db, rpc
 drafts    → db

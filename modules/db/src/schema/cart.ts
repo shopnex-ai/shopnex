@@ -3,7 +3,7 @@ import { productVariants } from './catalog'
 import { customers } from './customers'
 import { orders } from './orders'
 import { channels } from './channels'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/core/schema'
 
 export const CART_STATUSES = ['active', 'completed'] as const
 export type CartStatus = (typeof CART_STATUSES)[number]
