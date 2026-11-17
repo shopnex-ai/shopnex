@@ -19,7 +19,7 @@ import {
   carrierServicesApp as adminCarrierServicesApp,
 } from './routers/admin/carrier-services'
 import { collections as adminCollections } from './routers/admin/collections'
-import { customFields as adminCustomFields } from './routers/admin/custom-fields'
+import { customFields as adminCustomFields } from '@shopnex/custom-fields/router'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { discounts as adminDiscounts } from './routers/admin/discounts'
 import { email as adminEmail } from './routers/admin/email'

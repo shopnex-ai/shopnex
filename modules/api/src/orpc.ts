@@ -1,4 +1,5 @@
 import { ORPCError, implement, os } from '@orpc/server'
+import { createProcedures, type Context, type ErrorMapper } from '@shopnex/rpc'
 import { AiError } from '@shopnex/ai'
 import { AppError, appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
@@ -6,6 +7,7 @@ import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
 import { CustomFieldError } from '@shopnex/custom-fields'
+import { customFieldErrors } from '@shopnex/custom-fields/router'
 import { ContentError } from '@shopnex/content'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
@@ -28,145 +30,139 @@ import {
   type ShopRole,
 } from '@shopnex/tenancy'
 
-export type Context = { headers: Headers }
-
-export function createContext(headers: Headers): Context {
-  return { headers }
-}
+export { createContext, type Context } from '@shopnex/rpc'
 
 const base = os.$context<Context>()
 
 // Domain modules throw their own errors; map them to 400s with a stable code
-const domainErrors = base.middleware(async ({ next }) => {
-  try {
-    return await next()
-  } catch (error) {
-    if (error instanceof OrderError) {
-      const status =
-        error.code === 'ORDER_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'ORDER_CANCELLED' || error.code === 'INVALID_STATUS_TRANSITION'
-            ? 'CONFLICT'
-            : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof ChannelError) {
-      const status =
-        error.code === 'CHANNEL_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'HANDLE_TAKEN' || error.code === 'CHANNEL_IN_USE' || error.code === 'CHANNEL_PROTECTED'
-            ? 'CONFLICT'
-            : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof CartError) {
-      const status =
-        error.code === 'CART_NOT_FOUND' || error.code === 'VARIANT_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'CART_COMPLETED'
-            ? 'CONFLICT'
-            : error.code === 'NOT_A_CARRIER_APP'
-              ? 'FORBIDDEN'
-              : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof CatalogError) {
-      const status =
-        error.code === 'SLUG_TAKEN' || error.code === 'SKU_TAKEN'
+const mapDomainError: ErrorMapper = (error) => {
+  if (error instanceof OrderError) {
+    const status =
+      error.code === 'ORDER_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'ORDER_CANCELLED' || error.code === 'INVALID_STATUS_TRANSITION'
           ? 'CONFLICT'
-          : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS'
-            ? 'BAD_REQUEST'
-            : 'NOT_FOUND'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof CustomFieldError) {
-      const status =
-        error.code === 'FIELD_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'KEY_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof ContentError) {
-      const status =
-        error.code === 'HANDLE_TAKEN'
+          : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof ChannelError) {
+    const status =
+      error.code === 'CHANNEL_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'HANDLE_TAKEN' || error.code === 'CHANNEL_IN_USE' || error.code === 'CHANNEL_PROTECTED'
           ? 'CONFLICT'
-          : error.code === 'MENU_NOT_FOUND' || error.code === 'PAGE_NOT_FOUND'
-            ? 'NOT_FOUND'
-            : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof FilesError) {
-      throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof EmailError) {
-      throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof PricingError) {
-      const status =
-        error.code === 'DISCOUNT_NOT_FOUND' || error.code === 'TAX_RATE_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'CODE_TAKEN' || error.code === 'TAX_RATE_EXISTS'
-            ? 'CONFLICT'
-            : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof AppError) {
-      const status =
-        error.code === 'APP_NOT_FOUND' || error.code === 'INSTALLATION_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'invalid_client'
-            ? 'UNAUTHORIZED'
-            : 'BAD_REQUEST'
-      // OAuth clients look for `error` (RFC 6749 §5.2)
-      throw new ORPCError(status, {
-        message: error.message,
-        data: { code: error.code, error: error.code },
-        cause: error,
-      })
-    }
-    if (error instanceof PaymentError) {
-      const status =
-        error.code === 'SESSION_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'SESSION_CLOSED' || error.code === 'NOT_PAYABLE'
-            ? 'CONFLICT'
-            : error.code === 'NOT_A_PAYMENTS_APP'
-              ? 'FORBIDDEN'
-              : error.code === 'PROVIDER_UNAVAILABLE'
-                ? 'BAD_GATEWAY'
-                : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof AiError) {
-      const status =
-        error.code === 'SUBJECT_NOT_FOUND' || error.code === 'GENERATION_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : error.code === 'NOT_AN_AI_APP'
+          : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof CartError) {
+    const status =
+      error.code === 'CART_NOT_FOUND' || error.code === 'VARIANT_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'CART_COMPLETED'
+          ? 'CONFLICT'
+          : error.code === 'NOT_A_CARRIER_APP'
             ? 'FORBIDDEN'
-            : error.code === 'PROVIDER_FAILED'
+            : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof CatalogError) {
+    const status =
+      error.code === 'SLUG_TAKEN' || error.code === 'SKU_TAKEN'
+        ? 'CONFLICT'
+        : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS'
+          ? 'BAD_REQUEST'
+          : 'NOT_FOUND'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  const customFieldError = customFieldErrors(error)
+  if (customFieldError) return customFieldError
+  if (error instanceof ContentError) {
+    const status =
+      error.code === 'HANDLE_TAKEN'
+        ? 'CONFLICT'
+        : error.code === 'MENU_NOT_FOUND' || error.code === 'PAGE_NOT_FOUND'
+          ? 'NOT_FOUND'
+          : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof FilesError) {
+    return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof EmailError) {
+    return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof PricingError) {
+    const status =
+      error.code === 'DISCOUNT_NOT_FOUND' || error.code === 'TAX_RATE_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'CODE_TAKEN' || error.code === 'TAX_RATE_EXISTS'
+          ? 'CONFLICT'
+          : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof AppError) {
+    const status =
+      error.code === 'APP_NOT_FOUND' || error.code === 'INSTALLATION_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'invalid_client'
+          ? 'UNAUTHORIZED'
+          : 'BAD_REQUEST'
+    // OAuth clients look for `error` (RFC 6749 §5.2)
+    return new ORPCError(status, {
+      message: error.message,
+      data: { code: error.code, error: error.code },
+      cause: error,
+    })
+  }
+  if (error instanceof PaymentError) {
+    const status =
+      error.code === 'SESSION_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'SESSION_CLOSED' || error.code === 'NOT_PAYABLE'
+          ? 'CONFLICT'
+          : error.code === 'NOT_A_PAYMENTS_APP'
+            ? 'FORBIDDEN'
+            : error.code === 'PROVIDER_UNAVAILABLE'
               ? 'BAD_GATEWAY'
               : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof DomainError) {
-      const status =
-        error.code === 'DOMAIN_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'DOMAIN_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    if (error instanceof StaffError) {
-      const status = error.code === 'ALREADY_MEMBER' ? 'CONFLICT' : error.code
-      throw new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-    }
-    throw error
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
   }
-})
+  if (error instanceof AiError) {
+    const status =
+      error.code === 'SUBJECT_NOT_FOUND' || error.code === 'GENERATION_NOT_FOUND'
+        ? 'NOT_FOUND'
+        : error.code === 'NOT_AN_AI_APP'
+          ? 'FORBIDDEN'
+          : error.code === 'PROVIDER_FAILED'
+            ? 'BAD_GATEWAY'
+            : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof DomainError) {
+    const status =
+      error.code === 'DOMAIN_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'DOMAIN_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  if (error instanceof StaffError) {
+    const status = error.code === 'ALREADY_MEMBER' ? 'CONFLICT' : error.code
+    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
+  }
+  return undefined
+}
 
-export const pub = base.use(domainErrors)
-
-// Session is resolved lazily here, so public procedures never hit the DB for it
-export const authed = pub.use(async ({ context, next }) => {
-  const session = await auth.api.getSession({ headers: context.headers })
-  if (!session) throw new ORPCError('UNAUTHORIZED')
-  return next({ context: { session: session.session, user: session.user } })
-})
+export const {
+  pub,
+  authed,
+  admin,
+  adminOrToken,
+  scoped,
+  paymentsApp,
+  aiApp,
+  carrierApp,
+  shopManager,
+  webhookManager,
+  superAdminOnly,
+} = createProcedures(mapDomainError)
 
 // Storefront errors are part of the published contract: map domain errors to the contract's
 // typed errors (code + data) so clients get `defined` errors instead of parsing messages.
@@ -259,109 +255,3 @@ export const storefront = implement(storefrontContract)
     }
     return next({ context: { shop: result.shop, channelId: result.channelId } })
   })
-
-type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>
-
-async function staffTenant({ session, user }: Session) {
-  const tenant = await resolveAdminShop({
-    userId: user.id,
-    activeShopId: session.activeOrganizationId,
-    superAdmin: isSuperAdmin(user),
-  })
-  if (!tenant) throw new ORPCError('FORBIDDEN', { message: 'Not a member of this shop' })
-  return tenant
-}
-
-// Admin procedures: signed-in member of the active shop, or a super admin
-export const admin = authed.use(async ({ context, next }) => {
-  const tenant = await staffTenant(context)
-  return next({ context: { shop: tenant.shop, role: tenant.role, superAdmin: tenant.superAdmin } })
-})
-
-// Who is calling an admin API procedure: staff (token null) or an API token (role and userId null)
-type ApiCaller = {
-  shop: Shop
-  token: ApiToken | null
-  role: ShopRole | null
-  superAdmin: boolean
-  userId: string | null
-}
-
-const BEARER = /^Bearer\s+(\S+)$/i
-
-// Admin API for apps: a staff session (same access as `admin`) or a bearer token, which only gets what
-// `scoped()` allows: an API token (sk_…) or an app's 1-hour access token (a JWT from /oauth/token). A bearer
-// header wins over the cookie.
-export const adminOrToken = pub.use(async ({ context, next }) => {
-  const bearer = context.headers.get('authorization')?.match(BEARER)?.[1]
-  let caller: ApiCaller
-  if (bearer) {
-    const resolved = (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer))
-    if (!resolved) throw new ORPCError('UNAUTHORIZED', { message: 'Invalid or revoked API token' })
-    caller = { shop: resolved.shop, token: resolved.token, role: null, superAdmin: false, userId: null }
-  } else {
-    const session = await auth.api.getSession({ headers: context.headers })
-    if (!session) throw new ORPCError('UNAUTHORIZED')
-    const tenant = await staffTenant(session)
-    caller = {
-      shop: tenant.shop,
-      token: null,
-      role: tenant.role,
-      superAdmin: tenant.superAdmin,
-      userId: session.user.id,
-    }
-  }
-  return next({ context: caller })
-})
-
-// Staff always pass; tokens need the scope (write_* includes read_*)
-export const scoped = (scope: ApiScope) =>
-  adminOrToken.use(({ context, next }) => {
-    if (context.token && !hasScope(context.token.scopes, scope)) {
-      throw new ORPCError('FORBIDDEN', { message: `This API token needs the ${scope} scope` })
-    }
-    return next()
-  })
-
-// Payments apps: an installed app's token with the payment session scope (staff never resolve sessions)
-export const paymentsApp = scoped('write_payment_sessions').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a payments app's own token can do this" })
-  return next({ context: { appId } })
-})
-
-// AI apps: an installed app's token with the AI capability scope (staff never register capabilities)
-export const aiApp = scoped('write_ai_capabilities').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an AI app's own token can do this" })
-  return next({ context: { appId } })
-})
-
-// Carrier services: an installed app's token with the shipping scope (staff manage them from the admin instead)
-export const carrierApp = scoped('write_shipping').use(({ context, next }) => {
-  const appId = context.token?.appId
-  if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only a carrier app's own token can do this" })
-  return next({ context: { appId } })
-})
-
-// Shop settings (keys, etc.): owners/admins of the shop, or a super admin
-export const shopManager = admin.use(async ({ context, next }) => {
-  if (!context.superAdmin && context.role !== 'owner' && context.role !== 'admin') {
-    throw new ORPCError('FORBIDDEN', { message: 'Requires shop owner or admin' })
-  }
-  return next()
-})
-
-// Webhooks: shop owners/admins, or an API token (which only sees the subscriptions it created)
-export const webhookManager = adminOrToken.use(async ({ context, next }) => {
-  if (!context.token && !context.superAdmin && context.role !== 'owner' && context.role !== 'admin') {
-    throw new ORPCError('FORBIDDEN', { message: 'Requires shop owner or admin' })
-  }
-  return next()
-})
-
-// Platform-wide settings (the app registry): super admins only
-export const superAdminOnly = admin.use(async ({ context, next }) => {
-  if (!context.superAdmin) throw new ORPCError('FORBIDDEN', { message: 'Requires a super admin' })
-  return next()
-})

@@ -3,8 +3,7 @@
 // Drizzle tables like the inputs in ./schemas do, so a new column shows up here by itself.
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { CUSTOM_FIELD_RESOURCES, CUSTOM_FIELD_TYPES } from '@shopnex/custom-fields'
-import { customFieldDefinitions } from '@shopnex/custom-fields/schema'
+export { customFieldOutput } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
@@ -212,10 +211,6 @@ export const customerEraseOutput = z.object({
 
 // customer.erased: names the customer so a receiver can find and delete its own copy
 export const customerErasedOutput = z.object({ id: z.uuid(), email: z.string() })
-export const customFieldOutput = createSelectSchema(customFieldDefinitions, {
-  resource: z.enum(CUSTOM_FIELD_RESOURCES),
-  type: z.enum(CUSTOM_FIELD_TYPES),
-})
 export const discountOutput = createSelectSchema(discounts, {
   type: z.enum(['percentage', 'fixed_amount', 'free_shipping']),
 })

@@ -5,15 +5,21 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/custom-fields.schema.ts"
+    "./schema": "./src/custom-fields.schema.ts",
+    "./contract": "./src/custom-fields.contract.ts",
+    "./router": "./src/custom-fields.router.ts"
   },
   "scripts": {
     "typecheck": "tsc",
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@orpc/server": "catalog:",
     "@shopnex/db": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@shopnex/rpc": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

@@ -4,7 +4,7 @@
 // drizzle-zod re-applies the column's nullable/optional on top of each refinement.
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { CUSTOM_FIELD_KEY_PATTERN, CUSTOM_FIELD_RESOURCES, CUSTOM_FIELD_TYPES } from '@shopnex/custom-fields'
+export { customFieldInput, customFieldPatch } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import {
   PRODUCT_STATUSES,
@@ -44,28 +44,6 @@ export const customFieldValues = z.record(z.string(), z.union([z.string(), z.num
 export const customFieldUpdates = z
   .record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()]))
   .describe('Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields.')
-
-export const customFieldInput = z.object({
-  resource: z.enum(CUSTOM_FIELD_RESOURCES),
-  // How themes and APIs address the field, e.g. `material` → product.custom_fields.material. Fixed once created.
-  key: z
-    .string()
-    .min(1)
-    .max(40)
-    .regex(CUSTOM_FIELD_KEY_PATTERN, 'Use lowercase letters, digits and underscores, starting with a letter'),
-  label: z.string().trim().min(1).max(100),
-  // Fixed once created
-  type: z.enum(CUSTOM_FIELD_TYPES),
-  // The choices of a `choice` field (and only of it)
-  options: z.array(z.string().trim().min(1).max(100)).max(50).optional(),
-  // Show the value in themes and the Storefront API (otherwise it stays in the admin, Admin API and apps)
-  storefront: z.boolean().optional(),
-})
-
-export const customFieldPatch = customFieldInput
-  .pick({ label: true, storefront: true, options: true })
-  .extend({ position: z.number().int().min(0).max(1000) })
-  .partial()
 
 export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
 
