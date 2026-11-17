@@ -1,3 +1,4 @@
-export * as draftService from './drafts'
-export { applyChanges, draftJoin, DraftConflictError, hasDraft } from './drafts'
-export type { DraftChanges } from '@shopnex/db/schema'
+export * as draftService from './drafts.service'
+export { applyChanges, draftJoin, hasDraft } from './drafts.service'
+export { DraftConflictError } from './drafts.errors'
+export { entityDrafts, type DraftChanges } from './drafts.schema'

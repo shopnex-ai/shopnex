@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
-import { applyChanges } from '../src/drafts'
+import { applyChanges } from '../src/drafts.service'
 
 describe('applyChanges', () => {
   test('sets changed keys and keeps the others', () => {
