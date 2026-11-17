@@ -8,6 +8,8 @@ import { and, asc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
 import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
 import { db, schema } from '@shopnex/db'
+import { paymentMethodService } from '@shopnex/payments'
+import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
 import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
@@ -266,12 +268,16 @@ export class Fixtures {
   }
 
   async paymentMethod(name = 'E2E bank transfer') {
-    const method = await checkoutSettings.createPaymentMethod(SHOP, {
-      name,
-      additionalDetails: null,
-      instructions: 'Transfer the total to IBAN E2E-0000',
-      active: true,
-    })
+    const method = await paymentMethodService.create(
+      SHOP,
+      {
+        name,
+        additionalDetails: null,
+        instructions: 'Transfer the total to IBAN E2E-0000',
+        active: true,
+      },
+      db,
+    )
     this.paymentMethods.push(method.id)
     return method
   }
@@ -304,7 +310,7 @@ export class Fixtures {
     if (this.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.token, this.carts))
     if (this.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, this.orders))
     if (this.paymentMethods.length) {
-      await db.delete(schema.paymentMethods).where(inArray(schema.paymentMethods.id, this.paymentMethods))
+      await db.delete(paymentMethods).where(inArray(paymentMethods.id, this.paymentMethods))
     }
     await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
     if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))

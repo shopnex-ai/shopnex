@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { paymentMethods } from '@shopnex/payments/schema'
 import { seedSampleProducts } from '@shopnex/catalog'
 import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
@@ -41,7 +42,7 @@ describe('createShop', () => {
 
     const rates = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.shopId, shop.id))
     assert.equal(rates.length, 0)
-    const methods = await db.select().from(schema.paymentMethods).where(eq(schema.paymentMethods.shopId, shop.id))
+    const methods = await db.select().from(paymentMethods).where(eq(paymentMethods.shopId, shop.id))
     assert.equal(methods.length, 0)
 
     // The storefront header and footer have links from the first visit, with no product or collection needed

@@ -63,7 +63,7 @@ catalog   → db, channels, custom-fields, webhooks
 content   → db, catalog
 customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
-payments  → db, apps, orders, email, webhooks
+payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing
 apps      → db, tenancy, theme
 ai        → db, apps, catalog, tenancy
@@ -130,6 +130,21 @@ option of `defineError` (the OAuth errors of apps also name the code as `error`)
 `createProcedures` for an error that must answer differently; it is tried first, then the default.
 `pnpm modules:check` verifies
 the manifest against the imports and `package.json`.
+
+Hooks: when a module has to react to something another module does, and the dependency would run against the graph (`payments`
+depends on `apps`, so `apps` cannot call it), the owner declares a hook and runs it inside its own transaction; the module that
+cares adds a listener under an id when it loads. The owner never imports the listener, a listener that throws undoes the owner's
+transaction, and adding the same id again replaces it (a module loaded twice does not run twice):
+
+```ts
+// apps.hooks.ts
+export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn>('app.uninstalled')
+// apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
+// payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
+```
+
+A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
+file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).
 
 ## API layout
 

@@ -17,6 +17,7 @@ process.env.SHOPNEX_SECRET ??= 'embedded-checkout-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { paymentMethods } = await import('@shopnex/payments/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { appService } = await import('@shopnex/apps')
@@ -96,14 +97,19 @@ before(async () => {
     userId: null as unknown as string,
     scopes: ['write_payment_sessions'],
   })
-  await paymentsAppService.configure(SHOP, app.id, {
-    name: 'Credit card',
-    gateway: 'test-provider',
-    paymentSessionUrl: `${providerUrl}/session`,
-    refundSessionUrl: `${providerUrl}/refund`,
-    ready: true,
-  })
-  const [method] = await db.select().from(schema.paymentMethods).where(eq(schema.paymentMethods.appId, app.id))
+  await paymentsAppService.configure(
+    SHOP,
+    app.id,
+    {
+      name: 'Credit card',
+      gateway: 'test-provider',
+      paymentSessionUrl: `${providerUrl}/session`,
+      refundSessionUrl: `${providerUrl}/refund`,
+      ready: true,
+    },
+    db,
+  )
+  const [method] = await db.select().from(paymentMethods).where(eq(paymentMethods.appId, app.id))
   methodId = method!.id
 })
 
@@ -148,7 +154,7 @@ describe('checkout with a payments app on the embedded database', () => {
       'starting a second payment',
       (async () => {
         const [order] = orders
-        return paymentService.latestPayment(SHOP, order!.id)
+        return paymentService.latestPayment(SHOP, order!.id, db)
       })(),
     )
     assert.ok(again)

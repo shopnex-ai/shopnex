@@ -9,10 +9,7 @@ import {
   apps as adminApps,
   marketplaceConnection as adminMarketplace,
 } from './routers/admin/apps'
-import {
-  paymentMethods as adminPaymentMethods,
-  shippingRates as adminShippingRates,
-} from './routers/admin/checkout-settings'
+import { shippingRates as adminShippingRates } from './routers/admin/checkout-settings'
 import {
   carrierServices as adminCarrierServices,
   carrierServicesApp as adminCarrierServicesApp,
@@ -20,17 +17,13 @@ import {
 import { collections as adminCollections } from './routers/admin/collections'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
+import { paymentsModule } from '@shopnex/payments/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { email as adminEmail } from './routers/admin/email'
 import { filesModule } from '@shopnex/files/module'
 import { menus as adminMenus } from './routers/admin/menus'
 import { notifications as adminNotifications } from './routers/admin/notifications'
 import { pages as adminPages } from './routers/admin/pages'
-import {
-  paymentApps as adminPaymentApps,
-  paymentSessions as adminPaymentSessions,
-  paymentsAppApi as adminPaymentsApp,
-} from './routers/admin/payments'
 import { orders as adminOrders } from './routers/admin/orders'
 import { products as adminProducts } from './routers/admin/products'
 import { shop as adminShop } from './routers/admin/shop'
@@ -81,10 +74,10 @@ export const router = {
     shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
     carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
     carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),
-    paymentMethods: tagged('Admin · Payments').router(adminPaymentMethods),
-    paymentApps: tagged('Admin · Payments').router(adminPaymentApps),
-    paymentsApp: tagged('Admin · Payments apps').router(adminPaymentsApp),
-    paymentSessions: tagged('Admin · Payments apps').router(adminPaymentSessions),
+    paymentMethods: tagged('Admin · Payments').router(paymentsModule.router.paymentMethods),
+    paymentApps: tagged('Admin · Payments').router(paymentsModule.router.paymentApps),
+    paymentsApp: tagged('Admin · Payments apps').router(paymentsModule.router.paymentsApp),
+    paymentSessions: tagged('Admin · Payments apps').router(paymentsModule.router.paymentSessions),
     taxRates: tagged('Admin · Taxes').router(pricingModule.router.taxRates),
     ai: tagged('Admin · AI').router(adminAi),
     aiSettings: tagged('Admin · AI').router(adminAiSettings),

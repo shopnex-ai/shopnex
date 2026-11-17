@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { customFieldUpdates } from '@shopnex/custom-fields/contract'
 export { discountCreateInput, discountInput, taxRateInput } from '@shopnex/pricing/contract'
 export { s3Input, storageInput } from '@shopnex/files/contract'
+export { paymentMethodInput, paymentsAppConfigureInput } from '@shopnex/payments/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
 export {
   customFieldInput,
@@ -27,7 +28,6 @@ import {
   products,
   CANCEL_REASONS,
   STAFF_ROLES,
-  paymentMethods,
   shippingRates,
   shops,
   storefrontKeys,
@@ -234,12 +234,6 @@ export const shippingRateInput = createInsertSchema(shippingRates, {
   freeAboveCents: nonNegative,
 }).pick({ name: true, priceCents: true, freeAboveCents: true, active: true })
 
-export const paymentMethodInput = createInsertSchema(paymentMethods, {
-  name: (s) => s.trim().min(1).max(100),
-  additionalDetails: (s) => s.max(2000),
-  instructions: (s) => s.max(5000),
-}).pick({ name: true, additionalDetails: true, instructions: true, active: true })
-
 export const cancelOrderInput = z.object({
   reason: z.enum(CANCEL_REASONS),
   restock: z.boolean(),
@@ -401,23 +395,6 @@ export const carrierServiceConfigureInput = z.object({
   /** Receives signed RatesRequests; must be on the app's own origin */
   ratesUrl: z.url({ protocol: /^https?$/ }),
   /** false hides it at checkout (e.g. until the merchant has connected the carrier) */
-  ready: z.boolean(),
-})
-
-// Payments apps (Shopify paymentsAppConfigure)
-export const paymentsAppConfigureInput = z.object({
-  /** Shown at checkout when the method is first created, e.g. "Credit card" (staff can rename it) */
-  name: z.string().trim().min(1).max(100),
-  /** Gateway name snapshotted on orders, e.g. "stripe" */
-  gateway: z
-    .string()
-    .regex(/^[a-z0-9][a-z0-9_-]{0,39}$/, 'Lowercase letters, digits, - and _')
-    .refine((g) => g !== 'manual' && g !== 'app', 'Reserved gateway name'),
-  /** Receives signed PaymentSessionRequests; must be on the app's own origin */
-  paymentSessionUrl: z.url({ protocol: /^https?$/ }),
-  /** Receives signed RefundSessionRequests; must be on the app's own origin */
-  refundSessionUrl: z.url({ protocol: /^https?$/ }),
-  /** false hides the method at checkout (e.g. until the merchant has entered provider keys) */
   ready: z.boolean(),
 })
 

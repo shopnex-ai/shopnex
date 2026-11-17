@@ -2,8 +2,8 @@ import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { checkoutSettings } from '@shopnex/cart'
 import { shopManager } from '../../orpc'
-import { paymentMethodInput, shippingRateInput } from './schemas'
-import { paymentMethodOutput, shippingRateOutput } from './outputs'
+import { shippingRateInput } from './schemas'
+import { shippingRateOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -34,31 +34,4 @@ export const shippingRates = {
     .output(shippingRateOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await checkoutSettings.deleteShippingRate(context.shop.id, input.id))),
-}
-
-// Settings → Payments: manual payment methods (bank transfer, cash on delivery…)
-export const paymentMethods = {
-  list: shopManager
-    .route({ method: 'GET', path: '/admin/payment-methods' })
-    .output(z.array(paymentMethodOutput))
-    .handler(({ context }) => checkoutSettings.listPaymentMethods(context.shop.id)),
-  create: shopManager
-    .route({ method: 'POST', path: '/admin/payment-methods' })
-    .output(paymentMethodOutput)
-    .input(paymentMethodInput)
-    .handler(({ input, context }) => checkoutSettings.createPaymentMethod(context.shop.id, input)),
-  update: shopManager
-    .route({ method: 'PATCH', path: '/admin/payment-methods/{id}' })
-    .output(paymentMethodOutput)
-    .input(id.extend(paymentMethodInput.partial().shape))
-    .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await checkoutSettings.updatePaymentMethod(context.shop.id, id, patch)),
-    ),
-  delete: shopManager
-    .route({ method: 'DELETE', path: '/admin/payment-methods/{id}' })
-    .output(paymentMethodOutput)
-    .input(id)
-    .handler(async ({ input, context }) =>
-      found(await checkoutSettings.deletePaymentMethod(context.shop.id, input.id)),
-    ),
 }

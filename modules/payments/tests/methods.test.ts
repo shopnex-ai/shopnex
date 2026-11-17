@@ -4,7 +4,9 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP } = fx
-const methods = await import('../src/methods')
+const { paymentMethods } = await import('../src/payments.schema')
+const { bindConn } = await import('@shopnex/kit')
+const methods = bindConn(await import('../src/methods'), db)
 const { PaymentError } = await import('../src/payments.errors')
 const { and, eq } = await import('drizzle-orm')
 
@@ -35,8 +37,8 @@ const input = (patch: Partial<Parameters<typeof methods.configure>[2]> = {}) => 
 const methodsOf = (appId: string) =>
   db
     .select()
-    .from(schema.paymentMethods)
-    .where(and(eq(schema.paymentMethods.shopId, SHOP), eq(schema.paymentMethods.appId, appId)))
+    .from(paymentMethods)
+    .where(and(eq(paymentMethods.shopId, SHOP), eq(paymentMethods.appId, appId)))
 
 before(async () => {
   await fx.prepareDatabase()
@@ -64,7 +66,7 @@ describe('configure', () => {
 
   test('a new method goes before the ones already there: most buyers pay by card', async () => {
     const [existing] = await db
-      .insert(schema.paymentMethods)
+      .insert(paymentMethods)
       .values({ shopId: SHOP, provider: 'manual', name: 'Bank transfer', position: 3 })
       .returning()
     const app = await bareApp()
@@ -78,9 +80,9 @@ describe('configure', () => {
     const app = await bareApp()
     const first = await methods.configure(SHOP, app.id, input({ ready: false }))
     await db
-      .update(schema.paymentMethods)
+      .update(paymentMethods)
       .set({ name: 'Pay by card', active: false, position: 7 })
-      .where(eq(schema.paymentMethods.id, first.id))
+      .where(eq(paymentMethods.id, first.id))
     const again = await methods.configure(
       SHOP,
       app.id,

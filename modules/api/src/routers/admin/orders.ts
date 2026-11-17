@@ -1,6 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES, orderService } from '@shopnex/orders'
+import { db } from '@shopnex/db'
 import { paymentService } from '@shopnex/payments'
 import { scoped } from '../../orpc'
 import { pagination } from '../pagination'
@@ -160,7 +161,7 @@ export const orders = {
     .output(orderOutput)
     .input(id.extend(cancelOrderInput.shape))
     // Paid through a payments app: the refund is sent to it and the order shows refunded once it confirms
-    .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options)),
+    .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options, db)),
 
   refund: write
     .route({ method: 'POST', path: '/admin/orders/{id}/refund' })
@@ -169,6 +170,6 @@ export const orders = {
     // Part of what the order took goes back and the order stays open. Paid through a payments app: the refund is sent
     // to it and the order shows partially refunded (or refunded) once it confirms
     .handler(({ input: { id, amountCents }, context }) =>
-      paymentService.refundOrder(context.shop.id, id, { amountCents }),
+      paymentService.refundOrder(context.shop.id, id, { amountCents }, db),
     ),
 }
