@@ -84,6 +84,27 @@ named `<name>.<concern>.ts`:
 | `<name>.router.ts`   | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.    |
 | `<name>.module.ts`   | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                      |
 
+What a module exposes. Other code reaches a module only through the entries in its `package.json` `exports`, never by a
+deep path:
+
+| Import                                    | What it gives                                                                           | Where it may run   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- | ------------------ |
+| `@shopnex/custom-fields` (`src/index.ts`) | The module's public API: the service (`customFieldService`), its error class and types. | Server only        |
+| `@shopnex/custom-fields/schema`           | Tables, constants and their types.                                                      | Server and browser |
+| `@shopnex/custom-fields/contract`         | The Zod shapes of its API.                                                              | Server and browser |
+| `@shopnex/custom-fields/router`           | Its Admin API routes.                                                                   | Server only        |
+| `@shopnex/custom-fields/module`           | The manifest.                                                                           | Server only        |
+
+Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
+
+- Inside a module, files import each other by relative path (`./custom-fields.service`), never through `index.ts`, so the
+  entry cannot create an import cycle.
+- Keep the root entry small: the service, the errors and the types. Do not re-export the router, the manifest or anything
+  else that drags in more.
+- Code that runs in the browser (the admin UI's forms, `@shopnex/api/schemas`) imports only `/schema` or `/contract`.
+  The root entry exports the service, which pulls in the database client, and a browser bundle that reaches it fails with
+  `Buffer is not defined`.
+
 Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
 
 ```ts
