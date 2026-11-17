@@ -28,8 +28,8 @@
 - /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
-- /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, error mapper, router). A plain object, no decorators; `modules/api/src/modules.ts` lists the modules that have one. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
-- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes; a module hands in an `ErrorMapper` for its own errors, so nothing here knows a module Depends on `db` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
+- /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
+- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `db` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
@@ -82,7 +82,7 @@ named `<name>.<concern>.ts`:
 | `<name>.service.ts`  | Business logic: every function takes `shopId` first and a `conn`.                                          | No HTTP, oRPC or Hono imports; never import the shared `db`.                                                   |
 | `<name>.contract.ts` | The Zod shapes of its API: inputs and outputs. The admin UI uses them for its forms.                       | Must stay free of server code: the browser bundles it.                                                         |
 | `<name>.router.ts`   | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.                                                      |
-| `<name>.module.ts`   | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                                                                        |
+| `<name>.module.ts`   | The manifest: `name`, `dependsOn`, `tables`, `router`.                                                     | Read by `modules:check`; its router is mounted in `modules/api/src/router.ts`.                                 |
 
 What a module exposes. Other code reaches a module only through the entries in its `package.json` `exports`, never by a
 deep path:
@@ -109,10 +109,11 @@ Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
 Tests that delete rows run on the embedded database and say so: set `DATABASE_URL=pglite:memory` before anything imports
 `@shopnex/db`, then call `requireEmbeddedDatabase()` (it refuses any other database before a row is touched). Routes stand on the
 resolvers `modules/api` registers with `configureRpc`; the entry point that mounts them calls `assertRpcConfigured()`, so a
-process that forgot to register them fails at startup. `configureRpc` also takes `mapError` (every module's errors), which a
-route falls back on when its own module's mapper does not know the error a service of another module threw.
+process that forgot to register them fails at startup. `configureRpc` also takes `mapError`, for the errors of classes not converted to `defineError` yet (`modules/api` maps
+them by hand in `orpc.ts` until they are): any route may meet them, because a service of another module may throw them.
 
-Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
+Errors: declare the status next to the code, and that is all: `rpc` answers any error made with `defineError` with the status its
+class declares for the code (the code goes in `data`, the error is the cause). No mapper, no manifest field, no registration:
 
 ```ts
 // custom-fields.errors.ts
@@ -121,11 +122,13 @@ export const CustomFieldError = defineError('CustomFieldError', {
   KEY_TAKEN: 'CONFLICT',
   INVALID_VALUE: 'BAD_REQUEST',
 })
-// custom-fields.module.ts: errors: mapperFor(CustomFieldError)
 ```
 
-An error that needs more than a status per code (typed data for the storefront, a status that depends on the data) keeps a
-mapper of its own; `modules/api/src/orpc.ts` still maps the modules that have not moved. `pnpm modules:check` verifies
+An error that carries more than a code extends the class (`class OrderError extends defineError('OrderError', { ... })` with
+its own `readonly data`). The Storefront routes answer with the typed errors of the public contract, so `modules/api/src/orpc.ts`
+keeps that mapping, and the errors of the modules not converted yet, until they are. A route can still pass its own mapper to
+`createProcedures` for an error that must answer differently; it is tried first, then the registered one, then the default.
+`pnpm modules:check` verifies
 the manifest against the imports and `package.json`.
 
 ## API layout

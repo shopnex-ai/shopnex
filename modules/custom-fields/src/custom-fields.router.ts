@@ -1,16 +1,12 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
-import { createProcedures, mapperFor } from '@shopnex/rpc'
-import { CustomFieldError } from './custom-fields.errors'
+import { createProcedures } from '@shopnex/rpc'
 import { customFieldInput, customFieldOutput, customFieldPatch } from './custom-fields.contract'
 import { CUSTOM_FIELD_RESOURCES } from './custom-fields.schema'
 import * as customFieldService from './custom-fields.service'
 
-// What the Admin API answers with for this module's errors: the statuses declared in custom-fields.errors.ts
-export const customFieldErrors = mapperFor(CustomFieldError)
-
-const { adminOrToken, shopManager } = createProcedures(customFieldErrors)
+const { adminOrToken, shopManager } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 

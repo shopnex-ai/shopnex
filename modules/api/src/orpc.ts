@@ -7,7 +7,6 @@ import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
 import { CatalogError } from '@shopnex/catalog'
 import { CustomFieldError } from '@shopnex/custom-fields'
-import { moduleErrors } from './modules'
 import { ContentError } from '@shopnex/content'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
@@ -69,8 +68,6 @@ const mapDomainError: ErrorMapper = (error) => {
           : 'NOT_FOUND'
     return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
   }
-  const moduleError = moduleErrors(error)
-  if (moduleError) return moduleError
   if (error instanceof ContentError) {
     const status =
       error.code === 'HANDLE_TAKEN'

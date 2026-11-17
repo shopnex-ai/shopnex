@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
-import { createProcedures, mapperFor, pagination } from '@shopnex/rpc'
+import { createProcedures, pagination } from '@shopnex/rpc'
 import * as storageService from './backends'
 import {
   fileListOutput,
@@ -11,13 +11,9 @@ import {
   storageSettingsOutput,
   storageTestOutput,
 } from './files.contract'
-import { FilesError } from './files.errors'
 import * as fileService from './files'
 
-// What the Admin API answers with for this module's errors: the statuses declared in files.errors.ts
-export const filesErrors = mapperFor(FilesError)
-
-const { admin, shopManager } = createProcedures(filesErrors)
+const { admin, shopManager } = createProcedures()
 
 // A blank secret key means "keep the one already saved"
 const keepSaved = (secret: string | undefined) => (secret === '' ? undefined : secret)

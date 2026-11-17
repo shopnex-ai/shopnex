@@ -5,6 +5,7 @@ import { readdirSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { ORPCError } from '@orpc/server'
+import { domainErrorMapper } from '@shopnex/rpc'
 import { is } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 
@@ -51,7 +52,7 @@ describe('pricing manifest', () => {
     } as const
     for (const [code, status] of Object.entries(expected)) {
       const cause = new PricingError(code as keyof typeof expected, `message of ${code}`)
-      const mapped = pricingModule.errors(cause)
+      const mapped = domainErrorMapper(cause)
       assert.ok(mapped instanceof ORPCError, code)
       assert.equal(mapped.code, status, code)
       assert.equal(mapped.message, `message of ${code}`)
@@ -61,6 +62,6 @@ describe('pricing manifest', () => {
   })
 
   test('an error that is not this module is left alone', () => {
-    assert.equal(pricingModule.errors(new Error('boom')), undefined)
+    assert.equal(domainErrorMapper(new Error('boom')), undefined)
   })
 })

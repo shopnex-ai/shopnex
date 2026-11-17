@@ -5,6 +5,7 @@ import { readdirSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { ORPCError } from '@orpc/server'
+import { domainErrorMapper } from '@shopnex/rpc'
 import { is } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 
@@ -36,7 +37,7 @@ describe('files manifest', () => {
   test('each error code answers 400, as it always did', () => {
     for (const code of ['FILE_TOO_LARGE', 'UNSUPPORTED_TYPE', 'STORAGE_FAILED', 'SECRET_REQUIRED'] as const) {
       const cause = new FilesError(code, `message of ${code}`)
-      const mapped = filesModule.errors(cause)
+      const mapped = domainErrorMapper(cause)
       assert.ok(mapped instanceof ORPCError, code)
       assert.equal(mapped.code, 'BAD_REQUEST', code)
       assert.equal(mapped.message, `message of ${code}`)
@@ -46,6 +47,6 @@ describe('files manifest', () => {
   })
 
   test('an error that is not this module is left alone', () => {
-    assert.equal(filesModule.errors(new Error('boom')), undefined)
+    assert.equal(domainErrorMapper(new Error('boom')), undefined)
   })
 })
