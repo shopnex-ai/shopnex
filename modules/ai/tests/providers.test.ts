@@ -3,8 +3,10 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP } = fx
-const { aiProviderService } = await import('../src')
+const { db, schema, SHOP, aiProviders, aiSettings } = fx
+const { bindConn } = await import('@shopnex/kit')
+const aiProviderService = bindConn((await import('../src')).aiProviderService, db)
+const { BUILTIN } = await import('../src')
 const { AiError } = await import('../src/ai.errors')
 const { encryptSecret } = await import('@shopnex/db/secrets')
 const { eq } = await import('drizzle-orm')
@@ -49,7 +51,7 @@ describe('configure: what an app provides in a shop', () => {
       rows.map((r) => [r.capability, r.url]),
       [['product.seo', `${fx.appUrl}/c`]],
     )
-    const all = await db.select().from(schema.aiProviders).where(eq(schema.aiProviders.appId, app.id))
+    const all = await db.select().from(aiProviders).where(eq(aiProviders.appId, app.id))
     assert.equal(all.length, 1)
   })
 
@@ -57,7 +59,7 @@ describe('configure: what an app provides in a shop', () => {
     const one = await fx.aiApp({ name: 'One', capabilities: ['product.seo'] })
     const two = await fx.aiApp({ name: 'Two', capabilities: ['product.seo'] })
     assert.deepEqual(await aiProviderService.configure(SHOP, one.id, { capabilities: {} }), [])
-    const left = await db.select().from(schema.aiProviders).where(eq(schema.aiProviders.appId, two.id))
+    const left = await db.select().from(aiProviders).where(eq(aiProviders.appId, two.id))
     assert.equal(left.length, 1)
   })
 
@@ -71,7 +73,7 @@ describe('configure: what an app provides in a shop', () => {
       aiProviderService.configure(SHOP, app.id, { capabilities: { 'product.seo': 'ftp://127.0.0.1/run' } }),
       refused('INVALID_PROVIDER_URL'),
     )
-    const rows = await db.select().from(schema.aiProviders).where(eq(schema.aiProviders.appId, app.id))
+    const rows = await db.select().from(aiProviders).where(eq(aiProviders.appId, app.id))
     assert.deepEqual(
       rows.map((r) => r.url),
       [`${fx.appUrl}/run`],
@@ -91,7 +93,7 @@ describe('providers: apps still installed', () => {
     const first = await fx.aiApp({ name: 'First', capabilities: ['product.seo'] })
     await fx.aiApp({ name: 'Gone', installed: false, capabilities: ['product.seo'] })
     const second = await fx.aiApp({ name: 'Second', capabilities: ['product.seo'] })
-    const rows = await aiProviderService.providers(SHOP)
+    const rows = await aiProviderService.providers(SHOP, undefined)
     assert.deepEqual(
       rows.map((r) => r.app.id),
       [first.id, second.id],
@@ -107,7 +109,7 @@ describe('providers: apps still installed', () => {
 
 describe('available: what staff can use', () => {
   const settings = (enabled: boolean) =>
-    db.insert(schema.aiSettings).values({
+    db.insert(aiSettings).values({
       shopId: SHOP,
       provider: 'anthropic',
       model: 'claude-sonnet-5-5',
@@ -137,7 +139,7 @@ describe('available: what staff can use', () => {
     assert.deepEqual(
       seo.providers.map((p) => [p.id, p.name]),
       [
-        [aiProviderService.BUILTIN, 'Claude'],
+        [BUILTIN, 'Claude'],
         [seo.providers[1]!.id, 'Writer'],
       ],
     )

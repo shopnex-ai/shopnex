@@ -66,7 +66,7 @@ orders    → db, catalog, channels, custom-fields, customers, email, pricing, w
 payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing
 apps      → db, tenancy, theme
-ai        → db, apps, catalog, tenancy
+ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
 api       → everything above (transport only)
 ```
 
@@ -146,6 +146,8 @@ export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
 file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).
+Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or revokes a token without going through the API
+(a script, an e2e test calling `appService.uninstall`) has to import the module's entry, or its cleanup is silently skipped.
 
 ## API layout
 

@@ -8,6 +8,7 @@ import { customFieldUpdates } from '@shopnex/custom-fields/contract'
 export { discountCreateInput, discountInput, taxRateInput } from '@shopnex/pricing/contract'
 export { s3Input, storageInput } from '@shopnex/files/contract'
 export { paymentMethodInput, paymentsAppConfigureInput } from '@shopnex/payments/contract'
+export { aiAppConfigureInput, aiRunInput, aiSettingsInput } from '@shopnex/ai/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
 export {
   customFieldInput,
@@ -32,7 +33,6 @@ import {
   shops,
   storefrontKeys,
   CHANNEL_TYPES,
-  AI_BUILTIN_PROVIDERS,
   API_SCOPES,
   MENU_ITEM_TYPES,
   SMTP_PRESETS,
@@ -388,47 +388,6 @@ export const carrierServiceConfigureInput = z.object({
   ratesUrl: z.url({ protocol: /^https?$/ }),
   /** false hides it at checkout (e.g. until the merchant has connected the carrier) */
   ready: z.boolean(),
-})
-
-// AI capabilities (see @shopnex/marketplace-sdk/ai)
-export const aiAppConfigureInput = z.object({
-  /** Capability → URL receiving its signed AiRunRequests (on the app's own origin). Left out: not provided. */
-  capabilities: z.partialRecord(z.enum(AI_CAPABILITIES), z.url({ protocol: /^https?$/ })),
-})
-
-// What a capability is about: the product or collection to read (a page being written may not exist yet)
-const aiRunFor = <C extends AiCapability, S extends z.ZodRawShape>(capability: C, subject: S) =>
-  z.object({
-    capability: z.literal(capability),
-    ...subject,
-    /** Who should answer: "builtin" or an app's id (GET /admin/ai/capabilities); default: the first */
-    providerId: z.union([z.literal('builtin'), z.uuid()]).optional(),
-    input: aiCapabilities[capability].input.optional(),
-  })
-
-const product = { productId: z.uuid() }
-const collection = { collectionId: z.uuid() }
-const page = { pageId: z.uuid().optional() }
-
-// One entry per capability, so each one's input is typed
-export const aiRunInput = z.discriminatedUnion('capability', [
-  aiRunFor('product.description', product),
-  aiRunFor('product.seo', product),
-  aiRunFor('product.image_alt', product),
-  aiRunFor('product.classify', product),
-  aiRunFor('collection.description', collection),
-  aiRunFor('collection.seo', collection),
-  aiRunFor('page.content', page),
-])
-
-// Settings → AI: built-in AI with the shop's own key
-export const aiSettingsInput = z.object({
-  provider: z.enum(AI_BUILTIN_PROVIDERS),
-  /** Empty keeps the saved key (same provider only) */
-  apiKey: z.string().trim().max(500).optional(),
-  /** Empty for the provider's default */
-  model: z.string().trim().max(100).optional(),
-  brandVoice: z.string().trim().max(1000).optional(),
 })
 
 export {

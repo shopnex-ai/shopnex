@@ -4,14 +4,21 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP } = fx
-const { aiService } = await import('../src')
+const { db, schema, SHOP, aiGenerations } = fx
+const service = (await import('../src')).aiService
+type Capability = keyof typeof import('@shopnex/marketplace-sdk/ai').aiCapabilities
+// bindConn would lose run's generic, and with it the type of the output
+const aiService = {
+  run: <C extends Capability>(shopId: string, request: Parameters<typeof service.run<C>>[1]) =>
+    service.run(shopId, request, db),
+  feedback: (shopId: string, id: string, value: Parameters<typeof service.feedback>[2]) =>
+    service.feedback(shopId, id, value, db),
+}
 const { AiError } = await import('../src/ai.errors')
 const { eq } = await import('drizzle-orm')
 
 const refused = (code: string) => (e: unknown) => e instanceof AiError && e.code === code
-const generation = async (id: string) =>
-  (await db.select().from(schema.aiGenerations).where(eq(schema.aiGenerations.id, id)))[0]
+const generation = async (id: string) => (await db.select().from(aiGenerations).where(eq(aiGenerations.id, id)))[0]
 
 before(async () => {
   await fx.prepareDatabase()
@@ -247,8 +254,7 @@ describe('run: what comes back is cleaned', () => {
 })
 
 describe('run: when the provider fails', () => {
-  const lastFailed = async () =>
-    (await db.select().from(schema.aiGenerations).where(eq(schema.aiGenerations.status, 'failed')))[0]
+  const lastFailed = async () => (await db.select().from(aiGenerations).where(eq(aiGenerations.status, 'failed')))[0]
 
   test('the app explains it as { error }: staff read that, and the failed run is kept', async () => {
     const app = await fx.aiApp({ name: 'Writer', capabilities: ['product.seo'] })
@@ -301,7 +307,7 @@ describe('feedback', () => {
     )
     const { id } = await succeeded()
     await assert.rejects(aiService.feedback('another-shop', id, 'accepted'), refused('GENERATION_NOT_FOUND'))
-    await db.update(schema.aiGenerations).set({ status: 'failed' }).where(eq(schema.aiGenerations.id, id))
+    await db.update(aiGenerations).set({ status: 'failed' }).where(eq(aiGenerations.id, id))
     await assert.rejects(aiService.feedback(SHOP, id, 'accepted'), refused('GENERATION_NOT_FOUND'))
   })
 })

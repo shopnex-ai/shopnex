@@ -14,6 +14,7 @@ const { configureRpc } = await import('@shopnex/rpc')
 const { router } = await import('../src/router')
 const { appUninstalled } = await import('@shopnex/apps')
 const { paymentMethods } = await import('@shopnex/payments/schema')
+const { aiProviders } = await import('@shopnex/ai/schema')
 const { eq, inArray } = await import('drizzle-orm')
 
 const SHOP = 'default'
@@ -81,6 +82,7 @@ after(async () => {
 describe('uninstalling an app, through the route', () => {
   test('payments has listened to the hook', () => {
     assert.ok(appUninstalled.listeners.includes('payments.method'))
+    assert.ok(appUninstalled.listeners.includes('ai.providers'))
   })
 
   test('removes the method of the app that was uninstalled, and only that one', async () => {
@@ -90,6 +92,25 @@ describe('uninstalling an app, through the route', () => {
     assert.equal(await exists(gone.method.id), false, 'the uninstalled app’s method is gone')
     assert.equal(await exists(stays.method.id), true, 'another app’s method stays')
     assert.equal(await exists(manualId), true, 'a manual method stays')
+  })
+
+  test('removes the AI capabilities of the app that was uninstalled, and only that one', async () => {
+    const gone = await installedPaymentsApp('Hook ai one')
+    const stays = await installedPaymentsApp('Hook ai two')
+    for (const { installation } of [gone, stays]) {
+      await db
+        .insert(aiProviders)
+        .values({ shopId: SHOP, appId: installation.appId, capability: 'product.seo', url: 'http://127.0.0.1:1/run' })
+    }
+    await run(admin.apps!.uninstall, { id: gone.installation.id })
+    const left = await db
+      .select()
+      .from(aiProviders)
+      .where(inArray(aiProviders.appId, [gone.installation.appId, stays.installation.appId]))
+    assert.deepEqual(
+      left.map((r) => r.appId),
+      [stays.installation.appId],
+    )
   })
 
   test('a listener that fails undoes the uninstall: the method and the installation are both still there', async () => {

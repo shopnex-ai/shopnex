@@ -90,9 +90,47 @@ jobs:
             exit 1
           fi
 
-      - run: pnpm test
-
       - run: pnpm build
+
+  # The unit tests run beside lint and typecheck, not after them: they need neither, and in one job they were the longest step
+  # (each test file boots its own in-memory database). They are split over two runners by scripts/test-shard.mjs, which gives
+  # every package with tests to exactly one shard.
+  unit-test-shards:
+    name: Unit tests (shard ${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: node scripts/test-shard.mjs ${{ matrix.shard }} 2
+
+  # One check for the shards, so the name in the required checks does not change when the number of shards does. Add "Unit tests"
+  # (this job) to the required checks next to "Lint, typecheck, build".
+  unit-tests:
+    name: Unit tests
+    needs: unit-test-shards
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every shard passed
+        env:
+          RESULT: ${{ needs.unit-test-shards.result }}
+        run: |
+          echo "unit test shards: $RESULT"
+          test "$RESULT" = success
 
   app-image:
     name: App image (${{ matrix.app }})
@@ -126,6 +164,8 @@ jobs:
 
       - run: scripts/smoke-proxy.sh
 
+  # The API tests and the browser tests are two jobs, each with its own database and its own running app: they share only the demo
+  # seed, and in one job they ran one after the other. Both are required checks: "End-to-end tests" and "Browser tests".
   e2e:
     name: End-to-end tests
     needs: changes
@@ -155,33 +195,53 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm build
-
-      - run: pnpm --dir templates/storefront build
-
-      - run: pnpm db:migrate
-
-      # An empty database with a shop, accounts and the demo catalog (the tests need active, in-stock variants)
-      - run: pnpm demo:seed
-
-      - name: Start the app and the storefront
-        run: |
-          (cd apps/admin-ui && PORT=3000 node server.mjs > "$RUNNER_TEMP/app.log" 2>&1) &
-          (cd templates/storefront && HOST=127.0.0.1 PORT=4321 SHOPNEX_URL=http://localhost:3000 \
-            node dist/server/entry.mjs > "$RUNNER_TEMP/storefront.log" 2>&1) &
-          npx --yes wait-on@8 -t 60000 http-get://localhost:3000/api/v1/storefront/shop http://localhost:4321/
+      - uses: ./.github/actions/e2e-app
 
       # Same tests as `pnpm e2e`, plus a JUnit file for the public test report
       - run: pnpm --filter @shopnex/e2e test:ci
+
+      - name: Server logs
+        if: failure()
+        run: tail -n 100 "$RUNNER_TEMP/app.log" "$RUNNER_TEMP/storefront.log"
+
+      - name: API test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: api-results
+          path: e2e/api-results.xml
+          if-no-files-found: ignore
+
+  browser:
+    name: Browser tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shopnex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/shopnex
+      SHOPNEX_SECRET: ci-only-shopnex-secret-ci-only-shopnex
+      APP_URL: http://localhost:3000
+      STOREFRONT_URL: http://localhost:4321
+      DEMO_OWNER_EMAIL: owner@example.com
+      DEMO_OWNER_PASSWORD: ci-owner-Passw0rd!
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/e2e-app
 
       # The browser comes from Playwright's own CDN. `install-deps` then runs apt for the system packages the runner lacks
       # (in practice only fonts), and when Ubuntu's mirrors stopped resolving it hung for many minutes and failed the whole
@@ -196,29 +256,57 @@ jobs:
       - name: Browser tests
         run: pnpm --dir e2e test:browser
 
+      # Collected into one folder first: upload-artifact roots an artifact at the common folder of the files it finds, so a run
+      # that left only some of them would otherwise come out with a different layout
+      - name: Collect the browser test report
+        if: always()
+        run: |
+          mkdir -p browser-results
+          cp -r e2e/playwright-report e2e/test-results browser-results/ 2>/dev/null || true
+          cp e2e/playwright-results.json browser-results/ 2>/dev/null || true
+
       - name: Browser test report
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
-          path: |
-            e2e/playwright-report
-            e2e/test-results
+          path: browser-results
           if-no-files-found: ignore
 
       - name: Server logs
         if: failure()
         run: tail -n 100 "$RUNNER_TEMP/app.log" "$RUNNER_TEMP/storefront.log"
 
-      # The public test report: results.json for shopnex.ai/testing and the Playwright HTML report.
-      # Built on every run of main, also when a test failed, so a red run is published too.
-      - name: Build the test report
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: node scripts/e2e-summary.mjs report-site
+  # The public test report: results.json for shopnex.ai/testing and the Playwright HTML report, from both jobs' results.
+  # Built on every run of main, also when a test failed, so a red run is published too.
+  report:
+    name: Build the test report
+    needs: [e2e, browser]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e.result != 'skipped' && needs.e2e.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
 
-      - name: Upload the test report
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      # A job that failed before its tests ran has nothing to give: the report then says so for that half
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: api-results
+          path: e2e
+
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: playwright-report
+          path: e2e
+
+      - run: node scripts/e2e-summary.mjs report-site
+
+      - uses: actions/upload-artifact@v7
         with:
           name: test-report-site
           path: report-site
@@ -228,8 +316,8 @@ jobs:
   # Needs Settings > Pages > Source: GitHub Actions. Until that is on, this job fails without failing CI.
   publish-report:
     name: Publish test report
-    needs: e2e
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.e2e.result != 'skipped' && needs.e2e.result != 'cancelled'
+    needs: report
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.report.result == 'success'
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
