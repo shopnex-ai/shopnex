@@ -28,7 +28,7 @@ export const getCheckout = publicFn({ method: 'GET' })
     if (found.status === 'completed' && found.orderId) {
       const [order, payment] = await Promise.all([
         orderService.getById(found.shopId, found.orderId),
-        paymentService.latestPayment(found.shopId, found.orderId),
+        paymentService.latestPayment(found.shopId, found.orderId, db),
       ])
       return order
         ? {
@@ -168,9 +168,14 @@ export const payNow = publicFn({ method: 'POST' })
     const cart = await cartService.findByToken(null, token)
     if (!cart?.orderId) return { error: 'This order is no longer available.' }
     try {
-      const session = await paymentService.startPayment(cart.shopId, cart.orderId, {
-        returnUrl: confirmationUrl(token),
-      })
+      const session = await paymentService.startPayment(
+        cart.shopId,
+        cart.orderId,
+        {
+          returnUrl: confirmationUrl(token),
+        },
+        db,
+      )
       return { redirectTo: session.redirectUrl! }
     } catch (error) {
       if (error instanceof PaymentError) return { error: error.message }

@@ -96,13 +96,18 @@ before(async () => {
     userId: null as unknown as string,
     scopes: ['write_payment_sessions'],
   })
-  await paymentsAppService.configure(SHOP, app.id, {
-    name: 'Credit card',
-    gateway: 'test-provider',
-    paymentSessionUrl: `${providerUrl}/session`,
-    refundSessionUrl: `${providerUrl}/refund`,
-    ready: true,
-  })
+  await paymentsAppService.configure(
+    SHOP,
+    app.id,
+    {
+      name: 'Credit card',
+      gateway: 'test-provider',
+      paymentSessionUrl: `${providerUrl}/session`,
+      refundSessionUrl: `${providerUrl}/refund`,
+      ready: true,
+    },
+    db,
+  )
   const [method] = await db.select().from(schema.paymentMethods).where(eq(schema.paymentMethods.appId, app.id))
   methodId = method!.id
 })
@@ -148,7 +153,7 @@ describe('checkout with a payments app on the embedded database', () => {
       'starting a second payment',
       (async () => {
         const [order] = orders
-        return paymentService.latestPayment(SHOP, order!.id)
+        return paymentService.latestPayment(SHOP, order!.id, db)
       })(),
     )
     assert.ok(again)

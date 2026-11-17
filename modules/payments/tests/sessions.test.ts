@@ -5,7 +5,8 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP, behavior, received } = fx
-const sessions = await import('../src/sessions')
+const { bindConn } = await import('@shopnex/kit')
+const sessions = bindConn(await import('../src/sessions'), db)
 const { PaymentError } = await import('../src/payments.errors')
 const { eq } = await import('drizzle-orm')
 
@@ -353,7 +354,7 @@ describe('expiry', () => {
       .set({ expiresAt: inThePast() })
       .where(eq(schema.paymentSessions.id, lateSession.id))
 
-    const handled = await sessions.expireDue()
+    const handled = await sessions.expireDue(undefined)
     assert.ok(handled >= 2, `a session and an order were handled, got ${handled}`)
     const expired = await fx.sessionOf(lateSession.id)
     assert.equal(expired?.status, 'expired')
@@ -384,7 +385,7 @@ describe('expiry', () => {
       .update(schema.paymentSessions)
       .set({ expiresAt: inThePast() })
       .where(eq(schema.paymentSessions.transactionId, refund!.id))
-    await sessions.expireDue()
+    await sessions.expireDue(undefined)
     const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund!.id))
     assert.equal(after?.status, 'error')
     assert.equal(after?.errorMessage, 'The payments app never confirmed this refund')

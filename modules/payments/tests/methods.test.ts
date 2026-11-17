@@ -4,7 +4,8 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP } = fx
-const methods = await import('../src/methods')
+const { bindConn } = await import('@shopnex/kit')
+const methods = bindConn(await import('../src/methods'), db)
 const { PaymentError } = await import('../src/payments.errors')
 const { and, eq } = await import('drizzle-orm')
 

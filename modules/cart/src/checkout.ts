@@ -212,10 +212,15 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
     !order.cancelledAt
   if (!payable) return { ...placed, paymentUrl: null, paymentError: null }
   try {
-    const session = await paymentService.startPayment(shopId, placed.orderId, {
-      returnUrl: opts.returnUrl,
-      paymentMethodId: placed.paymentMethodId ?? undefined,
-    })
+    const session = await paymentService.startPayment(
+      shopId,
+      placed.orderId,
+      {
+        returnUrl: opts.returnUrl,
+        paymentMethodId: placed.paymentMethodId ?? undefined,
+      },
+      db,
+    )
     return { ...placed, paymentUrl: session.redirectUrl, paymentError: null }
   } catch (error) {
     if (error instanceof PaymentError) return { ...placed, paymentUrl: null, paymentError: error.message }
