@@ -28,6 +28,7 @@
 - /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
+- /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, error mapper, router). A plain object, no decorators; `modules/api/src/modules.ts` lists the modules that have one. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes; a module hands in an `ErrorMapper` for its own errors, so nothing here knows a module
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)

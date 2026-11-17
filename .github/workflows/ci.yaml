@@ -56,6 +56,9 @@ jobs:
 
       - run: pnpm lint
 
+      # Each module's imports, package.json and manifest agree, and the module graph has no cycle (see scripts/modules-check.mjs)
+      - run: pnpm modules:check
+
       # Only the files this PR changes: the codebase isn't fully formatted yet, so a repo-wide check would fail
       - name: Format (changed files)
         if: github.event_name == 'pull_request'
