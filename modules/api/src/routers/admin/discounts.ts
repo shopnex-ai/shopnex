@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { db } from '@shopnex/db'
 import { discountService } from '@shopnex/pricing'
 import { scoped } from '../../orpc'
 import { discountCreateInput, discountInput } from './schemas'
@@ -20,32 +21,32 @@ export const discounts = {
     .route({ method: 'DELETE', path: '/admin/discounts/bulk' })
     .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
-    .handler(({ input, context }) => discountService.removeMany(context.shop.id, input.ids)),
+    .handler(({ input, context }) => discountService.removeMany(context.shop.id, input.ids, db)),
 
   list: read
     .route({ method: 'GET', path: '/admin/discounts' })
     .output(z.array(discountOutput))
-    .handler(({ context }) => discountService.list(context.shop.id)),
+    .handler(({ context }) => discountService.list(context.shop.id, db)),
   get: read
     .route({ method: 'GET', path: '/admin/discounts/{id}' })
     .output(discountOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await discountService.getById(context.shop.id, input.id))),
+    .handler(async ({ input, context }) => found(await discountService.getById(context.shop.id, input.id, db))),
   create: write
     .route({ method: 'POST', path: '/admin/discounts' })
     .output(discountOutput)
     .input(discountCreateInput)
-    .handler(({ input, context }) => discountService.create(context.shop.id, input)),
+    .handler(({ input, context }) => discountService.create(context.shop.id, input, db)),
   update: write
     .route({ method: 'PATCH', path: '/admin/discounts/{id}' })
     .output(discountOutput)
     .input(id.extend(discountInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await discountService.update(context.shop.id, id, patch)),
+      found(await discountService.update(context.shop.id, id, patch, db)),
     ),
   delete: write
     .route({ method: 'DELETE', path: '/admin/discounts/{id}' })
     .output(discountOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await discountService.remove(context.shop.id, input.id))),
+    .handler(async ({ input, context }) => found(await discountService.remove(context.shop.id, input.id, db))),
 }

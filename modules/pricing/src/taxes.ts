@@ -1,7 +1,7 @@
 // Tax rates per country / province (admin: Settings → Taxes). Business logic only; every query is
 // scoped by shopId. Whether prices include tax and whether shipping is taxed are shop settings.
 import { and, asc, eq, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { TaxRate } from '@shopnex/db/schema'
 import { taxRateFor } from './calculate'
 import { PricingError } from './errors'
@@ -9,7 +9,7 @@ import { PricingError } from './errors'
 type NewTaxRate = typeof schema.taxRates.$inferInsert
 export type TaxRateInput = Pick<NewTaxRate, 'countryCode' | 'province' | 'name' | 'ratePercent'>
 
-export async function list(shopId: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
   return conn
     .select()
     .from(schema.taxRates)
@@ -21,7 +21,7 @@ export async function list(shopId: string, conn: Conn = db) {
 export async function rateForAddress(
   shopId: string,
   address: { countryCode: string; province?: string | null } | null | undefined,
-  conn: Conn = db,
+  conn: Conn,
 ): Promise<TaxRate | null> {
   if (!address) return null
   const rates = await conn
@@ -36,7 +36,10 @@ function normalize<T extends Partial<TaxRateInput>>(r: T): T {
   const out = { ...r }
   if (r.countryCode !== undefined) out.countryCode = r.countryCode.toUpperCase()
   // Blank = the whole country
-  if (r.province !== undefined) out.province = r.province?.trim() || null
+  if (r.province !== undefined) {
+    const province = r.province?.trim()
+    out.province = province === undefined || province === '' ? null : province
+  }
   if (r.name !== undefined) out.name = r.name.trim()
   return out
 }
@@ -67,21 +70,22 @@ async function assertRegionFree(
   }
 }
 
-export async function create(shopId: string, input: TaxRateInput) {
+export async function create(shopId: string, input: TaxRateInput, conn: Conn) {
   const values = normalize(input)
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     await assertRegionFree(tx, shopId, values)
     const [rate] = await tx
       .insert(schema.taxRates)
       .values({ ...values, shopId })
       .returning()
-    return rate!
+    if (!rate) throw new Error('The tax rate was not saved')
+    return rate
   })
 }
 
 // Returns null when the rate isn't in this shop
-export async function update(shopId: string, id: string, patch: Partial<TaxRateInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<TaxRateInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const [current] = await tx
       .select()
       .from(schema.taxRates)
@@ -94,13 +98,13 @@ export async function update(shopId: string, id: string, patch: Partial<TaxRateI
       .set({ ...values, updatedAt: new Date() })
       .where(eq(schema.taxRates.id, id))
       .returning()
-    return rate!
+    return rate ?? null
   })
 }
 
 // Orders keep their tax lines (snapshot)
-export async function remove(shopId: string, id: string) {
-  const [rate] = await db
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [rate] = await conn
     .delete(schema.taxRates)
     .where(and(eq(schema.taxRates.shopId, shopId), eq(schema.taxRates.id, id)))
     .returning()

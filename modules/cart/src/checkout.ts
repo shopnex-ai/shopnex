@@ -147,7 +147,7 @@ export async function taxContext(shopId: string) {
       .select({ taxesIncluded: schema.shops.taxesIncluded, taxShipping: schema.shops.taxShipping })
       .from(schema.shops)
       .where(eq(schema.shops.id, shopId)),
-    taxService.list(shopId),
+    taxService.list(shopId, db),
   ])
   return {
     taxesIncluded: shop?.taxesIncluded ?? false,

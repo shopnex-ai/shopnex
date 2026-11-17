@@ -2,6 +2,7 @@
 // Uses its own codes, shipping rate and tax rates (in AQ / BV, so they never clash with a shop's real rates).
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PricingError, taxService } from '@shopnex/pricing'
 import { updateShop } from '@shopnex/tenancy'
@@ -83,13 +84,18 @@ describe('admin discounts API', () => {
 
 describe('tax rates', () => {
   test('one rate per country / province', async () => {
-    fx.taxRate((await taxService.create(SHOP, { countryCode: 'aq', province: '', name: 'AQ tax', ratePercent: 5 })).id)
     fx.taxRate(
-      (await taxService.create(SHOP, { countryCode: 'AQ', province: 'Ross', name: 'Ross tax', ratePercent: 7.25 })).id,
+      (await taxService.create(SHOP, { countryCode: 'aq', province: '', name: 'AQ tax', ratePercent: 5 }, db)).id,
     )
-    fx.taxRate((await taxService.create(SHOP, { countryCode: 'BV', province: null, name: 'VAT', ratePercent: 19 })).id)
+    fx.taxRate(
+      (await taxService.create(SHOP, { countryCode: 'AQ', province: 'Ross', name: 'Ross tax', ratePercent: 7.25 }, db))
+        .id,
+    )
+    fx.taxRate(
+      (await taxService.create(SHOP, { countryCode: 'BV', province: null, name: 'VAT', ratePercent: 19 }, db)).id,
+    )
     await assert.rejects(
-      taxService.create(SHOP, { countryCode: 'AQ', province: ' ross ', name: 'x', ratePercent: 1 }),
+      taxService.create(SHOP, { countryCode: 'AQ', province: ' ross ', name: 'x', ratePercent: 1 }, db),
       (e) => e instanceof PricingError && e.code === 'TAX_RATE_EXISTS',
     )
   })

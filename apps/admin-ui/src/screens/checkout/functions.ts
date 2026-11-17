@@ -5,6 +5,7 @@ import { CartError, cartService, checkoutService } from '@shopnex/cart'
 import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
+import { db } from '@shopnex/db'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
@@ -189,7 +190,7 @@ export const applyDiscountCode = publicFn({ method: 'POST' })
       const view = await cartService.setDiscountCode(cart.shopId, data.token, code)
       if (!view.discountCode?.applicable) {
         await cartService.setDiscountCode(cart.shopId, data.token, null)
-        const discount = await discountService.findByCode(cart.shopId, code)
+        const discount = await discountService.findByCode(cart.shopId, code, db)
         return {
           error: !discount
             ? 'Enter a valid discount code'

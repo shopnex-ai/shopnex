@@ -2,8 +2,6 @@
 // or free shipping) and manual tax rates per country / province.
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { customers } from './customers'
-import { orders } from './orders'
 import { shops } from './tenancy'
 
 // percentage: `value` is a whole percent (1–100) off the subtotal; fixed_amount: `value` minor units off
@@ -36,23 +34,6 @@ export const discounts = pgTable(
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   (t) => [uniqueIndex('discounts_shop_code_idx').on(t.shopId, sql`lower(${t.code})`)],
-)
-
-// One row per order that used a discount (usage counts, "once per customer")
-export const discountRedemptions = pgTable(
-  'discount_redemptions',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    discountId: uuid('discount_id')
-      .notNull()
-      .references(() => discounts.id, { onDelete: 'cascade' }),
-    orderId: uuid('order_id')
-      .notNull()
-      .references(() => orders.id, { onDelete: 'cascade' }),
-    customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-  },
-  (t) => [index('discount_redemptions_discount_customer_idx').on(t.discountId, t.customerId)],
 )
 
 // The rate for the buyer's shipping address: a province-specific rate wins over the country-wide one

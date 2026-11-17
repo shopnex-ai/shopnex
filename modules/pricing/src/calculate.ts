@@ -2,16 +2,21 @@
 // checkout can show the same totals in the browser that the server charges.
 // All amounts are integer minor units; rounding happens per line, as in Shopify.
 
-export type PricingDiscount = {
+export interface PricingDiscount {
   code: string
   type: 'percentage' | 'fixed_amount' | 'free_shipping'
   value: number
   minSubtotalCents: number | null
 }
 
-export type PricingTaxRate = { countryCode: string; province: string | null; name: string; ratePercent: number }
+export interface PricingTaxRate {
+  countryCode: string
+  province: string | null
+  name: string
+  ratePercent: number
+}
 
-export type PricingInput = {
+export interface PricingInput {
   /** Line totals (unit price × quantity), in order */
   lines: number[]
   shippingCents: number
@@ -23,7 +28,7 @@ export type PricingInput = {
   taxShipping: boolean
 }
 
-export type PricingResult = {
+export interface PricingResult {
   subtotalCents: number
   shippingCents: number
   /** Per line, same order as the input */
@@ -64,7 +69,7 @@ function allocate(amount: number, weights: number[]): number[] {
   const byFraction = exact.map((e, i) => [e - Math.floor(e), i] as const).sort((a, b) => b[0] - a[0])
   for (const [, i] of byFraction) {
     if (left <= 0) break
-    parts[i]! += 1
+    parts[i] = (parts[i] ?? 0) + 1
     left -= 1
   }
   return parts
@@ -74,11 +79,29 @@ function allocate(amount: number, weights: number[]): number[] {
 const taxOn = (base: number, ratePercent: number, included: boolean) =>
   Math.round(included ? (base * ratePercent) / (100 + ratePercent) : (base * ratePercent) / 100)
 
+/** The tax on the lines (after their discounts) and, when the shop taxes it, on the shipping */
+function taxFor(
+  input: PricingInput,
+  lineDiscountCents: number[],
+  shippingDiscountCents: number,
+): Pick<PricingResult, 'taxCents' | 'taxLines'> {
+  const { taxRate } = input
+  if (!taxRate || taxRate.ratePercent <= 0) return { taxCents: 0, taxLines: [] }
+  const included = input.taxesIncluded
+  let taxCents = input.lines.reduce(
+    (sum, l, i) => sum + taxOn(l - (lineDiscountCents[i] ?? 0), taxRate.ratePercent, included),
+    0,
+  )
+  if (input.taxShipping) taxCents += taxOn(input.shippingCents - shippingDiscountCents, taxRate.ratePercent, included)
+  const taxLines =
+    taxCents > 0 ? [{ title: taxRate.name, ratePercent: taxRate.ratePercent, amountCents: taxCents }] : []
+  return { taxCents, taxLines }
+}
+
 export function calculate(input: PricingInput): PricingResult {
   const subtotalCents = input.lines.reduce((a, b) => a + b, 0)
-  const { discount, taxRate } = input
-  const discountApplicable =
-    !discount || discount.minSubtotalCents == null || subtotalCents >= discount.minSubtotalCents
+  const { discount } = input
+  const discountApplicable = discount?.minSubtotalCents == null || subtotalCents >= discount.minSubtotalCents
   const applied = discount && discountApplicable ? discount : null
 
   let lineDiscountCents = input.lines.map(() => 0)
@@ -93,17 +116,7 @@ export function calculate(input: PricingInput): PricingResult {
   }
   const discountCents = lineDiscountCents.reduce((a, b) => a + b, 0) + shippingDiscountCents
 
-  let taxCents = 0
-  if (taxRate && taxRate.ratePercent > 0) {
-    const included = input.taxesIncluded
-    taxCents = input.lines.reduce(
-      (sum, l, i) => sum + taxOn(l - lineDiscountCents[i]!, taxRate.ratePercent, included),
-      0,
-    )
-    if (input.taxShipping) taxCents += taxOn(input.shippingCents - shippingDiscountCents, taxRate.ratePercent, included)
-  }
-  const taxLines =
-    taxCents > 0 ? [{ title: taxRate!.name, ratePercent: taxRate!.ratePercent, amountCents: taxCents }] : []
+  const { taxCents, taxLines } = taxFor(input, lineDiscountCents, shippingDiscountCents)
 
   return {
     subtotalCents,
@@ -122,7 +135,7 @@ export function calculate(input: PricingInput): PricingResult {
 /** "20% off", "$5.00 off", "Free shipping" — `money` formats minor units */
 export function describeDiscount(d: Pick<PricingDiscount, 'type' | 'value'>, money: (cents: number) => string) {
   return d.type === 'percentage'
-    ? `${d.value}% off`
+    ? `${String(d.value)}% off`
     : d.type === 'fixed_amount'
       ? `${money(d.value)} off`
       : 'Free shipping'
