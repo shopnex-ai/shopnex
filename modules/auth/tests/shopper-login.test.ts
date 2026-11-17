@@ -130,13 +130,14 @@ describe('takeRate: login-code limits shared through the database', () => {
   })
 
   test('the key is stored as a hash: no email address or visitor address in the table', async () => {
-    await takeRate('login:someone@example.com', 5, 60_000)
+    const key = 'login:someone@example.com'
+    await takeRate(key, 5, 60_000)
     const all = await rows()
-    assert.ok(all.length > 0)
-    for (const row of all) {
-      assert.match(row.key, /^[0-9a-f]{64}$/)
-      assert.ok(!row.key.includes('example.com'))
-    }
+    for (const row of all) assert.match(row.key, /^[0-9a-f]{64}$/)
+    assert.ok(
+      all.some((row) => row.key === createHash('sha256').update(key).digest('hex')),
+      'the row is under the hash of the key, not the key',
+    )
   })
 
   test('concurrent uses do not slip under the cap', async () => {
