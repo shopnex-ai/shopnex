@@ -8,7 +8,7 @@
 //   client_credentials  shop_id of a live installation → 1-hour access token (background work)
 // Codes are only stored as SHA-256 hashes.
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { and, asc, desc, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
 import {

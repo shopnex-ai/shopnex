@@ -1,7 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { checkoutSettings } from '@shopnex/cart'
-import { db } from '@shopnex/db'
 import { shopManager } from '../../orpc'
 import { paymentMethodInput, shippingRateInput } from './schemas'
 import { paymentMethodOutput, shippingRateOutput } from './outputs'
