@@ -1,3 +1,4 @@
+import './ai.hooks'
 export * as aiService from './generations'
 export * as aiProviderService from './providers'
 export * as aiSettingsService from './builtin'
@@ -12,7 +13,7 @@ export {
   type AiBuiltinProvider,
   type AiFeedback,
   type AiGeneration,
-} from '@shopnex/db/schema'
+} from './ai.schema'
 export {
   AI_CAPABILITIES,
   aiCapabilities,

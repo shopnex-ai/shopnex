@@ -17,6 +17,7 @@ const strictModules = [
   'modules/files',
   'modules/theme',
   'modules/payments',
+  'modules/ai',
   'modules/webhooks',
 ]
 
@@ -33,6 +34,7 @@ const connectionBoundModules = [
   'modules/files',
   'modules/theme',
   'modules/payments',
+  'modules/ai',
   'modules/webhooks',
 ]
 
