@@ -29,7 +29,7 @@
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, error mapper, router). A plain object, no decorators; `modules/api/src/modules.ts` lists the modules that have one. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
-- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes; a module hands in an `ErrorMapper` for its own errors, so nothing here knows a module
+- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes; a module hands in an `ErrorMapper` for its own errors, so nothing here knows a module Depends on `db` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
@@ -57,7 +57,7 @@ tenancy   → db, channels
 auth      → db, tenancy
 files     → db, rpc, tenancy, webhooks
 email     → db, tenancy, webhooks
-rpc       → db, apps, auth, tenancy   (the route building blocks; only modules that expose routes use it)
+rpc       → db   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc
 catalog   → db, channels, custom-fields, webhooks
 content   → db, catalog

@@ -1,25 +1,54 @@
 // The building blocks of a route: who is calling (staff, an API token, an app's token), the shop it acts on, and the
 // scopes it needs. Every module that exposes routes builds its procedures from here, and `modules/api` does too.
-// Nothing here knows a module: a module's own errors are turned into HTTP errors by the `ErrorMapper` it hands in.
+// Nothing here knows a module, and nothing here knows how a login or a token is checked: `modules/api` registers those
+// functions once (`configureRpc`), so a module that sits below auth or tenancy can have routes too.
 import { ORPCError, os } from '@orpc/server'
 import { z } from 'zod'
 import type { DomainErrorClass, ErrorMapper } from '@shopnex/kit'
-import { appService } from '@shopnex/apps'
-import { auth, isSuperAdmin } from '@shopnex/auth'
-import type { Shop } from '@shopnex/db/schema'
-import {
-  hasScope,
-  resolveAdminShop,
-  resolveApiToken,
-  type ApiScope,
-  type ApiToken,
-  type ShopRole,
-} from '@shopnex/tenancy'
+import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
 
 export type Context = { headers: Headers }
 
 export function createContext(headers: Headers): Context {
   return { headers }
+}
+
+/**
+ * Filled in by the app that registers the resolvers, to give the signed-in staff member its exact type without this
+ * package depending on the login library (`declare module '@shopnex/rpc' { interface Register { session: … } }`).
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- augmented by modules/api
+export interface Register {}
+
+/** What a handler can read of the signed-in staff member: the registered type, else the least every login has */
+export type StaffSession = Register extends { session: infer S }
+  ? S
+  : { session: { activeOrganizationId?: string | null }; user: { id: string } }
+
+/** How a request is recognised. Registered once by `modules/api`, which knows about logins, tokens and shops. */
+export interface Resolvers {
+  /** The signed-in staff member of the request, or null */
+  session(headers: Headers): Promise<StaffSession | null>
+  /** The shop that member acts on (their active one), or null when they are not a member of it */
+  adminShop(session: StaffSession): Promise<{ shop: Shop; role: ShopRole; superAdmin: boolean } | null>
+  /** An API token or an app's access token (the bearer): its shop and token, or null when invalid or revoked */
+  token(bearer: string): Promise<{ shop: Shop; token: ApiToken } | null>
+  /** Whether a token's scopes allow what a route needs (write includes read) */
+  hasScope(scopes: readonly ApiScope[], needed: ApiScope): boolean
+}
+
+// On globalThis so a dev server that loads this file twice (hot reload) still finds what was registered
+const SLOT = Symbol.for('shopnex.rpc.resolvers')
+
+export function configureRpc(resolvers: Resolvers) {
+  ;(globalThis as Record<symbol, Resolvers>)[SLOT] = resolvers
+}
+
+function resolvers(): Resolvers {
+  const registered = (globalThis as Record<symbol, Resolvers | undefined>)[SLOT]
+  if (!registered)
+    throw new Error('@shopnex/rpc has no resolvers: call configureRpc(...) once at startup (modules/api does)')
+  return registered
 }
 
 export type { ErrorMapper }
@@ -65,19 +94,13 @@ export function createProcedures(mapError: ErrorMapper) {
 
   // Session is resolved lazily here, so public procedures never hit the DB for it
   const authed = pub.use(async ({ context, next }) => {
-    const session = await auth.api.getSession({ headers: context.headers })
-    if (!session) throw new ORPCError('UNAUTHORIZED')
-    return next({ context: { session: session.session, user: session.user } })
+    const found = await resolvers().session(context.headers)
+    if (!found) throw new ORPCError('UNAUTHORIZED')
+    return next({ context: { session: found.session, user: found.user } })
   })
 
-  type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>
-
-  async function staffTenant({ session, user }: Session) {
-    const tenant = await resolveAdminShop({
-      userId: user.id,
-      activeShopId: session.activeOrganizationId,
-      superAdmin: isSuperAdmin(user),
-    })
+  async function staffTenant(session: StaffSession) {
+    const tenant = await resolvers().adminShop(session)
     if (!tenant) throw new ORPCError('FORBIDDEN', { message: 'Not a member of this shop' })
     return tenant
   }
@@ -106,11 +129,11 @@ export function createProcedures(mapError: ErrorMapper) {
     const bearer = context.headers.get('authorization')?.match(BEARER)?.[1]
     let caller: ApiCaller
     if (bearer) {
-      const resolved = (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer))
+      const resolved = await resolvers().token(bearer)
       if (!resolved) throw new ORPCError('UNAUTHORIZED', { message: 'Invalid or revoked API token' })
       caller = { shop: resolved.shop, token: resolved.token, role: null, superAdmin: false, userId: null }
     } else {
-      const session = await auth.api.getSession({ headers: context.headers })
+      const session = await resolvers().session(context.headers)
       if (!session) throw new ORPCError('UNAUTHORIZED')
       const tenant = await staffTenant(session)
       caller = {
@@ -127,7 +150,7 @@ export function createProcedures(mapError: ErrorMapper) {
   // Staff always pass; tokens need the scope (write_* includes read_*)
   const scoped = (scope: ApiScope) =>
     adminOrToken.use(({ context, next }) => {
-      if (context.token && !hasScope(context.token.scopes, scope)) {
+      if (context.token && !resolvers().hasScope(context.token.scopes, scope)) {
         throw new ORPCError('FORBIDDEN', { message: `This API token needs the ${scope} scope` })
       }
       return next()
