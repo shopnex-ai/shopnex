@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./schema": "./src/custom-fields.schema.ts",
     "./contract": "./src/custom-fields.contract.ts",
-    "./router": "./src/custom-fields.router.ts"
+    "./router": "./src/custom-fields.router.ts",
+    "./module": "./src/custom-fields.module.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@orpc/server": "catalog:",
     "@shopnex/db": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "@shopnex/rpc": "workspace:*",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",

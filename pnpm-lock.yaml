@@ -564,6 +564,9 @@ importers:
       '@shopnex/files':
         specifier: workspace:*
         version: link:../files
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
@@ -757,6 +760,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
@@ -887,6 +893,19 @@ importers:
       aws4fetch:
         specifier: 1.0.20
         version: 1.0.20
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+
+  modules/kit:
+    dependencies:
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
