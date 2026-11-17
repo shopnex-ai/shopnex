@@ -35,6 +35,11 @@ export interface Resolvers {
   token(bearer: string): Promise<{ shop: Shop; token: ApiToken } | null>
   /** Whether a token's scopes allow what a route needs (write includes read) */
   hasScope(scopes: readonly ApiScope[], needed: ApiScope): boolean
+  /**
+   * Every module's errors, for a route whose own module's mapper does not know the error it got (a service of another module
+   * threw it). Without it such an error would come out as a 500 instead of its 400 or 404.
+   */
+  mapError?(error: unknown): Error | undefined
 }
 
 // On globalThis so a dev server that loads this file twice (hot reload) still finds what was registered
@@ -44,11 +49,18 @@ export function configureRpc(resolvers: Resolvers) {
   ;(globalThis as Record<symbol, Resolvers>)[SLOT] = resolvers
 }
 
+const registered = () => (globalThis as Record<symbol, Resolvers | undefined>)[SLOT]
+
 function resolvers(): Resolvers {
-  const registered = (globalThis as Record<symbol, Resolvers | undefined>)[SLOT]
-  if (!registered)
+  const found = registered()
+  if (!found)
     throw new Error('@shopnex/rpc has no resolvers: call configureRpc(...) once at startup (modules/api does)')
-  return registered
+  return found
+}
+
+/** For an entry point that mounts routes: fails at startup, with the reason, instead of at the first request */
+export function assertRpcConfigured() {
+  resolvers()
 }
 
 export type { ErrorMapper }
@@ -84,7 +96,8 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     try {
       return await next()
     } catch (error) {
-      const mapped = mapError(error)
+      // The module's own mapper first, then every module's (registered by modules/api), else the error as it is
+      const mapped = mapError(error) ?? registered()?.mapError?.(error)
       if (mapped) throw mapped
       throw error
     }
