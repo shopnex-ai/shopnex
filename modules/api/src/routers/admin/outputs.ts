@@ -32,6 +32,7 @@ export {
   marketplaceConnectionOutput,
   sessionTokenOutput,
 } from '@shopnex/apps/contract'
+export { menuOutput, pageOutput } from '@shopnex/content/contract'
 export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
@@ -42,13 +43,10 @@ import {
   CHANNEL_TYPES,
   NOTIFICATIONS,
   SMTP_PRESETS,
-  type StoredMenuItem,
   apiTokens,
   apps,
   channels,
   collections,
-  menus,
-  pages,
   shippingRates,
   carrierServices,
   emailDeliveries,
@@ -69,6 +67,7 @@ import {
 import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
+import { menus, pages, type StoredMenuItem } from '@shopnex/content/schema'
 
 const variantOutput = createSelectSchema(productVariants)
   .pick({
@@ -203,8 +202,6 @@ export const customerEraseOutput = z.object({
 
 // customer.erased: names the customer so a receiver can find and delete its own copy
 export const customerErasedOutput = z.object({ id: z.uuid(), email: z.string() })
-export const pageOutput = createSelectSchema(pages)
-export const menuOutput = createSelectSchema(menus).extend({ items: z.custom<StoredMenuItem[]>() })
 
 // Orders
 export const orderListItemOutput = orderOutput.extend({ customerName: z.string().nullable() })

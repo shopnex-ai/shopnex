@@ -4,6 +4,7 @@ import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
 import { ContentError } from './content.errors'
+import { pages } from './content.schema'
 
 export type PageInput = {
   title: string
@@ -16,43 +17,43 @@ export type PageInput = {
 }
 
 export async function list(shopId: string, conn: Conn = db) {
-  return conn.select().from(schema.pages).where(eq(schema.pages.shopId, shopId)).orderBy(asc(schema.pages.createdAt))
+  return conn.select().from(pages).where(eq(pages.shopId, shopId)).orderBy(asc(pages.createdAt))
 }
 
 export async function getById(shopId: string, id: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.pages)
-    .where(and(eq(schema.pages.shopId, shopId), eq(schema.pages.id, id)))
+    .from(pages)
+    .where(and(eq(pages.shopId, shopId), eq(pages.id, id)))
   return row ?? null
 }
 
 async function getByHandle(shopId: string, handle: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.pages)
-    .where(and(eq(schema.pages.shopId, shopId), eq(schema.pages.handle, handle)))
+    .from(pages)
+    .where(and(eq(pages.shopId, shopId), eq(pages.handle, handle)))
   return row ?? null
 }
 
 const visible = (shopId: string) =>
-  and(eq(schema.pages.shopId, shopId), isNotNull(schema.pages.publishedAt), lte(schema.pages.publishedAt, new Date()))
+  and(eq(pages.shopId, shopId), isNotNull(pages.publishedAt), lte(pages.publishedAt, new Date()))
 
 /** For storefronts: null when there's no such page or it's hidden */
 export async function getPublishedByHandle(shopId: string, handle: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.pages)
-    .where(and(visible(shopId), eq(schema.pages.handle, handle)))
+    .from(pages)
+    .where(and(visible(shopId), eq(pages.handle, handle)))
   return row ?? null
 }
 
 export async function listPublished(shopId: string, opts: { limit: number; offset: number }, conn: Conn = db) {
   return conn
     .select()
-    .from(schema.pages)
+    .from(pages)
     .where(visible(shopId))
-    .orderBy(asc(schema.pages.createdAt))
+    .orderBy(asc(pages.createdAt))
     .limit(opts.limit)
     .offset(opts.offset)
 }
@@ -86,7 +87,7 @@ export async function create(shopId: string, input: PageInput) {
     if (handle) await assertHandleFree(tx, shopId, handle)
     else handle = await freeHandle(tx, shopId, input.title)
     const [row] = await tx
-      .insert(schema.pages)
+      .insert(pages)
       .values({
         shopId,
         handle,
@@ -108,14 +109,14 @@ export async function update(shopId: string, id: string, patch: Partial<PageInpu
     const publishedAt =
       patch.published === undefined ? current.publishedAt : patch.published ? (current.publishedAt ?? new Date()) : null
     const [row] = await tx
-      .update(schema.pages)
+      .update(pages)
       .set({
         ...fields(patch),
         ...(patch.handle !== undefined && { handle: patch.handle }),
         publishedAt,
         updatedAt: new Date(),
       })
-      .where(eq(schema.pages.id, id))
+      .where(eq(pages.id, id))
       .returning()
     return row!
   })
@@ -123,8 +124,8 @@ export async function update(shopId: string, id: string, patch: Partial<PageInpu
 
 export async function remove(shopId: string, id: string) {
   const [row] = await db
-    .delete(schema.pages)
-    .where(and(eq(schema.pages.shopId, shopId), eq(schema.pages.id, id)))
+    .delete(pages)
+    .where(and(eq(pages.shopId, shopId), eq(pages.id, id)))
     .returning()
   return row ?? null
 }

@@ -62,7 +62,7 @@ email     → db, tenancy, webhooks
 rpc       → db   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc
 catalog   → db, channels, custom-fields, webhooks
-content   → db, catalog
+content   → db, catalog, tenancy, rpc   (owns pages and menus; listens to shopCreated and seeds a new shop's menus)
 customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
 payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
@@ -144,6 +144,7 @@ export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn
 // apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
 // payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
 // tenancy.hooks.ts / webhooks.hooks.ts:    the same for apiTokenRevoked: a revoked token takes its webhook subscriptions with it
+// tenancy.hooks.ts / content.hooks.ts:     shopCreated: a new shop gets its menus (tenancy cannot call content, which reaches tenancy through catalog and webhooks)
 ```
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the

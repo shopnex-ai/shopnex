@@ -3,7 +3,8 @@
 // Like WordPress/Ghost, whoever reaches a fresh install first can claim it — finish setup right after deploying.
 import { eq } from 'drizzle-orm'
 import { db, schema, withAdvisoryLock } from '@shopnex/db'
-import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, seedDefaultMenu } from '@shopnex/tenancy'
+import { seedDefaultMenu } from '@shopnex/content'
+import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop } from '@shopnex/tenancy'
 import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
 import { withSignUpAllowed } from './sign-up-policy'

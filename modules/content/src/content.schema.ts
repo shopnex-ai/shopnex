@@ -1,7 +1,9 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // Online store content the merchant manages in the admin: pages (About, Shipping policy…) and navigation
 // menus. Storefronts read them through the Storefront API (pages, menu.get), Shopify-style: by handle.
 import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from '@shopnex/core/schema'
+import { shops } from '@shopnex/db/schema'
 
 export const pages = pgTable(
   'pages',

@@ -18,6 +18,7 @@ const { shopMembers } = await import('@shopnex/tenancy/schema')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { eq } = await import('drizzle-orm')
+const { menus } = await import('@shopnex/content/schema')
 
 /** Fails the test, instead of hanging it, when `work` doesn't finish: on the embedded database that is the bug */
 async function within<T>(ms: number, what: string, work: Promise<T>): Promise<T> {
@@ -57,6 +58,9 @@ describe('open sign-up on the embedded database', () => {
     assert.equal(members[0]!.role, 'owner')
     const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, members[0]!.organizationId))
     assert.ok(shop, 'the shop exists')
+    // The menus come from content's shopCreated listener: signing up has to load content, not rely on the API app having done it
+    const menuRows = await db.select().from(menus).where(eq(menus.shopId, shop.id))
+    assert.deepEqual(menuRows.map((m) => m.handle).sort(), ['footer', 'main-menu'])
   })
 
   test('a second account gets a shop of its own', { timeout: 40_000 }, async () => {
