@@ -5,6 +5,7 @@ import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { guardEmbeddedClient } from './embedded-guard'
 import * as schema from './schema'
+import { log } from './log'
 
 // DATABASE_URL is a PostgreSQL connection string, or `pglite:<directory>` / `pglite:memory` for the embedded
 // database (PGlite, PostgreSQL compiled to WebAssembly, running inside this process: no server to install).
@@ -42,7 +43,7 @@ async function createEmbedded(): Promise<Created> {
     import('drizzle-orm/pglite/migrator'),
   ])
   const location = databaseUrl.slice(EMBEDDED_PREFIX.length).replace(/^\/\/(?=\/)/, '')
-  console.log(`[db] embedded PGlite (${location === 'memory' ? 'in memory, lost on exit' : location})`)
+  log.info('embedded PGlite (%s)', location === 'memory' ? 'in memory, lost on exit' : location)
   // One connection: see embedded-guard.ts
   const client = guardEmbeddedClient(new PGlite(location === 'memory' ? undefined : location))
   const embedded = drizzlePglite({ client, schema })
@@ -67,7 +68,7 @@ async function createDb(): Promise<Created> {
       return 'DATABASE_URL'
     }
   })()
-  console.log(`[db] PostgreSQL ${target}`)
+  log.info('PostgreSQL %s', target)
   const db = drizzle({ client: pool, schema })
   // Opt-in (create-shopnex sets it): a server-side PostgreSQL is otherwise migrated by `pnpm db:migrate` or the deploy
   const migrateAtStart =

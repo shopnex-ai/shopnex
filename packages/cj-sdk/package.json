@@ -10,6 +10,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@shopnex/log": "workspace:*",
     "axios": "^1.21.1"
   },
   "devDependencies": {

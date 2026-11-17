@@ -3,6 +3,7 @@ import type { CJApiResponse } from '../../types'
 import type { FreightCalculateParams, FreightOption, TrackInfo } from './logistics-types.ts'
 
 import { cjApiClient } from '../../api-client'
+import { log } from '../../log'
 
 export async function calculateFreight(
   accessToken: string,
@@ -21,7 +22,7 @@ export async function calculateFreight(
 
     return { data: response.data.data ?? [] }
   } catch (error: any) {
-    console.error(`Error calculating freight [${error.code}]: ${error.message}`)
+    log.error(`Error calculating freight [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -43,7 +44,7 @@ export async function getTrackingInfo(accessToken: string, trackNumbers: string[
 
     return { data: response.data.data ?? [] }
   } catch (error: any) {
-    console.error(`Error fetching tracking info [${error.code}]: ${error.message}`)
+    log.error(`Error fetching tracking info [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }

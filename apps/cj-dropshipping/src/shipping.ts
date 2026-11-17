@@ -12,6 +12,7 @@ import type { FreightOption } from '@shopnex/cj-sdk'
 import type { Rate, RatesRequest, ShopContext } from '@shopnex/app'
 import { cjFor } from './cj'
 import type { Tables } from './db'
+import { log } from './log'
 
 /** What CJ bills for one method, in dollars */
 export const priceOf = (o: FreightOption) => o.totalPostageFee ?? o.logisticPrice
@@ -60,7 +61,7 @@ const inFlight = new Map<string, Promise<Rate[]>>()
 /** The rates for a cart, or none when CJ can't price it (see the top of this file) */
 export async function quoteRates(shop: ShopContext, tables: Tables, request: RatesRequest): Promise<Rate[]> {
   if (request.currency !== 'USD') {
-    console.warn(`[cj] shipping prices need a USD shop (this one is ${request.currency})`)
+    log.warn('shipping prices need a USD shop (this one is %s)', request.currency)
     return []
   }
   // Every item must be a CJ variant the app knows; the same variant twice adds up

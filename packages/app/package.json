@@ -16,6 +16,7 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
     "@shopnex/app-bridge": "workspace:*",
+    "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "drizzle-orm": "catalog:",
     "hono": "catalog:",

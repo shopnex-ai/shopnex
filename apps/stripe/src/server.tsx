@@ -15,6 +15,7 @@ import { createShopnexApp, type ShopContext } from '@shopnex/app'
 import { SettingsPage } from './settings'
 import { paymentRoutes } from './payments'
 import { ensureWebhookEvents, WEBHOOK_EVENTS, webhookRoutes } from './webhook'
+import { log } from './log'
 
 // Public origin ShopNex, the admin (iframe) and Stripe reach this app at
 const APP_URL = (process.env.STRIPE_APP_URL || 'http://localhost:4600').replace(/\/$/, '')
@@ -93,10 +94,10 @@ async function refreshWebhook(shop: ShopContext) {
   if (!connection?.webhookEndpointId || !key) return
   try {
     if (await ensureWebhookEvents(new Stripe(key), connection.webhookEndpointId)) {
-      console.log(`[stripe] added the missing events to the webhook endpoint of ${shop.instance} ${shop.shopId}`)
+      log.info('added the missing events to the webhook endpoint of %s %s', shop.instance, shop.shopId)
     }
   } catch (error) {
-    console.warn(`[stripe] couldn't update the webhook events of ${shop.instance} ${shop.shopId}:`, message(error))
+    log.warn({ err: error }, "couldn't update the webhook events of %s %s", shop.instance, shop.shopId)
   }
 }
 
@@ -194,10 +195,10 @@ app.route(
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) return error.getResponse()
-  console.error('[stripe]', error)
+  log.error({ err: error }, 'unhandled error')
   return c.json({ error: message(error) }, 500)
 })
 
 serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || undefined }, () =>
-  console.log(`Stripe app on ${APP_URL} (port ${PORT})`),
+  log.info('Stripe app on %s (port %s)', APP_URL, PORT),
 )

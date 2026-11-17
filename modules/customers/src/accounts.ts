@@ -9,6 +9,7 @@ import { sendLoginCode } from '@shopnex/email'
 import type { Customer } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
 import * as customers from './customers'
+import { log } from './log'
 
 export type AccountErrorCode = 'INVALID_EMAIL' | 'TOO_MANY_REQUESTS' | 'INVALID_CODE'
 
@@ -77,7 +78,7 @@ export async function requestLoginCode(shopId: string, rawEmail: string, visitor
     throw new AccountError('TOO_MANY_REQUESTS', 'Too many codes requested. Wait a few minutes and try again.')
   }
   if (await isUnverifiedAccount(email)) {
-    console.warn(`[customers] not sending a sign-in code to ${email}: it belongs to a staff account`)
+    log.warn('not sending a sign-in code to %s: it belongs to a staff account', email)
     return
   }
   // Better Auth runs the sender inside the request; keep its failure (a shop with email off) to rethrow as is
