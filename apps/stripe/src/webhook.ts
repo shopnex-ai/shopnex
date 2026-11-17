@@ -3,6 +3,7 @@
 import { Hono } from 'hono'
 import Stripe from 'stripe'
 import { ShopnexError, type ShopContext } from '@shopnex/app'
+import { log } from './log'
 
 export type WebhookDeps = {
   forShop(instance: string, shopId: string): Promise<ShopContext>
@@ -63,7 +64,7 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
     try {
       shop = await forShop(instance, shopId)
     } catch (error) {
-      console.warn(`[stripe] webhook for ${instance} ${shopId}:`, message(error))
+      log.warn({ err: error, instance, shopId }, 'webhook for an unknown shop')
       return c.text('Unknown shop', 400)
     }
     const { secretKey, webhookSecret } = await secrets(shop)
@@ -96,8 +97,8 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
       (event.type === 'checkout.session.completed' && session.payment_status === 'paid')
     const mismatch = claimsPaid ? amountMismatch(session) : null
     if (mismatch) {
-      console.error(
-        `[stripe] AMOUNT MISMATCH on session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): ${mismatch}. Order NOT marked paid: check it in Stripe, refund or fix by hand`,
+      log.error(
+        `AMOUNT MISMATCH on session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): ${mismatch}. Order NOT marked paid: check it in Stripe, refund or fix by hand`,
       )
       return c.text('Paid amount does not match the order', 500)
     }
@@ -135,17 +136,17 @@ export function webhookRoutes({ forShop, secrets }: WebhookDeps) {
       // A payment for a session ShopNex doesn't have: the buyer was charged and no order will show it. Fail loudly
       // (Stripe retries for days and flags the endpoint in the merchant's Dashboard) instead of dropping it.
       if (paidEvent && error instanceof ShopnexError && error.status === 404) {
-        console.error(
-          `[stripe] PAID but no ShopNex session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): refund or fix by hand`,
+        log.error(
+          `PAID but no ShopNex session ${id} (payment ${paymentIntent ?? 'unknown'}, ${event.type}): refund or fix by hand`,
         )
         return c.text('Payment received for an unknown ShopNex session', 500)
       }
       // Already settled the other way (409) or a decline/expiry for a session that is gone (404): nothing to retry
       if (error instanceof ShopnexError && (error.status === 409 || error.status === 404)) {
-        console.warn(`[stripe] ${event.type} for session ${id}:`, error.message)
+        log.warn('%s for session %s: %s', event.type, id, error.message)
         return c.body(null, 204)
       }
-      console.error(`[stripe] ${event.type} for session ${id}:`, message(error))
+      log.error({ err: error }, '%s for session %s failed', event.type, id)
       return c.text('ShopNex unavailable', 503)
     }
     return c.body(null, 204)

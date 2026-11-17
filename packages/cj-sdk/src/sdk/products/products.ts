@@ -15,6 +15,7 @@ import type {
 
 import { cjApiClient } from '../../api-client'
 import { getCurrentAccessToken } from '../access-token'
+import { log } from '../../log'
 
 export async function getProductCategory(accessToken: string, params: any): Promise<APIResponse<CategoryFirstLevel[]>> {
   try {
@@ -30,7 +31,7 @@ export async function getProductCategory(accessToken: string, params: any): Prom
 
     return { data }
   } catch (error: any) {
-    console.error(`Error fetching categories [${error.code}]: ${error.message}`)
+    log.error(`Error fetching categories [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch categories' }
   }
 }
@@ -66,7 +67,7 @@ export async function getProductList(params: Record<string, any> = {}): Promise<
 
     return { data: data.data.list }
   } catch (error: any) {
-    console.error(`Error fetching product list [${error.code}]: ${error.message}`)
+    log.error(`Error fetching product list [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch product list' }
   }
 }
@@ -105,7 +106,7 @@ export async function getProductDetails(queryParams: {
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching product details [${error.code}]: ${error.message}`)
+    log.error(`Error fetching product details [${error.code}]: ${error.message}`)
     // Keep CJ's code so callers can tell "removed from shelves" (1602002) from a failure
     throw Object.assign(new Error(error.message), { code: error.code })
   }
@@ -141,7 +142,7 @@ export async function getProductStockByVid({
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching stock by VID [${error.code}]: ${error.message}`)
+    log.error(`Error fetching stock by VID [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch stock information' }
   }
 }
@@ -168,7 +169,7 @@ export async function getProductStockBySku(sku: string, accessToken: string): Pr
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching stock by SKU [${error.code}]: ${error.message}`)
+    log.error(`Error fetching stock by SKU [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch stock information' }
   }
 }
@@ -198,7 +199,7 @@ export async function getProductListV2(
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching product list V2 [${error.code}]: ${error.message}`)
+    log.error(`Error fetching product list V2 [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch products' }
   }
 }
@@ -226,7 +227,7 @@ export async function getProductInventoryByPid(
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching stock by PID [${error.code}]: ${error.message}`)
+    log.error(`Error fetching stock by PID [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to fetch stock information' }
   }
 }
@@ -252,7 +253,7 @@ export async function addToMyProducts(accessToken: string, productId: string): P
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error adding to My Products [${error.code}]: ${error.message}`)
+    log.error(`Error adding to My Products [${error.code}]: ${error.message}`)
     return { error: error.message || 'Failed to add to My Products' }
   }
 }
@@ -287,7 +288,7 @@ async function getData(path: string, accessToken: string, params: object): Promi
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error calling ${path} [${error.code}]: ${error.message}`)
+    log.error(`Error calling ${path} [${error.code}]: ${error.message}`)
     return { error: error.message || `Request failed: ${path}` }
   }
 }

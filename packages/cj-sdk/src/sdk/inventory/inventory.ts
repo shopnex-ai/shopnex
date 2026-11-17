@@ -4,6 +4,7 @@ import type { Inventory } from './inventory-types.ts'
 
 import { cjApiClient } from '../../api-client'
 import { getCurrentAccessToken } from '../access-token'
+import { log } from '../../log'
 
 export async function getInventoryByVariantId(vid: string): Promise<APIResponse<Inventory[]>> {
   if (!vid) {
@@ -31,7 +32,7 @@ export async function getInventoryByVariantId(vid: string): Promise<APIResponse<
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching inventory by variant ID [${error.code}]: ${error.message}`)
+    log.error(`Error fetching inventory by variant ID [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }

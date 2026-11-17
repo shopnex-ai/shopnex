@@ -3,6 +3,7 @@ import type { ShopContext } from '@shopnex/app'
 import { cjFor, settingsOf } from './cj'
 import type { Tables } from './db'
 import { priceOf } from './shipping'
+import { log } from './log'
 
 // The parts of the order webhook payload (the admin API's order) this app reads
 export type PaidOrder = {
@@ -86,7 +87,7 @@ export async function forwardOrder(shop: ShopContext, tables: Tables, order: Pai
     if (!created.data) throw new Error(created.error ?? 'CJ did not create the order')
     await tables.setOrder(shop, order.id, 'created', { cjOrderId: created.data.orderId })
   } catch (error) {
-    console.error(`[cj] order ${order.orderNumber}:`, message(error))
+    log.error({ err: error, orderNumber: order.orderNumber }, 'creating the CJ order failed')
     await tables.setOrder(shop, order.id, 'failed', { error: message(error) })
   }
 }
@@ -107,7 +108,7 @@ export async function syncTracking(shop: ShopContext, tables: Tables) {
       })
       await tables.setOrder(shop, order_id, 'fulfilled', { trackingNumber })
     } catch (error) {
-      console.error(`[cj] tracking for ${cj_order_id}:`, message(error))
+      log.error({ err: error, cjOrderId: cj_order_id }, 'tracking failed')
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { AccessTokenResponse } from '../types'
 
 import { cjApiClient } from '../api-client'
+import { log } from '../log'
 
 interface RefreshTokenResponse {
   code: number
@@ -32,10 +33,9 @@ export async function getAccessToken(apiKey: string) {
       throw new Error('Failed to fetch access token')
     }
     // TODO: add logger
-    // console.log('Access Token:', response.data.data?.accessToken)
     return response.data.data
   } catch (error) {
-    console.error('Error fetching access token:', error)
+    log.error({ err: error }, 'Error fetching access token')
     throw error // Rethrow for caller to handle
   }
 }
@@ -47,10 +47,9 @@ export async function refreshAccessToken(refreshToken: string) {
     })
 
     // TODO: add logger
-    // console.info('New Access Token:', response.data.data.accessToken)
     return response.data.data
   } catch (error) {
-    console.error('Error refreshing access token:', error)
+    log.error({ err: error }, 'Error refreshing access token')
     throw error
   }
 }
@@ -65,9 +64,9 @@ export async function logout(accessToken: string) {
       },
     )
 
-    console.log('Successfully logged out')
+    log.info('Successfully logged out')
   } catch (error) {
-    console.error('Logout failed:', error)
+    log.error({ err: error }, 'Logout failed')
     throw error
   }
 }

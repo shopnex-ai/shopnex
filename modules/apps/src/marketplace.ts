@@ -10,6 +10,7 @@ import { ThemeDocument } from '@shopnex/storefront-sdk/theme'
 import { db, schema, type Tx } from '@shopnex/db'
 import { normalizeScopes } from '@shopnex/tenancy'
 import { AppError } from './errors'
+import { log } from './log'
 
 const CONNECTION_ID = 'default'
 // Catalog + installations sync interval (the worker also runs right after connecting)
@@ -94,7 +95,7 @@ export async function disconnect() {
   if (connection.instanceKey) {
     await client(connection)
       .instances.disconnect()
-      .catch((error) => console.error('[marketplace] disconnect:', error))
+      .catch((error) => log.error({ err: error }, 'marketplace disconnect failed'))
   }
   await db.transaction(async (tx) => {
     await tx.delete(schema.marketplaceConnection).where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
@@ -179,7 +180,7 @@ async function syncThemes(tx: Tx, themes: CatalogThemes) {
   const rows = themes.flatMap((theme) => {
     const document = ThemeDocument.safeParse(theme.document)
     if (!document.success) {
-      console.warn(`[marketplace] skipped theme style ${theme.slug}: invalid document`)
+      log.warn('skipped theme style %s: invalid document', theme.slug)
       return []
     }
     return [
@@ -246,7 +247,7 @@ export async function reportInstallationsSoon() {
     ])
   } catch (error) {
     if (error instanceof AppError && error.code === 'MARKETPLACE_NOT_CONNECTED') return
-    console.error('[marketplace] report installations:', error instanceof Error ? error.message : error)
+    log.error({ err: error }, 'could not report installations to the marketplace')
   }
 }
 
@@ -257,7 +258,7 @@ export function startMarketplaceSync() {
   if (globalForSync.marketplaceSync) return
   const tick = async () => {
     if (!(await getConnection())?.instanceKey) return
-    await sync().catch((error) => console.error('[marketplace] sync:', error instanceof Error ? error.message : error))
+    await sync().catch((error) => log.error({ err: error }, 'marketplace sync failed'))
   }
   globalForSync.marketplaceSync = setInterval(tick, SYNC_INTERVAL_MS)
   setTimeout(tick, 5_000)

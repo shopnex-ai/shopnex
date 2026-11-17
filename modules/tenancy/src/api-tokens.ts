@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { API_SCOPES, type ApiScope, type ApiToken, type Shop } from '@shopnex/db/schema'
+import { log } from './log'
 
 export const API_TOKEN_PREFIX = 'sk_'
 
@@ -100,7 +101,7 @@ export function touchToken(id: string) {
         or(isNull(schema.apiTokens.lastUsedAt), lt(schema.apiTokens.lastUsedAt, sql`now() - interval '1 minute'`)),
       ),
     )
-    .catch((error) => console.error('[api-tokens] lastUsedAt:', error))
+    .catch((error) => log.error({ err: error }, 'could not update the API token lastUsedAt'))
 }
 
 // Bearer token → its shop. Null for unknown or revoked tokens.
