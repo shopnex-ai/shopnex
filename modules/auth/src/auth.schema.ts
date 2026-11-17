@@ -3,7 +3,7 @@
 // every module points at (shops, user, apps, api_tokens).
 // Tables required by Better Auth (drizzle adapter), and the counters for rate limits
 import { index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
-import { user } from '@shopnex/db/schema'
+import { user } from '@shopnex/core/schema'
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),

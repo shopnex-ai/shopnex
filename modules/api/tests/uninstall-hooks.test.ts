@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { call } from '@orpc/server'
+import { apps } from '@shopnex/core/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -29,7 +30,7 @@ let manualId = ''
 
 async function installedPaymentsApp(name: string) {
   const [app] = await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({
       name,
       appUrl: 'http://127.0.0.1:1',
@@ -77,7 +78,7 @@ before(async () => {
 
 after(async () => {
   await db.delete(paymentMethods).where(eq(paymentMethods.id, manualId))
-  if (appIds.length) await db.delete(schema.apps).where(inArray(schema.apps.id, appIds))
+  if (appIds.length) await db.delete(apps).where(inArray(apps.id, appIds))
 })
 
 describe('uninstalling an app, through the route', () => {

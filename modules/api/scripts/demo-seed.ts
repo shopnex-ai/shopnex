@@ -8,12 +8,13 @@
 //   APP_URL                                  public origin, saved as the shop's Storefront URL
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { auth, SUPER_ADMIN_ROLE, withSignUpAllowed } from '@shopnex/auth'
 import { menuService, pageService } from '@shopnex/content'
 import { seedDemoCatalog } from './lib/demo-catalog'
 import { seedDemoOrders } from './lib/demo-orders'
 import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shopnex/tenancy'
+import { user as userTable } from '@shopnex/core/schema'
 
 const ownerEmail = process.env.DEMO_OWNER_EMAIL?.toLowerCase()
 const ownerPassword = process.env.DEMO_OWNER_PASSWORD
@@ -25,7 +26,7 @@ if (!ownerEmail || !ownerPassword) {
   process.exit(1)
 }
 
-const [existing] = await db.select({ id: schema.user.id }).from(schema.user).limit(1)
+const [existing] = await db.select({ id: userTable.id }).from(userTable).limit(1)
 if (existing) {
   console.error('This database already has accounts. Run demo:reset to wipe it and seed again.')
   process.exit(1)
@@ -43,7 +44,7 @@ await updateShop(DEFAULT_SHOP_ID, {
 // The first member of a shop is its owner, later ones are staff
 async function createAccount(name: string, email: string, password: string, superAdmin: boolean) {
   const { user } = await withSignUpAllowed(() => auth.api.signUpEmail({ body: { name, email, password } }))
-  if (superAdmin) await db.update(schema.user).set({ role: SUPER_ADMIN_ROLE }).where(eq(schema.user.id, user.id))
+  if (superAdmin) await db.update(userTable).set({ role: SUPER_ADMIN_ROLE }).where(eq(userTable.id, user.id))
   await addMember(DEFAULT_SHOP_ID, user.id)
 }
 await createAccount('Shop Owner', ownerEmail, ownerPassword, true)

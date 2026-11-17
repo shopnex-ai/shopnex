@@ -11,7 +11,6 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { appUninstalled } from './apps.hooks'
-import { API_SCOPES, type ApiScope, type App } from '@shopnex/db/schema'
 import {
   decodeJwt,
   generateKeyPair,
@@ -30,6 +29,7 @@ import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'
 import { log } from './log'
 import { appAuthorizationCodes, appData, appInstallations, type AppInstallation } from './apps.schema'
+import { API_SCOPES, type ApiScope, apiTokens, type App, apps, shops } from '@shopnex/core/schema'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const random = (bytes: number) => randomBytes(bytes).toString('base64url')
@@ -57,7 +57,7 @@ export function publicApp(app: App) {
 export async function registerApp(input: AppInput, createdById: string | null) {
   const { privateKey, publicKey } = await generateKeyPair()
   const [app] = await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({
       ...input,
       scopes: normalizeScopes(input.scopes),
@@ -70,32 +70,28 @@ export async function registerApp(input: AppInput, createdById: string | null) {
 }
 
 // Registry functions only touch custom apps; marketplace apps are edited by their vendor on the marketplace
-const customApp = (id: string) => and(eq(schema.apps.id, id), eq(schema.apps.source, 'custom'))
+const customApp = (id: string) => and(eq(apps.id, id), eq(apps.source, 'custom'))
 
 export async function listApps() {
-  const rows = await db
-    .select()
-    .from(schema.apps)
-    .where(eq(schema.apps.source, 'custom'))
-    .orderBy(asc(schema.apps.name))
+  const rows = await db.select().from(apps).where(eq(apps.source, 'custom')).orderBy(asc(apps.name))
   return rows.map(publicApp)
 }
 
 /** The client id of an installed app by its row id (what apps call themselves), or null */
 export async function clientIdOf(id: string) {
-  const [app] = await db.select({ clientId: schema.apps.clientId }).from(schema.apps).where(eq(schema.apps.id, id))
+  const [app] = await db.select({ clientId: apps.clientId }).from(apps).where(eq(apps.id, id))
   return app?.clientId ?? null
 }
 
 export async function getApp(id: string) {
-  const [app] = await db.select().from(schema.apps).where(customApp(id))
+  const [app] = await db.select().from(apps).where(customApp(id))
   return app ? publicApp(app) : null
 }
 
 // Narrowing `scopes` doesn't touch existing installations; they keep what they were granted until re-authorized
 export async function updateApp(id: string, patch: Partial<AppInput>) {
   const [app] = await db
-    .update(schema.apps)
+    .update(apps)
     .set({ ...patch, ...(patch.scopes && { scopes: normalizeScopes(patch.scopes) }), updatedAt: new Date() })
     .where(customApp(id))
     .returning()
@@ -104,14 +100,14 @@ export async function updateApp(id: string, patch: Partial<AppInput>) {
 
 // Uninstalls it everywhere: its tokens (and their webhooks) and installations are deleted with it
 export async function deleteApp(id: string) {
-  const [app] = await db.delete(schema.apps).where(customApp(id)).returning()
+  const [app] = await db.delete(apps).where(customApp(id)).returning()
   return app ? publicApp(app) : null
 }
 
 // The old key stops working right away
 export async function rotateKey(id: string) {
   const { privateKey, publicKey } = await generateKeyPair()
-  const [app] = await db.update(schema.apps).set({ publicKey, updatedAt: new Date() }).where(customApp(id)).returning()
+  const [app] = await db.update(apps).set({ publicKey, updatedAt: new Date() }).where(customApp(id)).returning()
   return app ? { app: publicApp(app), privateKey } : null
 }
 
@@ -135,7 +131,7 @@ const covers = (granted: readonly ApiScope[], scope: ApiScope) =>
  * Without `scope`, the app gets everything it was registered with.
  */
 export async function validateAuthorizeRequest(input: { clientId: string; redirectUri?: string; scope?: string }) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.clientId, input.clientId))
+  const [app] = await db.select().from(apps).where(eq(apps.clientId, input.clientId))
   if (!app) throw new AppError('invalid_client', 'Unknown app (client_id)')
   if (app.delistedAt) throw new AppError('invalid_client', 'This app is no longer available in the App Store')
   // Without redirect_uri: a managed install (the consent screen installs it, nothing is sent to the app)
@@ -175,7 +171,7 @@ export async function createAuthorizationCode(input: {
  * invalid_client for unknown apps, apps without a key, and assertions that don't check out.
  */
 export async function authenticateClient(clientId: string, assertion: string) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.clientId, clientId))
+  const [app] = await db.select().from(apps).where(eq(apps.clientId, clientId))
   const valid =
     app?.publicKey &&
     (await verifyClientAssertion(assertion, app.publicKey, { clientId, audience: await instanceUrl() }))
@@ -229,12 +225,9 @@ export async function exchangeCode(input: {
 // The live installation of an app on a shop, with its (unrevoked) token
 async function liveInstallation(appId: string, shopId: string) {
   const [row] = await db
-    .select({ installation: appInstallations, token: schema.apiTokens })
+    .select({ installation: appInstallations, token: apiTokens })
     .from(appInstallations)
-    .innerJoin(
-      schema.apiTokens,
-      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
-    )
+    .innerJoin(apiTokens, and(eq(apiTokens.id, appInstallations.apiTokenId), isNull(apiTokens.revokedAt)))
     .where(
       and(
         eq(appInstallations.appId, appId),
@@ -300,18 +293,15 @@ export async function clientCredentials(input: { clientId: string; clientAsserti
 /** Bearer access token (JWT) → the installation's API token and shop. Null if invalid, expired or uninstalled. */
 export async function resolveAccessToken(
   token: string,
-): Promise<{ token: ApiToken; shop: typeof schema.shops.$inferSelect } | null> {
+): Promise<{ token: ApiToken; shop: typeof shops.$inferSelect } | null> {
   if (decodeJwt(token)?.header.typ !== ACCESS_TOKEN_TYP) return null
   const claims = await verifyJwt<AccessTokenClaims>(token, ACCESS_TOKEN_TYP, (header) => ownKey(header.kid))
   if (!claims) return null
   const [row] = await db
-    .select({ token: schema.apiTokens, shop: schema.shops })
+    .select({ token: apiTokens, shop: shops })
     .from(appInstallations)
-    .innerJoin(
-      schema.apiTokens,
-      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
-    )
-    .innerJoin(schema.shops, eq(schema.shops.id, appInstallations.shopId))
+    .innerJoin(apiTokens, and(eq(apiTokens.id, appInstallations.apiTokenId), isNull(apiTokens.revokedAt)))
+    .innerJoin(shops, eq(shops.id, appInstallations.shopId))
     .where(
       and(
         eq(appInstallations.id, claims.sub),
@@ -330,7 +320,7 @@ export async function resolveAccessToken(
  */
 export async function installManaged(input: { appId: string; shopId: string; userId: string; scopes: ApiScope[] }) {
   const { installation, app } = await db.transaction(async (tx) => {
-    const [app] = await tx.select().from(schema.apps).where(eq(schema.apps.id, input.appId))
+    const [app] = await tx.select().from(apps).where(eq(apps.id, input.appId))
     if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
     const { token: _, ...secret } = mintToken()
     const installation = await install(tx, {
@@ -396,21 +386,18 @@ async function install(
   },
 ) {
   const [existing] = await tx
-    .select({ installation: appInstallations, token: schema.apiTokens })
+    .select({ installation: appInstallations, token: apiTokens })
     .from(appInstallations)
-    .leftJoin(
-      schema.apiTokens,
-      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
-    )
+    .leftJoin(apiTokens, and(eq(apiTokens.id, appInstallations.apiTokenId), isNull(apiTokens.revokedAt)))
     .where(and(eq(appInstallations.appId, input.app.id), eq(appInstallations.shopId, input.shopId)))
     .for('update', { of: appInstallations })
 
   // Already installed: new secret and scopes on the same token row
   if (existing?.token && !existing.installation.uninstalledAt) {
     await tx
-      .update(schema.apiTokens)
+      .update(apiTokens)
       .set({ ...input.secret, scopes: input.scopes, name: input.app.name })
-      .where(eq(schema.apiTokens.id, existing.token.id))
+      .where(eq(apiTokens.id, existing.token.id))
     const [installation] = await tx
       .update(appInstallations)
       .set({ scopes: input.scopes })
@@ -420,7 +407,7 @@ async function install(
   }
 
   const [token] = await tx
-    .insert(schema.apiTokens)
+    .insert(apiTokens)
     .values({
       shopId: input.shopId,
       appId: input.app.id,
@@ -429,7 +416,7 @@ async function install(
       createdById: input.userId,
       ...input.secret,
     })
-    .returning({ id: schema.apiTokens.id })
+    .returning({ id: apiTokens.id })
   const values = {
     apiTokenId: token!.id,
     scopes: input.scopes,
@@ -454,18 +441,18 @@ async function install(
  */
 export async function listCatalog(shopId: string) {
   const rows = await db
-    .select({ app: schema.apps, installationId: appInstallations.id })
-    .from(schema.apps)
+    .select({ app: apps, installationId: appInstallations.id })
+    .from(apps)
     .leftJoin(
       appInstallations,
       and(
-        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.appId, apps.id),
         eq(appInstallations.shopId, shopId),
         isNull(appInstallations.uninstalledAt),
       ),
     )
-    .where(isNull(schema.apps.delistedAt))
-    .orderBy(asc(schema.apps.name))
+    .where(isNull(apps.delistedAt))
+    .orderBy(asc(apps.name))
   return rows.map((r) => ({
     ...publicApp(r.app),
     origin: r.app.source,
@@ -480,12 +467,12 @@ const installedApps = (shopId: string) =>
   db
     .select({
       installation: appInstallations,
-      app: schema.apps,
-      lastUsedAt: schema.apiTokens.lastUsedAt,
+      app: apps,
+      lastUsedAt: apiTokens.lastUsedAt,
     })
     .from(appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
-    .leftJoin(schema.apiTokens, eq(schema.apiTokens.id, appInstallations.apiTokenId))
+    .innerJoin(apps, eq(apps.id, appInstallations.appId))
+    .leftJoin(apiTokens, eq(apiTokens.id, appInstallations.apiTokenId))
     .where(and(eq(appInstallations.shopId, shopId), isNull(appInstallations.uninstalledAt)))
 
 export async function listInstallations(shopId: string) {
@@ -551,9 +538,9 @@ export async function uninstall(shopId: string, installationId: string) {
 // A live installation of this shop, with its app (embedded app page)
 export async function getInstallationWithApp(shopId: string, installationId: string) {
   const [row] = await db
-    .select({ installation: appInstallations, app: schema.apps })
+    .select({ installation: appInstallations, app: apps })
     .from(appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
+    .innerJoin(apps, eq(apps.id, appInstallations.appId))
     .where(
       and(
         eq(appInstallations.shopId, shopId),
@@ -571,9 +558,9 @@ export async function getInstallationWithApp(shopId: string, installationId: str
  */
 export async function createSessionToken(input: { shopId: string; installationId: string; userId: string }) {
   const [row] = await db
-    .select({ installation: appInstallations, clientId: schema.apps.clientId })
+    .select({ installation: appInstallations, clientId: apps.clientId })
     .from(appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
+    .innerJoin(apps, eq(apps.id, appInstallations.appId))
     .where(
       and(
         eq(appInstallations.shopId, input.shopId),
@@ -756,9 +743,9 @@ async function syncBundledApp(bundled: BundledApp, url: string | undefined) {
     updatedAt: new Date(),
   }
   await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({ ...values, clientId: bundled.clientId })
-    .onConflictDoUpdate({ target: schema.apps.clientId, set: values })
+    .onConflictDoUpdate({ target: apps.clientId, set: values })
 }
 
 /**

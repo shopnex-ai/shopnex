@@ -2,7 +2,7 @@
 // history in modules/db/migrations. The `apps` table (the registry) stays in @shopnex/db/schema with the other foundation
 // tables (shops, user, apps, api_tokens): payments, ai and cart point at it, and so does api_tokens.
 import { index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { apiTokens, apps, shops, user, type ApiScope } from '@shopnex/db/schema'
+import { type ApiScope, apiTokens, apps, shops, user } from '@shopnex/core/schema'
 
 export const appInstallations = pgTable(
   'app_installations',

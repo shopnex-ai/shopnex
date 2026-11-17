@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
 import { shopDomains, shopMembers } from './tenancy.schema'
+import { type Shop, shops } from '@shopnex/core/schema'
 
 // Where a shop's storefront lives.
 // - Multi mode: derived, never chosen. The shop's first verified domain (domains prove ownership), else its
@@ -11,7 +12,7 @@ import { shopDomains, shopMembers } from './tenancy.schema'
 // - Single mode: the saved Storefront URL, else STOREFRONT_URL (`pnpm dev` sets it to the bundled storefront).
 // `conn`: pass the transaction when called inside one. The multi mode reads the shop's domains, and a read on `db` inside
 // a transaction waits for it for ever on the embedded database (one connection)
-export async function withStorefrontUrl<T extends schema.Shop | null>(shop: T, conn: Conn = db): Promise<T> {
+export async function withStorefrontUrl<T extends Shop | null>(shop: T, conn: Conn = db): Promise<T> {
   if (!shop) return shop
   if (!isMultiTenant) {
     if (shop.storefrontUrl) return shop
@@ -33,9 +34,9 @@ let defaultShopCreated: Promise<void> | undefined
 
 // Idempotent; the insert runs once per process (the migration also creates it). The row itself is
 // read every time, since name/currency can be edited in the admin.
-export async function ensureDefaultShop(): Promise<schema.Shop> {
+export async function ensureDefaultShop(): Promise<Shop> {
   defaultShopCreated ??= db
-    .insert(schema.shops)
+    .insert(shops)
     .values({ id: DEFAULT_SHOP_ID, name: process.env.DEFAULT_SHOP_NAME ?? 'My Shop', slug: DEFAULT_SHOP_ID })
     .onConflictDoNothing()
     .then(
@@ -54,7 +55,7 @@ export async function updateShop(
   id: string,
   patch: Partial<
     Pick<
-      schema.Shop,
+      Shop,
       | 'name'
       | 'currency'
       | 'storefrontUrl'
@@ -74,30 +75,30 @@ export async function updateShop(
   const { storefrontUrl: _ignored, ...rest } = patch
   const values = isMultiTenant ? rest : patch
   if (Object.keys(values).length === 0) return getShopById(id)
-  const [shop] = await db.update(schema.shops).set(values).where(eq(schema.shops.id, id)).returning()
+  const [shop] = await db.update(shops).set(values).where(eq(shops.id, id)).returning()
   return withStorefrontUrl(shop ?? null)
 }
 
 export async function getShopById(id: string) {
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, id))
+  const [shop] = await db.select().from(shops).where(eq(shops.id, id))
   return withStorefrontUrl(shop ?? null)
 }
 
 export async function getFirstShop() {
-  const [shop] = await db.select().from(schema.shops).orderBy(asc(schema.shops.createdAt)).limit(1)
+  const [shop] = await db.select().from(shops).orderBy(asc(shops.createdAt)).limit(1)
   return withStorefrontUrl(shop ?? null)
 }
 
 export async function getShopBySlug(slug: string) {
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.slug, slug))
+  const [shop] = await db.select().from(shops).where(eq(shops.slug, slug))
   return withStorefrontUrl(shop ?? null)
 }
 
 export async function getShopByDomain(domain: string) {
   const [row] = await db
-    .select({ shop: schema.shops })
+    .select({ shop: shops })
     .from(shopDomains)
-    .innerJoin(schema.shops, eq(schema.shops.id, shopDomains.shopId))
+    .innerJoin(shops, eq(shops.id, shopDomains.shopId))
     .where(and(eq(shopDomains.domain, domain.toLowerCase()), isNotNull(shopDomains.verifiedAt)))
   return withStorefrontUrl(row?.shop ?? null)
 }
@@ -138,14 +139,14 @@ const SWITCHER_LIMIT = 100
 // Empty in single mode (there is one shop, nothing to switch).
 export async function listSwitchableShops(userId: string, superAdmin: boolean) {
   if (!isMultiTenant) return []
-  const columns = { id: schema.shops.id, name: schema.shops.name }
-  if (superAdmin) return db.select(columns).from(schema.shops).orderBy(asc(schema.shops.name)).limit(SWITCHER_LIMIT)
+  const columns = { id: shops.id, name: shops.name }
+  if (superAdmin) return db.select(columns).from(shops).orderBy(asc(shops.name)).limit(SWITCHER_LIMIT)
   return db
     .select(columns)
-    .from(schema.shops)
-    .innerJoin(shopMembers, eq(shopMembers.organizationId, schema.shops.id))
+    .from(shops)
+    .innerJoin(shopMembers, eq(shopMembers.organizationId, shops.id))
     .where(eq(shopMembers.userId, userId))
-    .orderBy(asc(schema.shops.name))
+    .orderBy(asc(shops.name))
     .limit(SWITCHER_LIMIT)
 }
 

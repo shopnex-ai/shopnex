@@ -3,7 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { sessionSecret } from '@shopnex/db/secrets'
 import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
@@ -14,6 +14,7 @@ import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
 
 // A provider is enabled only when both its credentials are set.
 // OAuth callback URL to register: {APP_URL}/api/auth/callback/{provider}
@@ -50,11 +51,11 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
-      user: schema.user,
+      user: userTable,
       session,
       account,
       verification,
-      shops: schema.shops,
+      shops: shopsTable,
       shopMembers: shopMembers,
       shopInvitations: shopInvitations,
     },

@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { instanceSigner, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import {
   aiCapabilities,
@@ -23,6 +23,7 @@ import { AiError } from './ai.errors'
 import { aiGenerations, type AiFeedback } from './ai.schema'
 import { BUILTIN, providers } from './providers'
 import * as subjects from './subjects'
+import { shops } from '@shopnex/core/schema'
 
 // Models are slow; staff are waiting on the other end, so not much longer than this
 const TIMEOUT_MS = 60_000
@@ -141,7 +142,7 @@ export async function run<C extends AiCapability>(
   const provider =
     via.kind === 'app' ? { id: via.app.app.id, name: via.app.app.name } : { id: BUILTIN, name: via.own.name }
 
-  const [shopRow] = await conn.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [shopRow] = await conn.select().from(shops).where(eq(shops.id, shopId))
   if (!shopRow) throw new AiError('SUBJECT_NOT_FOUND', 'Shop not found')
   const shop = await withStorefrontUrl(shopRow)
   const needSubject = () => {

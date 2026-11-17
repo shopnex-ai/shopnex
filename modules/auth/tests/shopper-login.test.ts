@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
+import { user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -79,7 +80,7 @@ describe('the endpoints over HTTP', () => {
       assert.equal(res.status, 403, path)
       assert.match(await res.text(), /Not available/)
     }
-    const users = await db.select().from(schema.user).where(eq(schema.user.email, 'someone@example.com'))
+    const users = await db.select().from(user).where(eq(user.email, 'someone@example.com'))
     assert.equal(users.length, 0, 'no account was made')
   })
 })

@@ -4,7 +4,7 @@
 // or free shipping) and manual tax rates per country / province.
 import { sql } from 'drizzle-orm'
 import { boolean, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from '@shopnex/db/schema'
+import { shops } from '@shopnex/core/schema'
 
 // percentage: `value` is a whole percent (1–100) off the subtotal; fixed_amount: `value` minor units off
 // the subtotal; free_shipping: shipping costs nothing (`value` unused, 0)

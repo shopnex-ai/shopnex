@@ -5,6 +5,7 @@
 import { and, eq, inArray, like, sql } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
 import { db, schema } from '@shopnex/db'
+import { shops } from '@shopnex/core/schema'
 
 const DEMO_DOMAIN = '@demo.shopnex.test'
 const DISCOUNT_CODE = 'WELCOME10'
@@ -55,7 +56,7 @@ export async function deleteAllOrders(shopId: string) {
     .where(eq(schema.orders.shopId, shopId))
     .returning({ id: schema.orders.id })
   await deleteDemoOrders(shopId)
-  await db.update(schema.shops).set({ nextOrderNumber: 1001 }).where(eq(schema.shops.id, shopId))
+  await db.update(shops).set({ nextOrderNumber: 1001 }).where(eq(shops.id, shopId))
   return removed.length
 }
 
@@ -67,7 +68,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
     .limit(1)
   if (existing) throw new Error('Demo orders already exist for this shop (use --replace to regenerate them).')
 
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
   if (!shop) throw new Error(`Shop "${shopId}" not found.`)
   const channel = await channelService.getDefault(shopId, db)
 
@@ -277,7 +278,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
       }
     }
 
-    await tx.update(schema.shops).set({ nextOrderNumber: orderNumber }).where(eq(schema.shops.id, shopId))
+    await tx.update(shops).set({ nextOrderNumber: orderNumber }).where(eq(shops.id, shopId))
   })
 
   return { orders: planned.length, customers: new Set(planned.map((o) => o.person)).size }

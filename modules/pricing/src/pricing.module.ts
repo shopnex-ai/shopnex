@@ -4,7 +4,7 @@ import { discounts as discountRoutes, taxRates as taxRateRoutes } from './pricin
 
 export const pricingModule = defineModule({
   name: 'pricing',
-  dependsOn: ['db', 'rpc'],
+  dependsOn: ['core', 'db', 'rpc'],
   tables: { discounts, taxRates },
   router: { discounts: discountRoutes, taxRates: taxRateRoutes },
 })

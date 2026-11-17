@@ -1,11 +1,12 @@
 // Payments apps register their payment method for a shop (Shopify paymentsAppConfigure). Staff then see it in
 // Settings → Payments, where they can rename, reorder or deactivate it; uninstalling the app removes it.
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { PaymentError } from './payments.errors'
 import { only } from './rows'
 import { paymentMethods } from './payments.schema'
 import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
 
 export interface ConfigureInput {
   /** Shown at checkout on first configure, e.g. "Credit card" (staff can rename it) */
@@ -32,7 +33,7 @@ export const origin = (url: string) => {
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and position stay.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput, conn: Conn) {
-  const [app] = await conn.select().from(schema.apps).where(eq(schema.apps.id, appId))
+  const [app] = await conn.select().from(apps).where(eq(apps.id, appId))
   if (!app) throw new PaymentError('NOT_A_PAYMENTS_APP', 'Only an installed app can configure a payment method')
   const appOrigin = origin(app.appUrl)
   for (const url of [input.paymentSessionUrl, input.refundSessionUrl]) {
@@ -81,17 +82,17 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
 /** Apps that can take payments (allowed write_payment_sessions) and aren't installed in this shop yet */
 export async function availableApps(shopId: string, conn: Conn) {
   const rows = await conn
-    .select({ app: schema.apps, installationId: appInstallations.id })
-    .from(schema.apps)
+    .select({ app: apps, installationId: appInstallations.id })
+    .from(apps)
     .leftJoin(
       appInstallations,
       and(
-        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.appId, apps.id),
         eq(appInstallations.shopId, shopId),
         isNull(appInstallations.uninstalledAt),
       ),
     )
-    .where(and(sql`'write_payment_sessions' = any(${schema.apps.scopes})`, isNull(schema.apps.delistedAt)))
+    .where(and(sql`'write_payment_sessions' = any(${apps.scopes})`, isNull(apps.delistedAt)))
   return rows
     .filter((r) => r.installationId === null)
     .map(({ app }) => ({

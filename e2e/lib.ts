@@ -16,6 +16,7 @@ import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketpla
 import { storefrontKeyService } from '@shopnex/channels'
 import { createApiToken, getShopById, type ApiScope } from '@shopnex/tenancy'
 import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { apiTokens, shops, user } from '@shopnex/core/schema'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -153,7 +154,7 @@ export class Fixtures {
   async shop() {
     const id = `e2e-${this.run}-${++this.seq}`
     const [shop] = await db
-      .insert(schema.shops)
+      .insert(shops)
       .values({ id, name: `E2E shop ${id}`, slug: id })
       .returning()
     this.shops.push(id)
@@ -169,7 +170,7 @@ export class Fixtures {
   private inviterId() {
     this.inviter ??= (async () => {
       const id = `e2e-inviter-${this.run}`
-      await db.insert(schema.user).values({ id, name: 'E2E inviter', email: `${id}@example.com` })
+      await db.insert(user).values({ id, name: 'E2E inviter', email: `${id}@example.com` })
       this.users.push(id)
       return id
     })()
@@ -224,7 +225,7 @@ export class Fixtures {
     const cookie = signUp.cookie!
     if (role === 'outsider' || role === 'superadmin') {
       await db.update(shopInvitations).set({ status: 'canceled' }).where(eq(shopInvitations.id, invitationId))
-      if (role === 'superadmin') await db.update(schema.user).set({ role: 'superadmin' }).where(eq(schema.user.id, id))
+      if (role === 'superadmin') await db.update(user).set({ role: 'superadmin' }).where(eq(user.id, id))
     } else {
       const accepted = await authCall('/organization/accept-invitation', { invitationId }, cookie)
       assert.equal(accepted.status, 200, JSON.stringify(accepted.body))
@@ -312,21 +313,18 @@ export class Fixtures {
       await db.delete(paymentMethods).where(inArray(paymentMethods.id, this.paymentMethods))
     }
     await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
-    if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))
+    if (this.shoppers.length) await db.delete(user).where(inArray(user.email, this.shoppers))
     if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
     if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
       await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.id, this.shippingRates))
     }
-    if (this.users.length) await db.delete(schema.user).where(inArray(schema.user.id, this.users))
-    if (this.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, this.shops))
-    if (this.tokens.length) await db.delete(schema.apiTokens).where(inArray(schema.apiTokens.id, this.tokens))
+    if (this.users.length) await db.delete(user).where(inArray(user.id, this.users))
+    if (this.shops.length) await db.delete(shops).where(inArray(shops.id, this.shops))
+    if (this.tokens.length) await db.delete(apiTokens).where(inArray(apiTokens.id, this.tokens))
     if (this.shopBefore) {
       const { taxesIncluded, taxShipping, nextOrderNumber } = this.shopBefore
-      await db
-        .update(schema.shops)
-        .set({ taxesIncluded, taxShipping, nextOrderNumber })
-        .where(eq(schema.shops.id, SHOP))
+      await db.update(shops).set({ taxesIncluded, taxShipping, nextOrderNumber }).where(eq(shops.id, SHOP))
     }
   }
 }

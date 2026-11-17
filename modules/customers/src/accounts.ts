@@ -10,6 +10,7 @@ import type { Customer } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
 import * as customers from './customers'
 import { log } from './log'
+import { user as userTable } from '@shopnex/core/schema'
 
 export type AccountErrorCode = 'INVALID_EMAIL' | 'TOO_MANY_REQUESTS' | 'INVALID_CODE'
 
@@ -56,9 +57,9 @@ async function overLimit(limits: [key: string, max: number][]) {
 // signing one in with a code would lock the owner out of the admin. They use the admin's login instead.
 async function isUnverifiedAccount(email: string) {
   const [existing] = await db
-    .select({ emailVerified: schema.user.emailVerified })
-    .from(schema.user)
-    .where(eq(schema.user.email, email))
+    .select({ emailVerified: userTable.emailVerified })
+    .from(userTable)
+    .where(eq(userTable.email, email))
   return existing !== undefined && !existing.emailVerified
 }
 

@@ -14,6 +14,7 @@ import { verifyPaymentsRequest, type PaymentsAppRequest } from '@shopnex/marketp
 import { orderService } from '@shopnex/orders'
 import { paymentService } from '@shopnex/payments'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
+import { apps } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 
@@ -78,7 +79,7 @@ before(async () => {
 after(async () => {
   await fx.cleanup()
   // The app owns its method, sessions, installation and token
-  if (appId) await db.delete(schema.apps).where(eq(schema.apps.id, appId))
+  if (appId) await db.delete(apps).where(eq(apps.id, appId))
   server?.close()
   await closeDb()
 })

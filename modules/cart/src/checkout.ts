@@ -14,6 +14,7 @@ import * as carrierService from './carrier-services'
 import type { QuoteInput } from './carrier-services'
 import { listShippingRates } from './checkout-settings'
 import { CartError } from './cart.errors'
+import { shops } from '@shopnex/core/schema'
 
 export type CheckoutInput = {
   email: string
@@ -144,9 +145,9 @@ export async function options(
 export async function taxContext(shopId: string) {
   const [[shop], rates] = await Promise.all([
     db
-      .select({ taxesIncluded: schema.shops.taxesIncluded, taxShipping: schema.shops.taxShipping })
-      .from(schema.shops)
-      .where(eq(schema.shops.id, shopId)),
+      .select({ taxesIncluded: shops.taxesIncluded, taxShipping: shops.taxShipping })
+      .from(shops)
+      .where(eq(shops.id, shopId)),
     taxService.list(shopId, db),
   ])
   return {

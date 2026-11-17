@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@orpc/server": "catalog:",
-    "@shopnex/db": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "zod": "catalog:"
   },

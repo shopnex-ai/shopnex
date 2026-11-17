@@ -2,6 +2,7 @@
 // the account is made (429), and so is the cap for everyone. Caps are set tiny so the test stays short.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -36,7 +37,7 @@ const signUp = (email: string, ip: string) =>
     }),
   )
 const exists = async (email: string) =>
-  (await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, email))).length === 1
+  (await db.select({ id: user.id }).from(user).where(eq(user.email, email))).length === 1
 
 describe('open sign-up caps', () => {
   test('the first sign-up from an address works', { timeout: 60_000 }, async () => {

@@ -3,7 +3,6 @@
 import assert from 'node:assert/strict'
 import { before, describe, test } from 'node:test'
 import { ORPCError, call } from '@orpc/server'
-import type { ApiScope, ApiToken, Shop } from '@shopnex/db/schema'
 import { defineError } from '@shopnex/kit'
 import {
   assertRpcConfigured,
@@ -14,6 +13,7 @@ import {
   type Resolvers,
   type ShopRole,
 } from '../src'
+import { type ApiScope, type ApiToken, type Shop } from '@shopnex/core/schema'
 
 const NoteError = defineError('NoteError', { MISSING: 'NOT_FOUND', DUPLICATE: 'CONFLICT' })
 const OtherError = defineError('OtherError', { BROKEN: 'BAD_REQUEST' })

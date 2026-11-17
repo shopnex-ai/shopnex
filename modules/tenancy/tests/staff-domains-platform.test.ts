@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shopDomains, shopInvitations, shopMembers } from '../src/tenancy.schema'
+import { user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -16,7 +17,7 @@ const refused = (Err: typeof StaffError | typeof DomainError, code: string) => (
   e instanceof Err && (e as { code: string }).code === code
 
 let shopId = ''
-let owner: typeof schema.user.$inferSelect
+let owner: typeof user.$inferSelect
 let ownerActor: { userId: string; role: 'owner' | 'admin' | 'member'; superAdmin: boolean }
 const actor = (userId: string, role: 'owner' | 'admin' | 'member', superAdmin = false) => ({ userId, role, superAdmin })
 
@@ -116,7 +117,7 @@ describe('inviting', () => {
 })
 
 describe('changing a member', () => {
-  let admin: typeof schema.user.$inferSelect
+  let admin: typeof user.$inferSelect
   let adminMember: typeof shopMembers.$inferSelect
   let plain: typeof shopMembers.$inferSelect
   let ownerMember: typeof shopMembers.$inferSelect

@@ -2,9 +2,10 @@
 // (shipped in browser code): they select a shop, they don't grant extra access.
 import { randomBytes, randomUUID } from 'node:crypto'
 import { and, desc, eq, isNull } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import * as channelService from './channels'
 import { storefrontKeys } from './channels.schema'
+import { shops } from '@shopnex/core/schema'
 
 export const PUBLISHABLE_KEY_PREFIX = 'pk_'
 
@@ -45,9 +46,9 @@ export async function revoke(shopId: string, id: string, conn: Conn) {
 /** The key's shop and the channel it reads. Null for an unknown or revoked key. */
 export async function shopByKey(token: string, conn: Conn) {
   const [row] = await conn
-    .select({ shop: schema.shops, channelId: storefrontKeys.channelId })
+    .select({ shop: shops, channelId: storefrontKeys.channelId })
     .from(storefrontKeys)
-    .innerJoin(schema.shops, eq(schema.shops.id, storefrontKeys.shopId))
+    .innerJoin(shops, eq(shops.id, storefrontKeys.shopId))
     .where(and(eq(storefrontKeys.token, token), isNull(storefrontKeys.revokedAt)))
   return row ?? null
 }

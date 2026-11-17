@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { appAuthorizationCodes, appInstallations } from '../src/apps.schema'
+import { apps } from '@shopnex/core/schema'
 
 const { db, schema, eq, appService, SHOP, REDIRECT } = fx
 const { AppError } = await import('../src/apps.errors')
@@ -59,7 +60,7 @@ describe('registering an app', () => {
   test('only custom apps are listed, read, changed, deleted or given a new key; a bundled one is left alone', async () => {
     const mine = await fx.newApp({ name: 'Zeta mine' })
     const [bundled] = await db
-      .insert(schema.apps)
+      .insert(apps)
       .values({
         source: 'bundled',
         name: 'Bundled one',
@@ -80,7 +81,7 @@ describe('registering an app', () => {
       assert.equal((await appService.clientIdOf(bundled!.id))?.startsWith('app_b_'), true, 'clientIdOf reads any app')
       assert.equal(await appService.clientIdOf('00000000-0000-4000-8000-000000000000'), null)
     } finally {
-      await db.delete(schema.apps).where(eq(schema.apps.id, bundled!.id))
+      await db.delete(apps).where(eq(apps.id, bundled!.id))
     }
   })
 
@@ -119,7 +120,7 @@ describe('what an authorize request may ask for', () => {
   test('an unknown or delisted app is an invalid client', async () => {
     const a = await fx.newApp()
     await assert.rejects(appService.validateAuthorizeRequest({ clientId: 'app_nope' }), refused('invalid_client'))
-    await db.update(schema.apps).set({ delistedAt: new Date() }).where(eq(schema.apps.id, a.app.id))
+    await db.update(apps).set({ delistedAt: new Date() }).where(eq(apps.id, a.app.id))
     await assert.rejects(appService.validateAuthorizeRequest({ clientId: a.app.clientId }), refused('invalid_client'))
   })
 

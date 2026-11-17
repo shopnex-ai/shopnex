@@ -18,7 +18,7 @@ export {
   revokeApiToken,
   revokeTokenById,
 } from './api-tokens'
-export { API_SCOPES, type ApiScope, type ApiToken } from '@shopnex/db/schema'
+export { API_SCOPES, type ApiScope, type ApiToken } from '@shopnex/core/schema'
 export {
   addMember,
   ensureDefaultShop,

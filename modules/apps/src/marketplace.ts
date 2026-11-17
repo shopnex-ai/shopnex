@@ -13,6 +13,7 @@ import { normalizeScopes } from '@shopnex/core/scopes'
 import { AppError } from './apps.errors'
 import { log } from './log'
 import { appInstallations, marketplaceConnection } from './apps.schema'
+import { apps as appsTable } from '@shopnex/core/schema'
 
 const CONNECTION_ID = 'default'
 // Catalog + installations sync interval (the worker also runs right after connecting)
@@ -101,9 +102,9 @@ export async function disconnect() {
     // Copies shops already added stay in their libraries
     await themeService.clearStore(tx)
     await tx
-      .update(schema.apps)
+      .update(appsTable)
       .set({ delistedAt: new Date() })
-      .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
+      .where(and(eq(appsTable.source, 'marketplace'), isNull(appsTable.delistedAt)))
   })
   return connection
 }
@@ -135,20 +136,20 @@ export async function sync() {
           updatedAt: new Date(),
         }
         await tx
-          .insert(schema.apps)
+          .insert(appsTable)
           .values({ ...fields, source: 'marketplace', marketplaceAppId: app.id })
-          .onConflictDoUpdate({ target: schema.apps.marketplaceAppId, set: fields })
+          .onConflictDoUpdate({ target: appsTable.marketplaceAppId, set: fields })
       }
       await tx
-        .update(schema.apps)
+        .update(appsTable)
         .set({ delistedAt: new Date() })
         .where(
           and(
-            eq(schema.apps.source, 'marketplace'),
-            isNull(schema.apps.delistedAt),
+            eq(appsTable.source, 'marketplace'),
+            isNull(appsTable.delistedAt),
             apps.length
               ? notInArray(
-                  schema.apps.marketplaceAppId,
+                  appsTable.marketplaceAppId,
                   apps.map((a) => a.id),
                 )
               : undefined,
@@ -206,10 +207,10 @@ async function syncThemes(tx: Tx, themes: CatalogThemes) {
 export async function reportInstallations() {
   const connection = await requireConnected()
   const rows = await db
-    .select({ installation: appInstallations, marketplaceAppId: schema.apps.marketplaceAppId })
+    .select({ installation: appInstallations, marketplaceAppId: appsTable.marketplaceAppId })
     .from(appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
-    .where(and(isNull(appInstallations.uninstalledAt), isNotNull(schema.apps.marketplaceAppId)))
+    .innerJoin(appsTable, eq(appsTable.id, appInstallations.appId))
+    .where(and(isNull(appInstallations.uninstalledAt), isNotNull(appsTable.marketplaceAppId)))
   await client(connection).installations.sync({
     installations: rows.map((r) => ({
       appId: r.marketplaceAppId!,

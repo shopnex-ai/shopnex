@@ -19,6 +19,7 @@ import { log } from './log'
 import { only } from './rows'
 import { paymentSessions, paymentMethods, type PaymentSession } from './payments.schema'
 import { appInstallations } from '@shopnex/apps/schema'
+import { shops } from '@shopnex/core/schema'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released
 const PAYMENT_TTL_MS = 60 * 60_000
@@ -525,15 +526,15 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
   const stale = await conn
     .select({ shopId: schema.orders.shopId, orderId: schema.orders.id })
     .from(schema.orders)
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.orders.shopId))
+    .innerJoin(shops, eq(shops.id, schema.orders.shopId))
     .where(
       and(
-        isNotNull(schema.shops.unpaidOrderExpiryHours),
+        isNotNull(shops.unpaidOrderExpiryHours),
         isNull(schema.orders.cancelledAt),
         eq(schema.orders.financialStatus, 'pending'),
         eq(schema.orders.fulfillmentStatus, 'unfulfilled'),
         // created_at is written by the database clock (default now()), so compare it with the database clock
-        sql`${schema.orders.createdAt} <= now() - make_interval(hours => ${schema.shops.unpaidOrderExpiryHours})`,
+        sql`${schema.orders.createdAt} <= now() - make_interval(hours => ${shops.unpaidOrderExpiryHours})`,
         notExists(
           conn
             .select({ id: open.id })

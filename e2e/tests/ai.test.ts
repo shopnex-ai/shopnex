@@ -17,6 +17,7 @@ import { encryptSecret } from '@shopnex/db/secrets'
 import { verifyAiRequest, type AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp } from '../lib'
+import { apps } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 
@@ -98,7 +99,7 @@ after(async () => {
   // The app owns its providers, installation and token; its generations stay (app id set null): remove ours
   if (appId) {
     await db.delete(aiGenerations).where(eq(aiGenerations.appId, appId))
-    await db.delete(schema.apps).where(eq(schema.apps.id, appId))
+    await db.delete(apps).where(eq(apps.id, appId))
   }
   server?.close()
   await closeDb()

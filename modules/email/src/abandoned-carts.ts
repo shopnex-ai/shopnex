@@ -17,6 +17,7 @@ import {
   type CheckoutLine,
 } from './notifications'
 import { log } from './log'
+import { shops } from '@shopnex/core/schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -84,7 +85,7 @@ async function queueOne(cartId: string) {
       .where(and(eq(schema.carts.id, cartId), eq(schema.carts.status, 'active')))
       .for('update', { skipLocked: true })
     if (!cart?.email) return
-    const [row] = await tx.select().from(schema.shops).where(eq(schema.shops.id, cart.shopId))
+    const [row] = await tx.select().from(shops).where(eq(shops.id, cart.shopId))
     if (!row) return
     const base = { shopId: cart.shopId, notification: 'abandoned_cart' as const, cartId: cart.id, to: cart.email }
 

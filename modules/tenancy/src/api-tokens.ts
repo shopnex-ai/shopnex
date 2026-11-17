@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { normalizeScopes } from '@shopnex/core/scopes'
-import type { ApiScope, ApiToken, Shop } from '@shopnex/db/schema'
 import { webhookService } from '@shopnex/webhooks'
 import { log } from './log'
+import { type ApiScope, type ApiToken, apiTokens, type Shop, shops } from '@shopnex/core/schema'
 
 export const API_TOKEN_PREFIX = 'sk_'
 
@@ -25,7 +25,7 @@ export async function createApiToken(
 ) {
   const { token, ...secret } = mintToken()
   const [row] = await db
-    .insert(schema.apiTokens)
+    .insert(apiTokens)
     .values({
       shopId,
       name: input.name,
@@ -45,9 +45,9 @@ export function publicFields({ tokenHash: _, ...token }: ApiToken) {
 export async function listApiTokens(shopId: string) {
   const rows = await db
     .select()
-    .from(schema.apiTokens)
-    .where(and(eq(schema.apiTokens.shopId, shopId), isNull(schema.apiTokens.appId)))
-    .orderBy(desc(schema.apiTokens.createdAt))
+    .from(apiTokens)
+    .where(and(eq(apiTokens.shopId, shopId), isNull(apiTokens.appId)))
+    .orderBy(desc(apiTokens.createdAt))
   return rows.map(publicFields)
 }
 
@@ -55,9 +55,9 @@ export async function listApiTokens(shopId: string) {
 async function revoke(conn: Conn, where: SQL | undefined) {
   return conn.transaction(async (tx) => {
     const [token] = await tx
-      .update(schema.apiTokens)
+      .update(apiTokens)
       .set({ revokedAt: new Date() })
-      .where(and(where, isNull(schema.apiTokens.revokedAt)))
+      .where(and(where, isNull(apiTokens.revokedAt)))
       .returning()
     if (!token) return null
     await webhookService.removeOfToken(token.id, tx)
@@ -67,25 +67,22 @@ async function revoke(conn: Conn, where: SQL | undefined) {
 
 // Hand-made tokens only: an app's token goes away by uninstalling the app
 export async function revokeApiToken(shopId: string, id: string) {
-  return revoke(
-    db,
-    and(eq(schema.apiTokens.shopId, shopId), eq(schema.apiTokens.id, id), isNull(schema.apiTokens.appId)),
-  )
+  return revoke(db, and(eq(apiTokens.shopId, shopId), eq(apiTokens.id, id), isNull(apiTokens.appId)))
 }
 
 // Any token of the shop (app uninstall)
 export async function revokeTokenById(shopId: string, id: string, conn: Conn = db) {
-  return revoke(conn, and(eq(schema.apiTokens.shopId, shopId), eq(schema.apiTokens.id, id)))
+  return revoke(conn, and(eq(apiTokens.shopId, shopId), eq(apiTokens.id, id)))
 }
 
 // At most one write a minute per token; not awaited, the request doesn't depend on it
 export function touchToken(id: string) {
-  db.update(schema.apiTokens)
+  db.update(apiTokens)
     .set({ lastUsedAt: sql`now()` })
     .where(
       and(
-        eq(schema.apiTokens.id, id),
-        or(isNull(schema.apiTokens.lastUsedAt), lt(schema.apiTokens.lastUsedAt, sql`now() - interval '1 minute'`)),
+        eq(apiTokens.id, id),
+        or(isNull(apiTokens.lastUsedAt), lt(apiTokens.lastUsedAt, sql`now() - interval '1 minute'`)),
       ),
     )
     .catch((error) => log.error({ err: error }, 'could not update the API token lastUsedAt'))
@@ -95,10 +92,10 @@ export function touchToken(id: string) {
 export async function resolveApiToken(token: string): Promise<{ token: ApiToken; shop: Shop } | null> {
   if (!token.startsWith(API_TOKEN_PREFIX)) return null
   const [row] = await db
-    .select({ token: schema.apiTokens, shop: schema.shops })
-    .from(schema.apiTokens)
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.apiTokens.shopId))
-    .where(and(eq(schema.apiTokens.tokenHash, hash(token)), isNull(schema.apiTokens.revokedAt)))
+    .select({ token: apiTokens, shop: shops })
+    .from(apiTokens)
+    .innerJoin(shops, eq(shops.id, apiTokens.shopId))
+    .where(and(eq(apiTokens.tokenHash, hash(token)), isNull(apiTokens.revokedAt)))
   if (!row) return null
   touchToken(row.token.id)
   return row

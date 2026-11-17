@@ -38,13 +38,10 @@ import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
-  API_SCOPES,
   CANCEL_REASONS,
   CHANNEL_TYPES,
   NOTIFICATIONS,
   SMTP_PRESETS,
-  apiTokens,
-  apps,
   channels,
   collections,
   shippingRates,
@@ -62,12 +59,12 @@ import {
   orders,
   productVariants,
   products,
-  shops,
 } from '@shopnex/db/schema'
 import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
 import { menus, pages, type StoredMenuItem } from '@shopnex/content/schema'
+import { API_SCOPES, apiTokens, apps, shops } from '@shopnex/core/schema'
 
 const variantOutput = createSelectSchema(productVariants)
   .pick({

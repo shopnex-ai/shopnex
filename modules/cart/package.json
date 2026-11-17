@@ -14,6 +14,7 @@
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",

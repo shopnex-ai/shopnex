@@ -2,6 +2,7 @@
 // and answers the way a test says. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { apps } from '@shopnex/core/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -66,7 +67,7 @@ export async function paymentsApp(
   opts: { installed?: boolean; ready?: boolean; active?: boolean; name?: string } = {},
 ) {
   const [app] = await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({
       name: opts.name ?? 'Fake pay',
       appUrl: appUrl,
@@ -129,5 +130,5 @@ export async function cleanup() {
   await db.delete(schema.orders).where(eq(schema.orders.shopId, SHOP))
   await db.delete(paymentMethods).where(eq(paymentMethods.shopId, SHOP))
   await db.delete(appInstallations).where(eq(appInstallations.shopId, SHOP))
-  await db.delete(schema.apps).where(eq(schema.apps.source, 'custom'))
+  await db.delete(apps).where(eq(apps.source, 'custom'))
 }

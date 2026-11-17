@@ -2,8 +2,8 @@
 // data) take and answer. Plain Zod, no oRPC or server code.
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { API_SCOPES, apps } from '@shopnex/db/schema'
 import { appInstallations, marketplaceConnection } from './apps.schema'
+import { API_SCOPES, apps } from '@shopnex/core/schema'
 
 const scopes = z.array(z.enum(API_SCOPES))
 

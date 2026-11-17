@@ -5,7 +5,7 @@
 // backend that holds it, so switching backends later doesn't strand files uploaded before.
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from '@shopnex/db/schema'
+import { shops } from '@shopnex/core/schema'
 
 // Presets only prefill the form; every S3-compatible service is configured the same way
 export const S3_PRESETS = ['aws', 'r2', 'spaces', 'b2', 'minio', 'other'] as const

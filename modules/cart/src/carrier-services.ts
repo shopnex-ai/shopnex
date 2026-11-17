@@ -10,6 +10,7 @@ import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/sh
 import { CartError } from './cart.errors'
 import { log } from './log'
 import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
 
 // Checkout waits for these, so keep it short
 const TIMEOUT_MS = 5000
@@ -45,7 +46,7 @@ const origin = (url: string) => {
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and switch stay.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
+  const [app] = await db.select().from(apps).where(eq(apps.id, appId))
   if (!app) throw new CartError('NOT_A_CARRIER_APP', 'Only an installed app can configure a carrier service')
   const appOrigin = origin(app.appUrl)
   if (!appOrigin || origin(input.ratesUrl) !== appOrigin) {
@@ -101,21 +102,21 @@ export async function update(shopId: string, id: string, patch: { name?: string;
  */
 export async function availableApps(shopId: string) {
   const rows = await db
-    .select({ app: schema.apps, installationId: appInstallations.id })
-    .from(schema.apps)
+    .select({ app: apps, installationId: appInstallations.id })
+    .from(apps)
     .leftJoin(
       appInstallations,
       and(
-        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.appId, apps.id),
         eq(appInstallations.shopId, shopId),
         isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(
       and(
-        sql`'write_shipping' = any(${schema.apps.scopes})`,
-        sql`not ('write_products' = any(${schema.apps.scopes}))`,
-        isNull(schema.apps.delistedAt),
+        sql`'write_shipping' = any(${apps.scopes})`,
+        sql`not ('write_products' = any(${apps.scopes}))`,
+        isNull(apps.delistedAt),
       ),
     )
   return rows
