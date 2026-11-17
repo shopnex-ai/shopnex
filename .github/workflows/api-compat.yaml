@@ -1,0 +1,112 @@
+name: API compatibility
+
+# Apps, SDKs and storefronts depend on the public API (/api/v1). This builds the OpenAPI spec of the pull request and of
+# its base branch from their routers (no database or running shop needed) and fails when the pull request breaks the
+# contract: a removed or renamed endpoint, a removed response field, a new required parameter, a narrowed type.
+# Adding endpoints and optional fields is fine. For a break that is intended, add the `breaking-api-change` label: the
+# check then passes, and the diff stays in the job summary for the release notes.
+# It runs on every pull request, with its steps skipped for docs-only ones, so it can be a required check: a workflow
+# that never starts would leave a required check pending forever.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  OASDIFF_VERSION: 1.38.0
+  # linux_amd64 tarball, from the release's checksums.txt
+  OASDIFF_SHA256: 613037fd6a1d3362a1b742d6d86c338c0eb5ab3511f4942ce3948e78720ea2da
+
+jobs:
+  breaking:
+    name: No breaking API changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: head
+          fetch-depth: 0
+
+      # Docs-only pull requests can't change the API: the rest is skipped (and the check still passes)
+      - id: diff
+        working-directory: head
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          code=true
+          other=$(git diff --name-only "origin/$BASE...HEAD" | grep -vE '\.(md|mdx)$|^docs/|^apps/docs/' || true)
+          [ -z "$other" ] && code=false
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - if: steps.diff.outputs.code == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - if: steps.diff.outputs.code == 'true'
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: head/package.json
+
+      - if: steps.diff.outputs.code == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: head/.node-version
+          cache: pnpm
+          cache-dependency-path: head/pnpm-lock.yaml
+
+      - name: Generate the spec (pull request)
+        if: steps.diff.outputs.code == 'true'
+        working-directory: head
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @shopnex/docs openapi
+          cp apps/docs/public/openapi.json "$RUNNER_TEMP/head.json"
+
+      - name: Generate the spec (base branch)
+        if: steps.diff.outputs.code == 'true'
+        working-directory: base
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter @shopnex/docs openapi
+          cp apps/docs/public/openapi.json "$RUNNER_TEMP/base.json"
+
+      - name: Install oasdiff
+        if: steps.diff.outputs.code == 'true'
+        run: |
+          curl -fsSL -o oasdiff.tar.gz "https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          echo "$OASDIFF_SHA256  oasdiff.tar.gz" | sha256sum -c -
+          tar -xzf oasdiff.tar.gz oasdiff
+          sudo mv oasdiff /usr/local/bin/
+
+      - name: Changes (summary)
+        if: steps.diff.outputs.code == 'true'
+        run: |
+          {
+            echo '## API changes against `${{ github.base_ref }}`'
+            echo '```'
+            oasdiff changelog "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail on breaking changes
+        if: steps.diff.outputs.code == 'true'
+        env:
+          ALLOWED: ${{ contains(github.event.pull_request.labels.*.name, 'breaking-api-change') }}
+        run: |
+          if oasdiff breaking "$RUNNER_TEMP/base.json" "$RUNNER_TEMP/head.json" --fail-on ERR --format githubactions; then
+            exit 0
+          fi
+          if [ "$ALLOWED" = true ]; then
+            echo "::warning::Breaking API changes, allowed by the breaking-api-change label"
+            exit 0
+          fi
+          echo "::error::This pull request breaks the public API. Keep it additive, or add the breaking-api-change label if the break is intended (and document the migration)."
+          exit 1
