@@ -1069,21 +1069,12 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
-      '@shopnex/apps':
-        specifier: workspace:*
-        version: link:../apps
-      '@shopnex/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
-      '@shopnex/tenancy':
-        specifier: workspace:*
-        version: link:../tenancy
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -1091,6 +1082,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/tenancy:
     dependencies:
