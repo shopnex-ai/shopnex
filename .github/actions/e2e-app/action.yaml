@@ -1,0 +1,38 @@
+name: Build and start the app
+description: >-
+  Installs the dependencies, builds the admin and the storefront, migrates and seeds the database, and starts both servers, for
+  the end-to-end jobs. The job provides the checkout, the PostgreSQL service and the environment (DATABASE_URL, APP_URL, ...).
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v6
+
+    - uses: actions/setup-node@v7
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+
+    - run: pnpm build
+      shell: bash
+
+    - run: pnpm --dir templates/storefront build
+      shell: bash
+
+    - run: pnpm db:migrate
+      shell: bash
+
+    # An empty database with a shop, accounts and the demo catalog (the tests need active, in-stock variants)
+    - run: pnpm demo:seed
+      shell: bash
+
+    - name: Start the app and the storefront
+      shell: bash
+      run: |
+        (cd apps/admin-ui && PORT=3000 node server.mjs > "$RUNNER_TEMP/app.log" 2>&1) &
+        (cd templates/storefront && HOST=127.0.0.1 PORT=4321 SHOPNEX_URL=http://localhost:3000 \
+          node dist/server/entry.mjs > "$RUNNER_TEMP/storefront.log" 2>&1) &
+        npx --yes wait-on@8 -t 60000 http-get://localhost:3000/api/v1/storefront/shop http://localhost:4321/
