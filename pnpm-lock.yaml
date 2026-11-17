@@ -677,6 +677,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/tenancy':
         specifier: workspace:*
         version: link:../tenancy

@@ -54,7 +54,7 @@ drafts    → db
 webhooks  → db, rpc, tenancy   (owns webhook_endpoints and webhook_deliveries; tenancy tells it when an API token is revoked)
 theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
 tenancy   → db, channels
-auth      → db, tenancy
+auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
 email     → db, tenancy, webhooks
 rpc       → db   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
