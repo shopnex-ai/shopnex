@@ -5,7 +5,7 @@ import { createProcedures, mapperFor } from '@shopnex/rpc'
 import { CustomFieldError } from './custom-fields.errors'
 import { customFieldInput, customFieldOutput, customFieldPatch } from './custom-fields.contract'
 import { CUSTOM_FIELD_RESOURCES } from './custom-fields.schema'
-import * as customFieldService from './custom-fields'
+import * as customFieldService from './custom-fields.service'
 
 // What the Admin API answers with for this module's errors: the statuses declared in custom-fields.errors.ts
 export const customFieldErrors = mapperFor(CustomFieldError)

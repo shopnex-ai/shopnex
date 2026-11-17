@@ -75,14 +75,14 @@ api       → everything above (transport only)
 `modules/custom-fields` is the worked example. A module's own code sits in `modules/<name>/src`, one file per concern,
 named `<name>.<concern>.ts`:
 
-| File                      | What it holds                                                                                              | Rules                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `<name>.schema.ts`        | Its tables (Drizzle). `pnpm db:generate` and the privacy test find them by this name.                      | Tables and constants only.                                   |
-| `<name>.errors.ts`        | Its errors, with the HTTP status of each code (`defineError`, below).                                      | No HTTP or oRPC imports.                                     |
-| `<name>.ts` (the service) | Business logic: every function takes `shopId` first and a `conn`.                                          | No HTTP, oRPC or Hono imports; never import the shared `db`. |
-| `<name>.contract.ts`      | The Zod shapes of its API: inputs and outputs. The admin UI uses them for its forms.                       | Must stay free of server code: the browser bundles it.       |
-| `<name>.router.ts`        | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.    |
-| `<name>.module.ts`        | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                      |
+| File                 | What it holds                                                                                              | Rules                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `<name>.schema.ts`   | Its tables (Drizzle). `pnpm db:generate` and the privacy test find them by this name.                      | Tables and constants only.                                   |
+| `<name>.errors.ts`   | Its errors, with the HTTP status of each code (`defineError`, below).                                      | No HTTP or oRPC imports.                                     |
+| `<name>.service.ts`  | Business logic: every function takes `shopId` first and a `conn`.                                          | No HTTP, oRPC or Hono imports; never import the shared `db`. |
+| `<name>.contract.ts` | The Zod shapes of its API: inputs and outputs. The admin UI uses them for its forms.                       | Must stay free of server code: the browser bundles it.       |
+| `<name>.router.ts`   | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.    |
+| `<name>.module.ts`   | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                      |
 
 Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
 
