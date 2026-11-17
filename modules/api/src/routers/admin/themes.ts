@@ -11,6 +11,7 @@ import {
   themeSourcePath,
   withoutCodeSettings,
 } from '@shopnex/storefront-sdk/theme'
+import { db } from '@shopnex/db'
 import { DraftConflictError } from '@shopnex/drafts'
 import { checkLiquid, createPreviewToken, themeService, type ShopTheme } from '@shopnex/theme'
 import { z } from 'zod'
@@ -106,13 +107,13 @@ export const themes = {
   list: admin
     .route({ method: 'GET', path: '/admin/themes' })
     .output(z.array(themeSummaryOutput))
-    .handler(({ context }) => themeService.list(context.shop.id)),
+    .handler(({ context }) => themeService.list(context.shop.id, db)),
   get: admin
     .route({ method: 'GET', path: '/admin/themes/{id}' })
     .output(themeDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const { files: _, ...theme } = found(await themeService.get(context.shop.id, input.id))
+      const { files: _, ...theme } = found(await themeService.get(context.shop.id, input.id, db))
       return theme
     }),
   // Edit code: the theme's own Liquid files (from the storefront) and the copy's edits of them, drafts included
@@ -123,9 +124,9 @@ export const themes = {
     .output(themeFilesOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const copy = found(await themeService.get(context.shop.id, input.id))
+      const copy = found(await themeService.get(context.shop.id, input.id, db))
       const original = await storefrontSource(context.shop.storefrontUrl, context.shop.id, copy)
-      const { files, changed, rev } = await themeService.codeDraft(context.shop.id, copy)
+      const { files, changed, rev } = await themeService.codeDraft(context.shop.id, copy, db)
       return { original, edited: files, changed, rev }
     }),
   // Autosaves one file to the draft (a null source puts the theme's own back). Liquid that doesn't parse is
@@ -143,9 +144,9 @@ export const themes = {
       }),
     )
     .handler(async ({ input, context }) => {
-      const copy = found(await themeService.get(context.shop.id, input.id))
+      const copy = found(await themeService.get(context.shop.id, input.id, db))
       if (input.source !== null) {
-        const { files } = await themeService.codeDraft(context.shop.id, copy)
+        const { files } = await themeService.codeDraft(context.shop.id, copy, db)
         if (!(input.path in files) && Object.keys(files).length >= MAX_THEME_FILES) {
           throw new ORPCError('BAD_REQUEST', { message: `A theme can have at most ${MAX_THEME_FILES} edited files` })
         }
@@ -154,7 +155,7 @@ export const themes = {
           throw new ORPCError('BAD_REQUEST', { message: `Liquid error: ${problem.message}`, data: problem })
         }
       }
-      return found(await themeService.saveFile(context.shop.id, input.id, input.path, input.source))
+      return found(await themeService.saveFile(context.shop.id, input.id, input.path, input.source, db))
     }),
   // Back to the theme's own file, or deletes an added snippet, in the draft
   deleteFile: admin
@@ -162,7 +163,7 @@ export const themes = {
     .output(revOutput)
     .input(id.extend({ path: ThemeFilePath }))
     .handler(async ({ input, context }) =>
-      found(await themeService.saveFile(context.shop.id, input.id, input.path, null)),
+      found(await themeService.saveFile(context.shop.id, input.id, input.path, null, db)),
     ),
   // The code draft goes live when this copy is (buyers get it right away on the live theme). The design
   // draft isn't touched, and this never changes which theme is live. `rev`: the draft the editor saw.
@@ -172,7 +173,7 @@ export const themes = {
     .input(id.extend({ rev: z.number().int().nonnegative().optional() }))
     .handler(async ({ input, context }) => {
       try {
-        return found(await themeService.publishCode(context.shop.id, input.id, input.rev))
+        return found(await themeService.publishCode(context.shop.id, input.id, input.rev, db))
       } catch (error) {
         if (error instanceof DraftConflictError) throw new ORPCError('CONFLICT', { message: error.message })
         throw error
@@ -183,25 +184,29 @@ export const themes = {
     .route({ method: 'POST', path: '/admin/themes/{id}/files/discard' })
     .output(revOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await themeService.discardCode(context.shop.id, input.id))),
+    .handler(async ({ input, context }) => found(await themeService.discardCode(context.shop.id, input.id, db))),
   // Adds a copy of the storefront's theme when the library has none (the first one goes live). Null: one exists.
   ensure: admin
     .route({ method: 'POST', path: '/admin/themes/ensure' })
     .output(themeRowOutput)
     .input(z.object({ themeId, name, document }))
     .handler(async ({ input, context }) => {
-      const row = await themeService.ensure(context.shop.id, {
-        themeId: input.themeId,
-        name: input.name,
-        draft: input.document,
-      })
+      const row = await themeService.ensure(
+        context.shop.id,
+        {
+          themeId: input.themeId,
+          name: input.name,
+          draft: input.document,
+        },
+        db,
+      )
       return row && summary(row)
     }),
   // The Theme Store: styles from the connected marketplace, for themes storefronts include
   store: admin
     .route({ method: 'GET', path: '/admin/themes/store' })
     .output(themeStoreOutput)
-    .handler(() => themeService.listStore()),
+    .handler(() => themeService.listStore(db)),
   // A copy of a Theme Store style, ready to customize. Its `code` settings (custom CSS/HTML) are dropped:
   // a marketplace style never ships code.
   addFromStore: admin
@@ -209,15 +214,19 @@ export const themes = {
     .output(themeRowOutput.unwrap())
     .input(id)
     .handler(async ({ input, context }) => {
-      const style = found(await themeService.getStoreTheme(input.id))
+      const style = found(await themeService.getStoreTheme(input.id, db))
       const definition = await storefrontTheme(context.shop.storefrontUrl, style.baseThemeId)
       const draft = withoutCodeSettings(definition, ThemeDocument.parse(style.document))
-      const row = await themeService.create(context.shop.id, {
-        themeId: style.baseThemeId,
-        name: style.name,
-        draft,
-        marketplaceThemeId: style.id,
-      })
+      const row = await themeService.create(
+        context.shop.id,
+        {
+          themeId: style.baseThemeId,
+          name: style.name,
+          draft,
+          marketplaceThemeId: style.id,
+        },
+        db,
+      )
       return summary(row)
     }),
   rename: admin
@@ -225,32 +234,32 @@ export const themes = {
     .output(themeRowOutput.unwrap())
     .input(id.extend({ name }))
     .handler(async ({ input, context }) =>
-      summary(found(await themeService.rename(context.shop.id, input.id, input.name))),
+      summary(found(await themeService.rename(context.shop.id, input.id, input.name, db))),
     ),
   duplicate: admin
     .route({ method: 'POST', path: '/admin/themes/{id}/duplicate' })
     .output(themeRowOutput.unwrap())
     .input(id.extend({ name: name.optional() }))
     .handler(async ({ input, context }) =>
-      summary(found(await themeService.duplicate(context.shop.id, input.id, input.name))),
+      summary(found(await themeService.duplicate(context.shop.id, input.id, input.name, db))),
     ),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/themes/{id}' })
     .output(idOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const row = found(await themeService.get(context.shop.id, input.id))
+      const row = found(await themeService.get(context.shop.id, input.id, db))
       if (row.role === 'live') {
         throw new ORPCError('CONFLICT', { message: 'The live theme can’t be deleted. Publish another theme first.' })
       }
-      return found(await themeService.remove(context.shop.id, input.id))
+      return found(await themeService.remove(context.shop.id, input.id, db))
     }),
   saveDraft: admin
     .route({ method: 'PUT', path: '/admin/themes/{id}/draft' })
     .output(updatedAtOutput)
     .input(id.extend({ document }))
     .handler(async ({ input, context }) => {
-      const row = found(await themeService.saveDraft(context.shop.id, input.id, input.document))
+      const row = found(await themeService.saveDraft(context.shop.id, input.id, input.document, db))
       return { updatedAt: row.updatedAt }
     }),
   // The draft goes live and this copy replaces the shop's live theme
@@ -259,7 +268,7 @@ export const themes = {
     .output(publishedAtOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const row = found(await themeService.publish(context.shop.id, input.id))
+      const row = found(await themeService.publish(context.shop.id, input.id, db))
       return { publishedAt: row.publishedAt! }
     }),
   discardDraft: admin
@@ -267,7 +276,7 @@ export const themes = {
     .output(themeDraftOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const row = await themeService.discardDraft(context.shop.id, input.id)
+      const row = await themeService.discardDraft(context.shop.id, input.id, db)
       if (!row) throw new ORPCError('NOT_FOUND', { message: 'This theme was never published' })
       return { draft: row.draft, updatedAt: row.updatedAt }
     }),
@@ -277,7 +286,7 @@ export const themes = {
     .output(previewTokenOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      found(await themeService.get(context.shop.id, input.id))
+      found(await themeService.get(context.shop.id, input.id, db))
       return createPreviewToken(context.shop.id, input.id)
     }),
 }

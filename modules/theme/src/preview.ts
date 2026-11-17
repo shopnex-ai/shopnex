@@ -10,7 +10,11 @@ const TTL_SECONDS = 60 * 60
 const LABEL = 'shopnex:theme-preview:v1'
 
 // `copy`: the shop_themes row
-type Payload = { shop: string; copy: string; exp: number }
+interface Payload {
+  shop: string
+  copy: string
+  exp: number
+}
 
 function key() {
   return createHmac('sha256', shopnexSecret()).update(LABEL).digest()
@@ -33,7 +37,7 @@ export function verifyPreviewToken(token: string, shopId: string, now = Date.now
   const given = Buffer.from(mac)
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null
   try {
-    const payload: Payload = JSON.parse(Buffer.from(body, 'base64url').toString())
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString()) as Payload
     return payload.shop === shopId && typeof payload.copy === 'string' && payload.exp * 1000 > now ? payload.copy : null
   } catch {
     return null

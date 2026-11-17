@@ -450,13 +450,13 @@ export const storefrontRouter = storefront.router({
     current: storefront.theme.current.handler(async ({ input, context }) => {
       // Preview: the draft of the library copy the editor is on
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
-      const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
+      const copy = copyId ? await themeService.get(context.shop.id, copyId, db) : null
       if (copy) {
-        const code = await themeService.codeDraft(context.shop.id, copy)
+        const code = await themeService.codeDraft(context.shop.id, copy, db)
         const files = Object.keys(code.files).length ? { copyId: copy.id, version: code.version } : null
         return { themeId: copy.themeId, document: copy.draft, preview: true, files }
       }
-      const live = await themeService.getLive(context.shop.id)
+      const live = await themeService.getLive(context.shop.id, db)
       return {
         themeId: live?.themeId ?? null,
         document: live?.published ?? null,
@@ -467,22 +467,22 @@ export const storefrontRouter = storefront.router({
     // The preview reads the copy's code draft over its files; the live theme only what was published
     files: storefront.theme.files.handler(async ({ input, context }) => {
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
-      const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
+      const copy = copyId ? await themeService.get(context.shop.id, copyId, db) : null
       if (copy) {
-        const code = await themeService.codeDraft(context.shop.id, copy)
+        const code = await themeService.codeDraft(context.shop.id, copy, db)
         return { copyId: copy.id, version: code.version, files: code.files }
       }
-      const live = await themeService.getLive(context.shop.id)
+      const live = await themeService.getLive(context.shop.id, db)
       if (!live) return { copyId: null, version: 0, files: {} }
-      const row = await themeService.get(context.shop.id, live.id)
+      const row = await themeService.get(context.shop.id, live.id, db)
       return { copyId: live.id, version: row?.filesVersion ?? 0, files: row?.files ?? {} }
     }),
     get: storefront.theme.get.handler(async ({ input, context }) => {
       // Preview: the draft of the library copy the editor is on (a copy of this storefront's theme)
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
-      const copy = copyId ? await themeService.get(context.shop.id, copyId) : null
+      const copy = copyId ? await themeService.get(context.shop.id, copyId, db) : null
       if (copy && copy.themeId === input.themeId) return { document: copy.draft, preview: true }
-      const live = await themeService.getLive(context.shop.id)
+      const live = await themeService.getLive(context.shop.id, db)
       return { document: live?.themeId === input.themeId ? live.published : null, preview: false }
     }),
   },

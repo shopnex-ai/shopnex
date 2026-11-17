@@ -11,13 +11,18 @@ class SectionsTag extends Tag {
     if (!page || !('content' in page) || typeof page.content !== 'string')
       throw new Error(`{% sections %} needs a page id, like {% sections 'home' %}`)
   }
-  *render() {}
+  *render() {
+    // Nothing to render: only the syntax is checked here
+  }
 }
 
 const liquid = new Liquid({ strictFilters: false, parseLimit: 1e6 })
 liquid.registerTag('sections', SectionsTag)
 
-export type LiquidProblem = { message: string; line: number | null }
+export interface LiquidProblem {
+  message: string
+  line: number | null
+}
 
 /** Null when the template parses */
 export function checkLiquid(source: string): LiquidProblem | null {
@@ -27,6 +32,6 @@ export function checkLiquid(source: string): LiquidProblem | null {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const line = /line:(\d+)/.exec(message)?.[1]
-    return { message: message.split('\n')[0]!, line: line ? Number(line) : null }
+    return { message: message.split('\n')[0] ?? message, line: line ? Number(line) : null }
   }
 }
