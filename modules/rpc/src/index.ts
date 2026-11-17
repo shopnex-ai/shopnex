@@ -4,7 +4,7 @@
 // functions once (`configureRpc`), so a module that sits below auth or tenancy can have routes too.
 import { ORPCError, os } from '@orpc/server'
 import { z } from 'zod'
-import type { DomainErrorClass, ErrorMapper } from '@shopnex/kit'
+import { domainErrorStatus, isDomainError, type ErrorMapper } from '@shopnex/kit'
 import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
 
 export type Context = { headers: Headers }
@@ -36,8 +36,8 @@ export interface Resolvers {
   /** Whether a token's scopes allow what a route needs (write includes read) */
   hasScope(scopes: readonly ApiScope[], needed: ApiScope): boolean
   /**
-   * Every module's errors, for a route whose own module's mapper does not know the error it got (a service of another module
-   * threw it). Without it such an error would come out as a 500 instead of its 400 or 404.
+   * The errors of classes not converted to `defineError` yet (modules/api maps them by hand), for any route: a service of another
+   * module may throw them. Errors made with `defineError` need none of this.
    */
   mapError?(error: unknown): Error | undefined
 }
@@ -65,28 +65,19 @@ export function assertRpcConfigured() {
 
 export type { ErrorMapper }
 
-/** The `ErrorMapper` of an error class made with `defineError`: its code's status, the code in `data`, the error as cause */
-export function mapperFor<Code extends string>(errorClass: DomainErrorClass<Code>): ErrorMapper {
-  return (error) => {
-    if (!(error instanceof errorClass)) return undefined
-    return new ORPCError(errorClass.statuses[error.code], {
-      message: error.message,
-      data: { code: error.code },
-      cause: error,
-    })
-  }
+/**
+ * The answer for any error made with `defineError`: the status its class declares for the code, the code in `data`, the error as
+ * the cause. Routes use it by default, so a module needs no mapper; `createProcedures` and `configureRpc` can still add one
+ * for an error that must answer differently.
+ */
+export const domainErrorMapper: ErrorMapper = (error) => {
+  if (!isDomainError(error)) return undefined
+  return new ORPCError(domainErrorStatus(error) ?? 'INTERNAL_SERVER_ERROR', {
+    message: error.message,
+    data: { code: error.code },
+    cause: error,
+  })
 }
-
-/** Mappers tried one after the other: the first that knows the error wins */
-export const firstMapper =
-  (...mappers: ErrorMapper[]): ErrorMapper =>
-  (error) => {
-    for (const mapper of mappers) {
-      const mapped = mapper(error)
-      if (mapped) return mapped
-    }
-    return undefined
-  }
 
 /** The procedures of the Admin API (and the public ones), with `mapError` applied to every error they throw (none: a module with no errors of its own) */
 export function createProcedures(mapError: ErrorMapper = () => undefined) {
@@ -96,8 +87,8 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     try {
       return await next()
     } catch (error) {
-      // The module's own mapper first, then every module's (registered by modules/api), else the error as it is
-      const mapped = mapError(error) ?? registered()?.mapError?.(error)
+      // The route's own mapper, then the one registered by modules/api (errors of classes not converted yet), then the default
+      const mapped = mapError(error) ?? registered()?.mapError?.(error) ?? domainErrorMapper(error)
       if (mapped) throw mapped
       throw error
     }

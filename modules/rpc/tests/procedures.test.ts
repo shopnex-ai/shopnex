@@ -9,15 +9,26 @@ import {
   assertRpcConfigured,
   configureRpc,
   createProcedures,
-  firstMapper,
-  mapperFor,
+  domainErrorMapper,
   pagination,
   type Resolvers,
 } from '../src'
 
 const NoteError = defineError('NoteError', { MISSING: 'NOT_FOUND', DUPLICATE: 'CONFLICT' })
 const OtherError = defineError('OtherError', { BROKEN: 'BAD_REQUEST' })
-const procedures = createProcedures(mapperFor(NoteError))
+// An error that carries more than a code extends the class
+class StockError extends defineError('StockError', { OUT_OF_STOCK: 'CONFLICT' }) {
+  constructor(
+    code: 'OUT_OF_STOCK',
+    message: string,
+    readonly data: { available: number } = { available: 0 },
+  ) {
+    super(code, message)
+  }
+}
+// A class of a module that has not been converted to defineError yet: only the registered mapper knows it
+class LegacyError extends Error {}
+const procedures = createProcedures()
 
 const shop = { id: 'shop-1' } as Shop
 const token = (scopes: ApiScope[], appId: string | null = null) => ({ scopes, appId }) as unknown as ApiToken
@@ -47,11 +58,7 @@ const resolvers: Resolvers = {
     return Promise.resolve(bearers[bearer] ?? null)
   },
   mapError: (error) =>
-    error instanceof OtherError
-      ? new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
-      : error instanceof NoteError
-        ? new ORPCError('INTERNAL_SERVER_ERROR', { message: 'the fallback must not win over the module’s own mapper' })
-        : undefined,
+    error instanceof LegacyError ? new ORPCError('PRECONDITION_FAILED', { message: error.message }) : undefined,
   hasScope: (scopes, needed) =>
     scopes.includes(needed) || scopes.includes(needed.replace('read_', 'write_') as ApiScope),
 }
@@ -112,22 +119,26 @@ describe('with resolvers', () => {
     )
   })
 
-  test('an error of another module, which this route’s module does not map, is mapped by the registered mapper', async () => {
-    const thrown = procedures.pub.handler(() => {
-      throw new OtherError('BROKEN', 'another module failed')
+  test('the registered mapper answers for the errors of modules not converted to defineError yet', async () => {
+    const legacy = procedures.pub.handler(() => {
+      throw new LegacyError('an old module failed')
     })
-    await assert.rejects(
-      run(thrown),
-      (e: unknown) =>
-        e instanceof ORPCError && e.code === 'BAD_REQUEST' && (e.data as { code: string }).code === 'BROKEN',
-    )
+    await assert.rejects(run(legacy), refused('PRECONDITION_FAILED'))
   })
 
-  test('the module’s own mapper comes first: its status wins over the registered one', async () => {
-    const own = procedures.pub.handler(() => {
+  test('a route’s own mapper comes first, then the registered one, then the default', async () => {
+    const own = createProcedures((error) =>
+      error instanceof NoteError ? new ORPCError('FORBIDDEN', { message: 'own mapper' }) : undefined,
+    )
+    const note = own.pub.handler(() => {
       throw new NoteError('MISSING', 'gone')
     })
-    await assert.rejects(run(own), (e: unknown) => e instanceof ORPCError && e.code === 'NOT_FOUND')
+    await assert.rejects(run(note), refused('FORBIDDEN', /own mapper/))
+    // Not the own mapper's: the default answers with what the class declares
+    const other = own.pub.handler(() => {
+      throw new OtherError('BROKEN', 'broke')
+    })
+    await assert.rejects(run(other), refused('BAD_REQUEST'))
   })
 
   test('assertRpcConfigured passes once the resolvers are registered', () => {
@@ -255,16 +266,43 @@ describe('with resolvers', () => {
   })
 })
 
-describe('helpers', () => {
-  test('firstMapper tries the mappers in turn and the first that knows the error wins', () => {
-    const a = (e: unknown) => (e === 'a' ? new Error('from a') : undefined)
-    const b = (e: unknown) => (e === 'a' || e === 'b' ? new Error('from b') : undefined)
-    const both = firstMapper(a, b)
-    assert.equal(both('a')?.message, 'from a')
-    assert.equal(both('b')?.message, 'from b')
-    assert.equal(both('c'), undefined)
+describe('the default answer for errors made with defineError', () => {
+  test('is the status the class declares for the code, with the code in data and the error as the cause', () => {
+    const cause = new NoteError('MISSING', 'gone')
+    const mapped = domainErrorMapper(cause)
+    assert.ok(mapped instanceof ORPCError)
+    assert.equal(mapped.code, 'NOT_FOUND')
+    assert.equal(mapped.message, 'gone')
+    assert.deepEqual(mapped.data, { code: 'MISSING' })
+    assert.equal(mapped.cause, cause)
   })
 
+  test('a class that extends it, with its own fields, is answered the same way (the fields stay out of the response)', () => {
+    const mapped = domainErrorMapper(new StockError('OUT_OF_STOCK', 'Only 2 left', { available: 2 }))
+    assert.ok(mapped instanceof ORPCError)
+    assert.equal(mapped.code, 'CONFLICT')
+    assert.deepEqual(mapped.data, { code: 'OUT_OF_STOCK' })
+  })
+
+  test('an error that is not one is left alone, and a code outside its class’s table is a 500, not a guess', () => {
+    assert.equal(domainErrorMapper(new Error('boom')), undefined)
+    assert.equal(domainErrorMapper('text'), undefined)
+    const bad = new NoteError('MISSING', 'x') as unknown as { code: string }
+    bad.code = 'NOT_IN_THE_TABLE'
+    const mapped = domainErrorMapper(bad as unknown as Error)
+    assert.ok(mapped instanceof ORPCError)
+    assert.equal(mapped.code, 'INTERNAL_SERVER_ERROR')
+  })
+
+  test('works through a route without any mapper registered anywhere', async () => {
+    const thrown = createProcedures().pub.handler(() => {
+      throw new StockError('OUT_OF_STOCK', 'Only 2 left', { available: 2 })
+    })
+    await assert.rejects(run(thrown), refused('CONFLICT', /Only 2 left/))
+  })
+})
+
+describe('helpers', () => {
   test('pagination defaults to 20 from 0, coerces query strings and keeps the limit between 1 and 100', () => {
     assert.deepEqual(pagination.parse({}), { limit: 20, offset: 0 })
     assert.deepEqual(pagination.parse({ limit: '50', offset: '10' }), { limit: 50, offset: 10 })

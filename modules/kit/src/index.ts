@@ -2,8 +2,6 @@
 // read by the composition root (modules/api) and by `pnpm modules:check`, and it keeps the module graph in one readable
 // place. Add a field here only when a second module needs it.
 import type { AnyPgTable } from 'drizzle-orm/pg-core'
-import type { ErrorMapper } from './errors'
-
 export * from './errors'
 export * from './conn'
 
@@ -14,8 +12,6 @@ export interface ModuleManifest {
   dependsOn: readonly string[]
   /** The tables it owns, from its `*.schema.ts` files (migrations stay one history in modules/db) */
   tables?: Readonly<Record<string, AnyPgTable>>
-  /** Turns its own errors into HTTP errors for the Admin API (see @shopnex/rpc) */
-  errors?: ErrorMapper
   /** Its Admin API routes. Typed by the module: modules/api mounts it by name so the client types stay end to end */
   router?: object
 }

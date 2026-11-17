@@ -7,9 +7,13 @@
 //   })
 //   throw new CustomFieldError('KEY_TAKEN', 'A product field with this key already exists')
 //
-// The table is plain strings, so domain code stays free of HTTP and oRPC imports. `mapperFor` in @shopnex/rpc turns the
-// class into the `ErrorMapper` of the module's manifest. An error that needs more than a status per code (typed data
-// for the storefront, a status that depends on the data) keeps a mapper of its own.
+// The table is plain strings, so domain code stays free of HTTP and oRPC imports, and it is all a module has to write:
+// @shopnex/rpc answers any error made with `defineError` with its status (the code goes in `data`, the error is the cause).
+// An error that carries more than a code (typed data for the storefront) extends the class:
+//
+//   export class OrderError extends defineError('OrderError', { ... }) {
+//     constructor(code: OrderErrorCode, message: string, readonly data: OrderErrorData = {}) { super(code, message) }
+//   }
 
 /** The statuses an error code can answer with: the oRPC / HTTP error codes, as strings */
 export type ErrorStatus =
@@ -23,8 +27,27 @@ export type ErrorStatus =
   | 'BAD_GATEWAY'
   | 'SERVICE_UNAVAILABLE'
 
-/** Turns an error a module throws into the error a route answers with, or undefined when it is not that module's */
+/** Turns an error into the error a route answers with, or undefined when it is not one the mapper knows */
 export type ErrorMapper = (error: unknown) => Error | undefined
+
+// The mark of a class made with defineError. A mark, not `instanceof`, so it still works when two copies of a module are loaded
+// (a dev server reloading, a bundle that includes a package twice).
+const MARK = Symbol.for('shopnex.domain-error')
+
+/** Whether the error came from a class made with `defineError` (or one that extends it) */
+export function isDomainError(error: unknown): error is DomainErrorInstance {
+  return (
+    error instanceof Error &&
+    (error as unknown as Record<symbol, unknown>)[MARK] === true &&
+    typeof (error as { code?: unknown }).code === 'string'
+  )
+}
+
+/** The status its class declares for its code, or undefined when the class has no entry for it (a subclass passing a code outside the table) */
+export function domainErrorStatus(error: DomainErrorInstance): ErrorStatus | undefined {
+  const statuses = (error.constructor as { statuses?: Readonly<Record<string, ErrorStatus>> }).statuses
+  return statuses?.[error.code]
+}
 
 export interface DomainErrorInstance<Code extends string = string> extends Error {
   readonly code: Code
@@ -53,5 +76,6 @@ export function defineError<const T extends Record<string, ErrorStatus>>(
       this.name = name
     }
   }
+  Object.defineProperty(Domain.prototype, MARK, { value: true })
   return Domain as unknown as DomainErrorClass<keyof T & string>
 }
