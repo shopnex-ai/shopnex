@@ -27,6 +27,7 @@ import {
   type ApiToken,
   type ShopRole,
 } from '@shopnex/tenancy'
+import { log } from './log'
 
 export type Context = { headers: Headers }
 
@@ -225,7 +226,7 @@ const storefrontErrors = base.middleware(async ({ next }) => {
     }
     if (error instanceof EmailError && (error.code === 'EMAIL_OFF' || error.code === 'EMAIL_FAILED')) {
       // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available
-      if (error.code === 'EMAIL_FAILED') console.error('[customers] sign-in code email:', error.message)
+      if (error.code === 'EMAIL_FAILED') log.error({ err: error }, 'sign-in code email failed')
       throw defined('CUSTOMER_LOGIN_UNAVAILABLE', 'Sign-in is not available right now')
     }
     if (error instanceof OrderError) {

@@ -10,6 +10,7 @@ import type {
 
 import { cjApiClient } from '../../api-client'
 import { getCurrentAccessToken } from '../access-token'
+import { log } from '../../log'
 
 export async function createDispute(requestData: CreateDisputeRequest): Promise<APIResponse<DisputeAPIResponse>> {
   try {
@@ -28,7 +29,7 @@ export async function createDispute(requestData: CreateDisputeRequest): Promise<
 
     return { data: response.data }
   } catch (error: any) {
-    console.error(`Error creating dispute [${error.code}]: ${error.message}`)
+    log.error(`Error creating dispute [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -50,7 +51,7 @@ export async function confirmDispute(requestData: ConfirmDisputeRequest): Promis
 
     return { data: response.data }
   } catch (error: any) {
-    console.error(`Error confirming dispute [${error.code}]: ${error.message}`)
+    log.error(`Error confirming dispute [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -74,7 +75,7 @@ export async function cancelDispute(requestData: CancelDisputeRequest): Promise<
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error cancelling dispute [${error.code}]: ${error.message}`)
+    log.error(`Error cancelling dispute [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -101,7 +102,7 @@ async function disputeGet(path: string, params: object): Promise<APIResponse<any
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error calling ${path} [${error.code}]: ${error.message}`)
+    log.error(`Error calling ${path} [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }

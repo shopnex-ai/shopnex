@@ -12,6 +12,7 @@ import { readLocalFile, typeOfKey } from '@shopnex/files'
 import { PUBLISHABLE_KEY_HEADER } from '@shopnex/storefront-sdk'
 import { router } from './router'
 import { createContext } from './orpc'
+import { log } from './log'
 
 const BASE = '/api'
 
@@ -20,7 +21,7 @@ const logError = (error: unknown) => {
   if (error instanceof ORPCError && error.status < 500) return
   // The client went away (a closed dialog cancels its in-flight queries): nothing to fix
   if (error instanceof DOMException && error.name === 'AbortError') return
-  console.error('[orpc]', error)
+  log.error({ err: error }, 'unexpected oRPC error')
 }
 
 const rpcHandler = new RPCHandler(router, { interceptors: [onError(logError)] })

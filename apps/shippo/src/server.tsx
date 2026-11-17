@@ -14,6 +14,7 @@ import { createShopnexApp, type ShopContext } from '@shopnex/app'
 import { getToken, isReady, loadConfig, saveConfig, setToken, type Config, type Origin } from './config'
 import { SettingsPage } from './settings'
 import { quoteRates, verifyKey } from './shippo'
+import { log } from './log'
 
 // Public origin ShopNex and the admin (iframe) reach this app at
 const APP_URL = (process.env.SHIPPO_APP_URL || 'http://localhost:4900').replace(/\/$/, '')
@@ -139,17 +140,17 @@ app.post('/shipping/rates', async (c) => {
     if (!token || !config.origin) return c.json({ rates: [] })
     return c.json({ rates: await quoteRates(token, config.origin, config.parcel, request) })
   } catch (error) {
-    console.error(`[shippo] rates for ${request.destination.countryCode}:`, message(error))
+    log.error({ err: error, country: request.destination.countryCode }, 'rates failed')
     return c.json({ rates: [] })
   }
 })
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) return error.getResponse()
-  console.error('[shippo]', error)
+  log.error({ err: error }, 'unhandled error')
   return c.json({ error: message(error) }, 500)
 })
 
 serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || undefined }, () =>
-  console.log(`Shippo app on ${APP_URL} (port ${PORT})`),
+  log.info('Shippo app on %s (port %s)', APP_URL, PORT),
 )

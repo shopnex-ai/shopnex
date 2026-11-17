@@ -4,6 +4,7 @@ import type { Variant } from './variant-types.js'
 
 import { cjApiClient } from '../../api-client'
 import { getCurrentAccessToken } from '../access-token'
+import { log } from '../../log'
 
 export async function getAllVariants(queryParams: {
   pid?: string
@@ -37,7 +38,7 @@ export async function getAllVariants(queryParams: {
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching all variants [${error.code}]: ${error.message}`)
+    log.error(`Error fetching all variants [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -68,7 +69,7 @@ export async function getVariantById(vid: string): Promise<APIResponse<Variant>>
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error fetching variant by ID [${error.code}]: ${error.message}`)
+    log.error(`Error fetching variant by ID [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }

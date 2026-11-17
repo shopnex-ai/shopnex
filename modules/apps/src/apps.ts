@@ -26,6 +26,7 @@ import { AppError } from './errors'
 import { instanceSigner, ownKey } from './keys'
 import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'
+import { log } from './log'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const random = (bytes: number) => randomBytes(bytes).toString('base64url')
@@ -388,7 +389,7 @@ function notifyInstalled(app: App, installationId: string, shopId: string) {
     })
     // 404: an app that doesn't listen for it
     if (!res.ok && res.status !== 404) throw new Error(`${res.status} ${res.statusText}`)
-  })().catch((error) => console.error(`[apps] app.installed for ${app.clientId}:`, error))
+  })().catch((error) => log.error({ err: error, clientId: app.clientId }, 'app.installed delivery failed'))
 }
 
 async function install(
@@ -797,7 +798,7 @@ export function registerBundledApps() {
         failures = 0
       } catch (error) {
         if (failures === 0 && url)
-          console.warn(`[apps] ${bundled.name} not registered yet, retrying:`, (error as Error).message)
+          log.warn('%s not registered yet, retrying: %s', bundled.name, (error as Error).message)
         failingBundled.add(bundled.clientId)
         next = Math.min(5000 * 2 ** failures, 60_000)
         failures++

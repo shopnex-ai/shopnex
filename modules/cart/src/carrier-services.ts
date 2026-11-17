@@ -8,6 +8,7 @@ import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './errors'
+import { log } from './log'
 
 // Checkout waits for these, so keep it short
 const TIMEOUT_MS = 5000
@@ -191,7 +192,7 @@ async function quoteService(
     }
     return rates
   } catch (error) {
-    console.error(`[shipping] ${service.name} (${shopId}):`, error instanceof Error ? error.message : error)
+    log.error({ err: error, shopId }, 'carrier service %s failed', service.name)
     return []
   }
 }
