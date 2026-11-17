@@ -1,6 +1,6 @@
 import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
-import type { CustomFieldValues } from './custom-fields'
+import type { CustomFieldValues } from './custom-field-values'
 import { shops } from './tenancy'
 
 // Shop-scoped customer records. userId links a storefront login when there is one;

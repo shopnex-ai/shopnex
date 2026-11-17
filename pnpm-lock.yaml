@@ -436,6 +436,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../modules/channels
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../modules/custom-fields
       '@shopnex/customers':
         specifier: workspace:*
         version: link:../modules/customers

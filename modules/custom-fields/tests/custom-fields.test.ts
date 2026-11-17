@@ -7,6 +7,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 
 const { db, schema, prepareDatabase } = await import('@shopnex/db')
 const { CustomFieldError, customFieldService: fields } = await import('../src')
+const { customFieldDefinitions } = await import('../src/custom-fields.schema')
 const { eq } = await import('drizzle-orm')
 
 const SHOP = 'default'

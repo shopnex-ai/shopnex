@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import type { CustomFieldValues } from './custom-fields'
+import type { CustomFieldValues } from './custom-field-values'
 import { shops } from './tenancy'
 
 // Valid `slug` (URL handle) for products and collections

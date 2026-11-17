@@ -69,6 +69,17 @@ jobs:
       - name: Admin API types are up to date
         run: pnpm --filter @shopnex/app generate && git diff --exit-code packages/app/src/admin-api.gen.ts
 
+      # The tables (modules/db and every modules/*/src/*.schema.ts) and the migrations must agree: a table change without
+      # its migration, or a table moved between modules, shows up as a new migration file here
+      - name: Migrations match the schema
+        run: |
+          pnpm db:generate
+          if [ -n "$(git status --porcelain modules/db/migrations)" ]; then
+            git status --short modules/db/migrations
+            echo "::error::The schema has changes with no migration. Run pnpm db:generate and commit the result."
+            exit 1
+          fi
+
       - run: pnpm test
 
       - run: pnpm build

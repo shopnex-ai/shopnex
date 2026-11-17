@@ -2,14 +2,14 @@
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { schema, type Conn } from '@shopnex/db'
-import type {
-  CustomFieldDefinition,
-  CustomFieldResource,
-  CustomFieldType,
-  CustomFieldValue,
-  CustomFieldValues,
-} from '@shopnex/db/schema'
+import type { CustomFieldValue, CustomFieldValues } from '@shopnex/db/schema'
 import { CustomFieldError } from './errors'
+import {
+  customFieldDefinitions,
+  type CustomFieldDefinition,
+  type CustomFieldResource,
+  type CustomFieldType,
+} from './custom-fields.schema'
 
 export interface CustomFieldInput {
   resource: CustomFieldResource
@@ -39,17 +39,17 @@ const tables = {
 export async function list(shopId: string, resource: CustomFieldResource | undefined, conn: Conn) {
   return conn
     .select()
-    .from(schema.customFieldDefinitions)
+    .from(customFieldDefinitions)
     .where(
       and(
-        eq(schema.customFieldDefinitions.shopId, shopId),
-        resource ? eq(schema.customFieldDefinitions.resource, resource) : undefined,
+        eq(customFieldDefinitions.shopId, shopId),
+        resource ? eq(customFieldDefinitions.resource, resource) : undefined,
       ),
     )
     .orderBy(
-      asc(schema.customFieldDefinitions.resource),
-      asc(schema.customFieldDefinitions.position),
-      asc(schema.customFieldDefinitions.createdAt),
+      asc(customFieldDefinitions.resource),
+      asc(customFieldDefinitions.position),
+      asc(customFieldDefinitions.createdAt),
     )
 }
 
@@ -69,7 +69,7 @@ function cleanOptions(type: CustomFieldType, options: string[] | undefined) {
 export async function create(shopId: string, input: CustomFieldInput, conn: Conn) {
   const existing = await list(shopId, input.resource, conn)
   const [row] = await conn
-    .insert(schema.customFieldDefinitions)
+    .insert(customFieldDefinitions)
     .values({
       ...input,
       options: cleanOptions(input.type, input.options),
@@ -88,17 +88,17 @@ export async function update(shopId: string, id: string, patch: CustomFieldPatch
   if (patch.options) {
     const [current] = await conn
       .select()
-      .from(schema.customFieldDefinitions)
-      .where(and(eq(schema.customFieldDefinitions.shopId, shopId), eq(schema.customFieldDefinitions.id, id)))
+      .from(customFieldDefinitions)
+      .where(and(eq(customFieldDefinitions.shopId, shopId), eq(customFieldDefinitions.id, id)))
     if (!current) return null
     const options = cleanOptions(current.type, patch.options)
     if (current.options.some((o) => !options.includes(o))) throw invalid('Options can be added but not removed')
     patch = { ...patch, options }
   }
   const [row] = await conn
-    .update(schema.customFieldDefinitions)
+    .update(customFieldDefinitions)
     .set({ ...patch, updatedAt: new Date() })
-    .where(and(eq(schema.customFieldDefinitions.shopId, shopId), eq(schema.customFieldDefinitions.id, id)))
+    .where(and(eq(customFieldDefinitions.shopId, shopId), eq(customFieldDefinitions.id, id)))
     .returning()
   return row ?? null
 }
@@ -107,8 +107,8 @@ export async function update(shopId: string, id: string, patch: CustomFieldPatch
 export async function remove(shopId: string, id: string, conn: Conn) {
   return conn.transaction(async (tx) => {
     const [row] = await tx
-      .delete(schema.customFieldDefinitions)
-      .where(and(eq(schema.customFieldDefinitions.shopId, shopId), eq(schema.customFieldDefinitions.id, id)))
+      .delete(customFieldDefinitions)
+      .where(and(eq(customFieldDefinitions.shopId, shopId), eq(customFieldDefinitions.id, id)))
       .returning()
     if (!row) return null
     const table = tables[row.resource]

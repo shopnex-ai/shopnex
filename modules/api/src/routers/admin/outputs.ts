@@ -3,14 +3,14 @@
 // Drizzle tables like the inputs in ./schemas do, so a new column shows up here by itself.
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { CUSTOM_FIELD_RESOURCES, CUSTOM_FIELD_TYPES } from '@shopnex/custom-fields'
+import { customFieldDefinitions } from '@shopnex/custom-fields/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
   API_SCOPES,
   CANCEL_REASONS,
   CHANNEL_TYPES,
-  CUSTOM_FIELD_RESOURCES,
-  CUSTOM_FIELD_TYPES,
   NOTIFICATIONS,
   S3_PRESETS,
   SMTP_PRESETS,
@@ -37,7 +37,6 @@ import {
   aiGenerations,
   aiSettings,
   carrierServices,
-  customFieldDefinitions,
   emailDeliveries,
   marketplaceConnection,
   marketplaceThemes,

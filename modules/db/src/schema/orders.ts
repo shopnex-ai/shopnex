@@ -4,7 +4,7 @@
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { products, productVariants } from './catalog'
-import type { CustomFieldValues } from './custom-fields'
+import type { CustomFieldValues } from './custom-field-values'
 import { customers } from './customers'
 import { channels, shops } from './tenancy'
 
