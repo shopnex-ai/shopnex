@@ -103,7 +103,8 @@ Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
   else that drags in more.
 - Code that runs in the browser (the admin UI's forms, `@shopnex/api/schemas`) imports only `/schema` or `/contract`.
   The root entry exports the service, which pulls in the database client, and a browser bundle that reaches it fails with
-  `Buffer is not defined`.
+  `Buffer is not defined`. `pnpm bundle:check` (also in CI) bundles every `@shopnex/...` entry the admin UI's `.tsx` files
+  import, and every module's `*.contract.ts` and `*.schema.ts`, for the browser, and fails when server code comes along.
 
 Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
 
