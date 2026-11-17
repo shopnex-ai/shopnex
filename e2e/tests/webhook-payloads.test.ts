@@ -10,8 +10,8 @@ import { z } from 'zod'
 import { webhookPayloads } from '@shopnex/api/reference'
 import { productService } from '@shopnex/catalog'
 import { privacyService } from '@shopnex/customers'
-import { db, schema } from '@shopnex/db'
-import { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/db/schema'
+import { db } from '@shopnex/db'
+import { WEBHOOK_TOPICS, webhookDeliveries, type WebhookTopic } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
 const SNAPSHOT = new URL('./webhook-payloads.snapshot.json', import.meta.url)
@@ -200,10 +200,10 @@ before(async () => {
     ok(await call('POST', `/admin/orders/${cancelled}/cancel`, { reason: 'customer', restock: true }, token))
 
     const rows = await db
-      .select({ topic: schema.webhookDeliveries.topic, body: schema.webhookDeliveries.body })
-      .from(schema.webhookDeliveries)
-      .where(eq(schema.webhookDeliveries.endpointId, endpoint.id))
-      .orderBy(asc(schema.webhookDeliveries.createdAt))
+      .select({ topic: webhookDeliveries.topic, body: webhookDeliveries.body })
+      .from(webhookDeliveries)
+      .where(eq(webhookDeliveries.endpointId, endpoint.id))
+      .orderBy(asc(webhookDeliveries.createdAt))
     for (const row of rows) {
       const topic = row.topic as WebhookTopic
       payloads.set(topic, [...(payloads.get(topic) ?? []), JSON.parse(row.body, revive).data])

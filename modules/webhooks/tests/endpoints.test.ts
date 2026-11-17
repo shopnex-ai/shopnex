@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP, OTHER_SHOP } = fx
+const { db, schema, SHOP, OTHER_SHOP, webhookDeliveries } = fx
 const { bindConn } = await import('@shopnex/kit')
 const webhookService = bindConn((await import('../src')).webhookService, db)
 const { eq } = await import('drizzle-orm')
@@ -152,7 +152,7 @@ describe('test sends and the delivery log', () => {
     assert.equal(again?.id, d.id)
     assert.equal(again?.status, 'pending')
     assert.equal(again?.body, d.body)
-    const [row] = await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.id, d.id))
+    const [row] = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.id, d.id))
     assert.ok(row!.nextAttemptAt.getTime() <= Date.now() + 1000, 'due now')
   })
 

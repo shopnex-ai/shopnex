@@ -4,7 +4,7 @@ import { createHmac } from 'node:crypto'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema } = fx
+const { db, schema, webhookDeliveries } = fx
 const { processDue: processDueIn, RETRY_DELAYS_S } = await import('../src/worker')
 const processDue = (opts: Parameters<typeof processDueIn>[0]) => processDueIn(opts, db)
 const { eq } = await import('drizzle-orm')
@@ -119,9 +119,9 @@ describe('a delivery that fails', () => {
     assert.equal(seventh!.status, 'pending')
     assert.equal(seventh!.attempts, 7)
     await db
-      .update(schema.webhookDeliveries)
+      .update(webhookDeliveries)
       .set({ nextAttemptAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.webhookDeliveries.id, d.id))
+      .where(eq(webhookDeliveries.id, d.id))
     await processDue(open)
     const eighth = await fx.deliveryById(d.id)
     assert.equal(eighth!.status, 'failed')

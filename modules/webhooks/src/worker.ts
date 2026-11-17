@@ -1,8 +1,8 @@
 // Sends queued deliveries. Runs in the app process (started from apps/admin-ui/src/server.ts);
 // rows are claimed with SKIP LOCKED, so several app instances can run it side by side.
 import { and, eq, inArray, lt, lte, ne, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { WebhookDelivery, WebhookEndpoint } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
+import { webhookDeliveries, webhookEndpoints, type WebhookDelivery, type WebhookEndpoint } from './webhooks.schema'
 import { assertPublicHost } from './network'
 import { signedHeaders } from './sign'
 import { log } from './log'
@@ -37,21 +37,19 @@ export interface WorkerOptions {
 async function claim(conn: Conn): Promise<WebhookDelivery[]> {
   return conn.transaction(async (tx) => {
     const due = await tx
-      .select({ id: schema.webhookDeliveries.id })
-      .from(schema.webhookDeliveries)
-      .where(
-        and(eq(schema.webhookDeliveries.status, 'pending'), lte(schema.webhookDeliveries.nextAttemptAt, sql`now()`)),
-      )
-      .orderBy(schema.webhookDeliveries.nextAttemptAt)
+      .select({ id: webhookDeliveries.id })
+      .from(webhookDeliveries)
+      .where(and(eq(webhookDeliveries.status, 'pending'), lte(webhookDeliveries.nextAttemptAt, sql`now()`)))
+      .orderBy(webhookDeliveries.nextAttemptAt)
       .limit(BATCH)
       .for('update', { skipLocked: true })
     if (due.length === 0) return []
     return tx
-      .update(schema.webhookDeliveries)
+      .update(webhookDeliveries)
       .set({ nextAttemptAt: sql`now() + ${LEASE_MS} * interval '1 millisecond'` })
       .where(
         inArray(
-          schema.webhookDeliveries.id,
+          webhookDeliveries.id,
           due.map((d) => d.id),
         ),
       )
@@ -109,7 +107,7 @@ async function attempt(
   const retryIn = RETRY_DELAYS_S[attempts - 1]
   const giveUp = !endpoint?.active || retryIn === undefined
   await conn
-    .update(schema.webhookDeliveries)
+    .update(webhookDeliveries)
     .set({
       attempts,
       lastAttemptAt: now,
@@ -121,7 +119,7 @@ async function attempt(
           ? { status: 'failed' as const }
           : { nextAttemptAt: new Date(now.getTime() + retryIn * 1000) }),
     })
-    .where(eq(schema.webhookDeliveries.id, delivery.id))
+    .where(eq(webhookDeliveries.id, delivery.id))
 }
 
 /** One pass: sends what's due. Returns how many deliveries it handled. */
@@ -129,10 +127,7 @@ export async function processDue(opts: WorkerOptions, conn: Conn) {
   const deliveries = await claim(conn)
   if (deliveries.length === 0) return 0
   const endpointIds = [...new Set(deliveries.map((d) => d.endpointId))]
-  const endpoints = await conn
-    .select()
-    .from(schema.webhookEndpoints)
-    .where(inArray(schema.webhookEndpoints.id, endpointIds))
+  const endpoints = await conn.select().from(webhookEndpoints).where(inArray(webhookEndpoints.id, endpointIds))
   const byId = new Map(endpoints.map((e) => [e.id, e]))
   await Promise.all(deliveries.map((d) => attempt(d, byId.get(d.endpointId), opts, conn)))
   return deliveries.length
@@ -140,11 +135,11 @@ export async function processDue(opts: WorkerOptions, conn: Conn) {
 
 async function pruneFinished(conn: Conn) {
   await conn
-    .delete(schema.webhookDeliveries)
+    .delete(webhookDeliveries)
     .where(
       and(
-        ne(schema.webhookDeliveries.status, 'pending'),
-        lt(schema.webhookDeliveries.createdAt, new Date(Date.now() - RETENTION_MS)),
+        ne(webhookDeliveries.status, 'pending'),
+        lt(webhookDeliveries.createdAt, new Date(Date.now() - RETENTION_MS)),
       ),
     )
 }

@@ -1,12 +1,13 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
-import { hasScope, type ApiScope, type ApiToken } from '@shopnex/tenancy'
 import { db } from '@shopnex/db'
-import { webhookService, type WebhookTopic } from '@shopnex/webhooks'
-import { webhookManager } from '../../orpc'
-import { pagination } from '../pagination'
-import { webhookEndpointInput } from './schemas'
-import { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from './outputs'
+import { pagination, createProcedures } from '@shopnex/rpc'
+import { hasScope, type ApiScope, type ApiToken } from '@shopnex/tenancy'
+import * as webhookService from './endpoints'
+import { webhookDeliveryOutput, webhookEndpointInput, webhookListItemOutput, webhookOutput } from './webhooks.contract'
+import type { WebhookTopic } from './webhooks.schema'
+
+const { webhookManager } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -22,11 +23,15 @@ const TOPIC_SCOPE: Record<string, ApiScope> = {
   customer: 'read_customers',
 }
 
+function scopeOf(topic: WebhookTopic): ApiScope {
+  const scope = TOPIC_SCOPE[topic.split('.')[0] ?? '']
+  if (!scope) throw new Error(`No scope is defined for ${topic}`)
+  return scope
+}
+
 function assertTopicsAllowed(token: ApiToken | null, topics: WebhookTopic[] | undefined) {
   if (!token || !topics) return
-  const missing = [...new Set(topics.map((t) => TOPIC_SCOPE[t.split('.')[0]!]!))].filter(
-    (s) => !hasScope(token.scopes, s),
-  )
+  const missing = [...new Set(topics.map(scopeOf))].filter((s) => !hasScope(token.scopes, s))
   if (missing.length) {
     throw new ORPCError('FORBIDDEN', {
       message: `This API token needs the ${missing.join(', ')} scope to subscribe to these events`,
