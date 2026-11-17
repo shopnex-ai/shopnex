@@ -1,6 +1,5 @@
 // API tokens (what is stored, how one is recognised, revoking, the hook other modules listen to) and storefront publishable keys.
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
 import { after, before, beforeEach, describe, test } from 'node:test'
 
 // Set before the modules load: they read these when first imported
@@ -13,7 +12,6 @@ const tenancy = await import('../src')
 const { getShopByStorefrontKey } = await import('../src/keys')
 const { ChannelError } = await import('@shopnex/channels')
 
-const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 let SHOP = ''
 
 before(async () => {
@@ -53,10 +51,12 @@ describe('scopes', () => {
 })
 
 describe('minting and creating', () => {
-  test('a token is sk_ and 32 random bytes, kept as its SHA-256 and a short prefix to recognise it', () => {
+  test('a token is sk_ and 32 random bytes, kept as a 64-character hash and a short prefix to recognise it', () => {
     const a = tenancy.mintToken()
     assert.match(a.token, /^sk_[A-Za-z0-9_-]{43}$/)
-    assert.equal(a.tokenHash, sha256(a.token))
+    assert.match(a.tokenHash, /^[0-9a-f]{64}$/)
+    assert.notEqual(a.tokenHash, a.token)
+    assert.notEqual(a.tokenHash, tenancy.mintToken().tokenHash)
     assert.equal(a.tokenPrefix, a.token.slice(0, 9))
     assert.notEqual(a.token, tenancy.mintToken().token)
   })
@@ -73,8 +73,10 @@ describe('minting and creating', () => {
     assert.deepEqual(made.scopes, ['write_orders'])
     assert.equal(made.createdById, creator.id)
     const [stored] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, made.id))
-    assert.equal(stored?.tokenHash, sha256(made.token))
+    assert.match(stored?.tokenHash ?? '', /^[0-9a-f]{64}$/)
     assert.ok(![stored?.tokenHash, stored?.tokenPrefix].includes(made.token))
+    // The stored value is derived from the token that was shown: that token finds this row
+    assert.equal((await tenancy.resolveApiToken(made.token))?.token.id, made.id)
   })
 
   test('listApiTokens: this shop’s hand-made tokens, newest first, never the hash, never an app’s', async () => {
