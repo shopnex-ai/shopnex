@@ -2,8 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
 import { seedDefaultMenu } from '@shopnex/content'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { shopMembers } from './tenancy.schema'
+import { shops } from '@shopnex/core/schema'
 
 const DEFAULT_CURRENCY = 'USD'
 
@@ -15,7 +16,7 @@ export const NEW_SHOP_NAME = 'My Shop'
 async function randomSlug(conn: Pick<typeof db, 'select'>) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = `shop-${randomUUID().replaceAll('-', '').slice(0, 8)}`
-    const [taken] = await conn.select({ id: schema.shops.id }).from(schema.shops).where(eq(schema.shops.slug, slug))
+    const [taken] = await conn.select({ id: shops.id }).from(shops).where(eq(shops.slug, slug))
     if (!taken) return slug
   }
   return `shop-${randomUUID().replaceAll('-', '').slice(0, 16)}`
@@ -31,7 +32,7 @@ export async function createShop(input: { ownerId: string; name: string; currenc
   return db.transaction(async (tx) => {
     const id = randomUUID()
     const [shop] = await tx
-      .insert(schema.shops)
+      .insert(shops)
       .values({ id, name, slug: await randomSlug(tx), currency: input.currency ?? DEFAULT_CURRENCY })
       .returning()
     await tx.insert(shopMembers).values({ id: randomUUID(), organizationId: id, userId: input.ownerId, role: 'owner' })

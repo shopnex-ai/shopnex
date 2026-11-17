@@ -2,8 +2,8 @@
 // Zod, no oRPC or server code.
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { apps } from '@shopnex/db/schema'
 import { paymentMethods } from './payments.schema'
+import { apps } from '@shopnex/core/schema'
 
 export const paymentMethodInput = createInsertSchema(paymentMethods, {
   name: (s) => s.trim().min(1).max(100),

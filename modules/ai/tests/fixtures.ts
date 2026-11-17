@@ -3,6 +3,7 @@
 // way a test says. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { apps } from '@shopnex/core/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -70,7 +71,7 @@ const created = { apps: [] as string[], products: [] as string[], collections: [
 /** An app, installed in the shop (or not), that provides the capabilities it is given, each at `${appUrl}/run` */
 export async function aiApp(opts: { name?: string; installed?: boolean; capabilities?: string[] } = {}) {
   const [app] = await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({
       name: opts.name ?? 'Fake AI',
       appUrl,
@@ -122,7 +123,7 @@ export async function page(patch: Partial<typeof pages.$inferInsert> = {}) {
 export async function cleanup() {
   await db.delete(aiGenerations).where(eq(aiGenerations.shopId, SHOP))
   await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP))
-  if (created.apps.length) await db.delete(schema.apps).where(inArray(schema.apps.id, created.apps))
+  if (created.apps.length) await db.delete(apps).where(inArray(apps.id, created.apps))
   if (created.products.length) await db.delete(schema.products).where(inArray(schema.products.id, created.products))
   if (created.collections.length)
     await db.delete(schema.collections).where(inArray(schema.collections.id, created.collections))

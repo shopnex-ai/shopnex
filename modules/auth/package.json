@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@shopnex/content": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/tenancy": "workspace:*",

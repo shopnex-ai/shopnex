@@ -4,7 +4,7 @@ import { customFields } from './custom-fields.router'
 
 export const customFieldsModule = defineModule({
   name: 'custom-fields',
-  dependsOn: ['db', 'rpc'],
+  dependsOn: ['core', 'db', 'rpc'],
   tables: { customFieldDefinitions },
   router: customFields,
 })

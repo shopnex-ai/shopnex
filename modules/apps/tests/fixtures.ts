@@ -3,6 +3,7 @@
 // must come before anything imports @shopnex/db.
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { apps, shops, user as userTable } from '@shopnex/core/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -76,7 +77,7 @@ export async function newApp(patch: Partial<Parameters<typeof appService.registe
 export async function user() {
   const id = `u-${unique()}`
   const [row] = await db
-    .insert(schema.user)
+    .insert(userTable)
     .values({ id, name: id, email: `${id}@example.test` })
     .returning()
   made.users.push(id)
@@ -85,7 +86,7 @@ export async function user() {
 
 export async function shop() {
   const id = `s-${unique()}`
-  const [row] = await db.insert(schema.shops).values({ id, name: id, slug: id }).returning()
+  const [row] = await db.insert(shops).values({ id, name: id, slug: id }).returning()
   made.shops.push(id)
   return row!
 }
@@ -99,9 +100,9 @@ export async function until(predicate: () => boolean, ms = 3000) {
 
 /** Everything the tests made (an app takes its installations, tokens, codes and data with it) */
 export async function cleanup() {
-  if (made.apps.length) await db.delete(schema.apps).where(inArray(schema.apps.id, made.apps))
-  await db.delete(schema.shops).where(inArray(schema.shops.id, made.shops))
-  await db.delete(schema.user).where(inArray(schema.user.id, made.users))
+  if (made.apps.length) await db.delete(apps).where(inArray(apps.id, made.apps))
+  await db.delete(shops).where(inArray(shops.id, made.shops))
+  await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
   received.length = 0
 }

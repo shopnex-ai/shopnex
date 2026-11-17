@@ -11,6 +11,7 @@ import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { menus } from '@shopnex/content/schema'
+import { shops } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -24,7 +25,7 @@ before(async () => {
 
 after(async () => {
   // Shop-scoped rows go with the shop (on delete cascade)
-  if (created.length) await db.delete(schema.shops).where(inArray(schema.shops.id, created))
+  if (created.length) await db.delete(shops).where(inArray(shops.id, created))
   await fx.cleanup()
   await closeDb()
 })

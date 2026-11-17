@@ -11,6 +11,7 @@ import { session as sessionTable } from '@shopnex/auth/schema'
 import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { user } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -71,7 +72,7 @@ after(async () => {
       .delete(schema.emailSuppressions)
       .where(and(eq(schema.emailSuppressions.shopId, SHOP), eq(schema.emailSuppressions.email, email)))
   }
-  for (const id of userIds) await db.delete(schema.user).where(eq(schema.user.id, id))
+  for (const id of userIds) await db.delete(user).where(eq(user.id, id))
   await db.delete(schema.emailDeliveries).where(eq(schema.emailDeliveries.shopId, SHOP))
   await fx.cleanup()
   if (productId) await productService.removeMany(SHOP, [productId])
@@ -112,7 +113,7 @@ describe('export', () => {
     // The storefront login, with a session
     const userId = randomUUID()
     userIds.push(userId)
-    await db.insert(schema.user).values({ id: userId, name: 'Export Privacy', email, emailVerified: true })
+    await db.insert(user).values({ id: userId, name: 'Export Privacy', email, emailVerified: true })
     await db.insert(sessionTable).values({
       id: randomUUID(),
       token: randomUUID(),
@@ -250,7 +251,7 @@ describe('erase', () => {
     // A login that belongs to nobody else
     const userId = randomUUID()
     userIds.push(userId)
-    await db.insert(schema.user).values({ id: userId, name: 'Gone', email: `login-${run}-gone@example.com` })
+    await db.insert(user).values({ id: userId, name: 'Gone', email: `login-${run}-gone@example.com` })
     await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, customer.id))
 
     const result = ok(await call('POST', `/admin/customers/${customer.id}/erase`, undefined, owner))
@@ -265,7 +266,7 @@ describe('erase', () => {
 
     // The customer and their login are gone
     assert.equal((await call('GET', `/admin/customers/${customer.id}`, undefined, owner)).status, 404)
-    assert.equal((await db.select().from(schema.user).where(eq(schema.user.id, userId))).length, 0)
+    assert.equal((await db.select().from(user).where(eq(user.id, userId))).length, 0)
 
     // The order stays as a record, without the buyer
     const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, finished.id))
@@ -357,21 +358,17 @@ describe('erase', () => {
     await db.update(schema.customers).set({ userId: staff.id }).where(eq(schema.customers.id, customer.id))
     const result = ok(await call('POST', `/admin/customers/${customer.id}/erase`, undefined, owner))
     assert.equal(result.loginAccountDeleted, false)
-    assert.equal((await db.select().from(schema.user).where(eq(schema.user.id, staff.id))).length, 1)
+    assert.equal((await db.select().from(user).where(eq(user.id, staff.id))).length, 1)
 
     const shared = await buyer('shared')
     const other = await fx.shop()
     const userId = randomUUID()
     userIds.push(userId)
-    await db.insert(schema.user).values({ id: userId, name: 'Shared', email: `login-${run}-shared@example.com` })
+    await db.insert(user).values({ id: userId, name: 'Shared', email: `login-${run}-shared@example.com` })
     await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, shared.customer.id))
     await db.insert(schema.customers).values({ shopId: other.id, email: shared.email, userId })
     ok(await call('POST', `/admin/customers/${shared.customer.id}/erase`, undefined, owner))
-    assert.equal(
-      (await db.select().from(schema.user).where(eq(schema.user.id, userId))).length,
-      1,
-      'still the other shop’s login',
-    )
+    assert.equal((await db.select().from(user).where(eq(user.id, userId))).length, 1, 'still the other shop’s login')
   })
 
   test('only owners and admins can erase, never an API token', async () => {

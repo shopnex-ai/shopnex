@@ -2,6 +2,7 @@
 // server code that says so (setup, scripts). Open sign-up is another process's configuration: see open-signup-limits.test.ts.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { shops, user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -36,10 +37,7 @@ const invite = (patch: Partial<typeof shopInvitations.$inferInsert> = {}) =>
 
 before(async () => {
   await prepareDatabase()
-  await db
-    .insert(schema.user)
-    .values({ id: INVITER, name: 'Inviter', email: 'inviter@example.com' })
-    .onConflictDoNothing()
+  await db.insert(user).values({ id: INVITER, name: 'Inviter', email: 'inviter@example.com' }).onConflictDoNothing()
 })
 beforeEach(() => db.delete(shopInvitations).where(eq(shopInvitations.organizationId, SHOP)))
 after(() => {
@@ -86,8 +84,8 @@ describe('assertSignUpAllowed, by invitation', () => {
 
 describe('createShopForNewAccount, by invitation', () => {
   test('makes no shop: an invited person joins the shop that invited them', async () => {
-    const before = await db.select().from(schema.shops)
+    const before = await db.select().from(shops)
     await createShopForNewAccount({ id: INVITER, email: 'invited@example.com' })
-    assert.equal((await db.select().from(schema.shops)).length, before.length)
+    assert.equal((await db.select().from(shops)).length, before.length)
   })
 })

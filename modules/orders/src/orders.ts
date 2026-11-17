@@ -15,6 +15,7 @@ import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress }
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
+import { shops } from '@shopnex/core/schema'
 
 export type OrderLineInput =
   | { variantId: string; quantity: number }
@@ -197,10 +198,10 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         tx,
       )
       const [shop] = await tx
-        .update(schema.shops)
-        .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
-        .where(eq(schema.shops.id, shopId))
-        .returning({ orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1` })
+        .update(shops)
+        .set({ nextOrderNumber: sql`${shops.nextOrderNumber} + 1` })
+        .where(eq(shops.id, shopId))
+        .returning({ orderNumber: sql<number>`${shops.nextOrderNumber} - 1` })
       if (!shop) throw new OrderError('CUSTOMER_NOT_FOUND', 'Shop not found')
       const importedNote = `${marker}${input.note ? `\n${input.note}` : ''}`
       const [order] = await tx
@@ -359,14 +360,14 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     // Next order number, taken under the shop row's lock (concurrent checkouts get consecutive numbers).
     // Prices are in the shop's currency; record it so the order stays correct if the shop changes it later.
     const [shop] = await tx
-      .update(schema.shops)
-      .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
-      .where(eq(schema.shops.id, shopId))
+      .update(shops)
+      .set({ nextOrderNumber: sql`${shops.nextOrderNumber} + 1` })
+      .where(eq(shops.id, shopId))
       .returning({
-        orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1`,
-        currency: schema.shops.currency,
-        taxesIncluded: schema.shops.taxesIncluded,
-        taxShipping: schema.shops.taxShipping,
+        orderNumber: sql<number>`${shops.nextOrderNumber} - 1`,
+        currency: shops.currency,
+        taxesIncluded: shops.taxesIncluded,
+        taxShipping: shops.taxShipping,
       })
 
     // Tax follows the shipping address (no address, e.g. a manual order: no tax)

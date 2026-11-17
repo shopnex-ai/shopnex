@@ -4,7 +4,7 @@
 // renamed via modelName); TS keys must match Better Auth field names, DB columns use shop_* naming.
 import { sql } from 'drizzle-orm'
 import { pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
-import { shops, user } from '@shopnex/db/schema'
+import { shops, user } from '@shopnex/core/schema'
 
 export const shopMembers = pgTable(
   'shop_members',

@@ -1,4 +1,5 @@
 import { menus, pages, type MenuItemType, type StoredMenuItem } from '../src/content.schema'
+import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
 // What the content tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 
@@ -20,14 +21,14 @@ const made = { products: [] as string[], collections: [] as string[], shops: [] 
 
 export async function otherShop() {
   await db
-    .insert(schema.shops)
+    .insert(shopsTable)
     .values({ id: OTHER_SHOP, name: 'Other shop', slug: `other-${unique()}` })
     .onConflictDoNothing()
 }
 
 export async function shop() {
   const id = `s-${unique()}`
-  const [row] = await db.insert(schema.shops).values({ id, name: id, slug: id }).returning()
+  const [row] = await db.insert(shopsTable).values({ id, name: id, slug: id }).returning()
   made.shops.push(id)
   return row!
 }
@@ -35,7 +36,7 @@ export async function shop() {
 export async function user() {
   const id = `u-${unique()}`
   const [row] = await db
-    .insert(schema.user)
+    .insert(userTable)
     .values({ id, name: id, email: `${id}@example.test` })
     .returning()
   made.users.push(id)
@@ -74,7 +75,7 @@ export async function cleanup() {
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
   if (made.collections.length)
     await db.delete(schema.collections).where(inArray(schema.collections.id, made.collections))
-  if (made.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, made.shops))
-  if (made.users.length) await db.delete(schema.user).where(inArray(schema.user.id, made.users))
+  if (made.shops.length) await db.delete(shopsTable).where(inArray(shopsTable.id, made.shops))
+  if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
 }

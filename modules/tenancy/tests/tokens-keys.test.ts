@@ -1,6 +1,7 @@
 // API tokens (what is stored, how one is recognised, revoking, which takes the token's webhook subscriptions with it).
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { apiTokens, apps } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -44,7 +45,7 @@ describe('minting and creating', () => {
     assert.ok(!('tokenHash' in made))
     assert.deepEqual(made.scopes, ['write_orders'])
     assert.equal(made.createdById, creator.id)
-    const [stored] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, made.id))
+    const [stored] = await db.select().from(apiTokens).where(eq(apiTokens.id, made.id))
     assert.match(stored?.tokenHash ?? '', /^[0-9a-f]{64}$/)
     assert.ok(![stored?.tokenHash, stored?.tokenPrefix].includes(made.token))
     // The stored value is derived from the token that was shown: that token finds this row
@@ -58,7 +59,7 @@ describe('minting and creating', () => {
     const second = await tenancy.createApiToken(SHOP, { name: 'Two', scopes: [], createdById: null })
     await tenancy.createApiToken(other.id, { name: 'Elsewhere', scopes: [], createdById: null })
     const [app] = await db
-      .insert(schema.apps)
+      .insert(apps)
       .values({
         name: 'An app',
         appUrl: 'http://127.0.0.1:1',
@@ -68,7 +69,7 @@ describe('minting and creating', () => {
       })
       .returning()
     const appToken = tenancy.mintToken()
-    await db.insert(schema.apiTokens).values({
+    await db.insert(apiTokens).values({
       shopId: SHOP,
       name: 'App token',
       scopes: [],
@@ -81,7 +82,7 @@ describe('minting and creating', () => {
       [second.id, first.id],
     )
     for (const t of listed) assert.ok(!('tokenHash' in t))
-    await db.delete(schema.apps).where(eq(schema.apps.id, app!.id))
+    await db.delete(apps).where(eq(apps.id, app!.id))
   })
 })
 
@@ -94,7 +95,7 @@ describe('recognising a token', () => {
     let used: Date | null = null
     for (let i = 0; i < 20 && !used; i++) {
       await new Promise((r) => setTimeout(r, 25))
-      used = (await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, made.id)))[0]!.lastUsedAt
+      used = (await db.select().from(apiTokens).where(eq(apiTokens.id, made.id)))[0]!.lastUsedAt
     }
     assert.ok(used, 'lastUsedAt is written, without the request waiting for it')
   })
@@ -122,7 +123,7 @@ describe('revoking', () => {
 
   test('a token made by an app is not revoked by hand; the app’s uninstall revokes it by id', async () => {
     const [app] = await db
-      .insert(schema.apps)
+      .insert(apps)
       .values({
         name: 'An app',
         appUrl: 'http://127.0.0.1:1',
@@ -133,7 +134,7 @@ describe('revoking', () => {
       .returning()
     const t = tenancy.mintToken()
     const [row] = await db
-      .insert(schema.apiTokens)
+      .insert(apiTokens)
       .values({
         shopId: SHOP,
         name: 'App token',
@@ -145,7 +146,7 @@ describe('revoking', () => {
       .returning()
     assert.equal(await tenancy.revokeApiToken(SHOP, row!.id), null)
     assert.ok(await tenancy.revokeTokenById(SHOP, row!.id))
-    await db.delete(schema.apps).where(eq(schema.apps.id, app!.id))
+    await db.delete(apps).where(eq(apps.id, app!.id))
   })
 
   test('takes the subscriptions the token made with it, with their deliveries, and leaves other tokens’ and staff-made ones', async () => {

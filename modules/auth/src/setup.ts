@@ -2,12 +2,13 @@
 // first account is created as platform super admin and owner of the default shop.
 // Like WordPress/Ghost, whoever reaches a fresh install first can claim it — finish setup right after deploying.
 import { eq } from 'drizzle-orm'
-import { db, schema, withAdvisoryLock } from '@shopnex/db'
+import { db, withAdvisoryLock } from '@shopnex/db'
 import { seedDefaultMenu } from '@shopnex/content'
 import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop } from '@shopnex/tenancy'
 import { auth } from './index'
 import { SUPER_ADMIN_ROLE } from './roles'
 import { withSignUpAllowed } from './sign-up-policy'
+import { user as userTable } from '@shopnex/core/schema'
 
 export interface SetupInput {
   email: string
@@ -29,7 +30,7 @@ let complete = false
 
 export async function isSetupComplete() {
   if (complete) return true
-  const [row] = await db.select({ id: schema.user.id }).from(schema.user).limit(1)
+  const [row] = await db.select({ id: userTable.id }).from(userTable).limit(1)
   complete = Boolean(row)
   return complete
 }
@@ -48,7 +49,7 @@ export async function completeSetup(input: SetupInput) {
     const { user } = await withSignUpAllowed(() =>
       auth.api.signUpEmail({ body: { name, email: input.email, password: input.password } }),
     )
-    await db.update(schema.user).set({ role: SUPER_ADMIN_ROLE }).where(eq(schema.user.id, user.id))
+    await db.update(userTable).set({ role: SUPER_ADMIN_ROLE }).where(eq(userTable.id, user.id))
     // First member of the shop, so owner
     await addMember(DEFAULT_SHOP_ID, user.id)
 

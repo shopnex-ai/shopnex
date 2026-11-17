@@ -5,7 +5,7 @@
 import { ORPCError, os } from '@orpc/server'
 import { z } from 'zod'
 import { domainErrorData, domainErrorStatus, isDomainError, type ErrorMapper } from '@shopnex/kit'
-import type { ApiScope, ApiToken, Shop } from '@shopnex/db/schema'
+import { type ApiScope, type ApiToken, type Shop } from '@shopnex/core/schema'
 
 // The roles a member can have in a shop (tenancy's ShopRole is the same union; rpc does not depend on tenancy)
 export type ShopRole = 'owner' | 'admin' | 'member'

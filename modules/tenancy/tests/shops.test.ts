@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shopDomains, shopMembers } from '../src/tenancy.schema'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -40,7 +41,7 @@ describe('reading shops', () => {
     const [a, b] = await Promise.all([tenancy.ensureDefaultShop(), tenancy.ensureDefaultShop()])
     assert.equal(a.id, 'default')
     assert.equal(b.id, 'default')
-    assert.equal((await db.select().from(schema.shops).where(eq(schema.shops.id, 'default'))).length, 1)
+    assert.equal((await db.select().from(shops).where(eq(shops.id, 'default'))).length, 1)
   })
 
   test('updateShop changes what it is given, can set the storefront URL in this mode, and null for an unknown shop', async () => {
@@ -108,20 +109,20 @@ describe('createShop, for a new account', () => {
       channels.map((c) => c.handle),
       ['online-store'],
     )
-    await db.delete(schema.shops).where(eq(schema.shops.id, s.id))
+    await db.delete(shops).where(eq(shops.id, s.id))
   })
 
   test('takes the currency given', async () => {
     const owner = await fx.user()
     const s = await tenancy.createShop({ ownerId: owner.id, name: 'Euro shop', currency: 'EUR' })
     assert.equal(s.currency, 'EUR')
-    await db.delete(schema.shops).where(eq(schema.shops.id, s.id))
+    await db.delete(shops).where(eq(shops.id, s.id))
   })
 
   test('is all or nothing: an owner that does not exist leaves no shop or channel behind', async () => {
-    const shopsBefore = (await db.select().from(schema.shops)).length
+    const shopsBefore = (await db.select().from(shops)).length
     await assert.rejects(tenancy.createShop({ ownerId: 'nobody', name: 'Ghost' }))
-    assert.equal((await db.select().from(schema.shops)).length, shopsBefore)
+    assert.equal((await db.select().from(shops)).length, shopsBefore)
   })
 })
 

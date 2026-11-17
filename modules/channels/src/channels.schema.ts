@@ -7,7 +7,8 @@
 // pages, menus or anything else later need no new table. There's no FK to the resource: the module that
 // deletes it deletes its publications (publicationService.removeFor).
 import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { channels, shops } from '@shopnex/db/schema'
+import { channels } from '@shopnex/db/schema'
+import { shops } from '@shopnex/core/schema'
 
 export const PUBLISHABLE_TYPES = ['product', 'collection'] as const
 export type PublishableType = (typeof PUBLISHABLE_TYPES)[number]

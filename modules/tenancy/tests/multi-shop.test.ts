@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shopDomains } from '../src/tenancy.schema'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.TENANCY_MODE = 'multi'
@@ -88,10 +89,7 @@ describe('the storefront URL of a shop', () => {
     const changed = await tenancy.updateShop(s.id, { name: 'Renamed', storefrontUrl: 'https://sneaky.example.test' })
     assert.equal(changed?.name, 'Renamed')
     assert.equal(changed?.storefrontUrl, 'https://derived.shops.example.test')
-    const [stored] = await db
-      .select({ url: schema.shops.storefrontUrl })
-      .from(schema.shops)
-      .where(eq(schema.shops.id, s.id))
+    const [stored] = await db.select({ url: shops.storefrontUrl }).from(shops).where(eq(shops.id, s.id))
     assert.equal(stored?.url, 'https://ignored.example.test', 'what was sent is not saved either')
     await db
       .insert(shopDomains)

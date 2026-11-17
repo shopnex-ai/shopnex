@@ -10,9 +10,10 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { appService, marketplaceService } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { SHOP, closeDb } from '../lib'
 import { marketplaceConnection } from '@shopnex/apps/schema'
+import { apps as appsTable } from '@shopnex/core/schema'
 
 const busy = Boolean(await marketplaceService.getConnection())
 
@@ -61,7 +62,7 @@ before(async () => {
 after(async () => {
   if (!busy) {
     await db.delete(marketplaceConnection).where(eq(marketplaceConnection.id, 'default'))
-    if (apps.length) await db.delete(schema.apps).where(inArray(schema.apps.id, apps))
+    if (apps.length) await db.delete(appsTable).where(inArray(appsTable.id, apps))
     marketplace?.close()
     app?.close()
   }
@@ -70,7 +71,7 @@ after(async () => {
 
 async function marketplaceApp() {
   const [row] = await db
-    .insert(schema.apps)
+    .insert(appsTable)
     .values({
       source: 'marketplace',
       marketplaceAppId: randomUUID(),

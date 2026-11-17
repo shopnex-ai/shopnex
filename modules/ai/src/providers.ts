@@ -2,12 +2,13 @@
 // register the ones they provide (like payments apps register their method), when their own setup decides.
 // Uninstalling an app removes them (see appService.uninstall).
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
 import { AiError } from './ai.errors'
 import { aiProviders } from './ai.schema'
 import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
 
 /** The provider id of built-in AI (apps go by their app id) */
 export const BUILTIN = 'builtin'
@@ -31,7 +32,7 @@ const origin = (url: string) => {
  * so an app can't point ShopNex at someone else's server.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput, conn: Conn) {
-  const [app] = await conn.select().from(schema.apps).where(eq(schema.apps.id, appId))
+  const [app] = await conn.select().from(apps).where(eq(apps.id, appId))
   if (!app) throw new AiError('NOT_AN_AI_APP', 'Only an installed app can provide AI capabilities')
   const appOrigin = origin(app.appUrl)
   const entries = Object.entries(input.capabilities).filter((e): e is [AiCapability, string] => Boolean(e[1]))
@@ -64,10 +65,10 @@ export async function providers(shopId: string, capabilities: readonly string[] 
     .select({
       capability: aiProviders.capability,
       url: aiProviders.url,
-      app: { id: schema.apps.id, name: schema.apps.name, iconUrl: schema.apps.iconUrl },
+      app: { id: apps.id, name: apps.name, iconUrl: apps.iconUrl },
     })
     .from(aiProviders)
-    .innerJoin(schema.apps, eq(schema.apps.id, aiProviders.appId))
+    .innerJoin(apps, eq(apps.id, aiProviders.appId))
     .innerJoin(
       appInstallations,
       and(
@@ -77,7 +78,7 @@ export async function providers(shopId: string, capabilities: readonly string[] 
       ),
     )
     .where(and(eq(aiProviders.shopId, shopId), inArray(aiProviders.capability, [...capabilities])))
-    .orderBy(asc(aiProviders.createdAt), asc(schema.apps.name))
+    .orderBy(asc(aiProviders.createdAt), asc(apps.name))
 }
 
 /** What staff can use in this shop: each available capability with who provides it, the default first */

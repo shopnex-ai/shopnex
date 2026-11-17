@@ -2,9 +2,9 @@
 // session token the embedded page gets, and the data an app keeps per shop.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
-import type { ApiScope } from '@shopnex/db/schema'
 import * as fx from './fixtures'
 import { appInstallations } from '../src/apps.schema'
+import { type ApiScope, apiTokens, apps } from '@shopnex/core/schema'
 
 const { db, schema, eq, appService, SHOP } = fx
 const { AppError } = await import('../src/apps.errors')
@@ -30,9 +30,7 @@ async function install(app: { id: string }, scopes: ApiScope[] = ['read_products
 }
 const tokenOf = async (installationId: string) => {
   const [row] = await db.select().from(appInstallations).where(eq(appInstallations.id, installationId))
-  return row?.apiTokenId
-    ? (await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, row.apiTokenId)))[0]
-    : undefined
+  return row?.apiTokenId ? (await db.select().from(apiTokens).where(eq(apiTokens.id, row.apiTokenId)))[0] : undefined
 }
 
 describe('installing an app that needs no consent screen', () => {
@@ -95,7 +93,7 @@ describe('what a shop sees', () => {
   test('the catalog lists every app that is not delisted, by name, marked installed here or not', async () => {
     const [b, a] = [await fx.newApp({ name: 'zz Catalog B' }), await fx.newApp({ name: 'zz Catalog A' })]
     const delisted = await fx.newApp({ name: 'zz Catalog Hidden' })
-    await db.update(schema.apps).set({ delistedAt: new Date() }).where(eq(schema.apps.id, delisted.app.id))
+    await db.update(apps).set({ delistedAt: new Date() }).where(eq(apps.id, delisted.app.id))
     const i = await install(a.app)
     const mine = (await appService.listCatalog(SHOP)).filter((x) => x.name.startsWith('zz Catalog'))
     assert.deepEqual(
@@ -141,7 +139,7 @@ describe('what a shop sees', () => {
     delete process.env.SHOPNEX_BUNDLED_APPS
     const u = await fx.user()
     const [app] = await db
-      .insert(schema.apps)
+      .insert(apps)
       .values({
         source: 'bundled',
         name: 'Stripe (test)',
@@ -150,7 +148,7 @@ describe('what a shop sees', () => {
         redirectUrls: [],
         scopes: [],
       })
-      .onConflictDoUpdate({ target: schema.apps.clientId, set: { source: 'bundled' } })
+      .onConflictDoUpdate({ target: apps.clientId, set: { source: 'bundled' } })
       .returning()
     const [i] = await db
       .insert(appInstallations)
@@ -168,7 +166,7 @@ describe('what a shop sees', () => {
       )
     } finally {
       delete process.env.STRIPE_APP_URL
-      await db.delete(schema.apps).where(eq(schema.apps.id, app!.id))
+      await db.delete(apps).where(eq(apps.id, app!.id))
     }
   })
 
@@ -193,7 +191,7 @@ describe('uninstalling', () => {
     const done = await appService.uninstall(SHOP, i.id)
     assert.ok(done?.uninstalledAt)
     assert.equal(done?.apiTokenId, null)
-    const [revoked] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, t.id))
+    const [revoked] = await db.select().from(apiTokens).where(eq(apiTokens.id, t.id))
     assert.ok(revoked?.revokedAt)
     assert.equal(await appService.uninstall(SHOP, i.id), null)
   })
@@ -245,7 +243,7 @@ describe('uninstalling', () => {
       appUninstalled.on('test.records', () => undefined)
     }
     assert.ok(await appService.getInstallation(SHOP, kept.app.id), 'still installed')
-    const [row] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, token!.id))
+    const [row] = await db.select().from(apiTokens).where(eq(apiTokens.id, token!.id))
     assert.equal(row?.revokedAt, null, 'and its token is not revoked')
   })
 })
@@ -315,13 +313,13 @@ describe('app data', () => {
   test('only an app’s own token, with a live installation, may use it', async () => {
     const hand = mintToken()
     const [plain] = await db
-      .insert(schema.apiTokens)
+      .insert(apiTokens)
       .values({ shopId: SHOP, name: 'Hand made', scopes: [], tokenHash: hand.tokenHash, tokenPrefix: hand.tokenPrefix })
       .returning()
     try {
       await assert.rejects(appService.listAppData(plain!), refused('APP_NOT_FOUND'))
     } finally {
-      await db.delete(schema.apiTokens).where(eq(schema.apiTokens.id, plain!.id))
+      await db.delete(apiTokens).where(eq(apiTokens.id, plain!.id))
     }
     const a = await fx.newApp()
     const i = await install(a.app)

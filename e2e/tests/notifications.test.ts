@@ -11,6 +11,7 @@ import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, closeDb, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
 import { shopMembers } from '@shopnex/tenancy/schema'
+import { user } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -85,9 +86,9 @@ before(async () => {
   })
   owners = (
     await db
-      .select({ email: schema.user.email })
+      .select({ email: user.email })
       .from(shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
+      .innerJoin(user, eq(user.id, shopMembers.userId))
       .where(and(eq(shopMembers.organizationId, SHOP), eq(shopMembers.role, 'owner')))
   ).map((o) => o.email)
 })

@@ -12,6 +12,7 @@ import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 
@@ -69,7 +70,7 @@ after(async () => {
   await fx.cleanup()
   if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
   // The app owns its carrier service, installation and token
-  if (appId) await db.delete(schema.apps).where(eq(schema.apps.id, appId))
+  if (appId) await db.delete(apps).where(eq(apps.id, appId))
   server?.close()
   await closeDb()
 })

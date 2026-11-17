@@ -1,6 +1,5 @@
 import { db } from '@shopnex/db'
 import { channelService, storefrontKeyService } from '@shopnex/channels'
-import type { Shop } from '@shopnex/db/schema'
 import { ROOT_DOMAIN, isMultiTenant } from './config'
 import {
   ensureDefaultShop,
@@ -13,6 +12,7 @@ import {
 } from './shops'
 import { subdomainSlug } from './subdomains'
 import { type ShopRole } from './tenancy.schema'
+import { type Shop } from '@shopnex/core/schema'
 
 export type { ShopRole }
 

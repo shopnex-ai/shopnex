@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
+import { shops, user } from '@shopnex/core/schema'
 
 process.env.TENANCY_MODE = 'multi'
 process.env.ROOT_DOMAIN = 'shopnex.test'
@@ -32,14 +33,14 @@ const shopIds: string[] = []
 // Shops inserted with a slug createShop would never produce (a reserved name, characters a host can't have)
 async function rawShop(slug: string) {
   const id = `e2e-host-${run}-${slug.replace(/\W/g, '')}`
-  await db.insert(schema.shops).values({ id, name: id, slug })
+  await db.insert(shops).values({ id, name: id, slug })
   shopIds.push(id)
   return id
 }
 
 before(async () => {
   ownerId = `e2e-host-owner-${run}`
-  await db.insert(schema.user).values({ id: ownerId, name: 'E2E host owner', email: `${ownerId}@example.com` })
+  await db.insert(user).values({ id: ownerId, name: 'E2E host owner', email: `${ownerId}@example.com` })
   acme = await createShop({ ownerId, name: `E2E Acme ${run}` })
   beta = await createShop({ ownerId, name: `E2E Beta ${run}` })
   shopIds.push(acme.id, beta.id)
@@ -47,8 +48,8 @@ before(async () => {
 
 after(async () => {
   // Domains, keys, channels and the rest of a shop's rows go with it (on delete cascade)
-  await db.delete(schema.shops).where(inArray(schema.shops.id, shopIds))
-  await db.delete(schema.user).where(eq(schema.user.id, ownerId))
+  await db.delete(shops).where(inArray(shops.id, shopIds))
+  await db.delete(user).where(eq(user.id, ownerId))
   await db.$client.end()
 })
 

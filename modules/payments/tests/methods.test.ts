@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP } = fx
@@ -13,10 +14,10 @@ const { and, eq } = await import('drizzle-orm')
 
 const refused = (code: string) => (e: unknown) => e instanceof PaymentError && e.code === code
 let n = 0
-const bareApp = async (patch: Partial<typeof schema.apps.$inferInsert> = {}) =>
+const bareApp = async (patch: Partial<typeof apps.$inferInsert> = {}) =>
   (
     await db
-      .insert(schema.apps)
+      .insert(apps)
       .values({
         name: `App ${++n}`,
         appUrl: fx.appUrl,

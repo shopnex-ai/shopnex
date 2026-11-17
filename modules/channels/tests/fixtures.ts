@@ -1,3 +1,4 @@
+import { shops } from '@shopnex/core/schema'
 // What the channels tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 process.env.DATABASE_URL = 'pglite:memory'
@@ -18,7 +19,7 @@ const made = { channels: [] as string[], products: [] as string[] }
 
 export async function otherShop() {
   await db
-    .insert(schema.shops)
+    .insert(shops)
     .values({ id: OTHER_SHOP, name: 'Other shop', slug: `other-${unique()}` })
     .onConflictDoNothing()
 }

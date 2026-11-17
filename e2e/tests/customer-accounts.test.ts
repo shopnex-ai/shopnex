@@ -13,6 +13,7 @@ import { orderService } from '@shopnex/orders'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
 import { shopMembers } from '@shopnex/tenancy/schema'
+import { user } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -164,8 +165,8 @@ describe('customer accounts', () => {
       const [member] = await db
         .select()
         .from(shopMembers)
-        .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
-        .where(and(eq(shopMembers.organizationId, SHOP), eq(schema.user.email, email)))
+        .innerJoin(user, eq(user.id, shopMembers.userId))
+        .where(and(eq(shopMembers.organizationId, SHOP), eq(user.email, email)))
       assert.equal(member, undefined, 'a customer is not a shop member')
 
       ok(await call('POST', '/storefront/customer/sign-out', undefined, as(token)))

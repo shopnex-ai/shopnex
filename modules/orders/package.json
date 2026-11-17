@@ -13,6 +13,7 @@
   "dependencies": {
     "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/custom-fields": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",

@@ -41,15 +41,14 @@ import {
   products,
   CANCEL_REASONS,
   shippingRates,
-  shops,
   CHANNEL_TYPES,
-  API_SCOPES,
   SMTP_PRESETS,
   NOTIFICATIONS,
 } from '@shopnex/db/schema'
 import { STAFF_ROLES } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
+import { API_SCOPES, shops } from '@shopnex/core/schema'
 
 export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
 
@@ -157,7 +156,7 @@ export const publicationsInput = z.object({
     .refine((list) => new Set(list.map((p) => p.channelId)).size === list.length, 'Each channel once'),
 })
 
-export { API_SCOPES, type ApiScope } from '@shopnex/db/schema'
+export { API_SCOPES, type ApiScope } from '@shopnex/core/schema'
 
 export const MIN_PASSWORD = 8
 

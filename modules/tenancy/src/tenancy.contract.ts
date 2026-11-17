@@ -2,8 +2,8 @@
 // no oRPC or server code.
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { API_SCOPES, apiTokens, shops } from '@shopnex/db/schema'
 import { STAFF_ROLES, shopDomains, shopInvitations, shopMembers } from './tenancy.schema'
+import { API_SCOPES, apiTokens, shops } from '@shopnex/core/schema'
 
 const scopes = z.array(z.enum(API_SCOPES))
 

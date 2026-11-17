@@ -13,6 +13,7 @@ import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
 import { Fixtures, SHOP, appToken, call, ok, requireApp } from '../lib'
+import { apps } from '@shopnex/core/schema'
 
 const STOREFRONT_URL = (process.env.STOREFRONT_URL ?? 'http://localhost:4321').replace(/\/$/, '')
 const METHOD = 'E2E provider card'
@@ -98,7 +99,7 @@ test.afterAll(async () => {
   const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
   await fx.cleanup()
-  if (appId) await db.delete(schema.apps).where(eq(schema.apps.id, appId))
+  if (appId) await db.delete(apps).where(eq(apps.id, appId))
   // The DB pool is shared with the other specs in this run: leave it open
   server?.close()
 })

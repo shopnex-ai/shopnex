@@ -4,6 +4,7 @@
 // sign-up on (every account gets a shop), and fails instead of hanging if anything blocks.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -56,7 +57,7 @@ describe('open sign-up on the embedded database', () => {
     )
     assert.equal(members.length, 1, 'the new account owns one shop')
     assert.equal(members[0]!.role, 'owner')
-    const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, members[0]!.organizationId))
+    const [shop] = await db.select().from(shops).where(eq(shops.id, members[0]!.organizationId))
     assert.ok(shop, 'the shop exists')
     // The menus come from content's shopCreated listener: signing up has to load content, not rely on the API app having done it
     const menuRows = await db.select().from(menus).where(eq(menus.shopId, shop.id))
@@ -71,7 +72,7 @@ describe('open sign-up on the embedded database', () => {
     )
     const members = await db.select().from(shopMembers).where(eq(shopMembers.userId, user.id))
     assert.equal(members.length, 1)
-    const all = await db.select().from(schema.shops)
+    const all = await db.select().from(shops)
     assert.ok(all.length >= 2)
   })
 })

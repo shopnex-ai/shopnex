@@ -12,8 +12,8 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { like } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { API_SCOPES } from '@shopnex/db/schema'
 import { API, Fixtures, call, closeDb, ok, requireApp } from '../lib'
+import { API_SCOPES } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)

@@ -13,7 +13,6 @@ import type {
   Order,
   OrderItem,
   OrderShippingLine,
-  Shop,
 } from '@shopnex/db/schema'
 import { getSettings as getAbandonedSettings, updateSettings as updateAbandonedSettings } from './abandoned-settings'
 import { DEFAULTS } from './defaults'
@@ -22,6 +21,7 @@ import { EmailError } from './email.errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
 import { log } from './log'
 import { shopMembers } from '@shopnex/tenancy/schema'
+import { type Shop, shops, user } from '@shopnex/core/schema'
 
 export type NotificationInfo = {
   notification: Notification
@@ -271,9 +271,9 @@ export async function renderEmail(
 const recipientsOf = async (conn: Conn, shopId: string, notification: Notification, order: OrderView) => {
   if (notification !== 'staff_order') return order.email ? [order.email] : []
   const owners = await conn
-    .select({ email: schema.user.email })
+    .select({ email: user.email })
     .from(shopMembers)
-    .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
+    .innerJoin(user, eq(user.id, shopMembers.userId))
     .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.role, 'owner')))
   return owners.map((o) => o.email)
 }
@@ -325,7 +325,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
       const notifications = await notificationsFor(tx, event, order)
       if (notifications.length === 0) return
       const [[row], templates] = await Promise.all([
-        tx.select().from(schema.shops).where(eq(schema.shops.id, shopId)),
+        tx.select().from(shops).where(eq(shops.id, shopId)),
         templateRows(tx, shopId, [...notifications, 'layout']),
       ])
       if (!row) return
@@ -371,7 +371,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
  * staff) and a retry hours later is useless. Throws EMAIL_OFF when the shop doesn't send email.
  */
 export async function sendLoginCode(shopId: string, to: string, code: string) {
-  const [row] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [row] = await db.select().from(shops).where(eq(shops.id, shopId))
   if (!row) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   const shop = await withStorefrontUrl(row)
   const templates = await templateRows(db, shopId, ['login_code', 'layout'])
@@ -563,7 +563,7 @@ function sampleOrder(shop: Shop): OrderView {
 }
 
 async function shopOf(shopId: string) {
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
   if (!shop) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   return withStorefrontUrl(shop)
 }

@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { call } from '@orpc/server'
+import { apiTokens } from '@shopnex/core/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -26,7 +27,7 @@ let counter = 0
 
 async function token() {
   const [row] = await db
-    .insert(schema.apiTokens)
+    .insert(apiTokens)
     .values({
       shopId: SHOP,
       name: 'Hook test',
@@ -61,7 +62,7 @@ before(async () => {
 
 after(async () => {
   if (endpointIds.length) await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.id, endpointIds))
-  if (tokenIds.length) await db.delete(schema.apiTokens).where(inArray(schema.apiTokens.id, tokenIds))
+  if (tokenIds.length) await db.delete(apiTokens).where(inArray(apiTokens.id, tokenIds))
 })
 
 describe('revoking an API token, through the route', () => {
@@ -80,7 +81,7 @@ describe('revoking an API token, through the route', () => {
     assert.equal(await exists(staffs.id), true, 'a subscription staff made stays')
     const left = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, mine.id))
     assert.equal(left.length, 0)
-    const [revoked] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, gone.id))
+    const [revoked] = await db.select().from(apiTokens).where(eq(apiTokens.id, gone.id))
     assert.ok(revoked?.revokedAt)
   })
 })

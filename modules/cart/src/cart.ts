@@ -7,6 +7,7 @@ import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Cart, CartStatus } from '@shopnex/db/schema'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
+import { shops } from '@shopnex/core/schema'
 
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999
@@ -89,10 +90,7 @@ async function requireActive(shopId: string, token: string, conn: Conn) {
 export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
   // Re-read so updatedAt reflects changes made earlier in this transaction
   const [fresh] = await conn.select().from(schema.carts).where(eq(schema.carts.id, cart.id))
-  const [shop] = await conn
-    .select({ currency: schema.shops.currency })
-    .from(schema.shops)
-    .where(eq(schema.shops.id, cart.shopId))
+  const [shop] = await conn.select({ currency: shops.currency }).from(shops).where(eq(shops.id, cart.shopId))
   const rows = await conn
     .select({ line: schema.cartLines, variant: schema.productVariants, product: schema.products })
     .from(schema.cartLines)

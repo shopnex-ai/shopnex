@@ -1,3 +1,4 @@
+import { shops, user as userTable } from '@shopnex/core/schema'
 // What the tenancy tests share: the embedded database and a few rows. TENANCY_MODE, ROOT_DOMAIN and the rest are read when
 // @shopnex/tenancy first loads, so a test file sets them first and imports this file after (`await import('./fixtures')`).
 process.env.DATABASE_URL = 'pglite:memory'
@@ -14,20 +15,20 @@ let counter = 0
 export const unique = () => `${Date.now().toString(36)}${(++counter).toString(36)}`
 const made = { users: [] as string[], shops: [] as string[], members: [] as string[] }
 
-export async function user(patch: Partial<typeof schema.user.$inferInsert> = {}) {
+export async function user(patch: Partial<typeof userTable.$inferInsert> = {}) {
   const id = `u-${unique()}`
   const [row] = await db
-    .insert(schema.user)
+    .insert(userTable)
     .values({ id, name: `User ${id}`, email: `${id}@example.test`, ...patch })
     .returning()
   made.users.push(id)
   return row!
 }
 
-export async function shop(patch: Partial<typeof schema.shops.$inferInsert> = {}) {
+export async function shop(patch: Partial<typeof shops.$inferInsert> = {}) {
   const id = `s-${unique()}`
   const [row] = await db
-    .insert(schema.shops)
+    .insert(shops)
     .values({ id, name: `Shop ${id}`, slug: id, ...patch })
     .returning()
   made.shops.push(row!.id)
@@ -69,7 +70,7 @@ export async function invitation(
 /** Everything the tests made (shops take their members, domains, tokens, keys and invitations with them) */
 export async function cleanup() {
   if (made.members.length) await db.delete(shopMembers).where(inArray(shopMembers.id, made.members))
-  if (made.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, made.shops))
-  if (made.users.length) await db.delete(schema.user).where(inArray(schema.user.id, made.users))
+  if (made.shops.length) await db.delete(shops).where(inArray(shops.id, made.shops))
+  if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
 }

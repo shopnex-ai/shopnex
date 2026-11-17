@@ -12,6 +12,7 @@
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "drizzle-orm": "catalog:"

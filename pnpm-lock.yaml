@@ -445,6 +445,9 @@ importers:
       '@shopnex/content':
         specifier: workspace:*
         version: link:../modules/content
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../modules/core
       '@shopnex/custom-fields':
         specifier: workspace:*
         version: link:../modules/custom-fields
@@ -707,6 +710,9 @@ importers:
       '@shopnex/content':
         specifier: workspace:*
         version: link:../content
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -741,6 +747,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -812,6 +821,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -846,6 +858,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -893,6 +908,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -924,6 +942,9 @@ importers:
       '@shopnex/auth':
         specifier: workspace:*
         version: link:../auth
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/custom-fields':
         specifier: workspace:*
         version: link:../custom-fields
@@ -982,6 +1003,9 @@ importers:
 
   modules/drafts:
     dependencies:
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -1001,6 +1025,9 @@ importers:
 
   modules/email:
     dependencies:
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -1038,6 +1065,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -1103,6 +1133,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/custom-fields':
         specifier: workspace:*
         version: link:../custom-fields
@@ -1146,6 +1179,9 @@ importers:
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../apps
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -1192,6 +1228,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
@@ -1223,9 +1262,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
-      '@shopnex/db':
+      '@shopnex/core':
         specifier: workspace:*
-        version: link:../db
+        version: link:../core
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
@@ -1291,6 +1330,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db

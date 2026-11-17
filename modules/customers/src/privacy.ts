@@ -9,6 +9,7 @@ import { session } from '@shopnex/auth/schema'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
 import { shopMembers } from '@shopnex/tenancy/schema'
+import { user as userTable } from '@shopnex/core/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -87,7 +88,7 @@ export async function exportData(shopId: string, customerId: string) {
     .where(and(eq(schema.emailSuppressions.shopId, shopId), eq(schema.emailSuppressions.email, email)))
 
   // The storefront login, when the customer has one
-  const login = customer.userId ? await db.select().from(schema.user).where(eq(schema.user.id, customer.userId)) : []
+  const login = customer.userId ? await db.select().from(userTable).where(eq(userTable.id, customer.userId)) : []
   const sessions = customer.userId ? await db.select().from(session).where(eq(session.userId, customer.userId)) : []
 
   return {
@@ -276,7 +277,7 @@ export async function erase(shopId: string, customerId: string) {
     // admin, or the customer of another shop (one login can serve several)
     let loginAccountDeleted = false
     if (customer.userId) {
-      const [user] = await tx.select().from(schema.user).where(eq(schema.user.id, customer.userId))
+      const [user] = await tx.select().from(userTable).where(eq(userTable.id, customer.userId))
       const [staff] = await tx
         .select({ id: shopMembers.id })
         .from(shopMembers)
@@ -288,7 +289,7 @@ export async function erase(shopId: string, customerId: string) {
         .where(eq(schema.customers.userId, customer.userId))
         .limit(1)
       if (user && !staff && !elsewhere && user.role !== 'superadmin') {
-        await tx.delete(schema.user).where(eq(schema.user.id, customer.userId))
+        await tx.delete(userTable).where(eq(userTable.id, customer.userId))
         loginAccountDeleted = true
       }
     }

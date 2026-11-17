@@ -3,12 +3,13 @@
 // every shop. Invitees still accept through Better Auth (/organization/accept-invitation), which reads these rows.
 import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import type { ShopRole } from './resolve'
 
 export { StaffError, type StaffErrorCode } from './tenancy.errors'
 import { StaffError } from './tenancy.errors'
 import { shopInvitations, shopMembers, type StaffRole } from './tenancy.schema'
+import { user } from '@shopnex/core/schema'
 
 // Who is acting: their role in this shop (super admins act as owners) and user id
 export type Actor = { userId: string; role: ShopRole; superAdmin: boolean }
@@ -30,14 +31,14 @@ export async function listMembers(shopId: string) {
         userId: shopMembers.userId,
         role: shopMembers.role,
         createdAt: shopMembers.createdAt,
-        name: schema.user.name,
-        email: schema.user.email,
+        name: user.name,
+        email: user.email,
       })
       .from(shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
+      .innerJoin(user, eq(user.id, shopMembers.userId))
       .where(eq(shopMembers.organizationId, shopId))
       // Owners, then admins, then staff (created_at isn't comparable: Better Auth writes it from JS, defaultNow() from the DB)
-      .orderBy(sql`case ${shopMembers.role} when 'owner' then 0 when 'admin' then 1 else 2 end`, asc(schema.user.name))
+      .orderBy(sql`case ${shopMembers.role} when 'owner' then 0 when 'admin' then 1 else 2 end`, asc(user.name))
   )
 }
 
@@ -71,8 +72,8 @@ export async function invite(
     const [existing] = await tx
       .select({ id: shopMembers.id })
       .from(shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
-      .where(and(eq(shopMembers.organizationId, shopId), eq(schema.user.email, email)))
+      .innerJoin(user, eq(user.id, shopMembers.userId))
+      .where(and(eq(shopMembers.organizationId, shopId), eq(user.email, email)))
     if (existing) throw new StaffError('ALREADY_MEMBER', `${email} is already a member of this shop`)
 
     await tx

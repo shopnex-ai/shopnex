@@ -3,6 +3,7 @@
 // database and fails instead of hanging if anything blocks.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { user as userTable } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -53,7 +54,7 @@ describe('first-run setup on the embedded database', () => {
     )
     assert.equal(user.email, 'owner@example.com')
 
-    const [row] = await db.select().from(schema.user).where(eq(schema.user.id, user.id))
+    const [row] = await db.select().from(userTable).where(eq(userTable.id, user.id))
     assert.equal(row?.role, SUPER_ADMIN_ROLE)
     assert.equal(row?.name, 'Owner', 'the name is the part of the email before the @, as it was typed')
 
@@ -78,7 +79,7 @@ describe('first-run setup on the embedded database', () => {
       ),
       (error: unknown) => error instanceof SetupError && /already complete/.test(error.message),
     )
-    const users = await db.select().from(schema.user)
+    const users = await db.select().from(userTable)
     assert.equal(users.length, 1, 'no second account was created')
   })
 })

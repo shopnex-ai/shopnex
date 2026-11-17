@@ -7,7 +7,7 @@
 // There is no FK to the entity (the type says which table the id is in): the entity's module deletes its
 // drafts with it (draftService.remove).
 import { integer, jsonb, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
-import { shops } from '@shopnex/db/schema'
+import { shops } from '@shopnex/core/schema'
 
 export type DraftChanges = Record<string, unknown>
 
