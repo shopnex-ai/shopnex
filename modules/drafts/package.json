@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./module": "./src/drafts.module.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -12,6 +13,7 @@
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

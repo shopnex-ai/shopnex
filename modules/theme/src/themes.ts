@@ -6,7 +6,7 @@
 // several themes renders its theme (`getLive`), a single-theme storefront only when it's a copy of its own.
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { schema, type Conn } from '@shopnex/db'
-import { applyChanges, draftJoin, draftService, hasDraft } from '@shopnex/drafts'
+import { applyChanges, draftJoin, draftService, entityDrafts, hasDraft } from '@shopnex/drafts'
 import type { ShopTheme, StoredThemeDocument } from '@shopnex/db/schema'
 
 const t = schema.shopThemes
@@ -38,7 +38,7 @@ export async function list(shopId: string, conn: Conn) {
       updatedAt: t.updatedAt,
     })
     .from(t)
-    .leftJoin(schema.entityDrafts, draftJoin(CODE_DRAFT, t.shopId, t.id))
+    .leftJoin(entityDrafts, draftJoin(CODE_DRAFT, t.shopId, t.id))
     .where(eq(t.shopId, shopId))
     .orderBy(sql`${t.role} = 'live' desc`, desc(t.updatedAt))
 }

@@ -1,3 +1,5 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // Unpublished changes to any entity (the theme's code today; products and the like later). A draft is a
 // shallow patch over the entity's live data: key → new value, or null to remove the key when published.
 // Keeping it out of the entity's own table means the live row, and everything that reads it (storefronts,
@@ -5,7 +7,7 @@
 // There is no FK to the entity (the type says which table the id is in): the entity's module deletes its
 // drafts with it (draftService.remove).
 import { integer, jsonb, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/db/schema'
 
 export type DraftChanges = Record<string, unknown>
 
