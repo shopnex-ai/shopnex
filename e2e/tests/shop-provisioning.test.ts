@@ -76,12 +76,13 @@ describe('createShop', () => {
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))
     // Published on the Online Store, or the storefront would show an empty catalog
-    const channel = await channelService.getDefault(shop.id)
+    const channel = await channelService.getDefault(shop.id, db)
     const live = await publicationService.liveIds(
       shop.id,
       channel.id,
       'product',
       products.map((p) => p.id),
+      db,
     )
     assert.equal(live.size, 4)
   })

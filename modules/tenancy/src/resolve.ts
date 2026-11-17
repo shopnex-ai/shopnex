@@ -1,3 +1,4 @@
+import { db } from '@shopnex/db'
 import { channelService } from '@shopnex/channels'
 import type { Shop, ShopRole } from '@shopnex/db/schema'
 import { ROOT_DOMAIN, isMultiTenant } from './config'
@@ -45,13 +46,13 @@ export async function resolveStorefrontShop(headers: Headers): Promise<Storefron
   }
   if (!isMultiTenant) {
     const shop = await ensureDefaultShop()
-    return { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+    return { ok: true, shop, channelId: (await channelService.getDefault(shop.id, db)).id }
   }
   const host = hostOf(headers)
   const slug = ROOT_DOMAIN ? subdomainSlug(host, ROOT_DOMAIN) : null
   const shop = slug ? await getShopBySlug(slug) : await getShopByDomain(host)
   return shop
-    ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+    ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id, db)).id }
     : { ok: false, reason: 'shop_not_found' }
 }
 

@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { db } from '@shopnex/db'
 import { collectionService } from '@shopnex/catalog'
 import { publicationService } from '@shopnex/channels'
 import { scoped } from '../../orpc'
@@ -29,7 +30,7 @@ type CollectionRow = NonNullable<Awaited<ReturnType<typeof collectionService.get
 async function withExtras(shopId: string, rows: CollectionRow[]) {
   const ids = rows.map((r) => r.id)
   const counts = await collectionService.productCounts(shopId, ids)
-  const publications = await publicationService.listFor(shopId, 'collection', ids)
+  const publications = await publicationService.listFor(shopId, 'collection', ids, db)
   return rows.map((r) => ({
     ...r,
     productCount: counts.get(r.id) ?? 0,
@@ -62,7 +63,7 @@ export const collections = {
     .input(id)
     .handler(async ({ input, context }) => {
       if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
-      return (await publicationService.listFor(context.shop.id, 'collection', [input.id])).get(input.id)!
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
     }),
 
   // Publishes the collection on exactly these channels
@@ -72,8 +73,8 @@ export const collections = {
     .input(publicationsInput.extend(id.shape))
     .handler(async ({ input, context }) => {
       if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
-      await publicationService.set(context.shop.id, 'collection', input.id, input.publications)
-      return (await publicationService.listFor(context.shop.id, 'collection', [input.id])).get(input.id)!
+      await publicationService.set(context.shop.id, 'collection', input.id, input.publications, db)
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
     }),
 
   deleteMany: write

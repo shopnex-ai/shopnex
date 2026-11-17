@@ -316,7 +316,11 @@ async function activeProduct(
   currency: string,
   channelId: string,
 ) {
-  if (!row || row.status !== 'active' || !(await publicationService.isLive(row.shopId, channelId, 'product', row.id))) {
+  if (
+    !row ||
+    row.status !== 'active' ||
+    !(await publicationService.isLive(row.shopId, channelId, 'product', row.id, db))
+  ) {
     throw new ORPCError('NOT_FOUND')
   }
   const [product] = await withLiveCollections(await productService.withDetails([row]), row.shopId, channelId)
@@ -414,7 +418,7 @@ export const storefrontRouter = storefront.router({
       const collection = await collectionService.getBySlug(context.shop.id, input.handle)
       if (
         !collection ||
-        !(await publicationService.isLive(context.shop.id, context.channelId, 'collection', collection.id))
+        !(await publicationService.isLive(context.shop.id, context.channelId, 'collection', collection.id, db))
       ) {
         throw new ORPCError('NOT_FOUND')
       }

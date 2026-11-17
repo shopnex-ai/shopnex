@@ -2,16 +2,23 @@
 // the date has come. Products also need status "active" (checked by the catalog, which owns it).
 // Whether the resource itself exists, and is the shop's, is for the caller to check: only it knows the table.
 import { and, eq, exists, inArray, lte, sql, type AnyColumn } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { QueryBuilder } from 'drizzle-orm/pg-core'
+import { schema, type Conn } from '@shopnex/db'
 import type { PublishableType } from '@shopnex/db/schema'
 import { ChannelError } from './channels.errors'
 
 const t = schema.resourcePublications
 
-export type Publication = { channelId: string; publishedAt: Date }
+export interface Publication {
+  channelId: string
+  publishedAt: Date
+}
 
 /** Publish on this date; a date in the future schedules it, omitted means now */
-export type PublicationInput = { channelId: string; publishAt?: Date | null }
+export interface PublicationInput {
+  channelId: string
+  publishAt?: Date | null
+}
 
 /**
  * For queries on the resource's table: true when the resource is on the channel
@@ -19,7 +26,7 @@ export type PublicationInput = { channelId: string; publishAt?: Date | null }
  */
 export const liveOn = (type: PublishableType, channelId: string, resourceId: AnyColumn) =>
   exists(
-    db
+    new QueryBuilder()
       .select({ one: sql`1` })
       .from(t)
       .where(
@@ -33,7 +40,7 @@ export const liveOn = (type: PublishableType, channelId: string, resourceId: Any
   )
 
 /** Every channel the resource is published on, scheduled ones included */
-export async function listFor(shopId: string, type: PublishableType, ids: string[], conn: Conn = db) {
+export async function listFor(shopId: string, type: PublishableType, ids: string[], conn: Conn) {
   const byResource = new Map<string, Publication[]>(ids.map((id) => [id, []]))
   if (!ids.length) return byResource
   const rows = await conn
@@ -46,13 +53,7 @@ export async function listFor(shopId: string, type: PublishableType, ids: string
 }
 
 /** Which of the resources are on the channel now */
-export async function liveIds(
-  shopId: string,
-  channelId: string,
-  type: PublishableType,
-  ids: string[],
-  conn: Conn = db,
-) {
+export async function liveIds(shopId: string, channelId: string, type: PublishableType, ids: string[], conn: Conn) {
   if (!ids.length) return new Set<string>()
   const rows = await conn
     .select({ id: t.resourceId })
@@ -69,7 +70,7 @@ export async function liveIds(
   return new Set(rows.map((r) => r.id))
 }
 
-export async function isLive(shopId: string, channelId: string, type: PublishableType, id: string, conn: Conn = db) {
+export async function isLive(shopId: string, channelId: string, type: PublishableType, id: string, conn: Conn) {
   return (await liveIds(shopId, channelId, type, [id], conn)).has(id)
 }
 
@@ -77,13 +78,7 @@ export async function isLive(shopId: string, channelId: string, type: Publishabl
  * Makes the resource published on exactly these channels. A channel that stays keeps its date, so saving the
  * same list again doesn't reset a schedule; one given a date changes to it.
  */
-export async function set(
-  shopId: string,
-  type: PublishableType,
-  id: string,
-  items: PublicationInput[],
-  conn: Conn = db,
-) {
+export async function set(shopId: string, type: PublishableType, id: string, items: PublicationInput[], conn: Conn) {
   const wanted = new Map(items.map((i) => [i.channelId, i]))
   const channelIds = [...wanted.keys()]
   if (channelIds.length) {
@@ -120,12 +115,11 @@ export async function set(
         })
     }
   }
-  if (conn === db) await db.transaction(run)
-  else await run(conn)
+  await conn.transaction(run)
 }
 
 /** For a newly created resource: publishes it on the channels that want new resources (the Online Store) */
-export async function autoPublish(shopId: string, type: PublishableType, id: string, conn: Conn = db) {
+export async function autoPublish(shopId: string, type: PublishableType, id: string, conn: Conn) {
   const auto = await conn
     .select({ id: schema.channels.id })
     .from(schema.channels)
@@ -138,7 +132,7 @@ export async function autoPublish(shopId: string, type: PublishableType, id: str
 }
 
 /** For when the resources are deleted */
-export async function removeFor(shopId: string, type: PublishableType, ids: string[], conn: Conn = db) {
+export async function removeFor(shopId: string, type: PublishableType, ids: string[], conn: Conn) {
   if (!ids.length) return
   await conn.delete(t).where(and(eq(t.shopId, shopId), eq(t.resourceType, type), inArray(t.resourceId, ids)))
 }

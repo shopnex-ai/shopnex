@@ -19,6 +19,7 @@ const strictModules = [
   'modules/payments',
   'modules/ai',
   'modules/webhooks',
+  'modules/channels',
 ]
 
 // Connection-bound modules: their code never imports the shared `db`. Every function that queries takes the `conn`
@@ -36,6 +37,7 @@ const connectionBoundModules = [
   'modules/payments',
   'modules/ai',
   'modules/webhooks',
+  'modules/channels',
 ]
 
 // Server code logs through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), never console.*: every

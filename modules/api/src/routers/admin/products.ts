@@ -33,6 +33,7 @@ async function withPublications<T extends { id: string }>(shopId: string, items:
     shopId,
     'product',
     items.map((i) => i.id),
+    db,
   )
   return items.map((item) => ({ ...item, publications: byProduct.get(item.id) ?? [] }))
 }
@@ -88,7 +89,7 @@ export const products = {
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       if (!(await productService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
-      return (await publicationService.listFor(context.shop.id, 'product', [input.id])).get(input.id)!
+      return (await publicationService.listFor(context.shop.id, 'product', [input.id], db)).get(input.id)!
     }),
 
   // Publishes the product on exactly these channels (an unpublished product, by status, is still hidden)

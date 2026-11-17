@@ -7,7 +7,7 @@ export const PUBLISHABLE_KEY_PREFIX = 'pk_'
 
 /** `channelId`: the channel the key reads (default: the Online Store). Throws ChannelError when it isn't the shop's. */
 export async function createStorefrontKey(shopId: string, name: string, channelId?: string) {
-  const channel = await channelService.resolve(shopId, channelId)
+  const channel = await channelService.resolve(shopId, channelId, db)
   const [key] = await db
     .insert(schema.storefrontKeys)
     .values({
