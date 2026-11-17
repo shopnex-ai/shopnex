@@ -93,11 +93,16 @@ jobs:
       - run: pnpm build
 
   # The unit tests run beside lint and typecheck, not after them: they need neither, and in one job they were the longest step
-  # (each test file boots its own in-memory database). Add this job to the required checks next to "Lint, typecheck, build".
-  unit-tests:
-    name: Unit tests
+  # (each test file boots its own in-memory database). They are split over two runners by scripts/test-shard.mjs, which gives
+  # every package with tests to exactly one shard.
+  unit-test-shards:
+    name: Unit tests (shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v7
 
@@ -110,7 +115,22 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm test
+      - run: node scripts/test-shard.mjs ${{ matrix.shard }} 2
+
+  # One check for the shards, so the name in the required checks does not change when the number of shards does. Add "Unit tests"
+  # (this job) to the required checks next to "Lint, typecheck, build".
+  unit-tests:
+    name: Unit tests
+    needs: unit-test-shards
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every shard passed
+        env:
+          RESULT: ${{ needs.unit-test-shards.result }}
+        run: |
+          echo "unit test shards: $RESULT"
+          test "$RESULT" = success
 
   app-image:
     name: App image (${{ matrix.app }})
