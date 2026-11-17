@@ -1,7 +1,7 @@
 // Sends queued deliveries. Runs in the app process (started from apps/admin-ui/src/server.ts);
 // rows are claimed with SKIP LOCKED, so several app instances can run it side by side.
 import { and, eq, inArray, lt, lte, ne, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { WebhookDelivery, WebhookEndpoint } from '@shopnex/db/schema'
 import { assertPublicHost } from './network'
 import { signedHeaders } from './sign'
@@ -17,7 +17,7 @@ const POLL_MS = 3_000
 // Finished deliveries are kept this long for the admin's delivery log
 export const RETENTION_MS = 30 * 24 * 3600_000
 
-export type WorkerOptions = {
+export interface WorkerOptions {
   /**
    * Allow endpoints on loopback/private addresses (e.g. a local n8n). Off in multi-tenant mode, where a
    * merchant could otherwise make the server call internal services (SSRF).
@@ -34,8 +34,8 @@ export type WorkerOptions = {
 
 // Claims due deliveries by pushing their next attempt past the lease. "Due" uses the DB clock, the same
 // one that stamped new rows, so app/DB clock skew can't hide them.
-async function claim(): Promise<WebhookDelivery[]> {
-  return db.transaction(async (tx) => {
+async function claim(conn: Conn): Promise<WebhookDelivery[]> {
+  return conn.transaction(async (tx) => {
     const due = await tx
       .select({ id: schema.webhookDeliveries.id })
       .from(schema.webhookDeliveries)
@@ -59,18 +59,23 @@ async function claim(): Promise<WebhookDelivery[]> {
   })
 }
 
-type Result = { ok: boolean; responseStatus: number | null; error: string | null }
+interface Result {
+  ok: boolean
+  responseStatus: number | null
+  error: string | null
+}
 
 async function send(delivery: WebhookDelivery, endpoint: WebhookEndpoint, opts: WorkerOptions): Promise<Result> {
   try {
     const url = new URL(endpoint.url)
     if (!opts.allowPrivateNetworks) await assertPublicHost(url)
-    const headers: Record<string, string> = signedHeaders(endpoint.secret, delivery.id, delivery.body)
+    const signed = signedHeaders(endpoint.secret, delivery.id, delivery.body)
+    const headers: Record<string, string> = { ...signed }
     if (opts.instanceSignature) {
-      const signed = await opts.instanceSignature(`${delivery.id}.${headers['webhook-timestamp']}.${delivery.body}`)
-      headers['webhook-signature'] += ` v1a,${signed.signature}`
-      headers['shopnex-instance'] = signed.instance
-      headers['shopnex-key-id'] = signed.kid
+      const instance = await opts.instanceSignature(`${delivery.id}.${signed['webhook-timestamp']}.${delivery.body}`)
+      headers['webhook-signature'] = `${signed['webhook-signature']} v1a,${instance.signature}`
+      headers['shopnex-instance'] = instance.instance
+      headers['shopnex-key-id'] = instance.kid
     }
     const res = await fetch(opts.resolveUrl ? opts.resolveUrl(url.href) : url, {
       method: 'POST',
@@ -88,7 +93,12 @@ async function send(delivery: WebhookDelivery, endpoint: WebhookEndpoint, opts: 
   }
 }
 
-async function attempt(delivery: WebhookDelivery, endpoint: WebhookEndpoint | undefined, opts: WorkerOptions) {
+async function attempt(
+  delivery: WebhookDelivery,
+  endpoint: WebhookEndpoint | undefined,
+  opts: WorkerOptions,
+  conn: Conn,
+) {
   const now = new Date()
   const attempts = delivery.attempts + 1
   const result: Result = !endpoint
@@ -98,7 +108,7 @@ async function attempt(delivery: WebhookDelivery, endpoint: WebhookEndpoint | un
       : await send(delivery, endpoint, opts)
   const retryIn = RETRY_DELAYS_S[attempts - 1]
   const giveUp = !endpoint?.active || retryIn === undefined
-  await db
+  await conn
     .update(schema.webhookDeliveries)
     .set({
       attempts,
@@ -115,21 +125,21 @@ async function attempt(delivery: WebhookDelivery, endpoint: WebhookEndpoint | un
 }
 
 /** One pass: sends what's due. Returns how many deliveries it handled. */
-export async function processDue(opts: WorkerOptions) {
-  const deliveries = await claim()
+export async function processDue(opts: WorkerOptions, conn: Conn) {
+  const deliveries = await claim(conn)
   if (deliveries.length === 0) return 0
   const endpointIds = [...new Set(deliveries.map((d) => d.endpointId))]
-  const endpoints = await db
+  const endpoints = await conn
     .select()
     .from(schema.webhookEndpoints)
     .where(inArray(schema.webhookEndpoints.id, endpointIds))
   const byId = new Map(endpoints.map((e) => [e.id, e]))
-  await Promise.all(deliveries.map((d) => attempt(d, byId.get(d.endpointId), opts)))
+  await Promise.all(deliveries.map((d) => attempt(d, byId.get(d.endpointId), opts, conn)))
   return deliveries.length
 }
 
-async function pruneFinished() {
-  await db
+async function pruneFinished(conn: Conn) {
+  await conn
     .delete(schema.webhookDeliveries)
     .where(
       and(
@@ -142,7 +152,7 @@ async function pruneFinished() {
 const globalForWorker = globalThis as unknown as { webhookWorker?: { stop: () => void } }
 
 /** Starts the polling loop once per process (dev hot reloads reuse it). Returns a stop function. */
-export function startDeliveryWorker(opts: WorkerOptions) {
+export function startDeliveryWorker(opts: WorkerOptions, conn: Conn) {
   if (globalForWorker.webhookWorker) return globalForWorker.webhookWorker.stop
   let stopped = false
   let timer: NodeJS.Timeout | undefined
@@ -151,18 +161,18 @@ export function startDeliveryWorker(opts: WorkerOptions) {
   const loop = async () => {
     let handled = 0
     try {
-      handled = await processDue(opts)
+      handled = await processDue(opts, conn)
       if (Date.now() - lastPrune > 3600_000) {
         lastPrune = Date.now()
-        await pruneFinished()
+        await pruneFinished(conn)
       }
     } catch (error) {
       log.error({ err: error }, 'delivery worker failed')
     }
     // A full batch means more may be due: go again right away
-    if (!stopped) timer = setTimeout(loop, handled === BATCH ? 0 : POLL_MS)
+    if (!stopped) timer = setTimeout(() => void loop(), handled === BATCH ? 0 : POLL_MS)
   }
-  timer = setTimeout(loop, POLL_MS)
+  timer = setTimeout(() => void loop(), POLL_MS)
 
   const stop = () => {
     stopped = true
