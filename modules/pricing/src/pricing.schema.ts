@@ -1,8 +1,10 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // Discount codes and tax rates. Modeled on Shopify's basic code discounts (amount off the order,
 // or free shipping) and manual tax rates per country / province.
 import { sql } from 'drizzle-orm'
-import { boolean, index, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { boolean, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { shops } from '@shopnex/db/schema'
 
 // percentage: `value` is a whole percent (1–100) off the subtotal; fixed_amount: `value` minor units off
 // the subtotal; free_shipping: shipping costs nothing (`value` unused, 0)

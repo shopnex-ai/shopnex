@@ -4,6 +4,7 @@
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 export { customFieldOutput } from '@shopnex/custom-fields/contract'
+export { discountOutput, taxRateOutput } from '@shopnex/pricing/contract'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
@@ -22,7 +23,6 @@ import {
   apps,
   channels,
   collections,
-  discounts,
   files,
   menus,
   pages,
@@ -31,7 +31,6 @@ import {
   shopThemes,
   shopInvitations,
   storefrontKeys,
-  taxRates,
   webhookDeliveries,
   aiGenerations,
   aiSettings,
@@ -157,7 +156,6 @@ export const publicationsOutput = publications
 export const channelOutput = createSelectSchema(channels, { type: z.enum(CHANNEL_TYPES) })
 export const shippingRateOutput = createSelectSchema(shippingRates)
 export const paymentMethodOutput = createSelectSchema(paymentMethods, { provider: z.enum(['manual', 'app']) })
-export const taxRateOutput = createSelectSchema(taxRates)
 
 // Catalog
 export const collectionOutput = createSelectSchema(collections)
@@ -211,9 +209,6 @@ export const customerEraseOutput = z.object({
 
 // customer.erased: names the customer so a receiver can find and delete its own copy
 export const customerErasedOutput = z.object({ id: z.uuid(), email: z.string() })
-export const discountOutput = createSelectSchema(discounts, {
-  type: z.enum(['percentage', 'fixed_amount', 'free_shipping']),
-})
 export const pageOutput = createSelectSchema(pages)
 export const menuOutput = createSelectSchema(menus).extend({ items: z.custom<StoredMenuItem[]>() })
 

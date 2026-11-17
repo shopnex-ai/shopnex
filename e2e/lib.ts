@@ -9,6 +9,7 @@ import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
 import { db, schema } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
+import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
 import { createApiToken, createStorefrontKey, getShopById, type ApiScope } from '@shopnex/tenancy'
 
@@ -307,8 +308,8 @@ export class Fixtures {
     }
     await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
     if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))
-    if (this.discounts.length) await db.delete(schema.discounts).where(inArray(schema.discounts.id, this.discounts))
-    if (this.taxRates.length) await db.delete(schema.taxRates).where(inArray(schema.taxRates.id, this.taxRates))
+    if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
+    if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
       await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.id, this.shippingRates))
     }

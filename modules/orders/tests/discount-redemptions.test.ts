@@ -9,6 +9,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 
 const { db, schema, prepareDatabase } = await import('@shopnex/db')
 const { discountService } = await import('@shopnex/pricing')
+const { discounts } = await import('@shopnex/pricing/schema')
 const { checkDiscount, redeemDiscount } = await import('../src/discount-redemptions')
 const { eq, sql } = await import('drizzle-orm')
 
@@ -25,7 +26,7 @@ before(async () => {
 })
 
 after(async () => {
-  await db.delete(schema.discounts).where(eq(schema.discounts.shopId, SHOP))
+  await db.delete(discounts).where(eq(discounts.shopId, SHOP))
   await db.delete(schema.orders).where(eq(schema.orders.shopId, SHOP))
   await db.delete(schema.customers).where(eq(schema.customers.shopId, SHOP))
   await db.$client.end?.()
@@ -82,7 +83,7 @@ describe('placing an order with a discount', () => {
     const buyer = await customer('count')
     const { error, order: placed } = await place('COUNT', buyer.id)
     assert.equal(error, null)
-    const [after] = await db.select().from(schema.discounts).where(eq(schema.discounts.id, d.id))
+    const [after] = await db.select().from(discounts).where(eq(discounts.id, d.id))
     assert.equal(after!.usageCount, 1)
     assert.equal(await redemptions(d.id), 1)
     assert.ok(placed)
@@ -113,7 +114,7 @@ describe('placing an order with a discount', () => {
     const buyer = await customer('refused')
     await place('REFUSED', buyer.id)
     await place('REFUSED', buyer.id)
-    const [after] = await db.select().from(schema.discounts).where(eq(schema.discounts.id, d.id))
+    const [after] = await db.select().from(discounts).where(eq(discounts.id, d.id))
     assert.equal(after!.usageCount, 1)
     assert.equal(await redemptions(d.id), 1)
   })
@@ -141,7 +142,7 @@ describe('what the database does with a redemption', () => {
   test('deleting the discount deletes its redemptions', async () => {
     const d = await discount({ code: 'GONE' })
     await place('GONE', null)
-    await db.delete(schema.discounts).where(eq(schema.discounts.id, d.id))
+    await db.delete(discounts).where(eq(discounts.id, d.id))
     assert.equal(await redemptions(d.id), 0)
   })
 })

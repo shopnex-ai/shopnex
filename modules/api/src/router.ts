@@ -12,7 +12,6 @@ import {
 import {
   paymentMethods as adminPaymentMethods,
   shippingRates as adminShippingRates,
-  taxRates as adminTaxRates,
 } from './routers/admin/checkout-settings'
 import {
   carrierServices as adminCarrierServices,
@@ -21,7 +20,7 @@ import {
 import { collections as adminCollections } from './routers/admin/collections'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
-import { discounts as adminDiscounts } from './routers/admin/discounts'
+import { pricingModule } from '@shopnex/pricing/module'
 import { email as adminEmail } from './routers/admin/email'
 import { files as adminFiles } from './routers/admin/files'
 import { menus as adminMenus } from './routers/admin/menus'
@@ -67,7 +66,7 @@ export const router = {
     customers: tagged('Admin · Customers').router(adminCustomers),
     orders: tagged('Admin · Orders').router(adminOrders),
     analytics: tagged('Admin · Analytics').router(adminAnalytics),
-    discounts: tagged('Admin · Discounts').router(adminDiscounts),
+    discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
     themes: tagged('Admin · Themes').router(adminThemes),
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
@@ -87,7 +86,7 @@ export const router = {
     paymentApps: tagged('Admin · Payments').router(adminPaymentApps),
     paymentsApp: tagged('Admin · Payments apps').router(adminPaymentsApp),
     paymentSessions: tagged('Admin · Payments apps').router(adminPaymentSessions),
-    taxRates: tagged('Admin · Taxes').router(adminTaxRates),
+    taxRates: tagged('Admin · Taxes').router(pricingModule.router.taxRates),
     ai: tagged('Admin · AI').router(adminAi),
     aiSettings: tagged('Admin · AI').router(adminAiSettings),
     aiApp: tagged('Admin · AI apps').router(adminAiApp),

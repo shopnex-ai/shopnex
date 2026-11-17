@@ -1,10 +1,16 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
-import { discountService } from '@shopnex/pricing'
-import { scoped } from '../../orpc'
-import { discountCreateInput, discountInput } from './schemas'
-import { countOutput, discountOutput } from './outputs'
+import { createProcedures, mapperFor } from '@shopnex/rpc'
+import * as discountService from './discounts'
+import { discountCreateInput, discountInput, discountOutput, taxRateInput, taxRateOutput } from './pricing.contract'
+import { PricingError } from './pricing.errors'
+import * as taxService from './taxes'
+
+// What the Admin API answers with for this module's errors: the statuses declared in pricing.errors.ts
+export const pricingErrors = mapperFor(PricingError)
+
+const { scoped, shopManager } = createProcedures(pricingErrors)
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -19,7 +25,7 @@ const write = scoped('write_discounts')
 export const discounts = {
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/discounts/bulk' })
-    .output(countOutput)
+    .output(z.number().int())
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
     .handler(({ input, context }) => discountService.removeMany(context.shop.id, input.ids, db)),
 
@@ -49,4 +55,29 @@ export const discounts = {
     .output(discountOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await discountService.remove(context.shop.id, input.id, db))),
+}
+
+// Settings → Taxes: rates by country / province (whether prices include tax is on the shop)
+export const taxRates = {
+  list: shopManager
+    .route({ method: 'GET', path: '/admin/tax-rates' })
+    .output(z.array(taxRateOutput))
+    .handler(({ context }) => taxService.list(context.shop.id, db)),
+  create: shopManager
+    .route({ method: 'POST', path: '/admin/tax-rates' })
+    .output(taxRateOutput)
+    .input(taxRateInput)
+    .handler(({ input, context }) => taxService.create(context.shop.id, input, db)),
+  update: shopManager
+    .route({ method: 'PATCH', path: '/admin/tax-rates/{id}' })
+    .output(taxRateOutput)
+    .input(id.extend(taxRateInput.partial().shape))
+    .handler(async ({ input: { id, ...patch }, context }) =>
+      found(await taxService.update(context.shop.id, id, patch, db)),
+    ),
+  delete: shopManager
+    .route({ method: 'DELETE', path: '/admin/tax-rates/{id}' })
+    .output(taxRateOutput)
+    .input(id)
+    .handler(async ({ input, context }) => found(await taxService.remove(context.shop.id, input.id, db))),
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
 import { unavailableReason } from '../src/discounts'
-import { PricingError } from '../src/errors'
+import { PricingError } from '../src/pricing.errors'
 
 const now = new Date('2026-06-15T12:00:00Z')
 const discount = (patch: Record<string, unknown> = {}) =>
