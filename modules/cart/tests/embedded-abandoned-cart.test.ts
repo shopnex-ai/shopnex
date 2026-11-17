@@ -9,7 +9,9 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'embedded-abandoned-cart-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { channelService } = await import('@shopnex/channels')
 const { productService } = await import('@shopnex/catalog')
 const { queueAbandonedCartEmails } = await import('@shopnex/email')

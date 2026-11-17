@@ -12,7 +12,9 @@ process.env.OPEN_SIGNUP = 'true'
 process.env.SHOPNEX_SECRET ??= 'embedded-signup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { eq } = await import('drizzle-orm')
 

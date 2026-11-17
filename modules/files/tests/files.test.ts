@@ -11,7 +11,9 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.APP_URL = 'http://shop.test'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { files: filesTable, storageBackends } = await import('../src/files.schema')
 const { fileService, FilesError, MAX_FILE_SIZE } = await import('../src')
 const { eq } = await import('drizzle-orm')
