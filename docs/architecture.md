@@ -33,7 +33,7 @@
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
 - /auth # Better Auth integration
-- /db # drizzle client + all table schemas (src/schema/<domain>.ts) + migrations
+- /db # drizzle client + the core table schemas (src/schema/<domain>.ts) + migrations (one history for all tables). A module may own its tables in `modules/<name>/src/<name>.schema.ts` (custom-fields does): `pnpm db:generate` and the privacy test find them by that name, and CI fails when the schema and the migrations disagree
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker

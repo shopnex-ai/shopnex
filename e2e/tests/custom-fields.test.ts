@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
+import { customFieldDefinitions } from '@shopnex/custom-fields/schema'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 
@@ -60,7 +61,7 @@ after(async () => {
   if (productIds.length) await call('DELETE', '/admin/products/bulk', { ids: productIds }, token)
   if (customerIds.length) await call('DELETE', '/admin/customers/bulk', { ids: customerIds }, token)
   for (const d of Object.values(defs))
-    await db.delete(schema.customFieldDefinitions).where(eq(schema.customFieldDefinitions.id, d.id))
+    await db.delete(customFieldDefinitions).where(eq(customFieldDefinitions.id, d.id))
   await fx.cleanup()
   await closeDb()
 })

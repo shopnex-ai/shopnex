@@ -5,7 +5,23 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { getTableConfig } from 'drizzle-orm/pg-core'
-import * as schema from '@shopnex/db/schema'
+import { existsSync, readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import * as core from '@shopnex/db/schema'
+
+// The core tables, and the ones a module owns (modules/<name>/src/*.schema.ts): a table cannot leave the check by moving
+const modulesDir = fileURLToPath(new URL('../../modules/', import.meta.url))
+const moduleSchemaFiles = readdirSync(modulesDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && existsSync(`${modulesDir}${entry.name}/src`))
+  .flatMap((entry) =>
+    readdirSync(`${modulesDir}${entry.name}/src`)
+      .filter((file) => file.endsWith('.schema.ts'))
+      .map((file) => `${modulesDir}${entry.name}/src/${file}`),
+  )
+const moduleSchemas = await Promise.all(
+  moduleSchemaFiles.map((file) => import(file) as Promise<Record<string, unknown>>),
+)
+const schema: Record<string, unknown> = Object.assign({}, core, ...moduleSchemas)
 
 const LOOKS_PERSONAL = /email|phone|address|ip_address|user_agent|first_name|last_name/
 

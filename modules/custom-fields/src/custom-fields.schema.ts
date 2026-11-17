@@ -1,6 +1,8 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts (modules/db/drizzle.config.ts):
+// the migrations stay one history in modules/db/migrations.
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/db/schema'
 
 // The records a shop can add its own fields to
 export const CUSTOM_FIELD_RESOURCES = ['product', 'order', 'customer'] as const
@@ -9,10 +11,6 @@ export type CustomFieldResource = (typeof CUSTOM_FIELD_RESOURCES)[number]
 // boolean = yes/no; choice = one of the field's options; file = the URL of an uploaded file
 export const CUSTOM_FIELD_TYPES = ['text', 'number', 'boolean', 'choice', 'file'] as const
 export type CustomFieldType = (typeof CUSTOM_FIELD_TYPES)[number]
-
-// What a record stores per field: text, choice and file as a string, number, boolean
-export type CustomFieldValue = string | number | boolean
-export type CustomFieldValues = Record<string, CustomFieldValue>
 
 // `key` in definitions: how themes and APIs address the field (product.custom_fields.<key>)
 export const CUSTOM_FIELD_KEY_PATTERN = /^[a-z][a-z0-9_]*$/
