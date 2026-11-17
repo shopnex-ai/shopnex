@@ -49,7 +49,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 ```text
 db        →
 channels  → db
-pricing   → db
+pricing   → db, rpc
 drafts    → db
 webhooks  → db
 theme     → db, drafts

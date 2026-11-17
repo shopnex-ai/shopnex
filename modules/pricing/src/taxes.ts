@@ -1,20 +1,20 @@
 // Tax rates per country / province (admin: Settings → Taxes). Business logic only; every query is
 // scoped by shopId. Whether prices include tax and whether shipping is taxed are shop settings.
 import { and, asc, eq, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { TaxRate } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
 import { taxRateFor } from './calculate'
-import { PricingError } from './errors'
+import { PricingError } from './pricing.errors'
+import { taxRates, type TaxRate } from './pricing.schema'
 
-type NewTaxRate = typeof schema.taxRates.$inferInsert
+type NewTaxRate = typeof taxRates.$inferInsert
 export type TaxRateInput = Pick<NewTaxRate, 'countryCode' | 'province' | 'name' | 'ratePercent'>
 
 export async function list(shopId: string, conn: Conn) {
   return conn
     .select()
-    .from(schema.taxRates)
-    .where(eq(schema.taxRates.shopId, shopId))
-    .orderBy(asc(schema.taxRates.countryCode), sql`${schema.taxRates.province} nulls first`)
+    .from(taxRates)
+    .where(eq(taxRates.shopId, shopId))
+    .orderBy(asc(taxRates.countryCode), sql`${taxRates.province} nulls first`)
 }
 
 // The rate for a shipping address (null: no tax). Province-specific rates win over country-wide ones.
@@ -26,8 +26,8 @@ export async function rateForAddress(
   if (!address) return null
   const rates = await conn
     .select()
-    .from(schema.taxRates)
-    .where(and(eq(schema.taxRates.shopId, shopId), eq(schema.taxRates.countryCode, address.countryCode.toUpperCase())))
+    .from(taxRates)
+    .where(and(eq(taxRates.shopId, shopId), eq(taxRates.countryCode, address.countryCode.toUpperCase())))
   return taxRateFor(rates, address)
 }
 
@@ -51,13 +51,13 @@ async function assertRegionFree(
   exceptId?: string,
 ) {
   const [existing] = await conn
-    .select({ id: schema.taxRates.id })
-    .from(schema.taxRates)
+    .select({ id: taxRates.id })
+    .from(taxRates)
     .where(
       and(
-        eq(schema.taxRates.shopId, shopId),
-        eq(schema.taxRates.countryCode, r.countryCode),
-        sql`coalesce(lower(${schema.taxRates.province}), '') = ${r.province?.toLowerCase() ?? ''}`,
+        eq(taxRates.shopId, shopId),
+        eq(taxRates.countryCode, r.countryCode),
+        sql`coalesce(lower(${taxRates.province}), '') = ${r.province?.toLowerCase() ?? ''}`,
       ),
     )
   if (existing && existing.id !== exceptId) {
@@ -75,7 +75,7 @@ export async function create(shopId: string, input: TaxRateInput, conn: Conn) {
   return conn.transaction(async (tx) => {
     await assertRegionFree(tx, shopId, values)
     const [rate] = await tx
-      .insert(schema.taxRates)
+      .insert(taxRates)
       .values({ ...values, shopId })
       .returning()
     if (!rate) throw new Error('The tax rate was not saved')
@@ -88,15 +88,15 @@ export async function update(shopId: string, id: string, patch: Partial<TaxRateI
   return conn.transaction(async (tx) => {
     const [current] = await tx
       .select()
-      .from(schema.taxRates)
-      .where(and(eq(schema.taxRates.shopId, shopId), eq(schema.taxRates.id, id)))
+      .from(taxRates)
+      .where(and(eq(taxRates.shopId, shopId), eq(taxRates.id, id)))
     if (!current) return null
     const values = normalize(patch)
     await assertRegionFree(tx, shopId, { ...current, ...values }, id)
     const [rate] = await tx
-      .update(schema.taxRates)
+      .update(taxRates)
       .set({ ...values, updatedAt: new Date() })
-      .where(eq(schema.taxRates.id, id))
+      .where(eq(taxRates.id, id))
       .returning()
     return rate ?? null
   })
@@ -105,8 +105,8 @@ export async function update(shopId: string, id: string, patch: Partial<TaxRateI
 // Orders keep their tax lines (snapshot)
 export async function remove(shopId: string, id: string, conn: Conn) {
   const [rate] = await conn
-    .delete(schema.taxRates)
-    .where(and(eq(schema.taxRates.shopId, shopId), eq(schema.taxRates.id, id)))
+    .delete(taxRates)
+    .where(and(eq(taxRates.shopId, shopId), eq(taxRates.id, id)))
     .returning()
   return rate ?? null
 }

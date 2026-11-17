@@ -5,15 +5,24 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./calculate": "./src/calculate.ts"
+    "./calculate": "./src/calculate.ts",
+    "./schema": "./src/pricing.schema.ts",
+    "./contract": "./src/pricing.contract.ts",
+    "./router": "./src/pricing.router.ts",
+    "./module": "./src/pricing.module.ts"
   },
   "scripts": {
     "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@orpc/server": "catalog:",
     "@shopnex/db": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@shopnex/kit": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

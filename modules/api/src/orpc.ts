@@ -14,7 +14,6 @@ import { EmailError } from '@shopnex/email'
 import { FilesError } from '@shopnex/files'
 import { OrderError } from '@shopnex/orders'
 import { PaymentError } from '@shopnex/payments'
-import { PricingError } from '@shopnex/pricing'
 import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from '@shopnex/storefront-sdk/contract'
 import type { z } from 'zod'
 import type { Shop } from '@shopnex/db/schema'
@@ -91,15 +90,6 @@ const mapDomainError: ErrorMapper = (error) => {
   }
   if (error instanceof EmailError) {
     return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof PricingError) {
-    const status =
-      error.code === 'DISCOUNT_NOT_FOUND' || error.code === 'TAX_RATE_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'CODE_TAKEN' || error.code === 'TAX_RATE_EXISTS'
-          ? 'CONFLICT'
-          : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
   }
   if (error instanceof AppError) {
     const status =

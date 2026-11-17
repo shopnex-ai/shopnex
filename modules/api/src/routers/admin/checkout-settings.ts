@@ -2,10 +2,9 @@ import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { checkoutSettings } from '@shopnex/cart'
 import { db } from '@shopnex/db'
-import { taxService } from '@shopnex/pricing'
 import { shopManager } from '../../orpc'
-import { paymentMethodInput, shippingRateInput, taxRateInput } from './schemas'
-import { paymentMethodOutput, shippingRateOutput, taxRateOutput } from './outputs'
+import { paymentMethodInput, shippingRateInput } from './schemas'
+import { paymentMethodOutput, shippingRateOutput } from './outputs'
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -63,29 +62,4 @@ export const paymentMethods = {
     .handler(async ({ input, context }) =>
       found(await checkoutSettings.deletePaymentMethod(context.shop.id, input.id)),
     ),
-}
-
-// Settings → Taxes: rates by country / province (whether prices include tax is on the shop)
-export const taxRates = {
-  list: shopManager
-    .route({ method: 'GET', path: '/admin/tax-rates' })
-    .output(z.array(taxRateOutput))
-    .handler(({ context }) => taxService.list(context.shop.id, db)),
-  create: shopManager
-    .route({ method: 'POST', path: '/admin/tax-rates' })
-    .output(taxRateOutput)
-    .input(taxRateInput)
-    .handler(({ input, context }) => taxService.create(context.shop.id, input, db)),
-  update: shopManager
-    .route({ method: 'PATCH', path: '/admin/tax-rates/{id}' })
-    .output(taxRateOutput)
-    .input(id.extend(taxRateInput.partial().shape))
-    .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await taxService.update(context.shop.id, id, patch, db)),
-    ),
-  delete: shopManager
-    .route({ method: 'DELETE', path: '/admin/tax-rates/{id}' })
-    .output(taxRateOutput)
-    .input(id)
-    .handler(async ({ input, context }) => found(await taxService.remove(context.shop.id, input.id, db))),
 }

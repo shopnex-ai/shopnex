@@ -1,9 +1,9 @@
 // Discount codes (admin: Discounts). Business logic only; every query is scoped by shopId.
 // One code per order. Usage is recorded when an order is placed (see redeem), under the discount's row lock.
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { Discount, NewDiscount } from '@shopnex/db/schema'
-import { PricingError } from './errors'
+import type { Conn } from '@shopnex/db'
+import { PricingError } from './pricing.errors'
+import { discounts, type Discount, type NewDiscount } from './pricing.schema'
 
 export type DiscountInput = Pick<
   NewDiscount,
@@ -11,27 +11,23 @@ export type DiscountInput = Pick<
 >
 
 const byCode = (shopId: string, code: string) =>
-  and(eq(schema.discounts.shopId, shopId), sql`lower(${schema.discounts.code}) = ${code.trim().toLowerCase()}`)
+  and(eq(discounts.shopId, shopId), sql`lower(${discounts.code}) = ${code.trim().toLowerCase()}`)
 
 export async function list(shopId: string, conn: Conn) {
-  return conn
-    .select()
-    .from(schema.discounts)
-    .where(eq(schema.discounts.shopId, shopId))
-    .orderBy(desc(schema.discounts.createdAt))
+  return conn.select().from(discounts).where(eq(discounts.shopId, shopId)).orderBy(desc(discounts.createdAt))
 }
 
 export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.discounts)
-    .where(and(eq(schema.discounts.shopId, shopId), eq(schema.discounts.id, id)))
+    .from(discounts)
+    .where(and(eq(discounts.shopId, shopId), eq(discounts.id, id)))
   return row ?? null
 }
 
 // Case-insensitive; null when the shop has no such code
 export async function findByCode(shopId: string, code: string, conn: Conn) {
-  const [row] = await conn.select().from(schema.discounts).where(byCode(shopId, code))
+  const [row] = await conn.select().from(discounts).where(byCode(shopId, code))
   return row ?? null
 }
 
@@ -61,7 +57,7 @@ export async function create(shopId: string, input: DiscountInput, conn: Conn) {
   return conn.transaction(async (tx) => {
     await assertCodeFree(tx, shopId, values.code)
     const [row] = await tx
-      .insert(schema.discounts)
+      .insert(discounts)
       .values({ ...values, shopId })
       .returning()
     if (!row) throw new Error('The discount was not saved')
@@ -77,7 +73,7 @@ export async function update(shopId: string, id: string, patch: Partial<Discount
     const values = normalize({ ...current, ...patch })
     if (patch.code !== undefined) await assertCodeFree(tx, shopId, values.code, id)
     const [row] = await tx
-      .update(schema.discounts)
+      .update(discounts)
       .set({
         code: values.code,
         type: values.type,
@@ -90,7 +86,7 @@ export async function update(shopId: string, id: string, patch: Partial<Discount
         endsAt: values.endsAt,
         updatedAt: new Date(),
       })
-      .where(eq(schema.discounts.id, id))
+      .where(eq(discounts.id, id))
       .returning()
     return row ?? null
   })
@@ -99,8 +95,8 @@ export async function update(shopId: string, id: string, patch: Partial<Discount
 // Orders keep the code (discountCodes snapshot); their redemption rows go with the discount
 export async function remove(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
-    .delete(schema.discounts)
-    .where(and(eq(schema.discounts.shopId, shopId), eq(schema.discounts.id, id)))
+    .delete(discounts)
+    .where(and(eq(discounts.shopId, shopId), eq(discounts.id, id)))
     .returning()
   return row ?? null
 }
@@ -108,9 +104,9 @@ export async function remove(shopId: string, id: string, conn: Conn) {
 export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
   const deleted = await conn
-    .delete(schema.discounts)
-    .where(and(eq(schema.discounts.shopId, shopId), inArray(schema.discounts.id, ids)))
-    .returning({ id: schema.discounts.id })
+    .delete(discounts)
+    .where(and(eq(discounts.shopId, shopId), inArray(discounts.id, ids)))
+    .returning({ id: discounts.id })
   return deleted.length
 }
 
@@ -134,7 +130,7 @@ export async function checkForOrder(
   customerId: string | null,
   hasRedeemed: (discountId: string, customerId: string) => Promise<boolean>,
 ): Promise<{ discount: Discount; error: null } | { discount: null; error: string }> {
-  const [discount] = await tx.select().from(schema.discounts).where(byCode(shopId, code)).for('update')
+  const [discount] = await tx.select().from(discounts).where(byCode(shopId, code)).for('update')
   if (!discount) return { discount: null, error: `Discount code "${code.trim()}" isn't valid` }
   const reason = unavailableReason(discount)
   if (reason) return { discount: null, error: reason }
@@ -146,7 +142,7 @@ export async function checkForOrder(
 // Counts the use, in the order's transaction (after checkForOrder locked the row). Orders records who used it.
 export async function redeem(tx: Conn, discount: Discount) {
   await tx
-    .update(schema.discounts)
-    .set({ usageCount: sql`${schema.discounts.usageCount} + 1` })
-    .where(eq(schema.discounts.id, discount.id))
+    .update(discounts)
+    .set({ usageCount: sql`${discounts.usageCount} + 1` })
+    .where(eq(discounts.id, discount.id))
 }
