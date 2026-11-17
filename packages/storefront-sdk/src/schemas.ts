@@ -61,6 +61,8 @@ export const Shop = z.object({
    * storefront decides for itself how to ask; the bundled one does it for every theme.
    */
   cookieBanner: z.boolean(),
+  /** Test only: a new optional field */
+  supportEmail: z.string().nullable().optional(),
 })
 
 // ── catalog ───────────────────────────────────────────────────────────────────
