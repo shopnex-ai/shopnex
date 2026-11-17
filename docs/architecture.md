@@ -145,6 +145,8 @@ export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
 file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).
+Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or revokes a token without going through the API
+(a script, an e2e test calling `appService.uninstall`) has to import the module's entry, or its cleanup is silently skipped.
 
 ## API layout
 

@@ -10,6 +10,8 @@ import { after, before, describe, test } from 'node:test'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
 import { db, schema } from '@shopnex/db'
+// The entry registers what ai does when an app is uninstalled; this test uninstalls through appService, not the API, so it has to load it
+import '@shopnex/ai'
 import { aiGenerations, aiProviders, aiSettings, type AiSettings } from '@shopnex/ai/schema'
 import { encryptSecret } from '@shopnex/db/secrets'
 import { verifyAiRequest, type AiRunRequest } from '@shopnex/marketplace-sdk/ai'
