@@ -5,6 +5,7 @@ import { htmlToText, productService, type ProductWithDetails } from '@shopnex/ca
 import { schema, type Conn } from '@shopnex/db'
 import type { AiCollection, AiPage, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { AiError } from './ai.errors'
+import { pages } from '@shopnex/content/schema'
 
 const MAX_VARIANTS = 50
 const MAX_COLLECTION_PRODUCTS = 30
@@ -74,8 +75,8 @@ export async function page(shopId: string, id: string | undefined, conn: Conn): 
   if (!id) return null
   const [row] = await conn
     .select()
-    .from(schema.pages)
-    .where(and(eq(schema.pages.shopId, shopId), eq(schema.pages.id, id)))
+    .from(pages)
+    .where(and(eq(pages.shopId, shopId), eq(pages.id, id)))
   if (!row) throw new AiError('SUBJECT_NOT_FOUND', 'Page not found')
   return { id: row.id, title: row.title, handle: row.handle, body: htmlToText(row.bodyHtml) }
 }

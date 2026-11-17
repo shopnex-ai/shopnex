@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { pages } from '../src/content.schema'
 
 const { db, schema, eq, pageService, SHOP, OTHER_SHOP } = fx
 const { ContentError } = await import('../src')
@@ -92,13 +93,13 @@ describe('reading pages', () => {
       await pageService.create(SHOP, { title: 'Second', published: false }),
     ]
     await db
-      .update(schema.pages)
+      .update(pages)
       .set({ createdAt: new Date('2026-01-01') })
-      .where(eq(schema.pages.id, a.id))
+      .where(eq(pages.id, a.id))
     await db
-      .update(schema.pages)
+      .update(pages)
       .set({ createdAt: new Date('2026-01-02') })
-      .where(eq(schema.pages.id, b.id))
+      .where(eq(pages.id, b.id))
     await pageService.create(OTHER_SHOP, { title: 'Elsewhere' })
     assert.deepEqual(
       (await pageService.list(SHOP)).map((p) => p.id),
@@ -113,9 +114,9 @@ describe('reading pages', () => {
     await pageService.create(SHOP, { title: 'Draft', published: false })
     const later = await pageService.create(SHOP, { title: 'Later' })
     await db
-      .update(schema.pages)
+      .update(pages)
       .set({ publishedAt: new Date(Date.now() + DAY) })
-      .where(eq(schema.pages.id, later.id))
+      .where(eq(pages.id, later.id))
     assert.deepEqual(
       (await pageService.listPublished(SHOP, { limit: 10, offset: 0 })).map((p) => p.id),
       [live.id],
@@ -130,9 +131,9 @@ describe('reading pages', () => {
     for (let i = 0; i < 3; i++) {
       const p = await pageService.create(SHOP, { title: `Paged ${String(i)}` })
       await db
-        .update(schema.pages)
+        .update(pages)
         .set({ createdAt: new Date(2026, 0, i + 1) })
-        .where(eq(schema.pages.id, p.id))
+        .where(eq(pages.id, p.id))
       made.push(p.id)
     }
     assert.deepEqual(

@@ -15,12 +15,11 @@ import { paymentsModule } from '@shopnex/payments/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { email as adminEmail } from './routers/admin/email'
 import { filesModule } from '@shopnex/files/module'
-import { menus as adminMenus } from './routers/admin/menus'
 import { notifications as adminNotifications } from './routers/admin/notifications'
-import { pages as adminPages } from './routers/admin/pages'
 import { orders as adminOrders } from './routers/admin/orders'
 import { products as adminProducts } from './routers/admin/products'
 import { channelsModule } from '@shopnex/channels/module'
+import { contentModule } from '@shopnex/content/module'
 import { tenancyModule } from '@shopnex/tenancy/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
@@ -48,8 +47,8 @@ export const router = {
     analytics: tagged('Admin · Analytics').router(adminAnalytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
     themes: tagged('Admin · Themes').router(themeModule.router),
-    menus: tagged('Admin · Navigation').router(adminMenus),
-    pages: tagged('Admin · Pages').router(adminPages),
+    menus: tagged('Admin · Navigation').router(contentModule.router.menus),
+    pages: tagged('Admin · Pages').router(contentModule.router.pages),
     files: tagged('Admin · Files').router(filesModule.router.files),
     channels: tagged('Admin · Channels').router(channelsModule.router.channels),
     domains: tagged('Admin · Domains').router(tenancyModule.router.domains),

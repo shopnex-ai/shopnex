@@ -7,7 +7,7 @@ export {
   type ShopRole,
   type StorefrontResolution,
 } from './resolve'
-export { apiTokenRevoked } from './tenancy.hooks'
+export { apiTokenRevoked, shopCreated } from './tenancy.hooks'
 export {
   API_TOKEN_PREFIX,
   createApiToken,
@@ -33,7 +33,7 @@ export {
   withStorefrontUrl,
 } from './shops'
 export { getOpenInvitation, userExists } from './invitations'
-export { createShop, NEW_SHOP_NAME, seedDefaultMenu } from './provisioning'
+export { createShop, NEW_SHOP_NAME } from './provisioning'
 export * as staffService from './staff'
 export { StaffError, type StaffErrorCode } from './staff'
 export * as platformService from './platform'

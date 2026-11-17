@@ -9,6 +9,7 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { pages } = await import('@shopnex/content/schema')
 const { appInstallations } = await import('@shopnex/apps/schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
@@ -108,9 +109,9 @@ export async function collection(patch: Partial<typeof schema.collections.$infer
   return row!
 }
 
-export async function page(patch: Partial<typeof schema.pages.$inferInsert> = {}) {
+export async function page(patch: Partial<typeof pages.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.pages)
+    .insert(pages)
     .values({ shopId: SHOP, handle: `ai-${unique()}`, title: 'Shipping', bodyHtml: '<p>Ships in 2 days</p>', ...patch })
     .returning()
   created.pages.push(row!.id)
@@ -125,6 +126,6 @@ export async function cleanup() {
   if (created.products.length) await db.delete(schema.products).where(inArray(schema.products.id, created.products))
   if (created.collections.length)
     await db.delete(schema.collections).where(inArray(schema.collections.id, created.collections))
-  if (created.pages.length) await db.delete(schema.pages).where(inArray(schema.pages.id, created.pages))
+  if (created.pages.length) await db.delete(pages).where(inArray(pages.id, created.pages))
   for (const list of Object.values(created)) list.length = 0
 }

@@ -10,6 +10,9 @@ import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
 import { shopMembers } from '@shopnex/tenancy/schema'
+// The entry registers what content does when a shop is created (it makes the menus); this test calls createShop itself, not the API
+import '@shopnex/content'
+import { menus } from '@shopnex/content/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -47,9 +50,11 @@ describe('createShop', () => {
     assert.equal(methods.length, 0)
 
     // The storefront header and footer have links from the first visit, with no product or collection needed
-    const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, shop.id))
+    const shopMenus = await db.select().from(menus).where(eq(menus.shopId, shop.id))
     assert.deepEqual(
-      menus.map((m) => [m.handle, m.items.map((i) => i.type)]).sort(([a], [b]) => String(a).localeCompare(String(b))),
+      shopMenus
+        .map((m) => [m.handle, m.items.map((i) => i.type)])
+        .sort(([a], [b]) => String(a).localeCompare(String(b))),
       [
         ['footer', ['search']],
         ['main-menu', ['frontpage', 'catalog']],
