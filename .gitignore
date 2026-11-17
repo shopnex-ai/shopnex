@@ -13,3 +13,6 @@ apps/*/dist
 .DS_Store
 report-site/
 .vscode/
+
+# A generate run that died while writing leaves its temp file
+admin-api.gen.ts.tmp

@@ -75,11 +75,21 @@ const formatSeconds = (s: number) => (s >= 3600 ? `${s / 3600}h` : `${s / 60}m`)
 
 // One package.json `description` per module (tests/modules.test.ts requires it)
 const modulesDir = '../../modules'
+// Only folders that are packages: after switching branches, an untracked folder (its node_modules) of a module the
+// branch does not have is still there, and must not break the build
+const hasPackage = (dir: string) =>
+  readFile(`${modulesDir}/${dir}/package.json`, 'utf8').then(
+    () => true,
+    () => false,
+  )
+const moduleDirs = (await readdir(modulesDir)).sort()
 const modules = await Promise.all(
-  (await readdir(modulesDir)).sort().map(async (dir) => {
-    const pkg = JSON.parse(await readFile(`${modulesDir}/${dir}/package.json`, 'utf8')) as { description?: string }
-    return { dir, description: pkg.description ?? '' }
-  }),
+  (await Promise.all(moduleDirs.map(async (dir) => ((await hasPackage(dir)) ? dir : null))))
+    .filter((dir): dir is string => dir !== null)
+    .map(async (dir) => {
+      const pkg = JSON.parse(await readFile(`${modulesDir}/${dir}/package.json`, 'utf8')) as { description?: string }
+      return { dir, description: pkg.description ?? '' }
+    }),
 )
 
 const reference = {

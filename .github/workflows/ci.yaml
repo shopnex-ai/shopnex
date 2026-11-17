@@ -54,7 +54,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Type-aware lint of the strict modules: about 2 GB with six of them (measured), growing with each one that joins. All twenty at
+      # once ran out of Node's default 4 GB, so the limit is raised before it is reached.
       - run: pnpm lint
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
       # Each module's imports, package.json and manifest agree, and the module graph has no cycle (see scripts/modules-check.mjs)
       - run: pnpm modules:check
