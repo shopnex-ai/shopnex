@@ -1,4 +1,4 @@
-import { shops, user } from '@shopnex/core/schema'
+import { shops, user as userTable } from '@shopnex/core/schema'
 // What the tenancy tests share: the embedded database and a few rows. TENANCY_MODE, ROOT_DOMAIN and the rest are read when
 // @shopnex/tenancy first loads, so a test file sets them first and imports this file after (`await import('./fixtures')`).
 process.env.DATABASE_URL = 'pglite:memory'
@@ -15,10 +15,10 @@ let counter = 0
 export const unique = () => `${Date.now().toString(36)}${(++counter).toString(36)}`
 const made = { users: [] as string[], shops: [] as string[], members: [] as string[] }
 
-export async function user(patch: Partial<typeof user.$inferInsert> = {}) {
+export async function user(patch: Partial<typeof userTable.$inferInsert> = {}) {
   const id = `u-${unique()}`
   const [row] = await db
-    .insert(user)
+    .insert(userTable)
     .values({ id, name: `User ${id}`, email: `${id}@example.test`, ...patch })
     .returning()
   made.users.push(id)
@@ -71,6 +71,6 @@ export async function invitation(
 export async function cleanup() {
   if (made.members.length) await db.delete(shopMembers).where(inArray(shopMembers.id, made.members))
   if (made.shops.length) await db.delete(shops).where(inArray(shops.id, made.shops))
-  if (made.users.length) await db.delete(user).where(inArray(user.id, made.users))
+  if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
 }
