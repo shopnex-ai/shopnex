@@ -2,6 +2,7 @@
 // starting (and reusing, and replacing) a session, the app resolving, rejecting or failing an attempt, refunds, and expiry.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { appInstallations } from '@shopnex/apps/schema'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP, behavior, received } = fx
@@ -309,10 +310,7 @@ describe('refunds', () => {
 
     behavior.refund = 'ok'
     const gone = await paidOrder()
-    await db
-      .update(schema.appInstallations)
-      .set({ uninstalledAt: new Date() })
-      .where(eq(schema.appInstallations.appId, gone.app.id))
+    await db.update(appInstallations).set({ uninstalledAt: new Date() }).where(eq(appInstallations.appId, gone.app.id))
     await sessions.startRefunds(SHOP, gone.o.id)
     const [lost] = await db
       .select()

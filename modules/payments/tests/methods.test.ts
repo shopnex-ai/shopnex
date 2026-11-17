@@ -1,6 +1,7 @@
 // The payment method a payments app registers in a shop (what Settings → Payments shows), and the list of apps a shop can still install.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { appInstallations } from '@shopnex/apps/schema'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP } = fx
@@ -126,11 +127,9 @@ describe('availableApps', () => {
     const delisted = await bareApp({ name: 'Delisted app', delistedAt: new Date() })
     const noScope = await bareApp({ name: 'No scope', scopes: ['read_products'] })
     const reinstallable = await bareApp({ name: 'Was uninstalled' })
+    await db.insert(appInstallations).values({ appId: installed.id, shopId: SHOP, scopes: ['write_payment_sessions'] })
     await db
-      .insert(schema.appInstallations)
-      .values({ appId: installed.id, shopId: SHOP, scopes: ['write_payment_sessions'] })
-    await db
-      .insert(schema.appInstallations)
+      .insert(appInstallations)
       .values({ appId: reinstallable.id, shopId: SHOP, scopes: ['write_payment_sessions'], uninstalledAt: new Date() })
 
     const names = (await methods.availableApps(SHOP)).map((a) => a.name)

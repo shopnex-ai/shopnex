@@ -9,6 +9,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { appInstallations } = await import('@shopnex/apps/schema')
 requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
 const { router } = await import('../src/router')
@@ -38,7 +39,7 @@ async function installedPaymentsApp(name: string) {
     })
     .returning()
   const [installation] = await db
-    .insert(schema.appInstallations)
+    .insert(appInstallations)
     .values({ appId: app!.id, shopId: SHOP, scopes: [] })
     .returning()
   const [method] = await db
@@ -124,10 +125,7 @@ describe('uninstalling an app, through the route', () => {
       appUninstalled.on('test.fails', () => undefined)
     }
     assert.equal(await exists(app.method.id), true)
-    const [installation] = await db
-      .select()
-      .from(schema.appInstallations)
-      .where(eq(schema.appInstallations.id, app.installation.id))
+    const [installation] = await db.select().from(appInstallations).where(eq(appInstallations.id, app.installation.id))
     assert.equal(installation?.uninstalledAt, null)
   })
 })

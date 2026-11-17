@@ -18,6 +18,7 @@ import { PaymentError } from './payments.errors'
 import { log } from './log'
 import { only } from './rows'
 import { paymentSessions, paymentMethods, type PaymentSession } from './payments.schema'
+import { appInstallations } from '@shopnex/apps/schema'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released
 const PAYMENT_TTL_MS = 60 * 60_000
@@ -29,13 +30,13 @@ const TIMEOUT_MS = 15_000
 // Requests only go to an app that's still installed on the shop
 async function installed(conn: Conn, shopId: string, appId: string) {
   const [row] = await conn
-    .select({ id: schema.appInstallations.id })
-    .from(schema.appInstallations)
+    .select({ id: appInstallations.id })
+    .from(appInstallations)
     .where(
       and(
-        eq(schema.appInstallations.shopId, shopId),
-        eq(schema.appInstallations.appId, appId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.shopId, shopId),
+        eq(appInstallations.appId, appId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   return Boolean(row)

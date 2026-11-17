@@ -1,13 +1,8 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
 import { aiModule } from '@shopnex/ai/module'
+import { appsModule } from '@shopnex/apps/module'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
-import {
-  appData as adminAppData,
-  appRegistry as adminAppRegistry,
-  apps as adminApps,
-  marketplaceConnection as adminMarketplace,
-} from './routers/admin/apps'
 import { shippingRates as adminShippingRates } from './routers/admin/checkout-settings'
 import {
   carrierServices as adminCarrierServices,
@@ -29,8 +24,6 @@ import { channelsModule } from '@shopnex/channels/module'
 import { tenancyModule } from '@shopnex/tenancy/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
-import { marketplace } from './routers/marketplace'
-import { oauth } from './routers/oauth'
 import { storefrontRouter } from './routers/storefront'
 
 // Tags group endpoints in the API reference (/api/v1/docs). A bare builder: `.router()` on `pub`/`admin`
@@ -42,9 +35,9 @@ export const router = {
   // Public, contract-first (see @shopnex/storefront-sdk)
   storefront: storefrontRouter,
   // Apps exchange an authorization code for an access token
-  oauth: tagged('OAuth').router(oauth),
+  oauth: tagged('OAuth').router(appsModule.router.oauth),
   // The app marketplace verifies this instance's URL while connecting
-  marketplace: tagged('Marketplace').router(marketplace),
+  marketplace: tagged('Marketplace').router(appsModule.router.marketplace),
   admin: {
     shop: tagged('Admin · Shop').router(tenancyModule.router.shop),
     products: tagged('Admin · Products').router(adminProducts),
@@ -79,10 +72,10 @@ export const router = {
     aiApp: tagged('Admin · AI apps').router(aiModule.router.aiApp),
     webhooks: tagged('Admin · Webhooks').router(webhooksModule.router),
     apiTokens: tagged('Admin · API tokens').router(tenancyModule.router.apiTokens),
-    apps: tagged('Admin · Apps').router(adminApps),
-    appRegistry: tagged('Admin · App registry').router(adminAppRegistry),
-    appData: tagged('Admin · App data').router(adminAppData),
-    marketplace: tagged('Admin · Marketplace').router(adminMarketplace),
+    apps: tagged('Admin · Apps').router(appsModule.router.apps),
+    appRegistry: tagged('Admin · App registry').router(appsModule.router.appRegistry),
+    appData: tagged('Admin · App data').router(appsModule.router.appData),
+    marketplace: tagged('Admin · Marketplace').router(appsModule.router.marketplaceConnection),
   },
 }
 

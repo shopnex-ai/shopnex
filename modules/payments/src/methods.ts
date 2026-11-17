@@ -5,6 +5,7 @@ import { schema, type Conn } from '@shopnex/db'
 import { PaymentError } from './payments.errors'
 import { only } from './rows'
 import { paymentMethods } from './payments.schema'
+import { appInstallations } from '@shopnex/apps/schema'
 
 export interface ConfigureInput {
   /** Shown at checkout on first configure, e.g. "Credit card" (staff can rename it) */
@@ -80,14 +81,14 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
 /** Apps that can take payments (allowed write_payment_sessions) and aren't installed in this shop yet */
 export async function availableApps(shopId: string, conn: Conn) {
   const rows = await conn
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .select({ app: schema.apps, installationId: appInstallations.id })
     .from(schema.apps)
     .leftJoin(
-      schema.appInstallations,
+      appInstallations,
       and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.shopId, shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(and(sql`'write_payment_sessions' = any(${schema.apps.scopes})`, isNull(schema.apps.delistedAt)))
