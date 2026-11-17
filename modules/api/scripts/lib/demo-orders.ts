@@ -69,7 +69,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
 
   const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
   if (!shop) throw new Error(`Shop "${shopId}" not found.`)
-  const channel = await channelService.getDefault(shopId)
+  const channel = await channelService.getDefault(shopId, db)
 
   const variants = await db
     .select({

@@ -8,6 +8,15 @@ import { customFieldUpdates } from '@shopnex/custom-fields/contract'
 export { discountCreateInput, discountInput, taxRateInput } from '@shopnex/pricing/contract'
 export { s3Input, storageInput } from '@shopnex/files/contract'
 export { paymentMethodInput, paymentsAppConfigureInput } from '@shopnex/payments/contract'
+export {
+  CURRENCY_CODES,
+  apiTokenInput,
+  domainInput,
+  shopInput,
+  staffInviteInput,
+  staffRole,
+} from '@shopnex/tenancy/contract'
+export { channelInput, storefrontKeyInput } from '@shopnex/channels/contract'
 export { aiAppConfigureInput, aiRunInput, aiSettingsInput } from '@shopnex/ai/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
 export {
@@ -28,10 +37,8 @@ import {
   productVariants,
   products,
   CANCEL_REASONS,
-  STAFF_ROLES,
   shippingRates,
   shops,
-  storefrontKeys,
   CHANNEL_TYPES,
   API_SCOPES,
   MENU_ITEM_TYPES,
@@ -39,6 +46,8 @@ import {
   NOTIFICATIONS,
   type StoredMenuItem,
 } from '@shopnex/db/schema'
+import { STAFF_ROLES } from '@shopnex/tenancy/schema'
+import { storefrontKeys } from '@shopnex/channels/schema'
 
 export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
 
@@ -137,22 +146,6 @@ export const customerInput = createInsertSchema(customers, {
   .pick({ email: true, name: true, phone: true })
   .extend({ customFields: customFieldUpdates.optional() })
 
-export const storefrontKeyInput = createInsertSchema(storefrontKeys, { name: (s) => s.min(1).max(100) })
-  .pick({ name: true })
-  // The channel the key reads; omitted: the Online Store
-  .extend({ channelId: z.uuid().optional() })
-
-// Settings → Channels. The handle and type are fixed once created.
-export const channelInput = z.object({
-  name: z.string().trim().min(1).max(100),
-  handle: z.string().min(1).max(60).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens').optional(),
-  type: z.enum(CHANNEL_TYPES).optional(),
-  autoPublish: z.boolean().optional(),
-})
-
-// Settings → Domains. Normalised (scheme, path, case) and validated by the tenancy module.
-export const domainInput = z.object({ domain: z.string().trim().min(1).max(300) })
-
 // Where a product or collection is published: the full list (channels left out are unpublished). A date in the
 // future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
 export const publicationsInput = z.object({
@@ -162,45 +155,7 @@ export const publicationsInput = z.object({
     .refine((list) => new Set(list.map((p) => p.channelId)).size === list.length, 'Each channel once'),
 })
 
-// Settings → API tokens
-export const apiTokenInput = z.object({
-  name: z.string().trim().min(1).max(100),
-  scopes: z.array(z.enum(API_SCOPES)).min(1, 'Grant at least one permission'),
-})
 export { API_SCOPES, type ApiScope } from '@shopnex/db/schema'
-
-// ISO 4217 codes the runtime knows how to format (Node and browsers agree on this list)
-export const CURRENCY_CODES: readonly string[] = Intl.supportedValuesOf('currency')
-
-export const shopInput = createInsertSchema(shops, {
-  name: (s) => s.trim().min(1).max(100),
-  // Prices are stored in the shop's currency; existing orders keep the currency they were placed in
-  currency: () => z.string().refine((c) => CURRENCY_CODES.includes(c), 'Choose a currency'),
-  // Checkout's "Continue shopping" link
-  storefrontUrl: () => z.url({ protocol: /^https?$/ }).max(500),
-  // The homepage's <title> and meta description; empty = the shop name, none
-  seoTitle: (s) => s.trim().max(200),
-  seoDescription: (s) => s.trim().max(500),
-  // Hours until an unpaid order nobody is paying is cancelled and restocked; null = never (up to a year)
-  unpaidOrderExpiryHours: () => z.number().int().min(1).max(8760).nullable(),
-  // Printed on invoices; empty = not set (the invoice falls back to the shop name and says what is missing)
-  legalName: (s) => s.trim().max(150),
-  businessAddress: (s) => s.trim().max(500),
-  taxId: (s) => s.trim().max(50),
-}).pick({
-  name: true,
-  currency: true,
-  storefrontUrl: true,
-  seoTitle: true,
-  seoDescription: true,
-  taxesIncluded: true,
-  taxShipping: true,
-  unpaidOrderExpiryHours: true,
-  legalName: true,
-  businessAddress: true,
-  taxId: true,
-  cookieBanner: true,
-})
 
 export const MIN_PASSWORD = 8
 
@@ -220,10 +175,6 @@ export {
   type FulfillmentStatus,
   type MailingAddress,
 } from '@shopnex/db/schema'
-
-// Shop staff (Admin → Staff)
-export const staffRole = z.enum(STAFF_ROLES)
-export const staffInviteInput = z.object({ email: z.email(), role: staffRole })
 
 // Settings → Shipping / Payments (money in minor units)
 export const shippingRateInput = createInsertSchema(shippingRates, {

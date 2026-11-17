@@ -9,6 +9,7 @@ import { seedSampleProducts } from '@shopnex/catalog'
 import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
+import { shopMembers } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -36,8 +37,8 @@ describe('createShop', () => {
 
     const [member] = await db
       .select()
-      .from(schema.shopMembers)
-      .where(and(eq(schema.shopMembers.organizationId, shop.id), eq(schema.shopMembers.userId, owner.id)))
+      .from(shopMembers)
+      .where(and(eq(shopMembers.organizationId, shop.id), eq(shopMembers.userId, owner.id)))
     assert.equal(member?.role, 'owner')
 
     const rates = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.shopId, shop.id))
@@ -76,12 +77,13 @@ describe('createShop', () => {
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))
     // Published on the Online Store, or the storefront would show an empty catalog
-    const channel = await channelService.getDefault(shop.id)
+    const channel = await channelService.getDefault(shop.id, db)
     const live = await publicationService.liveIds(
       shop.id,
       channel.id,
       'product',
       products.map((p) => p.id),
+      db,
     )
     assert.equal(live.size, 4)
   })

@@ -4,6 +4,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { resourcePublications, storefrontKeys } = await import('../src/channels.schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 
@@ -53,7 +54,7 @@ export const orderOn = async (channelId: string) =>
   })
 
 export const storefrontKey = async (channelId: string, revoked = false) =>
-  db.insert(schema.storefrontKeys).values({
+  db.insert(storefrontKeys).values({
     id: crypto.randomUUID(),
     shopId: SHOP,
     name: 'Key',
@@ -65,8 +66,8 @@ export const storefrontKey = async (channelId: string, revoked = false) =>
 /** Everything the tests made, and the default channel and publications they caused */
 export async function cleanup() {
   await db.delete(schema.orders).where(inArray(schema.orders.shopId, [SHOP, OTHER_SHOP]))
-  await db.delete(schema.resourcePublications).where(inArray(schema.resourcePublications.shopId, [SHOP, OTHER_SHOP]))
-  await db.delete(schema.storefrontKeys).where(inArray(schema.storefrontKeys.shopId, [SHOP, OTHER_SHOP]))
+  await db.delete(resourcePublications).where(inArray(resourcePublications.shopId, [SHOP, OTHER_SHOP]))
+  await db.delete(storefrontKeys).where(inArray(storefrontKeys.shopId, [SHOP, OTHER_SHOP]))
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
   await db.delete(schema.channels).where(inArray(schema.channels.shopId, [SHOP, OTHER_SHOP]))
   made.channels.length = 0

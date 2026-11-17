@@ -1,6 +1,7 @@
 // Who is on a shop's staff and who may change whom, a shop's domains (the database side), and the platform listings for super admins.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { shopDomains, shopInvitations, shopMembers } from '../src/tenancy.schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -90,7 +91,7 @@ describe('inviting', () => {
   test('inviting again cancels the earlier open invitation to that address', async () => {
     const first = await staffService.invite(shopId, ownerActor, { email: 'again@example.test', role: 'member' }, 7)
     const second = await staffService.invite(shopId, ownerActor, { email: 'again@example.test', role: 'admin' }, 7)
-    const rows = await db.select().from(schema.shopInvitations).where(eq(schema.shopInvitations.organizationId, shopId))
+    const rows = await db.select().from(shopInvitations).where(eq(shopInvitations.organizationId, shopId))
     assert.equal(rows.find((r) => r.id === first.id)?.status, 'canceled')
     assert.equal(rows.find((r) => r.id === second.id)?.status, 'pending')
   })
@@ -116,15 +117,15 @@ describe('inviting', () => {
 
 describe('changing a member', () => {
   let admin: typeof schema.user.$inferSelect
-  let adminMember: typeof schema.shopMembers.$inferSelect
-  let plain: typeof schema.shopMembers.$inferSelect
-  let ownerMember: typeof schema.shopMembers.$inferSelect
+  let adminMember: typeof shopMembers.$inferSelect
+  let plain: typeof shopMembers.$inferSelect
+  let ownerMember: typeof shopMembers.$inferSelect
 
   beforeEach(async () => {
     admin = await fx.user()
     adminMember = await fx.member(shopId, admin.id, 'admin')
     plain = await fx.member(shopId, (await fx.user()).id, 'member')
-    ownerMember = (await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, owner.id)))[0]!
+    ownerMember = (await db.select().from(shopMembers).where(eq(shopMembers.userId, owner.id)))[0]!
   })
 
   test('an owner changes a member’s role', async () => {
@@ -163,7 +164,7 @@ describe('changing a member', () => {
   test('removing takes the member off and returns them; one from another shop is not found', async () => {
     const removed = await staffService.removeMember(shopId, ownerActor, plain.id)
     assert.equal(removed.id, plain.id)
-    assert.equal((await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.id, plain.id))).length, 0)
+    assert.equal((await db.select().from(shopMembers).where(eq(shopMembers.id, plain.id))).length, 0)
     const other = await fx.shop()
     const theirs = await fx.member(other.id, (await fx.user()).id, 'member')
     await assert.rejects(staffService.removeMember(shopId, ownerActor, theirs.id), refused(StaffError, 'NOT_FOUND'))
@@ -194,7 +195,7 @@ describe('domains', () => {
     await assert.rejects(domainService.addDomain(shopId, 'mine.example.test'), refused(DomainError, 'DOMAIN_TAKEN'))
     const other = await fx.shop()
     await db
-      .insert(schema.shopDomains)
+      .insert(shopDomains)
       .values({ id: `d-${fx.unique()}`, shopId: other.id, domain: 'theirs.example.test', verifiedAt: new Date() })
     await assert.rejects(domainService.addDomain(shopId, 'theirs.example.test'), refused(DomainError, 'DOMAIN_TAKEN'))
     for (let i = 0; i < 19; i++) await domainService.addDomain(shopId, `d${i}.example.test`)
@@ -220,7 +221,7 @@ describe('domains', () => {
     await domainService.removeDomain(shopId, d.id)
     await assert.rejects(domainService.removeDomain(shopId, d.id), refused(DomainError, 'DOMAIN_NOT_FOUND'))
     const [done] = await db
-      .insert(schema.shopDomains)
+      .insert(shopDomains)
       .values({ id: `d-${fx.unique()}`, shopId, domain: 'done.example.test', verifiedAt: new Date() })
       .returning()
     const result = await domainService.verifyDomain(shopId, done!.id)

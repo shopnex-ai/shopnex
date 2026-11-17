@@ -321,6 +321,7 @@ export async function removeMany(shopId: string, ids: string[]) {
     shopId,
     'product',
     deleted.map((p) => p.id),
+    db,
   )
   return deleted.length
 }

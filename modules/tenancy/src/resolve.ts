@@ -1,7 +1,7 @@
-import { channelService } from '@shopnex/channels'
-import type { Shop, ShopRole } from '@shopnex/db/schema'
+import { db } from '@shopnex/db'
+import { channelService, storefrontKeyService } from '@shopnex/channels'
+import type { Shop } from '@shopnex/db/schema'
 import { ROOT_DOMAIN, isMultiTenant } from './config'
-import { getShopByStorefrontKey } from './keys'
 import {
   ensureDefaultShop,
   getFirstMembership,
@@ -12,6 +12,7 @@ import {
   getShopBySlug,
 } from './shops'
 import { subdomainSlug } from './subdomains'
+import { type ShopRole } from './tenancy.schema'
 
 export type { ShopRole }
 
@@ -40,18 +41,18 @@ export type StorefrontResolution =
 export async function resolveStorefrontShop(headers: Headers): Promise<StorefrontResolution> {
   const key = headers.get(PUBLISHABLE_KEY_HEADER)
   if (key) {
-    const found = await getShopByStorefrontKey(key)
+    const found = await storefrontKeyService.shopByKey(key, db)
     return found ? { ok: true, shop: found.shop, channelId: found.channelId } : { ok: false, reason: 'invalid_key' }
   }
   if (!isMultiTenant) {
     const shop = await ensureDefaultShop()
-    return { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+    return { ok: true, shop, channelId: (await channelService.getDefault(shop.id, db)).id }
   }
   const host = hostOf(headers)
   const slug = ROOT_DOMAIN ? subdomainSlug(host, ROOT_DOMAIN) : null
   const shop = slug ? await getShopBySlug(slug) : await getShopByDomain(host)
   return shop
-    ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id)).id }
+    ? { ok: true, shop, channelId: (await channelService.getDefault(shop.id, db)).id }
     : { ok: false, reason: 'shop_not_found' }
 }
 

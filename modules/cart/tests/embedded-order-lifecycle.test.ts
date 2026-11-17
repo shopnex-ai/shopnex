@@ -71,7 +71,7 @@ after(() => {
 
 describe('an order on the embedded database, with email and a webhook on', () => {
   test('placing it queues the confirmation email and the webhook', { timeout: 30_000 }, async () => {
-    const channel = await channelService.resolve(SHOP, undefined)
+    const channel = await channelService.resolve(SHOP, undefined, db)
     const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 2 }])
     const placed = await within(
       10_000,
@@ -132,7 +132,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
   })
 
   test('cancelling another order queues order.cancelled', { timeout: 30_000 }, async () => {
-    const channel = await channelService.resolve(SHOP, undefined)
+    const channel = await channelService.resolve(SHOP, undefined, db)
     const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 1 }])
     const placed = await within(
       10_000,

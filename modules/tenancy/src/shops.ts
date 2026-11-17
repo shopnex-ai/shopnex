@@ -3,6 +3,7 @@ import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
+import { shopDomains, shopMembers } from './tenancy.schema'
 
 // Where a shop's storefront lives.
 // - Multi mode: derived, never chosen. The shop's first verified domain (domains prove ownership), else its
@@ -18,10 +19,10 @@ export async function withStorefrontUrl<T extends schema.Shop | null>(shop: T, c
     return fallback ? { ...shop, storefrontUrl: fallback } : shop
   }
   const [domain] = await conn
-    .select({ domain: schema.shopDomains.domain })
-    .from(schema.shopDomains)
-    .where(and(eq(schema.shopDomains.shopId, shop.id), isNotNull(schema.shopDomains.verifiedAt)))
-    .orderBy(asc(schema.shopDomains.verifiedAt), asc(schema.shopDomains.id))
+    .select({ domain: shopDomains.domain })
+    .from(shopDomains)
+    .where(and(eq(shopDomains.shopId, shop.id), isNotNull(shopDomains.verifiedAt)))
+    .orderBy(asc(shopDomains.verifiedAt), asc(shopDomains.id))
     .limit(1)
   if (domain) return { ...shop, storefrontUrl: `https://${domain.domain}` }
   const derived = ROOT_DOMAIN && isSubdomainSlug(shop.slug) ? subdomainUrl(shop.slug, ROOT_DOMAIN) : null
@@ -95,26 +96,26 @@ export async function getShopBySlug(slug: string) {
 export async function getShopByDomain(domain: string) {
   const [row] = await db
     .select({ shop: schema.shops })
-    .from(schema.shopDomains)
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.shopDomains.shopId))
-    .where(and(eq(schema.shopDomains.domain, domain.toLowerCase()), isNotNull(schema.shopDomains.verifiedAt)))
+    .from(shopDomains)
+    .innerJoin(schema.shops, eq(schema.shops.id, shopDomains.shopId))
+    .where(and(eq(shopDomains.domain, domain.toLowerCase()), isNotNull(shopDomains.verifiedAt)))
   return withStorefrontUrl(row?.shop ?? null)
 }
 
 export async function getMembership(shopId: string, userId: string) {
   const [member] = await db
     .select()
-    .from(schema.shopMembers)
-    .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, userId)))
+    .from(shopMembers)
+    .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.userId, userId)))
   return member ?? null
 }
 
 export async function getFirstMembership(userId: string) {
   const [member] = await db
     .select()
-    .from(schema.shopMembers)
-    .where(eq(schema.shopMembers.userId, userId))
-    .orderBy(asc(schema.shopMembers.createdAt))
+    .from(shopMembers)
+    .where(eq(shopMembers.userId, userId))
+    .orderBy(asc(shopMembers.createdAt))
     .limit(1)
   return member ?? null
 }
@@ -123,10 +124,10 @@ export async function getFirstMembership(userId: string) {
 export async function addMember(shopId: string, userId: string) {
   const [{ value: existing } = { value: 0 }] = await db
     .select({ value: count() })
-    .from(schema.shopMembers)
-    .where(eq(schema.shopMembers.organizationId, shopId))
+    .from(shopMembers)
+    .where(eq(shopMembers.organizationId, shopId))
   await db
-    .insert(schema.shopMembers)
+    .insert(shopMembers)
     .values({ id: randomUUID(), organizationId: shopId, userId, role: existing === 0 ? 'owner' : 'member' })
     .onConflictDoNothing()
 }
@@ -142,8 +143,8 @@ export async function listSwitchableShops(userId: string, superAdmin: boolean) {
   return db
     .select(columns)
     .from(schema.shops)
-    .innerJoin(schema.shopMembers, eq(schema.shopMembers.organizationId, schema.shops.id))
-    .where(eq(schema.shopMembers.userId, userId))
+    .innerJoin(shopMembers, eq(shopMembers.organizationId, schema.shops.id))
+    .where(eq(shopMembers.userId, userId))
     .orderBy(asc(schema.shops.name))
     .limit(SWITCHER_LIMIT)
 }

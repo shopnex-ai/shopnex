@@ -3,12 +3,13 @@
 import { randomUUID } from 'node:crypto'
 import { Resolver, resolveTxt } from 'node:dns/promises'
 import { and, asc, eq, isNull } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { ROOT_DOMAIN } from './config'
 import { isUnderRoot } from './subdomains'
 
 export { DomainError, type DomainErrorCode } from './tenancy.errors'
 import { DomainError } from './tenancy.errors'
+import { shopDomains } from './tenancy.schema'
 
 export const MAX_DOMAINS_PER_SHOP = 20
 
@@ -46,11 +47,7 @@ function appHost() {
 }
 
 export async function listDomains(shopId: string) {
-  return db
-    .select()
-    .from(schema.shopDomains)
-    .where(eq(schema.shopDomains.shopId, shopId))
-    .orderBy(asc(schema.shopDomains.createdAt))
+  return db.select().from(shopDomains).where(eq(shopDomains.shopId, shopId)).orderBy(asc(shopDomains.createdAt))
 }
 
 export async function addDomain(shopId: string, input: string) {
@@ -61,27 +58,27 @@ export async function addDomain(shopId: string, input: string) {
   if (domain === appHost()) throw new DomainError('DOMAIN_TAKEN', 'This is the address of the admin itself')
 
   return db.transaction(async (tx) => {
-    const [existing] = await tx.select().from(schema.shopDomains).where(eq(schema.shopDomains.domain, domain))
+    const [existing] = await tx.select().from(shopDomains).where(eq(shopDomains.domain, domain))
     if (existing) {
       if (existing.shopId === shopId) throw new DomainError('DOMAIN_TAKEN', 'You already added this domain')
       // Another shop's claim that was never verified carries no rights; only a verified one blocks
       if (existing.verifiedAt) throw new DomainError('DOMAIN_TAKEN', 'This domain is used by another shop')
-      await tx.delete(schema.shopDomains).where(eq(schema.shopDomains.id, existing.id))
+      await tx.delete(shopDomains).where(eq(shopDomains.id, existing.id))
     }
-    const count = await tx.$count(schema.shopDomains, eq(schema.shopDomains.shopId, shopId))
+    const count = await tx.$count(shopDomains, eq(shopDomains.shopId, shopId))
     if (count >= MAX_DOMAINS_PER_SHOP) {
       throw new DomainError('INVALID_DOMAIN', `A shop can have up to ${MAX_DOMAINS_PER_SHOP} domains`)
     }
-    const [row] = await tx.insert(schema.shopDomains).values({ id: randomUUID(), shopId, domain }).returning()
+    const [row] = await tx.insert(shopDomains).values({ id: randomUUID(), shopId, domain }).returning()
     return row!
   })
 }
 
 export async function removeDomain(shopId: string, id: string) {
   const rows = await db
-    .delete(schema.shopDomains)
-    .where(and(eq(schema.shopDomains.id, id), eq(schema.shopDomains.shopId, shopId)))
-    .returning({ id: schema.shopDomains.id })
+    .delete(shopDomains)
+    .where(and(eq(shopDomains.id, id), eq(shopDomains.shopId, shopId)))
+    .returning({ id: shopDomains.id })
   if (rows.length === 0) throw new DomainError('DOMAIN_NOT_FOUND', 'Domain not found')
 }
 
@@ -111,8 +108,8 @@ async function lookupTxt(name: string) {
 export async function verifyDomain(shopId: string, id: string) {
   const [row] = await db
     .select()
-    .from(schema.shopDomains)
-    .where(and(eq(schema.shopDomains.id, id), eq(schema.shopDomains.shopId, shopId)))
+    .from(shopDomains)
+    .where(and(eq(shopDomains.id, id), eq(shopDomains.shopId, shopId)))
   if (!row) throw new DomainError('DOMAIN_NOT_FOUND', 'Domain not found')
   if (row.verifiedAt) return { domain: row, verified: true }
 
@@ -122,9 +119,9 @@ export async function verifyDomain(shopId: string, id: string) {
   if (!found) return { domain: row, verified: false }
 
   const [updated] = await db
-    .update(schema.shopDomains)
+    .update(shopDomains)
     .set({ verifiedAt: new Date() })
-    .where(and(eq(schema.shopDomains.id, row.id), isNull(schema.shopDomains.verifiedAt)))
+    .where(and(eq(shopDomains.id, row.id), isNull(shopDomains.verifiedAt)))
     .returning()
   return { domain: updated ?? { ...row, verifiedAt: new Date() }, verified: true }
 }

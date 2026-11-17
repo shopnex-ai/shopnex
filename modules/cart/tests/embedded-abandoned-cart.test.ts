@@ -53,7 +53,7 @@ before(async () => {
   })
   await db.insert(schema.abandonedCartSettings).values({ shopId: SHOP, enabled: true, delayMinutes: 0 })
 
-  const channel = await channelService.resolve(SHOP, undefined)
+  const channel = await channelService.resolve(SHOP, undefined, db)
   const cart = await cartService.create(SHOP, channel.id, [{ variantId: product.variants[0]!.id, quantity: 2 }])
   await cartService.setReminderContact(cart.token, 'walked-away@example.com')
   const [row] = await db.select({ id: schema.carts.id }).from(schema.carts).where(eq(schema.carts.token, cart.token))

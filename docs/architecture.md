@@ -48,12 +48,12 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 
 ```text
 db        →
-channels  → db
+channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there)
 pricing   → db, rpc
 drafts    → db
 webhooks  → db, rpc, tenancy   (owns webhook_endpoints and webhook_deliveries; tenancy tells it when an API token is revoked)
 theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
-tenancy   → db, channels
+tenancy   → db, channels, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
 email     → db, tenancy, webhooks

@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { revokeApiToken } from '@shopnex/tenancy'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, requireApp } from '../lib'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36).toUpperCase()
@@ -93,7 +94,7 @@ describe('sign-up is by invitation only', () => {
   test('a cancelled invitation does not count', async () => {
     const email = fx.email.replace('e2e-', 'e2e-cancelled-')
     const id = await fx.invitation(SHOP, email, 'member')
-    await db.update(schema.shopInvitations).set({ status: 'canceled' }).where(eq(schema.shopInvitations.id, id))
+    await db.update(shopInvitations).set({ status: 'canceled' }).where(eq(shopInvitations.id, id))
     assert.equal((await authCall('/sign-up/email', { name: 'Gone', email, password: PASSWORD })).status, 403)
   })
 
@@ -109,9 +110,9 @@ describe('sign-up is by invitation only', () => {
     const r = await authCall('/organization/accept-invitation', { invitationId: id }, outsider.headers.cookie)
     assert.notEqual(r.status, 200)
     const [row] = await db
-      .select({ userId: schema.shopMembers.userId })
-      .from(schema.shopMembers)
-      .where(eq(schema.shopMembers.userId, outsider.id))
+      .select({ userId: shopMembers.userId })
+      .from(shopMembers)
+      .where(eq(shopMembers.userId, outsider.id))
     assert.equal(row, undefined, 'the outsider is still in no shop')
   })
 })

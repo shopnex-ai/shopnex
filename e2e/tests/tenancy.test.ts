@@ -5,9 +5,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { revokeApiToken } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { storefrontKeys } from '@shopnex/channels/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36).toUpperCase()
@@ -126,7 +127,7 @@ describe('storefront keys', () => {
   test('a revoked key stops working', async () => {
     const key = await fx.storefrontKey(otherId)
     ok(await call('GET', '/storefront/shop', undefined, { 'x-shopnex-key': key.token }))
-    await db.update(schema.storefrontKeys).set({ revokedAt: new Date() }).where(eq(schema.storefrontKeys.id, key.id))
+    await db.update(storefrontKeys).set({ revokedAt: new Date() }).where(eq(storefrontKeys.id, key.id))
     assert.equal((await call('GET', '/storefront/shop', undefined, { 'x-shopnex-key': key.token })).status, 401)
   })
 

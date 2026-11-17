@@ -13,7 +13,9 @@ process.env.APP_URL = 'https://admin.shopnex.test'
 
 const { eq, inArray } = await import('drizzle-orm')
 const { db, schema } = await import('@shopnex/db')
-const { DomainError, createShop, createStorefrontKey, domainService, getShopById, resolveStorefrontShop, updateShop } =
+const { shopDomains } = await import('@shopnex/tenancy/schema')
+const { storefrontKeyService } = await import('@shopnex/channels')
+const { DomainError, createShop, domainService, getShopById, resolveStorefrontShop, updateShop } =
   await import('@shopnex/tenancy')
 
 const run = randomBytes(3).toString('hex')
@@ -99,7 +101,7 @@ describe('<slug>.ROOT_DOMAIN', () => {
   })
 
   test('a publishable key beats the host', async () => {
-    const key = await createStorefrontKey(beta.id, 'e2e')
+    const key = await storefrontKeyService.create(beta.id, 'e2e', undefined, db)
     const r = await resolve(sub(acme), { 'x-shopnex-key': key.token })
     assert.ok(r.ok && r.shop.id === beta.id)
     assert.deepEqual(await resolve(sub(acme), { 'x-shopnex-key': 'pk_nope' }), { ok: false, reason: 'invalid_key' })
@@ -120,7 +122,7 @@ describe('storefront URL', () => {
     const domain = `shop-${run}.beta.example`
     const { id } = await domainService.addDomain(beta.id, domain)
     assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${sub(beta)}`, 'unverified does nothing')
-    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, id))
+    await db.update(shopDomains).set({ verifiedAt: new Date() }).where(eq(shopDomains.id, id))
     assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${domain}`)
     assert.equal((await getShopById(acme.id))?.storefrontUrl, `https://${sub(acme)}`)
     await domainService.removeDomain(beta.id, id)
@@ -147,7 +149,7 @@ describe('custom domains', () => {
     const row = await domainService.addDomain(acme.id, domain)
     assert.deepEqual(await resolve(domain), { ok: false, reason: 'shop_not_found' }, 'unverified')
 
-    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, row.id))
+    await db.update(shopDomains).set({ verifiedAt: new Date() }).where(eq(shopDomains.id, row.id))
     const r = await resolve(domain)
     assert.ok(r.ok && r.shop.id === acme.id, 'verified')
     // The subdomain keeps working next to it

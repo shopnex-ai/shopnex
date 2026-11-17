@@ -1,0 +1,34 @@
+// The manifest must say what the module really has: every table its *.schema.ts files export, a name that is the folder, and the
+// route groups it was mounted with.
+import assert from 'node:assert/strict'
+import { readdirSync } from 'node:fs'
+import { describe, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { is } from 'drizzle-orm'
+import { PgTable } from 'drizzle-orm/pg-core'
+
+// Set before the modules load: @shopnex/db picks its database when it is first imported
+process.env.DATABASE_URL = 'pglite:memory'
+
+const { channelsModule } = await import('../src/channels.module')
+const srcDir = fileURLToPath(new URL('../src/', import.meta.url))
+
+describe('channels manifest', () => {
+  test('tables lists every table the schema files export', async () => {
+    const exported = new Set<unknown>()
+    for (const file of readdirSync(srcDir).filter((f) => f.endsWith('.schema.ts'))) {
+      const schema = (await import(`${srcDir}${file}`)) as Record<string, unknown>
+      for (const value of Object.values(schema)) if (is(value, PgTable)) exported.add(value)
+    }
+    assert.equal(exported.size, 2)
+    assert.deepEqual(new Set(Object.values(channelsModule.tables)), exported)
+  })
+
+  test('the name is the folder', () => {
+    assert.equal(channelsModule.name, 'channels')
+  })
+
+  test('the route groups are there, under the names they were mounted with', () => {
+    assert.deepEqual(Object.keys(channelsModule.router).sort(), ['channels', 'storefrontKeys'])
+  })
+})

@@ -2,6 +2,7 @@
 // can no longer set itself. The mode is read when the package loads, so this runs in its own process.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { shopDomains } from '../src/tenancy.schema'
 
 // Set before the modules load: they read these when first imported
 process.env.TENANCY_MODE = 'multi'
@@ -12,6 +13,7 @@ const fx = await import('./fixtures')
 
 const { db, schema, eq } = fx
 const tenancy = await import('../src')
+const { storefrontKeyService } = await import('@shopnex/channels')
 
 const hostHeaders = (host: string, extra: Record<string, string> = {}) => new Headers({ host, ...extra })
 
@@ -50,11 +52,9 @@ describe('which shop a storefront host means', () => {
   test('a verified custom domain is the shop; one that was never verified is not', async () => {
     const s = await fx.shop()
     await db
-      .insert(schema.shopDomains)
+      .insert(shopDomains)
       .values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'www.mine.example.test', verifiedAt: new Date() })
-    await db
-      .insert(schema.shopDomains)
-      .values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'pending.mine.example.test' })
+    await db.insert(shopDomains).values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'pending.mine.example.test' })
     const found = await tenancy.resolveStorefrontShop(hostHeaders('www.mine.example.test'))
     assert.equal(found.ok && found.shop.id, s.id)
     assert.deepEqual(await tenancy.resolveStorefrontShop(hostHeaders('pending.mine.example.test')), {
@@ -73,7 +73,7 @@ describe('which shop a storefront host means', () => {
       reason: 'shop_not_found',
     })
     const keyed = await fx.shop()
-    const key = await tenancy.createStorefrontKey(keyed.id, 'Web')
+    const key = await storefrontKeyService.create(keyed.id, 'Web', undefined, db)
     const found = await tenancy.resolveStorefrontShop(
       hostHeaders('nobody.shops.example.test', { [tenancy.PUBLISHABLE_KEY_HEADER]: key.token }),
     )
@@ -94,7 +94,7 @@ describe('the storefront URL of a shop', () => {
       .where(eq(schema.shops.id, s.id))
     assert.equal(stored?.url, 'https://ignored.example.test', 'what was sent is not saved either')
     await db
-      .insert(schema.shopDomains)
+      .insert(shopDomains)
       .values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'shop.example.org', verifiedAt: new Date() })
     assert.equal((await tenancy.getShopById(s.id))?.storefrontUrl, 'https://shop.example.org')
   })

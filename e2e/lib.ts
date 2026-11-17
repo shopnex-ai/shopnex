@@ -13,7 +13,9 @@ import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
 import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
-import { createApiToken, createStorefrontKey, getShopById, type ApiScope } from '@shopnex/tenancy'
+import { storefrontKeyService } from '@shopnex/channels'
+import { createApiToken, getShopById, type ApiScope } from '@shopnex/tenancy'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -159,7 +161,7 @@ export class Fixtures {
   }
 
   async storefrontKey(shopId: string) {
-    return createStorefrontKey(shopId, 'e2e')
+    return storefrontKeyService.create(shopId, 'e2e', undefined, db)
   }
 
   /** The account that owns the invitations made below (invitations need an inviter) */
@@ -177,7 +179,7 @@ export class Fixtures {
   /** A pending invitation written straight to the database; `expiresInMs` < 0 for an expired one */
   async invitation(shopId: string, email: string, role: 'admin' | 'member', expiresInMs = 86400e3) {
     const id = randomBytes(24).toString('base64url')
-    await db.insert(schema.shopInvitations).values({
+    await db.insert(shopInvitations).values({
       id,
       organizationId: shopId,
       email,
@@ -221,25 +223,22 @@ export class Fixtures {
     const id = signUp.body.user.id as string
     const cookie = signUp.cookie!
     if (role === 'outsider' || role === 'superadmin') {
-      await db
-        .update(schema.shopInvitations)
-        .set({ status: 'canceled' })
-        .where(eq(schema.shopInvitations.id, invitationId))
+      await db.update(shopInvitations).set({ status: 'canceled' }).where(eq(shopInvitations.id, invitationId))
       if (role === 'superadmin') await db.update(schema.user).set({ role: 'superadmin' }).where(eq(schema.user.id, id))
     } else {
       const accepted = await authCall('/organization/accept-invitation', { invitationId }, cookie)
       assert.equal(accepted.status, 200, JSON.stringify(accepted.body))
       if (role === 'owner') {
         await db
-          .update(schema.shopMembers)
+          .update(shopMembers)
           .set({ role: 'owner' })
-          .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+          .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.userId, id)))
       }
     }
     const [member] = await db
-      .select({ id: schema.shopMembers.id })
-      .from(schema.shopMembers)
-      .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+      .select({ id: shopMembers.id })
+      .from(shopMembers)
+      .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.userId, id)))
     return { id, email, memberId: member?.id as string, headers: { cookie } }
   }
 

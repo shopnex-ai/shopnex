@@ -2,6 +2,7 @@
 // storefront lands in, and the invitation lookups the sign-up page uses.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { shopDomains, shopMembers } from '../src/tenancy.schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -11,6 +12,7 @@ const fx = await import('./fixtures')
 
 const { db, schema } = fx
 const tenancy = await import('../src')
+const { storefrontKeyService } = await import('@shopnex/channels')
 // Used by the resolvers, not part of the package's public API
 const internal = await import('../src/shops')
 const { eq } = fx
@@ -23,9 +25,9 @@ describe('reading shops', () => {
   test('by id, slug and verified domain; the domain is matched in lower case and an unverified one is not a shop', async () => {
     const s = await fx.shop({ slug: 'acme-read' })
     await db
-      .insert(schema.shopDomains)
+      .insert(shopDomains)
       .values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'verified.example.test', verifiedAt: new Date() })
-    await db.insert(schema.shopDomains).values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'pending.example.test' })
+    await db.insert(shopDomains).values({ id: `d-${fx.unique()}`, shopId: s.id, domain: 'pending.example.test' })
     assert.equal((await tenancy.getShopById(s.id))?.slug, 'acme-read')
     assert.equal(await tenancy.getShopById('nope'), null)
     assert.equal((await internal.getShopBySlug('acme-read'))?.id, s.id)
@@ -69,7 +71,7 @@ describe('members', () => {
     await tenancy.addMember(s.id, first.id)
     await tenancy.addMember(s.id, second.id)
     await tenancy.addMember(s.id, second.id)
-    const rows = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.organizationId, s.id))
+    const rows = await db.select().from(shopMembers).where(eq(shopMembers.organizationId, s.id))
     assert.equal(rows.length, 2)
     assert.equal(rows.find((r) => r.userId === first.id)?.role, 'owner')
     assert.equal(rows.find((r) => r.userId === second.id)?.role, 'member')
@@ -82,7 +84,7 @@ describe('members', () => {
     await fx.member(a.id, u.id, 'member', new Date('2026-01-01'))
     assert.equal((await tenancy.getFirstMembership(u.id))?.organizationId, a.id)
     assert.equal(await tenancy.getFirstMembership('nobody'), null)
-    assert.equal((await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, u.id))).length, 2)
+    assert.equal((await db.select().from(shopMembers).where(eq(shopMembers.userId, u.id))).length, 2)
   })
 })
 
@@ -93,7 +95,7 @@ describe('createShop, for a new account', () => {
     assert.equal(s.name, 'Café', 'the name is trimmed')
     assert.equal(s.currency, 'USD')
     assert.match(s.slug, /^shop-[0-9a-f]{8}$/)
-    const members = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.organizationId, s.id))
+    const members = await db.select().from(shopMembers).where(eq(shopMembers.organizationId, s.id))
     assert.deepEqual(
       members.map((m) => [m.userId, m.role]),
       [[owner.id, 'owner']],
@@ -168,10 +170,10 @@ describe('which shop the storefront lands in', () => {
 
   test('with a publishable key: that key’s shop and channel, even in this mode; a revoked or unknown key is refused', async () => {
     const s = await fx.shop()
-    const key = await tenancy.createStorefrontKey(s.id, 'Mobile app')
+    const key = await storefrontKeyService.create(s.id, 'Mobile app', undefined, db)
     const found = await tenancy.resolveStorefrontShop(new Headers({ [tenancy.PUBLISHABLE_KEY_HEADER]: key.token }))
     assert.deepEqual(found.ok && [found.shop.id, found.channelId], [s.id, key.channelId])
-    await tenancy.revokeStorefrontKey(s.id, key.id)
+    await storefrontKeyService.revoke(s.id, key.id, db)
     for (const token of [key.token, 'pk_unknown']) {
       const refused = await tenancy.resolveStorefrontShop(new Headers({ [tenancy.PUBLISHABLE_KEY_HEADER]: token }))
       assert.deepEqual(refused, { ok: false, reason: 'invalid_key' })

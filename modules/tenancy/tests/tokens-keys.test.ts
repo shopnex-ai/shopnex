@@ -1,4 +1,4 @@
-// API tokens (what is stored, how one is recognised, revoking, the hook other modules listen to) and storefront publishable keys.
+// API tokens (what is stored, how one is recognised, revoking, the hook other modules listen to).
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 
@@ -8,9 +8,6 @@ const fx = await import('./fixtures')
 
 const { db, schema, eq } = fx
 const tenancy = await import('../src')
-// Used by the resolvers, not part of the package's public API
-const { getShopByStorefrontKey } = await import('../src/keys')
-const { ChannelError } = await import('@shopnex/channels')
 
 let SHOP = ''
 
@@ -194,48 +191,5 @@ describe('revoking', () => {
       tenancy.apiTokenRevoked.on('test.records', () => undefined)
     }
     assert.ok(await tenancy.resolveApiToken(kept.token), 'still a live token')
-  })
-})
-
-describe('storefront keys', () => {
-  test('a key is pk_ and random, reads the Online Store unless a channel is named, and lists newest first', async () => {
-    const key = await tenancy.createStorefrontKey(SHOP, 'Web')
-    assert.match(key.token, /^pk_[A-Za-z0-9_-]{32}$/)
-    const store = (await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))).find(
-      (c) => c.handle === 'online-store',
-    )
-    assert.equal(key.channelId, store?.id)
-    const [channel] = await db.insert(schema.channels).values({ shopId: SHOP, handle: 'app', name: 'App' }).returning()
-    await new Promise((r) => setTimeout(r, 5))
-    const second = await tenancy.createStorefrontKey(SHOP, 'App', channel!.id)
-    assert.equal(second.channelId, channel!.id)
-    assert.deepEqual(
-      (await tenancy.listStorefrontKeys(SHOP)).map((k) => k.id),
-      [second.id, key.id],
-    )
-  })
-
-  test('a channel that is not the shop’s is refused, and no key is made', async () => {
-    const other = await fx.shop()
-    const [theirs] = await db
-      .insert(schema.channels)
-      .values({ shopId: other.id, handle: 'theirs', name: 'Theirs' })
-      .returning()
-    await assert.rejects(
-      tenancy.createStorefrontKey(SHOP, 'Sneaky', theirs!.id),
-      (e: unknown) => e instanceof ChannelError && e.code === 'CHANNEL_NOT_FOUND',
-    )
-    assert.equal((await tenancy.listStorefrontKeys(SHOP)).length, 0)
-  })
-
-  test('revoking stamps the key once, in its own shop only; a revoked key no longer finds a shop', async () => {
-    const key = await tenancy.createStorefrontKey(SHOP, 'Web')
-    assert.equal((await getShopByStorefrontKey(key.token))?.shop.id, SHOP)
-    assert.equal(await getShopByStorefrontKey('pk_unknown'), null)
-    const other = await fx.shop()
-    assert.equal(await tenancy.revokeStorefrontKey(other.id, key.id), null)
-    assert.ok((await tenancy.revokeStorefrontKey(SHOP, key.id))?.revokedAt)
-    assert.equal(await tenancy.revokeStorefrontKey(SHOP, key.id), null)
-    assert.equal(await getShopByStorefrontKey(key.token), null)
   })
 })

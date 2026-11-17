@@ -15,6 +15,7 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/log": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:"
   }

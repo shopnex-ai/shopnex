@@ -6,7 +6,8 @@ import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, 
 import { products, productVariants } from './catalog'
 import type { CustomFieldValues } from './custom-field-values'
 import { customers } from './customers'
-import { channels, shops } from './tenancy'
+import { channels } from './channels'
+import { shops } from './tenancy'
 
 // Shopify displayFinancialStatus (lowercase). Manual payments stay `pending` until marked as paid.
 export const FINANCIAL_STATUSES = [

@@ -2,14 +2,14 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { resourcePublications } from '../src/channels.schema'
 
 const { db, schema, SHOP, OTHER_SHOP } = fx
 const { channelService, publicationService, ChannelError } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof ChannelError && e.code === code
 const HOUR = 3600_000
-const rows = (id: string) =>
-  db.select().from(schema.resourcePublications).where(fx.eq(schema.resourcePublications.resourceId, id))
+const rows = (id: string) => db.select().from(resourcePublications).where(fx.eq(resourcePublications.resourceId, id))
 
 before(async () => {
   await fx.prepareDatabase()
