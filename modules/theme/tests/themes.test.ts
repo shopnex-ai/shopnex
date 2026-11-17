@@ -7,7 +7,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 process.env.DATABASE_URL = 'pglite:memory'
 
 const { db, schema, prepareDatabase } = await import('@shopnex/db')
-const { DraftConflictError, draftService } = await import('@shopnex/drafts')
+const { DraftConflictError, draftService, entityDrafts } = await import('@shopnex/drafts')
 const themes = await import('../src/themes')
 const { eq } = await import('drizzle-orm')
 
@@ -22,7 +22,7 @@ before(async () => {
 
 const clean = async () => {
   await db.delete(schema.shopThemes).where(eq(schema.shopThemes.shopId, SHOP))
-  await db.delete(schema.entityDrafts).where(eq(schema.entityDrafts.shopId, SHOP))
+  await db.delete(entityDrafts).where(eq(entityDrafts.shopId, SHOP))
 }
 beforeEach(clean)
 after(async () => {
