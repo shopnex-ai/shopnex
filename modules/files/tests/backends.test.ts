@@ -13,7 +13,9 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.APP_URL = 'http://shop.test'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { files: filesTable, storageBackends } = await import('../src/files.schema')
 const { decryptSecret } = await import('@shopnex/db/secrets')
 const { fileService, storageService, FilesError } = await import('../src')

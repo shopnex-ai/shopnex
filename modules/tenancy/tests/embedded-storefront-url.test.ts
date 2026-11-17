@@ -10,7 +10,9 @@ process.env.TENANCY_MODE = 'multi'
 process.env.ROOT_DOMAIN = 'shops.example.com'
 process.env.SHOPNEX_SECRET ??= 'embedded-storefront-url-test-secret-0123456789'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { withStorefrontUrl } = await import('../src')
 const { eq } = await import('drizzle-orm')
 

@@ -12,6 +12,7 @@ import { readLocalFile, typeOfKey } from '@shopnex/files'
 import { PUBLISHABLE_KEY_HEADER } from '@shopnex/storefront-sdk'
 import { router } from './router'
 import { createContext } from './orpc'
+import { assertRpcConfigured } from '@shopnex/rpc'
 import { log } from './log'
 
 const BASE = '/api'
@@ -23,6 +24,9 @@ const logError = (error: unknown) => {
   if (error instanceof DOMException && error.name === 'AbortError') return
   log.error({ err: error }, 'unexpected oRPC error')
 }
+
+// The routes need the resolvers registered in orpc.ts: fail here, at startup, with the reason, not at the first request
+assertRpcConfigured()
 
 const rpcHandler = new RPCHandler(router, { interceptors: [onError(logError)] })
 // API reference UI. Pinned + integrity-checked: the page runs on the admin's origin (session cookie),

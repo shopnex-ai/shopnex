@@ -8,7 +8,9 @@ import { ORPCError, call } from '@orpc/server'
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
 const { themeModule } = await import('../src/theme.module')
 const { marketplaceThemes, shopThemes } = await import('../src/theme.schema')

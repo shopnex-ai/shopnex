@@ -12,7 +12,21 @@ import { log } from './log'
 // Embedded is for trying ShopNex out: one process owns the data, so nothing else can open it.
 const EMBEDDED_PREFIX = 'pglite:'
 const databaseUrl = process.env.DATABASE_URL ?? ''
-export const isEmbeddedDatabase = databaseUrl.startsWith(EMBEDDED_PREFIX)
+export const isEmbeddedUrl = (url: string) => url.startsWith(EMBEDDED_PREFIX)
+export const isEmbeddedDatabase = isEmbeddedUrl(databaseUrl)
+
+/**
+ * For a test that deletes rows: refuses to go on unless the database is the embedded one. A test sets DATABASE_URL=pglite:memory
+ * before it imports this package; if an import above that line ever runs first, the package has already picked whatever
+ * database the shell or .env names, and the cleanup would run there.
+ */
+export function requireEmbeddedDatabase() {
+  if (!isEmbeddedDatabase) {
+    throw new Error(
+      'This test deletes rows, so it must run on the embedded database. Set DATABASE_URL=pglite:memory before anything imports @shopnex/db.',
+    )
+  }
+}
 
 type Embedded = { migrate: () => Promise<void> }
 // `$client` is the pg Pool (tests and scripts use it); on the embedded database it is the PGlite instance instead

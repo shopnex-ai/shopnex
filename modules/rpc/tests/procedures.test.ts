@@ -5,9 +5,18 @@ import { before, describe, test } from 'node:test'
 import { ORPCError, call } from '@orpc/server'
 import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
 import { defineError } from '@shopnex/kit'
-import { configureRpc, createProcedures, firstMapper, mapperFor, pagination, type Resolvers } from '../src'
+import {
+  assertRpcConfigured,
+  configureRpc,
+  createProcedures,
+  firstMapper,
+  mapperFor,
+  pagination,
+  type Resolvers,
+} from '../src'
 
 const NoteError = defineError('NoteError', { MISSING: 'NOT_FOUND', DUPLICATE: 'CONFLICT' })
+const OtherError = defineError('OtherError', { BROKEN: 'BAD_REQUEST' })
 const procedures = createProcedures(mapperFor(NoteError))
 
 const shop = { id: 'shop-1' } as Shop
@@ -37,6 +46,12 @@ const resolvers: Resolvers = {
     calls.token++
     return Promise.resolve(bearers[bearer] ?? null)
   },
+  mapError: (error) =>
+    error instanceof OtherError
+      ? new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
+      : error instanceof NoteError
+        ? new ORPCError('INTERNAL_SERVER_ERROR', { message: 'the fallback must not win over the module’s own mapper' })
+        : undefined,
   hasScope: (scopes, needed) =>
     scopes.includes(needed) || scopes.includes(needed.replace('read_', 'write_') as ApiScope),
 }
@@ -52,6 +67,22 @@ describe('before the app registers its resolvers', () => {
   test('a public route needs none, a route that needs a caller says what is missing', async () => {
     assert.equal(await run(procedures.pub.handler(() => 'open')), 'open')
     await assert.rejects(run(procedures.authed.handler(() => 'x')), /has no resolvers: call configureRpc/)
+  })
+
+  test('an entry point that mounts routes can assert it at startup, with the reason', () => {
+    assert.throws(() => assertRpcConfigured(), /has no resolvers: call configureRpc/)
+  })
+
+  test('an error thrown by a public route is not masked by the missing resolvers', async () => {
+    const boom = new Error('boom')
+    await assert.rejects(
+      run(
+        procedures.pub.handler(() => {
+          throw boom
+        }),
+      ),
+      (e: unknown) => e === boom,
+    )
   })
 })
 
@@ -79,6 +110,28 @@ describe('with resolvers', () => {
       ),
       (e: unknown) => e === boom,
     )
+  })
+
+  test('an error of another module, which this route’s module does not map, is mapped by the registered mapper', async () => {
+    const thrown = procedures.pub.handler(() => {
+      throw new OtherError('BROKEN', 'another module failed')
+    })
+    await assert.rejects(
+      run(thrown),
+      (e: unknown) =>
+        e instanceof ORPCError && e.code === 'BAD_REQUEST' && (e.data as { code: string }).code === 'BROKEN',
+    )
+  })
+
+  test('the module’s own mapper comes first: its status wins over the registered one', async () => {
+    const own = procedures.pub.handler(() => {
+      throw new NoteError('MISSING', 'gone')
+    })
+    await assert.rejects(run(own), (e: unknown) => e instanceof ORPCError && e.code === 'NOT_FOUND')
+  })
+
+  test('assertRpcConfigured passes once the resolvers are registered', () => {
+    assert.doesNotThrow(() => assertRpcConfigured())
   })
 
   test('authed: no session is UNAUTHORIZED, a session is given to the handler', async () => {

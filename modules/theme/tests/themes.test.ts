@@ -6,7 +6,9 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 
-const { db, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+// These tests delete rows: never against a real database
+requireEmbeddedDatabase()
 const { marketplaceThemes, shopThemes } = await import('../src/theme.schema')
 const { DraftConflictError, draftService, entityDrafts } = await import('@shopnex/drafts')
 const themes = await import('../src/themes')

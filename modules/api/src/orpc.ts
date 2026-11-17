@@ -147,6 +147,7 @@ configureRpc({
     resolveAdminShop({ userId: user.id, activeShopId: session.activeOrganizationId, superAdmin: isSuperAdmin(user) }),
   token: async (bearer) => (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer)),
   hasScope,
+  mapError: mapDomainError,
 })
 
 export const {
