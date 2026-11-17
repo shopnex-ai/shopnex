@@ -9,6 +9,7 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { appInstallations } = await import('@shopnex/apps/schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { aiGenerations, aiProviders, aiSettings } = await import('../src/ai.schema')
@@ -77,7 +78,7 @@ export async function aiApp(opts: { name?: string; installed?: boolean; capabili
       clientId: `fake-ai-${unique()}`,
     })
     .returning()
-  await db.insert(schema.appInstallations).values({
+  await db.insert(appInstallations).values({
     appId: app!.id,
     shopId: SHOP,
     scopes: ['write_ai_capabilities'],

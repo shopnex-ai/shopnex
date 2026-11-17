@@ -7,6 +7,7 @@ import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
 import { AiError } from './ai.errors'
 import { aiProviders } from './ai.schema'
+import { appInstallations } from '@shopnex/apps/schema'
 
 /** The provider id of built-in AI (apps go by their app id) */
 export const BUILTIN = 'builtin'
@@ -68,11 +69,11 @@ export async function providers(shopId: string, capabilities: readonly string[] 
     .from(aiProviders)
     .innerJoin(schema.apps, eq(schema.apps.id, aiProviders.appId))
     .innerJoin(
-      schema.appInstallations,
+      appInstallations,
       and(
-        eq(schema.appInstallations.appId, aiProviders.appId),
-        eq(schema.appInstallations.shopId, aiProviders.shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, aiProviders.appId),
+        eq(appInstallations.shopId, aiProviders.shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(and(eq(aiProviders.shopId, shopId), inArray(aiProviders.capability, [...capabilities])))

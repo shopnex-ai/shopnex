@@ -9,6 +9,7 @@ import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './cart.errors'
 import { log } from './log'
+import { appInstallations } from '@shopnex/apps/schema'
 
 // Checkout waits for these, so keep it short
 const TIMEOUT_MS = 5000
@@ -100,14 +101,14 @@ export async function update(shopId: string, id: string, patch: { name?: string;
  */
 export async function availableApps(shopId: string) {
   const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .select({ app: schema.apps, installationId: appInstallations.id })
     .from(schema.apps)
     .leftJoin(
-      schema.appInstallations,
+      appInstallations,
       and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.shopId, shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(

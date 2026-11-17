@@ -11,6 +11,7 @@ import { db, schema } from '@shopnex/db'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
+import { appInstallations } from '@shopnex/apps/schema'
 
 const fx = new Fixtures()
 
@@ -354,10 +355,7 @@ describe('carrier service: placing the order', () => {
     await db.update(schema.carrierServices).set({ active: true }).where(eq(schema.carrierServices.id, service.id))
     assert.equal(carrierRates(await options(cart.id)).length, 1)
 
-    const [installation] = await db
-      .select()
-      .from(schema.appInstallations)
-      .where(eq(schema.appInstallations.appId, appId))
+    const [installation] = await db.select().from(appInstallations).where(eq(appInstallations.appId, appId))
     await appService.uninstall(SHOP, installation!.id)
     const left = await db.select().from(schema.carrierServices).where(eq(schema.carrierServices.appId, appId))
     assert.equal(left.length, 0)

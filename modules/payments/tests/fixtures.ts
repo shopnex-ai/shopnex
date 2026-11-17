@@ -8,6 +8,7 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { appInstallations } = await import('@shopnex/apps/schema')
 const { paymentMethods, paymentSessions } = await import('../src/payments.schema')
 requireEmbeddedDatabase()
 const { eq } = await import('drizzle-orm')
@@ -75,7 +76,7 @@ export async function paymentsApp(
     })
     .returning()
   const [installation] = await db
-    .insert(schema.appInstallations)
+    .insert(appInstallations)
     .values({
       appId: app!.id,
       shopId: SHOP,
@@ -127,6 +128,6 @@ export async function sessionOf(id: string) {
 export async function cleanup() {
   await db.delete(schema.orders).where(eq(schema.orders.shopId, SHOP))
   await db.delete(paymentMethods).where(eq(paymentMethods.shopId, SHOP))
-  await db.delete(schema.appInstallations).where(eq(schema.appInstallations.shopId, SHOP))
+  await db.delete(appInstallations).where(eq(appInstallations.shopId, SHOP))
   await db.delete(schema.apps).where(eq(schema.apps.source, 'custom'))
 }

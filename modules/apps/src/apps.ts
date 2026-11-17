@@ -11,7 +11,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { appUninstalled } from './apps.hooks'
-import { API_SCOPES, type ApiScope, type App, type AppInstallation } from '@shopnex/db/schema'
+import { API_SCOPES, type ApiScope, type App } from '@shopnex/db/schema'
 import {
   decodeJwt,
   generateKeyPair,
@@ -28,6 +28,7 @@ import { instanceSigner, ownKey } from './keys'
 import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'
 import { log } from './log'
+import { appAuthorizationCodes, appData, appInstallations, type AppInstallation } from './apps.schema'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const random = (bytes: number) => randomBytes(bytes).toString('base64url')
@@ -156,15 +157,13 @@ export async function createAuthorizationCode(input: {
   redirectUri: string
 }) {
   const code = random(32)
-  await db.insert(schema.appAuthorizationCodes).values({
+  await db.insert(appAuthorizationCodes).values({
     ...input,
     codeHash: hash(code),
     expiresAt: new Date(Date.now() + CODE_TTL_MS),
   })
   // Housekeeping: drop codes that expired over a day ago
-  await db
-    .delete(schema.appAuthorizationCodes)
-    .where(lt(schema.appAuthorizationCodes.expiresAt, sql`now() - interval '1 day'`))
+  await db.delete(appAuthorizationCodes).where(lt(appAuthorizationCodes.expiresAt, sql`now() - interval '1 day'`))
   return code
 }
 
@@ -198,13 +197,8 @@ export async function exchangeCode(input: {
     .transaction(async (tx) => {
       const [code] = await tx
         .select()
-        .from(schema.appAuthorizationCodes)
-        .where(
-          and(
-            eq(schema.appAuthorizationCodes.codeHash, hash(input.code)),
-            eq(schema.appAuthorizationCodes.appId, app.id),
-          ),
-        )
+        .from(appAuthorizationCodes)
+        .where(and(eq(appAuthorizationCodes.codeHash, hash(input.code)), eq(appAuthorizationCodes.appId, app.id)))
         .for('update')
       if (!code || code.usedAt || code.expiresAt < new Date() || code.redirectUri !== input.redirectUri) {
         throw new AppError(
@@ -212,10 +206,7 @@ export async function exchangeCode(input: {
           'Authorization code is invalid, expired, already used, or for another redirect_uri',
         )
       }
-      await tx
-        .update(schema.appAuthorizationCodes)
-        .set({ usedAt: new Date() })
-        .where(eq(schema.appAuthorizationCodes.id, code.id))
+      await tx.update(appAuthorizationCodes).set({ usedAt: new Date() }).where(eq(appAuthorizationCodes.id, code.id))
 
       const { token, ...secret } = mintToken()
       const installation = await install(tx, {
@@ -237,17 +228,17 @@ export async function exchangeCode(input: {
 // The live installation of an app on a shop, with its (unrevoked) token
 async function liveInstallation(appId: string, shopId: string) {
   const [row] = await db
-    .select({ installation: schema.appInstallations, token: schema.apiTokens })
-    .from(schema.appInstallations)
+    .select({ installation: appInstallations, token: schema.apiTokens })
+    .from(appInstallations)
     .innerJoin(
       schema.apiTokens,
-      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
     )
     .where(
       and(
-        eq(schema.appInstallations.appId, appId),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, appId),
+        eq(appInstallations.shopId, shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   return row ?? null
@@ -314,17 +305,17 @@ export async function resolveAccessToken(
   if (!claims) return null
   const [row] = await db
     .select({ token: schema.apiTokens, shop: schema.shops })
-    .from(schema.appInstallations)
+    .from(appInstallations)
     .innerJoin(
       schema.apiTokens,
-      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
     )
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.appInstallations.shopId))
+    .innerJoin(schema.shops, eq(schema.shops.id, appInstallations.shopId))
     .where(
       and(
-        eq(schema.appInstallations.id, claims.sub),
-        eq(schema.appInstallations.shopId, claims.shop_id),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.id, claims.sub),
+        eq(appInstallations.shopId, claims.shop_id),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   if (!row) return null
@@ -404,14 +395,14 @@ async function install(
   },
 ) {
   const [existing] = await tx
-    .select({ installation: schema.appInstallations, token: schema.apiTokens })
-    .from(schema.appInstallations)
+    .select({ installation: appInstallations, token: schema.apiTokens })
+    .from(appInstallations)
     .leftJoin(
       schema.apiTokens,
-      and(eq(schema.apiTokens.id, schema.appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
+      and(eq(schema.apiTokens.id, appInstallations.apiTokenId), isNull(schema.apiTokens.revokedAt)),
     )
-    .where(and(eq(schema.appInstallations.appId, input.app.id), eq(schema.appInstallations.shopId, input.shopId)))
-    .for('update', { of: schema.appInstallations })
+    .where(and(eq(appInstallations.appId, input.app.id), eq(appInstallations.shopId, input.shopId)))
+    .for('update', { of: appInstallations })
 
   // Already installed: new secret and scopes on the same token row
   if (existing?.token && !existing.installation.uninstalledAt) {
@@ -420,9 +411,9 @@ async function install(
       .set({ ...input.secret, scopes: input.scopes, name: input.app.name })
       .where(eq(schema.apiTokens.id, existing.token.id))
     const [installation] = await tx
-      .update(schema.appInstallations)
+      .update(appInstallations)
       .set({ scopes: input.scopes })
-      .where(eq(schema.appInstallations.id, existing.installation.id))
+      .where(eq(appInstallations.id, existing.installation.id))
       .returning()
     return installation!
   }
@@ -446,13 +437,9 @@ async function install(
     uninstalledAt: null,
   }
   const [installation] = existing
-    ? await tx
-        .update(schema.appInstallations)
-        .set(values)
-        .where(eq(schema.appInstallations.id, existing.installation.id))
-        .returning()
+    ? await tx.update(appInstallations).set(values).where(eq(appInstallations.id, existing.installation.id)).returning()
     : await tx
-        .insert(schema.appInstallations)
+        .insert(appInstallations)
         .values({ ...values, appId: input.app.id, shopId: input.shopId })
         .returning()
   return installation!
@@ -466,14 +453,14 @@ async function install(
  */
 export async function listCatalog(shopId: string) {
   const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
+    .select({ app: schema.apps, installationId: appInstallations.id })
     .from(schema.apps)
     .leftJoin(
-      schema.appInstallations,
+      appInstallations,
       and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, schema.apps.id),
+        eq(appInstallations.shopId, shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(isNull(schema.apps.delistedAt))
@@ -491,17 +478,17 @@ export async function listCatalog(shopId: string) {
 const installedApps = (shopId: string) =>
   db
     .select({
-      installation: schema.appInstallations,
+      installation: appInstallations,
       app: schema.apps,
       lastUsedAt: schema.apiTokens.lastUsedAt,
     })
-    .from(schema.appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
-    .leftJoin(schema.apiTokens, eq(schema.apiTokens.id, schema.appInstallations.apiTokenId))
-    .where(and(eq(schema.appInstallations.shopId, shopId), isNull(schema.appInstallations.uninstalledAt)))
+    .from(appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
+    .leftJoin(schema.apiTokens, eq(schema.apiTokens.id, appInstallations.apiTokenId))
+    .where(and(eq(appInstallations.shopId, shopId), isNull(appInstallations.uninstalledAt)))
 
 export async function listInstallations(shopId: string) {
-  const rows = (await installedApps(shopId).orderBy(desc(schema.appInstallations.installedAt))).filter(
+  const rows = (await installedApps(shopId).orderBy(desc(appInstallations.installedAt))).filter(
     ({ app }) => !isBundledAppUnavailable(app),
   )
   return rows.map(({ installation, app, lastUsedAt }) => ({
@@ -515,12 +502,12 @@ export async function listInstallations(shopId: string) {
 export async function getInstallation(shopId: string, appId: string) {
   const [row] = await db
     .select()
-    .from(schema.appInstallations)
+    .from(appInstallations)
     .where(
       and(
-        eq(schema.appInstallations.shopId, shopId),
-        eq(schema.appInstallations.appId, appId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.shopId, shopId),
+        eq(appInstallations.appId, appId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   return row ?? null
@@ -531,12 +518,12 @@ export async function uninstall(shopId: string, installationId: string) {
   return db.transaction(async (tx) => {
     const [installation] = await tx
       .select()
-      .from(schema.appInstallations)
+      .from(appInstallations)
       .where(
         and(
-          eq(schema.appInstallations.shopId, shopId),
-          eq(schema.appInstallations.id, installationId),
-          isNull(schema.appInstallations.uninstalledAt),
+          eq(appInstallations.shopId, shopId),
+          eq(appInstallations.id, installationId),
+          isNull(appInstallations.uninstalledAt),
         ),
       )
       .for('update')
@@ -550,9 +537,9 @@ export async function uninstall(shopId: string, installationId: string) {
       .delete(schema.carrierServices)
       .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, installation.appId)))
     const [updated] = await tx
-      .update(schema.appInstallations)
+      .update(appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })
-      .where(eq(schema.appInstallations.id, installationId))
+      .where(eq(appInstallations.id, installationId))
       .returning()
     return updated!
   })
@@ -563,14 +550,14 @@ export async function uninstall(shopId: string, installationId: string) {
 // A live installation of this shop, with its app (embedded app page)
 export async function getInstallationWithApp(shopId: string, installationId: string) {
   const [row] = await db
-    .select({ installation: schema.appInstallations, app: schema.apps })
-    .from(schema.appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
+    .select({ installation: appInstallations, app: schema.apps })
+    .from(appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
     .where(
       and(
-        eq(schema.appInstallations.shopId, shopId),
-        eq(schema.appInstallations.id, installationId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.shopId, shopId),
+        eq(appInstallations.id, installationId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   if (!row) return null
@@ -583,14 +570,14 @@ export async function getInstallationWithApp(shopId: string, installationId: str
  */
 export async function createSessionToken(input: { shopId: string; installationId: string; userId: string }) {
   const [row] = await db
-    .select({ installation: schema.appInstallations, clientId: schema.apps.clientId })
-    .from(schema.appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
+    .select({ installation: appInstallations, clientId: schema.apps.clientId })
+    .from(appInstallations)
+    .innerJoin(schema.apps, eq(schema.apps.id, appInstallations.appId))
     .where(
       and(
-        eq(schema.appInstallations.shopId, input.shopId),
-        eq(schema.appInstallations.id, input.installationId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.shopId, input.shopId),
+        eq(appInstallations.id, input.installationId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
   if (!row) throw new AppError('INSTALLATION_NOT_FOUND', 'App is not installed')
@@ -612,9 +599,9 @@ const APP_DATA_MAX_KEYS = 100
 async function tokenInstallation(token: ApiToken) {
   if (!token.appId) throw new AppError('APP_NOT_FOUND', "Only an app's own token can use app data")
   const [row] = await db
-    .select({ id: schema.appInstallations.id })
-    .from(schema.appInstallations)
-    .where(and(eq(schema.appInstallations.apiTokenId, token.id), isNull(schema.appInstallations.uninstalledAt)))
+    .select({ id: appInstallations.id })
+    .from(appInstallations)
+    .where(and(eq(appInstallations.apiTokenId, token.id), isNull(appInstallations.uninstalledAt)))
   if (!row) throw new AppError('INSTALLATION_NOT_FOUND', 'App is not installed')
   return row.id
 }
@@ -622,19 +609,19 @@ async function tokenInstallation(token: ApiToken) {
 export async function listAppData(token: ApiToken) {
   const installationId = await tokenInstallation(token)
   const rows = await db
-    .select({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
-    .from(schema.appData)
-    .where(eq(schema.appData.installationId, installationId))
-    .orderBy(asc(schema.appData.key))
+    .select({ key: appData.key, value: appData.value, updatedAt: appData.updatedAt })
+    .from(appData)
+    .where(eq(appData.installationId, installationId))
+    .orderBy(asc(appData.key))
   return rows
 }
 
 export async function getAppData(token: ApiToken, key: string) {
   const installationId = await tokenInstallation(token)
   const [row] = await db
-    .select({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
-    .from(schema.appData)
-    .where(and(eq(schema.appData.installationId, installationId), eq(schema.appData.key, key)))
+    .select({ key: appData.key, value: appData.value, updatedAt: appData.updatedAt })
+    .from(appData)
+    .where(and(eq(appData.installationId, installationId), eq(appData.key, key)))
   return row ?? null
 }
 
@@ -646,21 +633,19 @@ export async function setAppData(token: ApiToken, key: string, value: unknown) {
   return db.transaction(async (tx) => {
     const [{ count }] = (await tx
       .select({ count: sql<number>`count(*)::int` })
-      .from(schema.appData)
-      .where(and(eq(schema.appData.installationId, installationId), sql`${schema.appData.key} <> ${key}`))) as [
-      { count: number },
-    ]
+      .from(appData)
+      .where(and(eq(appData.installationId, installationId), sql`${appData.key} <> ${key}`))) as [{ count: number }]
     if (count >= APP_DATA_MAX_KEYS) {
       throw new AppError('APP_DATA_TOO_LARGE', `An app can keep at most ${APP_DATA_MAX_KEYS} keys per shop`)
     }
     const [row] = await tx
-      .insert(schema.appData)
+      .insert(appData)
       .values({ installationId, key, value })
       .onConflictDoUpdate({
-        target: [schema.appData.installationId, schema.appData.key],
+        target: [appData.installationId, appData.key],
         set: { value, updatedAt: new Date() },
       })
-      .returning({ key: schema.appData.key, value: schema.appData.value, updatedAt: schema.appData.updatedAt })
+      .returning({ key: appData.key, value: appData.value, updatedAt: appData.updatedAt })
     return row!
   })
 }
@@ -668,9 +653,9 @@ export async function setAppData(token: ApiToken, key: string, value: unknown) {
 export async function deleteAppData(token: ApiToken, key: string) {
   const installationId = await tokenInstallation(token)
   const [row] = await db
-    .delete(schema.appData)
-    .where(and(eq(schema.appData.installationId, installationId), eq(schema.appData.key, key)))
-    .returning({ key: schema.appData.key })
+    .delete(appData)
+    .where(and(eq(appData.installationId, installationId), eq(appData.key, key)))
+    .returning({ key: appData.key })
   return row ?? null
 }
 

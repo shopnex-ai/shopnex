@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import type { ApiScope } from '@shopnex/db/schema'
 import * as fx from './fixtures'
+import { appInstallations } from '../src/apps.schema'
 
 const { db, schema, eq, appService, SHOP } = fx
 const { AppError } = await import('../src/apps.errors')
@@ -28,7 +29,7 @@ async function install(app: { id: string }, scopes: ApiScope[] = ['read_products
   return appService.installManaged({ appId: app.id, shopId, userId: u.id, scopes })
 }
 const tokenOf = async (installationId: string) => {
-  const [row] = await db.select().from(schema.appInstallations).where(eq(schema.appInstallations.id, installationId))
+  const [row] = await db.select().from(appInstallations).where(eq(appInstallations.id, installationId))
   return row?.apiTokenId
     ? (await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, row.apiTokenId)))[0]
     : undefined
@@ -119,9 +120,9 @@ describe('what a shop sees', () => {
     await new Promise((r) => setTimeout(r, 5))
     const second = await install(b.app)
     await db
-      .update(schema.appInstallations)
+      .update(appInstallations)
       .set({ installedAt: new Date(Date.now() + 1000) })
-      .where(eq(schema.appInstallations.id, second.id))
+      .where(eq(appInstallations.id, second.id))
     const listed = (await appService.listInstallations(SHOP)).filter((x) => [first.id, second.id].includes(x.id))
     assert.deepEqual(
       listed.map((x) => x.id),
@@ -152,7 +153,7 @@ describe('what a shop sees', () => {
       .onConflictDoUpdate({ target: schema.apps.clientId, set: { source: 'bundled' } })
       .returning()
     const [i] = await db
-      .insert(schema.appInstallations)
+      .insert(appInstallations)
       .values({ appId: app!.id, shopId: SHOP, scopes: [], installedById: u.id })
       .returning()
     try {

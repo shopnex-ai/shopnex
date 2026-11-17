@@ -19,6 +19,19 @@ export {
   staffListOutput,
 } from '@shopnex/tenancy/contract'
 export { channelOutput, storefrontKeyOutput } from '@shopnex/channels/contract'
+export {
+  appCatalogOutput,
+  appDataItemOutput,
+  appDataKeyOutput,
+  appDataValueOutput,
+  appInstallationOutput,
+  appInstalledOutput,
+  appOutput,
+  appRegisteredOutput,
+  marketplaceConnectedOutput,
+  marketplaceConnectionOutput,
+  sessionTokenOutput,
+} from '@shopnex/apps/contract'
 export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
@@ -31,7 +44,6 @@ import {
   SMTP_PRESETS,
   type StoredMenuItem,
   apiTokens,
-  appInstallations,
   apps,
   channels,
   collections,
@@ -40,7 +52,6 @@ import {
   shippingRates,
   carrierServices,
   emailDeliveries,
-  marketplaceConnection,
   productImages,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
@@ -57,6 +68,7 @@ import {
 } from '@shopnex/db/schema'
 import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
+import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
 
 const variantOutput = createSelectSchema(productVariants)
   .pick({
@@ -124,8 +136,6 @@ export const carrierServiceOutput = createSelectSchema(carrierServices).pick({
   /** The app has what it needs to quote rates */
   ready: true,
 })
-
-export const appDataValueOutput = z.object({ key: z.string(), value: z.unknown(), updatedAt: z.date() })
 
 // --- everything else the admin routes answer ---
 
@@ -203,42 +213,6 @@ export const orderCreatedOutput = orderOutput.extend({
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
 })
 
-// Apps and tokens
-export const appOutput = createSelectSchema(apps, {
-  scopes,
-  source: z.enum(['custom', 'marketplace', 'bundled']),
-}).extend({
-  managed: z.boolean(),
-})
-export const appInstallationOutput = createSelectSchema(appInstallations, { scopes })
-export const appInstalledOutput = appInstallationOutput.extend({ app: appOutput, lastUsedAt: z.date().nullable() })
-export const appCatalogOutput = z.object({
-  marketplaceConnected: z.boolean(),
-  instanceUrl: z.string(),
-  apps: z.array(
-    appOutput.extend({
-      origin: z.enum(['custom', 'marketplace', 'bundled']),
-      installationId: z.string().nullable(),
-      installed: z.boolean(),
-    }),
-  ),
-})
-export const appRegisteredOutput = z.object({ app: appOutput, privateKey: z.string() })
-export const sessionTokenOutput = z.object({ token: z.string() })
-export const marketplaceConnectionOutput = createSelectSchema(marketplaceConnection)
-  .pick({
-    id: true,
-    marketplaceUrl: true,
-    publicUrl: true,
-    instanceId: true,
-    connectedAt: true,
-    lastSyncAt: true,
-    lastSyncError: true,
-  })
-  .nullable()
-export const marketplaceConnectedOutput = z.object({ connected: z.boolean() })
-export const appDataItemOutput = z.object({ key: z.string(), value: z.unknown(), updatedAt: z.date() })
-export const appDataKeyOutput = z.object({ key: z.string() })
 /** Apps a shop can install for a job (payments, shipping) */
 export const availableAppsOutput = z.object({
   instanceUrl: z.string(),
