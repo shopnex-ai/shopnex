@@ -779,15 +779,27 @@ importers:
 
   modules/channels:
     dependencies:
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(zod@4.6.7)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -863,6 +875,9 @@ importers:
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
+      '@shopnex/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks
@@ -1163,6 +1178,9 @@ importers:
 
   modules/tenancy:
     dependencies:
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
@@ -1175,9 +1193,18 @@ importers:
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(zod@4.6.7)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

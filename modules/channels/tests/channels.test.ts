@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { storefrontKeys } from '../src/channels.schema'
 
 const { db, schema, SHOP, OTHER_SHOP } = fx
 const { channelService, DEFAULT_CHANNEL_HANDLE, ChannelError } = await import('../src')
@@ -133,7 +134,7 @@ describe('remove', () => {
     const removed = await channelService.remove(SHOP, c.id, db)
     assert.equal(removed?.id, c.id)
     assert.equal(await channelService.getById(SHOP, c.id, db), null)
-    const keys = await db.select().from(schema.storefrontKeys).where(fx.eq(schema.storefrontKeys.channelId, c.id))
+    const keys = await db.select().from(storefrontKeys).where(fx.eq(storefrontKeys.channelId, c.id))
     assert.equal(keys.length, 0)
   })
 

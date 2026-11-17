@@ -137,7 +137,7 @@ export async function remove(shopId: string, id: string) {
     .delete(schema.collections)
     .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
     .returning()
-  if (row) await publicationService.removeFor(shopId, 'collection', [id])
+  if (row) await publicationService.removeFor(shopId, 'collection', [id], db)
   return row ?? null
 }
 
@@ -151,6 +151,7 @@ export async function removeMany(shopId: string, ids: string[]) {
     shopId,
     'collection',
     deleted.map((c) => c.id),
+    db,
   )
   return deleted.length
 }

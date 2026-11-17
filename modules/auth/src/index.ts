@@ -13,6 +13,7 @@ import { assertSignUpAllowed, createShopForNewAccount } from './sign-up-policy'
 import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 
 // A provider is enabled only when both its credentials are set.
 // OAuth callback URL to register: {APP_URL}/api/auth/callback/{provider}
@@ -54,8 +55,8 @@ export const auth = betterAuth({
       account,
       verification,
       shops: schema.shops,
-      shopMembers: schema.shopMembers,
-      shopInvitations: schema.shopInvitations,
+      shopMembers: shopMembers,
+      shopInvitations: shopInvitations,
     },
   }),
   emailAndPassword: { enabled: true },

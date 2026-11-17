@@ -4,6 +4,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { shopInvitations, shopMembers } = await import('../src/tenancy.schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 
@@ -36,7 +37,7 @@ export async function shop(patch: Partial<typeof schema.shops.$inferInsert> = {}
 export async function member(shopId: string, userId: string, role = 'member', createdAt?: Date) {
   const id = `m-${unique()}`
   const [row] = await db
-    .insert(schema.shopMembers)
+    .insert(shopMembers)
     .values({ id, organizationId: shopId, userId, role, ...(createdAt ? { createdAt } : {}) })
     .returning()
   made.members.push(id)
@@ -46,11 +47,11 @@ export async function member(shopId: string, userId: string, role = 'member', cr
 export async function invitation(
   shopId: string,
   inviterId: string,
-  patch: Partial<typeof schema.shopInvitations.$inferInsert> = {},
+  patch: Partial<typeof shopInvitations.$inferInsert> = {},
 ) {
   const id = `i-${unique()}`
   const [row] = await db
-    .insert(schema.shopInvitations)
+    .insert(shopInvitations)
     .values({
       id,
       organizationId: shopId,
@@ -67,7 +68,7 @@ export async function invitation(
 
 /** Everything the tests made (shops take their members, domains, tokens, keys and invitations with them) */
 export async function cleanup() {
-  if (made.members.length) await db.delete(schema.shopMembers).where(inArray(schema.shopMembers.id, made.members))
+  if (made.members.length) await db.delete(shopMembers).where(inArray(shopMembers.id, made.members))
   if (made.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, made.shops))
   if (made.users.length) await db.delete(schema.user).where(inArray(schema.user.id, made.users))
   for (const list of Object.values(made)) list.length = 0

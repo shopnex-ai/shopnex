@@ -60,7 +60,7 @@ let methodId: string
 let variantId: string
 
 async function newCart() {
-  const channel = await channelService.resolve(SHOP, undefined)
+  const channel = await channelService.resolve(SHOP, undefined, db)
   const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 1 }])
   return cart.token
 }

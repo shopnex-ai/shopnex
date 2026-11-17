@@ -13,6 +13,7 @@ process.env.SHOPNEX_SECRET ??= 'embedded-signup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { shopMembers } = await import('@shopnex/tenancy/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
@@ -50,7 +51,7 @@ describe('open sign-up on the embedded database', () => {
     const members = await within(
       5_000,
       'reading the members',
-      db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, user.id)),
+      db.select().from(shopMembers).where(eq(shopMembers.userId, user.id)),
     )
     assert.equal(members.length, 1, 'the new account owns one shop')
     assert.equal(members[0]!.role, 'owner')
@@ -64,7 +65,7 @@ describe('open sign-up on the embedded database', () => {
       'signing up the second account',
       auth.api.signUpEmail({ body: { name: 'Bob', email: 'bob@example.com', password: 'correct-horse-battery' } }),
     )
-    const members = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, user.id))
+    const members = await db.select().from(shopMembers).where(eq(shopMembers.userId, user.id))
     assert.equal(members.length, 1)
     const all = await db.select().from(schema.shops)
     assert.ok(all.length >= 2)

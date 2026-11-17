@@ -7,6 +7,18 @@ export { customFieldOutput } from '@shopnex/custom-fields/contract'
 export { discountOutput, taxRateOutput } from '@shopnex/pricing/contract'
 export { fileListOutput, fileOutput, storageSettingsOutput } from '@shopnex/files/contract'
 export { paymentMethodOutput, paymentSessionOutput, paymentsAppOutput } from '@shopnex/payments/contract'
+export {
+  apiTokenCreatedOutput,
+  apiTokenOutput,
+  domainCreatedOutput,
+  domainVerifiedOutput,
+  domainsListOutput,
+  invitationOutput,
+  memberOutput,
+  shopOutput,
+  staffListOutput,
+} from '@shopnex/tenancy/contract'
+export { channelOutput, storefrontKeyOutput } from '@shopnex/channels/contract'
 export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
@@ -26,14 +38,10 @@ import {
   menus,
   pages,
   shippingRates,
-  shopInvitations,
-  storefrontKeys,
   carrierServices,
   emailDeliveries,
   marketplaceConnection,
   productImages,
-  shopMembers,
-  shopDomains,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
@@ -47,11 +55,8 @@ import {
   products,
   shops,
 } from '@shopnex/db/schema'
-
-export const shopOutput = createSelectSchema(shops).extend({
-  /** True when the Storefront URL is derived from the shop's domains and can't be set (multi-tenant mode) */
-  storefrontUrlManaged: z.boolean(),
-})
+import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { storefrontKeys } from '@shopnex/channels/schema'
 
 const variantOutput = createSelectSchema(productVariants)
   .pick({
@@ -134,7 +139,6 @@ const publications = z.array(z.object({ channelId: z.uuid(), publishedAt: z.date
 export const publicationsOutput = publications
 
 // Channels, checkout settings
-export const channelOutput = createSelectSchema(channels, { type: z.enum(CHANNEL_TYPES) })
 export const shippingRateOutput = createSelectSchema(shippingRates)
 
 // Catalog
@@ -200,8 +204,6 @@ export const orderCreatedOutput = orderOutput.extend({
 })
 
 // Apps and tokens
-export const apiTokenOutput = createSelectSchema(apiTokens, { scopes }).omit({ tokenHash: true })
-export const apiTokenCreatedOutput = apiTokenOutput.extend({ token: z.string() })
 export const appOutput = createSelectSchema(apps, {
   scopes,
   source: z.enum(['custom', 'marketplace', 'bundled']),
@@ -252,21 +254,8 @@ export const availableAppsOutput = z.object({
     }),
   ),
 })
-export const storefrontKeyOutput = createSelectSchema(storefrontKeys)
 
 // Domains, email, storage, files, notifications
-const domainOutput = createSelectSchema(shopDomains)
-  .pick({ id: true, domain: true, verifiedAt: true, createdAt: true })
-  .extend({
-    /** verifiedAt is set */
-    verified: z.boolean(),
-    /** The DNS record that proves ownership */
-    record: z.object({ type: z.literal('TXT'), name: z.string(), value: z.string() }),
-  })
-export const domainsListOutput = z.object({ routing: z.boolean(), domains: z.array(domainOutput) })
-export const domainVerifiedOutput = z.object({ verified: z.boolean(), domain: domainOutput })
-export const domainCreatedOutput = domainOutput
-
 const testSteps = z.array(z.object({ step: z.string(), ok: z.boolean(), error: z.string().optional() }))
 export const testResultOutput = z.object({ ok: z.boolean(), steps: testSteps })
 export const emailSettingsOutput = z.object({
@@ -325,16 +314,6 @@ export const notificationPreviewOutput = z.object({
   problem: z.object({ message: z.string(), line: z.number().int().nullable() }).nullable(),
 })
 export const notificationTestOutput = z.object({ to: z.string() })
-
-// Staff
-export const staffListOutput = z.object({
-  members: z.array(
-    createSelectSchema(shopMembers).omit({ organizationId: true }).extend({ name: z.string(), email: z.string() }),
-  ),
-  invitations: z.array(createSelectSchema(shopInvitations)),
-})
-export const invitationOutput = createSelectSchema(shopInvitations)
-export const memberOutput = createSelectSchema(shopMembers)
 
 // Analytics
 const totals = z.object({

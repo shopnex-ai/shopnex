@@ -12,6 +12,7 @@ import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
+import { shopMembers } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -162,9 +163,9 @@ describe('customer accounts', () => {
       assert.ok([401, 403].includes(admin.status), `admin API answered ${admin.status}`)
       const [member] = await db
         .select()
-        .from(schema.shopMembers)
-        .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-        .where(and(eq(schema.shopMembers.organizationId, SHOP), eq(schema.user.email, email)))
+        .from(shopMembers)
+        .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
+        .where(and(eq(shopMembers.organizationId, SHOP), eq(schema.user.email, email)))
       assert.equal(member, undefined, 'a customer is not a shop member')
 
       ok(await call('POST', '/storefront/customer/sign-out', undefined, as(token)))

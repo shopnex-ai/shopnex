@@ -10,6 +10,7 @@ process.env.SHOPNEX_SECRET ??= 'embedded-setup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { shopMembers } = await import('@shopnex/tenancy/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { SUPER_ADMIN_ROLE } = await import('../src/roles')
@@ -55,7 +56,7 @@ describe('first-run setup on the embedded database', () => {
     assert.equal(row?.role, SUPER_ADMIN_ROLE)
     assert.equal(row?.name, 'Owner', 'the name is the part of the email before the @, as it was typed')
 
-    const members = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, user.id))
+    const members = await db.select().from(shopMembers).where(eq(shopMembers.userId, user.id))
     assert.equal(members.length, 1)
     assert.equal(members[0]?.role, 'owner')
     assert.equal(members[0]?.organizationId, 'default')
