@@ -26,6 +26,18 @@ const connectionBoundModules = ['modules/drafts', 'modules/custom-fields']
 const noConsoleFiles = ['modules/*/src/**/*.{ts,tsx}', 'apps/*/src/**/*.{ts,tsx}', 'packages/cj-sdk/src/**/*.ts']
 const noConsoleIgnores = ['modules/log/**', 'modules/db/src/migrate-db.ts', 'apps/docs/**']
 
+// First-party apps (apps/stripe, apps/shippo, ...) are built the way a third party builds one: only from the public
+// packages below, never from the core modules or their database. That keeps the app contract honest, and an app can then
+// move to its own repository without a change. (apps/admin-ui and apps/docs are the product itself, not apps.)
+const publicPackages = [
+  '@shopnex/app',
+  '@shopnex/app-bridge',
+  '@shopnex/storefront-sdk',
+  '@shopnex/marketplace-sdk',
+  // The CJ API client that apps/cj-dropshipping ships with
+  '@shopnex/cj-sdk',
+]
+
 export default defineConfig(
   globalIgnores([
     '**/node_modules/',
@@ -108,6 +120,28 @@ export default defineConfig(
           selector: "ImportDeclaration[source.value='@shopnex/db'] > ImportNamespaceSpecifier",
           message:
             'Import what you need by name (`schema`, `Conn`): a namespace import would bring the shared `db` in.',
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['apps/*/**/*.{ts,tsx,js,jsx,mjs,astro}'],
+    ignores: ['apps/admin-ui/**', 'apps/docs/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@shopnex/*', ...publicPackages.flatMap((name) => [`!${name}`, `!${name}/*`])],
+              message: `An app may import only the public packages (${publicPackages.join(', ')}). What it needs from the core belongs in the app API, not in a deep import.`,
+            },
+            {
+              group: ['**/modules/**', '**/packages/**', '**/templates/**'],
+              message: 'An app must not import from the repository outside its own folder: use a public package.',
+            },
+          ],
         },
       ],
     },
