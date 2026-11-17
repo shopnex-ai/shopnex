@@ -90,9 +90,27 @@ jobs:
             exit 1
           fi
 
-      - run: pnpm test
-
       - run: pnpm build
+
+  # The unit tests run beside lint and typecheck, not after them: they need neither, and in one job they were the longest step
+  # (each test file boots its own in-memory database). Add this job to the required checks next to "Lint, typecheck, build".
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test
 
   app-image:
     name: App image (${{ matrix.app }})
