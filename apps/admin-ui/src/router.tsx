@@ -1,8 +1,12 @@
 import { QueryClient } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
+import { RouteError } from '@/components/route-error'
+import { reloadOnPreloadError } from '@/lib/stale-chunk'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
+  if (typeof window !== 'undefined') reloadOnPreloadError()
+
   const queryClient = new QueryClient()
 
   return createRouter({
@@ -10,6 +14,7 @@ export function getRouter() {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreload: 'intent',
+    defaultErrorComponent: RouteError,
   })
 }
 
