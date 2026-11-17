@@ -4,7 +4,7 @@
 import { and, eq, exists, inArray, lte, sql, type AnyColumn } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { PublishableType } from '@shopnex/db/schema'
-import { ChannelError } from './errors'
+import { ChannelError } from './channels.errors'
 
 const t = schema.resourcePublications
 

@@ -8,7 +8,7 @@ import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { ProductVariant } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
-import { CatalogError } from './errors'
+import { CatalogError } from './catalog.errors'
 // Cycle with ./products is fine: only used inside functions
 import { emitProductEvent } from './products'
 

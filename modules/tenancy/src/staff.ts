@@ -7,17 +7,8 @@ import { db, schema } from '@shopnex/db'
 import type { StaffRole } from '@shopnex/db/schema'
 import type { ShopRole } from './resolve'
 
-export type StaffErrorCode = 'NOT_FOUND' | 'ALREADY_MEMBER' | 'FORBIDDEN'
-
-export class StaffError extends Error {
-  constructor(
-    readonly code: StaffErrorCode,
-    message: string,
-  ) {
-    super(message)
-    this.name = 'StaffError'
-  }
-}
+export { StaffError, type StaffErrorCode } from './tenancy.errors'
+import { StaffError } from './tenancy.errors'
 
 // Who is acting: their role in this shop (super admins act as owners) and user id
 export type Actor = { userId: string; role: ShopRole; superAdmin: boolean }

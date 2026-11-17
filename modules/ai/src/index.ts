@@ -5,7 +5,7 @@ export { BUILTIN } from './providers'
 export type { SettingsInput as AiSettingsInput } from './builtin'
 export type { ConfigureInput } from './providers'
 export type { RunInput } from './generations'
-export { AiError, type AiErrorCode } from './errors'
+export { AiError, type AiErrorCode } from './ai.errors'
 export {
   AI_BUILTIN_PROVIDERS,
   AI_FEEDBACK,

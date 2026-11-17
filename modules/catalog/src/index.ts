@@ -22,7 +22,7 @@ export type {
 export { DEFAULT_VARIANT_TITLE } from './variants'
 export { escapeHtml, htmlToText, sanitizeHtml } from './html'
 export { seedSampleProducts } from './sample'
-export { CatalogError, type CatalogErrorCode } from './errors'
+export { CatalogError, type CatalogErrorCode } from './catalog.errors'
 export { SLUG_PATTERN, slugify } from './slug'
 export { PRODUCT_STATUSES } from '@shopnex/db/schema'
 export type { Collection, NewProduct, Product, ProductStatus, ProductVariant } from '@shopnex/db/schema'

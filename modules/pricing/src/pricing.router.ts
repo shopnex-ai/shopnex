@@ -1,16 +1,12 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
-import { createProcedures, mapperFor } from '@shopnex/rpc'
+import { createProcedures } from '@shopnex/rpc'
 import * as discountService from './discounts'
 import { discountCreateInput, discountInput, discountOutput, taxRateInput, taxRateOutput } from './pricing.contract'
-import { PricingError } from './pricing.errors'
 import * as taxService from './taxes'
 
-// What the Admin API answers with for this module's errors: the statuses declared in pricing.errors.ts
-export const pricingErrors = mapperFor(PricingError)
-
-const { scoped, shopManager } = createProcedures(pricingErrors)
+const { scoped, shopManager } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {

@@ -14,7 +14,7 @@ import { checkDiscount, redeemDiscount } from './discount-redemptions'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
-import { OrderError } from './errors'
+import { OrderError } from './orders.errors'
 
 export type OrderLineInput =
   | { variantId: string; quantity: number }

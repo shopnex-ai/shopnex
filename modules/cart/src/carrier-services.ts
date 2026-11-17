@@ -7,7 +7,7 @@ import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { db, schema, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
-import { CartError } from './errors'
+import { CartError } from './cart.errors'
 import { log } from './log'
 
 // Checkout waits for these, so keep it short

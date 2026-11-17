@@ -12,6 +12,7 @@
   "dependencies": {
     "@shopnex/catalog": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

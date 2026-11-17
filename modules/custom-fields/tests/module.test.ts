@@ -6,6 +6,7 @@ import { readdirSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { ORPCError } from '@orpc/server'
+import { domainErrorMapper } from '@shopnex/rpc'
 import { is } from 'drizzle-orm'
 import { PgTable } from 'drizzle-orm/pg-core'
 
@@ -36,7 +37,7 @@ describe('custom-fields manifest', () => {
     const expected = { FIELD_NOT_FOUND: 'NOT_FOUND', KEY_TAKEN: 'CONFLICT', INVALID_VALUE: 'BAD_REQUEST' } as const
     for (const [code, status] of Object.entries(expected)) {
       const cause = new CustomFieldError(code as keyof typeof expected, `message of ${code}`)
-      const mapped = customFieldsModule.errors(cause)
+      const mapped = domainErrorMapper(cause)
       assert.ok(mapped instanceof ORPCError, code)
       assert.equal(mapped.code, status, code)
       assert.equal(mapped.message, `message of ${code}`)
@@ -45,13 +46,12 @@ describe('custom-fields manifest', () => {
     }
   })
 
-  test('an error that is not this module is left alone', () => {
-    assert.equal(customFieldsModule.errors(new Error('boom')), undefined)
-    assert.equal(customFieldsModule.errors('text'), undefined)
+  test('an error that is not a domain error is left alone', () => {
+    assert.equal(domainErrorMapper(new Error('boom')), undefined)
+    assert.equal(domainErrorMapper('text'), undefined)
   })
 
-  test('the routes and the error mapper are there', () => {
-    assert.equal(typeof customFieldsModule.errors, 'function')
+  test('the routes are there', () => {
     assert.ok(Object.keys(customFieldsModule.router).length >= 4)
   })
 })

@@ -6,7 +6,7 @@ import { variantService } from '@shopnex/catalog'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Cart, CartStatus } from '@shopnex/db/schema'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
-import { CartError } from './errors'
+import { CartError } from './cart.errors'
 
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999

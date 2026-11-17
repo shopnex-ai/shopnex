@@ -10,7 +10,7 @@ import { ThemeDocument } from '@shopnex/storefront-sdk/theme'
 import { db, schema, type Tx } from '@shopnex/db'
 import { themeService } from '@shopnex/theme'
 import { normalizeScopes } from '@shopnex/tenancy'
-import { AppError } from './errors'
+import { AppError } from './apps.errors'
 import { log } from './log'
 
 const CONNECTION_ID = 'default'

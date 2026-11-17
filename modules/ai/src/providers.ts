@@ -5,7 +5,7 @@ import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
-import { AiError } from './errors'
+import { AiError } from './ai.errors'
 
 /** The provider id of built-in AI (apps go by their app id) */
 export const BUILTIN = 'builtin'

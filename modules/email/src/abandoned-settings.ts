@@ -5,7 +5,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { shopnexSecret } from '@shopnex/db/secrets'
-import { EmailError } from './errors'
+import { EmailError } from './email.errors'
 
 export const DEFAULT_DELAY_MINUTES = 60
 /** A reminder two minutes after leaving is a nuisance, one a month later is noise */

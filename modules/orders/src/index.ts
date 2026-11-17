@@ -1,6 +1,6 @@
 export * as orderService from './orders'
 export type { CancelInput, CreateOrderInput, FulfillInput, ListOrdersInput, OrderLineInput } from './orders'
-export { OrderError, type OrderErrorCode, type OrderErrorData } from './errors'
+export { OrderError, type OrderErrorCode, type OrderErrorData } from './orders.errors'
 export {
   CANCEL_REASONS,
   FINANCIAL_STATUSES,

@@ -15,7 +15,7 @@ import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
 import { notify } from '@shopnex/email'
 import { OrderError, orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
-import { PaymentError } from './errors'
+import { PaymentError } from './payments.errors'
 import { log } from './log'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released

@@ -22,7 +22,7 @@ import {
 import { APP_INSTALLED_PATH, signLifecycleRequest, type AppInstalledRequest } from '@shopnex/marketplace-sdk/lifecycle'
 import { SESSION_TOKEN_TYP, signSessionToken, type SessionTokenClaims } from '@shopnex/marketplace-sdk/session-token'
 import { mintToken, normalizeScopes, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
-import { AppError } from './errors'
+import { AppError } from './apps.errors'
 import { instanceSigner, ownKey } from './keys'
 import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'

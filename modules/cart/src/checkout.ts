@@ -13,7 +13,7 @@ import type { CartView } from './cart'
 import * as carrierService from './carrier-services'
 import type { QuoteInput } from './carrier-services'
 import { listPaymentMethods, listShippingRates } from './checkout-settings'
-import { CartError } from './errors'
+import { CartError } from './cart.errors'
 
 export type CheckoutInput = {
   email: string

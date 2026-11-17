@@ -40,7 +40,8 @@ for (const entry of readdirSync(modulesDir, { withFileTypes: true })) {
   const pkg = JSON.parse(read(join(dir, 'package.json')))
   const src = join(dir, 'src')
   const files = walk(src)
-  const text = files.map(read).join('\n')
+  const sources = new Map(files.map((file) => [file, read(file)]))
+  const text = [...sources.values()].join('\n')
   const imported = new Set(
     [...text.matchAll(/(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)'@shopnex\/([a-z-]+)/g)]
       .map((m) => m[1])
@@ -52,7 +53,7 @@ for (const entry of readdirSync(modulesDir, { withFileTypes: true })) {
       .map(short),
   )
   const manifestFile = existsSync(src) ? readdirSync(src).find((f) => f.endsWith('.module.ts')) : undefined
-  mods.set(entry.name, { dir, pkgName: pkg.name, text, imported, declared, manifestFile, files })
+  mods.set(entry.name, { dir, pkgName: pkg.name, text, imported, declared, manifestFile, files, sources })
 }
 
 const errors = []
@@ -114,10 +115,10 @@ for (const [name, m] of mods) {
 // module's own src/*.schema.ts. A table in any other file would get no migration (so the migration check, finding no change,
 // would pass) and would be missing from the privacy check.
 for (const [name, m] of mods) {
-  for (const file of m.files) {
+  for (const [file, source] of m.sources) {
     const where = relative(root, file)
     const allowed = /^modules\/db\/src\/schema\//.test(where) || /^modules\/[^/]+\/src\/[^/]+\.schema\.ts$/.test(where)
-    if (!allowed && /\bpgTable\(/.test(read(file)))
+    if (!allowed && /\bpgTable\(/.test(source))
       errors.push(`${name}: ${where} defines a table but is not a *.schema.ts file, so it would get no migration`)
   }
 }
