@@ -11,7 +11,8 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.APP_URL = 'http://shop.test'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase } = await import('@shopnex/db')
+const { files: filesTable, storageBackends } = await import('../src/files.schema')
 const { fileService, FilesError, MAX_FILE_SIZE } = await import('../src')
 const { eq } = await import('drizzle-orm')
 
@@ -39,7 +40,7 @@ before(async () => {
 })
 
 after(async () => {
-  await db.delete(schema.files).where(eq(schema.files.shopId, SHOP))
+  await db.delete(filesTable).where(eq(filesTable.shopId, SHOP))
   await rm(root, { recursive: true, force: true })
 })
 
@@ -94,7 +95,7 @@ describe('upload', () => {
 
 describe('list, count and remove', () => {
   test('lists the newest first with their URLs, and pages', async () => {
-    await db.delete(schema.files).where(eq(schema.files.shopId, SHOP))
+    await db.delete(filesTable).where(eq(filesTable.shopId, SHOP))
     const first = await files.upload(SHOP, file(png(), 'first.png'))
     await new Promise((resolve) => setTimeout(resolve, 15))
     const second = await files.upload(SHOP, file(png(), 'second.png'))

@@ -2,12 +2,12 @@
 // bucket. Saving a bucket runs the connection test first, so a broken setup never receives uploads.
 import { randomUUID } from 'node:crypto'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { S3Config, StorageBackend } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
-import { FilesError } from './errors'
+import { FilesError } from './files.errors'
+import { storageBackends, type S3Config, type StorageBackend } from './files.schema'
 import { publicFileUrl, s3Provider } from './s3'
 import { localDisk, type StorageProvider } from './storage'
 
@@ -20,9 +20,9 @@ const providerOf = (row: StorageBackend) => s3Provider(row.id, row.config, decry
 async function latest(shopId: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.storageBackends)
-    .where(eq(schema.storageBackends.shopId, shopId))
-    .orderBy(desc(schema.storageBackends.createdAt))
+    .from(storageBackends)
+    .where(eq(storageBackends.shopId, shopId))
+    .orderBy(desc(storageBackends.createdAt))
     .limit(1)
   return row ?? null
 }
@@ -39,8 +39,8 @@ export async function getSettings(shopId: string, conn: Conn) {
 export async function activeStorage(shopId: string, conn: Conn): Promise<StorageProvider> {
   const [row] = await conn
     .select()
-    .from(schema.storageBackends)
-    .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
+    .from(storageBackends)
+    .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
   return row ? providerOf(row) : localDisk
 }
 
@@ -50,8 +50,8 @@ export async function providersFor(shopId: string, names: string[], conn: Conn) 
   const rows = ids.length
     ? await conn
         .select()
-        .from(schema.storageBackends)
-        .where(and(eq(schema.storageBackends.shopId, shopId), inArray(schema.storageBackends.id, ids)))
+        .from(storageBackends)
+        .where(and(eq(storageBackends.shopId, shopId), inArray(storageBackends.id, ids)))
     : []
   return new Map<string, StorageProvider>([
     [localDisk.name, localDisk],
@@ -132,16 +132,16 @@ export async function useS3(shopId: string, input: S3Input, conn: Conn) {
   const previous = await latest(shopId, conn)
   await conn.transaction(async (tx) => {
     await tx
-      .update(schema.storageBackends)
+      .update(storageBackends)
       .set({ active: false, updatedAt: new Date() })
-      .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
+      .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
     if (previous && sameLocation(previous.config, config)) {
       await tx
-        .update(schema.storageBackends)
+        .update(storageBackends)
         .set({ config, secretAccessKey, active: true, updatedAt: new Date() })
-        .where(eq(schema.storageBackends.id, previous.id))
+        .where(eq(storageBackends.id, previous.id))
     } else {
-      await tx.insert(schema.storageBackends).values({ shopId, config, secretAccessKey, active: true })
+      await tx.insert(storageBackends).values({ shopId, config, secretAccessKey, active: true })
     }
   })
   return getSettings(shopId, conn)
@@ -150,8 +150,8 @@ export async function useS3(shopId: string, input: S3Input, conn: Conn) {
 // Back to the server's disk for new uploads; files in the bucket stay there and keep working
 export async function useLocal(shopId: string, conn: Conn) {
   await conn
-    .update(schema.storageBackends)
+    .update(storageBackends)
     .set({ active: false, updatedAt: new Date() })
-    .where(and(eq(schema.storageBackends.shopId, shopId), eq(schema.storageBackends.active, true)))
+    .where(and(eq(storageBackends.shopId, shopId), eq(storageBackends.active, true)))
   return getSettings(shopId, conn)
 }

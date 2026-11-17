@@ -11,7 +11,6 @@ import { moduleErrors } from './modules'
 import { ContentError } from '@shopnex/content'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
-import { FilesError } from '@shopnex/files'
 import { OrderError } from '@shopnex/orders'
 import { PaymentError } from '@shopnex/payments'
 import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from '@shopnex/storefront-sdk/contract'
@@ -84,9 +83,6 @@ const mapDomainError: ErrorMapper = (error) => {
           ? 'NOT_FOUND'
           : 'BAD_REQUEST'
     return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof FilesError) {
-    return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
   }
   if (error instanceof EmailError) {
     return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })

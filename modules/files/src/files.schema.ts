@@ -1,15 +1,17 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // Files the merchant uploads (product images today). The bytes live in a storage backend: the server's
 // disk, or an S3-compatible bucket the shop configures (Settings → Storage). Each file remembers the
 // backend that holds it, so switching backends later doesn't strand files uploaded before.
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/db/schema'
 
 // Presets only prefill the form; every S3-compatible service is configured the same way
 export const S3_PRESETS = ['aws', 'r2', 'spaces', 'b2', 'minio', 'other'] as const
 export type S3Preset = (typeof S3_PRESETS)[number]
 
-export type S3Config = {
+export interface S3Config {
   preset: S3Preset
   /** API endpoint, e.g. https://<account-id>.r2.cloudflarestorage.com */
   endpoint: string

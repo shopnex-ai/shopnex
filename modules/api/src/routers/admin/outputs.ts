@@ -5,6 +5,7 @@ import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 export { customFieldOutput } from '@shopnex/custom-fields/contract'
 export { discountOutput, taxRateOutput } from '@shopnex/pricing/contract'
+export { fileListOutput, fileOutput, storageSettingsOutput } from '@shopnex/files/contract'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
 import {
@@ -12,7 +13,6 @@ import {
   CANCEL_REASONS,
   CHANNEL_TYPES,
   NOTIFICATIONS,
-  S3_PRESETS,
   SMTP_PRESETS,
   AI_BUILTIN_PROVIDERS,
   type StoredMenuItem,
@@ -23,7 +23,6 @@ import {
   apps,
   channels,
   collections,
-  files,
   menus,
   pages,
   paymentMethods,
@@ -326,25 +325,6 @@ export const emailSettingsOutput = z.object({
     })
     .nullable(),
 })
-export const storageSettingsOutput = z.object({
-  provider: z.enum(['s3', 'local']),
-  s3: z
-    .object({
-      hasSecret: z.boolean(),
-      preset: z.enum(S3_PRESETS),
-      endpoint: z.string(),
-      region: z.string(),
-      bucket: z.string(),
-      accessKeyId: z.string(),
-      publicUrl: z.string(),
-      forcePathStyle: z.boolean(),
-      publicAcl: z.boolean().optional(),
-    })
-    .nullable(),
-})
-export const fileOutput = createSelectSchema(files).extend({ url: z.string() })
-export const fileListOutput = z.object({ items: z.array(fileOutput), total: z.number().int() })
-
 const notificationBase = {
   enabled: z.boolean(),
   customized: z.boolean(),

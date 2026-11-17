@@ -13,7 +13,8 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.APP_URL = 'http://shop.test'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase } = await import('@shopnex/db')
+const { files: filesTable, storageBackends } = await import('../src/files.schema')
 const { decryptSecret } = await import('@shopnex/db/secrets')
 const { fileService, storageService, FilesError } = await import('../src')
 const { eq } = await import('drizzle-orm')
@@ -51,7 +52,7 @@ const bucket = (name = 'media', secretAccessKey: string | null = 'first-secret')
   forcePathStyle: true,
   ...(secretAccessKey ? { secretAccessKey } : {}),
 })
-const rows = () => db.select().from(schema.storageBackends).where(eq(schema.storageBackends.shopId, SHOP))
+const rows = () => db.select().from(storageBackends).where(eq(storageBackends.shopId, SHOP))
 
 before(async () => {
   root = await mkdtemp(path.join(tmpdir(), 'shopnex-files-'))
@@ -84,13 +85,13 @@ before(async () => {
 beforeEach(async () => {
   fail.put = fail.get = false
   objects.clear()
-  await db.delete(schema.files).where(eq(schema.files.shopId, SHOP))
-  await db.delete(schema.storageBackends).where(eq(schema.storageBackends.shopId, SHOP))
+  await db.delete(filesTable).where(eq(filesTable.shopId, SHOP))
+  await db.delete(storageBackends).where(eq(storageBackends.shopId, SHOP))
 })
 
 after(async () => {
-  await db.delete(schema.files).where(eq(schema.files.shopId, SHOP))
-  await db.delete(schema.storageBackends).where(eq(schema.storageBackends.shopId, SHOP))
+  await db.delete(filesTable).where(eq(filesTable.shopId, SHOP))
+  await db.delete(storageBackends).where(eq(storageBackends.shopId, SHOP))
   await new Promise((resolve) => server.close(resolve))
   await rm(root, { recursive: true, force: true })
 })

@@ -1,11 +1,11 @@
 // The shop's file library (uploaded images). Business logic only; every query is scoped by shopId.
 import { randomUUID } from 'node:crypto'
 import { and, count as countFn, desc, eq } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { StoredFile } from '@shopnex/db/schema'
-import { FilesError } from './errors'
+import type { Conn } from '@shopnex/db'
+import { FilesError } from './files.errors'
 import { IMAGE_TYPES, sniffImage } from './sniff'
 import { activeStorage, providersFor } from './backends'
+import { files, type StoredFile } from './files.schema'
 import type { StorageProvider } from './storage'
 
 export const MAX_FILE_SIZE = 20 * 1024 * 1024
@@ -32,16 +32,16 @@ async function withUrls(shopId: string, rows: StoredFile[], conn: Conn): Promise
 export async function list(shopId: string, opts: { limit: number; offset: number }, conn: Conn) {
   const rows = await conn
     .select()
-    .from(schema.files)
-    .where(eq(schema.files.shopId, shopId))
-    .orderBy(desc(schema.files.createdAt))
+    .from(files)
+    .where(eq(files.shopId, shopId))
+    .orderBy(desc(files.createdAt))
     .limit(opts.limit)
     .offset(opts.offset)
   return withUrls(shopId, rows, conn)
 }
 
 export async function count(shopId: string, conn: Conn) {
-  const [row] = await conn.select({ n: countFn() }).from(schema.files).where(eq(schema.files.shopId, shopId))
+  const [row] = await conn.select({ n: countFn() }).from(files).where(eq(files.shopId, shopId))
   return row?.n ?? 0
 }
 
@@ -58,7 +58,7 @@ export async function upload(shopId: string, file: File, opts: { alt?: string | 
   await storage.put(key, bytes, mimeType)
   try {
     const [row] = await conn
-      .insert(schema.files)
+      .insert(files)
       .values({
         shopId,
         storage: storage.name,
@@ -80,8 +80,8 @@ export async function upload(shopId: string, file: File, opts: { alt?: string | 
 // Removes the bytes too. Products still pointing at the URL show a broken image.
 export async function remove(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
-    .delete(schema.files)
-    .where(and(eq(schema.files.shopId, shopId), eq(schema.files.id, id)))
+    .delete(files)
+    .where(and(eq(files.shopId, shopId), eq(files.id, id)))
     .returning()
   if (!row) return null
   const provider = providerOf(await providersFor(shopId, [row.storage], conn), row)

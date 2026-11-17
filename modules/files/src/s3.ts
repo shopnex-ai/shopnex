@@ -2,10 +2,10 @@
 // signed with aws4fetch (SigV4) rather than the AWS SDK, which also avoids the SDK's default upload
 // checksums that several S3-compatible services reject.
 import { AwsClient } from 'aws4fetch'
-import type { S3Config } from '@shopnex/db/schema'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
-import { FilesError } from './errors'
+import { FilesError } from './files.errors'
+import type { S3Config } from './files.schema'
 import type { StorageProvider } from './storage'
 
 const trimSlash = (url: string) => url.replace(/\/+$/, '')
