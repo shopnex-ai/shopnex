@@ -33,7 +33,7 @@ import { channels as adminChannels } from './routers/admin/channels'
 import { domains as adminDomains } from './routers/admin/domains'
 import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
 import { themeModule } from '@shopnex/theme/module'
-import { webhooks as adminWebhooks } from './routers/admin/webhooks'
+import { webhooksModule } from '@shopnex/webhooks/module'
 import { marketplace } from './routers/marketplace'
 import { oauth } from './routers/oauth'
 import { storefrontRouter } from './routers/storefront'
@@ -82,7 +82,7 @@ export const router = {
     ai: tagged('Admin · AI').router(aiModule.router.ai),
     aiSettings: tagged('Admin · AI').router(aiModule.router.aiSettings),
     aiApp: tagged('Admin · AI apps').router(aiModule.router.aiApp),
-    webhooks: tagged('Admin · Webhooks').router(adminWebhooks),
+    webhooks: tagged('Admin · Webhooks').router(webhooksModule.router),
     apiTokens: tagged('Admin · API tokens').router(adminApiTokens),
     apps: tagged('Admin · Apps').router(adminApps),
     appRegistry: tagged('Admin · App registry').router(adminAppRegistry),

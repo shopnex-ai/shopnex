@@ -7,6 +7,7 @@ import { and, eq } from 'drizzle-orm'
 import { productService } from '@shopnex/catalog'
 import { customerService } from '@shopnex/customers'
 import { db, schema } from '@shopnex/db'
+import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -51,19 +52,19 @@ before(async () => {
   productId = product.id
   variantId = product.variants[0].id
   const [endpoint] = await db
-    .insert(schema.webhookEndpoints)
+    .insert(webhookEndpoints)
     .values({
       shopId: SHOP,
       url: 'https://example.com/e2e-privacy',
       topics: ['order.created', 'customer.erased'],
       secret: 'whsec_e2e_privacy',
     })
-    .returning({ id: schema.webhookEndpoints.id })
+    .returning({ id: webhookEndpoints.id })
   endpointId = endpoint!.id
 })
 
 after(async () => {
-  await db.delete(schema.webhookEndpoints).where(eq(schema.webhookEndpoints.id, endpointId))
+  await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, endpointId))
   for (const email of suppressed) {
     await db
       .delete(schema.emailSuppressions)
@@ -238,7 +239,7 @@ describe('erase', () => {
       body: JSON.stringify(body),
     })
     await db
-      .insert(schema.webhookDeliveries)
+      .insert(webhookDeliveries)
       .values([
         delivery({ data: { email, note: 'about the customer' } }),
         delivery({ data: { email: control.email, note: 'about someone else' } }),
@@ -314,17 +315,15 @@ describe('erase', () => {
     assert.equal(other!.html, '<p>control</p>')
 
     // Webhook history that named them is gone, and an event tells apps to erase their copy
-    const bodies = (
-      await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.endpointId, endpointId))
-    ).map((d) => d.body)
+    const bodies = (await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpointId))).map(
+      (d) => d.body,
+    )
     assert.ok(!bodies.some((b) => b.includes('about the customer')), 'the payload that named them is deleted')
     assert.ok(
       bodies.some((b) => b.includes('about someone else')),
       'someone else’s payload is not',
     )
-    const erased = (
-      await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.endpointId, endpointId))
-    )
+    const erased = (await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpointId)))
       .filter((d) => d.topic === 'customer.erased')
       .map((d) => JSON.parse(d.body).data)
     assert.deepEqual(

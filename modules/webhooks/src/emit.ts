@@ -1,6 +1,6 @@
 import { and, arrayContains, eq } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { WebhookTopic } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
+import { webhookDeliveries, webhookEndpoints, type WebhookTopic } from './webhooks.schema'
 
 export function envelope(shopId: string, topic: string, data: unknown) {
   return JSON.stringify({ type: topic, timestamp: new Date().toISOString(), shopId, data })
@@ -13,16 +13,16 @@ export function envelope(shopId: string, topic: string, data: unknown) {
  */
 export async function emit(conn: Conn, shopId: string, topic: WebhookTopic, payload: () => unknown) {
   const endpoints = await conn
-    .select({ id: schema.webhookEndpoints.id })
-    .from(schema.webhookEndpoints)
+    .select({ id: webhookEndpoints.id })
+    .from(webhookEndpoints)
     .where(
       and(
-        eq(schema.webhookEndpoints.shopId, shopId),
-        eq(schema.webhookEndpoints.active, true),
-        arrayContains(schema.webhookEndpoints.topics, [topic]),
+        eq(webhookEndpoints.shopId, shopId),
+        eq(webhookEndpoints.active, true),
+        arrayContains(webhookEndpoints.topics, [topic]),
       ),
     )
   if (endpoints.length === 0) return
   const body = envelope(shopId, topic, await payload())
-  await conn.insert(schema.webhookDeliveries).values(endpoints.map((e) => ({ shopId, endpointId: e.id, topic, body })))
+  await conn.insert(webhookDeliveries).values(endpoints.map((e) => ({ shopId, endpointId: e.id, topic, body })))
 }

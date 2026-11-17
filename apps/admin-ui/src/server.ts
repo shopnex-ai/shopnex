@@ -34,7 +34,7 @@ function startBackgroundServices() {
       import('@shopnex/tenancy'),
       import('@shopnex/apps'),
     ])
-    startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature, resolveUrl: serverUrl })
+    startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature, resolveUrl: serverUrl }, db)
     startPaymentsWorker(db)
     startEmailWorker()
     marketplaceService.startMarketplaceSync()
