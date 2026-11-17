@@ -1,17 +1,6 @@
 // Shops are Better Auth "organizations" (organization plugin, renamed via modelName).
 // TS keys must match Better Auth field names; DB columns use shop_* naming.
-import {
-  boolean,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-  type AnyPgColumn,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { boolean, index, integer, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core'
 import { apps } from './apps'
 import { user } from './auth'
 

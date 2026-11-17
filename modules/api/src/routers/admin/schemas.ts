@@ -17,6 +17,7 @@ export {
   staffRole,
 } from '@shopnex/tenancy/contract'
 export { channelInput, storefrontKeyInput } from '@shopnex/channels/contract'
+export { appInput, marketplaceConnectInput } from '@shopnex/apps/contract'
 export { aiAppConfigureInput, aiRunInput, aiSettingsInput } from '@shopnex/ai/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
 export {
@@ -201,34 +202,6 @@ export const fulfillOrderInput = z.object({
 
 export { webhookEndpointInput } from '@shopnex/webhooks/contract'
 export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/webhooks/schema'
-
-// Admin → Apps (registry, super admins). Redirect URLs must be absolute; https except on localhost.
-const redirectUrl = z
-  .url({ protocol: /^https?$/ })
-  .max(2000)
-  .refine((u) => u.startsWith('https://') || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(u), {
-    message: 'Use https (http only for localhost)',
-  })
-export const appInput = z.object({
-  name: z.string().trim().min(1).max(100),
-  description: z.string().trim().max(500).nullable().optional(),
-  iconUrl: z
-    .url({ protocol: /^https?$/ })
-    .max(2000)
-    .nullable()
-    .optional(),
-  appUrl: z.url({ protocol: /^https?$/ }).max(2000),
-  // None: a managed app (installed in the admin, gets tokens with token exchange / client credentials)
-  redirectUrls: z.array(redirectUrl).max(10),
-  scopes: z.array(z.enum(API_SCOPES)).min(1, 'Grant at least one permission'),
-})
-
-// Admin → Apps → Marketplace
-export const marketplaceConnectInput = z.object({
-  marketplaceUrl: z.url({ protocol: /^https?$/ }).max(2000),
-  // This instance's public origin: the marketplace and apps must be able to reach it
-  publicUrl: z.url({ protocol: /^https?$/ }).max(2000),
-})
 
 // Online store → Navigation. Items nest up to 3 levels (MENU_MAX_DEPTH), each level built from the one below.
 // collection / product / page items need a resourceId, http items a url; fields that don't apply are cleared.

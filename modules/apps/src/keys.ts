@@ -2,7 +2,7 @@
 // payments requests; apps check them against /api/v1/oauth/jwks. The newest key signs, every stored key is
 // published, so rotating = inserting a new row and deleting the old one once its tokens have expired.
 import { desc } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import {
   generateKeyPair,
   importPublicKey,
@@ -13,16 +13,17 @@ import {
   type Signer,
 } from '@shopnex/marketplace-sdk/keys'
 import { instanceUrl } from './marketplace'
+import { instanceKeys } from './apps.schema'
 
 let current: Promise<Signer> | null = null
 
 async function loadSigner() {
-  const [newest] = await db.select().from(schema.instanceKeys).orderBy(desc(schema.instanceKeys.createdAt)).limit(1)
+  const [newest] = await db.select().from(instanceKeys).orderBy(desc(instanceKeys.createdAt)).limit(1)
   if (newest) return signer(newest.privateKey)
   const { privateKey, publicKey } = await generateKeyPair()
   // Two processes starting at once may both create one: both are published, either can sign
   await db
-    .insert(schema.instanceKeys)
+    .insert(instanceKeys)
     .values({ kid: await keyId(publicKey), privateKey, publicKey })
     .onConflictDoNothing()
   return signer(privateKey)
@@ -38,7 +39,7 @@ export function instanceSigner() {
 
 export async function jwks() {
   await instanceSigner()
-  const rows = await db.select({ publicKey: schema.instanceKeys.publicKey }).from(schema.instanceKeys)
+  const rows = await db.select({ publicKey: instanceKeys.publicKey }).from(instanceKeys)
   return { keys: await Promise.all(rows.map((r) => toJwk(r.publicKey))) }
 }
 

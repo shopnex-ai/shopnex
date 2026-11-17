@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { instanceKeys } from '../src/apps.schema'
 
 const { db, schema } = fx
 const keys = await import('../src/keys')
@@ -17,7 +18,7 @@ describe('the instance key', () => {
   test('is made once and kept: the same signer on every call, one stored row, published in the JWKS', async () => {
     const [a, b] = await Promise.all([keys.instanceSigner(), keys.instanceSigner()])
     assert.equal(a.kid, b.kid)
-    assert.equal((await db.select().from(schema.instanceKeys)).length, 1)
+    assert.equal((await db.select().from(instanceKeys)).length, 1)
     const { keys: published } = await keys.jwks()
     assert.deepEqual(
       published.map((k) => k.kid),

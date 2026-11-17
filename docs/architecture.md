@@ -65,7 +65,7 @@ customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a l
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
 payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing
-apps      → db, tenancy, theme
+apps      → db, tenancy, theme, rpc, marketplace-sdk, storefront-sdk   (owns app_installations, app_authorization_codes, app_data, instance_keys and marketplace_connection; the apps registry table stays in db with the other foundation tables; owns appUninstalled and runs the carrier-service cleanup itself until cart is a module)
 ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
 api       → everything above (transport only)
 ```

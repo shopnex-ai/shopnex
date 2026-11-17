@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { appAuthorizationCodes, appInstallations } from '../src/apps.schema'
 
 const { db, schema, eq, appService, SHOP, REDIRECT } = fx
 const { AppError } = await import('../src/apps.errors')
@@ -153,8 +154,8 @@ describe('exchanging an authorization code', () => {
     assert.deepEqual([result.shopId, result.scopes], [SHOP, a.app.scopes])
     const [installation] = await db
       .select()
-      .from(schema.appInstallations)
-      .where(eq(schema.appInstallations.id, result.installationId))
+      .from(appInstallations)
+      .where(eq(appInstallations.id, result.installationId))
     assert.deepEqual(
       [installation?.appId, installation?.installedById, installation?.uninstalledAt],
       [a.app.id, user.id, null],
@@ -183,7 +184,7 @@ describe('exchanging an authorization code', () => {
     const first = await authorize(a)
     await assert.rejects(exchange(a, first.code, 'http://127.0.0.1/elsewhere'), refused('invalid_grant'))
     const expired = await authorize(a)
-    await db.update(schema.appAuthorizationCodes).set({ expiresAt: new Date(Date.now() - 1000) })
+    await db.update(appAuthorizationCodes).set({ expiresAt: new Date(Date.now() - 1000) })
     await assert.rejects(exchange(a, expired.code), refused('invalid_grant'))
     const fresh = await authorize(a)
     await assert.rejects(exchange(other, fresh.code), refused('invalid_grant'))
@@ -221,7 +222,7 @@ describe('exchanging an authorization code', () => {
     assert.equal(two.installationId, one.installationId)
     assert.equal(await resolveApiToken(one.accessToken), null, 'the old secret no longer works')
     assert.ok(await resolveApiToken(two.accessToken))
-    const rows = await db.select().from(schema.appInstallations).where(eq(schema.appInstallations.appId, a.app.id))
+    const rows = await db.select().from(appInstallations).where(eq(appInstallations.appId, a.app.id))
     assert.equal(rows.length, 1)
   })
 })
