@@ -1,5 +1,5 @@
 import { ORPCError, implement, os } from '@orpc/server'
-import { createProcedures, type Context, type ErrorMapper } from '@shopnex/rpc'
+import { configureRpc, createProcedures, type Context, type ErrorMapper } from '@shopnex/rpc'
 import { AiError } from '@shopnex/ai'
 import { AppError, appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
@@ -136,6 +136,22 @@ const mapDomainError: ErrorMapper = (error) => {
   }
   return undefined
 }
+
+// What rpc needs to recognise a request. Registered here, once, because api is the layer that knows about logins, API
+// tokens and shops: rpc itself depends on none of them, so a module below auth or tenancy can have routes too.
+declare module '@shopnex/rpc' {
+  interface Register {
+    session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>
+  }
+}
+
+configureRpc({
+  session: (headers) => auth.api.getSession({ headers }),
+  adminShop: ({ session, user }) =>
+    resolveAdminShop({ userId: user.id, activeShopId: session.activeOrganizationId, superAdmin: isSuperAdmin(user) }),
+  token: async (bearer) => (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer)),
+  hasScope,
+})
 
 export const {
   pub,
