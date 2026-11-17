@@ -1,6 +1,8 @@
 import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { auth } from '@shopnex/auth'
+// A new shop gets its menus from content's shopCreated listener, which only exists once the module is loaded
+import '@shopnex/content'
 import { createShop, getFirstMembership, isOpenSignup, NEW_SHOP_NAME } from '@shopnex/tenancy'
 
 export type SignupResult = { error?: string }

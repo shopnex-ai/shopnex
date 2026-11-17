@@ -146,6 +146,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../../modules/catalog
+      '@shopnex/content':
+        specifier: workspace:*
+        version: link:../../modules/content
       '@shopnex/db':
         specifier: workspace:*
         version: link:../../modules/db
