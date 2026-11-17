@@ -3,7 +3,7 @@
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
-import { ContentError } from './errors'
+import { ContentError } from './content.errors'
 
 export type PageInput = {
   title: string

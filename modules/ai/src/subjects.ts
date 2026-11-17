@@ -4,7 +4,7 @@ import { and, asc, count, desc, eq, sql } from 'drizzle-orm'
 import { htmlToText, productService, type ProductWithDetails } from '@shopnex/catalog'
 import { db, schema } from '@shopnex/db'
 import type { AiCollection, AiPage, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
-import { AiError } from './errors'
+import { AiError } from './ai.errors'
 
 const MAX_VARIANTS = 50
 const MAX_COLLECTION_PRODUCTS = 30

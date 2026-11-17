@@ -109,8 +109,7 @@ Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
 Tests that delete rows run on the embedded database and say so: set `DATABASE_URL=pglite:memory` before anything imports
 `@shopnex/db`, then call `requireEmbeddedDatabase()` (it refuses any other database before a row is touched). Routes stand on the
 resolvers `modules/api` registers with `configureRpc`; the entry point that mounts them calls `assertRpcConfigured()`, so a
-process that forgot to register them fails at startup. `configureRpc` also takes `mapError`, for the errors of classes not converted to `defineError` yet (`modules/api` maps
-them by hand in `orpc.ts` until they are): any route may meet them, because a service of another module may throw them.
+process that forgot to register them fails at startup.
 
 Errors: declare the status next to the code, and that is all: `rpc` answers any error made with `defineError` with the status its
 class declares for the code (the code goes in `data`, the error is the cause). No mapper, no manifest field, no registration:
@@ -126,8 +125,9 @@ export const CustomFieldError = defineError('CustomFieldError', {
 
 An error that carries more than a code extends the class (`class OrderError extends defineError('OrderError', { ... })` with
 its own `readonly data`). The Storefront routes answer with the typed errors of the public contract, so `modules/api/src/orpc.ts`
-keeps that mapping, and the errors of the modules not converted yet, until they are. A route can still pass its own mapper to
-`createProcedures` for an error that must answer differently; it is tried first, then the registered one, then the default.
+keeps that mapping (five branches, not status tables). A class can add fields to the response's `data` with the `data`
+option of `defineError` (the OAuth errors of apps also name the code as `error`), and a route can pass its own mapper to
+`createProcedures` for an error that must answer differently; it is tried first, then the default.
 `pnpm modules:check` verifies
 the manifest against the imports and `package.json`.
 

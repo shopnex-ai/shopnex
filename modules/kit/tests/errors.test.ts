@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { defineError, domainErrorStatus, isDomainError, type ErrorCode } from '../src'
+import { defineError, domainErrorData, domainErrorStatus, isDomainError, type ErrorCode } from '../src'
 
 const ThingError = defineError('ThingError', { NOT_THERE: 'NOT_FOUND', TAKEN: 'CONFLICT' })
 const OtherError = defineError('OtherError', { BAD: 'BAD_REQUEST' })
@@ -60,5 +60,21 @@ describe('the mark of a domain error', () => {
     const outside = new ThingError('TAKEN', 'x') as unknown as { code: string }
     outside.code = 'OTHER'
     assert.equal(domainErrorStatus(outside as unknown as Error & { code: string }), undefined)
+  })
+})
+
+describe('the data of a response', () => {
+  test('is the code, and a class can add fields (an OAuth error also names itself as `error`)', () => {
+    const Oauth = defineError('Oauth', { invalid_client: 'UNAUTHORIZED' }, { data: (code) => ({ error: code }) })
+    assert.deepEqual(domainErrorData(new ThingError('TAKEN', 'x')), { code: 'TAKEN' })
+    assert.deepEqual(domainErrorData(new Oauth('invalid_client', 'x')), {
+      code: 'invalid_client',
+      error: 'invalid_client',
+    })
+  })
+
+  test('also through a subclass', () => {
+    class Special extends defineError('Special', { A: 'CONFLICT' }, { data: () => ({ extra: true }) }) {}
+    assert.deepEqual(domainErrorData(new Special('A', 'x')), { code: 'A', extra: true })
   })
 })

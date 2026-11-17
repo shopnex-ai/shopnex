@@ -1,134 +1,20 @@
 import { ORPCError, implement, os } from '@orpc/server'
-import { configureRpc, createProcedures, type Context, type ErrorMapper } from '@shopnex/rpc'
-import { AiError } from '@shopnex/ai'
-import { AppError, appService } from '@shopnex/apps'
+import { configureRpc, createProcedures, type Context } from '@shopnex/rpc'
+import { appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
-import { ChannelError } from '@shopnex/channels'
 import { CartError } from '@shopnex/cart'
-import { CatalogError } from '@shopnex/catalog'
 import { CustomFieldError } from '@shopnex/custom-fields'
-import { ContentError } from '@shopnex/content'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
 import { OrderError } from '@shopnex/orders'
-import { PaymentError } from '@shopnex/payments'
 import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from '@shopnex/storefront-sdk/contract'
 import type { z } from 'zod'
-import {
-  DomainError,
-  StaffError,
-  hasScope,
-  resolveAdminShop,
-  resolveApiToken,
-  resolveStorefrontShop,
-} from '@shopnex/tenancy'
+import { hasScope, resolveAdminShop, resolveApiToken, resolveStorefrontShop } from '@shopnex/tenancy'
 import { log } from './log'
 
 export { createContext, type Context } from '@shopnex/rpc'
 
 const base = os.$context<Context>()
-
-// Domain modules throw their own errors; map them to 400s with a stable code
-const mapDomainError: ErrorMapper = (error) => {
-  if (error instanceof OrderError) {
-    const status =
-      error.code === 'ORDER_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'ORDER_CANCELLED' || error.code === 'INVALID_STATUS_TRANSITION'
-          ? 'CONFLICT'
-          : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof ChannelError) {
-    const status =
-      error.code === 'CHANNEL_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'HANDLE_TAKEN' || error.code === 'CHANNEL_IN_USE' || error.code === 'CHANNEL_PROTECTED'
-          ? 'CONFLICT'
-          : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof CartError) {
-    const status =
-      error.code === 'CART_NOT_FOUND' || error.code === 'VARIANT_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'CART_COMPLETED'
-          ? 'CONFLICT'
-          : error.code === 'NOT_A_CARRIER_APP'
-            ? 'FORBIDDEN'
-            : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof CatalogError) {
-    const status =
-      error.code === 'SLUG_TAKEN' || error.code === 'SKU_TAKEN'
-        ? 'CONFLICT'
-        : error.code === 'INVALID_VARIANTS' || error.code === 'HAS_VARIANTS'
-          ? 'BAD_REQUEST'
-          : 'NOT_FOUND'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof ContentError) {
-    const status =
-      error.code === 'HANDLE_TAKEN'
-        ? 'CONFLICT'
-        : error.code === 'MENU_NOT_FOUND' || error.code === 'PAGE_NOT_FOUND'
-          ? 'NOT_FOUND'
-          : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof EmailError) {
-    return new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof AppError) {
-    const status =
-      error.code === 'APP_NOT_FOUND' || error.code === 'INSTALLATION_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'invalid_client'
-          ? 'UNAUTHORIZED'
-          : 'BAD_REQUEST'
-    // OAuth clients look for `error` (RFC 6749 §5.2)
-    return new ORPCError(status, {
-      message: error.message,
-      data: { code: error.code, error: error.code },
-      cause: error,
-    })
-  }
-  if (error instanceof PaymentError) {
-    const status =
-      error.code === 'SESSION_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'SESSION_CLOSED' || error.code === 'NOT_PAYABLE'
-          ? 'CONFLICT'
-          : error.code === 'NOT_A_PAYMENTS_APP'
-            ? 'FORBIDDEN'
-            : error.code === 'PROVIDER_UNAVAILABLE'
-              ? 'BAD_GATEWAY'
-              : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof AiError) {
-    const status =
-      error.code === 'SUBJECT_NOT_FOUND' || error.code === 'GENERATION_NOT_FOUND'
-        ? 'NOT_FOUND'
-        : error.code === 'NOT_AN_AI_APP'
-          ? 'FORBIDDEN'
-          : error.code === 'PROVIDER_FAILED'
-            ? 'BAD_GATEWAY'
-            : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof DomainError) {
-    const status =
-      error.code === 'DOMAIN_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'DOMAIN_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  if (error instanceof StaffError) {
-    const status = error.code === 'ALREADY_MEMBER' ? 'CONFLICT' : error.code
-    return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-  }
-  return undefined
-}
 
 // What rpc needs to recognise a request. Registered here, once, because api is the layer that knows about logins, API
 // tokens and shops: rpc itself depends on none of them, so a module below auth or tenancy can have routes too.
@@ -144,7 +30,6 @@ configureRpc({
     resolveAdminShop({ userId: user.id, activeShopId: session.activeOrganizationId, superAdmin: isSuperAdmin(user) }),
   token: async (bearer) => (await resolveApiToken(bearer)) ?? (await appService.resolveAccessToken(bearer)),
   hasScope,
-  mapError: mapDomainError,
 })
 
 export const {
@@ -159,7 +44,7 @@ export const {
   shopManager,
   webhookManager,
   superAdminOnly,
-} = createProcedures(mapDomainError)
+} = createProcedures()
 
 // Storefront errors are part of the published contract: map domain errors to the contract's
 // typed errors (code + data) so clients get `defined` errors instead of parsing messages.

@@ -7,17 +7,8 @@ import { db, schema } from '@shopnex/db'
 import { ROOT_DOMAIN } from './config'
 import { isUnderRoot } from './subdomains'
 
-export type DomainErrorCode = 'INVALID_DOMAIN' | 'DOMAIN_TAKEN' | 'DOMAIN_NOT_FOUND'
-
-export class DomainError extends Error {
-  constructor(
-    readonly code: DomainErrorCode,
-    message: string,
-  ) {
-    super(message)
-    this.name = 'DomainError'
-  }
-}
+export { DomainError, type DomainErrorCode } from './tenancy.errors'
+import { DomainError } from './tenancy.errors'
 
 export const MAX_DOMAINS_PER_SHOP = 20
 

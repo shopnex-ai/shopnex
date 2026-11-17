@@ -3,7 +3,7 @@
 import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
 import { db, schema, type Conn } from '@shopnex/db'
-import { CatalogError } from './errors'
+import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'

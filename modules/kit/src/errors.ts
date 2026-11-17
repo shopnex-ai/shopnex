@@ -43,6 +43,12 @@ export function isDomainError(error: unknown): error is DomainErrorInstance {
   )
 }
 
+/** What a response carries in `data`: the code, and what its class adds (`responseData`) */
+export function domainErrorData(error: DomainErrorInstance): Record<string, unknown> {
+  const extra = (error.constructor as { responseData?: (code: string) => Record<string, unknown> }).responseData
+  return { code: error.code, ...extra?.(error.code) }
+}
+
 /** The status its class declares for its code, or undefined when the class has no entry for it (a subclass passing a code outside the table) */
 export function domainErrorStatus(error: DomainErrorInstance): ErrorStatus | undefined {
   const statuses = (error.constructor as { statuses?: Readonly<Record<string, ErrorStatus>> }).statuses
@@ -57,6 +63,13 @@ export interface DomainErrorClass<Code extends string = string> {
   new (code: Code, message: string): DomainErrorInstance<Code>
   /** The status of each code */
   readonly statuses: Readonly<Record<Code, ErrorStatus>>
+  /** Fields a response adds to `data` besides the code, for a code */
+  readonly responseData?: (code: Code) => Record<string, unknown>
+}
+
+export interface DomainErrorOptions {
+  /** Extra fields of the response's `data` besides `code`: the OAuth errors of apps add `error` (RFC 6749 §5.2) */
+  data?: (code: string) => Record<string, unknown>
 }
 
 /** The codes of an error class made with `defineError`: `type CustomFieldErrorCode = ErrorCode<typeof CustomFieldError>` */
@@ -65,9 +78,11 @@ export type ErrorCode<C> = C extends DomainErrorClass<infer Code> ? Code : never
 export function defineError<const T extends Record<string, ErrorStatus>>(
   name: string,
   statuses: T,
+  options: DomainErrorOptions = {},
 ): DomainErrorClass<keyof T & string> {
   class Domain extends Error {
     static readonly statuses = statuses
+    static readonly responseData = options.data
     constructor(
       readonly code: string,
       message: string,

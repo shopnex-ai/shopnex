@@ -3,7 +3,7 @@
 import { and, asc, count, eq, isNull } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { Channel, ChannelType } from '@shopnex/db/schema'
-import { ChannelError } from './errors'
+import { ChannelError } from './channels.errors'
 
 const t = schema.channels
 

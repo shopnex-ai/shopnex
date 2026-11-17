@@ -4,7 +4,7 @@
 import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import type { StoredMenuItem } from '@shopnex/db/schema'
-import { ContentError } from './errors'
+import { ContentError } from './content.errors'
 
 export type MenuInput = { handle: string; title: string; items: StoredMenuItem[] }
 

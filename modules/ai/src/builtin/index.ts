@@ -6,7 +6,7 @@ import { db, schema } from '@shopnex/db'
 import type { AiBuiltinProvider } from '@shopnex/db/schema'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import type { AiRunRequest, AiRunResponse } from '@shopnex/marketplace-sdk/ai'
-import { AiError } from '../errors'
+import { AiError } from '../ai.errors'
 import type { Settings } from './prompts'
 
 export { GenerationError } from './prompts'

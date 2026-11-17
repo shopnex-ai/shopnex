@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
-import { OrderError } from '../src/errors'
+import { OrderError } from '../src/orders.errors'
 import { shippingPrice } from '../src/orders'
 
 describe('shippingPrice', () => {

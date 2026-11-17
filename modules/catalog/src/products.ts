@@ -24,7 +24,7 @@ import { all, db, schema, type Conn } from '@shopnex/db'
 import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
-import { CatalogError } from './errors'
+import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
 import {

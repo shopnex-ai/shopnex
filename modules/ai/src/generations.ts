@@ -20,7 +20,7 @@ import {
   type AiUsage,
 } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
-import { AiError } from './errors'
+import { AiError } from './ai.errors'
 import { BUILTIN, providers } from './providers'
 import * as subjects from './subjects'
 

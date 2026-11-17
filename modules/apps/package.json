@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",

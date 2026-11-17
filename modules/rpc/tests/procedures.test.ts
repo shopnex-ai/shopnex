@@ -26,8 +26,6 @@ class StockError extends defineError('StockError', { OUT_OF_STOCK: 'CONFLICT' })
     super(code, message)
   }
 }
-// A class of a module that has not been converted to defineError yet: only the registered mapper knows it
-class LegacyError extends Error {}
 const procedures = createProcedures()
 
 const shop = { id: 'shop-1' } as Shop
@@ -57,8 +55,6 @@ const resolvers: Resolvers = {
     calls.token++
     return Promise.resolve(bearers[bearer] ?? null)
   },
-  mapError: (error) =>
-    error instanceof LegacyError ? new ORPCError('PRECONDITION_FAILED', { message: error.message }) : undefined,
   hasScope: (scopes, needed) =>
     scopes.includes(needed) || scopes.includes(needed.replace('read_', 'write_') as ApiScope),
 }
@@ -119,14 +115,7 @@ describe('with resolvers', () => {
     )
   })
 
-  test('the registered mapper answers for the errors of modules not converted to defineError yet', async () => {
-    const legacy = procedures.pub.handler(() => {
-      throw new LegacyError('an old module failed')
-    })
-    await assert.rejects(run(legacy), refused('PRECONDITION_FAILED'))
-  })
-
-  test('a route’s own mapper comes first, then the registered one, then the default', async () => {
+  test('a route’s own mapper comes first, then the default', async () => {
     const own = createProcedures((error) =>
       error instanceof NoteError ? new ORPCError('FORBIDDEN', { message: 'own mapper' }) : undefined,
     )

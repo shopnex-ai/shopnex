@@ -8,7 +8,7 @@ import type { EmailSettings, SmtpConfig } from '@shopnex/db/schema'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
-import { EmailError } from './errors'
+import { EmailError } from './email.errors'
 import { log } from './log'
 
 /** Omit password to keep the one already saved */

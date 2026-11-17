@@ -4,7 +4,7 @@
 // functions once (`configureRpc`), so a module that sits below auth or tenancy can have routes too.
 import { ORPCError, os } from '@orpc/server'
 import { z } from 'zod'
-import { domainErrorStatus, isDomainError, type ErrorMapper } from '@shopnex/kit'
+import { domainErrorData, domainErrorStatus, isDomainError, type ErrorMapper } from '@shopnex/kit'
 import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
 
 export type Context = { headers: Headers }
@@ -35,11 +35,6 @@ export interface Resolvers {
   token(bearer: string): Promise<{ shop: Shop; token: ApiToken } | null>
   /** Whether a token's scopes allow what a route needs (write includes read) */
   hasScope(scopes: readonly ApiScope[], needed: ApiScope): boolean
-  /**
-   * The errors of classes not converted to `defineError` yet (modules/api maps them by hand), for any route: a service of another
-   * module may throw them. Errors made with `defineError` need none of this.
-   */
-  mapError?(error: unknown): Error | undefined
 }
 
 // On globalThis so a dev server that loads this file twice (hot reload) still finds what was registered
@@ -74,7 +69,7 @@ export const domainErrorMapper: ErrorMapper = (error) => {
   if (!isDomainError(error)) return undefined
   return new ORPCError(domainErrorStatus(error) ?? 'INTERNAL_SERVER_ERROR', {
     message: error.message,
-    data: { code: error.code },
+    data: domainErrorData(error),
     cause: error,
   })
 }
@@ -87,8 +82,8 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     try {
       return await next()
     } catch (error) {
-      // The route's own mapper, then the one registered by modules/api (errors of classes not converted yet), then the default
-      const mapped = mapError(error) ?? registered()?.mapError?.(error) ?? domainErrorMapper(error)
+      // The route's own mapper, then the default for errors made with defineError
+      const mapped = mapError(error) ?? domainErrorMapper(error)
       if (mapped) throw mapped
       throw error
     }

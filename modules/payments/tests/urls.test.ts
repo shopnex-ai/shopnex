@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test, { describe } from 'node:test'
-import { PaymentError } from '../src/errors'
+import { PaymentError } from '../src/payments.errors'
 import { origin } from '../src/methods'
 import { isHttpUrl } from '../src/sessions'
 

@@ -2,7 +2,7 @@
 // Settings → Payments, where they can rename, reorder or deactivate it; uninstalling the app removes it.
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
-import { PaymentError } from './errors'
+import { PaymentError } from './payments.errors'
 
 export type ConfigureInput = {
   /** Shown at checkout on first configure, e.g. "Credit card" (staff can rename it) */

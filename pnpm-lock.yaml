@@ -497,6 +497,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
@@ -625,6 +628,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
@@ -684,6 +690,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
@@ -724,6 +733,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks
@@ -743,6 +755,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -759,6 +774,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -877,6 +895,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
@@ -985,6 +1006,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/pricing':
         specifier: workspace:*
         version: link:../pricing
@@ -1016,6 +1040,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
@@ -1100,6 +1127,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
