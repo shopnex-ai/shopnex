@@ -1,8 +1,7 @@
 // What a shop offers at checkout. Modeled on Shopify's delivery method definitions (one zone for now:
 // rates apply to every address) and carrier apps; payment methods belong to @shopnex/payments.
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { apps } from './apps'
-import { shops } from './tenancy'
+import { apps, shops } from '@shopnex/core/schema'
 
 export const shippingRates = pgTable(
   'shipping_rates',

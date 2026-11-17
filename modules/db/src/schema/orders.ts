@@ -7,7 +7,7 @@ import { products, productVariants } from './catalog'
 import type { CustomFieldValues } from './custom-field-values'
 import { customers } from './customers'
 import { channels } from './channels'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/core/schema'
 
 // Shopify displayFinancialStatus (lowercase). Manual payments stay `pending` until marked as paid.
 export const FINANCIAL_STATUSES = [

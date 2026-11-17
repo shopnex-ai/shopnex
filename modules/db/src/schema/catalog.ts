@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import type { CustomFieldValues } from './custom-field-values'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/core/schema'
 
 // Valid `slug` (URL handle) for products and collections
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

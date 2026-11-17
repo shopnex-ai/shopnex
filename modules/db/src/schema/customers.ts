@@ -1,7 +1,6 @@
 import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { user } from './auth'
+import { shops, user } from '@shopnex/core/schema'
 import type { CustomFieldValues } from './custom-field-values'
-import { shops } from './tenancy'
 
 // Shop-scoped customer records. userId links a storefront login when there is one;
 // guests (checkout without an account) have none.

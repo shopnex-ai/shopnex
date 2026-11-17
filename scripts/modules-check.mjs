@@ -69,6 +69,14 @@ for (const [name, m] of mods) {
       notes.push(`${name}: lists @shopnex/${dep} but src never imports it`)
 }
 
+// ── core is the bottom of the graph: the tables every module (and the tables still in db) point at. It may use the module kit and nothing
+// else of ours, in code or in package.json, or db could not depend on it without a cycle.
+const core = mods.get('core')
+if (core) {
+  for (const dep of [...core.imported, ...core.declared])
+    if (mods.has(dep) && dep !== 'kit') errors.push(`core: depends on @shopnex/${dep}, but core may only depend on kit`)
+}
+
 // ── the manifests, read as code (the TypeScript parser), not matched as text: a comment, a line break or a trailing comma
 // cannot make it pass or fail wrongly, and a manifest that is not a literal `defineModule({ name: '…', dependsOn: ['…'] })`
 // is reported instead of guessed at
