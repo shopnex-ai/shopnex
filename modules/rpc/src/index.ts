@@ -2,6 +2,7 @@
 // scopes it needs. Every module that exposes routes builds its procedures from here, and `modules/api` does too.
 // Nothing here knows a module: a module's own errors are turned into HTTP errors by the `ErrorMapper` it hands in.
 import { ORPCError, os } from '@orpc/server'
+import type { DomainErrorClass, ErrorMapper } from '@shopnex/kit'
 import { appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
 import type { Shop } from '@shopnex/db/schema'
@@ -20,11 +21,19 @@ export function createContext(headers: Headers): Context {
   return { headers }
 }
 
-/**
- * Turns an error a module throws into the error the route answers with (an ORPCError with a status and a stable
- * `data.code`), or returns undefined when it is not one of that module's errors.
- */
-export type ErrorMapper = (error: unknown) => Error | undefined
+export type { ErrorMapper }
+
+/** The `ErrorMapper` of an error class made with `defineError`: its code's status, the code in `data`, the error as cause */
+export function mapperFor<Code extends string>(errorClass: DomainErrorClass<Code>): ErrorMapper {
+  return (error) => {
+    if (!(error instanceof errorClass)) return undefined
+    return new ORPCError(errorClass.statuses[error.code], {
+      message: error.message,
+      data: { code: error.code },
+      cause: error,
+    })
+  }
+}
 
 /** Mappers tried one after the other: the first that knows the error wins */
 export const firstMapper =

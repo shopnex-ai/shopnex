@@ -1,19 +1,14 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
-import { createProcedures, type ErrorMapper } from '@shopnex/rpc'
-import { CustomFieldError } from './errors'
+import { createProcedures, mapperFor } from '@shopnex/rpc'
+import { CustomFieldError } from './custom-fields.errors'
 import { customFieldInput, customFieldOutput, customFieldPatch } from './custom-fields.contract'
 import { CUSTOM_FIELD_RESOURCES } from './custom-fields.schema'
-import * as customFieldService from './custom-fields'
+import * as customFieldService from './custom-fields.service'
 
-// The status each of this module's errors answers with (the Admin API; the storefront maps them on its own)
-export const customFieldErrors: ErrorMapper = (error) => {
-  if (!(error instanceof CustomFieldError)) return undefined
-  const status =
-    error.code === 'FIELD_NOT_FOUND' ? 'NOT_FOUND' : error.code === 'KEY_TAKEN' ? 'CONFLICT' : 'BAD_REQUEST'
-  return new ORPCError(status, { message: error.message, data: { code: error.code }, cause: error })
-}
+// What the Admin API answers with for this module's errors: the statuses declared in custom-fields.errors.ts
+export const customFieldErrors = mapperFor(CustomFieldError)
 
 const { adminOrToken, shopManager } = createProcedures(customFieldErrors)
 

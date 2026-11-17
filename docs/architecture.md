@@ -70,6 +70,57 @@ ai        → db, apps, catalog, tenancy
 api       → everything above (transport only)
 ```
 
+## Writing a module
+
+`modules/custom-fields` is the worked example. A module's own code sits in `modules/<name>/src`, one file per concern,
+named `<name>.<concern>.ts`:
+
+| File                 | What it holds                                                                                              | Rules                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `<name>.schema.ts`   | Its tables (Drizzle). `pnpm db:generate` and the privacy test find them by this name.                      | Tables and constants only.                                   |
+| `<name>.errors.ts`   | Its errors, with the HTTP status of each code (`defineError`, below).                                      | No HTTP or oRPC imports.                                     |
+| `<name>.service.ts`  | Business logic: every function takes `shopId` first and a `conn`.                                          | No HTTP, oRPC or Hono imports; never import the shared `db`. |
+| `<name>.contract.ts` | The Zod shapes of its API: inputs and outputs. The admin UI uses them for its forms.                       | Must stay free of server code: the browser bundles it.       |
+| `<name>.router.ts`   | Its Admin API routes (`@shopnex/custom-fields/router`), built with `createProcedures` from `@shopnex/rpc`. | The one place that passes the shared `db` to the service.    |
+| `<name>.module.ts`   | The manifest: `name`, `dependsOn`, `tables`, `errors`, `router`.                                           | Listed in `modules/api/src/modules.ts`.                      |
+
+What a module exposes. Other code reaches a module only through the entries in its `package.json` `exports`, never by a
+deep path:
+
+| Import                                    | What it gives                                                                           | Where it may run   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------- | ------------------ |
+| `@shopnex/custom-fields` (`src/index.ts`) | The module's public API: the service (`customFieldService`), its error class and types. | Server only        |
+| `@shopnex/custom-fields/schema`           | Tables, constants and their types.                                                      | Server and browser |
+| `@shopnex/custom-fields/contract`         | The Zod shapes of its API.                                                              | Server and browser |
+| `@shopnex/custom-fields/router`           | Its Admin API routes.                                                                   | Server only        |
+| `@shopnex/custom-fields/module`           | The manifest.                                                                           | Server only        |
+
+Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
+
+- Inside a module, files import each other by relative path (`./custom-fields.service`), never through `index.ts`, so the
+  entry cannot create an import cycle.
+- Keep the root entry small: the service, the errors and the types. Do not re-export the router, the manifest or anything
+  else that drags in more.
+- Code that runs in the browser (the admin UI's forms, `@shopnex/api/schemas`) imports only `/schema` or `/contract`.
+  The root entry exports the service, which pulls in the database client, and a browser bundle that reaches it fails with
+  `Buffer is not defined`.
+
+Errors: declare the status next to the code and the module's `ErrorMapper` comes from the table, with nothing written by hand:
+
+```ts
+// custom-fields.errors.ts
+export const CustomFieldError = defineError('CustomFieldError', {
+  FIELD_NOT_FOUND: 'NOT_FOUND',
+  KEY_TAKEN: 'CONFLICT',
+  INVALID_VALUE: 'BAD_REQUEST',
+})
+// custom-fields.module.ts: errors: mapperFor(CustomFieldError)
+```
+
+An error that needs more than a status per code (typed data for the storefront, a status that depends on the data) keeps a
+mapper of its own; `modules/api/src/orpc.ts` still maps the modules that have not moved. `pnpm modules:check` verifies
+the manifest against the imports and `package.json`.
+
 ## API layout
 
 ```

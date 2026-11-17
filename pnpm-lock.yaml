@@ -921,9 +921,6 @@ importers:
 
   modules/kit:
     dependencies:
-      '@shopnex/rpc':
-        specifier: workspace:*
-        version: link:../rpc
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -931,6 +928,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/log:
     devDependencies:
@@ -1045,6 +1045,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/tenancy':
         specifier: workspace:*
         version: link:../tenancy

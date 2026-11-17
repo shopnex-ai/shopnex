@@ -2,7 +2,9 @@
 // read by the composition root (modules/api) and by `pnpm modules:check`, and it keeps the module graph in one readable
 // place. Add a field here only when a second module needs it.
 import type { AnyPgTable } from 'drizzle-orm/pg-core'
-import type { ErrorMapper } from '@shopnex/rpc'
+import type { ErrorMapper } from './errors'
+
+export * from './errors'
 
 export interface ModuleManifest {
   /** The folder name under modules/ (`custom-fields`) */

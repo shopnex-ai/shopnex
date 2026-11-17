@@ -1,6 +1,6 @@
-export * as customFieldService from './custom-fields'
-export { CustomFieldError, type CustomFieldErrorCode } from './errors'
-export type { CustomFieldInput, CustomFieldPatch, CustomFieldUpdates } from './custom-fields'
+export * as customFieldService from './custom-fields.service'
+export { CustomFieldError, type CustomFieldErrorCode } from './custom-fields.errors'
+export type { CustomFieldInput, CustomFieldPatch, CustomFieldUpdates } from './custom-fields.service'
 export {
   CUSTOM_FIELD_KEY_PATTERN,
   CUSTOM_FIELD_RESOURCES,
