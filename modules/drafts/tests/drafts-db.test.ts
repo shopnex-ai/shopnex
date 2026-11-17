@@ -6,7 +6,8 @@ import { after, before, describe, test } from 'node:test'
 process.env.DATABASE_URL = 'pglite:memory'
 
 const { db, prepareDatabase } = await import('@shopnex/db')
-const { DraftConflictError, discard, get, patch, publish } = await import('../src/drafts')
+const { discard, get, patch, publish } = await import('../src/drafts.service')
+const { DraftConflictError } = await import('../src/drafts.errors')
 
 const SHOP = 'default'
 const TYPE = 'theme'

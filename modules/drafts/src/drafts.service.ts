@@ -6,20 +6,12 @@
 // router), merge the draft over the live data when it's previewed (`applyChanges`), and pass `publish` a
 // function that writes the changes to the entity. Delete its drafts with it (`remove`).
 import { and, eq, sql, type AnyColumn, type SQL } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { DraftChanges } from '@shopnex/db/schema'
-
-const t = schema.entityDrafts
+import type { Conn } from '@shopnex/db'
+import { DraftConflictError } from './drafts.errors'
+import { entityDrafts as t, type DraftChanges } from './drafts.schema'
 
 const byEntity = (shopId: string, type: string, id: string) =>
   and(eq(t.shopId, shopId), eq(t.entityType, type), eq(t.entityId, id))
-
-/** The draft was changed (or published) after the one the client saw */
-export class DraftConflictError extends Error {
-  constructor(readonly rev: number) {
-    super('This was changed somewhere else. Reload to see the latest.')
-  }
-}
 
 /** A draft over its live data: a key set to null is removed */
 export function applyChanges<T>(live: Record<string, T>, changes: DraftChanges): Record<string, T> {
@@ -110,7 +102,7 @@ export async function remove(shopId: string, type: string, id: string, conn: Con
 
 /**
  * For lists: left join the drafts of one entity type onto the entity's query
- * (`.leftJoin(schema.entityDrafts, draftJoin(type, row.shopId, row.id))`), then select `hasDraft`.
+ * (`.leftJoin(entityDrafts, draftJoin(type, row.shopId, row.id))`, with `entityDrafts` from this package), then select `hasDraft`.
  */
 export const draftJoin = (type: string, shopId: AnyColumn | SQL, id: AnyColumn | SQL) =>
   and(eq(t.shopId, shopId), eq(t.entityType, type), eq(t.entityId, sql`${id}::text`))
