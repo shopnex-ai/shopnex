@@ -10,6 +10,7 @@ import type {
 
 import { cjApiClient } from '../../api-client'
 import { getCurrentAccessToken } from '../access-token'
+import { log } from '../../log'
 
 interface ListOrderParams {
   orderIds?: string[]
@@ -55,7 +56,7 @@ export async function createOrder(
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error creating order [${error.code}]: ${error.message}`)
+    log.error(`Error creating order [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -84,7 +85,7 @@ export async function listOrders(
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error listing orders [${error.code}]: ${error.message}`)
+    log.error(`Error listing orders [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -120,7 +121,7 @@ export async function queryOrder(
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error querying order [${error.code}]: ${error.message}`)
+    log.error(`Error querying order [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -151,7 +152,7 @@ export async function deleteOrder(orderId: string, explicitToken?: string): Prom
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error deleting order [${error.code}]: ${error.message}`)
+    log.error(`Error deleting order [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }
@@ -188,7 +189,7 @@ export async function confirmOrder(orderId: string, explicitToken?: string): Pro
 
     return { data: response.data.data }
   } catch (error: any) {
-    console.error(`Error confirming order [${error.code}]: ${error.message}`)
+    log.error(`Error confirming order [${error.code}]: ${error.message}`)
     return { error: error.message || 'An unknown error occurred' }
   }
 }

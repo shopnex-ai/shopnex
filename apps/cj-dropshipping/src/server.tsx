@@ -39,6 +39,7 @@ import { forwardOrder, syncTracking, type PaidOrder } from './orders'
 import { quoteRates } from './shipping'
 import { ensureOrderWebhook } from './webhook'
 import { ProductList, SettingsPage, type MyProduct } from './settings'
+import { log } from './log'
 
 // Public origin ShopNex and the admin (iframe) reach this app at
 const APP_URL = (process.env.CJ_DROPSHIPPING_APP_URL || 'http://localhost:4700').replace(/\/$/, '')
@@ -112,7 +113,7 @@ app.get('/', async (c) => {
   const connected = await isConnected(shop)
   // Products imported or linked before `fulfilledBy` existed get it once, in the background
   if (connected)
-    void backfillFulfilledBy(shop).catch((error) => console.warn('[cj] fulfilledBy backfill:', message(error)))
+    void backfillFulfilledBy(shop).catch((error) => log.warn({ err: error }, 'fulfilledBy backfill failed'))
   let shippingError: string | null = null
   let shippingOff = false
   // Registering again is safe, and keeps the service (and its id, which orders are matched on) right after a
@@ -124,7 +125,7 @@ app.get('/', async (c) => {
       .catch((error) => (shippingError = message(error)))
   // After an uninstall and a new install the subscription is gone: make it again, so paid orders still reach CJ
   if (connected)
-    await ensureOrderWebhook(shop, APP_URL).catch((error) => console.warn('[cj] order subscription:', message(error)))
+    await ensureOrderWebhook(shop, APP_URL).catch((error) => log.warn({ err: error }, 'order subscription failed'))
   return c.html(
     <SettingsPage
       connected={connected}
@@ -265,14 +266,14 @@ app.post('/shipping/rates', async (c) => {
   try {
     return c.json({ rates: await quoteRates(shop, tables, request) })
   } catch (error) {
-    console.error(`[cj] shipping prices for ${request.destination.countryCode}:`, message(error))
+    log.error({ err: error, country: request.destination.countryCode }, 'shipping prices failed')
     return c.json({ rates: [] })
   }
 })
 
 app.onError((error, c) => {
   if (error instanceof HTTPException) return error.getResponse()
-  console.error('[cj]', error)
+  log.error({ err: error }, 'unhandled error')
   return c.json({ error: message(error) }, 500)
 })
 
@@ -284,14 +285,14 @@ async function pollTracking() {
     try {
       shop = await shopnex.forShop(instance, shop_id)
     } catch (error) {
-      console.warn(`[cj] tracking for ${instance} ${shop_id}:`, message(error))
+      log.warn({ err: error, instance, shopId: shop_id }, 'tracking: unknown shop')
       continue
     }
-    await syncTracking(shop, tables).catch((error) => console.error('[cj] tracking:', message(error)))
+    await syncTracking(shop, tables).catch((error) => log.error({ err: error }, 'tracking sync failed'))
   }
 }
 setInterval(() => void pollTracking(), 15 * 60_000).unref()
 
 serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || undefined }, () =>
-  console.log(`CJ Dropshipping app on ${APP_URL} (port ${PORT})`),
+  log.info('CJ Dropshipping app on %s (port %s)', APP_URL, PORT),
 )

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
+    "@shopnex/log": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

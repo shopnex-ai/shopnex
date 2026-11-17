@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @shopnex/admin-ui build",
-    "typecheck": "pnpm -r --parallel typecheck",
+    "typecheck": "pnpm -r --workspace-concurrency=4 typecheck",
     "modules:check": "node scripts/modules-check.mjs",
     "db:generate": "pnpm --filter @shopnex/db generate",
     "db:migrate": "pnpm --filter @shopnex/db migrate",

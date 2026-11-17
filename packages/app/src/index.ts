@@ -435,3 +435,6 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
 }
 
 export type ShopnexApp = ReturnType<typeof createShopnexApp>
+
+// The logger the apps use (levels, LOG_FORMAT=json, redaction): `createLogger('my-app')`
+export { createLogger, type Logger } from '@shopnex/log'

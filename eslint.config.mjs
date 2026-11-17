@@ -19,9 +19,12 @@ const strictModules = ['modules/drafts', 'modules/custom-fields', 'modules/auth'
 // functions are entry points called from a form action and from Better Auth's hooks, outside any transaction of ours.)
 const connectionBoundModules = ['modules/drafts', 'modules/custom-fields']
 
-// Logging goes through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), not console.*. A module joins
-// this list once it has no console calls left.
-const noConsoleModules = ['modules/payments', 'modules/email']
+// Server code logs through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), never console.*: every
+// module under modules/, the apps (apps/*, which get the logger from @shopnex/app) and the CJ client. Left out: the log
+// module itself (it is what writes to the console), `shopnex migrate-db` (its output is the command's own interface),
+// and apps/docs (a documentation site). Scripts, the CLIs and the templates are not listed: printing is their job.
+const noConsoleFiles = ['modules/*/src/**/*.{ts,tsx}', 'apps/*/src/**/*.{ts,tsx}', 'packages/cj-sdk/src/**/*.ts']
+const noConsoleIgnores = ['modules/log/**', 'modules/db/src/migrate-db.ts', 'apps/docs/**']
 
 // First-party apps (apps/stripe, apps/shippo, ...) are built the way a third party builds one: only from the public
 // packages below, never from the core modules or their database. That keeps the app contract honest, and an app can then
@@ -147,10 +150,17 @@ export default defineConfig(
   },
 
   {
-    // Modules that log through @shopnex/log (modules/log is the one place that writes to the console)
-    files: noConsoleModules.map((dir) => `${dir}/src/**/*.ts`),
+    files: noConsoleFiles,
+    ignores: noConsoleIgnores,
     rules: {
-      'no-console': ['error'],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'console',
+          message:
+            'Log with the logger: `const log = createLogger("name")` from @shopnex/log (in an app, from @shopnex/app), then `log.error({ err }, "message")`. console.* skips levels, JSON output and redaction.',
+        },
+      ],
     },
   },
 

@@ -4,6 +4,7 @@ import { Hono, type Context } from 'hono'
 import type Stripe from 'stripe'
 import { toStripeAmount } from './amount'
 import type { PaymentSessionRequest, RefundSessionRequest, ShopContext } from '@shopnex/app'
+import { log } from './log'
 
 export type PaymentDeps = {
   /** Checks the signature of ShopNex's request and finds its shop (shopnex.verifyPaymentsRequest) */
@@ -36,12 +37,12 @@ export async function expireReplaced(stripe: Stripe, request: PaymentSessionRequ
       const { shopnex_order_id: orderId, shopnex_session_id: sessionId } = open.metadata ?? {}
       if (orderId !== request.orderId || sessionId === request.id) continue
       await stripe.checkout.sessions.expire(open.id).catch((error: unknown) => {
-        console.error(`[stripe] expire replaced checkout ${open.id}:`, message(error))
+        log.error({ err: error, checkoutId: open.id }, 'expire replaced checkout failed')
       })
     }
   } catch (error) {
     // Starting the new payment matters more than cleaning up the old one
-    console.error(`[stripe] list open checkouts of order ${request.orderId}:`, message(error))
+    log.error({ err: error, orderId: request.orderId }, 'list open checkouts failed')
   }
 }
 
@@ -92,7 +93,7 @@ export function paymentRoutes(deps: PaymentDeps) {
       )
       return c.json({ redirectUrl: session.url })
     } catch (error) {
-      console.error(`[stripe] payment session ${request.id}:`, message(error))
+      log.error({ err: error, sessionId: request.id }, 'payment session failed')
       return c.json({ error: message(error) }, 502)
     }
   })
@@ -126,9 +127,9 @@ export async function refund(deps: PaymentDeps, shop: ShopContext, request: Refu
       await shop.payments.resolve(request.id, result.id)
     }
   } catch (error) {
-    console.error(`[stripe] refund ${request.id}:`, message(error))
+    log.error({ err: error, refundId: request.id }, 'refund failed')
     await shop.payments
       .reject(request.id, message(error))
-      .catch((e) => console.error(`[stripe] reject refund ${request.id}:`, message(e)))
+      .catch((e) => log.error({ err: e, refundId: request.id }, 'reject refund failed'))
   }
 }
