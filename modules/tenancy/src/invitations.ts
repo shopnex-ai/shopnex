@@ -1,14 +1,15 @@
 import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { shopInvitations } from './tenancy.schema'
 
 // For the public invite page: the invitation and its shop, or null when it can't be used
 // (unknown id, accepted/cancelled, or expired)
 export async function getOpenInvitation(id: string) {
   const [row] = await db
-    .select({ invitation: schema.shopInvitations, shopName: schema.shops.name })
-    .from(schema.shopInvitations)
-    .innerJoin(schema.shops, eq(schema.shops.id, schema.shopInvitations.organizationId))
-    .where(eq(schema.shopInvitations.id, id))
+    .select({ invitation: shopInvitations, shopName: schema.shops.name })
+    .from(shopInvitations)
+    .innerJoin(schema.shops, eq(schema.shops.id, shopInvitations.organizationId))
+    .where(eq(shopInvitations.id, id))
   if (!row || row.invitation.status !== 'pending' || row.invitation.expiresAt < new Date()) return null
   return { ...row.invitation, shopName: row.shopName }
 }

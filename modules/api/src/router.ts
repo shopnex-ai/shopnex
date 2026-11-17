@@ -1,7 +1,6 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
 import { aiModule } from '@shopnex/ai/module'
-import { apiTokens as adminApiTokens } from './routers/admin/api-tokens'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
 import {
   appData as adminAppData,
@@ -26,12 +25,8 @@ import { notifications as adminNotifications } from './routers/admin/notificatio
 import { pages as adminPages } from './routers/admin/pages'
 import { orders as adminOrders } from './routers/admin/orders'
 import { products as adminProducts } from './routers/admin/products'
-import { shop as adminShop } from './routers/admin/shop'
-import { platform as adminPlatform } from './routers/admin/platform'
-import { staff as adminStaff } from './routers/admin/staff'
-import { channels as adminChannels } from './routers/admin/channels'
-import { domains as adminDomains } from './routers/admin/domains'
-import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
+import { channelsModule } from '@shopnex/channels/module'
+import { tenancyModule } from '@shopnex/tenancy/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
 import { marketplace } from './routers/marketplace'
@@ -51,7 +46,7 @@ export const router = {
   // The app marketplace verifies this instance's URL while connecting
   marketplace: tagged('Marketplace').router(marketplace),
   admin: {
-    shop: tagged('Admin · Shop').router(adminShop),
+    shop: tagged('Admin · Shop').router(tenancyModule.router.shop),
     products: tagged('Admin · Products').router(adminProducts),
     collections: tagged('Admin · Collections').router(adminCollections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
@@ -63,11 +58,11 @@ export const router = {
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
     files: tagged('Admin · Files').router(filesModule.router.files),
-    channels: tagged('Admin · Channels').router(adminChannels),
-    domains: tagged('Admin · Domains').router(adminDomains),
-    storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
-    staff: tagged('Admin · Staff').router(adminStaff),
-    platform: tagged('Admin · Platform').router(adminPlatform),
+    channels: tagged('Admin · Channels').router(channelsModule.router.channels),
+    domains: tagged('Admin · Domains').router(tenancyModule.router.domains),
+    storefrontKeys: tagged('Admin · Storefront keys').router(channelsModule.router.storefrontKeys),
+    staff: tagged('Admin · Staff').router(tenancyModule.router.staff),
+    platform: tagged('Admin · Platform').router(tenancyModule.router.platform),
     storage: tagged('Admin · Storage').router(filesModule.router.storage),
     email: tagged('Admin · Email').router(adminEmail),
     notifications: tagged('Admin · Email').router(adminNotifications),
@@ -83,7 +78,7 @@ export const router = {
     aiSettings: tagged('Admin · AI').router(aiModule.router.aiSettings),
     aiApp: tagged('Admin · AI apps').router(aiModule.router.aiApp),
     webhooks: tagged('Admin · Webhooks').router(webhooksModule.router),
-    apiTokens: tagged('Admin · API tokens').router(adminApiTokens),
+    apiTokens: tagged('Admin · API tokens').router(tenancyModule.router.apiTokens),
     apps: tagged('Admin · Apps').router(adminApps),
     appRegistry: tagged('Admin · App registry').router(adminAppRegistry),
     appData: tagged('Admin · App data').router(adminAppData),

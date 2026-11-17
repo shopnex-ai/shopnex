@@ -8,6 +8,7 @@ import { db, schema } from '@shopnex/db'
 import { session } from '@shopnex/auth/schema'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
+import { shopMembers } from '@shopnex/tenancy/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -277,9 +278,9 @@ export async function erase(shopId: string, customerId: string) {
     if (customer.userId) {
       const [user] = await tx.select().from(schema.user).where(eq(schema.user.id, customer.userId))
       const [staff] = await tx
-        .select({ id: schema.shopMembers.id })
-        .from(schema.shopMembers)
-        .where(eq(schema.shopMembers.userId, customer.userId))
+        .select({ id: shopMembers.id })
+        .from(shopMembers)
+        .where(eq(shopMembers.userId, customer.userId))
         .limit(1)
       const [elsewhere] = await tx
         .select({ id: schema.customers.id })

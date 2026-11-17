@@ -21,6 +21,7 @@ import { send } from './email'
 import { EmailError } from './email.errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
 import { log } from './log'
+import { shopMembers } from '@shopnex/tenancy/schema'
 
 export type NotificationInfo = {
   notification: Notification
@@ -271,9 +272,9 @@ const recipientsOf = async (conn: Conn, shopId: string, notification: Notificati
   if (notification !== 'staff_order') return order.email ? [order.email] : []
   const owners = await conn
     .select({ email: schema.user.email })
-    .from(schema.shopMembers)
-    .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-    .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.role, 'owner')))
+    .from(shopMembers)
+    .innerJoin(schema.user, eq(schema.user.id, shopMembers.userId))
+    .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.role, 'owner')))
   return owners.map((o) => o.email)
 }
 

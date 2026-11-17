@@ -1,8 +1,7 @@
 import { db } from '@shopnex/db'
-import { channelService } from '@shopnex/channels'
-import type { Shop, ShopRole } from '@shopnex/db/schema'
+import { channelService, storefrontKeyService } from '@shopnex/channels'
+import type { Shop } from '@shopnex/db/schema'
 import { ROOT_DOMAIN, isMultiTenant } from './config'
-import { getShopByStorefrontKey } from './keys'
 import {
   ensureDefaultShop,
   getFirstMembership,
@@ -13,6 +12,7 @@ import {
   getShopBySlug,
 } from './shops'
 import { subdomainSlug } from './subdomains'
+import { type ShopRole } from './tenancy.schema'
 
 export type { ShopRole }
 
@@ -41,7 +41,7 @@ export type StorefrontResolution =
 export async function resolveStorefrontShop(headers: Headers): Promise<StorefrontResolution> {
   const key = headers.get(PUBLISHABLE_KEY_HEADER)
   if (key) {
-    const found = await getShopByStorefrontKey(key)
+    const found = await storefrontKeyService.shopByKey(key, db)
     return found ? { ok: true, shop: found.shop, channelId: found.channelId } : { ok: false, reason: 'invalid_key' }
   }
   if (!isMultiTenant) {

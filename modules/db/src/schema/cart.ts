@@ -2,7 +2,8 @@ import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'dri
 import { productVariants } from './catalog'
 import { customers } from './customers'
 import { orders } from './orders'
-import { channels, shops } from './tenancy'
+import { channels } from './channels'
+import { shops } from './tenancy'
 
 export const CART_STATUSES = ['active', 'completed'] as const
 export type CartStatus = (typeof CART_STATUSES)[number]

@@ -4,6 +4,7 @@ import { and, asc, count, eq, isNull } from 'drizzle-orm'
 import { all, schema, type Conn } from '@shopnex/db'
 import type { Channel, ChannelType } from '@shopnex/db/schema'
 import { ChannelError } from './channels.errors'
+import { storefrontKeys } from './channels.schema'
 
 const t = schema.channels
 
@@ -125,7 +126,7 @@ export async function remove(shopId: string, id: string, conn: Conn) {
   if (channel.handle === DEFAULT_HANDLE) {
     throw new ChannelError('CHANNEL_PROTECTED', 'The Online Store channel can’t be deleted')
   }
-  const keys = schema.storefrontKeys
+  const keys = storefrontKeys
   const [[orders], [activeKeys]] = await all(conn, [
     () => conn.select({ n: count() }).from(schema.orders).where(eq(schema.orders.channelId, id)),
     () =>

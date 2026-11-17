@@ -3,8 +3,9 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, requireApp } from '../lib'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 
@@ -146,7 +147,7 @@ describe('invitations', () => {
     assert.equal((await call('POST', `/admin/staff/invitations/${mine.id}/cancel`, {}, member.headers)).status, 403)
     const theirs = await fx.invitation(otherShop, fx.mail('theirs'), 'member')
     assert.equal((await call('POST', `/admin/staff/invitations/${theirs}/cancel`, {}, owner.headers)).status, 404)
-    const [row] = await db.select().from(schema.shopInvitations).where(eq(schema.shopInvitations.id, theirs))
+    const [row] = await db.select().from(shopInvitations).where(eq(shopInvitations.id, theirs))
     assert.equal(row?.status, 'pending')
   })
 
@@ -208,7 +209,7 @@ describe('roles', () => {
     const theirs = await fx.account('member', otherShop)
     assert.equal((await setRole(owner, theirs.memberId, 'admin')).status, 404)
     assert.equal((await remove(owner, theirs.memberId)).status, 404)
-    const [row] = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.id, theirs.memberId))
+    const [row] = await db.select().from(shopMembers).where(eq(shopMembers.id, theirs.memberId))
     assert.equal(row?.role, 'member')
     // …and the other shop's owner has no say in this one
     const theirOwner = await fx.account('owner', otherShop)

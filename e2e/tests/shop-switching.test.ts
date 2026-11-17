@@ -4,11 +4,12 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { session as sessionTable } from '@shopnex/auth/schema'
 import { setActiveShop } from '@shopnex/auth'
 import { isMultiTenant, listSwitchableShops } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
+import { shopMembers } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 
@@ -22,7 +23,7 @@ let notMine: { id: string; name: string }
 const sessionOf = async (userId: string) =>
   (await db.select().from(sessionTable).where(eq(sessionTable.userId, userId)))[0]!
 const join = (shopId: string, userId: string) =>
-  db.insert(schema.shopMembers).values({ id: randomUUID(), organizationId: shopId, userId, role: 'owner' })
+  db.insert(shopMembers).values({ id: randomUUID(), organizationId: shopId, userId, role: 'owner' })
 
 before(async () => {
   if (!isMultiTenant) return

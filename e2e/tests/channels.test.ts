@@ -4,11 +4,11 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
-import { channelService } from '@shopnex/channels'
+import { channelService, storefrontKeyService } from '@shopnex/channels'
 import { db, schema } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
-import { createStorefrontKey, revokeStorefrontKey } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { storefrontKeys } from '@shopnex/channels/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -30,7 +30,7 @@ before(async () => {
   admin = await fx.token(['write_products', 'write_publications'])
   online = await channelService.getDefault(SHOP, db)
   portal = await channelService.create(SHOP, { name: `E2E Portal ${run}` }, db)
-  portalKey = { 'x-shopnex-key': (await createStorefrontKey(SHOP, 'e2e portal', portal.id)).token }
+  portalKey = { 'x-shopnex-key': (await storefrontKeyService.create(SHOP, 'e2e portal', portal.id, db)).token }
   shippingRateId = (await fx.shippingRate(300)).id
   const created = ok(await call('POST', '/admin/products', { title: `E2E channel ${run}`, priceCents: 1500 }, admin))
   product = { id: created.id, handle: created.slug, variants: created.variants }
@@ -41,7 +41,7 @@ before(async () => {
 after(async () => {
   await fx.cleanup()
   await db.delete(schema.carts).where(eq(schema.carts.channelId, portal.id))
-  await db.delete(schema.storefrontKeys).where(eq(schema.storefrontKeys.channelId, portal.id))
+  await db.delete(storefrontKeys).where(eq(storefrontKeys.channelId, portal.id))
   await db.delete(schema.orders).where(eq(schema.orders.channelId, portal.id))
   await channelService.remove(SHOP, portal.id, db).catch(() => {})
   await db.delete(schema.products).where(inArray(schema.products.id, [product.id]))
@@ -214,11 +214,11 @@ describe('consistency', () => {
 
   test('a channel whose keys are all revoked can be deleted; an active key blocks it', async () => {
     const spare = await channelService.create(SHOP, { name: `E2E Spare ${run}` }, db)
-    const key = await createStorefrontKey(SHOP, 'e2e spare', spare.id)
+    const key = await storefrontKeyService.create(SHOP, 'e2e spare', spare.id, db)
     await assert.rejects(channelService.remove(SHOP, spare.id, db), /active storefront keys/)
-    await revokeStorefrontKey(SHOP, key.id)
+    await storefrontKeyService.revoke(SHOP, key.id, db)
     assert.ok(await channelService.remove(SHOP, spare.id, db))
-    const left = await db.select().from(schema.storefrontKeys).where(eq(schema.storefrontKeys.id, key.id))
+    const left = await db.select().from(storefrontKeys).where(eq(storefrontKeys.id, key.id))
     assert.equal(left.length, 0)
   })
 })

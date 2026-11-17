@@ -4,10 +4,10 @@
 import { and, eq, exists, inArray, lte, sql, type AnyColumn } from 'drizzle-orm'
 import { QueryBuilder } from 'drizzle-orm/pg-core'
 import { schema, type Conn } from '@shopnex/db'
-import type { PublishableType } from '@shopnex/db/schema'
 import { ChannelError } from './channels.errors'
+import { resourcePublications, type PublishableType } from './channels.schema'
 
-const t = schema.resourcePublications
+const t = resourcePublications
 
 export interface Publication {
   channelId: string
