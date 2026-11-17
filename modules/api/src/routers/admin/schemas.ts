@@ -4,7 +4,7 @@
 // drizzle-zod re-applies the column's nullable/optional on top of each refinement.
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { CUSTOM_FIELD_KEY_PATTERN, CUSTOM_FIELD_RESOURCES, CUSTOM_FIELD_TYPES } from '@shopnex/custom-fields'
+import { CUSTOM_FIELD_KEY_PATTERN, CUSTOM_FIELD_RESOURCES, CUSTOM_FIELD_TYPES } from '@shopnex/custom-fields/schema'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import {
   PRODUCT_STATUSES,
