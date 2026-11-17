@@ -12,6 +12,7 @@ const fx = await import('./fixtures')
 
 const { db, schema } = fx
 const tenancy = await import('../src')
+const { menus } = await import('@shopnex/content/schema')
 const { storefrontKeyService } = await import('@shopnex/channels')
 // Used by the resolvers, not part of the package's public API
 const internal = await import('../src/shops')
@@ -89,9 +90,7 @@ describe('members', () => {
 })
 
 describe('createShop, for a new account', () => {
-  test('makes the shop with a random slug, the account as owner and the Online Store, and tells the shopCreated listeners', async () => {
-    const seen: unknown[] = []
-    tenancy.shopCreated.on('test.records', (_conn, payload) => void seen.push(payload))
+  test('makes the shop with a random slug, the account as owner, the two default menus and the Online Store', async () => {
     const owner = await fx.user()
     const s = await tenancy.createShop({ ownerId: owner.id, name: '  Café  ' })
     assert.equal(s.name, 'Café', 'the name is trimmed')
@@ -102,8 +101,8 @@ describe('createShop, for a new account', () => {
       members.map((m) => [m.userId, m.role]),
       [[owner.id, 'owner']],
     )
-    assert.deepEqual(seen, [{ shopId: s.id }])
-    tenancy.shopCreated.on('test.records', () => undefined)
+    const shopMenus = await db.select().from(menus).where(eq(menus.shopId, s.id))
+    assert.deepEqual(shopMenus.map((m) => m.handle).sort(), ['footer', 'main-menu'])
     const channels = await db.select().from(schema.channels).where(eq(schema.channels.shopId, s.id))
     assert.deepEqual(
       channels.map((c) => c.handle),
@@ -123,21 +122,6 @@ describe('createShop, for a new account', () => {
     const shopsBefore = (await db.select().from(schema.shops)).length
     await assert.rejects(tenancy.createShop({ ownerId: 'nobody', name: 'Ghost' }))
     assert.equal((await db.select().from(schema.shops)).length, shopsBefore)
-  })
-
-  test('a shopCreated listener that fails undoes the whole shop: no shop, owner membership or channel is left', async () => {
-    const owner = await fx.user()
-    const shopsBefore = (await db.select().from(schema.shops)).length
-    tenancy.shopCreated.on('test.fails', () => {
-      throw new Error('could not seed')
-    })
-    try {
-      await assert.rejects(tenancy.createShop({ ownerId: owner.id, name: 'Doomed' }), /could not seed/)
-    } finally {
-      tenancy.shopCreated.on('test.fails', () => undefined)
-    }
-    assert.equal((await db.select().from(schema.shops)).length, shopsBefore)
-    assert.equal((await db.select().from(shopMembers).where(eq(shopMembers.userId, owner.id))).length, 0)
   })
 })
 

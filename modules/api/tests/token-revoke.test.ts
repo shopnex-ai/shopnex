@@ -1,5 +1,4 @@
-// Revoking an API token through the real route takes its webhook subscriptions with it, though `tenancy` knows nothing of webhooks:
-// it runs the apiTokenRevoked hook inside its transaction and webhooks listens. Staff-made and other tokens' subscriptions stay.
+// Revoking an API token through the real route takes its webhook subscriptions with it. Staff-made and other tokens' subscriptions stay.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { call } from '@orpc/server'
@@ -12,7 +11,6 @@ const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@
 requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
 const { router } = await import('../src/router')
-const { apiTokenRevoked } = await import('@shopnex/tenancy')
 const { webhookEndpoints, webhookDeliveries } = await import('@shopnex/webhooks/schema')
 const { eq, inArray } = await import('drizzle-orm')
 
@@ -67,10 +65,6 @@ after(async () => {
 })
 
 describe('revoking an API token, through the route', () => {
-  test('webhooks has listened to the hook', () => {
-    assert.ok(apiTokenRevoked.listeners.includes('webhooks.endpoints'))
-  })
-
   test('removes the subscriptions the token made, with their deliveries, and only those', async () => {
     const gone = await token()
     const stays = await token()
@@ -88,21 +82,5 @@ describe('revoking an API token, through the route', () => {
     assert.equal(left.length, 0)
     const [revoked] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, gone.id))
     assert.ok(revoked?.revokedAt)
-  })
-
-  test('a listener that fails undoes the revoke: the token is still live and its subscription is still there', async () => {
-    const t = await token()
-    const e = await endpoint(t.id)
-    apiTokenRevoked.on('test.fails', () => {
-      throw new Error('cleanup failed')
-    })
-    try {
-      await assert.rejects(run(admin.apiTokens!.revoke, { id: t.id }))
-    } finally {
-      apiTokenRevoked.on('test.fails', () => undefined)
-    }
-    assert.equal(await exists(e.id), true)
-    const [row] = await db.select().from(schema.apiTokens).where(eq(schema.apiTokens.id, t.id))
-    assert.equal(row?.revokedAt, null)
   })
 })

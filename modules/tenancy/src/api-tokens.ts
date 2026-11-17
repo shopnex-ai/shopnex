@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
-import { apiTokenRevoked } from './tenancy.hooks'
-import { API_SCOPES, type ApiScope, type ApiToken, type Shop } from '@shopnex/db/schema'
+import { normalizeScopes } from '@shopnex/core/scopes'
+import type { ApiScope, ApiToken, Shop } from '@shopnex/db/schema'
+import { webhookService } from '@shopnex/webhooks'
 import { log } from './log'
 
 export const API_TOKEN_PREFIX = 'sk_'
@@ -10,21 +11,6 @@ export const API_TOKEN_PREFIX = 'sk_'
 // Tokens are 256 bits of CSPRNG output, not user-chosen passwords, so there is nothing to brute-force:
 // a fast hash is correct (and keeps per-request lookup cheap). A slow KDF (bcrypt/argon2) would only add latency.
 const hash = (token: string) => createHash('sha256').update(token).digest('hex')
-
-// write_* includes read_*
-export function hasScope(scopes: readonly ApiScope[], needed: ApiScope) {
-  return (
-    scopes.includes(needed) ||
-    (needed.startsWith('read_') && scopes.includes(needed.replace('read_', 'write_') as ApiScope))
-  )
-}
-
-// A write scope already grants read: keep the list minimal (and in API_SCOPES order, without duplicates)
-export function normalizeScopes(scopes: readonly ApiScope[]): ApiScope[] {
-  return API_SCOPES.filter(
-    (s) => scopes.includes(s) && !(s.startsWith('read_') && scopes.includes(s.replace('read_', 'write_') as ApiScope)),
-  )
-}
 
 // A new secret: the plaintext goes to the caller once, only the hash and prefix are stored
 export function mintToken() {
@@ -65,7 +51,7 @@ export async function listApiTokens(shopId: string) {
   return rows.map(publicFields)
 }
 
-// What other modules keep for the token goes with it (webhooks removes its subscriptions). Null when there's no such live token.
+// Its webhook subscriptions go with it. Null when there's no such live token.
 async function revoke(conn: Conn, where: SQL | undefined) {
   return conn.transaction(async (tx) => {
     const [token] = await tx
@@ -74,7 +60,7 @@ async function revoke(conn: Conn, where: SQL | undefined) {
       .where(and(where, isNull(schema.apiTokens.revokedAt)))
       .returning()
     if (!token) return null
-    await apiTokenRevoked.run(tx, { shopId: token.shopId, tokenId: token.id })
+    await webhookService.removeOfToken(token.id, tx)
     return publicFields(token)
   })
 }

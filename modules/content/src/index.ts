@@ -1,4 +1,3 @@
-import './content.hooks'
 export * as menuService from './menus'
 export * as pageService from './pages'
 export type { MenuInput, ResolvedMenuItem } from './menus'

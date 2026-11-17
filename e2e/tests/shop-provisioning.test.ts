@@ -10,8 +10,6 @@ import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
 import { shopMembers } from '@shopnex/tenancy/schema'
-// The entry registers what content does when a shop is created (it makes the menus); this test calls createShop itself, not the API
-import '@shopnex/content'
 import { menus } from '@shopnex/content/schema'
 
 const fx = new Fixtures()

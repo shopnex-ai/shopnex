@@ -11,7 +11,6 @@ import { PgTable } from 'drizzle-orm/pg-core'
 process.env.DATABASE_URL = 'pglite:memory'
 
 const { contentModule } = await import('../src/content.module')
-const { shopCreated } = await import('@shopnex/tenancy')
 const srcDir = fileURLToPath(new URL('../src/', import.meta.url))
 
 describe('content manifest', () => {
@@ -28,9 +27,5 @@ describe('content manifest', () => {
   test('the name is the folder, and the route groups are the ones it was mounted with', () => {
     assert.equal(contentModule.name, 'content')
     assert.deepEqual(Object.keys(contentModule.router).sort(), ['menus', 'pages'])
-  })
-
-  test('loading the module makes it listen to shopCreated', () => {
-    assert.ok(shopCreated.listeners.includes('content.menus'))
   })
 })

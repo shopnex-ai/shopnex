@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
+import { seedDefaultMenu } from '@shopnex/content'
 import { db, schema, type Conn } from '@shopnex/db'
-import { shopCreated } from './tenancy.hooks'
 import { shopMembers } from './tenancy.schema'
 
 const DEFAULT_CURRENCY = 'USD'
@@ -22,7 +22,7 @@ async function randomSlug(conn: Pick<typeof db, 'select'>) {
 }
 
 /**
- * A new shop for `ownerId`: the owner membership, and whatever listens to shopCreated (content makes the menus). Shipping rates and payment methods are real
+ * A new shop for `ownerId`: the owner membership, and the default menus (content's). Shipping rates and payment methods are real
  * settings the owner chooses (the Home checklist points to them), so none are made up here. The Online Store channel
  * is created here too, so products added right away are published on it; the first theme is created on first use.
  */
@@ -35,7 +35,7 @@ export async function createShop(input: { ownerId: string; name: string; currenc
       .values({ id, name, slug: await randomSlug(tx), currency: input.currency ?? DEFAULT_CURRENCY })
       .returning()
     await tx.insert(shopMembers).values({ id: randomUUID(), organizationId: id, userId: input.ownerId, role: 'owner' })
-    await shopCreated.run(tx, { shopId: id })
+    await seedDefaultMenu(tx, id)
     // Make the Online Store now: it's otherwise created on first use, after the first products are added,
     // and a product is only auto-published on channels that already exist
     await channelService.getDefault(id, tx)

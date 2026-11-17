@@ -48,21 +48,21 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 (a module imports only what is on its right):
 
 ```text
-core      →
+core      →   (the tables every module points at, and the pure scope helpers `hasScope` and `normalizeScopes` in `@shopnex/core/scopes`)
 db        → core
 channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there)
 pricing   → db, rpc
 drafts    → db
-webhooks  → db, rpc, tenancy   (owns webhook_endpoints and webhook_deliveries; tenancy tells it when an API token is revoked)
+webhooks  → db, rpc, core   (owns webhook_endpoints and webhook_deliveries; tenancy removes a revoked token's subscriptions by calling it)
 theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
-tenancy   → db, channels, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
+tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
 email     → db, tenancy, webhooks
 rpc       → db   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc
 catalog   → db, channels, custom-fields, webhooks
-content   → db, catalog, tenancy, rpc   (owns pages and menus; listens to shopCreated and seeds a new shop's menus)
+content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
 customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
 payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
@@ -143,9 +143,11 @@ transaction, and adding the same id again replaces it (a module loaded twice doe
 export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn>('app.uninstalled')
 // apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
 // payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
-// tenancy.hooks.ts / webhooks.hooks.ts:    the same for apiTokenRevoked: a revoked token takes its webhook subscriptions with it
-// tenancy.hooks.ts / content.hooks.ts:     shopCreated: a new shop gets its menus (tenancy cannot call content, which reaches tenancy through catalog and webhooks)
 ```
+
+Use a hook only when the owner really cannot depend on the module that reacts. Most cases are not that: `tenancy` calls `content` when it
+creates a shop and `webhooks` when it revokes a token, as ordinary dependencies (the cycle that once forced hooks there was
+`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). `appUninstalled` is the one left.
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
 file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).

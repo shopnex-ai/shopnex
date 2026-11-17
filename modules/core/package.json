@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/core.schema.ts",
-    "./module": "./src/core.module.ts"
+    "./module": "./src/core.module.ts",
+    "./scopes": "./src/scopes.ts"
   },
   "scripts": {
     "test": "tsx --test \"tests/**/*.test.ts\"",

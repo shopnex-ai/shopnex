@@ -7,7 +7,6 @@ import { menus } from '../src/content.schema'
 
 const { db, schema, eq, menuService, pageService, item, SHOP, OTHER_SHOP } = fx
 const { ContentError, MENU_MAX_DEPTH, MENU_ITEM_TYPES, seedDefaultMenu } = await import('../src')
-const { createShop } = await import('@shopnex/tenancy')
 
 const refused = (code: string) => (e: unknown) => e instanceof ContentError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
@@ -255,12 +254,5 @@ describe('the menus a new shop starts with', () => {
       ],
     )
     assert.equal(main?.title, 'Main menu')
-  })
-
-  test('createShop in tenancy gives a new shop both menus, through the shopCreated hook, in the same transaction', async () => {
-    const owner = await fx.user()
-    const s = await createShop({ ownerId: owner.id, name: 'Fresh' })
-    assert.deepEqual((await menuService.list(s.id)).map((m) => m.handle).sort(), ['footer', 'main-menu'])
-    await db.delete(schema.shops).where(eq(schema.shops.id, s.id))
   })
 })

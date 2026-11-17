@@ -17,10 +17,13 @@
   "dependencies": {
     "@orpc/server": "catalog:",
     "@shopnex/channels": "workspace:*",
+    "@shopnex/content": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
     "@shopnex/rpc": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
     "zod": "catalog:"

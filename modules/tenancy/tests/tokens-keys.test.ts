@@ -1,4 +1,4 @@
-// API tokens (what is stored, how one is recognised, revoking, the hook other modules listen to).
+// API tokens (what is stored, how one is recognised, revoking, which takes the token's webhook subscriptions with it).
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 
@@ -7,6 +7,8 @@ delete process.env.TENANCY_MODE
 const fx = await import('./fixtures')
 
 const { db, schema, eq } = fx
+const { inArray } = await import('drizzle-orm')
+const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')
 const tenancy = await import('../src')
 
 let SHOP = ''
@@ -19,33 +21,6 @@ beforeEach(async () => {
   SHOP = (await fx.shop()).id
 })
 after(fx.cleanup)
-
-describe('scopes', () => {
-  test('write access includes read access of the same resource, and not the other way round', () => {
-    assert.equal(tenancy.hasScope(['write_orders'], 'read_orders'), true)
-    assert.equal(tenancy.hasScope(['read_orders'], 'write_orders'), false)
-    assert.equal(tenancy.hasScope(['read_orders'], 'read_orders'), true)
-    assert.equal(tenancy.hasScope(['write_products'], 'read_orders'), false)
-    assert.equal(tenancy.hasScope([], 'read_orders'), false)
-  })
-
-  test('normalizing drops a read scope that a write scope already covers, keeps the canonical order and drops repeats', () => {
-    const normalized = tenancy.normalizeScopes(['write_orders', 'read_orders', 'read_products', 'read_products'])
-    assert.deepEqual(
-      normalized.filter((s) => s.endsWith('_orders')),
-      ['write_orders'],
-    )
-    assert.deepEqual(
-      normalized.filter((s) => s.endsWith('_products')),
-      ['read_products'],
-    )
-    assert.deepEqual(
-      normalized,
-      tenancy.API_SCOPES.filter((s) => normalized.includes(s)),
-      'in the order of API_SCOPES',
-    )
-  })
-})
 
 describe('minting and creating', () => {
   test('a token is sk_ and 32 random bytes, kept as a 64-character hash and a short prefix to recognise it', () => {
@@ -173,23 +148,37 @@ describe('revoking', () => {
     await db.delete(schema.apps).where(eq(schema.apps.id, app!.id))
   })
 
-  test('tells the listeners of apiTokenRevoked inside the revoking transaction, and a listener that fails undoes the revoke', async () => {
-    const seen: unknown[] = []
-    tenancy.apiTokenRevoked.on('test.records', (_conn, payload) => void seen.push(payload))
-    const ok = await tenancy.createApiToken(SHOP, { name: 'Heard', scopes: [], createdById: null })
-    await tenancy.revokeApiToken(SHOP, ok.id)
-    assert.deepEqual(seen, [{ shopId: SHOP, tokenId: ok.id }])
-
-    const kept = await tenancy.createApiToken(SHOP, { name: 'Kept', scopes: [], createdById: null })
-    tenancy.apiTokenRevoked.on('test.fails', () => {
-      throw new Error('cleanup failed')
-    })
-    try {
-      await assert.rejects(tenancy.revokeApiToken(SHOP, kept.id), /cleanup failed/)
-    } finally {
-      tenancy.apiTokenRevoked.on('test.fails', () => undefined)
-      tenancy.apiTokenRevoked.on('test.records', () => undefined)
-    }
-    assert.ok(await tenancy.resolveApiToken(kept.token), 'still a live token')
+  test('takes the subscriptions the token made with it, with their deliveries, and leaves other tokens’ and staff-made ones', async () => {
+    const [gone, stays] = [
+      await tenancy.createApiToken(SHOP, { name: 'Gone', scopes: [], createdById: null }),
+      await tenancy.createApiToken(SHOP, { name: 'Stays', scopes: [], createdById: null }),
+    ]
+    const endpoint = async (apiTokenId: string | null) =>
+      (
+        await db
+          .insert(webhookEndpoints)
+          .values({
+            shopId: SHOP,
+            url: 'https://example.com/hook',
+            topics: ['order.created'],
+            secret: 'whsec_x',
+            apiTokenId,
+          })
+          .returning()
+      )[0]!
+    const [mine, theirs, staffs] = [await endpoint(gone.id), await endpoint(stays.id), await endpoint(null)]
+    await db.insert(webhookDeliveries).values({ shopId: SHOP, endpointId: mine.id, topic: 'order.created', body: '{}' })
+    await tenancy.revokeApiToken(SHOP, gone.id)
+    const left = (
+      await db
+        .select()
+        .from(webhookEndpoints)
+        .where(inArray(webhookEndpoints.id, [mine.id, theirs.id, staffs.id]))
+    )
+      .map((e) => e.id)
+      .sort()
+    assert.deepEqual(left, [theirs.id, staffs.id].sort())
+    assert.equal((await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, mine.id))).length, 0)
+    await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.id, [theirs.id, staffs.id]))
   })
 })
