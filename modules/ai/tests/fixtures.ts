@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- request bodies are whatever the capability sends; the tests read them loosely */
 // What the ai tests share: the embedded database, and a fake AI app on localhost that records what ShopNex sends it and answers the
 // way a test says. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { createServer, type Server } from 'node:http'
@@ -10,8 +11,9 @@ process.env.APP_URL = 'http://shop.test'
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
+const { aiGenerations, aiProviders, aiSettings } = await import('../src/ai.schema')
 
-export { db, schema, prepareDatabase }
+export { db, schema, prepareDatabase, aiGenerations, aiProviders, aiSettings }
 export const SHOP = 'default'
 
 // ── the fake AI app
@@ -82,7 +84,7 @@ export async function aiApp(opts: { name?: string; installed?: boolean; capabili
     ...(opts.installed === false ? { uninstalledAt: new Date() } : {}),
   })
   for (const capability of opts.capabilities ?? [])
-    await db.insert(schema.aiProviders).values({ shopId: SHOP, appId: app!.id, capability, url: `${appUrl}/run` })
+    await db.insert(aiProviders).values({ shopId: SHOP, appId: app!.id, capability, url: `${appUrl}/run` })
   created.apps.push(app!.id)
   return app!
 }
@@ -116,8 +118,8 @@ export async function page(patch: Partial<typeof schema.pages.$inferInsert> = {}
 
 /** Everything the tests made, and the generations and settings they left */
 export async function cleanup() {
-  await db.delete(schema.aiGenerations).where(eq(schema.aiGenerations.shopId, SHOP))
-  await db.delete(schema.aiSettings).where(eq(schema.aiSettings.shopId, SHOP))
+  await db.delete(aiGenerations).where(eq(aiGenerations.shopId, SHOP))
+  await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP))
   if (created.apps.length) await db.delete(schema.apps).where(inArray(schema.apps.id, created.apps))
   if (created.products.length) await db.delete(schema.products).where(inArray(schema.products.id, created.products))
   if (created.collections.length)
