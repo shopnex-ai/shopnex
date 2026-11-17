@@ -9,7 +9,9 @@
     "./providers": "./src/providers.ts",
     "./roles": "./src/roles.ts",
     "./setup": "./src/setup.ts",
-    "./signup-limit": "./src/signup-limit.ts"
+    "./signup-limit": "./src/signup-limit.ts",
+    "./schema": "./src/auth.schema.ts",
+    "./module": "./src/auth.module.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -18,6 +20,7 @@
   },
   "dependencies": {
     "@shopnex/db": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "better-auth": "^1.7.18",
     "drizzle-orm": "catalog:"

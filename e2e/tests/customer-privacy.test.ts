@@ -7,6 +7,7 @@ import { and, eq } from 'drizzle-orm'
 import { productService } from '@shopnex/catalog'
 import { customerService } from '@shopnex/customers'
 import { db, schema } from '@shopnex/db'
+import { session as sessionTable } from '@shopnex/auth/schema'
 import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
@@ -112,7 +113,7 @@ describe('export', () => {
     const userId = randomUUID()
     userIds.push(userId)
     await db.insert(schema.user).values({ id: userId, name: 'Export Privacy', email, emailVerified: true })
-    await db.insert(schema.session).values({
+    await db.insert(sessionTable).values({
       id: randomUUID(),
       token: randomUUID(),
       userId,
