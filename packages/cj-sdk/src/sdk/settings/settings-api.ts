@@ -2,6 +2,7 @@ import type { CJApiResponse } from '../../types'
 import type { AccountSettings } from './settings-types'
 
 import { cjApiClient } from '../../api-client'
+import { log } from '../../log'
 
 export async function getSettings(accessToken: string): Promise<AccountSettings> {
   try {
@@ -16,7 +17,7 @@ export async function getSettings(accessToken: string): Promise<AccountSettings>
 
     return result
   } catch (error: any) {
-    console.error(`Error fetching settings [${error.code}]: ${error.message}`)
+    log.error(`Error fetching settings [${error.code}]: ${error.message}`)
     throw error
   }
 }

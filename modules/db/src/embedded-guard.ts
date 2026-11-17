@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { PGlite } from '@electric-sql/pglite'
+import { log } from './log'
 
 /**
  * Turns a silent freeze of the embedded database into an error that says where.
@@ -52,7 +53,7 @@ export function guardEmbeddedClient(client: PGlite, mode: GuardMode = guardMode(
     if (!open) return null
     const error = new SharedHandleInTransactionError(method, open.opened)
     if (mode === 'throw') return Promise.reject(error)
-    console.error(`[db] ${error.message}\n${error.stack ?? ''}`)
+    log.error({ err: error }, error.message)
     return null
   }
 

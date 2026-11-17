@@ -152,6 +152,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../../modules/email
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../../modules/log
       '@shopnex/orders':
         specifier: workspace:*
         version: link:../../modules/orders
@@ -567,6 +570,9 @@ importers:
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
@@ -619,6 +625,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
@@ -672,6 +681,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../../packages/marketplace-sdk
@@ -797,6 +809,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks
@@ -809,6 +824,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.5.16
         version: 0.5.16
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -1043,6 +1061,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -1078,6 +1099,9 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
@@ -1094,6 +1118,9 @@ importers:
       '@shopnex/app-bridge':
         specifier: workspace:*
         version: link:../app-bridge
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../../modules/log
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../marketplace-sdk
@@ -1139,6 +1166,9 @@ importers:
 
   packages/cj-sdk:
     dependencies:
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../../modules/log
       axios:
         specifier: ^1.21.1
         version: 1.21.1

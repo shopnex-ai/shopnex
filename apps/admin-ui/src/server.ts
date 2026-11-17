@@ -1,4 +1,7 @@
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry'
+import { createLogger } from '@shopnex/log'
+
+const log = createLogger('shopnex')
 
 type StartupGlobal = typeof globalThis & {
   shopnexBackgroundServices?: Promise<void>
@@ -10,7 +13,7 @@ const startupGlobal = globalThis as StartupGlobal
 // checkout down with it: log it instead. Registered once, also across dev reloads.
 if (!startupGlobal.shopnexRejectionLogger) {
   startupGlobal.shopnexRejectionLogger = true
-  process.on('unhandledRejection', (reason) => console.error('[shopnex] unhandled rejection:', reason))
+  process.on('unhandledRejection', (reason) => log.error({ err: reason }, 'unhandled rejection'))
 }
 
 function startBackgroundServices() {

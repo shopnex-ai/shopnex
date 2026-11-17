@@ -35,6 +35,7 @@
     "@shopnex/email": "workspace:*",
     "@shopnex/files": "workspace:*",
     "@shopnex/kit": "workspace:*",
+    "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",

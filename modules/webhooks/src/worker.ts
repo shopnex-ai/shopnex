@@ -5,6 +5,7 @@ import { db, schema } from '@shopnex/db'
 import type { WebhookDelivery, WebhookEndpoint } from '@shopnex/db/schema'
 import { assertPublicHost } from './network'
 import { signedHeaders } from './sign'
+import { log } from './log'
 
 // Wait after the nth failed attempt; one more failure after the last is final (8 attempts over ~25h)
 export const RETRY_DELAYS_S = [60, 5 * 60, 30 * 60, 2 * 3600, 5 * 3600, 8 * 3600, 8 * 3600]
@@ -156,7 +157,7 @@ export function startDeliveryWorker(opts: WorkerOptions) {
         await pruneFinished()
       }
     } catch (error) {
-      console.error('[webhooks] delivery worker:', error)
+      log.error({ err: error }, 'delivery worker failed')
     }
     // A full batch means more may be due: go again right away
     if (!stopped) timer = setTimeout(loop, handled === BATCH ? 0 : POLL_MS)

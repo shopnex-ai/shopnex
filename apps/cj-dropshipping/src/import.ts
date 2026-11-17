@@ -4,6 +4,7 @@ import { ShopnexError, type ShopContext } from '@shopnex/app'
 import type { ProductDetails } from '@shopnex/cj-sdk'
 import { cjFor, settingsOf } from './cj'
 import type { Tables } from './db'
+import { log } from './log'
 
 /** What products this app ships are marked with, so other carrier apps leave them alone (fulfilledBy) */
 export const CLIENT_ID = 'app_cj_dropshipping'
@@ -49,7 +50,7 @@ export async function checkAvailability(shop: ShopContext, tables: Tables, pids:
       }
     }
   } catch (error) {
-    console.warn('[cj] availability check:', error instanceof Error ? error.message : error)
+    log.warn({ err: error }, 'availability check failed')
   } finally {
     checking.delete(key)
   }
@@ -84,7 +85,8 @@ export async function importProduct(shop: ShopContext, tables: Tables, pid: stri
 
   const { markupPercent } = await settingsOf(shop)
   const stock = await cj.products.getProductInventoryByPid(pid)
-  if (stock.error) console.warn(`[cj] no stock for ${pid}, variants imported without a stock count:`, stock.error)
+  if (stock.error)
+    log.warn({ pid, stockError: stock.error }, 'no stock for %s, variants imported without a stock count', pid)
   const inventory = new Map<string, number>()
   for (const v of stock.data?.variantInventories ?? []) {
     inventory.set(
@@ -165,7 +167,7 @@ export async function linkProduct(shop: ShopContext, tables: Tables, pid: string
   for (const v of variants) await tables.saveVariant(shop, v.variantSku, pid, v.vid)
   await tables.setAvailable(shop, pid, true)
   await markFulfilled(shop, new Set(variants.map((v) => v.variantSku))).catch((error) =>
-    console.warn('[cj] marking the product as fulfilled by CJ:', error instanceof Error ? error.message : error),
+    log.warn({ err: error }, 'marking the product as fulfilled by CJ failed'),
   )
   return variants.length
 }

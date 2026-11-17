@@ -10,6 +10,9 @@ import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
 import { checkoutBranding } from './branding'
 import { buyer, checkoutFieldNames } from './buyer-schema'
+import { createLogger } from '@shopnex/log'
+
+const log = createLogger('checkout')
 
 const tokenValidator = (token: string) => token
 
@@ -104,7 +107,7 @@ export const saveReminderContact = publicFn({ method: 'POST' })
 // Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:
 // the raw error can carry SQL and internal details
 const unexpected = (action: string, error: unknown) => {
-  console.error(`[checkout] ${action}:`, error)
+  log.error({ err: error }, 'checkout: could not %s', action)
   return `Could not ${action}. Please try again.`
 }
 
