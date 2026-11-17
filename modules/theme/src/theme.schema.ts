@@ -1,3 +1,5 @@
+// The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
+// history in modules/db/migrations.
 // The shop's theme library (Online store → Themes). Each row is one copy of a theme the merchant can
 // customize: the editor saves the draft, publishing copies it to `published` and makes the copy the live
 // one, which is what storefronts render. A shop has at most one live copy; the rest are unpublished. The document format belongs to
@@ -7,12 +9,12 @@
 // published on its own, apart from the document's.
 import { sql } from 'drizzle-orm'
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from './tenancy'
+import { shops } from '@shopnex/db/schema'
 
 export type ThemeRole = 'live' | 'unpublished'
 
 type ThemeSettings = Record<string, string | number | boolean | null>
-export type StoredThemeDocument = {
+export interface StoredThemeDocument {
   preset?: string
   settings: ThemeSettings
   pages: Record<string, { sections: { id: string; type: string; disabled?: boolean; settings: ThemeSettings }[] }>
@@ -78,3 +80,4 @@ export const marketplaceThemes = pgTable('marketplace_themes', {
 })
 
 export type MarketplaceTheme = typeof marketplaceThemes.$inferSelect
+export type NewMarketplaceTheme = typeof marketplaceThemes.$inferInsert

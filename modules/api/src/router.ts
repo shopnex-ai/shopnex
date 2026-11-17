@@ -39,7 +39,7 @@ import { staff as adminStaff } from './routers/admin/staff'
 import { channels as adminChannels } from './routers/admin/channels'
 import { domains as adminDomains } from './routers/admin/domains'
 import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
-import { themes as adminThemes } from './routers/admin/themes'
+import { themeModule } from '@shopnex/theme/module'
 import { webhooks as adminWebhooks } from './routers/admin/webhooks'
 import { marketplace } from './routers/marketplace'
 import { oauth } from './routers/oauth'
@@ -66,7 +66,7 @@ export const router = {
     orders: tagged('Admin · Orders').router(adminOrders),
     analytics: tagged('Admin · Analytics').router(adminAnalytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
-    themes: tagged('Admin · Themes').router(adminThemes),
+    themes: tagged('Admin · Themes').router(themeModule.router),
     menus: tagged('Admin · Navigation').router(adminMenus),
     pages: tagged('Admin · Pages').router(adminPages),
     files: tagged('Admin · Files').router(filesModule.router.files),

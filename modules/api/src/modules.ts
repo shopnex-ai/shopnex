@@ -4,10 +4,11 @@ import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { draftsModule } from '@shopnex/drafts/module'
 import { filesModule } from '@shopnex/files/module'
 import { pricingModule } from '@shopnex/pricing/module'
+import { themeModule } from '@shopnex/theme/module'
 import type { ModuleManifest } from '@shopnex/kit'
 import { firstMapper } from '@shopnex/rpc'
 
-export const modules = [customFieldsModule, draftsModule, filesModule, pricingModule] as const
+export const modules = [customFieldsModule, draftsModule, filesModule, pricingModule, themeModule] as const
 
 const manifests: readonly ModuleManifest[] = modules
 

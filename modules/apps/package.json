@@ -15,6 +15,7 @@
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
+    "@shopnex/theme": "workspace:*",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

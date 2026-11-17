@@ -4,12 +4,18 @@
 // and makes that copy the shop's live theme (at most one). Code edits (Edit code) have their own draft and
 // publish, apart from the document's (see "Code" below). Storefronts render the live copy: one with
 // several themes renders its theme (`getLive`), a single-theme storefront only when it's a copy of its own.
-import { and, desc, eq, ne, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
+import { and, desc, eq, ne, notInArray, sql } from 'drizzle-orm'
+import type { Conn } from '@shopnex/db'
 import { applyChanges, draftJoin, draftService, entityDrafts, hasDraft } from '@shopnex/drafts'
-import type { ShopTheme, StoredThemeDocument } from '@shopnex/db/schema'
+import {
+  marketplaceThemes,
+  shopThemes,
+  type NewMarketplaceTheme,
+  type ShopTheme,
+  type StoredThemeDocument,
+} from './theme.schema'
 
-const t = schema.shopThemes
+const t = shopThemes
 
 /** The entity type of a copy's code draft (entity_drafts) */
 export const CODE_DRAFT = 'theme_code'
@@ -219,9 +225,32 @@ export async function remove(shopId: string, id: string, conn: Conn) {
   return row ?? null
 }
 
-// --- Theme Store (styles synced from the marketplace by @shopnex/apps; the same for every shop) ---
+// --- Theme Store (styles synced from the marketplace by @shopnex/apps, which calls the two functions below; the same for every shop) ---
 
-const store = schema.marketplaceThemes
+/**
+ * The catalog the marketplace sync read: inserts or updates each style, and deletes the ones that are gone from it (all of them
+ * when the catalog is empty). Copies shops already added stay in their libraries: they have no foreign key to a style.
+ */
+export async function replaceStore(rows: NewMarketplaceTheme[], conn: Conn) {
+  for (const row of rows) {
+    await conn.insert(marketplaceThemes).values(row).onConflictDoUpdate({ target: marketplaceThemes.id, set: row })
+  }
+  await conn.delete(marketplaceThemes).where(
+    rows.length
+      ? notInArray(
+          marketplaceThemes.id,
+          rows.map((r) => r.id),
+        )
+      : undefined,
+  )
+}
+
+/** Empties the Theme Store (the marketplace was disconnected). Copies shops already added stay in their libraries. */
+export async function clearStore(conn: Conn) {
+  await conn.delete(marketplaceThemes)
+}
+
+const store = marketplaceThemes
 
 /** The Theme Store's styles, without documents */
 export async function listStore(conn: Conn) {

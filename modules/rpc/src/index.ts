@@ -76,8 +76,8 @@ export const firstMapper =
     return undefined
   }
 
-/** The procedures of the Admin API (and the public ones), with `mapError` applied to every error they throw */
-export function createProcedures(mapError: ErrorMapper) {
+/** The procedures of the Admin API (and the public ones), with `mapError` applied to every error they throw (none: a module with no errors of its own) */
+export function createProcedures(mapError: ErrorMapper = () => undefined) {
   const base = os.$context<Context>()
 
   const domainErrors = base.middleware(async ({ next }) => {

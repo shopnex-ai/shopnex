@@ -6,7 +6,8 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 
-const { db, schema, prepareDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase } = await import('@shopnex/db')
+const { marketplaceThemes, shopThemes } = await import('../src/theme.schema')
 const { DraftConflictError, draftService, entityDrafts } = await import('@shopnex/drafts')
 const themes = await import('../src/themes')
 const { eq } = await import('drizzle-orm')
@@ -21,13 +22,13 @@ before(async () => {
 })
 
 const clean = async () => {
-  await db.delete(schema.shopThemes).where(eq(schema.shopThemes.shopId, SHOP))
+  await db.delete(shopThemes).where(eq(shopThemes.shopId, SHOP))
   await db.delete(entityDrafts).where(eq(entityDrafts.shopId, SHOP))
 }
 beforeEach(clean)
 after(async () => {
   await clean()
-  await db.delete(schema.marketplaceThemes)
+  await db.delete(marketplaceThemes)
 })
 
 describe('creating copies', () => {
@@ -261,9 +262,9 @@ describe('the Theme Store', () => {
   })
 
   test('lists the styles by name without their documents, and gets one with its document', async () => {
-    await db.delete(schema.marketplaceThemes)
+    await db.delete(marketplaceThemes)
     await db
-      .insert(schema.marketplaceThemes)
+      .insert(marketplaceThemes)
       .values([
         style('00000000-0000-4000-8000-0000000000b2', 'Bravo'),
         style('00000000-0000-4000-8000-0000000000a1', 'Alpha'),
@@ -280,9 +281,66 @@ describe('the Theme Store', () => {
     assert.equal(await themes.getStoreTheme('00000000-0000-4000-8000-0000000000ff', db), null)
   })
 
+  const tableNames = async () => (await themes.listStore(db)).map((s) => s.name)
+  const catalog = (...names: string[]) =>
+    names.map((name, i) => style(`00000000-0000-4000-8000-00000000d${i}00`.slice(0, 36), name))
+
+  test('replaceStore inserts the catalog, and a later one updates the styles it still has and removes the others', async () => {
+    await db.delete(marketplaceThemes)
+    const [alpha, bravo, charlie] = catalog('Alpha', 'Bravo', 'Charlie') as [
+      ReturnType<typeof style>,
+      ReturnType<typeof style>,
+      ReturnType<typeof style>,
+    ]
+    await themes.replaceStore([alpha, bravo], db)
+    assert.deepEqual(await tableNames(), ['Alpha', 'Bravo'])
+    await themes.replaceStore([{ ...bravo, name: 'Bravo 2', tagline: 'new tagline' }, charlie], db)
+    assert.deepEqual(await tableNames(), ['Bravo 2', 'Charlie'])
+    assert.equal((await themes.getStoreTheme(bravo.id, db))?.tagline, 'new tagline')
+    assert.equal(await themes.getStoreTheme(alpha.id, db), null)
+  })
+
+  test('an empty catalog removes every style, and syncing the same catalog twice changes nothing', async () => {
+    await db.delete(marketplaceThemes)
+    const rows = catalog('Alpha', 'Bravo')
+    await themes.replaceStore(rows, db)
+    await themes.replaceStore(rows, db)
+    assert.deepEqual(await tableNames(), ['Alpha', 'Bravo'])
+    await themes.replaceStore([], db)
+    assert.deepEqual(await tableNames(), [])
+  })
+
+  test('clearStore empties the store, and the copies shops already added stay in their libraries', async () => {
+    await db.delete(marketplaceThemes)
+    const [alpha] = catalog('Alpha')
+    await themes.replaceStore([alpha!], db)
+    const copy = await themes.create(
+      SHOP,
+      { themeId: 'maison', name: 'Alpha', draft: doc('Alpha'), marketplaceThemeId: alpha!.id },
+      db,
+    )
+    await themes.clearStore(db)
+    assert.deepEqual(await tableNames(), [])
+    assert.equal((await themes.get(SHOP, copy.id, db))?.name, 'Alpha')
+  })
+
+  test('both run on a transaction, so the sync is all or nothing', async () => {
+    await db.delete(marketplaceThemes)
+    const rows = catalog('Alpha', 'Bravo')
+    await themes.replaceStore([rows[0]!], db)
+    await assert.rejects(
+      db.transaction(async (tx) => {
+        await themes.replaceStore(rows, tx)
+        throw new Error('the sync failed half way')
+      }),
+      /half way/,
+    )
+    assert.deepEqual(await tableNames(), ['Alpha'])
+  })
+
   test('a copy added from a style remembers it, and keeps working when the style is delisted (no foreign key)', async () => {
-    await db.delete(schema.marketplaceThemes)
-    await db.insert(schema.marketplaceThemes).values(style('00000000-0000-4000-8000-0000000000c3', 'Charlie'))
+    await db.delete(marketplaceThemes)
+    await db.insert(marketplaceThemes).values(style('00000000-0000-4000-8000-0000000000c3', 'Charlie'))
     const copy = await themes.create(
       SHOP,
       {
@@ -293,7 +351,7 @@ describe('the Theme Store', () => {
       },
       db,
     )
-    await db.delete(schema.marketplaceThemes)
+    await db.delete(marketplaceThemes)
     const row = (await themes.list(SHOP, db)).find((r) => r.id === copy.id)
     assert.equal(row?.marketplaceThemeId, '00000000-0000-4000-8000-0000000000c3')
   })
