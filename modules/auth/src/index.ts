@@ -7,6 +7,7 @@ import { db, schema } from '@shopnex/db'
 import { sessionSecret } from '@shopnex/db/secrets'
 import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
+import { account, session, verification } from './auth.schema'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed, createShopForNewAccount } from './sign-up-policy'
 import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
@@ -49,9 +50,9 @@ export const auth = betterAuth({
     provider: 'pg',
     schema: {
       user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
+      session,
+      account,
+      verification,
       shops: schema.shops,
       shopMembers: schema.shopMembers,
       shopInvitations: schema.shopInvitations,
@@ -130,6 +131,7 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
+export { setActiveShop } from './active-shop'
 export { takeRate } from './rate-limit'
 export { clientIp } from './signup-limit'
 export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

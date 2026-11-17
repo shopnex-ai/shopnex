@@ -15,6 +15,7 @@ const { auth } = await import('../src')
 const { currentOtpSender, isOtpPath, withOtpSender, withOtpSignIn } = await import('../src/shopper-login')
 const { SUPER_ADMIN_ROLE, isSuperAdmin } = await import('../src/roles')
 const { takeRate } = await import('../src/rate-limit')
+const { rateLimits } = await import('../src/auth.schema')
 const { eq } = await import('drizzle-orm')
 
 before(prepareDatabase)
@@ -93,7 +94,7 @@ describe('platform roles', () => {
 })
 
 describe('takeRate: login-code limits shared through the database', () => {
-  const rows = () => db.select().from(schema.rateLimits)
+  const rows = () => db.select().from(rateLimits)
 
   test('lets the first uses through up to max, then says how many seconds until the window ends', async () => {
     assert.equal(await takeRate('t:basic', 3, 60_000), null)
@@ -125,7 +126,7 @@ describe('takeRate: login-code limits shared through the database', () => {
   test('the window starts again once it has ended', async () => {
     await takeRate('t:reset', 1, 60_000)
     assert.notEqual(await takeRate('t:reset', 1, 60_000), null)
-    await db.update(schema.rateLimits).set({ resetAt: new Date(Date.now() - 1000) })
+    await db.update(rateLimits).set({ resetAt: new Date(Date.now() - 1000) })
     assert.equal(await takeRate('t:reset', 1, 60_000), null, 'a new window')
   })
 

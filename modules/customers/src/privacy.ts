@@ -5,6 +5,7 @@
 // tax, payments, shipping country) but loses who it was for. Everything else that identifies the person goes.
 import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { session } from '@shopnex/auth/schema'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
 
@@ -86,9 +87,7 @@ export async function exportData(shopId: string, customerId: string) {
 
   // The storefront login, when the customer has one
   const login = customer.userId ? await db.select().from(schema.user).where(eq(schema.user.id, customer.userId)) : []
-  const sessions = customer.userId
-    ? await db.select().from(schema.session).where(eq(schema.session.userId, customer.userId))
-    : []
+  const sessions = customer.userId ? await db.select().from(session).where(eq(session.userId, customer.userId)) : []
 
   return {
     schemaVersion: 1 as const,

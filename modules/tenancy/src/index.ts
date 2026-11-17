@@ -27,9 +27,9 @@ export {
   addMember,
   ensureDefaultShop,
   getFirstMembership,
+  canActInShop,
   getShopById,
   listSwitchableShops,
-  setActiveShop,
   updateShop,
   withStorefrontUrl,
 } from './shops'
