@@ -1,10 +1,9 @@
-// Installable apps (Admin → Apps). An app is registered once per ShopNex install (by a super admin) and
-// installed per shop, either right in the admin (managed install) or through OAuth (authorization code). Each
-// installation is backed by an API token, so scopes and webhook subscriptions work exactly as for hand-made
-// tokens. Apps authenticate with their own key pair; this instance only stores the public half.
-import { index, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+// The apps registry: one row per app registered on this ShopNex install (by a super admin, bundled, or synced from the marketplace).
+// A foundation table, like shops, user and api_tokens: api_tokens, payments, ai and cart point at it, so it stays in this package.
+// Everything else about apps (installations, OAuth codes, app data, the instance keys, the marketplace link) is @shopnex/apps'.
+import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
-import { apiTokens, shops, type ApiScope } from './tenancy'
+import { type ApiScope } from './tenancy'
 
 // custom: registered here by a super admin (private apps). marketplace: synced from the connected marketplace,
 // read-only here (the vendor edits it there). bundled: ships with this install and registers itself at startup,
