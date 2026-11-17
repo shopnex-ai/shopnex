@@ -1211,6 +1211,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   packages/app:
     dependencies:
