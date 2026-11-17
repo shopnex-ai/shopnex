@@ -10,8 +10,9 @@ const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { generateSecret } = await import('../src/sign')
+const { webhookDeliveries, webhookEndpoints } = await import('../src/webhooks.schema')
 
-export { db, schema, prepareDatabase }
+export { db, schema, prepareDatabase, webhookDeliveries, webhookEndpoints }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'webhooks-other-shop'
 
@@ -58,9 +59,9 @@ export async function otherShop() {
     .onConflictDoNothing()
 }
 
-export async function endpoint(patch: Partial<typeof schema.webhookEndpoints.$inferInsert> = {}) {
+export async function endpoint(patch: Partial<typeof webhookEndpoints.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.webhookEndpoints)
+    .insert(webhookEndpoints)
     .values({
       shopId: SHOP,
       url: `${receiverUrl}/hook`,
@@ -89,9 +90,9 @@ export async function apiToken(opts: { name?: string; appId?: string } = {}) {
   return row!
 }
 
-export async function delivery(endpointId: string, patch: Partial<typeof schema.webhookDeliveries.$inferInsert> = {}) {
+export async function delivery(endpointId: string, patch: Partial<typeof webhookDeliveries.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.webhookDeliveries)
+    .insert(webhookDeliveries)
     .values({
       shopId: SHOP,
       endpointId,
@@ -104,17 +105,16 @@ export async function delivery(endpointId: string, patch: Partial<typeof schema.
 }
 
 export const deliveriesOf = (endpointId: string) =>
-  db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.endpointId, endpointId))
+  db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpointId))
 export const deliveryById = async (id: string) =>
-  (await db.select().from(schema.webhookDeliveries).where(eq(schema.webhookDeliveries.id, id)))[0]
+  (await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.id, id)))[0]
 
 /** Everything the tests made (deliveries go with their endpoints) */
 export async function cleanup() {
-  if (created.endpoints.length)
-    await db.delete(schema.webhookEndpoints).where(inArray(schema.webhookEndpoints.id, created.endpoints))
+  if (created.endpoints.length) await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.id, created.endpoints))
   if (created.tokens.length) await db.delete(schema.apiTokens).where(inArray(schema.apiTokens.id, created.tokens))
   // Created by the services under test, not through the helpers
-  await db.delete(schema.webhookEndpoints).where(inArray(schema.webhookEndpoints.shopId, [SHOP, OTHER_SHOP]))
+  await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER_SHOP]))
   created.endpoints.length = 0
   created.tokens.length = 0
 }

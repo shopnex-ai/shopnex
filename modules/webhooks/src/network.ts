@@ -25,7 +25,7 @@ for (const [net, prefix] of [
 }
 
 function isPrivateAddress(address: string) {
-  const mapped = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1]
+  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address)?.[1]
   if (mapped) return privateRanges.check(mapped, 'ipv4')
   return privateRanges.check(address, isIP(address) === 6 ? 'ipv6' : 'ipv4')
 }

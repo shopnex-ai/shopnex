@@ -19,6 +19,7 @@ const { productService } = await import('@shopnex/catalog')
 const { orderService } = await import('@shopnex/orders')
 const { cartService, checkoutService } = await import('../src')
 const { eq } = await import('drizzle-orm')
+const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')
 
 const SHOP = 'default'
 
@@ -54,7 +55,7 @@ before(async () => {
     },
     active: true,
   })
-  await db.insert(schema.webhookEndpoints).values({
+  await db.insert(webhookEndpoints).values({
     shopId: SHOP,
     url: 'http://127.0.0.1:9/hook',
     topics: ['order.created', 'order.paid', 'order.updated', 'order.fulfilled', 'order.cancelled'],
@@ -105,7 +106,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
     const confirmation = emails.find((e) => e.notification === 'order_confirmation')!
     assert.match(confirmation.html, /Ceramic Cup/)
 
-    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(schema.webhookDeliveries))
+    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(webhookDeliveries))
     assert.ok(
       hooks.some((h) => h.topic === 'order.created' && h.body.includes(orderId)),
       'order.created queued',
@@ -114,7 +115,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
 
   test('marking it paid queues order.paid', { timeout: 30_000 }, async () => {
     await within(10_000, 'marking the order paid', orderService.markAsPaid(SHOP, orderId))
-    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(schema.webhookDeliveries))
+    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(webhookDeliveries))
     assert.ok(
       hooks.some((h) => h.topic === 'order.paid'),
       'order.paid queued',
@@ -123,7 +124,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
 
   test('fulfilling it queues the shipping email and order.fulfilled', { timeout: 30_000 }, async () => {
     await within(10_000, 'fulfilling the order', orderService.fulfill(SHOP, orderId))
-    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(schema.webhookDeliveries))
+    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(webhookDeliveries))
     assert.ok(
       hooks.some((h) => h.topic === 'order.fulfilled'),
       'order.fulfilled queued',
@@ -157,7 +158,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
       'cancelling the order',
       orderService.cancel(SHOP, placed.orderId, { reason: 'customer', restock: true }),
     )
-    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(schema.webhookDeliveries))
+    const hooks = await within(5_000, 'reading the webhook outbox', db.select().from(webhookDeliveries))
     assert.ok(
       hooks.some((h) => h.topic === 'order.cancelled' && h.body.includes(placed.orderId)),
       'order.cancelled queued',

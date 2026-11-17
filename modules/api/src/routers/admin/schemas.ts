@@ -32,9 +32,7 @@ import {
   shops,
   storefrontKeys,
   CHANNEL_TYPES,
-  WEBHOOK_TOPICS,
   AI_BUILTIN_PROVIDERS,
-  webhookEndpoints,
   API_SCOPES,
   MENU_ITEM_TYPES,
   SMTP_PRESETS,
@@ -250,14 +248,8 @@ export const fulfillOrderInput = z.object({
   trackingUrl: z.union([z.url({ protocol: /^https?$/ }).max(500), z.literal('')]).optional(),
 })
 
-// Settings → Webhooks
-export const webhookEndpointInput = createInsertSchema(webhookEndpoints, {
-  url: () => z.url({ protocol: /^https?$/ }).max(2000),
-  description: (s) => s.trim().max(200),
-  topics: () => z.array(z.enum(WEBHOOK_TOPICS)).min(1, 'Pick at least one event'),
-}).pick({ url: true, description: true, topics: true, active: true })
-
-export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/db/schema'
+export { webhookEndpointInput } from '@shopnex/webhooks/contract'
+export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/webhooks/schema'
 
 // Admin → Apps (registry, super admins). Redirect URLs must be absolute; https except on localhost.
 const redirectUrl = z

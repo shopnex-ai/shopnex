@@ -51,7 +51,7 @@ db        →
 channels  → db
 pricing   → db, rpc
 drafts    → db
-webhooks  → db
+webhooks  → db, rpc, tenancy   (owns webhook_endpoints and webhook_deliveries; tenancy tells it when an API token is revoked)
 theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
 tenancy   → db, channels
 auth      → db, tenancy
@@ -141,6 +141,7 @@ transaction, and adding the same id again replaces it (a module loaded twice doe
 export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn>('app.uninstalled')
 // apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
 // payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
+// tenancy.hooks.ts / webhooks.hooks.ts:    the same for apiTokenRevoked: a revoked token takes its webhook subscriptions with it
 ```
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the

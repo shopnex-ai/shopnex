@@ -5,6 +5,7 @@
 // tax, payments, shipping country) but loses who it was for. Everything else that identifies the person goes.
 import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
+import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
@@ -265,14 +266,9 @@ export async function erase(shopId: string, customerId: string) {
 
     // Webhook history: payloads of events about this person (kept 30 days for retries and the log)
     const deliveries = await tx
-      .delete(schema.webhookDeliveries)
-      .where(
-        and(
-          eq(schema.webhookDeliveries.shopId, shopId),
-          sql`strpos(lower(${schema.webhookDeliveries.body}), ${email}) > 0`,
-        ),
-      )
-      .returning({ id: schema.webhookDeliveries.id })
+      .delete(webhookDeliveries)
+      .where(and(eq(webhookDeliveries.shopId, shopId), sql`strpos(lower(${webhookDeliveries.body}), ${email}) > 0`))
+      .returning({ id: webhookDeliveries.id })
 
     await tx.delete(schema.customers).where(eq(schema.customers.id, customerId))
 

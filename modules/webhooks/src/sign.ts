@@ -10,7 +10,12 @@ export function generateSecret() {
 
 export function sign(secret: string, id: string, timestamp: number, body: string) {
   const key = Buffer.from(secret.slice(SECRET_PREFIX.length), 'base64')
-  return 'v1,' + createHmac('sha256', key).update(`${id}.${timestamp}.${body}`).digest('base64')
+  return (
+    'v1,' +
+    createHmac('sha256', key)
+      .update(`${id}.${String(timestamp)}.${body}`)
+      .digest('base64')
+  )
 }
 
 // Headers for one attempt; the timestamp (and so the signature) changes on every retry

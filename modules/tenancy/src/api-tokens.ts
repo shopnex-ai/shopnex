@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { and, desc, eq, isNull, lt, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
+import { apiTokenRevoked } from './tenancy.hooks'
 import { API_SCOPES, type ApiScope, type ApiToken, type Shop } from '@shopnex/db/schema'
 import { log } from './log'
 
@@ -64,7 +65,7 @@ export async function listApiTokens(shopId: string) {
   return rows.map(publicFields)
 }
 
-// Its webhook subscriptions are deleted with it. Null when there's no such live token.
+// What other modules keep for the token goes with it (webhooks removes its subscriptions). Null when there's no such live token.
 async function revoke(conn: Conn, where: SQL | undefined) {
   return conn.transaction(async (tx) => {
     const [token] = await tx
@@ -73,7 +74,7 @@ async function revoke(conn: Conn, where: SQL | undefined) {
       .where(and(where, isNull(schema.apiTokens.revokedAt)))
       .returning()
     if (!token) return null
-    await tx.delete(schema.webhookEndpoints).where(eq(schema.webhookEndpoints.apiTokenId, token.id))
+    await apiTokenRevoked.run(tx, { shopId: token.shopId, tokenId: token.id })
     return publicFields(token)
   })
 }
