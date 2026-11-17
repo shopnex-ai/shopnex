@@ -4,7 +4,13 @@
 // drizzle-zod re-applies the column's nullable/optional on top of each refinement.
 import { createInsertSchema } from 'drizzle-zod'
 import { z } from 'zod'
-export { customFieldInput, customFieldPatch } from '@shopnex/custom-fields/contract'
+import { customFieldUpdates, customFieldValues } from '@shopnex/custom-fields/contract'
+export {
+  customFieldInput,
+  customFieldPatch,
+  customFieldUpdates,
+  customFieldValues,
+} from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import {
   PRODUCT_STATUSES,
@@ -36,14 +42,6 @@ import {
   NOTIFICATIONS,
   type StoredMenuItem,
 } from '@shopnex/db/schema'
-
-// What a record stores for its custom fields, by key
-export const customFieldValues = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
-
-// What a create / update sends: a value sets the field, null clears it, keys left out stay as they are
-export const customFieldUpdates = z
-  .record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()]))
-  .describe('Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields.')
 
 export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
 

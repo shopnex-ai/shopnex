@@ -35,3 +35,11 @@ export const customFieldOutput = createSelectSchema(customFieldDefinitions, {
   resource: z.enum(CUSTOM_FIELD_RESOURCES),
   type: z.enum(CUSTOM_FIELD_TYPES),
 })
+
+// What a record stores for its custom fields, by key
+export const customFieldValues = z.record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+
+// What a create / update sends: a value sets the field, null clears it, keys left out stay as they are
+export const customFieldUpdates = z
+  .record(z.string(), z.union([z.string().max(2000), z.number(), z.boolean(), z.null()]))
+  .describe('Custom field values by key; null clears a field. Keys must be defined under Settings → Custom fields.')
