@@ -11,7 +11,7 @@ import {
 
 export const appsModule = defineModule({
   name: 'apps',
-  dependsOn: ['db', 'marketplace-sdk', 'rpc', 'storefront-sdk', 'tenancy', 'theme'],
+  dependsOn: ['core', 'db', 'marketplace-sdk', 'rpc', 'storefront-sdk', 'tenancy', 'theme'],
   tables: {
     appInstallations,
     appAuthorizationCodes,

@@ -4,7 +4,7 @@ import { shopDomains, shopInvitations, shopMembers } from './tenancy.schema'
 
 export const tenancyModule = defineModule({
   name: 'tenancy',
-  dependsOn: ['channels', 'db', 'rpc'],
+  dependsOn: ['channels', 'content', 'core', 'db', 'rpc', 'webhooks'],
   tables: { shopMembers, shopInvitations, shopDomains },
   router: { shop, staff, domains, apiTokens, platform },
 })

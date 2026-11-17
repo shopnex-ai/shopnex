@@ -20,7 +20,6 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/rpc": "workspace:*",
-    "@shopnex/tenancy": "workspace:*",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
     "zod": "catalog:"

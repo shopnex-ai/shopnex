@@ -4,8 +4,6 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { APIError } from 'better-auth/api'
 import { db } from '@shopnex/db'
-// A new account's shop gets its menus from content's shopCreated listener, which only exists once the module is loaded
-import '@shopnex/content'
 import { createShop, isOpenSignup, NEW_SHOP_NAME } from '@shopnex/tenancy'
 import { SIGNUP_LIMIT_MESSAGE, takeGlobalSignup } from './signup-limit'
 import { shopInvitations } from '@shopnex/tenancy/schema'

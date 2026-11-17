@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { customerService, PrivacyError, privacyService } from '@shopnex/customers'
-import { hasScope } from '@shopnex/tenancy'
+import { hasScope } from '@shopnex/core/scopes'
 import { adminOrToken, scoped, shopManager } from '../../orpc'
 import { pagination } from '../pagination'
 import { customerInput } from './schemas'

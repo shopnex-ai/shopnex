@@ -7,14 +7,11 @@ export {
   type ShopRole,
   type StorefrontResolution,
 } from './resolve'
-export { apiTokenRevoked, shopCreated } from './tenancy.hooks'
 export {
   API_TOKEN_PREFIX,
   createApiToken,
-  hasScope,
   listApiTokens,
   mintToken,
-  normalizeScopes,
   publicFields as publicTokenFields,
   resolveApiToken,
   touchToken,

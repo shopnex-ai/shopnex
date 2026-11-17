@@ -86,6 +86,11 @@ export async function rotateSecret(shopId: string, id: string, tokenId: string |
   return endpoint ?? null
 }
 
+// Removes the subscriptions an API token made (tenancy calls it, inside the transaction that revokes the token); their pending deliveries go with them
+export async function removeOfToken(tokenId: string, conn: Conn) {
+  await conn.delete(webhookEndpoints).where(eq(webhookEndpoints.apiTokenId, tokenId))
+}
+
 // Queues a `webhook.test` delivery to this endpoint only, whatever it's subscribed to
 export async function sendTest(shopId: string, id: string, tokenId: string | undefined, conn: Conn) {
   const endpoint = await get(shopId, id, tokenId, conn)
