@@ -15,6 +15,14 @@ const { db, schema, prepareDatabase } = await import('@shopnex/db')
 const { fileService, FilesError, MAX_FILE_SIZE } = await import('../src')
 const { eq } = await import('drizzle-orm')
 
+// The services take the connection from the caller: the tests pass the shared database
+const files = {
+  upload: (shop: string, f: File, opts: { alt?: string | null } = {}) => fileService.upload(shop, f, opts, db),
+  remove: (shop: string, id: string) => fileService.remove(shop, id, db),
+  list: (shop: string, opts: { limit: number; offset: number }) => fileService.list(shop, opts, db),
+  count: (shop: string) => fileService.count(shop, db),
+}
+
 const SHOP = 'default'
 let root: string
 
@@ -37,7 +45,7 @@ after(async () => {
 
 describe('upload', () => {
   test('stores the bytes and a row, with the type sniffed and the URL the API serves it at', async () => {
-    const up = await fileService.upload(SHOP, file(png()), { alt: 'A cat' })
+    const up = await files.upload(SHOP, file(png()), { alt: 'A cat' })
     assert.match(up.key, new RegExp(`^${SHOP}/[0-9a-f-]{36}\\.png$`))
     assert.equal(up.storage, 'local')
     assert.equal(up.mimeType, 'image/png')
@@ -49,36 +57,36 @@ describe('upload', () => {
   })
 
   test('the name and the Content-Type the client sends do not decide the type: the bytes do', async () => {
-    const up = await fileService.upload(SHOP, file(png(), 'looks-like.jpg', 'image/jpeg'))
+    const up = await files.upload(SHOP, file(png(), 'looks-like.jpg', 'image/jpeg'))
     assert.equal(up.mimeType, 'image/png')
     assert.ok(up.key.endsWith('.png'))
     assert.equal(up.filename, 'looks-like.jpg')
   })
 
   test('something that is not an accepted image is refused and leaves nothing behind', async () => {
-    const rowsBefore = await fileService.count(SHOP)
+    const rowsBefore = await files.count(SHOP)
     const diskBefore = await filesOnDisk()
     const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>')
     await assert.rejects(
-      fileService.upload(SHOP, file(svg, 'x.png', 'image/png')),
+      files.upload(SHOP, file(svg, 'x.png', 'image/png')),
       (e: unknown) => e instanceof FilesError && e.code === 'UNSUPPORTED_TYPE',
     )
-    assert.equal(await fileService.count(SHOP), rowsBefore)
+    assert.equal(await files.count(SHOP), rowsBefore)
     assert.equal(await filesOnDisk(), diskBefore)
   })
 
   test('a file above the limit is refused before it is read', async () => {
     const big = new File([new Uint8Array(MAX_FILE_SIZE + 1)], 'big.png', { type: 'image/png' })
     await assert.rejects(
-      fileService.upload(SHOP, big),
+      files.upload(SHOP, big),
       (e: unknown) => e instanceof FilesError && e.code === 'FILE_TOO_LARGE',
     )
   })
 
   test('the original name is cut to 255 characters, and an empty name becomes "upload"', async () => {
-    const long = await fileService.upload(SHOP, file(png(), `${'a'.repeat(300)}.png`))
+    const long = await files.upload(SHOP, file(png(), `${'a'.repeat(300)}.png`))
     assert.equal(long.filename.length, 255)
-    const empty = await fileService.upload(SHOP, file(png(), ''))
+    const empty = await files.upload(SHOP, file(png(), ''))
     assert.equal(empty.filename, 'upload')
     assert.equal(empty.alt, null)
   })
@@ -87,18 +95,18 @@ describe('upload', () => {
 describe('list, count and remove', () => {
   test('lists the newest first with their URLs, and pages', async () => {
     await db.delete(schema.files).where(eq(schema.files.shopId, SHOP))
-    const first = await fileService.upload(SHOP, file(png(), 'first.png'))
+    const first = await files.upload(SHOP, file(png(), 'first.png'))
     await new Promise((resolve) => setTimeout(resolve, 15))
-    const second = await fileService.upload(SHOP, file(png(), 'second.png'))
-    assert.equal(await fileService.count(SHOP), 2)
-    const page = await fileService.list(SHOP, { limit: 10, offset: 0 }, db)
+    const second = await files.upload(SHOP, file(png(), 'second.png'))
+    assert.equal(await files.count(SHOP), 2)
+    const page = await files.list(SHOP, { limit: 10, offset: 0 })
     assert.deepEqual(
       page.map((f) => f.filename),
       ['second.png', 'first.png'],
     )
     assert.equal(page[0]!.url, second.url)
     assert.equal(page[1]!.url, first.url)
-    const next = await fileService.list(SHOP, { limit: 1, offset: 1 }, db)
+    const next = await files.list(SHOP, { limit: 1, offset: 1 })
     assert.deepEqual(
       next.map((f) => f.filename),
       ['first.png'],
@@ -106,19 +114,19 @@ describe('list, count and remove', () => {
   })
 
   test('another shop sees none of them, and cannot remove them', async () => {
-    const up = await fileService.upload(SHOP, file(png(), 'mine.png'))
-    assert.equal(await fileService.count('some-other-shop'), 0)
-    assert.deepEqual(await fileService.list('some-other-shop', { limit: 10, offset: 0 }, db), [])
-    assert.equal(await fileService.remove('some-other-shop', up.id), null)
+    const up = await files.upload(SHOP, file(png(), 'mine.png'))
+    assert.equal(await files.count('some-other-shop'), 0)
+    assert.deepEqual(await files.list('some-other-shop', { limit: 10, offset: 0 }), [])
+    assert.equal(await files.remove('some-other-shop', up.id), null)
     assert.ok(await readFile(path.join(root, up.key)))
   })
 
   test('removing deletes the row and the bytes, and answers with what was removed', async () => {
-    const up = await fileService.upload(SHOP, file(png(), 'gone.png'))
-    const removed = await fileService.remove(SHOP, up.id)
+    const up = await files.upload(SHOP, file(png(), 'gone.png'))
+    const removed = await files.remove(SHOP, up.id)
     assert.equal(removed?.id, up.id)
     assert.equal(removed?.url, up.url)
     await assert.rejects(readFile(path.join(root, up.key)))
-    assert.equal(await fileService.remove(SHOP, up.id), null)
+    assert.equal(await files.remove(SHOP, up.id), null)
   })
 })

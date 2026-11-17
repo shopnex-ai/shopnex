@@ -1,3 +1,4 @@
+import { db } from '@shopnex/db'
 import { storageService } from '@shopnex/files'
 import { shopManager } from '../../orpc'
 import { s3Input, storageInput } from './schemas'
@@ -9,7 +10,7 @@ export const storage = {
   get: shopManager
     .route({ method: 'GET', path: '/admin/storage' })
     .output(storageSettingsOutput)
-    .handler(({ context }) => storageService.getSettings(context.shop.id)),
+    .handler(({ context }) => storageService.getSettings(context.shop.id, db)),
   // Switching to a bucket runs the connection test first and fails if any step does
   update: shopManager
     .route({ method: 'PUT', path: '/admin/storage' })
@@ -17,11 +18,12 @@ export const storage = {
     .input(storageInput)
     .handler(({ input, context }) =>
       input.provider === 'local'
-        ? storageService.useLocal(context.shop.id)
-        : storageService.useS3(context.shop.id, {
-            ...input.s3,
-            secretAccessKey: input.s3.secretAccessKey || undefined,
-          }),
+        ? storageService.useLocal(context.shop.id, db)
+        : storageService.useS3(
+            context.shop.id,
+            { ...input.s3, secretAccessKey: input.s3.secretAccessKey || undefined },
+            db,
+          ),
     ),
   // Upload, public load and delete of a small test file, without saving anything
   test: shopManager
@@ -29,6 +31,6 @@ export const storage = {
     .output(testResultOutput)
     .input(s3Input)
     .handler(({ input, context }) =>
-      storageService.testS3(context.shop.id, { ...input, secretAccessKey: input.secretAccessKey || undefined }),
+      storageService.testS3(context.shop.id, { ...input, secretAccessKey: input.secretAccessKey || undefined }, db),
     ),
 }

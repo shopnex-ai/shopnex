@@ -22,9 +22,9 @@ export const publicFileUrl = (config: S3Config, key: string) => `${trimSlash(con
 // S3 errors are XML: <Error><Code>AccessDenied</Code><Message>…</Message></Error>
 async function describeError(res: Response) {
   const body = await res.text().catch(() => '')
-  const code = body.match(/<Code>([^<]+)<\/Code>/)?.[1]
-  const message = body.match(/<Message>([^<]+)<\/Message>/)?.[1]
-  return [`HTTP ${res.status}`, code, message].filter(Boolean).join(': ')
+  const code = /<Code>([^<]+)<\/Code>/.exec(body)?.[1]
+  const message = /<Message>([^<]+)<\/Message>/.exec(body)?.[1]
+  return [`HTTP ${String(res.status)}`, code, message].filter(Boolean).join(': ')
 }
 
 export function s3Provider(name: string, config: S3Config, secretAccessKey: string): StorageProvider {

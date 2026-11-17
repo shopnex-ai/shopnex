@@ -1,5 +1,6 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { db } from '@shopnex/db'
 import { fileService } from '@shopnex/files'
 import { admin } from '../../orpc'
 import { pagination } from '../pagination'
@@ -13,8 +14,8 @@ export const files = {
     .input(pagination)
     .handler(async ({ input, context }) => {
       const [items, total] = await Promise.all([
-        fileService.list(context.shop.id, input),
-        fileService.count(context.shop.id),
+        fileService.list(context.shop.id, input, db),
+        fileService.count(context.shop.id, db),
       ])
       return { items, total }
     }),
@@ -23,13 +24,13 @@ export const files = {
     .route({ method: 'POST', path: '/admin/files' })
     .output(fileOutput)
     .input(z.object({ file: z.file(), alt: z.string().max(300).nullish() }))
-    .handler(({ input, context }) => fileService.upload(context.shop.id, input.file, { alt: input.alt })),
+    .handler(({ input, context }) => fileService.upload(context.shop.id, input.file, { alt: input.alt }, db)),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/files/{id}' })
     .output(fileOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      const row = await fileService.remove(context.shop.id, input.id)
+      const row = await fileService.remove(context.shop.id, input.id, db)
       if (!row) throw new ORPCError('NOT_FOUND')
       return row
     }),

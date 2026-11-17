@@ -18,6 +18,21 @@ const { decryptSecret } = await import('@shopnex/db/secrets')
 const { fileService, storageService, FilesError } = await import('../src')
 const { eq } = await import('drizzle-orm')
 
+// The services take the connection from the caller: the tests pass the shared database
+const files = {
+  upload: (shop: string, f: File, opts: { alt?: string | null } = {}) => fileService.upload(shop, f, opts, db),
+  remove: (shop: string, id: string) => fileService.remove(shop, id, db),
+  list: (shop: string, opts: { limit: number; offset: number }) => fileService.list(shop, opts, db),
+  count: (shop: string) => fileService.count(shop, db),
+}
+
+const storage = {
+  getSettings: (shop: string) => storageService.getSettings(shop, db),
+  testS3: (shop: string, input: Parameters<typeof storageService.testS3>[1]) => storageService.testS3(shop, input, db),
+  useS3: (shop: string, input: Parameters<typeof storageService.useS3>[1]) => storageService.useS3(shop, input, db),
+  useLocal: (shop: string) => storageService.useLocal(shop, db),
+}
+
 const SHOP = 'default'
 const objects = new Map<string, Buffer>()
 const fail = { put: false, get: false }
@@ -82,14 +97,14 @@ after(async () => {
 
 describe('settings', () => {
   test('a shop that never configured a bucket uses the disk', async () => {
-    assert.deepEqual(await storageService.getSettings(SHOP), { provider: 'local', s3: null })
+    assert.deepEqual(await storage.getSettings(SHOP), { provider: 'local', s3: null })
   })
 })
 
 describe('the connection test', () => {
   test('uploads, loads from the public URL and deletes, reporting each step, and leaves nothing in the bucket', async () => {
     const { secretAccessKey, ...input } = bucket()
-    const result = await storageService.testS3(SHOP, { ...input, secretAccessKey })
+    const result = await storage.testS3(SHOP, { ...input, secretAccessKey })
     assert.deepEqual(result, {
       ok: true,
       steps: [
@@ -103,7 +118,7 @@ describe('the connection test', () => {
 
   test('says which step failed: a bucket that is not public fails on the public step', async () => {
     fail.get = true
-    const result = await storageService.testS3(SHOP, bucket())
+    const result = await storage.testS3(SHOP, bucket())
     assert.equal(result.ok, false)
     assert.deepEqual(
       result.steps.map((s) => [s.step, s.ok]),
@@ -118,7 +133,7 @@ describe('the connection test', () => {
 
   test('when the upload is refused it stops there, and gives the S3 error', async () => {
     fail.put = true
-    const result = await storageService.testS3(SHOP, bucket())
+    const result = await storage.testS3(SHOP, bucket())
     assert.deepEqual(
       result.steps.map((s) => s.step),
       ['upload'],
@@ -128,7 +143,7 @@ describe('the connection test', () => {
 
   test('the first setup needs the secret access key', async () => {
     await assert.rejects(
-      storageService.testS3(SHOP, bucket('media', null)),
+      storage.testS3(SHOP, bucket('media', null)),
       (e: unknown) => e instanceof FilesError && e.code === 'SECRET_REQUIRED',
     )
   })
@@ -136,7 +151,7 @@ describe('the connection test', () => {
 
 describe('switching to a bucket', () => {
   test('activates it, keeps the secret encrypted and never returns it', async () => {
-    const settings = await storageService.useS3(SHOP, bucket())
+    const settings = await storage.useS3(SHOP, bucket())
     assert.equal(settings.provider, 's3')
     assert.equal(settings.s3?.bucket, 'media')
     assert.equal(settings.s3?.hasSecret, true)
@@ -149,9 +164,9 @@ describe('switching to a bucket', () => {
   })
 
   test('new uploads go to the bucket, with the public URL of the bucket', async () => {
-    await storageService.useS3(SHOP, bucket())
+    await storage.useS3(SHOP, bucket())
     const [row] = await rows()
-    const up = await fileService.upload(SHOP, new File([png], 'x.png'))
+    const up = await files.upload(SHOP, new File([png], 'x.png'))
     assert.equal(up.storage, row!.id)
     assert.equal(up.url, `http://127.0.0.1:${port}/media/${up.key}`)
     assert.ok(objects.has(`/media/${up.key}`))
@@ -160,38 +175,38 @@ describe('switching to a bucket', () => {
   test('a failed connection test changes nothing', async () => {
     fail.put = true
     await assert.rejects(
-      storageService.useS3(SHOP, bucket()),
+      storage.useS3(SHOP, bucket()),
       (e: unknown) =>
         e instanceof FilesError && e.code === 'STORAGE_FAILED' && /Connection test failed \(upload\)/.test(e.message),
     )
     assert.deepEqual(await rows(), [])
-    assert.equal((await storageService.getSettings(SHOP)).provider, 'local')
+    assert.equal((await storage.getSettings(SHOP)).provider, 'local')
   })
 
   test('the same bucket again (rotated keys) updates the same row; the secret can be left out to keep it', async () => {
-    await storageService.useS3(SHOP, bucket('media', 'first-secret'))
-    await storageService.useS3(SHOP, bucket('media', 'second-secret'))
+    await storage.useS3(SHOP, bucket('media', 'first-secret'))
+    await storage.useS3(SHOP, bucket('media', 'second-secret'))
     let all = await rows()
     assert.equal(all.length, 1)
     assert.equal(decryptSecret(all[0]!.secretAccessKey), 'second-secret')
-    await storageService.useS3(SHOP, bucket('media', null))
+    await storage.useS3(SHOP, bucket('media', null))
     all = await rows()
     assert.equal(all.length, 1)
     assert.equal(decryptSecret(all[0]!.secretAccessKey), 'second-secret')
   })
 
   test('another bucket is a new row and the old one stays, so files keep pointing at where they are', async () => {
-    await storageService.useS3(SHOP, bucket('first'))
+    await storage.useS3(SHOP, bucket('first'))
     const [first] = await rows()
-    const old = await fileService.upload(SHOP, new File([png], 'old.png'))
-    await storageService.useS3(SHOP, bucket('second'))
+    const old = await files.upload(SHOP, new File([png], 'old.png'))
+    await storage.useS3(SHOP, bucket('second'))
     const all = await rows()
     assert.equal(all.length, 2)
     assert.deepEqual(
       all.filter((r) => r.active).map((r) => r.config.bucket),
       ['second'],
     )
-    const listed = await fileService.list(SHOP, { limit: 10, offset: 0 }, db)
+    const listed = await files.list(SHOP, { limit: 10, offset: 0 })
     assert.equal(listed.find((f) => f.id === old.id)?.url, `http://127.0.0.1:${port}/first/${old.key}`)
     assert.equal(old.storage, first!.id)
   })
@@ -199,15 +214,15 @@ describe('switching to a bucket', () => {
 
 describe('back to the disk', () => {
   test('new uploads go to the disk again, and files already in the bucket keep working and can be removed', async () => {
-    await storageService.useS3(SHOP, bucket())
-    const inBucket = await fileService.upload(SHOP, new File([png], 'bucket.png'))
-    const settings = await storageService.useLocal(SHOP)
+    await storage.useS3(SHOP, bucket())
+    const inBucket = await files.upload(SHOP, new File([png], 'bucket.png'))
+    const settings = await storage.useLocal(SHOP)
     assert.equal(settings.provider, 'local')
     assert.equal(settings.s3?.bucket, 'media')
-    const onDisk = await fileService.upload(SHOP, new File([png], 'disk.png'))
+    const onDisk = await files.upload(SHOP, new File([png], 'disk.png'))
     assert.equal(onDisk.storage, 'local')
     assert.equal(objects.has(`/media/${inBucket.key}`), true)
-    await fileService.remove(SHOP, inBucket.id)
+    await files.remove(SHOP, inBucket.id)
     assert.equal(objects.has(`/media/${inBucket.key}`), false)
   })
 })
