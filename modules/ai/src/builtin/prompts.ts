@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { AiBuiltinProvider } from '@shopnex/db/schema'
 import type { AiCollection, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 
-export type Settings = {
+export interface Settings {
   provider: AiBuiltinProvider
   model: string
   /** How the shop sounds, applied to everything written for it */

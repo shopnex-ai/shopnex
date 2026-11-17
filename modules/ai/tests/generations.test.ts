@@ -5,7 +5,15 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
 const { db, schema, SHOP } = fx
-const { aiService } = await import('../src')
+const service = (await import('../src')).aiService
+type Capability = keyof typeof import('@shopnex/marketplace-sdk/ai').aiCapabilities
+// bindConn would lose run's generic, and with it the type of the output
+const aiService = {
+  run: <C extends Capability>(shopId: string, request: Parameters<typeof service.run<C>>[1]) =>
+    service.run(shopId, request, db),
+  feedback: (shopId: string, id: string, value: Parameters<typeof service.feedback>[2]) =>
+    service.feedback(shopId, id, value, db),
+}
 const { AiError } = await import('../src/ai.errors')
 const { eq } = await import('drizzle-orm')
 

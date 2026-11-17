@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { instanceSigner, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
-import { db, schema } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { AiFeedback } from '@shopnex/db/schema'
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import {
@@ -27,7 +27,7 @@ import * as subjects from './subjects'
 // Models are slow; staff are waiting on the other end, so not much longer than this
 const TIMEOUT_MS = 60_000
 
-export type RunInput<C extends AiCapability = AiCapability> = {
+export interface RunInput<C extends AiCapability = AiCapability> {
   capability: C
   /** The product or collection the capability is about; for page.content the page, if it exists yet */
   subjectId?: string
@@ -38,7 +38,7 @@ export type RunInput<C extends AiCapability = AiCapability> = {
   userId?: string | null
 }
 
-export type RunResult<C extends AiCapability = AiCapability> = {
+export interface RunResult<C extends AiCapability = AiCapability> {
   id: string
   capability: C
   /** BUILTIN or the app's id */
@@ -68,7 +68,7 @@ async function post(url: string, id: string, body: string) {
     signal: AbortSignal.timeout(TIMEOUT_MS),
   })
   const text = await res.text().catch(() => '')
-  if (!res.ok) throw new Error(appError(text) ?? `${res.status} ${text.slice(0, 300) || res.statusText}`)
+  if (!res.ok) throw new Error(appError(text) ?? `${String(res.status)} ${text.slice(0, 300) || res.statusText}`)
   try {
     return JSON.parse(text) as unknown
   } catch {
@@ -115,17 +115,22 @@ function clean<C extends AiCapability>(request: AiRunRequest, output: AiOutput<C
   }
 }
 
-export async function run<C extends AiCapability>(shopId: string, request: RunInput<C>): Promise<RunResult<C>> {
+export async function run<C extends AiCapability>(
+  shopId: string,
+  request: RunInput<C>,
+  conn: Conn,
+): Promise<RunResult<C>> {
   const { capability } = request
   const definition = aiCapabilities[capability]
   const input = definition.input.parse(request.input ?? {}) as AiInput<C>
 
   // Built-in AI is the default when it's on; an app is used when asked for, or when built-in AI is off
-  const [own, apps] = await Promise.all([builtin.active(shopId), providers(shopId, [capability])])
+  const [own, apps] = await Promise.all([builtin.active(shopId, conn), providers(shopId, [capability], conn)])
   const wanted = request.providerId
   const app = wanted && wanted !== BUILTIN ? apps.find((p) => p.app.id === wanted) : own ? undefined : apps[0]
-  const useBuiltin = !app && own && (!wanted || wanted === BUILTIN)
-  if (!app && !useBuiltin) {
+  const builtinAi = !app && own && (!wanted || wanted === BUILTIN) ? own : null
+  const via = app ? ({ kind: 'app', app } as const) : builtinAi ? ({ kind: 'builtin', own: builtinAi } as const) : null
+  if (!via) {
     throw new AiError(
       'CAPABILITY_UNAVAILABLE',
       wanted
@@ -133,9 +138,10 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
         : `Nothing provides ${capability} yet. Turn on AI in Settings → AI.`,
     )
   }
-  const provider = app ? { id: app.app.id, name: app.app.name } : { id: BUILTIN, name: own!.name }
+  const provider =
+    via.kind === 'app' ? { id: via.app.app.id, name: via.app.app.name } : { id: BUILTIN, name: via.own.name }
 
-  const [shopRow] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [shopRow] = await conn.select().from(schema.shops).where(eq(schema.shops.id, shopId))
   if (!shopRow) throw new AiError('SUBJECT_NOT_FOUND', 'Shop not found')
   const shop = await withStorefrontUrl(shopRow)
   const needSubject = () => {
@@ -146,8 +152,8 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
     definition.subject === 'product'
       ? { type: 'product', product: await subjects.product(shopId, needSubject(), shop.currency) }
       : definition.subject === 'collection'
-        ? { type: 'collection', collection: await subjects.collection(shopId, needSubject()) }
-        : { type: 'page', page: await subjects.page(shopId, request.subjectId) }
+        ? { type: 'collection', collection: await subjects.collection(shopId, needSubject(), conn) }
+        : { type: 'page', page: await subjects.page(shopId, request.subjectId, conn) }
   // Only what the capability needs: the catalog is shared with those that organize or write about the shop
   const withCatalog = capability === 'product.classify' || capability === 'page.content'
 
@@ -164,7 +170,7 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
       name: shop.name,
       currency: shop.currency,
       storefrontUrl: shop.storefrontUrl,
-      ...(withCatalog && { catalog: await subjects.catalog(shopId) }),
+      ...(withCatalog && { catalog: await subjects.catalog(shopId, conn) }),
     },
     subject,
   } as AiRunRequest
@@ -182,9 +188,8 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
   const started = Date.now()
   let result: { output: AiOutput<C>; usage?: AiUsage }
   try {
-    const answer = app
-      ? await post(app.url, id, JSON.stringify(runRequest))
-      : await own!.run(runRequest as AiRunRequest)
+    const answer =
+      via.kind === 'app' ? await post(via.app.url, id, JSON.stringify(runRequest)) : await via.own.run(runRequest)
     const parsed = aiRunResponse(capability).safeParse(answer)
     if (!parsed.success) {
       throw new Error(`The answer doesn't match ${capability}: ${parsed.error.issues[0]?.message ?? ''}`)
@@ -192,14 +197,14 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
     result = parsed.data as typeof result
   } catch (error) {
     const errorMessage = message(error).slice(0, 500)
-    await db
+    await conn
       .insert(schema.aiGenerations)
       .values({ ...record, status: 'failed', errorMessage, durationMs: Date.now() - started })
     throw new AiError('PROVIDER_FAILED', `${provider.name} couldn't do this: ${errorMessage}`)
   }
 
   const output = clean<C>(runRequest, result.output)
-  await db.insert(schema.aiGenerations).values({
+  await conn.insert(schema.aiGenerations).values({
     ...record,
     status: 'succeeded',
     output,
@@ -210,8 +215,8 @@ export async function run<C extends AiCapability>(shopId: string, request: RunIn
 }
 
 /** Staff used the suggestion or dismissed it */
-export async function feedback(shopId: string, id: string, value: AiFeedback) {
-  const [row] = await db
+export async function feedback(shopId: string, id: string, value: AiFeedback, conn: Conn) {
+  const [row] = await conn
     .update(schema.aiGenerations)
     .set({ feedback: value })
     .where(

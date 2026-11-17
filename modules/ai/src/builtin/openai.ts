@@ -28,7 +28,7 @@ function explain(error: unknown, model: string): never {
     throw new GenerationError('OpenAI took too long to answer. Try again.')
   }
   if (error instanceof OpenAI.APIError) {
-    throw new GenerationError(`OpenAI API error${error.status ? ` ${error.status}` : ''}: ${error.message}`)
+    throw new GenerationError(`OpenAI API error${error.status ? ` ${String(error.status)}` : ''}: ${error.message}`)
   }
   throw error
 }

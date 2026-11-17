@@ -2,7 +2,7 @@
 // provider. Only what the copy needs, nothing about orders or customers.
 import { and, asc, count, desc, eq, sql } from 'drizzle-orm'
 import { htmlToText, productService, type ProductWithDetails } from '@shopnex/catalog'
-import { db, schema } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { AiCollection, AiPage, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { AiError } from './ai.errors'
 
@@ -34,17 +34,18 @@ export async function product(shopId: string, id: string, currency: string): Pro
   const row = await productService.getById(shopId, id)
   if (!row) throw new AiError('SUBJECT_NOT_FOUND', 'Product not found')
   const [details] = await productService.withDetails([row])
-  return toAiProduct(details!, currency)
+  if (!details) throw new AiError('SUBJECT_NOT_FOUND', 'Product not found')
+  return toAiProduct(details, currency)
 }
 
-export async function collection(shopId: string, id: string): Promise<AiCollection> {
-  const [row] = await db
+export async function collection(shopId: string, id: string, conn: Conn): Promise<AiCollection> {
+  const [row] = await conn
     .select()
     .from(schema.collections)
     .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
   if (!row) throw new AiError('SUBJECT_NOT_FOUND', 'Collection not found')
   const [members, [total]] = await Promise.all([
-    db
+    conn
       .select({
         title: schema.products.title,
         productType: schema.products.productType,
@@ -55,7 +56,7 @@ export async function collection(shopId: string, id: string): Promise<AiCollecti
       .where(eq(schema.productCollections.collectionId, id))
       .orderBy(asc(schema.productCollections.position))
       .limit(MAX_COLLECTION_PRODUCTS),
-    db.select({ n: count() }).from(schema.productCollections).where(eq(schema.productCollections.collectionId, id)),
+    conn.select({ n: count() }).from(schema.productCollections).where(eq(schema.productCollections.collectionId, id)),
   ])
   return {
     id: row.id,
@@ -69,9 +70,9 @@ export async function collection(shopId: string, id: string): Promise<AiCollecti
 }
 
 /** null when no page is given: the page is still being written */
-export async function page(shopId: string, id: string | undefined): Promise<AiPage | null> {
+export async function page(shopId: string, id: string | undefined, conn: Conn): Promise<AiPage | null> {
   if (!id) return null
-  const [row] = await db
+  const [row] = await conn
     .select()
     .from(schema.pages)
     .where(and(eq(schema.pages.shopId, shopId), eq(schema.pages.id, id)))
@@ -80,30 +81,30 @@ export async function page(shopId: string, id: string | undefined): Promise<AiPa
 }
 
 /** What the shop sells: its collections, the product types and tags in use (most used first), a sample of products */
-export async function catalog(shopId: string): Promise<NonNullable<AiRunRequest['shop']['catalog']>> {
+export async function catalog(shopId: string, conn: Conn): Promise<NonNullable<AiRunRequest['shop']['catalog']>> {
   const mine = eq(schema.products.shopId, shopId)
   const [collections, types, tags, products] = await Promise.all([
-    db
+    conn
       .select({ handle: schema.collections.slug, title: schema.collections.title })
       .from(schema.collections)
       .where(eq(schema.collections.shopId, shopId))
       .orderBy(asc(schema.collections.createdAt))
       .limit(CATALOG_LISTED),
-    db
+    conn
       .select({ value: schema.products.productType, n: count() })
       .from(schema.products)
       .where(and(mine, sql`${schema.products.productType} <> ''`))
       .groupBy(schema.products.productType)
       .orderBy(desc(count()))
       .limit(CATALOG_LISTED),
-    db
+    conn
       .select({ value: sql<string>`unnest(${schema.products.tags})`, n: count() })
       .from(schema.products)
       .where(mine)
       .groupBy(sql`1`)
       .orderBy(desc(count()))
       .limit(CATALOG_LISTED),
-    db
+    conn
       .select({ title: schema.products.title, productType: schema.products.productType })
       .from(schema.products)
       .where(and(mine, eq(schema.products.status, 'active')))

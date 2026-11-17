@@ -26,7 +26,7 @@ function explain(error: unknown, model: string): never {
     throw new GenerationError('Claude took too long to answer. Try again.')
   }
   if (error instanceof Anthropic.APIError) {
-    throw new GenerationError(`Anthropic API error${error.status ? ` ${error.status}` : ''}: ${error.message}`)
+    throw new GenerationError(`Anthropic API error${error.status ? ` ${String(error.status)}` : ''}: ${error.message}`)
   }
   throw error
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- request bodies are whatever the capability sends; the tests read them loosely */
 // What the ai tests share: the embedded database, and a fake AI app on localhost that records what ShopNex sends it and answers the
 // way a test says. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { createServer, type Server } from 'node:http'

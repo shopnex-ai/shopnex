@@ -2,7 +2,7 @@
 // register the ones they provide (like payments apps register their method), when their own setup decides.
 // Uninstalling an app removes them (see appService.uninstall).
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import { AI_CAPABILITIES, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import * as builtin from './builtin'
 import { AiError } from './ai.errors'
@@ -10,7 +10,7 @@ import { AiError } from './ai.errors'
 /** The provider id of built-in AI (apps go by their app id) */
 export const BUILTIN = 'builtin'
 
-export type ConfigureInput = {
+export interface ConfigureInput {
   /** Capability → the URL that receives its signed AiRunRequests. Capabilities left out are removed. */
   capabilities: Partial<Record<AiCapability, string>>
 }
@@ -28,18 +28,18 @@ const origin = (url: string) => {
  * Replaces what the app provides in this shop. URLs must be on the app's own origin (its registered app URL),
  * so an app can't point ShopNex at someone else's server.
  */
-export async function configure(shopId: string, appId: string, input: ConfigureInput) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
+export async function configure(shopId: string, appId: string, input: ConfigureInput, conn: Conn) {
+  const [app] = await conn.select().from(schema.apps).where(eq(schema.apps.id, appId))
   if (!app) throw new AiError('NOT_AN_AI_APP', 'Only an installed app can provide AI capabilities')
   const appOrigin = origin(app.appUrl)
   const entries = Object.entries(input.capabilities).filter((e): e is [AiCapability, string] => Boolean(e[1]))
   for (const [, url] of entries) {
     if (!appOrigin || origin(url) !== appOrigin) {
-      throw new AiError('INVALID_PROVIDER_URL', `Capability URLs must be on the app's origin (${appOrigin})`)
+      throw new AiError('INVALID_PROVIDER_URL', `Capability URLs must be on the app's origin (${String(appOrigin)})`)
     }
   }
   const own = and(eq(schema.aiProviders.shopId, shopId), eq(schema.aiProviders.appId, appId))
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     const names = entries.map(([capability]) => capability)
     await tx
       .delete(schema.aiProviders)
@@ -58,8 +58,9 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
 }
 
 /** Providers of apps still installed in the shop, oldest first (the first one is the default) */
-export async function providers(shopId: string, capabilities: readonly string[] = AI_CAPABILITIES) {
-  return db
+export async function providers(shopId: string, capabilities: readonly string[] | undefined, conn: Conn) {
+  capabilities ??= AI_CAPABILITIES
+  return conn
     .select({
       capability: schema.aiProviders.capability,
       url: schema.aiProviders.url,
@@ -80,8 +81,8 @@ export async function providers(shopId: string, capabilities: readonly string[] 
 }
 
 /** What staff can use in this shop: each available capability with who provides it, the default first */
-export async function available(shopId: string) {
-  const [own, rows] = await Promise.all([builtin.active(shopId), providers(shopId)])
+export async function available(shopId: string, conn: Conn) {
+  const [own, rows] = await Promise.all([builtin.active(shopId, conn), providers(shopId, undefined, conn)])
   const builtIn = own ? [{ id: BUILTIN, name: own.name, iconUrl: null }] : []
   return AI_CAPABILITIES.flatMap((capability) => {
     const list = [...builtIn, ...rows.filter((r) => r.capability === capability).map((r) => r.app)]

@@ -5,7 +5,8 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
 const { db, schema, SHOP } = fx
-const { aiSettingsService } = await import('../src')
+const { bindConn } = await import('@shopnex/kit')
+const aiSettingsService = bindConn((await import('../src')).aiSettingsService, db)
 const { AiError } = await import('../src/ai.errors')
 const { decryptSecret, encryptSecret } = await import('@shopnex/db/secrets')
 const { eq } = await import('drizzle-orm')

@@ -4,7 +4,9 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
 const { db, schema, SHOP } = fx
-const { aiProviderService } = await import('../src')
+const { bindConn } = await import('@shopnex/kit')
+const aiProviderService = bindConn((await import('../src')).aiProviderService, db)
+const { BUILTIN } = await import('../src')
 const { AiError } = await import('../src/ai.errors')
 const { encryptSecret } = await import('@shopnex/db/secrets')
 const { eq } = await import('drizzle-orm')
@@ -91,7 +93,7 @@ describe('providers: apps still installed', () => {
     const first = await fx.aiApp({ name: 'First', capabilities: ['product.seo'] })
     await fx.aiApp({ name: 'Gone', installed: false, capabilities: ['product.seo'] })
     const second = await fx.aiApp({ name: 'Second', capabilities: ['product.seo'] })
-    const rows = await aiProviderService.providers(SHOP)
+    const rows = await aiProviderService.providers(SHOP, undefined)
     assert.deepEqual(
       rows.map((r) => r.app.id),
       [first.id, second.id],
@@ -137,7 +139,7 @@ describe('available: what staff can use', () => {
     assert.deepEqual(
       seo.providers.map((p) => [p.id, p.name]),
       [
-        [aiProviderService.BUILTIN, 'Claude'],
+        [BUILTIN, 'Claude'],
         [seo.providers[1]!.id, 'Writer'],
       ],
     )
