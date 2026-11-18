@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { productCollections } from '../src/catalog.schema'
 
 const { db, schema, eq, productService, collectionService, CatalogError, SHOP, OTHER_SHOP } = fx
 const refused = (code: string) => (e: unknown) => e instanceof CatalogError && e.code === code
@@ -137,8 +138,7 @@ describe('deleting collections', () => {
     assert.equal((await collectionService.remove(SHOP, c.id))?.id, c.id)
     assert.ok(await productService.getById(SHOP, p.id), 'the product stays')
     assert.equal(
-      (await db.select().from(schema.productCollections).where(eq(schema.productCollections.collectionId, c.id)))
-        .length,
+      (await db.select().from(productCollections).where(eq(productCollections.collectionId, c.id))).length,
       0,
     )
     assert.deepEqual(await collectionService.list(SHOP, { ...page, channelId: ch.id }), [])
@@ -212,7 +212,7 @@ describe('the products in a collection', () => {
       collectionService.removeProduct(SHOP, theirs.id, theirProduct.id),
       refused('COLLECTION_NOT_FOUND'),
     )
-    assert.equal((await db.select().from(schema.productCollections)).length, 0)
+    assert.equal((await db.select().from(productCollections)).length, 0)
   })
 
   test('productCounts says how many each collection has, for the shop’s own collections only', async () => {

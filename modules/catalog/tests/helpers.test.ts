@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { collections } from '../src/catalog.schema'
 
 const { productService, collectionService, SHOP, OTHER_SHOP } = fx
 const { slugify, SLUG_PATTERN, sanitizeHtml, htmlToText, escapeHtml } = await import('../src')
@@ -50,9 +51,9 @@ describe('finding a free slug', () => {
     assert.equal(await isSlugTaken(db, schema.products, SHOP, 'shirt'), true)
     assert.equal(await isSlugTaken(db, schema.products, SHOP, 'shirt', p.id), false)
     assert.equal(await isSlugTaken(db, schema.products, OTHER_SHOP, 'shirt'), false)
-    assert.equal(await isSlugTaken(db, schema.collections, SHOP, 'shirt'), false)
+    assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), false)
     await collectionService.create(SHOP, { title: 'Shirt' })
-    assert.equal(await isSlugTaken(db, schema.collections, SHOP, 'shirt'), true)
+    assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), true)
   })
 })
 

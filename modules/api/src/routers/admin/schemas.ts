@@ -16,8 +16,19 @@ export {
   staffInviteInput,
   staffRole,
 } from '@shopnex/tenancy/contract'
-export { channelInput, storefrontKeyInput } from '@shopnex/channels/contract'
+export { channelInput, publicationsInput, storefrontKeyInput } from '@shopnex/channels/contract'
 export { appInput, marketplaceConnectInput } from '@shopnex/apps/contract'
+export {
+  collectionInput,
+  imageInput,
+  imageUrl,
+  optionInput,
+  productFields,
+  seoInput,
+  slug,
+  variantInput,
+  variantsInput,
+} from '@shopnex/catalog/contract'
 export { menuInput, pageInput } from '@shopnex/content/contract'
 export { MENU_ITEM_TYPES, MENU_MAX_DEPTH, type MenuItemType, type StoredMenuItem } from '@shopnex/content/schema'
 export { aiAppConfigureInput, aiRunInput, aiSettingsInput } from '@shopnex/ai/contract'
@@ -30,15 +41,7 @@ export {
 } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
 import {
-  PRODUCT_STATUSES,
-  SLUG_PATTERN,
-  collections,
   customers,
-  productImages,
-  productOptionValues,
-  productOptions,
-  productVariants,
-  products,
   CANCEL_REASONS,
   shippingRates,
   CHANNEL_TYPES,
@@ -50,94 +53,7 @@ import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, shops } from '@shopnex/core/schema'
 
-export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
-
-// Absolute http(s) URLs only: external images, or uploads (admin.files.upload returns their URL)
-export const imageUrl = z.url({ protocol: /^https?$/ })
-
 const nonNegative = (s: z.ZodNumber) => s.nonnegative()
-const html = (s: z.ZodString) => s.max(100_000)
-
-export const imageInput = createInsertSchema(productImages, {
-  url: () => imageUrl,
-  alt: (s) => s.max(300),
-}).pick({ url: true, alt: true })
-
-const optionValue = createInsertSchema(productOptionValues, { value: (s) => s.min(1).max(60) }).shape.value
-
-export const optionInput = createInsertSchema(productOptions, { name: (s) => s.min(1).max(60) })
-  .pick({ name: true })
-  .extend({ values: z.array(optionValue).min(1).max(100) })
-
-const variantColumns = createInsertSchema(productVariants, {
-  sku: (s) => s.max(100),
-  priceCents: nonNegative,
-  compareAtPriceCents: nonNegative,
-  inventoryQuantity: nonNegative,
-  imageUrl: () => imageUrl,
-})
-
-export const variantInput = variantColumns
-  .pick({ sku: true, priceCents: true, compareAtPriceCents: true, inventoryQuantity: true, imageUrl: true })
-  // option name → value; omit for a product without options
-  .extend({ options: z.record(z.string(), z.string()).optional() })
-
-const productColumns = createInsertSchema(products, {
-  title: (s) => s.min(1),
-  // Only active products are visible to storefronts
-  status: () => z.enum(PRODUCT_STATUSES),
-  // Sanitized on save
-  descriptionHtml: html,
-  vendor: (s) => s.max(200),
-  fulfilledBy: () => z.string().trim().min(1).max(100).nullable().optional(),
-  productType: (s) => s.max(200),
-  tags: () => z.array(z.string().max(100)).max(250),
-  seoTitle: (s) => s.max(200),
-  seoDescription: (s) => s.max(500),
-  // Omit to derive from the title
-  slug: () => slug,
-})
-
-export const seoInput = z.object({
-  title: productColumns.shape.seoTitle,
-  description: productColumns.shape.seoDescription,
-})
-
-export const productFields = productColumns
-  .pick({
-    title: true,
-    status: true,
-    description: true,
-    descriptionHtml: true,
-    vendor: true,
-    fulfilledBy: true,
-    productType: true,
-    tags: true,
-    slug: true,
-  })
-  .partial({ slug: true })
-  .extend({
-    seo: seoInput.optional(),
-    customFields: customFieldUpdates.optional(),
-    // Simple product: one default variant at this price. With variants: options + variants (each with its own price).
-    priceCents: variantColumns.shape.priceCents.optional(),
-    images: z.array(imageInput).max(20).optional(),
-  })
-
-export const variantsInput = z.object({
-  options: z.array(optionInput).max(10),
-  variants: z.array(variantInput).min(1).max(1000),
-})
-
-export const collectionInput = createInsertSchema(collections, {
-  title: (s) => s.min(1),
-  descriptionHtml: html,
-  imageUrl: () => imageUrl,
-  slug: () => slug,
-})
-  .pick({ title: true, slug: true, description: true, descriptionHtml: true, imageUrl: true })
-  .partial({ slug: true })
-  .extend({ seo: seoInput.optional() })
 
 export const customerInput = createInsertSchema(customers, {
   email: () => z.email(),
@@ -146,15 +62,6 @@ export const customerInput = createInsertSchema(customers, {
 })
   .pick({ email: true, name: true, phone: true })
   .extend({ customFields: customFieldUpdates.optional() })
-
-// Where a product or collection is published: the full list (channels left out are unpublished). A date in the
-// future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
-export const publicationsInput = z.object({
-  publications: z
-    .array(z.object({ channelId: z.uuid(), publishAt: z.coerce.date().nullish() }))
-    .max(50)
-    .refine((list) => new Set(list.map((p) => p.channelId)).size === list.length, 'Each channel once'),
-})
 
 export { API_SCOPES, type ApiScope } from '@shopnex/core/schema'
 

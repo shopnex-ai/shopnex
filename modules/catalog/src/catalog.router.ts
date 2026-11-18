@@ -1,27 +1,54 @@
 import { ORPCError } from '@orpc/server'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { publicationService } from '@shopnex/channels'
-import { productService, seedSampleProducts, variantService } from '@shopnex/catalog'
+import { publicationsInput, publicationsOutput } from '@shopnex/channels/contract'
+import { apps } from '@shopnex/core/schema'
 import { customFieldService } from '@shopnex/custom-fields'
 import { db } from '@shopnex/db'
-import { appService } from '@shopnex/apps'
-import { scoped } from '../../orpc'
-import { pagination } from '../pagination'
-import { optionInput, productFields, publicationsInput, variantInput, variantsInput } from './schemas'
-import { countOutput, productListOutput, productOutput, publicationsOutput, variantRowOutput } from './outputs'
+import { createProcedures, pagination } from '@shopnex/rpc'
+import {
+  collectionDetailOutput,
+  collectionInput,
+  collectionOutput,
+  collectionProductOutput,
+  countOutput,
+  okOutput,
+  optionInput,
+  productFields,
+  productListOutput,
+  productOutput,
+  variantInput,
+  variantRowOutput,
+  variantsInput,
+} from './catalog.contract'
+import * as collectionService from './collections'
+import * as productService from './products'
+import { seedSampleProducts } from './sample'
+import * as variantService from './variants'
 
+const { scoped } = createProcedures()
 const read = scoped('read_products')
 const write = scoped('write_products')
 const readPublications = scoped('read_publications')
 const writePublications = scoped('write_publications')
 
+const id = z.object({ id: z.uuid() })
+const membership = z.object({ id: z.uuid(), productId: z.uuid() })
+
 /**
  * `fulfilledBy` says which app ships a product, and carrier apps trust it, so an app can only claim products for
  * itself. Anyone with write access can clear it (null: the shop ships it); staff can't name an app.
  */
+// The client id apps call themselves by (the same one-row read apps' own service has; `apps` is a core table)
+async function clientIdOf(appId: string) {
+  const [app] = await db.select({ clientId: apps.clientId }).from(apps).where(eq(apps.id, appId))
+  return app?.clientId ?? null
+}
+
 async function checkFulfilledBy(token: { appId?: string | null } | null | undefined, value: string | null | undefined) {
   if (!value) return
-  const mine = token?.appId ? await appService.clientIdOf(token.appId) : null
+  const mine = token?.appId ? await clientIdOf(token.appId) : null
   if (mine !== value) {
     throw new ORPCError('FORBIDDEN', { message: 'fulfilledBy can only be set to the calling app itself' })
   }
@@ -153,5 +180,114 @@ export const products = {
       const variant = await variantService.update(context.shop.id, variantId, patch)
       if (!variant) throw new ORPCError('NOT_FOUND')
       return variant
+    }),
+}
+
+type CollectionRow = NonNullable<Awaited<ReturnType<typeof collectionService.getById>>>
+
+// A collection with its product count and the channels it is published on
+async function withExtras(shopId: string, rows: CollectionRow[]) {
+  const ids = rows.map((r) => r.id)
+  const counts = await collectionService.productCounts(shopId, ids)
+  const publications = await publicationService.listFor(shopId, 'collection', ids, db)
+  return rows.map((r) => ({
+    ...r,
+    productCount: counts.get(r.id) ?? 0,
+    publications: publications.get(r.id) ?? [],
+  }))
+}
+
+export const collections = {
+  list: read
+    .route({ method: 'GET', path: '/admin/collections' })
+    .output(z.array(collectionDetailOutput))
+    .input(pagination)
+    .handler(async ({ input, context }) =>
+      withExtras(context.shop.id, await collectionService.list(context.shop.id, input)),
+    ),
+
+  get: read
+    .route({ method: 'GET', path: '/admin/collections/{id}' })
+    .output(collectionDetailOutput)
+    .input(id)
+    .handler(async ({ input, context }) => {
+      const row = await collectionService.getById(context.shop.id, input.id)
+      if (!row) throw new ORPCError('NOT_FOUND')
+      return (await withExtras(context.shop.id, [row]))[0]!
+    }),
+
+  publications: readPublications
+    .route({ method: 'GET', path: '/admin/collections/{id}/publications' })
+    .output(publicationsOutput)
+    .input(id)
+    .handler(async ({ input, context }) => {
+      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
+    }),
+
+  // Publishes the collection on exactly these channels
+  setPublications: writePublications
+    .route({ method: 'PUT', path: '/admin/collections/{id}/publications' })
+    .output(publicationsOutput)
+    .input(publicationsInput.extend(id.shape))
+    .handler(async ({ input, context }) => {
+      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      await publicationService.set(context.shop.id, 'collection', input.id, input.publications, db)
+      return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
+    }),
+
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/collections/bulk' })
+    .output(countOutput)
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => collectionService.removeMany(context.shop.id, input.ids)),
+
+  update: write
+    .route({ method: 'PATCH', path: '/admin/collections/{id}' })
+    .output(collectionOutput)
+    .input(collectionInput.partial().extend({ id: z.uuid() }))
+    .handler(async ({ input: { id, ...patch }, context }) => {
+      const row = await collectionService.update(context.shop.id, id, patch)
+      if (!row) throw new ORPCError('NOT_FOUND')
+      return row
+    }),
+
+  delete: write
+    .route({ method: 'DELETE', path: '/admin/collections/{id}' })
+    .output(okOutput)
+    .input(id)
+    .handler(async ({ input, context }) => {
+      if (!(await collectionService.remove(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      return { ok: true }
+    }),
+
+  products: read
+    .route({ method: 'GET', path: '/admin/collections/{id}/products' })
+    .output(z.array(collectionProductOutput))
+    .input(id)
+    .handler(({ input, context }) => collectionService.listProducts(context.shop.id, input.id)),
+
+  create: write
+    .route({ method: 'POST', path: '/admin/collections' })
+    .output(collectionOutput)
+    .input(collectionInput)
+    .handler(({ input, context }) => collectionService.create(context.shop.id, input)),
+
+  addProduct: write
+    .route({ method: 'POST', path: '/admin/collections/{id}/products' })
+    .output(okOutput)
+    .input(membership)
+    .handler(async ({ input, context }) => {
+      await collectionService.addProduct(context.shop.id, input.id, input.productId)
+      return { ok: true }
+    }),
+
+  removeProduct: write
+    .route({ method: 'DELETE', path: '/admin/collections/{id}/products/{productId}' })
+    .output(okOutput)
+    .input(membership)
+    .handler(async ({ input, context }) => {
+      await collectionService.removeProduct(context.shop.id, input.id, input.productId)
+      return { ok: true }
     }),
 }

@@ -21,12 +21,13 @@ import {
 } from 'drizzle-orm'
 import { publicationService, type PublicationInput } from '@shopnex/channels'
 import { all, db, schema, type Conn } from '@shopnex/db'
-import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
+import type { Product, ProductStatus } from '@shopnex/db/schema'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
+import { collections, productCollections, productImages, type ProductImage } from './catalog.schema'
 import {
   applyVariants,
   listByProduct,
@@ -80,16 +81,16 @@ export async function withDetails(rows: Product[], conn: Conn = db): Promise<Pro
     () =>
       conn
         .select()
-        .from(schema.productImages)
-        .where(inArray(schema.productImages.productId, ids))
-        .orderBy(asc(schema.productImages.position)),
+        .from(productImages)
+        .where(inArray(productImages.productId, ids))
+        .orderBy(asc(productImages.position)),
     () =>
       conn
-        .select({ productId: schema.productCollections.productId, slug: schema.collections.slug })
-        .from(schema.productCollections)
-        .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
-        .where(inArray(schema.productCollections.productId, ids))
-        .orderBy(asc(schema.collections.createdAt)),
+        .select({ productId: productCollections.productId, slug: collections.slug })
+        .from(productCollections)
+        .innerJoin(collections, eq(collections.id, productCollections.collectionId))
+        .where(inArray(productCollections.productId, ids))
+        .orderBy(asc(collections.createdAt)),
     () => loadForProducts(ids, conn),
   ])
   return rows.map((r) => ({
@@ -132,7 +133,7 @@ export type ListOptions = {
 }
 
 function ordering(opts: ListOptions): SQL[] {
-  const { products, productCollections } = schema
+  const { products } = schema
   const dir = (col: Parameters<typeof asc>[0], descending: boolean) => (descending ? desc(col) : asc(col))
   if (!opts.sortKey) {
     return opts.collection
@@ -185,7 +186,7 @@ function filters(shopId: string, opts: FilterOptions) {
   return and(
     eq(products.shopId, shopId),
     opts.status ? eq(products.status, opts.status) : undefined,
-    opts.collection ? eq(schema.collections.slug, opts.collection) : undefined,
+    opts.collection ? eq(collections.slug, opts.collection) : undefined,
     opts.channelId ? publicationService.liveOn('product', opts.channelId, products.id) : undefined,
     term
       ? or(
@@ -220,8 +221,8 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
     const rows = await conn
       .select({ product: schema.products })
       .from(schema.products)
-      .innerJoin(schema.productCollections, eq(schema.productCollections.productId, schema.products.id))
-      .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+      .innerJoin(productCollections, eq(productCollections.productId, schema.products.id))
+      .innerJoin(collections, eq(collections.id, productCollections.collectionId))
       .where(where)
       .orderBy(...ordering(opts))
       .limit(opts.limit)
@@ -242,8 +243,8 @@ export async function count(shopId: string, opts: FilterOptions, conn: Conn = db
   const query = conn.select({ total: sqlCount() }).from(schema.products)
   const [row] = await (opts.collection
     ? query
-        .innerJoin(schema.productCollections, eq(schema.productCollections.productId, schema.products.id))
-        .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+        .innerJoin(productCollections, eq(productCollections.productId, schema.products.id))
+        .innerJoin(collections, eq(collections.id, productCollections.collectionId))
         .where(filters(shopId, opts))
     : query.where(filters(shopId, opts)))
   return row?.total ?? 0
@@ -279,8 +280,8 @@ export async function facets(shopId: string, opts: FilterOptions, conn: Conn = d
   const rows = await (
     opts.collection
       ? base
-          .innerJoin(schema.productCollections, eq(schema.productCollections.productId, products.id))
-          .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+          .innerJoin(productCollections, eq(productCollections.productId, products.id))
+          .innerJoin(collections, eq(collections.id, productCollections.collectionId))
           .where(where)
       : base.where(where)
   ).limit(FACET_SCAN_LIMIT)
@@ -361,10 +362,10 @@ function contentColumns(input: Partial<ProductInput>) {
 }
 
 async function replaceImages(conn: Conn, productId: string, images: ImageInput[]) {
-  await conn.delete(schema.productImages).where(eq(schema.productImages.productId, productId))
+  await conn.delete(productImages).where(eq(productImages.productId, productId))
   if (images.length) {
     await conn
-      .insert(schema.productImages)
+      .insert(productImages)
       .values(images.map((img, position) => ({ productId, url: img.url, alt: img.alt ?? null, position })))
   }
 }
@@ -376,6 +377,8 @@ export async function create(shopId: string, input: ProductInput) {
   if (input.variants !== undefined && input.priceCents !== undefined) {
     throw new CatalogError('HAS_VARIANTS', 'Price lives on variants: pass priceCents on each variant instead')
   }
+  // Without this, Math.min() of nothing is Infinity below and Postgres refuses it with a message no one can read
+  if (input.variants?.length === 0) throw new CatalogError('INVALID_VARIANTS', 'A product needs at least one variant')
   return db.transaction(async (tx) => {
     let slug: string
     if (input.slug) {

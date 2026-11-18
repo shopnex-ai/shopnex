@@ -790,9 +790,15 @@ importers:
 
   modules/catalog:
     dependencies:
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../channels
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
       '@shopnex/custom-fields':
         specifier: workspace:*
         version: link:../custom-fields
@@ -802,19 +808,25 @@ importers:
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
       '@shopnex/webhooks':
         specifier: workspace:*
         version: link:../webhooks
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(zod@4.6.7)
       sanitize-html:
         specifier: ^2.18.1
         version: 2.18.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
-      '@shopnex/core':
-        specifier: workspace:*
-        version: link:../core
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
@@ -1034,6 +1046,9 @@ importers:
 
   modules/email:
     dependencies:
+      '@shopnex/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@shopnex/core':
         specifier: workspace:*
         version: link:../core

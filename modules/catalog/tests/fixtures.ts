@@ -1,4 +1,5 @@
 import { shops as shopsTable } from '@shopnex/core/schema'
+import { collections } from '../src/catalog.schema'
 // What the catalog tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 process.env.DATABASE_URL = 'pglite:memory'
@@ -58,7 +59,7 @@ export async function deliveries(endpointId: string) {
 export async function cleanup() {
   const shops = [SHOP, OTHER_SHOP]
   await db.delete(schema.products).where(inArray(schema.products.shopId, shops))
-  await db.delete(schema.collections).where(inArray(schema.collections.shopId, shops))
+  await db.delete(collections).where(inArray(collections.shopId, shops))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, shops))
   if (madeChannels.length) await db.delete(schema.channels).where(inArray(schema.channels.id, madeChannels))
   madeChannels.length = 0

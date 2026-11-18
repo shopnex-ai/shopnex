@@ -18,7 +18,7 @@ export {
   shopOutput,
   staffListOutput,
 } from '@shopnex/tenancy/contract'
-export { channelOutput, storefrontKeyOutput } from '@shopnex/channels/contract'
+export { channelOutput, publicationsOutput, storefrontKeyOutput } from '@shopnex/channels/contract'
 export {
   appCatalogOutput,
   appDataItemOutput,
@@ -32,6 +32,14 @@ export {
   marketplaceConnectionOutput,
   sessionTokenOutput,
 } from '@shopnex/apps/contract'
+export {
+  collectionDetailOutput,
+  collectionOutput,
+  collectionProductOutput,
+  productListOutput,
+  productOutput,
+  variantRowOutput,
+} from '@shopnex/catalog/contract'
 export { menuOutput, pageOutput } from '@shopnex/content/contract'
 export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
@@ -43,11 +51,9 @@ import {
   NOTIFICATIONS,
   SMTP_PRESETS,
   channels,
-  collections,
   shippingRates,
   carrierServices,
   emailDeliveries,
-  productImages,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
@@ -63,50 +69,9 @@ import {
 import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
+import { productOutput } from '@shopnex/catalog/contract'
 import { menus, pages, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, apiTokens, apps, shops } from '@shopnex/core/schema'
-
-const variantOutput = createSelectSchema(productVariants)
-  .pick({
-    id: true,
-    title: true,
-    sku: true,
-    priceCents: true,
-    compareAtPriceCents: true,
-    inventoryQuantity: true,
-    imageUrl: true,
-  })
-  .extend({
-    available: z.boolean(),
-    /** option name → value */
-    options: z.record(z.string(), z.string()),
-    /** The same, as an array in option order */
-    selectedOptions: z.array(z.object({ name: z.string(), value: z.string() })),
-  })
-
-const optionOutput = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  values: z.array(z.string()),
-  optionValues: z.array(z.object({ id: z.uuid(), name: z.string(), firstSelectableVariantId: z.uuid().nullable() })),
-})
-
-export const productOutput = createSelectSchema(products, {
-  status: z.enum(PRODUCT_STATUSES),
-  customFields: customFieldValues,
-}).extend({
-  images: z.array(createSelectSchema(productImages).pick({ id: true, url: true, alt: true })),
-  collectionSlugs: z.array(z.string()),
-  options: z.array(optionOutput),
-  variants: z.array(variantOutput),
-})
-
-export const productListOutput = z.object({
-  items: z.array(
-    productOutput.extend({ publications: z.array(z.object({ channelId: z.uuid(), publishedAt: z.date() })) }),
-  ),
-  total: z.number().int(),
-})
 
 export const orderOutput = createSelectSchema(orders, {
   financialStatus: z.enum(FINANCIAL_STATUSES),
@@ -141,21 +106,10 @@ export const okOutput = z.object({ ok: z.boolean() })
 export const countOutput = z.number().int()
 
 const scopes = z.array(z.enum(API_SCOPES))
-const publications = z.array(z.object({ channelId: z.uuid(), publishedAt: z.date() }))
-export const publicationsOutput = publications
 
 // Channels, checkout settings
 export const shippingRateOutput = createSelectSchema(shippingRates)
 
-// Catalog
-export const collectionOutput = createSelectSchema(collections)
-export const collectionDetailOutput = collectionOutput.extend({ productCount: z.number().int(), publications })
-export const collectionProductOutput = createSelectSchema(products, { status: z.enum(PRODUCT_STATUSES) }).pick({
-  id: true,
-  title: true,
-  status: true,
-})
-export const variantRowOutput = createSelectSchema(productVariants).extend({ available: z.boolean() })
 export const customerOutput = createSelectSchema(customers, { customFields: customFieldValues })
 
 // What the shop holds about one customer (Privacy → export). The orders, carts and emails are plain records: they are a

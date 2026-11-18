@@ -9,6 +9,7 @@ import { db, schema } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { storefrontKeys } from '@shopnex/channels/schema'
+import { collections } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -45,7 +46,7 @@ after(async () => {
   await db.delete(schema.orders).where(eq(schema.orders.channelId, portal.id))
   await channelService.remove(SHOP, portal.id, db).catch(() => {})
   await db.delete(schema.products).where(inArray(schema.products.id, [product.id]))
-  await db.delete(schema.collections).where(eq(schema.collections.id, collection.id))
+  await db.delete(collections).where(eq(collections.id, collection.id))
   await closeDb()
 })
 

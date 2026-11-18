@@ -8,6 +8,7 @@ import type { Cart, CartStatus } from '@shopnex/db/schema'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
+import { productImages } from '@shopnex/catalog/schema'
 
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999
@@ -103,9 +104,9 @@ export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
     async () =>
       productIds.length
         ? conn
-            .select({ productId: schema.productImages.productId, url: schema.productImages.url })
-            .from(schema.productImages)
-            .where(and(inArray(schema.productImages.productId, productIds), eq(schema.productImages.position, 0)))
+            .select({ productId: productImages.productId, url: productImages.url })
+            .from(productImages)
+            .where(and(inArray(productImages.productId, productIds), eq(productImages.position, 0)))
         : [],
     () => variantService.loadForProducts(productIds, conn),
   ])

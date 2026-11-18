@@ -24,3 +24,15 @@ export const storefrontKeyOutput = createSelectSchema(storefrontKeys)
 
 /** Deleting something: `{ ok: true }` */
 export const deletedOutput = z.object({ ok: z.boolean() })
+
+// Where a product or collection is published: the full list (channels left out are unpublished). A date in the
+// future schedules the publication; omitted or null publishes now (a channel that stays keeps its date).
+export const publicationsInput = z.object({
+  publications: z
+    .array(z.object({ channelId: z.uuid(), publishAt: z.coerce.date().nullish() }))
+    .max(50)
+    .refine((list) => new Set(list.map((p) => p.channelId)).size === list.length, 'Each channel once'),
+})
+
+/** The channels a product or collection is on (a scheduled one has a date in the future) */
+export const publicationsOutput = z.array(z.object({ channelId: z.uuid(), publishedAt: z.date() }))

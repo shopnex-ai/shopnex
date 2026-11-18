@@ -11,6 +11,7 @@ import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 // Cycle with ./products is fine: only used inside functions
 import { emitProductEvent } from './products'
+import { productImages, productOptionValues, productOptions, variantOptionValues } from './catalog.schema'
 
 export type OptionInput = { name: string; values: string[] }
 
@@ -159,23 +160,20 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
   )
 
   // 1. Options: upsert by name, delete the rest (cascades to values + variant links)
-  const existingOptions = await conn
-    .select()
-    .from(schema.productOptions)
-    .where(eq(schema.productOptions.productId, productId))
+  const existingOptions = await conn.select().from(productOptions).where(eq(productOptions.productId, productId))
   const keepNames = new Set(options.map((o) => o.name))
   const removedOptionIds = existingOptions.filter((o) => !keepNames.has(o.name)).map((o) => o.id)
   if (removedOptionIds.length) {
-    await conn.delete(schema.productOptions).where(inArray(schema.productOptions.id, removedOptionIds))
+    await conn.delete(productOptions).where(inArray(productOptions.id, removedOptionIds))
   }
 
   const valueIds = new Map<string, Map<string, string>>() // option name → value → value id
   for (const [position, option] of options.entries()) {
     const [row] = await conn
-      .insert(schema.productOptions)
+      .insert(productOptions)
       .values({ productId, name: option.name, position })
       .onConflictDoUpdate({
-        target: [schema.productOptions.productId, schema.productOptions.name],
+        target: [productOptions.productId, productOptions.name],
         set: { position },
       })
       .returning()
@@ -183,20 +181,15 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
 
     // 2. Values: upsert by value, delete the rest
     await conn
-      .delete(schema.productOptionValues)
-      .where(
-        and(
-          eq(schema.productOptionValues.optionId, optionId),
-          notInArray(schema.productOptionValues.value, option.values),
-        ),
-      )
+      .delete(productOptionValues)
+      .where(and(eq(productOptionValues.optionId, optionId), notInArray(productOptionValues.value, option.values)))
     const ids = new Map<string, string>()
     for (const [valuePosition, value] of option.values.entries()) {
       const [v] = await conn
-        .insert(schema.productOptionValues)
+        .insert(productOptionValues)
         .values({ optionId, value, position: valuePosition })
         .onConflictDoUpdate({
-          target: [schema.productOptionValues.optionId, schema.productOptionValues.value],
+          target: [productOptionValues.optionId, productOptionValues.value],
           set: { position: valuePosition },
         })
         .returning()
@@ -243,14 +236,14 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
   }
 
   // 4. Variant ↔ option value links, rebuilt from scratch
-  await conn.delete(schema.variantOptionValues).where(inArray(schema.variantOptionValues.variantId, savedIds))
+  await conn.delete(variantOptionValues).where(inArray(variantOptionValues.variantId, savedIds))
   const links = variants.flatMap((v, i) =>
     Object.entries(v.picked).map(([name, value]) => ({
       variantId: savedIds[i]!,
       optionValueId: valueIds.get(name)!.get(value)!,
     })),
   )
-  if (links.length) await conn.insert(schema.variantOptionValues).values(links)
+  if (links.length) await conn.insert(variantOptionValues).values(links)
 
   await syncPriceCache(shopId, productId, conn)
 }
@@ -263,20 +256,20 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
 
   const optionRows = await conn
     .select()
-    .from(schema.productOptions)
-    .where(inArray(schema.productOptions.productId, productIds))
-    .orderBy(asc(schema.productOptions.position))
+    .from(productOptions)
+    .where(inArray(productOptions.productId, productIds))
+    .orderBy(asc(productOptions.position))
   const valueRows = optionRows.length
     ? await conn
         .select()
-        .from(schema.productOptionValues)
+        .from(productOptionValues)
         .where(
           inArray(
-            schema.productOptionValues.optionId,
+            productOptionValues.optionId,
             optionRows.map((o) => o.id),
           ),
         )
-        .orderBy(asc(schema.productOptionValues.position))
+        .orderBy(asc(productOptionValues.position))
     : []
   const variantRows = await conn
     .select()
@@ -286,19 +279,16 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
   const linkRows = variantRows.length
     ? await conn
         .select({
-          variantId: schema.variantOptionValues.variantId,
-          name: schema.productOptions.name,
-          value: schema.productOptionValues.value,
+          variantId: variantOptionValues.variantId,
+          name: productOptions.name,
+          value: productOptionValues.value,
         })
-        .from(schema.variantOptionValues)
-        .innerJoin(
-          schema.productOptionValues,
-          eq(schema.productOptionValues.id, schema.variantOptionValues.optionValueId),
-        )
-        .innerJoin(schema.productOptions, eq(schema.productOptions.id, schema.productOptionValues.optionId))
+        .from(variantOptionValues)
+        .innerJoin(productOptionValues, eq(productOptionValues.id, variantOptionValues.optionValueId))
+        .innerJoin(productOptions, eq(productOptions.id, productOptionValues.optionId))
         .where(
           inArray(
-            schema.variantOptionValues.variantId,
+            variantOptionValues.variantId,
             variantRows.map((v) => v.id),
           ),
         )
@@ -374,7 +364,7 @@ const orderSnapshotFields = {
   productVendor: schema.products.vendor,
   imageUrl: sql<
     string | null
-  >`coalesce(${schema.productVariants.imageUrl}, (select ${schema.productImages.url} from ${schema.productImages} where ${schema.productImages.productId} = ${schema.products.id} order by ${schema.productImages.position} limit 1))`,
+  >`coalesce(${schema.productVariants.imageUrl}, (select ${productImages.url} from ${productImages} where ${productImages.productId} = ${schema.products.id} order by ${productImages.position} limit 1))`,
 }
 
 /** `channelId`: only variants of products published on that channel now */
