@@ -6,6 +6,7 @@ import type { AddressInfo } from 'node:net'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { apps, shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
+import { carts, shippingRates } from '../src/cart.schema'
 
 const { db, schema, eq, cartService, SHOP } = fx
 const { checkoutService, carrierService, CartError } = await import('../src')
@@ -331,9 +332,9 @@ describe('placing the order', () => {
         e instanceof CartError && e.code === 'VARIANT_NOT_FOUND' && e.data.variantIds?.[0] === variantOf(p),
     )
     await db
-      .update(schema.carts)
+      .update(carts)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.carts.token, c.token))
+      .where(eq(carts.token, c.token))
     await assert.rejects(
       checkoutService.complete(SHOP, c.token, { email: 'a@example.test' }, RETURN),
       refused('CART_NOT_FOUND'),
@@ -351,7 +352,7 @@ describe('placing the order', () => {
       checkoutService.complete(SHOP, c.token, { email: 'a@example.test', paymentMethodId: missing }, RETURN),
       refused('INVALID_PAYMENT_METHOD'),
     )
-    await db.update(schema.shippingRates).set({ active: false }).where(eq(schema.shippingRates.id, rate.id))
+    await db.update(shippingRates).set({ active: false }).where(eq(shippingRates.id, rate.id))
     await assert.rejects(
       checkoutService.complete(SHOP, c.token, { email: 'a@example.test', shippingRateId: rate.id }, RETURN),
       refused('INVALID_SHIPPING_RATE'),

@@ -12,6 +12,7 @@ import { Fixtures, closeDb, requireApp } from '../lib'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { menus } from '@shopnex/content/schema'
 import { shops } from '@shopnex/core/schema'
+import { shippingRates } from '@shopnex/cart/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -43,7 +44,7 @@ describe('createShop', () => {
       .where(and(eq(shopMembers.organizationId, shop.id), eq(shopMembers.userId, owner.id)))
     assert.equal(member?.role, 'owner')
 
-    const rates = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.shopId, shop.id))
+    const rates = await db.select().from(shippingRates).where(eq(shippingRates.shopId, shop.id))
     assert.equal(rates.length, 0)
     const methods = await db.select().from(paymentMethods).where(eq(paymentMethods.shopId, shop.id))
     assert.equal(methods.length, 0)

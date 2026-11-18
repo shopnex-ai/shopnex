@@ -16,6 +16,7 @@
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",

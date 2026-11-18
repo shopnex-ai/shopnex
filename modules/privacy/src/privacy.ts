@@ -11,6 +11,7 @@ import { emit } from '@shopnex/webhooks'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
+import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -42,8 +43,8 @@ const theirOrders = (shopId: string, customerId: string, email: string) =>
   )
 const theirCarts = (shopId: string, customerId: string, email: string) =>
   and(
-    eq(schema.carts.shopId, shopId),
-    or(eq(schema.carts.customerId, customerId), eq(sql`lower(${schema.carts.email})`, email)),
+    eq(cartsTable.shopId, shopId),
+    or(eq(cartsTable.customerId, customerId), eq(sql`lower(${cartsTable.email})`, email)),
   )
 
 /** Everything the shop holds about this customer, as plain data a person (or another system) can read */
@@ -71,11 +72,11 @@ export async function exportData(shopId: string, customerId: string) {
 
   const carts = await db
     .select()
-    .from(schema.carts)
+    .from(cartsTable)
     .where(theirCarts(shopId, customerId, email))
   const cartIds = carts.map((c) => c.id)
   const cartLines = cartIds.length
-    ? await db.select().from(schema.cartLines).where(inArray(schema.cartLines.cartId, cartIds))
+    ? await db.select().from(cartLinesTable).where(inArray(cartLinesTable.cartId, cartIds))
     : []
 
   const emails = await db
@@ -235,10 +236,10 @@ export async function erase(shopId: string, customerId: string) {
 
     // Carts: the address a checkout was started with
     const carts = await tx
-      .update(schema.carts)
+      .update(cartsTable)
       .set({ email: null, customerId: null })
       .where(theirCarts(shopId, customerId, email))
-      .returning({ id: schema.carts.id })
+      .returning({ id: cartsTable.id })
     const cartIds = carts.map((c) => c.id)
 
     // Stored emails: the ones sent to this person lose recipient, subject and body. Copies sent to the shop about this

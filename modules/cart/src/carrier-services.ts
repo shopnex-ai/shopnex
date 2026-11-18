@@ -5,12 +5,13 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './cart.errors'
 import { log } from './log'
 import { appInstallations } from '@shopnex/apps/schema'
 import { apps } from '@shopnex/core/schema'
+import { carrierServices } from './cart.schema'
 
 // Checkout waits for these, so keep it short
 const TIMEOUT_MS = 5000
@@ -54,18 +55,18 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
   }
   const [existing] = await db
     .select()
-    .from(schema.carrierServices)
-    .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, appId)))
+    .from(carrierServices)
+    .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.appId, appId)))
   if (existing) {
     const [service] = await db
-      .update(schema.carrierServices)
+      .update(carrierServices)
       .set({ ratesUrl: input.ratesUrl, ready: input.ready, updatedAt: new Date() })
-      .where(eq(schema.carrierServices.id, existing.id))
+      .where(eq(carrierServices.id, existing.id))
       .returning()
     return service!
   }
   const [service] = await db
-    .insert(schema.carrierServices)
+    .insert(carrierServices)
     .values({ shopId, appId, name: input.name, ratesUrl: input.ratesUrl, ready: input.ready })
     .returning()
   return service!
@@ -74,23 +75,23 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
 export async function list(shopId: string, opts: { usableOnly?: boolean } = {}, conn: Conn = db) {
   return conn
     .select()
-    .from(schema.carrierServices)
+    .from(carrierServices)
     .where(
       and(
-        eq(schema.carrierServices.shopId, shopId),
-        opts.usableOnly ? eq(schema.carrierServices.active, true) : undefined,
-        opts.usableOnly ? eq(schema.carrierServices.ready, true) : undefined,
+        eq(carrierServices.shopId, shopId),
+        opts.usableOnly ? eq(carrierServices.active, true) : undefined,
+        opts.usableOnly ? eq(carrierServices.ready, true) : undefined,
       ),
     )
-    .orderBy(asc(schema.carrierServices.createdAt))
+    .orderBy(asc(carrierServices.createdAt))
 }
 
 /** Staff: rename or switch off. Null when the service isn't in this shop. */
 export async function update(shopId: string, id: string, patch: { name?: string; active?: boolean }) {
   const [service] = await db
-    .update(schema.carrierServices)
+    .update(carrierServices)
     .set({ ...patch, updatedAt: new Date() })
-    .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.id, id)))
+    .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.id, id)))
     .returning()
   return service ?? null
 }

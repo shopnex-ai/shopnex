@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
+import { carts } from '../src/cart.schema'
 
 const { db, schema, eq, cartService, SHOP, OTHER_SHOP } = fx
 const { CartError } = await import('../src')
@@ -48,7 +49,7 @@ describe('making a cart', () => {
 
   test('nothing is made when a line cannot be: a failed start leaves no cart behind', async () => {
     await assert.rejects(fx.cart([{ variantId: MISSING, quantity: 1 }]), refused('VARIANT_NOT_FOUND'))
-    assert.equal((await db.select().from(schema.carts).where(eq(schema.carts.shopId, SHOP))).length, 0)
+    assert.equal((await db.select().from(carts).where(eq(carts.shopId, SHOP))).length, 0)
   })
 })
 
@@ -59,9 +60,9 @@ describe('finding a cart', () => {
     await assert.rejects(cartService.get(OTHER_SHOP, c.token), refused('CART_NOT_FOUND'))
     await assert.rejects(cartService.get(SHOP, 'cart_nope'), refused('CART_NOT_FOUND'))
     await db
-      .update(schema.carts)
+      .update(carts)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.carts.token, c.token))
+      .where(eq(carts.token, c.token))
     await assert.rejects(cartService.get(SHOP, c.token), refused('CART_NOT_FOUND'))
     assert.equal(await cartService.findByToken(null, c.token), null)
   })
@@ -190,9 +191,9 @@ describe('changing lines', () => {
     const p = await fx.product()
     const c = await fx.cart()
     await db
-      .update(schema.carts)
+      .update(carts)
       .set({ expiresAt: new Date(Date.now() + 1000), updatedAt: new Date(Date.now() - 3_600_000) })
-      .where(eq(schema.carts.token, c.token))
+      .where(eq(carts.token, c.token))
     const before = Date.now()
     await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }])
     const row = await cartService.findByToken(SHOP, c.token)
@@ -203,7 +204,7 @@ describe('changing lines', () => {
   test('a cart that was checked out cannot be changed: CART_COMPLETED', async () => {
     const p = await fx.product()
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 1 }])
-    await db.update(schema.carts).set({ status: 'completed' }).where(eq(schema.carts.token, c.token))
+    await db.update(carts).set({ status: 'completed' }).where(eq(carts.token, c.token))
     await assert.rejects(
       cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }]),
       refused('CART_COMPLETED'),
@@ -454,7 +455,7 @@ describe('what checkout uses', () => {
 
   test('setReminderContact keeps the email the buyer typed, lower case, on an open cart only', async () => {
     const [open, done] = [await fx.cart(), await fx.cart()]
-    await db.update(schema.carts).set({ status: 'completed' }).where(eq(schema.carts.token, done.token))
+    await db.update(carts).set({ status: 'completed' }).where(eq(carts.token, done.token))
     await cartService.setReminderContact(open.token, '  Shopper@Example.TEST ')
     await cartService.setReminderContact(done.token, 'late@example.test')
     assert.equal((await cartService.findByToken(SHOP, open.token))?.email, 'shopper@example.test')

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops, user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
+import { carts } from '@shopnex/cart/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -42,7 +43,7 @@ async function cleanup() {
   await db.delete(emailDeliveries).where(inArray(emailDeliveries.shopId, [SHOP, OTHER]))
   await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, [SHOP, OTHER]))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER]))
-  if (made.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.id, made.carts))
+  if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
   if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
   if (made.customers.length) await db.delete(schema.customers).where(inArray(schema.customers.id, made.customers))
   await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))
@@ -115,9 +116,9 @@ async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
   return row!
 }
 
-async function cart(patch: Partial<typeof schema.carts.$inferInsert> = {}) {
+async function cart(patch: Partial<typeof carts.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.carts)
+    .insert(carts)
     .values({
       shopId: SHOP,
       channelId: await channelId(),
@@ -311,12 +312,9 @@ describe('erase', () => {
     const other = await cart({ email: 'someone@example.test' })
     const result = await privacyService.erase(SHOP, c.id)
     assert.equal(result.cartsCleared, 1)
-    const [after] = await db.select().from(schema.carts).where(eq(schema.carts.id, mine.id))
+    const [after] = await db.select().from(carts).where(eq(carts.id, mine.id))
     assert.deepEqual([after?.email, after?.customerId], [null, null])
-    assert.equal(
-      (await db.select().from(schema.carts).where(eq(schema.carts.id, other.id)))[0]?.email,
-      'someone@example.test',
-    )
+    assert.equal((await db.select().from(carts).where(eq(carts.id, other.id)))[0]?.email, 'someone@example.test')
   })
 
   test('emails sent to them lose recipient, subject and body; copies about their orders lose the body; the rows stay', async () => {
@@ -419,9 +417,6 @@ describe('erase', () => {
     await order({ customerId: c.id, fulfillmentStatus: 'unfulfilled' })
     const mine = await cart({ customerId: c.id, email: 'ada@example.test' })
     await assert.rejects(privacyService.erase(SHOP, c.id), refused('HAS_OPEN_ORDERS'))
-    assert.equal(
-      (await db.select().from(schema.carts).where(eq(schema.carts.id, mine.id)))[0]?.email,
-      'ada@example.test',
-    )
+    assert.equal((await db.select().from(carts).where(eq(carts.id, mine.id)))[0]?.email, 'ada@example.test')
   })
 })

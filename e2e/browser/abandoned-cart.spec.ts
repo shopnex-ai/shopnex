@@ -8,6 +8,7 @@ import { db, schema } from '@shopnex/db'
 import { Fixtures, SHOP, requireApp, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
 import { abandonedCartSettings, emailDeliveries, emailSettings, emailSuppressions } from '@shopnex/email/schema'
+import { carts } from '@shopnex/cart/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -64,7 +65,7 @@ const deliveriesOf = (cartId: string) => db.select().from(emailDeliveries).where
 async function openCheckout(page: Page) {
   const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
   // The Storefront API's cart id is the cart's token
-  const [row] = await db.select().from(schema.carts).where(eq(schema.carts.token, cart.id))
+  const [row] = await db.select().from(carts).where(eq(carts.token, cart.id))
   await page.goto(`/checkout/${row!.token}`)
   return row!
 }
@@ -76,17 +77,15 @@ async function giveEmail(page: Page, cartId: string) {
   await page.getByLabel('Email').fill(fx.email)
   // Saved with the cart as soon as the shopper leaves the field
   await page.getByLabel('Email').blur()
-  await expect
-    .poll(async () => (await db.select().from(schema.carts).where(eq(schema.carts.id, cartId)))[0]?.email)
-    .toBe(fx.email)
+  await expect.poll(async () => (await db.select().from(carts).where(eq(carts.id, cartId)))[0]?.email).toBe(fx.email)
 }
 
 // "The delay has passed": the cart was last touched two hours ago
 const age = (cartId: string) =>
   db
-    .update(schema.carts)
+    .update(carts)
     .set({ updatedAt: new Date(Date.now() - 2 * 3600_000) })
-    .where(eq(schema.carts.id, cartId))
+    .where(eq(carts.id, cartId))
 
 // The raw messages, with quoted-printable undone (long lines are folded and "=" is written "=3D")
 const reminders = () =>
@@ -165,7 +164,7 @@ test('with the feature off, the email is not kept and nothing is sent', async ({
     await page.getByLabel('Email').fill(fx.email)
     await page.getByLabel('Email').blur()
     await new Promise((resolve) => setTimeout(resolve, 2_000))
-    expect((await db.select().from(schema.carts).where(eq(schema.carts.id, cart.id)))[0]?.email).toBeNull()
+    expect((await db.select().from(carts).where(eq(carts.id, cart.id)))[0]?.email).toBeNull()
 
     await age(cart.id)
     await new Promise((resolve) => setTimeout(resolve, 8_000))

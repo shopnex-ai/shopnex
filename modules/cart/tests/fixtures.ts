@@ -1,6 +1,7 @@
 // What the cart tests share: the embedded database, a product catalog on the Online Store, carts, and everything a checkout creates, cleaned up
 // afterwards. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { shops } from '@shopnex/core/schema'
+import { carrierServices, carts, shippingRates } from '../src/cart.schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'cart-test-secret-0123456789-abcdefghij'
@@ -85,9 +86,9 @@ export async function manualMethod(name = 'Bank transfer') {
   return row
 }
 
-export async function shippingRate(patch: Partial<typeof schema.shippingRates.$inferInsert> = {}, shopId = SHOP) {
+export async function shippingRate(patch: Partial<typeof shippingRates.$inferInsert> = {}, shopId = SHOP) {
   const [row] = await db
-    .insert(schema.shippingRates)
+    .insert(shippingRates)
     .values({ shopId, name: 'Standard', priceCents: 500, ...patch })
     .returning()
   return row!
@@ -98,11 +99,11 @@ export const trackApp = (id: string) => made.apps.push(id)
 /** Everything the tests made, and the orders and customers a checkout caused */
 export async function cleanup() {
   const shopIds = [SHOP, OTHER_SHOP]
-  await db.delete(schema.carts).where(inArray(schema.carts.shopId, shopIds))
+  await db.delete(carts).where(inArray(carts.shopId, shopIds))
   await db.delete(schema.orders).where(inArray(schema.orders.shopId, shopIds))
   await db.delete(schema.customers).where(inArray(schema.customers.shopId, shopIds))
-  await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.shopId, shopIds))
-  await db.delete(schema.carrierServices).where(inArray(schema.carrierServices.shopId, shopIds))
+  await db.delete(shippingRates).where(inArray(shippingRates.shopId, shopIds))
+  await db.delete(carrierServices).where(inArray(carrierServices.shopId, shopIds))
   const { taxRates } = await import('@shopnex/pricing/schema')
   await db.delete(taxRates).where(inArray(taxRates.shopId, shopIds))
   if (made.methods.length) {

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { abandonedCartSettings, emailDeliveries, emailSuppressions } from '../src/email.schema'
+import { carts } from '@shopnex/cart/schema'
 
 const { db, schema, eq, SHOP, OTHER_SHOP } = fx
 const { abandonedCartService, queueAbandonedCartEmails, EmailError } = await import('../src')
@@ -143,9 +144,9 @@ describe('which checkouts are reminded', () => {
     await fx.cart({ idleMinutes: 90, lines: 0 })
     const expired = await fx.cart({ idleMinutes: 90 })
     await db
-      .update(schema.carts)
+      .update(carts)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.carts.id, expired.id))
+      .where(eq(carts.id, expired.id))
     await fx.cart({ idleMinutes: 90, status: 'completed' })
     await fx.cart({ idleMinutes: 60 + 25 * 60 })
     assert.equal(await queueAbandonedCartEmails(), 0)
@@ -202,7 +203,7 @@ describe('just before sending', () => {
     assert.equal(await reasonToSkip(delivery), null)
     await abandonedCartService.unsubscribe(abandonedCartService.unsubscribeToken(SHOP, 'shopper@example.test'))
     assert.equal(await reasonToSkip(delivery), 'Unsubscribed')
-    await db.update(schema.carts).set({ status: 'completed' }).where(eq(schema.carts.id, c.id))
+    await db.update(carts).set({ status: 'completed' }).where(eq(carts.id, c.id))
     assert.equal(await reasonToSkip(delivery), 'Checkout was completed')
   })
 

@@ -13,6 +13,7 @@ import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { user } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
+import { carts } from '@shopnex/cart/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -126,7 +127,7 @@ describe('export', () => {
     await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, customer.id))
     // A checkout started with the address, a mail sent to it, and an unsubscribe
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
-    await db.update(schema.carts).set({ email }).where(eq(schema.carts.token, cart.id))
+    await db.update(carts).set({ email }).where(eq(carts.token, cart.id))
     await db.insert(emailDeliveries).values({
       shopId: SHOP,
       notification: 'order_confirmation',
@@ -200,7 +201,7 @@ describe('erase', () => {
 
     // Data to clean: a cart, mails to the customer and to the shop about them, webhook history
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
-    await db.update(schema.carts).set({ email, customerId: customer.id }).where(eq(schema.carts.token, cart.id))
+    await db.update(carts).set({ email, customerId: customer.id }).where(eq(carts.token, cart.id))
     const [toThem] = await db
       .insert(emailDeliveries)
       .values({
@@ -301,7 +302,7 @@ describe('erase', () => {
     )
 
     // The cart lost the address
-    const [kept] = await db.select().from(schema.carts).where(eq(schema.carts.token, cart.id))
+    const [kept] = await db.select().from(carts).where(eq(carts.token, cart.id))
     assert.equal(kept!.email, null)
     assert.equal(kept!.customerId, null)
 

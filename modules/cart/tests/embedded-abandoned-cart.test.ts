@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { abandonedCartSettings, emailDeliveries, emailSettings } from '@shopnex/email/schema'
+import { carts } from '../src/cart.schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -57,7 +58,7 @@ before(async () => {
   const channel = await channelService.resolve(SHOP, undefined, db)
   const cart = await cartService.create(SHOP, channel.id, [{ variantId: product.variants[0]!.id, quantity: 2 }])
   await cartService.setReminderContact(cart.token, 'walked-away@example.com')
-  const [row] = await db.select({ id: schema.carts.id }).from(schema.carts).where(eq(schema.carts.token, cart.token))
+  const [row] = await db.select({ id: carts.id }).from(carts).where(eq(carts.token, cart.token))
   cartId = row!.id
 })
 

@@ -8,6 +8,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { apps } from '@shopnex/core/schema'
 import { appInstallations } from '@shopnex/apps/schema'
 import * as fx from './fixtures'
+import { carrierServices } from '../src/cart.schema'
 
 const { db, schema, eq, SHOP, OTHER_SHOP } = fx
 const { carrierService, CartError } = await import('../src')
@@ -120,10 +121,7 @@ describe('registering a service', () => {
       [again.id, again.name, again.active, again.ratesUrl, again.ready],
       [service.id, 'Renamed', false, `${origin}/v2/rates`, false],
     )
-    assert.equal(
-      (await db.select().from(schema.carrierServices).where(eq(schema.carrierServices.shopId, SHOP))).length,
-      1,
-    )
+    assert.equal((await db.select().from(carrierServices).where(eq(carrierServices.shopId, SHOP))).length, 1)
   })
 
   test('one service per app and shop: the same app in another shop gets its own', async () => {

@@ -1,14 +1,10 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
 import { aiModule } from '@shopnex/ai/module'
+import { cartModule } from '@shopnex/cart/module'
 import { catalogModule } from '@shopnex/catalog/module'
 import { appsModule } from '@shopnex/apps/module'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
-import { shippingRates as adminShippingRates } from './routers/admin/checkout-settings'
-import {
-  carrierServices as adminCarrierServices,
-  carrierServicesApp as adminCarrierServicesApp,
-} from './routers/admin/carrier-services'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { paymentsModule } from '@shopnex/payments/module'
@@ -56,9 +52,9 @@ export const router = {
     storage: tagged('Admin · Storage').router(filesModule.router.storage),
     email: tagged('Admin · Email').router(emailModule.router.email),
     notifications: tagged('Admin · Email').router(emailModule.router.notifications),
-    shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
-    carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
-    carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),
+    shippingRates: tagged('Admin · Shipping').router(cartModule.router.shippingRates),
+    carrierServices: tagged('Admin · Shipping').router(cartModule.router.carrierServices),
+    carrierServicesApp: tagged('Admin · Carrier apps').router(cartModule.router.carrierServicesApp),
     paymentMethods: tagged('Admin · Payments').router(paymentsModule.router.paymentMethods),
     paymentApps: tagged('Admin · Payments').router(paymentsModule.router.paymentApps),
     paymentsApp: tagged('Admin · Payments apps').router(paymentsModule.router.paymentsApp),

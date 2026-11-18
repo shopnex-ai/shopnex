@@ -44,8 +44,8 @@ after(async () => {
 })
 
 describe('who listens', () => {
-  test('appUninstalled: payments takes the app’s method out of checkout, ai its capabilities', () => {
-    assert.deepEqual([...appUninstalled.listeners].sort(), ['ai.providers', 'payments.method'])
+  test('appUninstalled: payments takes the app’s method out of checkout, ai its capabilities, cart its carrier service', () => {
+    assert.deepEqual([...appUninstalled.listeners].sort(), ['ai.providers', 'cart.carrier-services', 'payments.method'])
   })
 
   test('orderEvent: email queues the order’s emails', () => {
