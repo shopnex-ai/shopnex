@@ -30,6 +30,14 @@ export {
   variantsInput,
 } from '@shopnex/catalog/contract'
 export { menuInput, pageInput } from '@shopnex/content/contract'
+export {
+  abandonedCartSettingsInput,
+  emailInput,
+  notificationParam,
+  smtpInput,
+  templateInput,
+  templatePatchInput,
+} from '@shopnex/email/contract'
 export { MENU_ITEM_TYPES, MENU_MAX_DEPTH, type MenuItemType, type StoredMenuItem } from '@shopnex/content/schema'
 export { aiAppConfigureInput, aiRunInput, aiSettingsInput } from '@shopnex/ai/contract'
 export { DISCOUNT_TYPES, type DiscountType } from '@shopnex/pricing/schema'
@@ -40,18 +48,12 @@ export {
   customFieldValues,
 } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
-import {
-  customers,
-  CANCEL_REASONS,
-  shippingRates,
-  CHANNEL_TYPES,
-  SMTP_PRESETS,
-  NOTIFICATIONS,
-} from '@shopnex/db/schema'
+import { customers, CANCEL_REASONS, shippingRates, CHANNEL_TYPES } from '@shopnex/db/schema'
 import { STAFF_ROLES } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, shops } from '@shopnex/core/schema'
+import { NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
 
 const nonNegative = (s: z.ZodNumber) => s.nonnegative()
 
@@ -109,43 +111,6 @@ export const fulfillOrderInput = z.object({
 
 export { webhookEndpointInput } from '@shopnex/webhooks/contract'
 export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/webhooks/schema'
-
-export const smtpInput = z.object({
-  preset: z.enum(SMTP_PRESETS),
-  host: z
-    .string()
-    .trim()
-    .regex(/^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$/, 'Host name only, like smtp.example.com'),
-  port: z.number().int().min(1).max(65535),
-  // Empty = no login (a local relay)
-  username: z.string().trim().max(256),
-  // Optional when one is already saved: leaving it empty keeps that one. Not trimmed: spaces can be part of it
-  password: z.string().max(512).optional(),
-  fromName: z.string().trim().max(100),
-  fromEmail: z.email('Enter an email address'),
-})
-
-export const notificationParam = z.object({ notification: z.enum(NOTIFICATIONS) })
-
-// How long a checkout with an email sits untouched before the reminder (the service enforces the limits)
-export const abandonedCartSettingsInput = z.object({
-  enabled: z.boolean().optional(),
-  delayMinutes: z.number().int().optional(),
-})
-
-// Liquid source; syntax is checked by the email service (with the line of the error)
-export const templateInput = z.object({
-  subject: z.string().max(500),
-  body: z.string().max(200_000),
-})
-
-// Turning a notification on/off and editing it are the same request
-export const templatePatchInput = templateInput.partial().extend({ enabled: z.boolean().optional() })
-
-export const emailInput = z.discriminatedUnion('provider', [
-  z.object({ provider: z.literal('off') }),
-  z.object({ provider: z.literal('smtp'), smtp: smtpInput }),
-])
 
 // Carrier services (Shopify carrierServiceCreate)
 export const carrierServiceConfigureInput = z.object({

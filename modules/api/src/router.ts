@@ -13,12 +13,11 @@ import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { paymentsModule } from '@shopnex/payments/module'
 import { pricingModule } from '@shopnex/pricing/module'
-import { email as adminEmail } from './routers/admin/email'
 import { filesModule } from '@shopnex/files/module'
-import { notifications as adminNotifications } from './routers/admin/notifications'
 import { orders as adminOrders } from './routers/admin/orders'
 import { channelsModule } from '@shopnex/channels/module'
 import { contentModule } from '@shopnex/content/module'
+import { emailModule } from '@shopnex/email/module'
 import { tenancyModule } from '@shopnex/tenancy/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
@@ -55,8 +54,8 @@ export const router = {
     staff: tagged('Admin · Staff').router(tenancyModule.router.staff),
     platform: tagged('Admin · Platform').router(tenancyModule.router.platform),
     storage: tagged('Admin · Storage').router(filesModule.router.storage),
-    email: tagged('Admin · Email').router(adminEmail),
-    notifications: tagged('Admin · Email').router(adminNotifications),
+    email: tagged('Admin · Email').router(emailModule.router.email),
+    notifications: tagged('Admin · Email').router(emailModule.router.notifications),
     shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
     carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
     carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),

@@ -5,6 +5,7 @@
 // @shopnex/db turns such a query into an error, and each step has a timeout, so a regression fails instead of hanging.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { emailDeliveries, emailSettings } from '@shopnex/email/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -45,7 +46,7 @@ before(async () => {
   await prepareDatabase()
   const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
   variantId = product.variants[0]!.id
-  await db.insert(schema.emailSettings).values({
+  await db.insert(emailSettings).values({
     shopId: SHOP,
     config: {
       preset: 'custom',
@@ -99,7 +100,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
     const emails = await within(
       5_000,
       'reading the outbox',
-      db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.orderId, orderId)),
+      db.select().from(emailDeliveries).where(eq(emailDeliveries.orderId, orderId)),
     )
     assert.ok(
       emails.some((e) => e.notification === 'order_confirmation' && e.to === 'buyer@example.com'),

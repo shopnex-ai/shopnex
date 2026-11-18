@@ -19,6 +19,11 @@ import {
 import { log } from './log'
 import { shops } from '@shopnex/core/schema'
 import { productImages } from '@shopnex/catalog/schema'
+import {
+  abandonedCartSettings as settings,
+  emailDeliveries as emailDeliveriesTable,
+  emailSettings,
+} from './email.schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -53,7 +58,8 @@ async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
 
 /** Carts that have waited out their shop's delay, in shops that send abandoned cart emails and haven't been reminded */
 async function dueCarts() {
-  const { carts, cartLines, abandonedCartSettings: settings, emailSettings, emailDeliveries } = schema
+  const { carts, cartLines } = schema
+  const emailDeliveries = emailDeliveriesTable
   return db
     .select({ id: carts.id })
     .from(carts)
@@ -93,7 +99,7 @@ async function queueOne(cartId: string) {
     // Not sent: recorded as such, so the cart isn't looked at again (and starves nothing behind it)
     const skip = async (reason: string) => {
       await tx
-        .insert(schema.emailDeliveries)
+        .insert(emailDeliveriesTable)
         .values({ ...base, subject: '', html: '', status: 'skipped', lastError: reason })
         .onConflictDoNothing()
     }
@@ -125,7 +131,7 @@ async function queueOne(cartId: string) {
     if (email.problem)
       log.warn({ notification: 'abandoned_cart', shopId: cart.shopId }, 'template problem: %s', email.problem.message)
     await tx
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveriesTable)
       .values({ ...base, subject: email.subject, html: email.html })
       .onConflictDoNothing()
   })

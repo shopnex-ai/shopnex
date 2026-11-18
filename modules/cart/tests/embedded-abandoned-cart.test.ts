@@ -3,6 +3,7 @@
 // freezes the whole shop. This runs the real job on an in-memory PGlite and fails (instead of hanging) if it blocks.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { abandonedCartSettings, emailDeliveries, emailSettings } from '@shopnex/email/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -39,7 +40,7 @@ before(async () => {
   await prepareDatabase()
   const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
   // Email on, abandoned cart reminders on with no delay: a cart with an email is due at once
-  await db.insert(schema.emailSettings).values({
+  await db.insert(emailSettings).values({
     shopId: SHOP,
     config: {
       preset: 'custom',
@@ -51,7 +52,7 @@ before(async () => {
     },
     active: true,
   })
-  await db.insert(schema.abandonedCartSettings).values({ shopId: SHOP, enabled: true, delayMinutes: 0 })
+  await db.insert(abandonedCartSettings).values({ shopId: SHOP, enabled: true, delayMinutes: 0 })
 
   const channel = await channelService.resolve(SHOP, undefined, db)
   const cart = await cartService.create(SHOP, channel.id, [{ variantId: product.variants[0]!.id, quantity: 2 }])
@@ -73,7 +74,7 @@ describe('abandoned cart emails on the embedded database', () => {
     const [delivery] = await within(
       5_000,
       'reading the outbox',
-      db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.cartId, cartId)),
+      db.select().from(emailDeliveries).where(eq(emailDeliveries.cartId, cartId)),
     )
     assert.ok(delivery, 'a reminder is queued for the cart')
     assert.equal(delivery.notification, 'abandoned_cart')

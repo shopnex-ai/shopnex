@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { user as userTable } from '@shopnex/core/schema'
+import { emailDeliveries, emailSettings, emailTemplates } from '../src/email.schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -31,9 +32,9 @@ after(async () => {
 })
 
 async function cleanup() {
-  await db.delete(schema.emailDeliveries).where(eq(schema.emailDeliveries.shopId, SHOP))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  await db.delete(schema.emailTemplates).where(eq(schema.emailTemplates.shopId, SHOP))
+  await db.delete(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  await db.delete(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
   if (made.users.length) await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))
   if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
   if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
@@ -41,7 +42,7 @@ async function cleanup() {
 }
 
 const turnOn = (active = true) =>
-  db.insert(schema.emailSettings).values({
+  db.insert(emailSettings).values({
     shopId: SHOP,
     active,
     config: {
@@ -84,7 +85,7 @@ async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
 const view = (o: Awaited<ReturnType<typeof order>>) =>
   ({ ...o, items: [], shippingLines: [], fulfillments: [], customer: null }) as unknown as View
 const sent = async () =>
-  (await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.shopId, SHOP)))
+  (await db.select().from(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP)))
     .map((d) => [d.notification, d.to] as const)
     .sort()
 
@@ -145,7 +146,7 @@ describe('which emails an event queues', () => {
     await turnOn()
     const o = await order()
     await db
-      .insert(schema.emailTemplates)
+      .insert(emailTemplates)
       .values({ shopId: SHOP, notification: 'order_confirmation', subject: 's', body: 'b', enabled: false })
     await notify(db, SHOP, 'order.created', () => Promise.resolve(view(o)))
     assert.deepEqual(

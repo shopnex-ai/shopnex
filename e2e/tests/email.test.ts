@@ -3,22 +3,23 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { EmailError, emailService, type SmtpInput } from '@shopnex/email'
 import { SHOP, closeDb } from '../lib'
 import { smtpSink } from '../smtp-sink'
+import { emailSettings } from '@shopnex/email/schema'
 
 const sink = smtpSink()
 let smtp: SmtpInput
-let previous: typeof schema.emailSettings.$inferSelect | undefined
+let previous: typeof emailSettings.$inferSelect | undefined
 
 const restore = async () => {
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  if (previous) await db.insert(schema.emailSettings).values(previous)
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  if (previous) await db.insert(emailSettings).values(previous)
 }
 
 before(async () => {
-  ;[previous] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+  ;[previous] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
   const port = await sink.start()
   smtp = {
     preset: 'other',
@@ -50,7 +51,7 @@ describe('email', () => {
     assert.match(raw, /^From: "?E2E Shop"? <orders@e2e\.test>/m)
     assert.match(raw, /^To: staff@e2e\.test/m)
     assert.match(raw, /^Subject: Test email from your shop/m)
-    const [row] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+    const [row] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
     assert.deepEqual(row, previous)
   })
 
@@ -83,7 +84,7 @@ describe('email', () => {
       emailService.useSmtp(SHOP, { ...smtp, username: 'user', password: 'hunter2' }),
       (error) => error instanceof EmailError && error.code === 'EMAIL_FAILED' && /STARTTLS/i.test(error.message),
     )
-    const [row] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+    const [row] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
     assert.equal(row, undefined, 'nothing saved when the login check fails')
 
     await assert.rejects(

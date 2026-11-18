@@ -59,13 +59,13 @@ theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its 
 tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
-email     → db, catalog, orders, tenancy, webhooks   (sits above orders: it reads them and its tables point at them; listens to orderEvent)
+email     → db, core, catalog, orders, rpc, storefront-sdk, tenancy, webhooks   (owns email_settings, email_templates, email_deliveries, abandoned_cart_settings and email_suppressions; sits above orders: it reads them and email_deliveries points at orders and carts, which are still tables in db; listens to orderEvent; the settings and notification routes are here)
 rpc       → core   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc   (clears a deleted field's values from the products, orders and customers tables by name: it sits below the modules that own them)
 catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db while orders and carts, which point at them, are still there; the product and collection routes are here)
 content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
 customers → db, auth, custom-fields, webhooks   (sign-in codes link a login to the customer; the code is sent by the sender the storefront route passes in, customers cannot call email)
-privacy   → db, auth, core, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
+privacy   → db, auth, core, email, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
 orders    → db, catalog, channels, custom-fields, customers, pricing, webhooks   (declares orderEvent; email listens)
 payments  → db, apps, orders, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing

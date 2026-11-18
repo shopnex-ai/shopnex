@@ -15,6 +15,7 @@
     "@shopnex/auth": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/webhooks": "workspace:*",

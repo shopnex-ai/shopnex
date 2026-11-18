@@ -2,6 +2,7 @@
 // every hook must have the listeners it is there for, and an order change must really end up in the email queue.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { emailDeliveries, emailSettings } from '@shopnex/email/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -21,7 +22,7 @@ const orderIds: string[] = []
 
 before(async () => {
   await prepareDatabase()
-  await db.insert(schema.emailSettings).values({
+  await db.insert(emailSettings).values({
     shopId: SHOP,
     active: true,
     config: {
@@ -35,8 +36,8 @@ before(async () => {
   })
 })
 after(async () => {
-  await db.delete(schema.emailDeliveries).where(eq(schema.emailDeliveries.shopId, SHOP))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+  await db.delete(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
   for (const id of orderIds) await db.delete(schema.orders).where(eq(schema.orders.id, id))
   // The embedded database keeps the process alive
   setImmediate(() => process.exit())
@@ -68,7 +69,7 @@ describe('an order change reaches the email queue', () => {
       .returning()
     orderIds.push(order!.id)
     await orderService.fulfill(SHOP, order!.id, { trackingNumber: 'T-1' })
-    const queued = await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.orderId, order!.id))
+    const queued = await db.select().from(emailDeliveries).where(eq(emailDeliveries.orderId, order!.id))
     assert.deepEqual(
       queued.map((d) => [d.notification, d.to]),
       [['shipping_confirmation', 'buyer@example.test']],

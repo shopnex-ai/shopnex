@@ -12,6 +12,7 @@ import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { user } from '@shopnex/core/schema'
+import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -69,11 +70,11 @@ after(async () => {
   await db.delete(webhookEndpoints).where(eq(webhookEndpoints.id, endpointId))
   for (const email of suppressed) {
     await db
-      .delete(schema.emailSuppressions)
-      .where(and(eq(schema.emailSuppressions.shopId, SHOP), eq(schema.emailSuppressions.email, email)))
+      .delete(emailSuppressions)
+      .where(and(eq(emailSuppressions.shopId, SHOP), eq(emailSuppressions.email, email)))
   }
   for (const id of userIds) await db.delete(user).where(eq(user.id, id))
-  await db.delete(schema.emailDeliveries).where(eq(schema.emailDeliveries.shopId, SHOP))
+  await db.delete(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP))
   await fx.cleanup()
   if (productId) await productService.removeMany(SHOP, [productId])
   await closeDb()
@@ -126,7 +127,7 @@ describe('export', () => {
     // A checkout started with the address, a mail sent to it, and an unsubscribe
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
     await db.update(schema.carts).set({ email }).where(eq(schema.carts.token, cart.id))
-    await db.insert(schema.emailDeliveries).values({
+    await db.insert(emailDeliveries).values({
       shopId: SHOP,
       notification: 'order_confirmation',
       orderId: finished.id,
@@ -134,7 +135,7 @@ describe('export', () => {
       subject: 'Thanks for your order',
       html: '<p>Hello Export Privacy, we ship to Privatweg 7</p>',
     })
-    await db.insert(schema.emailSuppressions).values({ shopId: SHOP, email })
+    await db.insert(emailSuppressions).values({ shopId: SHOP, email })
     suppressed.push(email)
 
     const data = ok(await call('GET', `/admin/customers/${customer.id}/data-export`, undefined, owner))
@@ -201,7 +202,7 @@ describe('erase', () => {
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
     await db.update(schema.carts).set({ email, customerId: customer.id }).where(eq(schema.carts.token, cart.id))
     const [toThem] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'order_confirmation',
@@ -213,7 +214,7 @@ describe('erase', () => {
       })
       .returning()
     const [aboutThem] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'staff_order',
@@ -224,7 +225,7 @@ describe('erase', () => {
       })
       .returning()
     const [controlMail] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'order_confirmation',
@@ -246,7 +247,7 @@ describe('erase', () => {
         delivery({ data: { email, note: 'about the customer' } }),
         delivery({ data: { email: control.email, note: 'about someone else' } }),
       ])
-    await db.insert(schema.emailSuppressions).values({ shopId: SHOP, email })
+    await db.insert(emailSuppressions).values({ shopId: SHOP, email })
     suppressed.push(email)
     // A login that belongs to nobody else
     const userId = randomUUID()
@@ -305,15 +306,15 @@ describe('erase', () => {
     assert.equal(kept!.customerId, null)
 
     // Mails: the one to them is blanked, the shop's copy lost its body, someone else's is untouched
-    const [them] = await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.id, toThem!.id))
+    const [them] = await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, toThem!.id))
     assert.match(them!.to, /^erased-.*@erased\.invalid$/)
     assert.equal(them!.subject, '(erased)')
     assert.equal(them!.html, '')
     assert.equal(them!.lastError, null)
-    const [about] = await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.id, aboutThem!.id))
+    const [about] = await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, aboutThem!.id))
     assert.equal(about!.to, 'merchant@example.com')
     assert.equal(about!.html, '')
-    const [other] = await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.id, controlMail!.id))
+    const [other] = await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, controlMail!.id))
     assert.equal(other!.html, '<p>control</p>')
 
     // Webhook history that named them is gone, and an event tells apps to erase their copy
@@ -339,8 +340,8 @@ describe('erase', () => {
       (
         await db
           .select()
-          .from(schema.emailSuppressions)
-          .where(and(eq(schema.emailSuppressions.shopId, SHOP), eq(schema.emailSuppressions.email, email)))
+          .from(emailSuppressions)
+          .where(and(eq(emailSuppressions.shopId, SHOP), eq(emailSuppressions.email, email)))
       ).length,
       1,
     )

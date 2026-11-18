@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops, user as userTable } from '@shopnex/core/schema'
+import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -38,8 +39,8 @@ after(async () => {
 })
 
 async function cleanup() {
-  await db.delete(schema.emailDeliveries).where(inArray(schema.emailDeliveries.shopId, [SHOP, OTHER]))
-  await db.delete(schema.emailSuppressions).where(inArray(schema.emailSuppressions.shopId, [SHOP, OTHER]))
+  await db.delete(emailDeliveries).where(inArray(emailDeliveries.shopId, [SHOP, OTHER]))
+  await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, [SHOP, OTHER]))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER]))
   if (made.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.id, made.carts))
   if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
@@ -198,7 +199,7 @@ describe('exportData', () => {
     const c = await customer({ email: 'ada@example.test' })
     await cart({ customerId: c.id, email: 'ada@example.test' })
     await cart({ email: 'someone@example.test' })
-    await db.insert(schema.emailDeliveries).values([
+    await db.insert(emailDeliveries).values([
       {
         shopId: SHOP,
         notification: 'order_confirmation',
@@ -214,7 +215,7 @@ describe('exportData', () => {
         html: '<p>x</p>',
       },
     ])
-    await db.insert(schema.emailSuppressions).values({ shopId: SHOP, email: 'ada@example.test' })
+    await db.insert(emailSuppressions).values({ shopId: SHOP, email: 'ada@example.test' })
     const data = await privacyService.exportData(SHOP, c.id)
     assert.equal(data?.carts.length, 1)
     assert.deepEqual(
@@ -322,7 +323,7 @@ describe('erase', () => {
     const c = await customer({ email: 'ada@example.test' })
     const o = await order({ customerId: c.id })
     const [toHer] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'order_confirmation',
@@ -333,7 +334,7 @@ describe('erase', () => {
       })
       .returning()
     const [aboutHer] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'staff_order',
@@ -344,7 +345,7 @@ describe('erase', () => {
       })
       .returning()
     const [unrelated] = await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({
         shopId: SHOP,
         notification: 'order_confirmation',
@@ -355,8 +356,7 @@ describe('erase', () => {
       .returning()
     const result = await privacyService.erase(SHOP, c.id)
     assert.equal(result.emailsRedacted, 2)
-    const row = async (id: string) =>
-      (await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.id, id)))[0]
+    const row = async (id: string) => (await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, id)))[0]
     const redacted = await row(toHer!.id)
     assert.equal(redacted?.to, `erased-${toHer!.id}@erased.invalid`)
     assert.deepEqual([redacted?.subject, redacted?.html], ['(erased)', ''])
