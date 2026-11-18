@@ -88,7 +88,7 @@ SHOPNEX_SECRET=<generated once>   # encrypts the provider keys saved in the admi
 ```
 
 - **PostgreSQL:** set `DATABASE_URL=postgres://user:password@host:5432/shopnex` and start again. The migrations are applied
-  on start (`SHOPNEX_AUTO_MIGRATE`). The data in `.pglite/` is not moved (there is no tool for that yet).
+  on start (`SHOPNEX_AUTO_MIGRATE`). To move the data from `.pglite/`, run `npx shopnex migrate-db` (see [Getting started](getting-started/README.md)).
 - **Other settings** in the file (SMTP, and so on) are passed to the admin. The address, the ports and the build's own
   files are set by the CLI and its flags and win over the file.
 - Do not commit or share it. Without `SHOPNEX_SECRET` the saved provider keys cannot be read: a lost one means a new
@@ -104,7 +104,7 @@ To start over, delete the shop folder.
 ## Not for production
 
 One process owns the data, so nothing else can open the folder, and the servers listen on `127.0.0.1` only. Use
-Docker or PostgreSQL for a real shop. There is no tool yet to move the data from the embedded database to PostgreSQL.
+Docker or PostgreSQL for a real shop, and move the data with `npx shopnex migrate-db`.
 
 ## Where the build comes from
 
