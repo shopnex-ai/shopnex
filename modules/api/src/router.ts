@@ -15,9 +15,9 @@ import { channelsModule } from '@shopnex/channels/module'
 import { contentModule } from '@shopnex/content/module'
 import { emailModule } from '@shopnex/email/module'
 import { tenancyModule } from '@shopnex/tenancy/module'
+import { storefrontModule } from '@shopnex/storefront/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
-import { storefrontRouter } from './routers/storefront'
 
 // Tags group endpoints in the API reference (/api/v1/docs). A bare builder: `.router()` on `pub`/`admin`
 // would apply their middleware a second time.
@@ -26,7 +26,7 @@ const tagged = (tag: string) => os.$context<Context>().tag(tag)
 export const router = {
   health: pub.route({ method: 'GET', path: '/health', tags: ['System'] }).handler(() => ({ ok: true })),
   // Public, contract-first (see @shopnex/storefront-sdk)
-  storefront: storefrontRouter,
+  storefront: storefrontModule.router.storefront,
   // Apps exchange an authorization code for an access token
   oauth: tagged('OAuth').router(appsModule.router.oauth),
   // The app marketplace verifies this instance's URL while connecting

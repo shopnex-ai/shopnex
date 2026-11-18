@@ -618,9 +618,6 @@ importers:
       '@shopnex/customers':
         specifier: workspace:*
         version: link:../customers
-      '@shopnex/db':
-        specifier: workspace:*
-        version: link:../db
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
@@ -651,6 +648,9 @@ importers:
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
+      '@shopnex/storefront':
+        specifier: workspace:*
+        version: link:../storefront
       '@shopnex/storefront-sdk':
         specifier: workspace:*
         version: link:../../packages/storefront-sdk
@@ -676,6 +676,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
@@ -1451,6 +1454,85 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
+  modules/storefront:
+    dependencies:
+      '@orpc/server':
+        specifier: 'catalog:'
+        version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@shopnex/cart':
+        specifier: workspace:*
+        version: link:../cart
+      '@shopnex/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
+      '@shopnex/content':
+        specifier: workspace:*
+        version: link:../content
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
+      '@shopnex/customers':
+        specifier: workspace:*
+        version: link:../customers
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
+      '@shopnex/email':
+        specifier: workspace:*
+        version: link:../email
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@shopnex/log':
+        specifier: workspace:*
+        version: link:../log
+      '@shopnex/orders':
+        specifier: workspace:*
+        version: link:../orders
+      '@shopnex/rpc':
+        specifier: workspace:*
+        version: link:../rpc
+      '@shopnex/storefront-sdk':
+        specifier: workspace:*
+        version: link:../../packages/storefront-sdk
+      '@shopnex/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
+      '@shopnex/theme':
+        specifier: workspace:*
+        version: link:../theme
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      '@shopnex/apps':
+        specifier: workspace:*
+        version: link:../apps
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
+      '@shopnex/payments':
+        specifier: workspace:*
+        version: link:../payments
+      '@shopnex/pricing':
+        specifier: workspace:*
+        version: link:../pricing
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
