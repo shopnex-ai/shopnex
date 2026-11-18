@@ -3,6 +3,14 @@
 import { build } from 'esbuild'
 import { readFileSync } from 'node:fs'
 
+// The files of templates/app-starter that `shopnex generate app` copies
+const starter = Object.fromEntries(
+  ['src/server.tsx', '.env.example', '.gitignore'].map((path) => [
+    path,
+    readFileSync(new URL(`../../../templates/app-starter/${path}`, import.meta.url), 'utf8'),
+  ]),
+)
+
 const { version, engines } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
 await build({
@@ -13,6 +21,6 @@ await build({
   format: 'esm',
   target: 'node22',
   // The bundle carries what it needs from package.json (the version it prints, the Node it requires)
-  define: { __PKG__: JSON.stringify({ version, engines }) },
+  define: { __PKG__: JSON.stringify({ version, engines }), __APP_STARTER__: JSON.stringify(starter) },
 })
 console.log(`shopnex ${version} built: dist/main.mjs`)

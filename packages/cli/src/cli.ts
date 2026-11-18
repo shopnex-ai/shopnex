@@ -4,6 +4,7 @@ import { UnavailableError, UsageError } from '@shopnex/cli-core/errors'
 import { assertNode } from '@shopnex/cli-core/node-version'
 import { brandBadge } from '@shopnex/cli-core/theme'
 import { COMMANDS, parse } from './args'
+import { generateApp, KINDS } from './generate'
 import { migrateDb } from './migrate-db'
 
 type Pkg = { version: string; engines: { node: string } }
@@ -21,6 +22,8 @@ Usage
 
 Commands
   migrate-db    move the shop's data from the embedded database to PostgreSQL
+  generate app <name>
+                make a new ShopNex app in the folder <name>: a page in the admin, app data and a webhook
 
 Options
   --to <url>        migrate-db: the PostgreSQL address, an empty database (postgres://user:password@host:5432/shopnex)
@@ -43,6 +46,14 @@ async function run(argv: string[]) {
   }
   assertNode(process.versions.node, pkg.engines.node)
   p.intro(brandBadge(` shopnex ${options.command} ${pkg.version} `))
+  if (options.command === 'generate') {
+    const [kind, name, ...extra] = options.rest
+    if (!(KINDS as readonly (string | undefined)[]).includes(kind) || extra.length > 0) {
+      throw new UsageError(`Usage: shopnex generate app <name> (kinds: ${KINDS.join(', ')}).`)
+    }
+    const folder = generateApp({ name, cwd: process.cwd(), version: pkg.version })
+    return void p.outro(`Made ${folder}\nNext: cd ${name}, copy .env.example to .env, then pnpm install and pnpm dev.`)
+  }
   await migrateDb({ ...options, version: pkg.version })
 }
 

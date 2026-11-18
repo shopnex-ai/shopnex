@@ -4,10 +4,12 @@ import { UsageError } from '@shopnex/cli-core/errors'
 /** The admin's port when create-shopnex is started without --port: what migrate-db checks to see if the shop runs */
 export const DEFAULT_PORT = 3000
 
-export const COMMANDS = ['migrate-db'] as const
+export const COMMANDS = ['migrate-db', 'generate'] as const
 
 export type Options = {
   command: string | undefined
+  /** generate: what to make and what to call it (shopnex generate app <name>) */
+  rest: string[]
   /** migrate-db: the PostgreSQL address to move to */
   to: string | undefined
   /** migrate-db: the name of an environment variable that holds it (keeps the password out of the shell history) */
@@ -37,13 +39,15 @@ export function parse(argv: string[]): Options {
   } catch (error) {
     throw new UsageError(`${(error as Error).message}\nRun shopnex --help for the options.`)
   }
-  if (positionals.length > 1) throw new UsageError(`Give one command, got: ${positionals.join(' ')}`)
+  if (positionals[0] !== 'generate' && positionals.length > 1)
+    throw new UsageError(`Give one command, got: ${positionals.join(' ')}`)
   const port = values.port === undefined ? DEFAULT_PORT : Number(values.port)
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new UsageError(`--port must be a port number (1-65535), got "${values.port}"`)
   }
   return {
     command: positionals[0],
+    rest: positionals.slice(1),
     to: values.to,
     toEnv: values['to-env'],
     dir: values.dir ?? '.',
