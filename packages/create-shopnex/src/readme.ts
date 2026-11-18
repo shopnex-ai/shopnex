@@ -1,26 +1,11 @@
-/** The README.md a new shop folder starts with: how to run it again and what the files are */
-export const readme = (name: string) => `# ${name}
+import { readFileSync } from 'node:fs'
 
-A ShopNex shop, started with \`npx create-shopnex\`.
+// The build bundles template/README.md into __SHOP_README__; from the sources (tsx) it is read from the file
+declare const __SHOP_README__: string | undefined
+const template =
+  typeof __SHOP_README__ !== 'undefined'
+    ? __SHOP_README__
+    : readFileSync(new URL('../template/README.md', import.meta.url), 'utf8')
 
-## Run it
-
-In this folder:
-
-\`\`\`sh
-npm install   # once
-npm start     # or: npm run dev
-\`\`\`
-
-Or from the folder above, without installing: \`npx create-shopnex ${name}\`.
-
-- Admin: http://localhost:3000/admin (the first run opens the setup wizard: create the owner account)
-- Storefront: http://localhost:4321
-- Ctrl+C stops everything.
-
-## What is here
-
-- \`.env\`: the shop's settings and secrets. Keep it out of git. Change \`DATABASE_URL\` to use PostgreSQL.
-- \`.pglite/\`: the embedded trial database. It is for trying ShopNex out, not for production.
-- \`docker-compose.yml\`: for a real shop, see https://shopnex.ai for the self-hosting docs.
-`
+/** The README.md a new shop folder starts with (template/README.md): how to run it again and what the files are */
+export const readme = (name: string) => template.replaceAll('{{name}}', name)

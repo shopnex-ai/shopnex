@@ -5,6 +5,9 @@ import { readFileSync } from 'node:fs'
 
 const { version, engines } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 
+// The README.md that a new shop folder starts with
+const shopReadme = readFileSync(new URL('../template/README.md', import.meta.url), 'utf8')
+
 await build({
   entryPoints: [new URL('../src/main.ts', import.meta.url).pathname],
   outfile: new URL('../dist/main.mjs', import.meta.url).pathname,
@@ -13,6 +16,6 @@ await build({
   format: 'esm',
   target: 'node22',
   // The bundle carries what it needs from package.json (the version it prints, the Node it requires)
-  define: { __PKG__: JSON.stringify({ version, engines }) },
+  define: { __PKG__: JSON.stringify({ version, engines }), __SHOP_README__: JSON.stringify(shopReadme) },
 })
 console.log(`create-shopnex ${version} built: dist/main.mjs`)

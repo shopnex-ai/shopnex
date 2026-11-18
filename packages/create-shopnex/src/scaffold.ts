@@ -4,29 +4,31 @@ import { isEdge } from '@shopnex/cli-core/bundle'
 import { readme } from './readme'
 
 const GITIGNORE = `# ShopNex: secrets and local data stay out of git
-node_modules/
 .env
 .pglite/
 apps/*/.pglite/
 apps/*/app-key
 `
 
-/** package.json: `npm start` runs this shop again, with the same create-shopnex version that made the folder */
-const packageJson = (name: string, version: string) =>
-  JSON.stringify(
-    {
-      name:
-        name
-          .toLowerCase()
-          .replace(/[^a-z0-9._-]+/g, '-')
-          .replace(/^[._-]+/, '') || 'shopnex-shop',
-      private: true,
-      scripts: { start: 'create-shopnex .', dev: 'create-shopnex .' },
-      dependencies: { 'create-shopnex': version },
-    },
-    null,
-    2,
-  ) + '\n'
+/** package.json: `npm start` runs this shop again, with the same create-shopnex version that made the folder, fetched by npx (nothing to install) */
+const packageJson = (name: string, version: string) => {
+  const run = `npx --yes create-shopnex@${version} .`
+  return (
+    JSON.stringify(
+      {
+        name:
+          name
+            .toLowerCase()
+            .replace(/[^a-z0-9._-]+/g, '-')
+            .replace(/^[._-]+/, '') || 'shopnex-shop',
+        private: true,
+        scripts: { start: run, dev: run },
+      },
+      null,
+      2,
+    ) + '\n'
+  )
+}
 
 /** The compose file of the self-hosting docs, from the tag of this version (the latest main for an edge build) */
 export const composeUrl = (version: string) =>

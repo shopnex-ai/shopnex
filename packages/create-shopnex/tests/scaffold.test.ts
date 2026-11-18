@@ -18,13 +18,11 @@ test('a new shop gets a .gitignore and the fetched docker-compose.yml, and exist
   assert.match(readFileSync(join(dir, '.gitignore'), 'utf8'), /^\.env$/m)
   assert.equal(readFileSync(join(dir, 'docker-compose.yml'), 'utf8'), 'services: {}\n')
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
-  assert.deepEqual(
-    [pkg.scripts.start, pkg.scripts.dev, pkg.dependencies['create-shopnex']],
-    ['create-shopnex .', 'create-shopnex .', '1.2.3'],
-  )
-  assert.match(readFileSync(join(dir, '.gitignore'), 'utf8'), /^node_modules\/$/m)
+  assert.deepEqual([pkg.scripts.start, pkg.scripts.dev], Array(2).fill('npx --yes create-shopnex@1.2.3 .'))
+  assert.equal(pkg.dependencies, undefined)
   assert.match(readFileSync(join(dir, 'README.md'), 'utf8'), /npm start/)
-  assert.match(readFileSync(join(dir, 'README.md'), 'utf8'), /npx create-shopnex shop/)
+  assert.doesNotMatch(readFileSync(join(dir, 'README.md'), 'utf8'), /\{\{name\}\}/)
+  assert.match(readFileSync(join(dir, 'README.md'), 'utf8'), /^# shop$/m)
   writeFileSync(join(dir, '.gitignore'), 'mine\n')
   writeFileSync(join(dir, 'README.md'), 'my notes\n')
   writeFileSync(join(dir, 'package.json'), '{}\n')

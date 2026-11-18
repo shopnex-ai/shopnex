@@ -29,12 +29,11 @@ The shop folder has a `package.json`, so from inside it:
 
 ```sh
 cd shopnex
-npm install   # once
 npm start     # or: npm run dev
 ```
 
-Both scripts run `create-shopnex .` with the version that made the folder (pinned in `package.json`). The same works
-from the folder above: `npx create-shopnex@latest shopnex`.
+No `npm install` first: both scripts run `npx --yes create-shopnex@<version> .`, the version that made the folder, and
+npx fetches it into its cache the first time. The same works from the folder above: `npx create-shopnex@latest shopnex`.
 
 ## What it does, and why you can trust it
 
