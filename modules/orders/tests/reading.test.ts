@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Reading orders: the list with its filters and search, one order with everything it holds, deleting, and importing a shop's history from
 // elsewhere (once, without touching stock, payments or emails).
 import assert from 'node:assert/strict'
@@ -36,27 +37,31 @@ describe('the list', () => {
       .set({ createdAt: new Date(Date.now() - 1000) })
       .where(eq(orders.id, c.id))
     const p = await fx.product({}, OTHER_SHOP)
-    await orderService.create(OTHER_SHOP, {
-      email: 'x@example.test',
-      items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
-    })
-    const all = await orderService.list(SHOP, page)
+    await orderService.create(
+      OTHER_SHOP,
+      {
+        email: 'x@example.test',
+        items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
+      },
+      db,
+    )
+    const all = await orderService.list(SHOP, page, db)
     assert.deepEqual([numbers(all), all.total], [[c.orderNumber, b.orderNumber, a.orderNumber], 3])
     assert.equal(all.items[2]?.customerName, 'Ada')
-    const second = await orderService.list(SHOP, { limit: 1, offset: 1 })
+    const second = await orderService.list(SHOP, { limit: 1, offset: 1 }, db)
     assert.deepEqual([numbers(second), second.total], [[b.orderNumber], 3])
   })
 
   test('filters by customer, payment status, fulfillment status and whether it is cancelled', async () => {
     const ada = await fx.customer()
     const paid = await fx.place({ customerId: ada.id })
-    await orderService.markAsPaid(SHOP, paid.id)
+    await orderService.markAsPaid(SHOP, paid.id, db)
     const shipped = await fx.place()
-    await orderService.fulfill(SHOP, shipped.id)
+    await orderService.fulfill(SHOP, shipped.id, db)
     const cancelled = await fx.place()
-    await orderService.cancel(SHOP, cancelled.id, { reason: 'other', restock: false })
+    await orderService.cancel(SHOP, cancelled.id, { reason: 'other', restock: false }, db)
     const nums = async (opts: Parameters<typeof orderService.list>[1]) =>
-      numbers(await orderService.list(SHOP, opts)).sort()
+      numbers(await orderService.list(SHOP, opts, db)).sort()
     assert.deepEqual(await nums({ ...page, customerId: ada.id }), [paid.orderNumber])
     assert.deepEqual(await nums({ ...page, financialStatus: 'paid' }), [paid.orderNumber])
     assert.deepEqual(await nums({ ...page, financialStatus: 'voided' }), [cancelled.orderNumber])
@@ -69,7 +74,7 @@ describe('the list', () => {
     const ada = await fx.customer({ name: 'Ada Lovelace', email: 'ada@example.test' })
     const a = await fx.place({ customerId: ada.id })
     const b = await fx.place({ email: '100%_sure@example.test' })
-    const found = async (search: string) => numbers(await orderService.list(SHOP, { ...page, search })).sort()
+    const found = async (search: string) => numbers(await orderService.list(SHOP, { ...page, search }, db)).sort()
     assert.deepEqual(await found(`#${String(a.orderNumber)}`), [a.orderNumber])
     assert.deepEqual(await found(String(b.orderNumber)), [b.orderNumber])
     assert.deepEqual(await found('ADA@'), [a.orderNumber])
@@ -77,7 +82,7 @@ describe('the list', () => {
     assert.deepEqual(await found('%_s'), [b.orderNumber])
     assert.deepEqual(await found('%'), [b.orderNumber])
     assert.deepEqual(await found('9999999'), [])
-    assert.equal((await orderService.list(SHOP, { ...page, search: 'lovelace' })).total, 1)
+    assert.equal((await orderService.list(SHOP, { ...page, search: 'lovelace' }, db)).total, 1)
   })
 })
 
@@ -88,9 +93,9 @@ describe('one order', () => {
       customerId: ada.id,
       shipping: { title: 'Standard', code: null, priceCents: 500, freeAboveCents: null },
     })
-    await orderService.markAsPaid(SHOP, o.id)
-    await orderService.fulfill(SHOP, o.id, { trackingNumber: 'T1' })
-    const got = await orderService.getById(SHOP, o.id)
+    await orderService.markAsPaid(SHOP, o.id, db)
+    await orderService.fulfill(SHOP, o.id, db, { trackingNumber: 'T1' })
+    const got = await orderService.getById(SHOP, o.id, db)
     assert.deepEqual(
       [
         got?.items.length,
@@ -105,22 +110,26 @@ describe('one order', () => {
 
   test('null for an unknown order or another shop’s', async () => {
     const o = await fx.place()
-    assert.equal(await orderService.getById(SHOP, MISSING), null)
-    assert.equal(await orderService.getById('another-shop', o.id), null)
+    assert.equal(await orderService.getById(SHOP, MISSING, db), null)
+    assert.equal(await orderService.getById('another-shop', o.id, db), null)
   })
 
   test('removeMany deletes the shop’s own with their lines and says how many; nothing to delete is 0', async () => {
     const [a, b] = [await fx.place(), await fx.place()]
     const p = await fx.product({}, OTHER_SHOP)
-    const theirs = await orderService.create(OTHER_SHOP, {
-      email: 'x@example.test',
-      items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
-    })
-    assert.equal(await orderService.removeMany(SHOP, [a.id, theirs.id, MISSING]), 1)
-    assert.equal(await orderService.removeMany(SHOP, []), 0)
+    const theirs = await orderService.create(
+      OTHER_SHOP,
+      {
+        email: 'x@example.test',
+        items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
+      },
+      db,
+    )
+    assert.equal(await orderService.removeMany(SHOP, [a.id, theirs.id, MISSING], db), 1)
+    assert.equal(await orderService.removeMany(SHOP, [], db), 0)
     assert.equal((await db.select().from(orderItems).where(eq(orderItems.orderId, a.id))).length, 0)
-    assert.ok(await orderService.getById(SHOP, b.id))
-    assert.ok(await orderService.getById(OTHER_SHOP, theirs.id))
+    assert.ok(await orderService.getById(SHOP, b.id, db))
+    assert.ok(await orderService.getById(OTHER_SHOP, theirs.id, db))
   })
 })
 
@@ -148,9 +157,9 @@ describe('importing history', () => {
   })
 
   test('adds the order as it was: its status, money, date and lines, marked as imported, with a customer found or made by email', async () => {
-    const { imported, skipped } = await orderService.importHistoricalMany(SHOP, [input()])
+    const { imported, skipped } = await orderService.importHistoricalMany(SHOP, [input()], db)
     assert.deepEqual([imported.length, skipped], [1, []])
-    const o = (await orderService.getById(SHOP, imported[0]!.id))!
+    const o = (await orderService.getById(SHOP, imported[0]!.id, db))!
     assert.deepEqual(
       [
         o.paymentGateway,
@@ -193,10 +202,11 @@ describe('importing history', () => {
     const sent = await fx.hook(['order.created'])
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 5 }] })
     const first = await fx.place()
-    const { imported } = await orderService.importHistoricalMany(SHOP, [
-      input({ sourceOrderName: 'A' }),
-      input({ sourceOrderName: 'B', email: 'b@customer.test' }),
-    ])
+    const { imported } = await orderService.importHistoricalMany(
+      SHOP,
+      [input({ sourceOrderName: 'A' }), input({ sourceOrderName: 'B', email: 'b@customer.test' })],
+      db,
+    )
     assert.deepEqual(
       imported.map((o) => o.orderNumber),
       [first.orderNumber + 1, first.orderNumber + 2],
@@ -213,30 +223,34 @@ describe('importing history', () => {
   })
 
   test('an order already imported is skipped, by name, so uploading a file twice adds nothing', async () => {
-    await orderService.importHistoricalMany(SHOP, [input()])
-    const again = await orderService.importHistoricalMany(SHOP, [input(), input({ sourceOrderName: '#1043' })])
+    await orderService.importHistoricalMany(SHOP, [input()], db)
+    const again = await orderService.importHistoricalMany(SHOP, [input(), input({ sourceOrderName: '#1043' })], db)
     assert.deepEqual([again.imported.length, again.skipped], [1, ['#1042']])
-    assert.equal((await orderService.list(SHOP, page)).total, 2)
+    assert.equal((await orderService.list(SHOP, page, db)).total, 2)
   })
 
   test('a name that only starts the same is not the same order', async () => {
-    await orderService.importHistoricalMany(SHOP, [input({ sourceOrderName: '#10' })])
+    await orderService.importHistoricalMany(SHOP, [input({ sourceOrderName: '#10' })], db)
     assert.equal(
-      (await orderService.importHistoricalMany(SHOP, [input({ sourceOrderName: '#100' })])).imported.length,
+      (await orderService.importHistoricalMany(SHOP, [input({ sourceOrderName: '#100' })], db)).imported.length,
       1,
     )
   })
 
   test('an unshipped, cancelled order has no fulfillment, and no shipping line when there was no shipping charge', async () => {
-    const { imported } = await orderService.importHistoricalMany(SHOP, [
-      input({
-        fulfillmentStatus: 'unfulfilled',
-        cancelledAt: new Date('2024-03-02T00:00:00Z'),
-        shippingCents: 0,
-        totalCents: 3000,
-      }),
-    ])
-    const o = (await orderService.getById(SHOP, imported[0]!.id))!
+    const { imported } = await orderService.importHistoricalMany(
+      SHOP,
+      [
+        input({
+          fulfillmentStatus: 'unfulfilled',
+          cancelledAt: new Date('2024-03-02T00:00:00Z'),
+          shippingCents: 0,
+          totalCents: 3000,
+        }),
+      ],
+      db,
+    )
+    const o = (await orderService.getById(SHOP, imported[0]!.id, db))!
     assert.deepEqual(
       [o.fulfillments.length, o.shippingLines.length, o.cancelledAt?.toISOString()],
       [0, 0, '2024-03-02T00:00:00.000Z'],
@@ -245,27 +259,31 @@ describe('importing history', () => {
 
   test('is all or nothing: a bad order undoes the ones before it', async () => {
     await assert.rejects(
-      orderService.importHistoricalMany(SHOP, [
-        input({ sourceOrderName: 'good' }),
-        input({
-          sourceOrderName: 'bad',
-          items: [
-            {
-              title: 'x',
-              unitPriceCents: 1,
-              quantity: 1,
-              discountCents: 0,
-              sku: null,
-              vendor: null,
-              imageUrl: null,
-              variantTitle: null,
-            },
-            null as never,
-          ],
-        }),
-      ]),
+      orderService.importHistoricalMany(
+        SHOP,
+        [
+          input({ sourceOrderName: 'good' }),
+          input({
+            sourceOrderName: 'bad',
+            items: [
+              {
+                title: 'x',
+                unitPriceCents: 1,
+                quantity: 1,
+                discountCents: 0,
+                sku: null,
+                vendor: null,
+                imageUrl: null,
+                variantTitle: null,
+              },
+              null as never,
+            ],
+          }),
+        ],
+        db,
+      ),
     )
-    assert.equal((await orderService.list(SHOP, page)).total, 0)
+    assert.equal((await orderService.list(SHOP, page, db)).total, 0)
     assert.equal((await customerService.list(SHOP, { limit: 10, offset: 0 }, db)).total, 0)
   })
 })

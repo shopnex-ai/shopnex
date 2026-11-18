@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
@@ -56,7 +56,8 @@ before(async () => {
 })
 
 after(async () => {
-  for (const id of directOrders) await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
+  for (const id of directOrders)
+    await orderService.cancel(SHOP, id, { reason: 'other', restock: true }, db).catch(() => {})
   if (directOrders.length) await db.delete(orders).where(inArray(orders.id, directOrders))
   await fx.cleanup()
   if (productIds.length) await db.delete(products).where(inArray(products.id, productIds))
@@ -133,10 +134,14 @@ describe('stock', () => {
   test('two lines for one variant are checked together: they cannot take more than is left', async () => {
     const variantId = await tracked(3)
     const order = (lines: number[]) =>
-      orderService.create(SHOP, {
-        email: fx.email,
-        items: lines.map((quantity) => ({ variantId, quantity })),
-      })
+      orderService.create(
+        SHOP,
+        {
+          email: fx.email,
+          items: lines.map((quantity) => ({ variantId, quantity })),
+        },
+        db,
+      )
 
     await assert.rejects(
       order([2, 2]),
@@ -153,11 +158,11 @@ describe('stock', () => {
   test('another shop’s variant id takes and gives back nothing', async () => {
     const variantId = await tracked(3)
     const other = await fx.shop()
-    assert.equal(await variantService.reserveStock(other.id, variantId, 1), false)
-    await variantService.restock(other.id, variantId, 5)
+    assert.equal(await variantService.reserveStock(other.id, variantId, 1, db), false)
+    await variantService.restock(other.id, variantId, 5, db)
     assert.equal(await stockOf(variantId), 3)
     // and the owner's own shop still can
-    assert.equal(await variantService.reserveStock(SHOP, variantId, 1), true)
+    assert.equal(await variantService.reserveStock(SHOP, variantId, 1, db), true)
     assert.equal(await stockOf(variantId), 2)
   })
 

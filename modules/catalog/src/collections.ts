@@ -2,7 +2,7 @@
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
-import { db, type Conn } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
@@ -21,11 +21,7 @@ export type CollectionInput = {
 }
 
 /** `channelId`: only collections published on that channel now (storefronts) */
-export async function list(
-  shopId: string,
-  opts: { limit: number; offset: number; channelId?: string },
-  conn: Conn = db,
-) {
+export async function list(shopId: string, opts: { limit: number; offset: number; channelId?: string }, conn: Conn) {
   return conn
     .select()
     .from(collections)
@@ -40,7 +36,7 @@ export async function list(
     .offset(opts.offset)
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(collections)
@@ -48,7 +44,7 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
-export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
+export async function getBySlug(shopId: string, slug: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(collections)
@@ -57,7 +53,7 @@ export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
 }
 
 /** Of these collection slugs, the ones published on the channel now (for what a storefront may name or filter by) */
-export async function liveSlugs(shopId: string, channelId: string, slugs: string[], conn: Conn = db) {
+export async function liveSlugs(shopId: string, channelId: string, slugs: string[], conn: Conn) {
   if (!slugs.length) return new Set<string>()
   const rows = await conn
     .select({ slug: collections.slug })
@@ -72,8 +68,8 @@ export async function liveSlugs(shopId: string, channelId: string, slugs: string
   return new Set(rows.map((r) => r.slug))
 }
 
-export async function create(shopId: string, input: CollectionInput) {
-  return db.transaction(async (tx) => {
+export async function create(shopId: string, input: CollectionInput, conn: Conn) {
+  return conn.transaction(async (tx) => {
     let slug: string
     if (input.slug) {
       if (await isSlugTaken(tx, collections, shopId, input.slug)) {
@@ -102,8 +98,8 @@ export async function create(shopId: string, input: CollectionInput) {
 }
 
 // Partial update; a changed slug must stay unique within the shop
-export async function update(shopId: string, id: string, patch: Partial<CollectionInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<CollectionInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const existing = await getById(shopId, id, tx)
     if (!existing) return null
     if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, collections, shopId, patch.slug, id))) {
@@ -130,18 +126,18 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
 }
 
 // Products stay; only their membership rows cascade away
-export async function remove(shopId: string, id: string) {
-  const [row] = await db
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [row] = await conn
     .delete(collections)
     .where(and(eq(collections.shopId, shopId), eq(collections.id, id)))
     .returning()
-  if (row) await publicationService.removeFor(shopId, 'collection', [id], db)
+  if (row) await publicationService.removeFor(shopId, 'collection', [id], conn)
   return row ?? null
 }
 
-export async function removeMany(shopId: string, ids: string[]) {
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
-  const deleted = await db
+  const deleted = await conn
     .delete(collections)
     .where(and(eq(collections.shopId, shopId), inArray(collections.id, ids)))
     .returning({ id: collections.id })
@@ -149,13 +145,13 @@ export async function removeMany(shopId: string, ids: string[]) {
     shopId,
     'collection',
     deleted.map((c) => c.id),
-    db,
+    conn,
   )
   return deleted.length
 }
 
 // collectionId → number of products, for the given collections (all belong to this shop)
-export async function productCounts(shopId: string, ids: string[], conn: Conn = db) {
+export async function productCounts(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return new Map<string, number>()
   const rows = await conn
     .select({ id: productCollections.collectionId, n: count() })
@@ -167,7 +163,7 @@ export async function productCounts(shopId: string, ids: string[], conn: Conn = 
 }
 
 // Members in collection order
-export async function listProducts(shopId: string, collectionId: string, conn: Conn = db) {
+export async function listProducts(shopId: string, collectionId: string, conn: Conn) {
   return conn
     .select({ id: products.id, title: products.title, status: products.status })
     .from(productCollections)
@@ -178,8 +174,8 @@ export async function listProducts(shopId: string, collectionId: string, conn: C
 }
 
 // Idempotent; new products go to the end of the collection
-export async function addProduct(shopId: string, collectionId: string, productId: string) {
-  return db.transaction(async (tx) => {
+export async function addProduct(shopId: string, collectionId: string, productId: string, conn: Conn) {
+  return conn.transaction(async (tx) => {
     // Both must belong to this shop — never link across shops
     if (!(await getById(shopId, collectionId, tx))) {
       throw new CatalogError('COLLECTION_NOT_FOUND', 'Collection not found')
@@ -198,11 +194,11 @@ export async function addProduct(shopId: string, collectionId: string, productId
   })
 }
 
-export async function removeProduct(shopId: string, collectionId: string, productId: string) {
-  if (!(await getById(shopId, collectionId))) {
+export async function removeProduct(shopId: string, collectionId: string, productId: string, conn: Conn) {
+  if (!(await getById(shopId, collectionId, conn))) {
     throw new CatalogError('COLLECTION_NOT_FOUND', 'Collection not found')
   }
-  await db
+  await conn
     .delete(productCollections)
     .where(and(eq(productCollections.collectionId, collectionId), eq(productCollections.productId, productId)))
 }

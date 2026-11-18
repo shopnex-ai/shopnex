@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // What the cart tests share: the embedded database, a product catalog on the Online Store, carts, and everything a checkout creates, cleaned up
 // afterwards. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { shops } from '@shopnex/core/schema'
@@ -49,14 +50,14 @@ export async function quietChannel() {
 /** A product with its variants; on the Online Store unless it is made in a shop without one */
 export async function product(patch: Partial<Parameters<typeof productService.create>[1]> = {}, shopId = SHOP) {
   const price = patch.variants ? {} : { priceCents: 2500 }
-  const created = await productService.create(shopId, { title: 'Linen shirt', ...price, ...patch } as never)
+  const created = await productService.create(shopId, { title: 'Linen shirt', ...price, ...patch } as never, db)
   return created
 }
 
 /** A cart on the Online Store with these lines */
 export async function cart(lines: { variantId: string; quantity: number }[] = [], shopId = SHOP) {
   const channel = await onlineStore(shopId)
-  return cartService.create(shopId, channel.id, lines)
+  return cartService.create(shopId, channel.id, db, lines)
 }
 
 export async function discount(patch: Partial<Parameters<typeof discountService.create>[1]> = {}) {

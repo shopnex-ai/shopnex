@@ -49,6 +49,10 @@ const connectionBoundModules = [
   'modules/content',
   'modules/customers',
   'modules/privacy',
+  'modules/catalog',
+  'modules/orders',
+  'modules/cart',
+  'modules/email',
 ]
 
 // Server code logs through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), never console.*: every

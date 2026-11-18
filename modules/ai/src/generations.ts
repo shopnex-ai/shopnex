@@ -151,7 +151,7 @@ export async function run<C extends AiCapability>(
   }
   const subject =
     definition.subject === 'product'
-      ? { type: 'product', product: await subjects.product(shopId, needSubject(), shop.currency) }
+      ? { type: 'product', product: await subjects.product(shopId, needSubject(), shop.currency, conn) }
       : definition.subject === 'collection'
         ? { type: 'collection', collection: await subjects.collection(shopId, needSubject(), conn) }
         : { type: 'page', page: await subjects.page(shopId, request.subjectId, conn) }

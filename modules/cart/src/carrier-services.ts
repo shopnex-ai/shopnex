@@ -5,7 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
-import { db, type Conn } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './cart.errors'
 import { log } from './log'
@@ -46,33 +46,33 @@ const origin = (url: string) => {
  * Creates or updates the app's carrier service in this shop. The rates URL must be on the app's own origin (its
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and switch stay.
  */
-export async function configure(shopId: string, appId: string, input: ConfigureInput) {
-  const [app] = await db.select().from(apps).where(eq(apps.id, appId))
+export async function configure(shopId: string, appId: string, input: ConfigureInput, conn: Conn) {
+  const [app] = await conn.select().from(apps).where(eq(apps.id, appId))
   if (!app) throw new CartError('NOT_A_CARRIER_APP', 'Only an installed app can configure a carrier service')
   const appOrigin = origin(app.appUrl)
   if (!appOrigin || origin(input.ratesUrl) !== appOrigin) {
     throw new CartError('INVALID_RATES_URL', `The rates URL must be on the app's origin (${appOrigin})`)
   }
-  const [existing] = await db
+  const [existing] = await conn
     .select()
     .from(carrierServices)
     .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.appId, appId)))
   if (existing) {
-    const [service] = await db
+    const [service] = await conn
       .update(carrierServices)
       .set({ ratesUrl: input.ratesUrl, ready: input.ready, updatedAt: new Date() })
       .where(eq(carrierServices.id, existing.id))
       .returning()
     return service!
   }
-  const [service] = await db
+  const [service] = await conn
     .insert(carrierServices)
     .values({ shopId, appId, name: input.name, ratesUrl: input.ratesUrl, ready: input.ready })
     .returning()
   return service!
 }
 
-export async function list(shopId: string, opts: { usableOnly?: boolean } = {}, conn: Conn = db) {
+export async function list(shopId: string, opts: { usableOnly?: boolean } = {}, conn: Conn) {
   return conn
     .select()
     .from(carrierServices)
@@ -87,8 +87,8 @@ export async function list(shopId: string, opts: { usableOnly?: boolean } = {}, 
 }
 
 /** Staff: rename or switch off. Null when the service isn't in this shop. */
-export async function update(shopId: string, id: string, patch: { name?: string; active?: boolean }) {
-  const [service] = await db
+export async function update(shopId: string, id: string, patch: { name?: string; active?: boolean }, conn: Conn) {
+  const [service] = await conn
     .update(carrierServices)
     .set({ ...patch, updatedAt: new Date() })
     .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.id, id)))
@@ -101,8 +101,8 @@ export async function update(shopId: string, id: string, patch: { name?: string;
  * in Settings → Shipping. An app that also imports products (write_products, a dropshipping app) is a different kind
  * of app that happens to quote its own freight: it is installed from Apps, not offered here.
  */
-export async function availableApps(shopId: string) {
-  const rows = await db
+export async function availableApps(shopId: string, conn: Conn) {
+  const rows = await conn
     .select({ app: apps, installationId: appInstallations.id })
     .from(apps)
     .leftJoin(
@@ -201,9 +201,9 @@ async function quoteService(
 }
 
 /** Rates from every active, ready carrier service, cheapest first. Needs a destination country at least. */
-export async function quote(shopId: string, input: QuoteInput): Promise<CarrierRate[]> {
+export async function quote(shopId: string, input: QuoteInput, conn: Conn): Promise<CarrierRate[]> {
   if (!input.destination.countryCode) return []
-  const services = await list(shopId, { usableOnly: true })
+  const services = await list(shopId, { usableOnly: true }, conn)
   const rates = (await Promise.all(services.map((s) => quoteService(s, shopId, input)))).flat()
   return rates.sort((a, b) => a.priceCents - b.priceCents)
 }

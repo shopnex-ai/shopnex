@@ -3,7 +3,7 @@
 // method (Stripe…) also starts a payment session, and the buyer is sent to its paymentUrl to pay.
 import { variantService } from '@shopnex/catalog'
 import { eq } from 'drizzle-orm'
-import { all, db } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PaymentError, paymentMethodService, paymentService } from '@shopnex/payments'
 import { calculate, taxRateFor, taxService } from '@shopnex/pricing'
@@ -98,15 +98,17 @@ function quoteInput(cart: CartView, address: QuoteAddress): QuoteInput {
 export async function options(
   shopId: string,
   subtotalCents: number,
+  conn: Conn,
   quote?: { cart: CartView; address?: QuoteAddress },
 ) {
-  const [rates, methods, carrierServices, carrierRates] = await Promise.all([
-    listShippingRates(shopId, { activeOnly: true }),
-    paymentMethodService.list(shopId, { activeOnly: true }, db),
-    carrierService.list(shopId, { usableOnly: true }),
-    quote?.address?.countryCode
-      ? carrierService.quote(shopId, quoteInput(quote.cart, quote.address))
-      : Promise.resolve([]),
+  const [rates, methods, carrierServices, carrierRates] = await all(conn, [
+    () => listShippingRates(shopId, { activeOnly: true }, conn),
+    () => paymentMethodService.list(shopId, { activeOnly: true }, conn),
+    () => carrierService.list(shopId, { usableOnly: true }, conn),
+    async () =>
+      quote?.address?.countryCode
+        ? carrierService.quote(shopId, quoteInput(quote.cart, quote.address), conn)
+        : Promise.resolve([]),
   ])
   return {
     // Carrier services quote once the buyer's address is known: the checkout asks again as they type it
@@ -142,13 +144,14 @@ export async function options(
 
 // What tax depends on besides the cart: the shop's rates (public — they're shown at checkout) and settings.
 // The hosted checkout passes this to the browser to update totals as the buyer types the address.
-export async function taxContext(shopId: string) {
-  const [[shop], rates] = await Promise.all([
-    db
-      .select({ taxesIncluded: shops.taxesIncluded, taxShipping: shops.taxShipping })
-      .from(shops)
-      .where(eq(shops.id, shopId)),
-    taxService.list(shopId, db),
+export async function taxContext(shopId: string, conn: Conn) {
+  const [[shop], rates] = await all(conn, [
+    () =>
+      conn
+        .select({ taxesIncluded: shops.taxesIncluded, taxShipping: shops.taxShipping })
+        .from(shops)
+        .where(eq(shops.id, shopId)),
+    () => taxService.list(shopId, conn),
   ])
   return {
     taxesIncluded: shop?.taxesIncluded ?? false,
@@ -167,11 +170,12 @@ export async function taxContext(shopId: string) {
 export async function estimate(
   shopId: string,
   cart: CartView,
+  conn: Conn,
   input: { shippingRateId?: string; address?: QuoteAddress } = {},
 ) {
-  const [{ shippingRates }, tax] = await Promise.all([
-    options(shopId, cart.subtotalCents, { cart, address: input.address }),
-    taxContext(shopId),
+  const [{ shippingRates }, tax] = await all(conn, [
+    () => options(shopId, cart.subtotalCents, conn, { cart, address: input.address }),
+    () => taxContext(shopId, conn),
   ])
   const rate = input.shippingRateId ? shippingRates.find((r) => r.id === input.shippingRateId) : shippingRates[0]
   if (input.shippingRateId && !rate) throw new CartError('INVALID_SHIPPING_RATE', 'Choose an available shipping method')
@@ -196,9 +200,9 @@ export type CompleteOptions = {
  * null for manual methods, or when the app couldn't be reached (`paymentError`): the order is placed and
  * unpaid, and completing again retries. Completing an unpaid, already completed cart picks the payment up again.
  */
-export async function complete(shopId: string, token: string, input: CheckoutInput, opts: CompleteOptions) {
-  const placed = await placeOrder(shopId, token, input)
-  const [order] = await db
+export async function complete(shopId: string, token: string, input: CheckoutInput, opts: CompleteOptions, conn: Conn) {
+  const placed = await placeOrder(shopId, token, input, conn)
+  const [order] = await conn
     .select({
       paymentGateway: orders.paymentGateway,
       financialStatus: orders.financialStatus,
@@ -220,7 +224,7 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
         returnUrl: opts.returnUrl,
         paymentMethodId: placed.paymentMethodId ?? undefined,
       },
-      db,
+      conn,
     )
     return { ...placed, paymentUrl: session.redirectUrl, paymentError: null }
   } catch (error) {
@@ -232,18 +236,19 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
 // One transaction: lock cart → create order (prices snapshotted, stock reserved) → mark cart completed.
 // Idempotent: completing an already-completed cart returns the same order instead of creating another.
 // A shop without shipping rates charges no shipping; a shop with payment methods requires one.
-async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
+async function placeOrder(shopId: string, token: string, input: CheckoutInput, conn: Conn) {
   // The rule of `options` applies here too: when a carrier app prices the cart only its rates are on offer, and the
   // price is its answer now (asked again here, outside the transaction since it calls another server), whatever the
   // browser showed
   let carrierRate: Awaited<ReturnType<typeof carrierService.quote>>[number] | null = null
-  const found = await cartService.findByToken(shopId, token)
+  const found = await cartService.findByToken(shopId, token, conn)
   if (found && found.status !== 'completed') {
     const chose = input.shippingRateId
     if (input.shippingAddress?.countryCode) {
       const quoted = await carrierService.quote(
         shopId,
-        quoteInput(await cartService.view(found), input.shippingAddress),
+        quoteInput(await cartService.view(found, conn), input.shippingAddress),
+        conn,
       )
       if (quoted.length > 0) {
         carrierRate = (chose ? quoted.find((r) => r.id === chose) : quoted[0]) ?? null
@@ -259,7 +264,7 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
       )
     }
   }
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     const cart = await cartService.lockForCheckout(tx, shopId, token)
     if (!cart) throw new CartError('CART_NOT_FOUND', 'Cart not found or expired')
     if (cart.status === 'completed' && cart.orderId) {

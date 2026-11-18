@@ -2,7 +2,7 @@
 // Like Shopify, a period is a run of whole days in the viewer's timezone, compared with the run just before it.
 // Sales count every order that isn't cancelled, voided or fully refunded; partial refunds aren't subtracted.
 import { sql } from 'drizzle-orm'
-import { all, db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 
 export type OverviewInput = {
   /** Days in the period, ending today (1 = today only) */
@@ -24,7 +24,7 @@ export type OverviewTotals = {
 const localDate = (timezone: string) => sql`(o.created_at::timestamptz at time zone ${timezone})::date`
 const counted = sql`o.cancelled_at is null and o.financial_status not in ('voided', 'refunded')`
 
-export async function overview(shopId: string, { days, timezone }: OverviewInput, conn: Conn = db) {
+export async function overview(shopId: string, { days, timezone }: OverviewInput, conn: Conn) {
   const today = sql`(now() at time zone ${timezone})::date`
   const start = sql`(${today} - ${days - 1}::int)`
   const previousStart = sql`(${start} - ${days}::int)`

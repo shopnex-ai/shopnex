@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Settings → Notifications: the Liquid of each email, edited, reverted, previewed with the shop's latest order and sent as a test,
 // the list of recent emails, and the sign-in code email. Plus the Liquid engine's rules (no files, no scripts, HTML escaped).
 import assert from 'node:assert/strict'
@@ -28,7 +29,7 @@ after(async () => {
 
 describe('the list', () => {
   test('every notification, in order, each on and not customized until the shop changes it', async () => {
-    const list = await notificationService.list(SHOP)
+    const list = await notificationService.list(SHOP, db)
     assert.deepEqual(
       list.map((n) => n.notification),
       [
@@ -55,12 +56,12 @@ describe('the list', () => {
 
   test('the abandoned cart email is off until its own switch is turned on; the others follow their template row', async () => {
     assert.equal(
-      (await notificationService.list(SHOP)).find((n) => n.notification === 'abandoned_cart')?.enabled,
+      (await notificationService.list(SHOP, db)).find((n) => n.notification === 'abandoned_cart')?.enabled,
       false,
     )
-    await notificationService.update(SHOP, 'order_cancelled', { enabled: false })
-    await notificationService.update(SHOP, 'abandoned_cart', { enabled: true })
-    const list = await notificationService.list(SHOP)
+    await notificationService.update(SHOP, 'order_cancelled', { enabled: false }, db)
+    await notificationService.update(SHOP, 'abandoned_cart', { enabled: true }, db)
+    const list = await notificationService.list(SHOP, db)
     assert.deepEqual(
       [
         list.find((n) => n.notification === 'abandoned_cart')?.enabled,
@@ -73,7 +74,7 @@ describe('the list', () => {
 
 describe('reading and editing one', () => {
   test('without edits it is the built-in subject and body, with the defaults alongside', async () => {
-    const n = await notificationService.get(SHOP, 'order_confirmation')
+    const n = await notificationService.get(SHOP, 'order_confirmation', db)
     assert.deepEqual(
       [n.subject, n.body, n.customized, n.enabled],
       [DEFAULTS.order_confirmation.subject, DEFAULTS.order_confirmation.body, false, true],
@@ -83,30 +84,35 @@ describe('reading and editing one', () => {
 
   test('an edit is saved for the shop only, and is customized', async () => {
     await fx.otherShop()
-    const saved = await notificationService.update(SHOP, 'shipping_confirmation', {
-      subject: 'On its way, {{ order.name }}',
-    })
+    const saved = await notificationService.update(
+      SHOP,
+      'shipping_confirmation',
+      {
+        subject: 'On its way, {{ order.name }}',
+      },
+      db,
+    )
     assert.deepEqual(
       [saved.subject, saved.body, saved.customized],
       ['On its way, {{ order.name }}', DEFAULTS.shipping_confirmation.body, true],
     )
     assert.equal(
-      (await notificationService.get(fx.OTHER_SHOP, 'shipping_confirmation')).subject,
+      (await notificationService.get(fx.OTHER_SHOP, 'shipping_confirmation', db)).subject,
       DEFAULTS.shipping_confirmation.subject,
     )
   })
 
   test('text equal to the default is stored as "default" (null), so later changes to the defaults apply', async () => {
-    await notificationService.update(SHOP, 'order_confirmation', { subject: 'Custom' })
-    await notificationService.update(SHOP, 'order_confirmation', { subject: DEFAULTS.order_confirmation.subject })
+    await notificationService.update(SHOP, 'order_confirmation', { subject: 'Custom' }, db)
+    await notificationService.update(SHOP, 'order_confirmation', { subject: DEFAULTS.order_confirmation.subject }, db)
     const [row] = await db.select().from(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
     assert.deepEqual([row?.subject, row?.body], [null, null])
-    assert.equal((await notificationService.get(SHOP, 'order_confirmation')).customized, false)
+    assert.equal((await notificationService.get(SHOP, 'order_confirmation', db)).customized, false)
   })
 
   test('Liquid with a syntax error is INVALID_TEMPLATE, naming the part and, for the body, the line; nothing is saved', async () => {
     await assert.rejects(
-      notificationService.update(SHOP, 'order_confirmation', { subject: '{{ order.name ' }),
+      notificationService.update(SHOP, 'order_confirmation', { subject: '{{ order.name ' }, db),
       (e: unknown) => {
         assert.ok(e instanceof EmailError)
         assert.equal(e.code, 'INVALID_TEMPLATE')
@@ -115,22 +121,27 @@ describe('reading and editing one', () => {
       },
     )
     await assert.rejects(
-      notificationService.update(SHOP, 'order_confirmation', { body: '<p>ok</p>\n<p>{% if %}</p>' }),
+      notificationService.update(SHOP, 'order_confirmation', { body: '<p>ok</p>\n<p>{% if %}</p>' }, db),
       (e: unknown) => e instanceof EmailError && /^Body \(line 2\): /.test(e.message),
     )
     assert.equal((await db.select().from(emailTemplates)).length, 0)
   })
 
   test('turning one off is its own switch: it stays customized or not, and the layout cannot be turned off', async () => {
-    const off = await notificationService.update(SHOP, 'shipping_confirmation', { enabled: false })
+    const off = await notificationService.update(SHOP, 'shipping_confirmation', { enabled: false }, db)
     assert.deepEqual([off.enabled, off.customized], [false, false])
-    const layout = await notificationService.update(SHOP, 'layout', { enabled: false })
+    const layout = await notificationService.update(SHOP, 'layout', { enabled: false }, db)
     assert.equal(layout.enabled, true)
   })
 
   test('revert goes back to the built-in text and leaves the switch alone', async () => {
-    await notificationService.update(SHOP, 'order_cancelled', { subject: 'Nope', body: '<p>Nope</p>', enabled: false })
-    const back = await notificationService.revert(SHOP, 'order_cancelled')
+    await notificationService.update(
+      SHOP,
+      'order_cancelled',
+      { subject: 'Nope', body: '<p>Nope</p>', enabled: false },
+      db,
+    )
+    const back = await notificationService.revert(SHOP, 'order_cancelled', db)
     assert.deepEqual(
       [back.subject, back.body, back.customized, back.enabled],
       [DEFAULTS.order_cancelled.subject, DEFAULTS.order_cancelled.body, false, false],
@@ -140,7 +151,7 @@ describe('reading and editing one', () => {
 
 describe('the preview', () => {
   test('with no order yet it shows a made-up one and says so', async () => {
-    const p = await notificationService.preview(SHOP, 'order_confirmation', DEFAULTS.order_confirmation)
+    const p = await notificationService.preview(SHOP, 'order_confirmation', DEFAULTS.order_confirmation, db)
     assert.equal(p.sample, true)
     assert.match(p.subject, /#1001/)
     assert.match(p.html, /Classic T-shirt/)
@@ -150,34 +161,54 @@ describe('the preview', () => {
   test('with an order it shows the latest one', async () => {
     await fx.order({ email: 'older@example.test', createdAt: new Date(Date.now() - 86_400_000) })
     const latest = await fx.order({ email: 'latest@example.test' })
-    const p = await notificationService.preview(SHOP, 'order_confirmation', {
-      subject: 'Hi {{ order.email }}',
-      body: '<p>{{ order.name }}</p>',
-    })
+    const p = await notificationService.preview(
+      SHOP,
+      'order_confirmation',
+      {
+        subject: 'Hi {{ order.email }}',
+        body: '<p>{{ order.name }}</p>',
+      },
+      db,
+    )
     assert.equal(p.sample, false)
     assert.equal(p.subject, 'Hi latest@example.test')
     assert.match(p.html, new RegExp(`#${String(latest.orderNumber)}`))
   })
 
   test('unsaved Liquid is rendered as given; a problem comes back, not thrown', async () => {
-    const p = await notificationService.preview(SHOP, 'order_confirmation', {
-      subject: 'S',
-      body: '<p>{{ order.name | nope }}</p>',
-    })
+    const p = await notificationService.preview(
+      SHOP,
+      'order_confirmation',
+      {
+        subject: 'S',
+        body: '<p>{{ order.name | nope }}</p>',
+      },
+      db,
+    )
     assert.ok(p.problem)
     assert.match(p.problem.message, /nope/)
   })
 
   test('the layout previews around the order confirmation, and the abandoned cart email with the order’s products', async () => {
-    const layout = await notificationService.preview(SHOP, 'layout', {
-      subject: '',
-      body: '<main>{{ content_for_layout }}</main>',
-    })
+    const layout = await notificationService.preview(
+      SHOP,
+      'layout',
+      {
+        subject: '',
+        body: '<main>{{ content_for_layout }}</main>',
+      },
+      db,
+    )
     assert.match(layout.html, /^<main>[\s\S]*<\/main>$/)
-    const cart = await notificationService.preview(SHOP, 'abandoned_cart', {
-      subject: 'Left behind',
-      body: '{% for l in checkout.line_items %}[{{ l.title }}]{% endfor %} {{ unsubscribe_url }}',
-    })
+    const cart = await notificationService.preview(
+      SHOP,
+      'abandoned_cart',
+      {
+        subject: 'Left behind',
+        body: '{% for l in checkout.line_items %}[{{ l.title }}]{% endfor %} {{ unsubscribe_url }}',
+      },
+      db,
+    )
     assert.match(cart.html, /\[Classic T-shirt\]\[Canvas tote bag\]/)
     assert.match(cart.html, /\/unsubscribe\/preview/)
   })
@@ -191,6 +222,7 @@ describe('the test send', () => {
       'order_confirmation',
       DEFAULTS.order_confirmation,
       'staff@example.test',
+      db,
     )
     assert.deepEqual(result, { to: 'staff@example.test' })
     assert.equal(received.length, 1)
@@ -206,12 +238,13 @@ describe('the test send', () => {
         'order_confirmation',
         { subject: 'S', body: '{{ x | nope }}' },
         'staff@example.test',
+        db,
       ),
       refused('INVALID_TEMPLATE'),
     )
     await fx.cleanup()
     await assert.rejects(
-      notificationService.sendTest(SHOP, 'order_confirmation', DEFAULTS.order_confirmation, 'staff@example.test'),
+      notificationService.sendTest(SHOP, 'order_confirmation', DEFAULTS.order_confirmation, 'staff@example.test', db),
       refused('EMAIL_OFF'),
     )
     assert.equal(received.length, 0)
@@ -236,20 +269,20 @@ describe('recent emails', () => {
     await db
       .insert(emailDeliveries)
       .values({ shopId: fx.OTHER_SHOP, notification: 'layout', to: 'x@example.test', subject: 'x', html: '' })
-    const recent = await notificationService.deliveries(SHOP)
+    const recent = await notificationService.deliveries(SHOP, db)
     assert.deepEqual(
       recent.map((d) => d.subject),
       ['c', 'b', 'a'],
     )
     assert.equal(JSON.stringify(recent).includes('secret body'), false)
-    assert.equal((await notificationService.deliveries(SHOP, 2)).length, 2)
+    assert.equal((await notificationService.deliveries(SHOP, db, 2)).length, 2)
   })
 })
 
 describe('the sign-in code email', () => {
   test('is sent right away to the customer, with the code and how long it works', async () => {
     await fx.turnOn()
-    await sendLoginCode(SHOP, 'customer@example.test', '123456')
+    await sendLoginCode(SHOP, 'customer@example.test', '123456', db)
     assert.equal(received.length, 1)
     assert.deepEqual(received[0]?.to, ['customer@example.test'])
     assert.match(received[0]!.raw, /123456/)
@@ -262,15 +295,15 @@ describe('the sign-in code email', () => {
   })
 
   test('EMAIL_OFF when the shop does not send email, or turned sign-in off by disabling the template', async () => {
-    await assert.rejects(sendLoginCode(SHOP, 'c@example.test', '123456'), refused('EMAIL_OFF'))
+    await assert.rejects(sendLoginCode(SHOP, 'c@example.test', '123456', db), refused('EMAIL_OFF'))
     await fx.turnOn()
-    await notificationService.update(SHOP, 'login_code', { enabled: false })
-    await assert.rejects(sendLoginCode(SHOP, 'c@example.test', '123456'), refused('EMAIL_OFF'))
+    await notificationService.update(SHOP, 'login_code', { enabled: false }, db)
+    await assert.rejects(sendLoginCode(SHOP, 'c@example.test', '123456', db), refused('EMAIL_OFF'))
     assert.equal(received.length, 0)
   })
 
   test('an unknown shop is EMAIL_FAILED', async () => {
-    await assert.rejects(sendLoginCode('no-such-shop', 'c@example.test', '123456'), refused('EMAIL_FAILED'))
+    await assert.rejects(sendLoginCode('no-such-shop', 'c@example.test', '123456', db), refused('EMAIL_FAILED'))
   })
 })
 

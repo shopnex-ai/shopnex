@@ -1,3 +1,5 @@
+import { db } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { marketplaceService } from '@shopnex/apps'
@@ -25,24 +27,26 @@ export const shippingRates = {
   list: shopManager
     .route({ method: 'GET', path: '/admin/shipping-rates' })
     .output(z.array(shippingRateOutput))
-    .handler(({ context }) => checkoutSettings.listShippingRates(context.shop.id)),
+    .handler(({ context }) => checkoutSettings.listShippingRates(context.shop.id, {}, db)),
   create: shopManager
     .route({ method: 'POST', path: '/admin/shipping-rates' })
     .output(shippingRateOutput)
     .input(shippingRateInput)
-    .handler(({ input, context }) => checkoutSettings.createShippingRate(context.shop.id, input)),
+    .handler(({ input, context }) => checkoutSettings.createShippingRate(context.shop.id, input, db)),
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/shipping-rates/{id}' })
     .output(shippingRateOutput)
     .input(id.extend(shippingRateInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await checkoutSettings.updateShippingRate(context.shop.id, id, patch)),
+      found(await checkoutSettings.updateShippingRate(context.shop.id, id, patch, db)),
     ),
   delete: shopManager
     .route({ method: 'DELETE', path: '/admin/shipping-rates/{id}' })
     .output(shippingRateOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await checkoutSettings.deleteShippingRate(context.shop.id, input.id))),
+    .handler(async ({ input, context }) =>
+      found(await checkoutSettings.deleteShippingRate(context.shop.id, input.id, db)),
+    ),
 }
 
 // What staff and apps see of a service
@@ -61,7 +65,9 @@ export const carrierServicesApp = {
     .route({ method: 'POST', path: '/admin/carrier-services/configure' })
     .output(carrierServiceOutput)
     .input(carrierServiceConfigureInput)
-    .handler(async ({ input, context }) => view(await carrierService.configure(context.shop.id, context.appId, input))),
+    .handler(async ({ input, context }) =>
+      view(await carrierService.configure(context.shop.id, context.appId, input, db)),
+    ),
 }
 
 // Settings → Shipping: the carrier services installed apps registered; staff rename or switch them off
@@ -73,20 +79,20 @@ export const carrierServices = {
     .handler(async ({ context }) => {
       const [instanceUrl, apps] = await Promise.all([
         marketplaceService.instanceUrl(),
-        carrierService.availableApps(context.shop.id),
+        carrierService.availableApps(context.shop.id, db),
       ])
       return { instanceUrl, apps }
     }),
   list: shopManager
     .route({ method: 'GET', path: '/admin/carrier-services' })
     .output(z.array(carrierServiceOutput))
-    .handler(async ({ context }) => (await carrierService.list(context.shop.id)).map(view)),
+    .handler(async ({ context }) => (await carrierService.list(context.shop.id, {}, db)).map(view)),
   update: shopManager
     .route({ method: 'PATCH', path: '/admin/carrier-services/{id}' })
     .output(carrierServiceOutput)
     .input(id.extend({ name: z.string().trim().min(1).max(100).optional(), active: z.boolean().optional() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
-      const service = await carrierService.update(context.shop.id, id, patch)
+      const service = await carrierService.update(context.shop.id, id, patch, db)
       if (!service) throw new ORPCError('NOT_FOUND')
       return view(service)
     }),

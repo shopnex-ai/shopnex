@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 import { count, create } from './products'
 
 // Free-to-use photos from Burst by Shopify (https://burst.shopify.com/photos/<name>), cropped square by its CDN.
@@ -44,14 +45,18 @@ const SAMPLES = [
 ]
 
 // Only into an empty shop (so a double click or a second tab can't add them twice); returns how many were added
-export async function seedSampleProducts(shopId: string) {
-  if ((await count(shopId, {})) > 0) return 0
+export async function seedSampleProducts(shopId: string, conn: Conn) {
+  if ((await count(shopId, {}, conn)) > 0) return 0
   for (const sample of SAMPLES) {
-    await create(shopId, {
-      ...sample,
-      vendor: 'Sample',
-      description: 'A sample product. Edit or delete it in Products.',
-    })
+    await create(
+      shopId,
+      {
+        ...sample,
+        vendor: 'Sample',
+        description: 'A sample product. Edit or delete it in Products.',
+      },
+      conn,
+    )
   }
   return SAMPLES.length
 }

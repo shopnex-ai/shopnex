@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The public Storefront API for what a shopper does: the cart, signing in with an emailed code and the customer's own data, and checking out.
 // Through the real router with an in-memory database. Domain errors come out as the contract's typed errors (code, status, data).
 import assert from 'node:assert/strict'
@@ -322,16 +323,20 @@ describe('the customer’s own data', () => {
     const other = await fx.customerWithToken()
     const p = await fx.product({ priceCents: 1000 })
     const place = (customerId: string, quantity = 1) =>
-      fx.orderService.create(SHOP, {
-        customerId,
-        items: [{ variantId: variantOf(p), quantity }],
-        payment: { gateway: 'manual', name: 'Bank', instructions: 'Pay to IBAN 1' },
-      })
+      fx.orderService.create(
+        SHOP,
+        {
+          customerId,
+          items: [{ variantId: variantOf(p), quantity }],
+          payment: { gateway: 'manual', name: 'Bank', instructions: 'Pay to IBAN 1' },
+        },
+        db,
+      )
     const first = await place(customer.id)
     await new Promise((r) => setTimeout(r, 5))
     const second = await place(customer.id, 2)
     await place(other.customer.id)
-    await fx.orderService.markAsPaid(SHOP, first.id)
+    await fx.orderService.markAsPaid(SHOP, first.id, db)
     const list = await run<{ nodes: Array<Record<string, any>>; pageInfo: Record<string, unknown> }>(
       sf.customer!.orders,
       { first: 1 },
@@ -365,27 +370,35 @@ describe('the customer’s own data', () => {
     const { customer, headers } = await fx.customerWithToken()
     const other = await fx.customerWithToken()
     const p = await fx.product()
-    const mine = await fx.orderService.create(SHOP, {
-      customerId: customer.id,
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-      shippingAddress: {
-        firstName: 'Ada',
-        lastName: 'Buyer',
-        company: null,
-        address1: '1 Main',
-        address2: null,
-        city: 'Paris',
-        province: null,
-        countryCode: 'FR',
-        zip: '75001',
-        phone: null,
+    const mine = await fx.orderService.create(
+      SHOP,
+      {
+        customerId: customer.id,
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+        shippingAddress: {
+          firstName: 'Ada',
+          lastName: 'Buyer',
+          company: null,
+          address1: '1 Main',
+          address2: null,
+          city: 'Paris',
+          province: null,
+          countryCode: 'FR',
+          zip: '75001',
+          phone: null,
+        },
       },
-    })
-    await fx.orderService.fulfill(SHOP, mine.id, { trackingNumber: 'T1' })
-    const theirs = await fx.orderService.create(SHOP, {
-      customerId: other.customer.id,
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-    })
+      db,
+    )
+    await fx.orderService.fulfill(SHOP, mine.id, db, { trackingNumber: 'T1' })
+    const theirs = await fx.orderService.create(
+      SHOP,
+      {
+        customerId: other.customer.id,
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+      },
+      db,
+    )
     const got = await run<Record<string, any>>(sf.customer!.order, { id: mine.id }, headers)
     assert.deepEqual(
       [
@@ -466,7 +479,7 @@ describe('checking out', () => {
       [placed.alreadyCompleted, placed.orderNumber, placed.paymentUrl, placed.paymentError],
       [false, 1001, null, null],
     )
-    const order = (await fx.orderService.getById(SHOP, placed.orderId))!
+    const order = (await fx.orderService.getById(SHOP, placed.orderId, db))!
     assert.deepEqual(
       [
         order.email,
@@ -503,7 +516,7 @@ describe('checking out', () => {
       run(sf.checkout!.complete, { cartId: cart.id, email: 'a@example.test', paymentMethodId: MISSING }),
       badRequest('INVALID_PAYMENT_METHOD'),
     )
-    await fx.productService.update(SHOP, p.id, { status: 'archived' })
+    await fx.productService.update(SHOP, p.id, { status: 'archived' }, db)
     await assert.rejects(
       run(sf.checkout!.complete, { cartId: cart.id, email: 'a@example.test', shippingRateId: rate.id }),
       typed('MERCHANDISE_NOT_FOUND', 404, { merchandiseIds: [variantOf(p)] }),
@@ -521,10 +534,15 @@ describe('checking out', () => {
   test('a product that sold out meanwhile is OUT_OF_STOCK (400 typed) at checkout, and nothing is placed', async () => {
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 5 }] })
     const cart = await run<Cart>(sf.cart!.create, { lines: [{ merchandiseId: variantOf(p), quantity: 3 }] })
-    await fx.productService.setVariants(SHOP, p.id, {
-      options: [],
-      variants: [{ priceCents: 100, inventoryQuantity: 1 }],
-    })
+    await fx.productService.setVariants(
+      SHOP,
+      p.id,
+      {
+        options: [],
+        variants: [{ priceCents: 100, inventoryQuantity: 1 }],
+      },
+      db,
+    )
     await assert.rejects(
       run(sf.checkout!.complete, { cartId: cart.id, email: 'a@example.test' }),
       (e: unknown) => e instanceof ORPCError && e.code === 'OUT_OF_STOCK' && e.status === 400,

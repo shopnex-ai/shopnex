@@ -2,7 +2,7 @@
 // Uses its own codes, shipping rate and tax rates (in AQ / BV, so they never clash with a shop's real rates).
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PricingError, taxService } from '@shopnex/pricing'
 import { updateShop } from '@shopnex/tenancy'
@@ -143,7 +143,7 @@ describe('cart and checkout', () => {
     )
 
     const placed = ok(await fx.complete(cart.id, { countryCode: 'AQ', province: 'Ross' }, shippingRateId))
-    const order = (await orderService.getById(SHOP, placed.orderId))!
+    const order = (await orderService.getById(SHOP, placed.orderId, db))!
     assert.equal(order.totalCents, ross.totalAmount.amountMinor, 'order matches the estimate')
     assert.equal(order.discountCents, discount)
     assert.equal(order.taxCents, rossTax)
@@ -187,6 +187,7 @@ describe('cart and checkout', () => {
     const order = (await orderService.getById(
       SHOP,
       ok(await fx.complete(free.id, { countryCode: 'BV' }, shippingRateId)).orderId,
+      db,
     ))!
     assert.equal(order.totalCents, price)
     assert.equal(order.taxesIncluded, true)

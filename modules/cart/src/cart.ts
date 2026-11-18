@@ -3,7 +3,7 @@
 import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
-import { all, db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
@@ -68,7 +68,7 @@ const newToken = () => `cart_${randomBytes(24).toString('base64url')}`
 const expiry = () => new Date(Date.now() + CART_TTL_MS)
 
 // shopId null = resolve by token alone (hosted checkout page, which learns the shop from the cart)
-export async function findByToken(shopId: string | null, token: string, conn: Conn = db): Promise<Cart | null> {
+export async function findByToken(shopId: string | null, token: string, conn: Conn): Promise<Cart | null> {
   const [cart] = await conn
     .select()
     .from(carts)
@@ -83,7 +83,7 @@ async function requireActive(shopId: string, token: string, conn: Conn) {
   return cart
 }
 
-export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
+export async function view(cart: Cart, conn: Conn): Promise<CartView> {
   // Re-read so updatedAt reflects changes made earlier in this transaction
   const [fresh] = await conn.select().from(carts).where(eq(carts.id, cart.id))
   const [shop] = await conn.select({ currency: shops.currency }).from(shops).where(eq(shops.id, cart.shopId))
@@ -232,8 +232,8 @@ async function resolveLineIds(conn: Conn, cartId: string, lineIds: string[]) {
 }
 
 /** `channelId`: the channel the buyer shops on (the storefront's; see resolveStorefrontShop) */
-export async function create(shopId: string, channelId: string, lines: LineInput[] = []) {
-  return db.transaction(async (tx) => {
+export async function create(shopId: string, channelId: string, conn: Conn, lines: LineInput[] = []) {
+  return conn.transaction(async (tx) => {
     const [cart] = await tx
       .insert(carts)
       .values({ shopId, channelId, token: newToken(), expiresAt: expiry() })
@@ -243,15 +243,15 @@ export async function create(shopId: string, channelId: string, lines: LineInput
   })
 }
 
-export async function get(shopId: string, token: string) {
-  const cart = await findByToken(shopId, token)
+export async function get(shopId: string, token: string, conn: Conn) {
+  const cart = await findByToken(shopId, token, conn)
   if (!cart) throw new CartError('CART_NOT_FOUND', 'Cart not found or expired')
-  return view(cart)
+  return view(cart, conn)
 }
 
 // Adds to existing quantities
-export async function addLines(shopId: string, token: string, lines: LineInput[]) {
-  return db.transaction(async (tx) => {
+export async function addLines(shopId: string, token: string, lines: LineInput[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await setLines(tx, cart, mergeAdds(await currentLines(tx, cart.id), lines))
     return view(cart, tx)
@@ -259,8 +259,8 @@ export async function addLines(shopId: string, token: string, lines: LineInput[]
 }
 
 // Sets quantities by line id; 0 removes the line
-export async function updateLines(shopId: string, token: string, updates: LineUpdate[]) {
-  return db.transaction(async (tx) => {
+export async function updateLines(shopId: string, token: string, updates: LineUpdate[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     const lines = await resolveLineIds(
       tx,
@@ -276,8 +276,8 @@ export async function updateLines(shopId: string, token: string, updates: LineUp
   })
 }
 
-export async function removeLines(shopId: string, token: string, lineIds: string[]) {
-  return db.transaction(async (tx) => {
+export async function removeLines(shopId: string, token: string, lineIds: string[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await resolveLineIds(tx, cart.id, lineIds)
     await tx.delete(cartLines).where(and(eq(cartLines.cartId, cart.id), inArray(cartLines.id, lineIds)))
@@ -288,8 +288,8 @@ export async function removeLines(shopId: string, token: string, lineIds: string
 
 // One code per cart for now; null (or blank) removes it. Stored even when not applicable, like Shopify:
 // the view says whether it applies.
-export async function setDiscountCode(shopId: string, token: string, code: string | null) {
-  return db.transaction(async (tx) => {
+export async function setDiscountCode(shopId: string, token: string, code: string | null, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await tx
       .update(carts)
@@ -338,7 +338,7 @@ export async function markCompleted(
  * The contact the buyer has typed so far, kept on the cart so a checkout they walk away from can be followed up
  * (abandoned cart emails). A completed cart is left alone.
  */
-export async function setReminderContact(token: string, email: string, conn: Conn = db) {
+export async function setReminderContact(token: string, email: string, conn: Conn) {
   await conn
     .update(carts)
     .set({ email: email.trim().toLowerCase(), updatedAt: sql`now()` })

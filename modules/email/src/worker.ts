@@ -2,7 +2,7 @@
 // apps/admin-ui/src/server.ts); rows are claimed with SKIP LOCKED, so several app instances can run it side by
 // side. Same shape as the webhook delivery worker.
 import { and, eq, inArray, lt, lte, ne, sql } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { queueDue, reasonToSkip } from './abandoned-carts'
 import { send } from './email'
 import { log } from './log'
@@ -17,8 +17,8 @@ const POLL_MS = 3_000
 // Finished deliveries are kept this long for the admin's list of recent emails
 const RETENTION_MS = 30 * 24 * 3600_000
 
-async function claim(): Promise<EmailDelivery[]> {
-  return db.transaction(async (tx) => {
+async function claim(conn: Conn): Promise<EmailDelivery[]> {
+  return conn.transaction(async (tx) => {
     const due = await tx
       .select({ id: emailDeliveries.id })
       .from(emailDeliveries)
@@ -40,23 +40,27 @@ async function claim(): Promise<EmailDelivery[]> {
   })
 }
 
-async function attempt(delivery: EmailDelivery) {
+async function attempt(delivery: EmailDelivery, conn: Conn) {
   const now = new Date()
   const attempts = delivery.attempts + 1
   let status: EmailDelivery['status'] = 'sent'
   let lastError: string | null = null
   try {
     // A reminder for a checkout that was completed (or unsubscribed from) since it was queued is dropped
-    const reason = await reasonToSkip(delivery)
+    const reason = await reasonToSkip(delivery, conn)
     if (reason) {
-      await db
+      await conn
         .update(emailDeliveries)
         .set({ status: 'skipped', lastError: reason, attempts, lastAttemptAt: now })
         .where(eq(emailDeliveries.id, delivery.id))
       return
     }
     // Email turned off since it was queued: dropped, not retried
-    const { sent } = await send(delivery.shopId, { to: delivery.to, subject: delivery.subject, html: delivery.html })
+    const { sent } = await send(
+      delivery.shopId,
+      { to: delivery.to, subject: delivery.subject, html: delivery.html },
+      conn,
+    )
     if (!sent) {
       status = 'skipped'
       lastError = 'Email is off'
@@ -66,7 +70,7 @@ async function attempt(delivery: EmailDelivery) {
     status = RETRY_DELAYS_S[attempts - 1] === undefined ? 'failed' : 'pending'
   }
   const retryIn = RETRY_DELAYS_S[attempts - 1] ?? 0
-  await db
+  await conn
     .update(emailDeliveries)
     .set({
       attempts,
@@ -79,15 +83,15 @@ async function attempt(delivery: EmailDelivery) {
 }
 
 /** One pass: sends what's due. Returns how many deliveries it handled. */
-export async function processDue() {
-  const deliveries = await claim()
+export async function processDue(conn: Conn) {
+  const deliveries = await claim(conn)
   // One at a time: SMTP providers rate-limit bursts, and order emails aren't urgent to the second
-  for (const delivery of deliveries) await attempt(delivery)
+  for (const delivery of deliveries) await attempt(delivery, conn)
   return deliveries.length
 }
 
-async function pruneFinished() {
-  await db
+async function pruneFinished(conn: Conn) {
+  await conn
     .delete(emailDeliveries)
     .where(
       and(ne(emailDeliveries.status, 'pending'), lt(emailDeliveries.createdAt, new Date(Date.now() - RETENTION_MS))),
@@ -97,7 +101,7 @@ async function pruneFinished() {
 const globalForWorker = globalThis as unknown as { emailWorker?: { stop: () => void } }
 
 /** Starts the polling loop once per process (dev hot reloads reuse it). Returns a stop function. */
-export function startEmailWorker() {
+export function startEmailWorker(conn: Conn) {
   if (globalForWorker.emailWorker) return globalForWorker.emailWorker.stop
   let stopped = false
   let timer: NodeJS.Timeout | undefined
@@ -107,11 +111,11 @@ export function startEmailWorker() {
     let handled = 0
     try {
       // Reminders for abandoned checkouts are queued here, then sent by the same pass
-      await queueDue()
-      handled = await processDue()
+      await queueDue(conn)
+      handled = await processDue(conn)
       if (Date.now() - lastPrune > 3600_000) {
         lastPrune = Date.now()
-        await pruneFinished()
+        await pruneFinished(conn)
       }
     } catch (error) {
       log.error({ err: error }, 'delivery worker failed')

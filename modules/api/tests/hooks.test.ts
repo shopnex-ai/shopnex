@@ -70,7 +70,7 @@ describe('an order change reaches the email queue', () => {
       })
       .returning()
     orderIds.push(order!.id)
-    await orderService.fulfill(SHOP, order!.id, { trackingNumber: 'T-1' })
+    await orderService.fulfill(SHOP, order!.id, db, { trackingNumber: 'T-1' })
     const queued = await db.select().from(emailDeliveries).where(eq(emailDeliveries.orderId, order!.id))
     assert.deepEqual(
       queued.map((d) => [d.notification, d.to]),

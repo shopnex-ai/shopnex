@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Carts: made on a channel, lines added, set and removed, what can be put in one (published on the channel, active, in stock), the
 // discount code, how a cart is shown (live prices, availability, images), and the small things checkout uses.
 import assert from 'node:assert/strict'
@@ -30,7 +31,7 @@ describe('making a cart', () => {
       [c.status, c.lines, c.subtotalCents, c.totalQuantity, c.currency, c.orderId],
       ['active', [], 0, 0, 'USD', null],
     )
-    const row = await cartService.findByToken(SHOP, c.token)
+    const row = await cartService.findByToken(SHOP, c.token, db)
     assert.equal(row?.channelId, (await fx.onlineStore()).id)
     const days = (row!.expiresAt.getTime() - Date.now()) / 86_400_000
     assert.ok(days > 29.9 && days <= 30, String(days))
@@ -58,20 +59,20 @@ describe('making a cart', () => {
 describe('finding a cart', () => {
   test('by its token in its shop; another shop, an unknown token and an expired cart are not found', async () => {
     const c = await fx.cart()
-    assert.equal((await cartService.get(SHOP, c.token)).token, c.token)
-    await assert.rejects(cartService.get(OTHER_SHOP, c.token), refused('CART_NOT_FOUND'))
-    await assert.rejects(cartService.get(SHOP, 'cart_nope'), refused('CART_NOT_FOUND'))
+    assert.equal((await cartService.get(SHOP, c.token, db)).token, c.token)
+    await assert.rejects(cartService.get(OTHER_SHOP, c.token, db), refused('CART_NOT_FOUND'))
+    await assert.rejects(cartService.get(SHOP, 'cart_nope', db), refused('CART_NOT_FOUND'))
     await db
       .update(carts)
       .set({ expiresAt: new Date(Date.now() - 1000) })
       .where(eq(carts.token, c.token))
-    await assert.rejects(cartService.get(SHOP, c.token), refused('CART_NOT_FOUND'))
-    assert.equal(await cartService.findByToken(null, c.token), null)
+    await assert.rejects(cartService.get(SHOP, c.token, db), refused('CART_NOT_FOUND'))
+    assert.equal(await cartService.findByToken(null, c.token, db), null)
   })
 
   test('without a shop (the hosted checkout learns the shop from the cart) the token alone finds it', async () => {
     const c = await fx.cart()
-    assert.equal((await cartService.findByToken(null, c.token))?.shopId, SHOP)
+    assert.equal((await cartService.findByToken(null, c.token, db))?.shopId, SHOP)
   })
 })
 
@@ -79,10 +80,15 @@ describe('adding lines', () => {
   test('adds to what is there: new variants become lines, known ones grow', async () => {
     const [a, b] = [await fx.product({ title: 'A' }), await fx.product({ title: 'B' })]
     const c = await fx.cart([{ variantId: variantOf(a), quantity: 1 }])
-    const added = await cartService.addLines(SHOP, c.token, [
-      { variantId: variantOf(a), quantity: 2 },
-      { variantId: variantOf(b), quantity: 1 },
-    ])
+    const added = await cartService.addLines(
+      SHOP,
+      c.token,
+      [
+        { variantId: variantOf(a), quantity: 2 },
+        { variantId: variantOf(b), quantity: 1 },
+      ],
+      db,
+    )
     assert.deepEqual(
       added.lines.map((l) => [l.title, l.quantity]),
       [
@@ -98,7 +104,7 @@ describe('adding lines', () => {
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 5000 }])
     assert.equal(c.lines[0]?.quantity, 999)
     assert.equal(
-      (await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 10 }])).lines[0]?.quantity,
+      (await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 10 }], db)).lines[0]?.quantity,
       999,
     )
   })
@@ -107,7 +113,7 @@ describe('adding lines', () => {
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 3 }] })
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 2 }])
     await assert.rejects(
-      cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 2 }]),
+      cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 2 }], db),
       (e: unknown) => {
         assert.ok(e instanceof CartError)
         assert.equal(e.code, 'OUT_OF_STOCK')
@@ -116,7 +122,7 @@ describe('adding lines', () => {
         return true
       },
     )
-    assert.equal((await cartService.get(SHOP, c.token)).lines[0]?.quantity, 2)
+    assert.equal((await cartService.get(SHOP, c.token, db)).lines[0]?.quantity, 2)
   })
 
   test('a variant that is unknown, another shop’s, in an archived product or not published on the cart’s channel is VARIANT_NOT_FOUND, naming it', async () => {
@@ -128,7 +134,7 @@ describe('adding lines', () => {
     const { publicationService } = await import('@shopnex/channels')
     await publicationService.set(SHOP, 'product', hidden.id, [{ channelId: quiet.id }], db)
     for (const variantId of [MISSING, variantOf(theirs), variantOf(archived), variantOf(hidden)]) {
-      await assert.rejects(cartService.addLines(SHOP, c.token, [{ variantId, quantity: 1 }]), (e: unknown) => {
+      await assert.rejects(cartService.addLines(SHOP, c.token, [{ variantId, quantity: 1 }], db), (e: unknown) => {
         assert.ok(e instanceof CartError)
         assert.equal(e.code, 'VARIANT_NOT_FOUND')
         assert.deepEqual(e.data.variantIds, [variantId])
@@ -138,7 +144,7 @@ describe('adding lines', () => {
   })
 
   test('an unknown cart is CART_NOT_FOUND', async () => {
-    await assert.rejects(cartService.addLines(SHOP, 'cart_nope', []), refused('CART_NOT_FOUND'))
+    await assert.rejects(cartService.addLines(SHOP, 'cart_nope', [], db), refused('CART_NOT_FOUND'))
   })
 })
 
@@ -150,10 +156,15 @@ describe('changing lines', () => {
       { variantId: variantOf(b), quantity: 1 },
     ])
     const lineOf = (title: string) => c.lines.find((l) => l.title === title)!.lineId
-    const changed = await cartService.updateLines(SHOP, c.token, [
-      { lineId: lineOf('A'), quantity: 5 },
-      { lineId: lineOf('B'), quantity: 0 },
-    ])
+    const changed = await cartService.updateLines(
+      SHOP,
+      c.token,
+      [
+        { lineId: lineOf('A'), quantity: 5 },
+        { lineId: lineOf('B'), quantity: 0 },
+      ],
+      db,
+    )
     assert.deepEqual(
       changed.lines.map((l) => [l.title, l.quantity]),
       [['A', 5]],
@@ -164,13 +175,18 @@ describe('changing lines', () => {
     const p = await fx.product()
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 1 }])
     await assert.rejects(
-      cartService.updateLines(SHOP, c.token, [
-        { lineId: c.lines[0]!.lineId, quantity: 4 },
-        { lineId: MISSING, quantity: 1 },
-      ]),
+      cartService.updateLines(
+        SHOP,
+        c.token,
+        [
+          { lineId: c.lines[0]!.lineId, quantity: 4 },
+          { lineId: MISSING, quantity: 1 },
+        ],
+        db,
+      ),
       (e: unknown) => e instanceof CartError && e.code === 'LINE_NOT_FOUND' && e.data.lineIds?.[0] === MISSING,
     )
-    assert.equal((await cartService.get(SHOP, c.token)).lines[0]?.quantity, 1)
+    assert.equal((await cartService.get(SHOP, c.token, db)).lines[0]?.quantity, 1)
   })
 
   test('removeLines removes the lines named, all or nothing', async () => {
@@ -180,9 +196,9 @@ describe('changing lines', () => {
       { variantId: variantOf(b), quantity: 1 },
     ])
     const lineOf = (title: string) => c.lines.find((l) => l.title === title)!.lineId
-    await assert.rejects(cartService.removeLines(SHOP, c.token, [lineOf('A'), MISSING]), refused('LINE_NOT_FOUND'))
-    assert.equal((await cartService.get(SHOP, c.token)).lines.length, 2)
-    const left = await cartService.removeLines(SHOP, c.token, [lineOf('A')])
+    await assert.rejects(cartService.removeLines(SHOP, c.token, [lineOf('A'), MISSING], db), refused('LINE_NOT_FOUND'))
+    assert.equal((await cartService.get(SHOP, c.token, db)).lines.length, 2)
+    const left = await cartService.removeLines(SHOP, c.token, [lineOf('A')], db)
     assert.deepEqual(
       left.lines.map((l) => l.title),
       ['B'],
@@ -197,8 +213,8 @@ describe('changing lines', () => {
       .set({ expiresAt: new Date(Date.now() + 1000), updatedAt: new Date(Date.now() - 3_600_000) })
       .where(eq(carts.token, c.token))
     const before = Date.now()
-    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }])
-    const row = await cartService.findByToken(SHOP, c.token)
+    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }], db)
+    const row = await cartService.findByToken(SHOP, c.token, db)
     assert.ok(row!.updatedAt.getTime() >= before - 1000)
     assert.ok(row!.expiresAt.getTime() > Date.now() + 29 * 86_400_000)
   })
@@ -208,12 +224,12 @@ describe('changing lines', () => {
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 1 }])
     await db.update(carts).set({ status: 'completed' }).where(eq(carts.token, c.token))
     await assert.rejects(
-      cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }]),
+      cartService.addLines(SHOP, c.token, [{ variantId: variantOf(p), quantity: 1 }], db),
       refused('CART_COMPLETED'),
     )
-    await assert.rejects(cartService.updateLines(SHOP, c.token, []), refused('CART_COMPLETED'))
-    await assert.rejects(cartService.removeLines(SHOP, c.token, []), refused('CART_COMPLETED'))
-    await assert.rejects(cartService.setDiscountCode(SHOP, c.token, 'X'), refused('CART_COMPLETED'))
+    await assert.rejects(cartService.updateLines(SHOP, c.token, [], db), refused('CART_COMPLETED'))
+    await assert.rejects(cartService.removeLines(SHOP, c.token, [], db), refused('CART_COMPLETED'))
+    await assert.rejects(cartService.setDiscountCode(SHOP, c.token, 'X', db), refused('CART_COMPLETED'))
   })
 })
 
@@ -258,7 +274,7 @@ describe('how a cart is shown', () => {
       .update(productVariants)
       .set({ priceCents: 1300 })
       .where(eq(productVariants.id, variantOf(p)))
-    const again = await cartService.get(SHOP, c.token)
+    const again = await cartService.get(SHOP, c.token, db)
     assert.deepEqual([again.lines[0]?.unitPriceCents, again.subtotalCents], [1300, 2600])
   })
 
@@ -295,7 +311,7 @@ describe('how a cart is shown', () => {
       .where(eq(productVariants.id, variantOf(p)))
     await db.update(products).set({ status: 'archived' }).where(eq(products.id, q.id))
     assert.deepEqual(
-      (await cartService.get(SHOP, c.token)).lines.map((l) => l.available),
+      (await cartService.get(SHOP, c.token, db)).lines.map((l) => l.available),
       [false, false],
     )
   })
@@ -307,9 +323,9 @@ describe('how a cart is shown', () => {
       await fx.product({ title: 'C' }),
     ]
     const c = await fx.cart([{ variantId: variantOf(b), quantity: 1 }])
-    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(c3), quantity: 1 }])
-    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(a), quantity: 1 }])
-    const view = await cartService.get(SHOP, c.token)
+    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(c3), quantity: 1 }], db)
+    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(a), quantity: 1 }], db)
+    const view = await cartService.get(SHOP, c.token, db)
     assert.deepEqual(
       view.lines.map((l) => l.title),
       ['B', 'C', 'A'],
@@ -322,7 +338,7 @@ describe('how a cart is shown', () => {
       { variantId: variantOf(a), quantity: 1 },
       { variantId: variantOf(b), quantity: 1 },
     ])
-    const twice = [await cartService.get(SHOP, c.token), await cartService.get(SHOP, c.token)]
+    const twice = [await cartService.get(SHOP, c.token, db), await cartService.get(SHOP, c.token, db)]
     assert.deepEqual(
       twice[0]!.lines.map((l) => l.lineId),
       twice[1]!.lines.map((l) => l.lineId),
@@ -350,7 +366,7 @@ describe('the discount code', () => {
       { variantId: variantOf(a), quantity: 1 },
       { variantId: variantOf(b), quantity: 1 },
     ])
-    const set = await cartService.setDiscountCode(SHOP, c.token, d.code.toLowerCase())
+    const set = await cartService.setDiscountCode(SHOP, c.token, d.code.toLowerCase(), db)
     assert.deepEqual(set.discountCode, { code: d.code, applicable: true })
     assert.deepEqual(set.lines.map((l) => [l.title, l.discountCents]).sort(), [
       ['A', 100],
@@ -369,7 +385,7 @@ describe('the discount code', () => {
       { variantId: variantOf(a), quantity: 1 },
       { variantId: variantOf(b), quantity: 1 },
     ])
-    const set = await cartService.setDiscountCode(SHOP, c.token, d.code)
+    const set = await cartService.setDiscountCode(SHOP, c.token, d.code, db)
     assert.deepEqual(set.lines.map((l) => [l.title, l.discountCents]).sort(), [
       ['A', 100],
       ['B', 300],
@@ -380,7 +396,7 @@ describe('the discount code', () => {
     const p = await fx.product()
     const d = await fx.discount({ type: 'free_shipping', value: 0 })
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 1 }])
-    const set = await cartService.setDiscountCode(SHOP, c.token, d.code)
+    const set = await cartService.setDiscountCode(SHOP, c.token, d.code, db)
     assert.deepEqual([set.discountCode?.applicable, set.discountCents, set.discount?.type], [true, 0, 'free_shipping'])
   })
 
@@ -394,7 +410,7 @@ describe('the discount code', () => {
       [off.code, off.code],
       ['NOSUCHCODE', 'NOSUCHCODE'],
     ] as const) {
-      const set = await cartService.setDiscountCode(SHOP, c.token, code)
+      const set = await cartService.setDiscountCode(SHOP, c.token, code, db)
       assert.deepEqual(
         [set.discountCode, set.discount, set.discountCents, set.totalCents],
         [{ code: shown, applicable: false }, null, 0, 1000],
@@ -406,10 +422,10 @@ describe('the discount code', () => {
   test('blank or null removes it, and the code is trimmed', async () => {
     const d = await fx.discount()
     const c = await fx.cart()
-    assert.equal((await cartService.setDiscountCode(SHOP, c.token, `  ${d.code}  `)).discountCode?.code, d.code)
-    assert.equal((await cartService.setDiscountCode(SHOP, c.token, '   ')).discountCode, null)
-    await cartService.setDiscountCode(SHOP, c.token, d.code)
-    assert.equal((await cartService.setDiscountCode(SHOP, c.token, null)).discountCode, null)
+    assert.equal((await cartService.setDiscountCode(SHOP, c.token, `  ${d.code}  `, db)).discountCode?.code, d.code)
+    assert.equal((await cartService.setDiscountCode(SHOP, c.token, '   ', db)).discountCode, null)
+    await cartService.setDiscountCode(SHOP, c.token, d.code, db)
+    assert.equal((await cartService.setDiscountCode(SHOP, c.token, null, db)).discountCode, null)
   })
 })
 
@@ -417,7 +433,7 @@ describe('what checkout uses', () => {
   test('lineInputs lists variants and quantities oldest first; lockForCheckout finds a live cart of the shop', async () => {
     const [a, b] = [await fx.product({ title: 'A' }), await fx.product({ title: 'B' })]
     const c = await fx.cart([{ variantId: variantOf(a), quantity: 2 }])
-    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(b), quantity: 1 }])
+    await cartService.addLines(SHOP, c.token, [{ variantId: variantOf(b), quantity: 1 }], db)
     const row = await db.transaction(async (tx) => {
       const locked = await cartService.lockForCheckout(tx, SHOP, c.token)
       assert.deepEqual(
@@ -435,7 +451,7 @@ describe('what checkout uses', () => {
 
   test('markCompleted records the order, the customer and the email, and stops the cart being changed', async () => {
     const c = await fx.cart()
-    const row = (await cartService.findByToken(SHOP, c.token))!
+    const row = (await cartService.findByToken(SHOP, c.token, db))!
     await cartService
       .markCompleted(db, row.id, { id: MISSING, customerId: null, email: 'buyer@example.test' })
       .catch(() => undefined)
@@ -451,16 +467,16 @@ describe('what checkout uses', () => {
       })
       .returning()
     await cartService.markCompleted(db, row.id, { id: o[0]!.id, customerId: null, email: 'buyer@example.test' })
-    const done = await cartService.findByToken(SHOP, c.token)
+    const done = await cartService.findByToken(SHOP, c.token, db)
     assert.deepEqual([done?.status, done?.orderId, done?.email], ['completed', o[0]!.id, 'buyer@example.test'])
   })
 
   test('setReminderContact keeps the email the buyer typed, lower case, on an open cart only', async () => {
     const [open, done] = [await fx.cart(), await fx.cart()]
     await db.update(carts).set({ status: 'completed' }).where(eq(carts.token, done.token))
-    await cartService.setReminderContact(open.token, '  Shopper@Example.TEST ')
-    await cartService.setReminderContact(done.token, 'late@example.test')
-    assert.equal((await cartService.findByToken(SHOP, open.token))?.email, 'shopper@example.test')
-    assert.equal((await cartService.findByToken(SHOP, done.token))?.email, null)
+    await cartService.setReminderContact(open.token, '  Shopper@Example.TEST ', db)
+    await cartService.setReminderContact(done.token, 'late@example.test', db)
+    assert.equal((await cartService.findByToken(SHOP, open.token, db))?.email, 'shopper@example.test')
+    assert.equal((await cartService.findByToken(SHOP, done.token, db))?.email, null)
   })
 })
