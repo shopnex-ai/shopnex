@@ -1,7 +1,7 @@
 // Sales channels (Shopify: Online Store, headless storefronts, later POS and the like). A channel is where a
 // shop sells; what it shows comes from publications.ts. Every query is scoped by shopId.
 import { and, asc, count, eq, isNull } from 'drizzle-orm'
-import { all, schema, type Conn } from '@shopnex/db'
+import { schema, type Conn } from '@shopnex/db'
 import type { Channel, ChannelType } from '@shopnex/db/schema'
 import { ChannelError } from './channels.errors'
 import { storefrontKeys } from './channels.schema'
@@ -127,24 +127,40 @@ export async function remove(shopId: string, id: string, conn: Conn) {
     throw new ChannelError('CHANNEL_PROTECTED', 'The Online Store channel can’t be deleted')
   }
   const keys = storefrontKeys
-  const [[orders], [activeKeys]] = await all(conn, [
-    () => conn.select({ n: count() }).from(schema.orders).where(eq(schema.orders.channelId, id)),
-    () =>
-      conn
-        .select({ n: count() })
-        .from(keys)
-        .where(and(eq(keys.channelId, id), isNull(keys.revokedAt))),
-  ])
-  if (orders?.n || activeKeys?.n) {
-    throw new ChannelError(
-      'CHANNEL_IN_USE',
-      'This channel has orders or active storefront keys, so it can’t be deleted. Revoke its keys, or unpublish its products instead.',
-    )
-  }
+  const [activeKeys] = await conn
+    .select({ n: count() })
+    .from(keys)
+    .where(and(eq(keys.channelId, id), isNull(keys.revokedAt)))
+  if (activeKeys?.n) throw inUse()
   const run = async (tx: Conn) => {
     await tx.delete(keys).where(eq(keys.channelId, id))
-    await tx.delete(t).where(and(eq(t.shopId, shopId), eq(t.id, id)))
+    // An order points at its channel with no cascade, so the database refuses a channel that has orders. That is the check:
+    // channels sits below orders and cannot look at its table (the whole transaction undoes, the keys deleted above included).
+    await tx
+      .delete(t)
+      .where(and(eq(t.shopId, shopId), eq(t.id, id)))
+      .catch((error: unknown) => {
+        throw isForeignKeyViolation(error, 'orders_') ? inUse() : error
+      })
   }
   await conn.transaction(run)
   return channel
+}
+
+const inUse = () =>
+  new ChannelError(
+    'CHANNEL_IN_USE',
+    'This channel has orders or active storefront keys, so it can’t be deleted. Revoke its keys, or unpublish its products instead.',
+  )
+
+// Postgres says 23503 and names the constraint; the driver may wrap the error (Drizzle keeps it as `cause`)
+export function isForeignKeyViolation(error: unknown, constraintPrefix: string) {
+  for (
+    let e = error as { code?: string; constraint?: string; cause?: unknown } | undefined;
+    e;
+    e = e.cause as typeof e
+  ) {
+    if (e.code === '23503') return Boolean(e.constraint?.startsWith(constraintPrefix))
+  }
+  return false
 }

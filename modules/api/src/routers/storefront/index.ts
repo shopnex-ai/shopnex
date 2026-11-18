@@ -27,6 +27,7 @@ import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem }
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
 import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
+import { sendLoginCode } from '@shopnex/email'
 import { db } from '@shopnex/db'
 import type { Customer as CustomerRow } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
@@ -530,7 +531,10 @@ export const storefrontRouter = storefront.router({
   },
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
-      await accountService.requestLoginCode(context.shop.id, input.email, { ip: clientIp(context.headers) })
+      const shopId = context.shop.id
+      await accountService.requestLoginCode(shopId, input.email, (to, code) => sendLoginCode(shopId, to, code), {
+        ip: clientIp(context.headers),
+      })
       return { success: true as const }
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {

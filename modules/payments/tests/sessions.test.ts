@@ -183,6 +183,22 @@ describe('the app resolving a payment', () => {
     assert.equal(resolved.transactionId, sale?.id)
   })
 
+  test('tells the order event listeners the order was paid, once, with a loader that sees the paid order', async () => {
+    const { orderEvent } = await import('@shopnex/orders')
+    const seen: { shopId: string; event: string; status?: string }[] = []
+    orderEvent.on('test.records', async (_conn, { shopId, event, load }) => {
+      seen.push({ shopId, event, status: (await load())?.financialStatus })
+    })
+    try {
+      const { app, session } = await started()
+      await sessions.resolve(SHOP, app.id, session.id, {})
+      await sessions.resolve(SHOP, app.id, session.id, {})
+      assert.deepEqual(seen, [{ shopId: SHOP, event: 'order.paid', status: 'paid' }])
+    } finally {
+      orderEvent.on('test.records', () => undefined)
+    }
+  })
+
   test('is idempotent: resolving again changes nothing and adds no second sale', async () => {
     const { app, o, session } = await started()
     const first = await sessions.resolve(SHOP, app.id, session.id, { externalId: 'pi_1' })

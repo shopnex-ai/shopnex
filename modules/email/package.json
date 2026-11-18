@@ -17,6 +17,7 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
+    "@shopnex/orders": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/webhooks": "workspace:*",

@@ -11,8 +11,7 @@ import {
   type RefundSessionRequest,
 } from '@shopnex/marketplace-sdk/payments'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
-import { notify } from '@shopnex/email'
-import { OrderError, orderService, type CancelInput } from '@shopnex/orders'
+import { OrderError, orderEvent, orderService, type CancelInput } from '@shopnex/orders'
 import { emit } from '@shopnex/webhooks'
 import { PaymentError } from './payments.errors'
 import { log } from './log'
@@ -382,7 +381,11 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
         .set({ financialStatus: 'paid', updatedAt: now })
         .where(eq(schema.orders.id, session.orderId))
       await emit(tx, shopId, 'order.paid', () => orderService.getById(shopId, session.orderId, tx))
-      await notify(tx, shopId, 'order.paid', () => orderService.getById(shopId, session.orderId, tx))
+      await orderEvent.run(tx, {
+        shopId,
+        event: 'order.paid',
+        load: () => orderService.getById(shopId, session.orderId, tx),
+      })
     } else {
       if (session.transactionId) {
         await tx

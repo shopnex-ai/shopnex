@@ -31,6 +31,7 @@
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService)
+- /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService); no tables or routes of its own → uses customers, orders, carts, emails
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
@@ -50,7 +51,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 ```text
 core      →   (the tables every module points at, and the pure scope helpers `hasScope` and `normalizeScopes` in `@shopnex/core/scopes`)
 db        → core
-channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there)
+channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there; deleting a channel that has orders is refused by the database's foreign key, so it never reads orders)
 pricing   → db, rpc
 drafts    → db
 webhooks  → db, rpc, core   (owns webhook_endpoints and webhook_deliveries; tenancy removes a revoked token's subscriptions by calling it)
@@ -58,14 +59,15 @@ theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its 
 tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
-email     → db, catalog, tenancy, webhooks
+email     → db, catalog, orders, tenancy, webhooks   (sits above orders: it reads them and its tables point at them; listens to orderEvent)
 rpc       → core   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
-custom-fields → db, rpc
+custom-fields → db, rpc   (clears a deleted field's values from the products, orders and customers tables by name: it sits below the modules that own them)
 catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db while orders and carts, which point at them, are still there; the product and collection routes are here)
 content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
-customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
-orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
-payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
+customers → db, auth, custom-fields, webhooks   (sign-in codes link a login to the customer; the code is sent by the sender the storefront route passes in, customers cannot call email)
+privacy   → db, auth, core, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
+orders    → db, catalog, channels, custom-fields, customers, pricing, webhooks   (declares orderEvent; email listens)
+payments  → db, apps, orders, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
 cart      → db, apps, catalog, channels, orders, payments, pricing
 apps      → db, tenancy, theme, rpc, marketplace-sdk, storefront-sdk   (owns app_installations, app_authorization_codes, app_data, instance_keys and marketplace_connection; the apps registry table stays in db with the other foundation tables; owns appUninstalled and runs the carrier-service cleanup itself until cart is a module)
 ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
@@ -143,16 +145,21 @@ transaction, and adding the same id again replaces it (a module loaded twice doe
 export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn>('app.uninstalled')
 // apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
 // payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
+// orders.hooks.ts:                         orderEvent: an order was created, paid, fulfilled or cancelled (orders and payments run it)
+// email.hooks.ts:                          orderEvent.on('email.notifications', (conn, { shopId, event, load }) => notify(…))
 ```
 
 Use a hook only when the owner really cannot depend on the module that reacts. Most cases are not that: `tenancy` calls `content` when it
 creates a shop and `webhooks` when it revokes a token, as ordinary dependencies (the cycle that once forced hooks there was
-`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). `appUninstalled` is the one left.
+`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). Two are left: `appUninstalled` (payments and ai need apps)
+and `orderEvent` (email reads orders and its tables point at them, so orders cannot call it).
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
-file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).
-Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or revokes a token without going through the API
-(a script, an e2e test calling `appService.uninstall`) has to import the module's entry, or its cleanup is silently skipped.
+file that registers it, and tests in `modules/api/tests` guard it: `uninstall-hooks.test.ts` goes through the real route, and `hooks.test.ts` loads the
+whole API and lists the listeners every hook must have (a new listener has to be added there, a missing import fails it).
+Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or changes an order without going through the API
+(a script, an e2e test calling `appService.uninstall` or `orderService.fulfill`) has to import the module's entry (`@shopnex/email`, `@shopnex/payments`…),
+or its side effects (the cleanup, the emails) are silently skipped.
 
 ## API layout
 

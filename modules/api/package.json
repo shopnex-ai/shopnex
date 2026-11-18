@@ -41,6 +41,7 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",
+    "@shopnex/privacy": "workspace:*",
     "@shopnex/rpc": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",

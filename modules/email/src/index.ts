@@ -1,3 +1,4 @@
+import './email.hooks'
 export * as emailService from './email'
 export * as notificationService from './notifications'
 export type { EmailMessage, SmtpInput, TestStep } from './email'
