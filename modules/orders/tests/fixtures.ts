@@ -52,7 +52,11 @@ export async function product(patch: Partial<Parameters<typeof productService.cr
 }
 
 export async function customer(patch: Partial<Parameters<typeof customerService.create>[1]> = {}, shopId = SHOP) {
-  return (await customerService.create(shopId, { email: `c-${unique()}@example.test`, name: 'Ada Buyer', ...patch }))!
+  return (await customerService.create(
+    shopId,
+    { email: `c-${unique()}@example.test`, name: 'Ada Buyer', ...patch },
+    db,
+  ))!
 }
 
 export async function discount(patch: Partial<Parameters<typeof discountService.create>[1]> = {}) {

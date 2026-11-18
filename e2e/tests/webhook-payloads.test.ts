@@ -181,7 +181,7 @@ before(async () => {
     ok(await call('PATCH', `/admin/customers/${customer.id}`, { name: 'Contract Test Renamed' }, token))
     // customer.erased: another customer, so the erasure does not sweep up the payloads of the one used above
     const erased = ok(await call('POST', '/admin/customers', { email: fx.shopper('contract-erased') }, token))
-    await privacyService.erase(SHOP, erased.id)
+    await privacyService.erase(SHOP, erased.id, db)
 
     // order.created, order.updated, order.paid, order.fulfilled; and order.cancelled on a second order placed at
     // checkout, so one order also carries a shipping line

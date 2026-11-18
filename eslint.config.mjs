@@ -46,6 +46,9 @@ const connectionBoundModules = [
   'modules/ai',
   'modules/webhooks',
   'modules/channels',
+  'modules/content',
+  'modules/customers',
+  'modules/privacy',
 ]
 
 // Server code logs through createLogger from @shopnex/log (levels, LOG_FORMAT=json, redaction), never console.*: every

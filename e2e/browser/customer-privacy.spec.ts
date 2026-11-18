@@ -1,3 +1,4 @@
+import { db } from '@shopnex/db'
 // The Privacy card on a customer: owners and admins can download the customer's data and erase it, staff cannot see it.
 // The rules of an erasure are in tests/customer-privacy.test.ts; this is the screen.
 import { readFileSync } from 'node:fs'
@@ -17,7 +18,11 @@ test.beforeAll(async () => {
   await fx.init()
   owner = await fx.account('owner')
   member = await fx.account('member')
-  customer = (await customerService.create(SHOP, { email: fx.shopper('browser-privacy'), name: 'Browser Privacy' }))!
+  customer = (await customerService.create(
+    SHOP,
+    { email: fx.shopper('browser-privacy'), name: 'Browser Privacy' },
+    db,
+  ))!
   const [variant] = await sellableVariants(1)
   order = await orderService.create(SHOP, {
     customerId: customer.id,

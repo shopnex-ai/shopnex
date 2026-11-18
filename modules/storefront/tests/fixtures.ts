@@ -88,11 +88,16 @@ export const product = (patch: Partial<Parameters<typeof productService.create>[
 
 export async function customerWithToken(email = `shopper-${unique()}@example.test`) {
   let code = ''
-  await accountService.requestLoginCode(SHOP, email, (_to, c) => {
-    code = c
-    return Promise.resolve()
-  })
-  const { token, customer } = await accountService.verifyLoginCode(SHOP, email, code)
+  await accountService.requestLoginCode(
+    SHOP,
+    email,
+    (_to, c) => {
+      code = c
+      return Promise.resolve()
+    },
+    db,
+  )
+  const { token, customer } = await accountService.verifyLoginCode(SHOP, email, code, db)
   return { token, customer, headers: { [CUSTOMER_TOKEN_HEADER]: token } }
 }
 

@@ -1,7 +1,7 @@
 // Pages (admin: Online store → Pages): About, FAQ, Shipping policy… Business logic only; every query is
 // scoped by shopId. Bodies are sanitized on write, since storefronts render them as is.
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
-import { db, type Conn } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
 import { ContentError } from './content.errors'
 import { pages } from './content.schema'
@@ -16,11 +16,11 @@ export interface PageInput {
   published?: boolean
 }
 
-export async function list(shopId: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
   return conn.select().from(pages).where(eq(pages.shopId, shopId)).orderBy(asc(pages.createdAt))
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(pages)
@@ -28,7 +28,7 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
-async function getByHandle(shopId: string, handle: string, conn: Conn = db) {
+async function getByHandle(shopId: string, handle: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(pages)
@@ -40,7 +40,7 @@ const visible = (shopId: string) =>
   and(eq(pages.shopId, shopId), isNotNull(pages.publishedAt), lte(pages.publishedAt, new Date()))
 
 /** For storefronts: null when there's no such page or it's hidden */
-export async function getPublishedByHandle(shopId: string, handle: string, conn: Conn = db) {
+export async function getPublishedByHandle(shopId: string, handle: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(pages)
@@ -48,7 +48,7 @@ export async function getPublishedByHandle(shopId: string, handle: string, conn:
   return row ?? null
 }
 
-export async function listPublished(shopId: string, opts: { limit: number; offset: number }, conn: Conn = db) {
+export async function listPublished(shopId: string, opts: { limit: number; offset: number }, conn: Conn) {
   return conn
     .select()
     .from(pages)
@@ -81,8 +81,8 @@ const fields = (input: Partial<PageInput>) => ({
   ...(input.seo?.description !== undefined && { seoDescription: input.seo.description }),
 })
 
-export async function create(shopId: string, input: PageInput) {
-  return db.transaction(async (tx) => {
+export async function create(shopId: string, input: PageInput, conn: Conn) {
+  return conn.transaction(async (tx) => {
     let handle = input.handle
     if (handle) await assertHandleFree(tx, shopId, handle)
     else handle = await freeHandle(tx, shopId, input.title)
@@ -102,8 +102,8 @@ export async function create(shopId: string, input: PageInput) {
 }
 
 // Returns null when the page isn't in this shop. Publishing keeps the first publish date.
-export async function update(shopId: string, id: string, patch: Partial<PageInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<PageInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const current = await getById(shopId, id, tx)
     if (!current) return null
     if (patch.handle !== undefined) await assertHandleFree(tx, shopId, patch.handle, id)
@@ -124,8 +124,8 @@ export async function update(shopId: string, id: string, patch: Partial<PageInpu
   })
 }
 
-export async function remove(shopId: string, id: string) {
-  const [row] = await db
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [row] = await conn
     .delete(pages)
     .where(and(eq(pages.shopId, shopId), eq(pages.id, id)))
     .returning()

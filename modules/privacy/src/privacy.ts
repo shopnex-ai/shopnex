@@ -4,7 +4,7 @@
 // Erase anonymizes instead of deleting where the shop has to keep its books: an order stays (number, date, items, totals,
 // tax, payments, shipping country) but loses who it was for. Everything else that identifies the person goes.
 import { and, eq, inArray, or, sql } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { session } from '@shopnex/auth/schema'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
@@ -50,50 +50,50 @@ const theirCarts = (shopId: string, customerId: string, email: string) =>
   )
 
 /** Everything the shop holds about this customer, as plain data a person (or another system) can read */
-export async function exportData(shopId: string, customerId: string) {
-  const [customer] = await db
+export async function exportData(shopId: string, customerId: string, conn: Conn) {
+  const [customer] = await conn
     .select()
     .from(customers)
     .where(and(eq(customers.shopId, shopId), eq(customers.id, customerId)))
   if (!customer) return null
   const email = customer.email.toLowerCase()
 
-  const orders = await db
+  const orders = await conn
     .select()
     .from(ordersTable)
     .where(theirOrders(shopId, customerId, email))
     .orderBy(ordersTable.orderNumber)
   const orderIds = orders.map((o) => o.id)
   const [items, shippingLines, transactions] = orderIds.length
-    ? await Promise.all([
-        db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds)),
-        db.select().from(orderShippingLines).where(inArray(orderShippingLines.orderId, orderIds)),
-        db.select().from(orderTransactions).where(inArray(orderTransactions.orderId, orderIds)),
+    ? await all(conn, [
+        () => conn.select().from(orderItems).where(inArray(orderItems.orderId, orderIds)),
+        () => conn.select().from(orderShippingLines).where(inArray(orderShippingLines.orderId, orderIds)),
+        () => conn.select().from(orderTransactions).where(inArray(orderTransactions.orderId, orderIds)),
       ])
     : [[], [], []]
 
-  const carts = await db
+  const carts = await conn
     .select()
     .from(cartsTable)
     .where(theirCarts(shopId, customerId, email))
   const cartIds = carts.map((c) => c.id)
   const cartLines = cartIds.length
-    ? await db.select().from(cartLinesTable).where(inArray(cartLinesTable.cartId, cartIds))
+    ? await conn.select().from(cartLinesTable).where(inArray(cartLinesTable.cartId, cartIds))
     : []
 
-  const emails = await db
+  const emails = await conn
     .select()
     .from(emailDeliveries)
     .where(and(eq(emailDeliveries.shopId, shopId), eq(sql`lower(${emailDeliveries.to})`, email)))
     .orderBy(emailDeliveries.createdAt)
-  const [suppressed] = await db
+  const [suppressed] = await conn
     .select()
     .from(emailSuppressions)
     .where(and(eq(emailSuppressions.shopId, shopId), eq(emailSuppressions.email, email)))
 
   // The storefront login, when the customer has one
-  const login = customer.userId ? await db.select().from(userTable).where(eq(userTable.id, customer.userId)) : []
-  const sessions = customer.userId ? await db.select().from(session).where(eq(session.userId, customer.userId)) : []
+  const login = customer.userId ? await conn.select().from(userTable).where(eq(userTable.id, customer.userId)) : []
+  const sessions = customer.userId ? await conn.select().from(session).where(eq(session.userId, customer.userId)) : []
 
   return {
     schemaVersion: 1 as const,
@@ -182,8 +182,8 @@ export async function exportData(shopId: string, customerId: string) {
  * Removes the customer's personal data and keeps what the shop's books need. Refused while the customer has an order
  * that is still to be delivered, paid or cancelled: it needs their address. Nothing is half done (one transaction).
  */
-export async function erase(shopId: string, customerId: string) {
-  const result = await db.transaction(async (tx) => {
+export async function erase(shopId: string, customerId: string, conn: Conn) {
+  const result = await conn.transaction(async (tx) => {
     const [customer] = await tx
       .select()
       .from(customers)

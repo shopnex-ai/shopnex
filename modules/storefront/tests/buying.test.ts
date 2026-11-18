@@ -246,10 +246,15 @@ describe('signing in', () => {
   test('the code signs in: a token and the customer, made on the first sign-in; a wrong code is INVALID_CODE (400 typed)', async () => {
     const email = `d-${fx.unique()}@example.test`
     let code = ''
-    await fx.accountService.requestLoginCode(SHOP, email, (_to, c) => {
-      code = c
-      return Promise.resolve()
-    })
+    await fx.accountService.requestLoginCode(
+      SHOP,
+      email,
+      (_to, c) => {
+        code = c
+        return Promise.resolve()
+      },
+      db,
+    )
     await assert.rejects(run(sf.customer!.signIn, { email, code: '000000' }), typed('INVALID_CODE', 400))
     const signedIn = await run<{ token: string; customer: Record<string, unknown> }>(sf.customer!.signIn, {
       email,
@@ -292,7 +297,7 @@ describe('the customer’s own data', () => {
       db,
     )
     const { customer, headers } = await fx.customerWithToken()
-    await fx.customerService.update(SHOP, customer.id, { customFields: { tier: 'gold', internal: 'x' } })
+    await fx.customerService.update(SHOP, customer.id, { customFields: { tier: 'gold', internal: 'x' } }, db)
     const got = await run<Record<string, unknown>>(sf.customer!.get, undefined, headers)
     assert.deepEqual([got.id, got.email, got.customFields], [customer.id, customer.email, { tier: 'gold' }])
     const updated = await run<Record<string, unknown>>(sf.customer!.update, { name: ' Ada ', phone: '+1' }, headers)

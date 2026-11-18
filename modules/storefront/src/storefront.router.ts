@@ -125,25 +125,25 @@ export const storefrontRouter = storefront.router({
   pages: {
     list: storefront.pages.list.handler(async ({ input, context }) => {
       const page = await paginate(input, (limit, offset) =>
-        pageService.listPublished(context.shop.id, { limit, offset }),
+        pageService.listPublished(context.shop.id, { limit, offset }, db),
       )
       return { ...page, nodes: page.nodes.map(toPage) }
     }),
     getByHandle: storefront.pages.getByHandle.handler(async ({ input, context }) => {
-      const page = await pageService.getPublishedByHandle(context.shop.id, input.handle)
+      const page = await pageService.getPublishedByHandle(context.shop.id, input.handle, db)
       if (!page) throw new ORPCError('NOT_FOUND')
       return toPage(page)
     }),
   },
   menu: {
     get: storefront.menu.get.handler(async ({ input, context }) => {
-      const menu = await menuService.getByHandle(context.shop.id, input.handle)
+      const menu = await menuService.getByHandle(context.shop.id, input.handle, db)
       if (!menu) throw new ORPCError('NOT_FOUND')
       return {
         id: menu.id,
         handle: menu.handle,
         title: menu.title,
-        items: toMenuItems(await menuService.resolve(context.shop.id, menu.items)),
+        items: toMenuItems(await menuService.resolve(context.shop.id, menu.items, db)),
       }
     }),
   },
@@ -228,13 +228,13 @@ export const storefrontRouter = storefront.router({
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {
       const shopId = context.shop.id
-      await accountService.requestLoginCode(shopId, input.email, (to, code) => sendLoginCode(shopId, to, code), {
+      await accountService.requestLoginCode(shopId, input.email, (to, code) => sendLoginCode(shopId, to, code), db, {
         ip: clientIp(context.headers),
       })
       return { success: true as const }
     }),
     signIn: storefront.customer.signIn.handler(async ({ input, context }) => {
-      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code, {
+      const { token, customer } = await accountService.verifyLoginCode(context.shop.id, input.email, input.code, db, {
         ip: clientIp(context.headers),
       })
       return { token, customer: toCustomer(customer, await fieldsView(context.shop.id, 'customer')) }
@@ -249,7 +249,7 @@ export const storefrontRouter = storefront.router({
     ),
     update: storefront.customer.update.handler(async ({ input, context }) => {
       const customer = await signedIn(context)
-      const updated = await accountService.updateProfile(context.shop.id, customer.id, input)
+      const updated = await accountService.updateProfile(context.shop.id, customer.id, input, db)
       return toCustomer(updated ?? customer, await fieldsView(context.shop.id, 'customer'))
     }),
     orders: storefront.customer.orders.handler(async ({ input, context }) => {
