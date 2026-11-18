@@ -11,7 +11,8 @@
     "./setup": "./src/setup.ts",
     "./signup-limit": "./src/signup-limit.ts",
     "./schema": "./src/auth.schema.ts",
-    "./module": "./src/auth.module.ts"
+    "./module": "./src/auth.module.ts",
+    "./contract": "./src/auth.contract.ts"
   },
   "scripts": {
     "typecheck": "tsc",
@@ -25,7 +26,8 @@
     "@shopnex/kit": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "better-auth": "^1.7.18",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

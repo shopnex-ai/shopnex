@@ -4,7 +4,7 @@
 // a product, a page, search, or any address).
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useState } from 'react'
-import type { MenuItemType, StoredMenuItem } from '@shopnex/api/schemas'
+import type { MenuItemType, StoredMenuItem } from '@shopnex/content/schema'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'

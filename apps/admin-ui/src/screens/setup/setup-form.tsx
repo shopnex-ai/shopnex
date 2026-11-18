@@ -1,7 +1,7 @@
 'use client'
 
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { MIN_PASSWORD, setupInput } from '@shopnex/api/schemas'
+import { MIN_PASSWORD, setupInput } from '@shopnex/auth/contract'
 import { authClient } from '@shopnex/auth/client'
 import { FormError, TextField, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'

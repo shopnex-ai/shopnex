@@ -1,6 +1,6 @@
 // Menu item tree edits for the editor. A path is the item's index at each level, e.g. [2, 0] = the first
 // sub-item of the third top-level item. Every function returns a new tree.
-import { MENU_MAX_DEPTH, type StoredMenuItem } from '@shopnex/api/schemas'
+import { MENU_MAX_DEPTH, type StoredMenuItem } from '@shopnex/content/schema'
 
 type Item = StoredMenuItem
 export type Path = number[]

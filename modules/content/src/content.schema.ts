@@ -59,7 +59,7 @@ export const menus = pgTable(
     // What storefronts ask for (main-menu, footer…)
     handle: text('handle').notNull(),
     title: text('title').notNull(),
-    // Ordered tree; validated by the API layer (menuInput in @shopnex/api/schemas)
+    // Ordered tree; validated by the API layer (menuInput in @shopnex/content/contract)
     items: jsonb('items').$type<StoredMenuItem[]>().notNull().default([]),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

@@ -1,6 +1,6 @@
 'use client'
 
-// Forms validate with the same zod schemas the API uses (@shopnex/api/schemas), so the browser
+// Forms validate with the same zod schemas the API uses (each module's `contract`), so the browser
 // rejects exactly what the server would — before a round trip.
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ORPCError } from '@orpc/client'

@@ -129,7 +129,7 @@ Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
   entry cannot create an import cycle.
 - Keep the root entry small: the service, the errors and the types. Do not re-export the router, the manifest or anything
   else that drags in more.
-- Code that runs in the browser (the admin UI's forms, `@shopnex/api/schemas`) imports only `/schema` or `/contract`.
+- Code that runs in the browser (the admin UI's forms) imports only `/schema` or `/contract` of a module, and `pnpm bundle:check` fails if server code gets in.
   The root entry exports the service, which pulls in the database client, and a browser bundle that reaches it fails with
   `Buffer is not defined`. `pnpm bundle:check` (also in CI) bundles every `@shopnex/...` entry the admin UI's `.tsx` files
   import, and every module's `*.contract.ts` and `*.schema.ts`, for the browser, and fails when server code comes along.
