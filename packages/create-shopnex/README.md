@@ -23,6 +23,19 @@ The first run downloads ShopNex (one file, about 15 MB) into `~/.shopnex/app/<ve
 runs start straight away. It prints where to open the shop and the admin and opens the admin's setup wizard (use
 `--no-open` to skip that). Ctrl+C stops everything. Nothing is installed globally.
 
+## Run it again
+
+The shop folder has a `package.json`, so from inside it:
+
+```sh
+cd shopnex
+npm install   # once
+npm start     # or: npm run dev
+```
+
+Both scripts run `create-shopnex .` with the version that made the folder (pinned in `package.json`). The same works
+from the folder above: `npx create-shopnex@latest shopnex`.
+
 ## What it does, and why you can trust it
 
 - **It runs on your machine only.** Both servers listen on `127.0.0.1`, and the data stays in the shop folder (`shopnex/data` by default).
@@ -79,7 +92,7 @@ SHOPNEX_SECRET=<generated once>   # encrypts the provider keys saved in the admi
 - Do not commit or share it. Without `SHOPNEX_SECRET` the saved provider keys cannot be read: a lost one means a new
   shop.
 
-The first run also writes a `.gitignore` (keeps `.env`, `.pglite/` and the apps' keys out of git) and the
+The first run also writes a `README.md` (how to run the shop again), a `package.json` (for `npm start`), a `.gitignore` (keeps `.env`, `.pglite/` and the apps' keys out of git) and the
 `docker-compose.yml` (fetched from the repository, the file the [self-hosting docs](https://shopnex.ai/docs/self-hosting/docker) describe: ShopNex, the Stripe
 app and PostgreSQL from prebuilt images), for when the shop should run in Docker instead. Existing files are never
 overwritten.
