@@ -27,6 +27,7 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",
+    "@shopnex/privacy": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",

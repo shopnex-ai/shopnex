@@ -6,6 +6,7 @@ import { storefrontKeys } from '../src/channels.schema'
 
 const { db, schema, SHOP, OTHER_SHOP } = fx
 const { channelService, DEFAULT_CHANNEL_HANDLE, ChannelError } = await import('../src')
+const { isForeignKeyViolation } = await import('../src/channels')
 
 const refused = (code: string) => (e: unknown) => e instanceof ChannelError && e.code === code
 
@@ -15,6 +16,28 @@ before(async () => {
 })
 beforeEach(fx.cleanup)
 after(fx.cleanup)
+
+describe('telling a foreign key violation from other errors', () => {
+  const violation = (constraint: string) => Object.assign(new Error('violates'), { code: '23503', constraint })
+  test('the one the orders table raises, bare or wrapped by the driver, and nothing else', () => {
+    assert.equal(isForeignKeyViolation(violation('orders_channel_id_channels_id_fk'), 'orders_'), true)
+    assert.equal(
+      isForeignKeyViolation(new Error('wrapped', { cause: violation('orders_channel_id_channels_id_fk') }), 'orders_'),
+      true,
+    )
+    assert.equal(
+      isForeignKeyViolation(violation('carts_channel_id_channels_id_fk'), 'orders_'),
+      false,
+      'another table’s constraint',
+    )
+    assert.equal(
+      isForeignKeyViolation(Object.assign(new Error('x'), { code: '23505', constraint: 'orders_x' }), 'orders_'),
+      false,
+    )
+    assert.equal(isForeignKeyViolation(new Error('plain'), 'orders_'), false)
+    assert.equal(isForeignKeyViolation(undefined, 'orders_'), false)
+  })
+})
 
 describe('the Online Store', () => {
   test('is made on first use, with auto-publish on, and is the same one every time', async () => {

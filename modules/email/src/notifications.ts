@@ -20,6 +20,7 @@ import { send } from './email'
 import { EmailError } from './email.errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
 import { log } from './log'
+import type { OrderEvent } from '@shopnex/orders'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { type Shop, shops, user } from '@shopnex/core/schema'
 
@@ -84,7 +85,7 @@ export type OrderView = Order & {
   customer: Customer | null
 }
 
-export type OrderEvent = 'order.created' | 'order.paid' | 'order.fulfilled' | 'order.cancelled'
+export type { OrderEvent }
 
 // --- Liquid variables (snake_case, Shopify-like names) ---
 

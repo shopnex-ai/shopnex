@@ -8,13 +8,13 @@ import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
 import { all, db, schema, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
-import { notify } from '@shopnex/email'
 import { calculate, taxService } from '@shopnex/pricing'
 import { checkDiscount, redeemDiscount } from './discount-redemptions'
 import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
+import { orderEvent } from './orders.hooks'
 import { shops } from '@shopnex/core/schema'
 
 export type OrderLineInput =
@@ -431,7 +431,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       : []
     if (discount?.discount) await redeemDiscount(tx, discount.discount, order!)
     await emit(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
-    await notify(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.created', load: () => getById(shopId, order!.id, tx) })
     return { ...order!, items, shippingLines }
   })
 }
@@ -494,7 +494,7 @@ export async function markAsPaid(shopId: string, id: string) {
     })
     const updated = await touch(tx, id, { financialStatus: 'paid' })
     await emit(tx, shopId, 'order.paid', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.paid', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.paid', load: () => getById(shopId, id, tx) })
     return updated
   })
 }
@@ -517,7 +517,7 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
     })
     const updated = await touch(tx, id, { fulfillmentStatus: 'fulfilled' })
     await emit(tx, shopId, 'order.fulfilled', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.fulfilled', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.fulfilled', load: () => getById(shopId, id, tx) })
     return updated
   })
 }
@@ -574,7 +574,7 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     }
     const updated = await touch(tx, id, { cancelledAt: new Date(), cancelReason: input.reason, financialStatus })
     await emit(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.cancelled', load: () => getById(shopId, id, tx) })
     return updated
   })
 }

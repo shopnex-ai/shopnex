@@ -17,6 +17,8 @@ requireEmbeddedDatabase()
 const { channelService } = await import('@shopnex/channels')
 const { productService } = await import('@shopnex/catalog')
 const { orderService } = await import('@shopnex/orders')
+// The confirmation email is what email does when orders say an order was created: it only does it once its module is loaded
+await import('@shopnex/email')
 const { cartService, checkoutService } = await import('../src')
 const { eq } = await import('drizzle-orm')
 const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')

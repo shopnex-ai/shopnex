@@ -1,4 +1,5 @@
 export * as orderService from './orders'
+export { orderEvent, type OrderEvent } from './orders.hooks'
 export type { CancelInput, CreateOrderInput, FulfillInput, ListOrdersInput, OrderLineInput } from './orders'
 export { OrderError, type OrderErrorCode, type OrderErrorData } from './orders.errors'
 export {

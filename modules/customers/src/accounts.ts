@@ -5,7 +5,6 @@
 import { and, eq } from 'drizzle-orm'
 import { auth, takeRate, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
 import { db, schema } from '@shopnex/db'
-import { sendLoginCode } from '@shopnex/email'
 import type { Customer } from '@shopnex/db/schema'
 import { emit } from '@shopnex/webhooks'
 import * as customers from './customers'
@@ -63,11 +62,14 @@ async function isUnverifiedAccount(email: string) {
   return existing !== undefined && !existing.emailVerified
 }
 
+/** Delivers a sign-in code to an address (the storefront route passes email's sendLoginCode: customers sits below email) */
+export type SendLoginCode = (to: string, code: string) => Promise<void>
+
 /**
- * Emails a sign-in code. Says nothing about whether the address has an account (a new customer gets one on
- * sign-in). Throws EMAIL_OFF (EmailError) when the shop can't send email.
+ * Sends a sign-in code through `send`. Says nothing about whether the address has an account (a new customer gets one on
+ * sign-in). What `send` throws (EMAIL_OFF when the shop can't send email) is rethrown as it is.
  */
-export async function requestLoginCode(shopId: string, rawEmail: string, visitor: Visitor = {}) {
+export async function requestLoginCode(shopId: string, rawEmail: string, send: SendLoginCode, visitor: Visitor = {}) {
   const email = normalize(rawEmail)
   if (!EMAIL.test(email) || email.length > 254) throw new AccountError('INVALID_EMAIL', 'Enter a valid email address')
   const wait = await overLimit([
@@ -87,7 +89,7 @@ export async function requestLoginCode(shopId: string, rawEmail: string, visitor
   await withOtpSender(
     async (to, code) => {
       try {
-        await sendLoginCode(shopId, to, code)
+        await send(to, code)
       } catch (error) {
         failure = error
       }

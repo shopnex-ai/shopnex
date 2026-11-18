@@ -20,7 +20,6 @@
     "@shopnex/apps": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
-    "@shopnex/email": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
