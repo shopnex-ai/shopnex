@@ -25,6 +25,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@shopnex/core": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

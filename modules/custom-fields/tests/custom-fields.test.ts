@@ -1,6 +1,7 @@
 // Custom field definitions and values on a real in-memory database (PGlite), the way the app runs them.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -170,6 +171,60 @@ describe('remove', () => {
     )
     const [after] = await db.select().from(schema.customers).where(eq(schema.customers.id, customer!.id))
     assert.deepEqual(after?.customFields, { rm_keep: 'stays' })
+  })
+
+  test('clears the value from products and orders too, only in the shop and only under that key', async () => {
+    const [onProduct, onOrder] = [
+      await fields.create(SHOP, { resource: 'product', key: 'rm_prod', label: 'x', type: 'text' }, db),
+      await fields.create(SHOP, { resource: 'order', key: 'rm_ord', label: 'x', type: 'text' }, db),
+    ]
+    const [product] = await db
+      .insert(schema.products)
+      .values({
+        shopId: SHOP,
+        slug: 'rm-prod',
+        title: 'P',
+        priceCents: 1,
+        customFields: { rm_prod: 'a', rm_ord: 'kept' },
+      })
+      .returning()
+    const [order] = await db
+      .insert(schema.orders)
+      .values({
+        shopId: SHOP,
+        orderNumber: 990_001,
+        channelId: (await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP)))[0]!.id,
+        email: 'rm@example.com',
+        subtotalCents: 1,
+        totalCents: 1,
+        customFields: { rm_ord: 'b', rm_prod: 'kept' },
+      })
+      .returning()
+    await fields.remove(SHOP, onProduct.id, db)
+    await fields.remove(SHOP, onOrder.id, db)
+    const [p] = await db.select().from(schema.products).where(eq(schema.products.id, product!.id))
+    const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, order!.id))
+    assert.deepEqual(
+      p?.customFields,
+      { rm_ord: 'kept' },
+      'a product keeps a value under a key that belongs to another resource',
+    )
+    assert.deepEqual(o?.customFields, { rm_prod: 'kept' })
+    await db.delete(schema.products).where(eq(schema.products.id, product!.id))
+    await db.delete(schema.orders).where(eq(schema.orders.id, order!.id))
+  })
+
+  test('leaves another shop’s values under the same key alone', async () => {
+    await db.insert(shops).values({ id: 'cf-other', name: 'Other', slug: 'cf-other' }).onConflictDoNothing()
+    const f = await fields.create(SHOP, { resource: 'customer', key: 'rm_shared', label: 'x', type: 'text' }, db)
+    const [theirs] = await db
+      .insert(schema.customers)
+      .values({ shopId: 'cf-other', email: 'theirs@example.com', customFields: { rm_shared: 'theirs' } })
+      .returning()
+    await fields.remove(SHOP, f.id, db)
+    const [after] = await db.select().from(schema.customers).where(eq(schema.customers.id, theirs!.id))
+    assert.deepEqual(after?.customFields, { rm_shared: 'theirs' })
+    await db.delete(shops).where(eq(shops.id, 'cf-other'))
   })
 
   test('is null for a field that does not exist', async () => {

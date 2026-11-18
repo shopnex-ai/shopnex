@@ -8,7 +8,8 @@
     "./worker": "./src/worker.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/catalog": "workspace:*",
@@ -24,6 +25,7 @@
     "nodemailer": "10.4.0"
   },
   "devDependencies": {
-    "@types/node": "catalog:"
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }
