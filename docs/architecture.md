@@ -25,7 +25,8 @@
 
 /modules
 
-- /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
+- /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later). It recognises the request (`configureRpc`) and mounts every module's routes under the names the API has always had; it has no routes or logic of its own
+- /storefront # the public Storefront API (`storefront-sdk`'s contract, implemented): products, collections, pages, menus, the theme, the cart, customer accounts and checkout, for any storefront. No tables or contract of its own; it sits above the modules it reads, and answers their domain errors with the contract's typed ones
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants), and the admin product and collection routes
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list (or a dependency it lists and never uses), a module without a manifest (apart from api, db, kit, log and rpc), a manifest that disagrees with package.json, a cycle, a table outside a `*.schema.ts`, a foreign key that points against the graph, or a dependency graph in this document that differs from the manifests
@@ -51,7 +52,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are answered with the
 ```text
 <!-- modules:graph:start -->
 ai → apps, catalog, content, core, db, rpc, tenancy
-api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, db, email, files, orders, payments, pricing, privacy, rpc, tenancy, theme, webhooks
+api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
@@ -72,6 +73,7 @@ payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
 privacy → auth, cart, core, custom-fields, customers, db, email, orders, rpc, tenancy, webhooks
 rpc → core
+storefront → auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, rpc, webhooks
 theme → core, db, drafts, rpc
 webhooks → core, db, rpc
@@ -96,6 +98,7 @@ of date). The edges that are not obvious, and why they run the way they do:
 - **customers** does not send email: `requestLoginCode` takes the sender as a parameter, and the one storefront route that calls it passes it.
 - **tenancy** calls `content` (default menus when a shop is created) and `webhooks` (a revoked token's subscriptions) as ordinary dependencies.
 - **apps** owns `appUninstalled`; payments, ai and cart listen to it. **orders** owns `orderEvent`; email listens to it.
+- **storefront** implements the published Storefront API on top of cart, catalog, content, customers, orders, theme and the rest. Nothing depends on it but `api`, which mounts it.
 - **api** mounts every module's routes and does nothing else.
 
 ## Writing a module

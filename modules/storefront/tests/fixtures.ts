@@ -1,4 +1,4 @@
-// What the storefront route tests share: the embedded database, the real router, and a shop with a catalog, content, a theme, carts and
+// What the storefront route tests share: the embedded database, the module's router, and a shop with a catalog, content, a theme, carts and
 // customers to read through the public API. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { call } from '@orpc/server'
 
@@ -11,7 +11,7 @@ const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
-const { router } = await import('../src/router')
+const { storefrontModule } = await import('../src/storefront.module')
 const { productService, collectionService } = await import('@shopnex/catalog')
 const { channelService, storefrontKeyService } = await import('@shopnex/channels')
 const { pageService, menuService } = await import('@shopnex/content')
@@ -42,12 +42,12 @@ const schemas = {
 }
 const { shops } = await import('@shopnex/core/schema')
 
-export { db, prepareDatabase, eq, router, productService, collectionService, channelService, storefrontKeyService }
+export { db, prepareDatabase, eq, productService, collectionService, channelService, storefrontKeyService }
 export { pageService, menuService, cartService, customerService, accountService, orderService, themeService }
 export { createPreviewToken, discountService, paymentMethodService, customFieldService, schemas, shops }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'storefront-other-shop'
-export const sf = router.storefront as unknown as Record<string, Record<string, unknown>>
+export const sf = storefrontModule.router.storefront as unknown as Record<string, Record<string, unknown>>
 export { PUBLISHABLE_KEY_HEADER, CUSTOMER_TOKEN_HEADER }
 
 let counter = 0

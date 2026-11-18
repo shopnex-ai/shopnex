@@ -30,7 +30,6 @@
     "@shopnex/core": "workspace:*",
     "@shopnex/custom-fields": "workspace:*",
     "@shopnex/customers": "workspace:*",
-    "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/files": "workspace:*",
     "@shopnex/kit": "workspace:*",
@@ -41,6 +40,7 @@
     "@shopnex/pricing": "workspace:*",
     "@shopnex/privacy": "workspace:*",
     "@shopnex/rpc": "workspace:*",
+    "@shopnex/storefront": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/theme": "workspace:*",
@@ -51,6 +51,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@shopnex/db": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

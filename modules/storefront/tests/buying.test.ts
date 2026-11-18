@@ -5,7 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { ORPCError } from '@orpc/server'
-import * as fx from './storefront-fixtures'
+import * as fx from './fixtures'
 
 const { db, eq, sf, run, SHOP, MISSING } = fx
 
@@ -272,7 +272,7 @@ describe('signing in', () => {
 
 describe('the customer’s own data', () => {
   test('without a token, or with one that is not valid, every route is UNAUTHORIZED (401 typed)', async () => {
-    for (const headers of [{}, { [fx.CUSTOMER_TOKEN_HEADER]: 'nope' }]) {
+    for (const headers of [{}, { [fx.CUSTOMER_TOKEN_HEADER]: 'nope' }] as Record<string, string>[]) {
       await assert.rejects(run(sf.customer!.get, undefined, headers), typed('UNAUTHORIZED', 401))
       await assert.rejects(run(sf.customer!.update, { name: 'x' }, headers), typed('UNAUTHORIZED', 401))
       await assert.rejects(run(sf.customer!.orders, { first: 5 }, headers), typed('UNAUTHORIZED', 401))

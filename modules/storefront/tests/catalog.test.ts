@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { ORPCError } from '@orpc/server'
-import * as fx from './storefront-fixtures'
+import * as fx from './fixtures'
 
 const { db, eq, sf, run, SHOP, MISSING } = fx
 const { shops } = fx

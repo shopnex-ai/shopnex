@@ -1,0 +1,43 @@
+{
+  "name": "@shopnex/storefront",
+  "description": "The public Storefront API: products, collections, pages, menus, theme, cart, customer accounts and checkout, for any storefront",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./router": "./src/storefront.router.ts",
+    "./module": "./src/storefront.module.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@shopnex/auth": "workspace:*",
+    "@shopnex/cart": "workspace:*",
+    "@shopnex/catalog": "workspace:*",
+    "@shopnex/channels": "workspace:*",
+    "@shopnex/content": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
+    "@shopnex/customers": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
+    "@shopnex/kit": "workspace:*",
+    "@shopnex/log": "workspace:*",
+    "@shopnex/orders": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
+    "@shopnex/storefront-sdk": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "@shopnex/theme": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@shopnex/apps": "workspace:*",
+    "@shopnex/core": "workspace:*",
+    "@shopnex/payments": "workspace:*",
+    "@shopnex/pricing": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}
