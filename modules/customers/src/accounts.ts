@@ -4,7 +4,7 @@
 // cookie and sends it back with each request.
 import { and, eq } from 'drizzle-orm'
 import { auth, takeRate, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
-import { db } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { emit } from '@shopnex/webhooks'
 import * as customers from './customers'
 import { log } from './log'
@@ -56,8 +56,8 @@ async function overLimit(limits: [key: string, max: number][]) {
 // Better Auth's emailOTP "promotes" an existing user whose email was never verified by deleting their
 // password, OAuth links and sessions. Staff accounts made by the setup wizard or an invitation are like that, so
 // signing one in with a code would lock the owner out of the admin. They use the admin's login instead.
-async function isUnverifiedAccount(email: string) {
-  const [existing] = await db
+async function isUnverifiedAccount(email: string, conn: Conn) {
+  const [existing] = await conn
     .select({ emailVerified: userTable.emailVerified })
     .from(userTable)
     .where(eq(userTable.email, email))
@@ -71,7 +71,13 @@ export type SendLoginCode = (to: string, code: string) => Promise<void>
  * Sends a sign-in code through `send`. Says nothing about whether the address has an account (a new customer gets one on
  * sign-in). What `send` throws (EMAIL_OFF when the shop can't send email) is rethrown as it is.
  */
-export async function requestLoginCode(shopId: string, rawEmail: string, send: SendLoginCode, visitor: Visitor = {}) {
+export async function requestLoginCode(
+  shopId: string,
+  rawEmail: string,
+  send: SendLoginCode,
+  conn: Conn,
+  visitor: Visitor = {},
+) {
   const email = normalize(rawEmail)
   if (!EMAIL.test(email) || email.length > 254) throw new AccountError('INVALID_EMAIL', 'Enter a valid email address')
   const wait = await overLimit([
@@ -82,7 +88,7 @@ export async function requestLoginCode(shopId: string, rawEmail: string, send: S
   if (wait !== null) {
     throw new AccountError('TOO_MANY_REQUESTS', 'Too many codes requested. Wait a few minutes and try again.')
   }
-  if (await isUnverifiedAccount(email)) {
+  if (await isUnverifiedAccount(email, conn)) {
     log.warn('not sending a sign-in code to %s: it belongs to a staff account', email)
     return
   }
@@ -102,25 +108,35 @@ export async function requestLoginCode(shopId: string, rawEmail: string, send: S
 }
 
 /** The customer's record in this shop, created or linked to this login (matched by the verified email) */
-async function linkCustomer(shopId: string, user: { id: string; email: string; name: string }): Promise<Customer> {
-  const existing = await customers.getByEmail(shopId, user.email)
+async function linkCustomer(
+  shopId: string,
+  user: { id: string; email: string; name: string },
+  conn: Conn,
+): Promise<Customer> {
+  const existing = await customers.getByEmail(shopId, user.email, conn)
   if (existing) {
     if (existing.userId === user.id) return existing
-    const [linked] = await db
+    const [linked] = await conn
       .update(customersTable)
       .set({ userId: user.id, updatedAt: new Date() })
       .where(and(eq(customersTable.shopId, shopId), eq(customersTable.id, existing.id)))
       .returning()
-    if (linked) await emit(db, shopId, 'customer.updated', () => linked)
+    if (linked) await emit(conn, shopId, 'customer.updated', () => linked)
     return linked ?? existing
   }
-  const created = await customers.create(shopId, { email: user.email, name: user.name || null, userId: user.id })
+  const created = await customers.create(shopId, { email: user.email, name: user.name || null, userId: user.id }, conn)
   // Lost a race with checkout creating the same customer: link that one instead
-  return created ?? linkCustomer(shopId, user)
+  return created ?? linkCustomer(shopId, user, conn)
 }
 
 /** Checks the code and starts a session. `token` is what the storefront sends back as the customer token. */
-export async function verifyLoginCode(shopId: string, rawEmail: string, code: string, visitor: Visitor = {}) {
+export async function verifyLoginCode(
+  shopId: string,
+  rawEmail: string,
+  code: string,
+  conn: Conn,
+  visitor: Visitor = {},
+) {
   const email = normalize(rawEmail)
   // Every attempt counts, right or wrong: each new code gives five more guesses, so this caps guessing as well
   if (EMAIL.test(email)) {
@@ -131,7 +147,7 @@ export async function verifyLoginCode(shopId: string, rawEmail: string, code: st
     if (wait !== null)
       throw new AccountError('TOO_MANY_REQUESTS', 'Too many attempts. Wait a few minutes and try again.')
   }
-  if (!EMAIL.test(email) || (await isUnverifiedAccount(email))) {
+  if (!EMAIL.test(email) || (await isUnverifiedAccount(email, conn))) {
     throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
   }
   let result: Awaited<ReturnType<typeof auth.api.signInEmailOTP>>
@@ -143,16 +159,16 @@ export async function verifyLoginCode(shopId: string, rawEmail: string, code: st
   } catch {
     throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
   }
-  const customer = await linkCustomer(shopId, result.user)
+  const customer = await linkCustomer(shopId, result.user, conn)
   return { token: result.token, customer }
 }
 
 /** The signed-in customer of this shop, or null (no token, expired, or the login isn't a customer here) */
-export async function fromToken(shopId: string, token: string | null | undefined) {
+export async function fromToken(shopId: string, token: string | null | undefined, conn: Conn) {
   if (!token) return null
   const session = await auth.api.getSession({ headers: bearer(token) }).catch(() => null)
   if (!session) return null
-  const [customer] = await db
+  const [customer] = await conn
     .select()
     .from(customersTable)
     .where(and(eq(customersTable.shopId, shopId), eq(customersTable.userId, session.user.id)))
@@ -167,6 +183,7 @@ export async function updateProfile(
   shopId: string,
   customerId: string,
   patch: { name?: string; phone?: string | null },
+  conn: Conn,
 ) {
-  return customers.update(shopId, customerId, patch)
+  return customers.update(shopId, customerId, patch, conn)
 }

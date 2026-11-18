@@ -86,7 +86,11 @@ after(async () => {
 /** A customer with a finished order (paid and shipped), the way a returning buyer looks after a while */
 async function buyer(label: string, opts: { open?: boolean } = {}) {
   const email = fx.shopper(`privacy-${label}`)
-  const customer = (await customerService.create(SHOP, { email, name: `${label} Privacy`, phone: '+4915112345678' }))!
+  const customer = (await customerService.create(
+    SHOP,
+    { email, name: `${label} Privacy`, phone: '+4915112345678' },
+    db,
+  ))!
   const place = async () => {
     const placed = await orderService.create(SHOP, {
       customerId: customer.id,

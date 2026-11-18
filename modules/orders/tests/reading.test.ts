@@ -266,6 +266,6 @@ describe('importing history', () => {
       ]),
     )
     assert.equal((await orderService.list(SHOP, page)).total, 0)
-    assert.equal((await customerService.list(SHOP, { limit: 10, offset: 0 })).total, 0)
+    assert.equal((await customerService.list(SHOP, { limit: 10, offset: 0 }, db)).total, 0)
   })
 })

@@ -247,7 +247,7 @@ export function toCustomerOrder(o: OrderRow, fields: FieldsView): CustomerOrder 
 
 /** The signed-in customer of this shop (from the customer token header), else UNAUTHORIZED */
 export async function signedIn(context: { headers: Headers; shop: { id: string } }) {
-  const customer = await accountService.fromToken(context.shop.id, context.headers.get(CUSTOMER_TOKEN_HEADER))
+  const customer = await accountService.fromToken(context.shop.id, context.headers.get(CUSTOMER_TOKEN_HEADER), db)
   if (!customer) throw defined('UNAUTHORIZED', 'Sign in to continue')
   return customer
 }

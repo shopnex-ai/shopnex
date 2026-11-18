@@ -136,13 +136,13 @@ const refused = (code: string) => (e: unknown) => e instanceof PrivacyError && e
 describe('exportData', () => {
   test('is null for an unknown customer, and for another shop’s', async () => {
     const theirs = await customer({}, OTHER)
-    assert.equal(await privacyService.exportData(SHOP, MISSING), null)
-    assert.equal(await privacyService.exportData(SHOP, theirs.id), null)
+    assert.equal(await privacyService.exportData(SHOP, MISSING, db), null)
+    assert.equal(await privacyService.exportData(SHOP, theirs.id, db), null)
   })
 
   test('gives the customer record, with the version of the format', async () => {
     const c = await customer({ email: 'ada@example.test', name: 'Ada', customFields: { vip: true } })
-    const data = await privacyService.exportData(SHOP, c.id)
+    const data = await privacyService.exportData(SHOP, c.id, db)
     assert.equal(data?.schemaVersion, 1)
     assert.deepEqual(
       [data?.customer.id, data?.customer.email, data?.customer.name, data?.customer.customFields],
@@ -158,7 +158,7 @@ describe('exportData', () => {
     const sameEmail = await order({ email: 'ADA@Example.test' })
     await order({ email: 'someone@example.test' })
     await order({ shopId: OTHER, email: 'ada@example.test' })
-    const data = await privacyService.exportData(SHOP, c.id)
+    const data = await privacyService.exportData(SHOP, c.id, db)
     assert.deepEqual(
       data?.orders.map((o) => o.id),
       [linked.id, sameEmail.id],
@@ -179,7 +179,7 @@ describe('exportData', () => {
       amountCents: 1000,
       currency: 'USD',
     })
-    const [exported] = (await privacyService.exportData(SHOP, c.id))!.orders
+    const [exported] = (await privacyService.exportData(SHOP, c.id, db))!.orders
     assert.deepEqual(
       exported?.items.map((i) => [i.title, i.quantity, i.sku]),
       [['Shirt', 2, 'S-1']],
@@ -215,7 +215,7 @@ describe('exportData', () => {
       },
     ])
     await db.insert(emailSuppressions).values({ shopId: SHOP, email: 'ada@example.test' })
-    const data = await privacyService.exportData(SHOP, c.id)
+    const data = await privacyService.exportData(SHOP, c.id, db)
     assert.equal(data?.carts.length, 1)
     assert.deepEqual(
       data?.emails.map((e) => e.subject),
@@ -234,7 +234,7 @@ describe('exportData', () => {
       expiresAt: new Date(Date.now() + 1000),
       ipAddress: '10.0.0.1',
     })
-    const data = await privacyService.exportData(SHOP, c.id)
+    const data = await privacyService.exportData(SHOP, c.id, db)
     assert.equal(data?.loginAccount?.name, 'Ada Login')
     assert.deepEqual(
       data?.loginAccount?.sessions.map((s) => s.ipAddress),
@@ -247,8 +247,8 @@ describe('exportData', () => {
 describe('erase', () => {
   test('refuses an unknown customer, and another shop’s', async () => {
     const theirs = await customer({}, OTHER)
-    await assert.rejects(privacyService.erase(SHOP, MISSING), refused('CUSTOMER_NOT_FOUND'))
-    await assert.rejects(privacyService.erase(SHOP, theirs.id), refused('CUSTOMER_NOT_FOUND'))
+    await assert.rejects(privacyService.erase(SHOP, MISSING, db), refused('CUSTOMER_NOT_FOUND'))
+    await assert.rejects(privacyService.erase(SHOP, theirs.id, db), refused('CUSTOMER_NOT_FOUND'))
   })
 
   test('refuses while an order is open (to deliver, or not paid), naming them in order, and changes nothing', async () => {
@@ -256,7 +256,7 @@ describe('erase', () => {
     await order({ customerId: c.id, fulfillmentStatus: 'unfulfilled' })
     await order({ customerId: c.id, financialStatus: 'pending' })
     await order({ customerId: c.id })
-    await assert.rejects(privacyService.erase(SHOP, c.id), (e: unknown) => {
+    await assert.rejects(privacyService.erase(SHOP, c.id, db), (e: unknown) => {
       assert.ok(e instanceof PrivacyError)
       assert.equal(e.code, 'HAS_OPEN_ORDERS')
       assert.deepEqual(e.data.orderNumbers, [orderNumber - 2, orderNumber - 1])
@@ -274,7 +274,7 @@ describe('erase', () => {
       financialStatus: 'pending',
       cancelledAt: new Date(),
     })
-    const result = await privacyService.erase(SHOP, c.id)
+    const result = await privacyService.erase(SHOP, c.id, db)
     assert.equal(result.ordersAnonymized, 1)
   })
 
@@ -283,7 +283,7 @@ describe('erase', () => {
     const linked = await order({ customerId: c.id })
     const byEmail = await order({ email: 'Ada@Example.test' })
     const unrelated = await order({ email: 'someone@example.test' })
-    const result = await privacyService.erase(SHOP, c.id)
+    const result = await privacyService.erase(SHOP, c.id, db)
     assert.equal(result.ordersAnonymized, 2)
     for (const id of [linked.id, byEmail.id]) {
       const [o] = await db.select().from(orders).where(eq(orders.id, id))
@@ -308,7 +308,7 @@ describe('erase', () => {
     const c = await customer({ email: 'ada@example.test' })
     const mine = await cart({ customerId: c.id, email: 'ada@example.test' })
     const other = await cart({ email: 'someone@example.test' })
-    const result = await privacyService.erase(SHOP, c.id)
+    const result = await privacyService.erase(SHOP, c.id, db)
     assert.equal(result.cartsCleared, 1)
     const [after] = await db.select().from(carts).where(eq(carts.id, mine.id))
     assert.deepEqual([after?.email, after?.customerId], [null, null])
@@ -350,7 +350,7 @@ describe('erase', () => {
         html: '<p>keep</p>',
       })
       .returning()
-    const result = await privacyService.erase(SHOP, c.id)
+    const result = await privacyService.erase(SHOP, c.id, db)
     assert.equal(result.emailsRedacted, 2)
     const row = async (id: string) => (await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, id)))[0]
     const redacted = await row(toHer!.id)
@@ -371,7 +371,7 @@ describe('erase', () => {
       { shopId: SHOP, endpointId: endpoint!.id, topic: 'customer.created', body: '{"email":"Ada@example.test"}' },
       { shopId: SHOP, endpointId: endpoint!.id, topic: 'customer.created', body: '{"email":"someone@example.test"}' },
     ])
-    const result = await privacyService.erase(SHOP, c.id)
+    const result = await privacyService.erase(SHOP, c.id, db)
     assert.equal(result.webhookDeliveriesDeleted, 1)
     assert.equal((await db.select().from(customers).where(eq(customers.id, c.id))).length, 0)
     const left = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpoint!.id))
@@ -387,7 +387,7 @@ describe('erase', () => {
       .insert(webhookEndpoints)
       .values({ shopId: SHOP, url: 'https://example.com/hook', topics: ['customer.erased'], secret: 'whsec_x' })
       .returning()
-    await privacyService.erase(SHOP, c.id)
+    await privacyService.erase(SHOP, c.id, db)
     const sent = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpoint!.id))
     assert.equal(sent.length, 1)
     assert.deepEqual((JSON.parse(sent[0]!.body) as { data: unknown }).data, { id: c.id, email: 'ada@example.test' })
@@ -403,7 +403,7 @@ describe('erase', () => {
     await customer({ userId: shared.id }, OTHER)
     for (const login of [lone, staff, admin, shared]) {
       const c = await customer({ userId: login.id })
-      results.push((await privacyService.erase(SHOP, c.id)).loginAccountDeleted)
+      results.push((await privacyService.erase(SHOP, c.id, db)).loginAccountDeleted)
     }
     assert.deepEqual(results, [true, false, false, false])
     assert.equal((await db.select().from(userTable).where(eq(userTable.id, lone.id))).length, 0)
@@ -414,7 +414,7 @@ describe('erase', () => {
     const c = await customer({ email: 'ada@example.test' })
     await order({ customerId: c.id, fulfillmentStatus: 'unfulfilled' })
     const mine = await cart({ customerId: c.id, email: 'ada@example.test' })
-    await assert.rejects(privacyService.erase(SHOP, c.id), refused('HAS_OPEN_ORDERS'))
+    await assert.rejects(privacyService.erase(SHOP, c.id, db), refused('HAS_OPEN_ORDERS'))
     assert.equal((await db.select().from(carts).where(eq(carts.id, mine.id)))[0]?.email, 'ada@example.test')
   })
 })

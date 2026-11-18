@@ -3,7 +3,7 @@
 // belong to the shop, and `resolve` turns them into storefront links.
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
-import { db, type Conn } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { ContentError } from './content.errors'
 import { menus, pages, type StoredMenuItem } from './content.schema'
 import { collections as collectionsTable } from '@shopnex/catalog/schema'
@@ -15,11 +15,11 @@ export interface MenuInput {
   items: StoredMenuItem[]
 }
 
-export async function list(shopId: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
   return conn.select().from(menus).where(eq(menus.shopId, shopId)).orderBy(asc(menus.createdAt))
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(menus)
@@ -27,7 +27,7 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
-export async function getByHandle(shopId: string, handle: string, conn: Conn = db) {
+export async function getByHandle(shopId: string, handle: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(menus)
@@ -69,8 +69,8 @@ async function assertHandleFree(conn: Conn, shopId: string, handle: string, exce
   }
 }
 
-export async function create(shopId: string, input: MenuInput) {
-  return db.transaction(async (tx) => {
+export async function create(shopId: string, input: MenuInput, conn: Conn) {
+  return conn.transaction(async (tx) => {
     await assertHandleFree(tx, shopId, input.handle)
     await assertResources(tx, shopId, input.items)
     const [row] = await tx
@@ -83,8 +83,8 @@ export async function create(shopId: string, input: MenuInput) {
 }
 
 // Returns null when the menu isn't in this shop
-export async function update(shopId: string, id: string, patch: Partial<MenuInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<MenuInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     if (patch.handle !== undefined) await assertHandleFree(tx, shopId, patch.handle, id)
     if (patch.items !== undefined) await assertResources(tx, shopId, patch.items)
@@ -98,8 +98,8 @@ export async function update(shopId: string, id: string, patch: Partial<MenuInpu
   })
 }
 
-export async function remove(shopId: string, id: string) {
-  const [row] = await db
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [row] = await conn
     .delete(menus)
     .where(and(eq(menus.shopId, shopId), eq(menus.id, id)))
     .returning()
@@ -123,7 +123,7 @@ const PATHS = { frontpage: '/', catalog: '/collections/all', search: '/search' }
  * that is gone or not active, or a page that is gone or hidden, are left out (with their sub-items), so
  * storefronts never show dead links.
  */
-export async function resolve(shopId: string, items: StoredMenuItem[], conn: Conn = db): Promise<ResolvedMenuItem[]> {
+export async function resolve(shopId: string, items: StoredMenuItem[], conn: Conn): Promise<ResolvedMenuItem[]> {
   const collectionIds = resourceIds(items, 'collection')
   const productIds = resourceIds(items, 'product')
   const pageIds = resourceIds(items, 'page')

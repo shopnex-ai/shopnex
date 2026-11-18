@@ -1,3 +1,4 @@
+import { db } from '@shopnex/db'
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { hasScope } from '@shopnex/core/scopes'
@@ -30,7 +31,7 @@ export const customers = {
     .output(customerExportOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      const data = await privacyService.exportData(context.shop.id, input.id)
+      const data = await privacyService.exportData(context.shop.id, input.id, db)
       if (!data) throw new ORPCError('NOT_FOUND')
       return data
     }),
@@ -42,7 +43,7 @@ export const customers = {
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
       try {
-        return await privacyService.erase(context.shop.id, input.id)
+        return await privacyService.erase(context.shop.id, input.id, db)
       } catch (error) {
         if (error instanceof PrivacyError) {
           throw new ORPCError(error.code === 'CUSTOMER_NOT_FOUND' ? 'NOT_FOUND' : 'CONFLICT', {

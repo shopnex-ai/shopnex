@@ -1,3 +1,4 @@
+import { db } from '@shopnex/db'
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { createProcedures, pagination } from '@shopnex/rpc'
@@ -17,20 +18,20 @@ export const customers = {
     .route({ method: 'DELETE', path: '/admin/customers/bulk' })
     .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
-    .handler(({ input, context }) => customerService.removeMany(context.shop.id, input.ids)),
+    .handler(({ input, context }) => customerService.removeMany(context.shop.id, input.ids, db)),
 
   list: read
     .route({ method: 'GET', path: '/admin/customers' })
     .output(z.object({ items: z.array(customerOutput), total: z.number().int() }))
     .input(pagination.extend({ search: z.string().trim().max(200).optional() }))
-    .handler(({ input, context }) => customerService.list(context.shop.id, input)),
+    .handler(({ input, context }) => customerService.list(context.shop.id, input, db)),
 
   get: read
     .route({ method: 'GET', path: '/admin/customers/{id}' })
     .output(customerOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      const customer = await customerService.getById(context.shop.id, input.id)
+      const customer = await customerService.getById(context.shop.id, input.id, db)
       if (!customer) throw new ORPCError('NOT_FOUND')
       return customer
     }),
@@ -40,7 +41,7 @@ export const customers = {
     .output(customerOutput)
     .input(customerInput)
     .handler(async ({ input, context }) => {
-      const customer = await customerService.create(context.shop.id, input)
+      const customer = await customerService.create(context.shop.id, input, db)
       if (!customer) throw emailTaken()
       return customer
     }),
@@ -51,10 +52,10 @@ export const customers = {
     .input(customerInput.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       if (patch.email) {
-        const existing = await customerService.getByEmail(context.shop.id, patch.email)
+        const existing = await customerService.getByEmail(context.shop.id, patch.email, db)
         if (existing && existing.id !== id) throw emailTaken()
       }
-      const customer = await customerService.update(context.shop.id, id, patch)
+      const customer = await customerService.update(context.shop.id, id, patch, db)
       if (!customer) throw new ORPCError('NOT_FOUND')
       return customer
     }),

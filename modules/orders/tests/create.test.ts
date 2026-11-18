@@ -358,7 +358,7 @@ describe('who the customer is', () => {
     const a = await fx.place({ email: 'Guest@Example.test', name: 'Guest', phone: '+1' })
     const b = await fx.place({ email: 'guest@example.test' })
     assert.equal(a.customerId, b.customerId)
-    const customer = await fx.customerService.getById(SHOP, a.customerId!)
+    const customer = await fx.customerService.getById(SHOP, a.customerId!, db)
     assert.deepEqual(
       [customer?.email, customer?.name, customer?.phone, a.email],
       ['guest@example.test', 'Guest', '+1', 'guest@example.test'],

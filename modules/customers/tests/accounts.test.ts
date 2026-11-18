@@ -42,7 +42,7 @@ after(async () => {
 describe('asking for a code', () => {
   test('goes to the sender given, once, to the address in lower case and trimmed, with a code of six digits', async () => {
     const email = address()
-    await accountService.requestLoginCode(SHOP, `  ${email.toUpperCase()} `, send)
+    await accountService.requestLoginCode(SHOP, `  ${email.toUpperCase()} `, send, db)
     assert.equal(sent.length, 1)
     assert.equal(sent[0]?.to, email)
     assert.match(sent[0]!.code, /^\d{6}$/)
@@ -50,40 +50,40 @@ describe('asking for a code', () => {
 
   test('an address that is not one is refused and nothing is sent', async () => {
     for (const bad of ['', 'nobody', 'a@b', 'x '.repeat(5), `${'a'.repeat(250)}@example.test`])
-      await assert.rejects(accountService.requestLoginCode(SHOP, bad, send), refused('INVALID_EMAIL'), bad)
+      await assert.rejects(accountService.requestLoginCode(SHOP, bad, send, db), refused('INVALID_EMAIL'), bad)
     assert.deepEqual(sent, [])
   })
 
   test('what the sender throws comes out as it is (the shop has email off, say), not as an account error', async () => {
     const off = new Error('EMAIL_OFF')
     await assert.rejects(
-      accountService.requestLoginCode(SHOP, address(), () => Promise.reject(off)),
+      accountService.requestLoginCode(SHOP, address(), () => Promise.reject(off), db),
       (e: unknown) => e === off,
     )
   })
 
   test('four codes for one address in the window, then TOO_MANY_REQUESTS; another address is not affected', async () => {
     const email = address()
-    for (let i = 0; i < 4; i++) await accountService.requestLoginCode(SHOP, email, send)
-    await assert.rejects(accountService.requestLoginCode(SHOP, email, send), refused('TOO_MANY_REQUESTS'))
+    for (let i = 0; i < 4; i++) await accountService.requestLoginCode(SHOP, email, send, db)
+    await assert.rejects(accountService.requestLoginCode(SHOP, email, send, db), refused('TOO_MANY_REQUESTS'))
     assert.equal(sent.length, 4)
-    await accountService.requestLoginCode(SHOP, address(), send)
+    await accountService.requestLoginCode(SHOP, address(), send, db)
     assert.equal(sent.length, 5)
   })
 
   test('the limit by visitor address counts across addresses', async () => {
-    for (let i = 0; i < 20; i++) await accountService.requestLoginCode(SHOP, address(), send, { ip: '203.0.113.7' })
+    for (let i = 0; i < 20; i++) await accountService.requestLoginCode(SHOP, address(), send, db, { ip: '203.0.113.7' })
     await assert.rejects(
-      accountService.requestLoginCode(SHOP, address(), send, { ip: '203.0.113.7' }),
+      accountService.requestLoginCode(SHOP, address(), send, db, { ip: '203.0.113.7' }),
       refused('TOO_MANY_REQUESTS'),
     )
-    await accountService.requestLoginCode(SHOP, address(), send, { ip: '203.0.113.8' })
+    await accountService.requestLoginCode(SHOP, address(), send, db, { ip: '203.0.113.8' })
   })
 
   test('a staff account that was never verified is sent nothing (a code would lock the owner out), and nothing says so', async () => {
     const email = address()
     await db.insert(userTable).values({ id: `u-${email}`, name: 'Owner', email, emailVerified: false })
-    await accountService.requestLoginCode(SHOP, email, send)
+    await accountService.requestLoginCode(SHOP, email, send, db)
     assert.deepEqual(sent, [])
     await db.delete(userTable).where(eq(userTable.id, `u-${email}`))
   })
@@ -92,19 +92,19 @@ describe('asking for a code', () => {
 describe('signing in with the code', () => {
   test('the first sign-in makes the customer of the shop, linked to the login, and the token starts a session', async () => {
     const email = address()
-    await accountService.requestLoginCode(SHOP, email, send)
-    const { token, customer } = await accountService.verifyLoginCode(SHOP, email, ` ${sent[0]!.code} `)
+    await accountService.requestLoginCode(SHOP, email, send, db)
+    const { token, customer } = await accountService.verifyLoginCode(SHOP, email, ` ${sent[0]!.code} `, db)
     assert.ok(token)
     assert.deepEqual([customer.email, customer.shopId], [email, SHOP])
     assert.ok(customer.userId)
-    assert.equal((await accountService.fromToken(SHOP, token))?.id, customer.id)
+    assert.equal((await accountService.fromToken(SHOP, token, db))?.id, customer.id)
     assert.equal(
-      await accountService.fromToken('another-shop', token),
+      await accountService.fromToken('another-shop', token, db),
       null,
       'the customer of one shop is nobody in another',
     )
     await accountService.signOut(token)
-    assert.equal(await accountService.fromToken(SHOP, token), null)
+    assert.equal(await accountService.fromToken(SHOP, token, db), null)
     await db.delete(customers).where(eq(customers.id, customer.id))
     await db.delete(userTable).where(eq(userTable.id, customer.userId))
   })
@@ -112,8 +112,8 @@ describe('signing in with the code', () => {
   test('a guest who ordered before gets the record back, linked to the login', async () => {
     const email = address()
     const [guest] = await db.insert(customers).values({ shopId: SHOP, email, name: 'Guest' }).returning()
-    await accountService.requestLoginCode(SHOP, email, send)
-    const { customer } = await accountService.verifyLoginCode(SHOP, email, sent[0]!.code)
+    await accountService.requestLoginCode(SHOP, email, send, db)
+    const { customer } = await accountService.verifyLoginCode(SHOP, email, sent[0]!.code, db)
     assert.equal(customer.id, guest!.id)
     assert.ok(customer.userId)
     await db.delete(customers).where(eq(customers.id, guest!.id))
@@ -122,20 +122,20 @@ describe('signing in with the code', () => {
 
   test('a wrong code, a malformed address and a staff account all answer the same INVALID_CODE', async () => {
     const email = address()
-    await accountService.requestLoginCode(SHOP, email, send)
-    await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000x'), refused('INVALID_CODE'))
-    await assert.rejects(accountService.verifyLoginCode(SHOP, 'nobody', '123456'), refused('INVALID_CODE'))
+    await accountService.requestLoginCode(SHOP, email, send, db)
+    await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000x', db), refused('INVALID_CODE'))
+    await assert.rejects(accountService.verifyLoginCode(SHOP, 'nobody', '123456', db), refused('INVALID_CODE'))
     const staff = address()
     await db.insert(userTable).values({ id: `u-${staff}`, name: 'Owner', email: staff, emailVerified: false })
-    await assert.rejects(accountService.verifyLoginCode(SHOP, staff, '123456'), refused('INVALID_CODE'))
+    await assert.rejects(accountService.verifyLoginCode(SHOP, staff, '123456', db), refused('INVALID_CODE'))
     await db.delete(userTable).where(eq(userTable.id, `u-${staff}`))
   })
 
   test('ten attempts for one address in the window, right or wrong, then TOO_MANY_REQUESTS', async () => {
     const email = address()
     for (let i = 0; i < 10; i++)
-      await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000'), refused('INVALID_CODE'))
-    await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000'), refused('TOO_MANY_REQUESTS'))
+      await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000', db), refused('INVALID_CODE'))
+    await assert.rejects(accountService.verifyLoginCode(SHOP, email, '000000', db), refused('TOO_MANY_REQUESTS'))
   })
 })
 
@@ -145,7 +145,7 @@ describe('the profile', () => {
       .insert(customers)
       .values({ shopId: SHOP, email: address(), name: 'A', phone: '+1' })
       .returning()
-    const changed = await accountService.updateProfile(SHOP, c!.id, { name: 'B', phone: null })
+    const changed = await accountService.updateProfile(SHOP, c!.id, { name: 'B', phone: null }, db)
     assert.deepEqual([changed?.name, changed?.phone], ['B', null])
     await db.delete(customers).where(eq(customers.id, c!.id))
   })
