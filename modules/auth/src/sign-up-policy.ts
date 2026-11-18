@@ -3,9 +3,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { and, eq, gt, sql } from 'drizzle-orm'
 import { APIError } from 'better-auth/api'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { createShop, isOpenSignup, NEW_SHOP_NAME } from '@shopnex/tenancy'
 import { SIGNUP_LIMIT_MESSAGE, takeGlobalSignup } from './signup-limit'
+import { shopInvitations } from '@shopnex/tenancy/schema'
 
 const trusted = new AsyncLocalStorage<true>()
 
@@ -27,13 +28,13 @@ export async function assertSignUpAllowed(email: string) {
 
 async function hasPendingInvitation(email: string) {
   const [invitation] = await db
-    .select({ id: schema.shopInvitations.id })
-    .from(schema.shopInvitations)
+    .select({ id: shopInvitations.id })
+    .from(shopInvitations)
     .where(
       and(
-        eq(sql`lower(${schema.shopInvitations.email})`, email.toLowerCase()),
-        eq(schema.shopInvitations.status, 'pending'),
-        gt(schema.shopInvitations.expiresAt, new Date()),
+        eq(sql`lower(${shopInvitations.email})`, email.toLowerCase()),
+        eq(shopInvitations.status, 'pending'),
+        gt(shopInvitations.expiresAt, new Date()),
       ),
     )
     .limit(1)

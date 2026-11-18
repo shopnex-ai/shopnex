@@ -5,7 +5,7 @@ import { PlusIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { productFields } from '@shopnex/api/schemas'
+import { productFields } from '@shopnex/catalog/contract'
 import { FormError, MoneyField, SelectField, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import {

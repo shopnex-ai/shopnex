@@ -7,10 +7,15 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
+import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
+import { carrierServices, shippingRates } from '@shopnex/cart/schema'
+import { orderShippingLines } from '@shopnex/orders/schema'
+import { products } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 
@@ -66,9 +71,9 @@ before(async () => {
 
 after(async () => {
   await fx.cleanup()
-  if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
+  if (productIds.length) await db.delete(products).where(inArray(products.id, productIds))
   // The app owns its carrier service, installation and token
-  if (appId) await db.delete(schema.apps).where(eq(schema.apps.id, appId))
+  if (appId) await db.delete(apps).where(eq(apps.id, appId))
   server?.close()
   await closeDb()
 })
@@ -203,10 +208,7 @@ describe('carrier service: replaces the shop’s own rates', () => {
       shippingAddress: { lastName: 'Tester', ...address },
     })
   const shippingOf = async (orderId: string) => {
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, orderId))
     return line!
   }
   const ids = (o: { shippingRates: { id: string }[] }) => o.shippingRates.map((r) => r.id)
@@ -260,17 +262,17 @@ describe('carrier service: nothing to ship with', () => {
   let switchedOff: string[] = []
   before(async () => {
     const rates = await db
-      .select({ id: schema.shippingRates.id })
-      .from(schema.shippingRates)
-      .where(and(eq(schema.shippingRates.shopId, SHOP), eq(schema.shippingRates.active, true)))
+      .select({ id: shippingRates.id })
+      .from(shippingRates)
+      .where(and(eq(shippingRates.shopId, SHOP), eq(shippingRates.active, true)))
     switchedOff = rates.map((r) => r.id)
     if (switchedOff.length) {
-      await db.update(schema.shippingRates).set({ active: false }).where(inArray(schema.shippingRates.id, switchedOff))
+      await db.update(shippingRates).set({ active: false }).where(inArray(shippingRates.id, switchedOff))
     }
   })
   after(async () => {
     if (switchedOff.length) {
-      await db.update(schema.shippingRates).set({ active: true }).where(inArray(schema.shippingRates.id, switchedOff))
+      await db.update(shippingRates).set({ active: true }).where(inArray(shippingRates.id, switchedOff))
     }
   })
 
@@ -295,10 +297,7 @@ describe('carrier service: nothing to ship with', () => {
     const [rate] = carrierRates(await options(cart.id))
     const placed = ok(await complete(cart.id))
     fx.order(placed.orderId)
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, placed.orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, placed.orderId))
     assert.equal(line!.priceCents, 900)
     assert.equal(line!.code, rate!.id)
   })
@@ -313,10 +312,7 @@ describe('carrier service: placing the order', () => {
     })
   }
   const shippingOf = async (orderId: string) => {
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, orderId))
     return line!
   }
 
@@ -345,21 +341,18 @@ describe('carrier service: placing the order', () => {
   })
 
   test('staff can switch the service off; uninstalling the app removes it', async () => {
-    const [service] = await db.select().from(schema.carrierServices).where(eq(schema.carrierServices.appId, appId))
+    const [service] = await db.select().from(carrierServices).where(eq(carrierServices.appId, appId))
     assert.ok(service)
-    await db.update(schema.carrierServices).set({ active: false }).where(eq(schema.carrierServices.id, service.id))
+    await db.update(carrierServices).set({ active: false }).where(eq(carrierServices.id, service.id))
     const cart = await fx.cart([{ merchandiseId: variant.id, quantity: 1 }])
     ratesAnswer = () => quote(9)
     assert.equal(carrierRates(await options(cart.id)).length, 0)
-    await db.update(schema.carrierServices).set({ active: true }).where(eq(schema.carrierServices.id, service.id))
+    await db.update(carrierServices).set({ active: true }).where(eq(carrierServices.id, service.id))
     assert.equal(carrierRates(await options(cart.id)).length, 1)
 
-    const [installation] = await db
-      .select()
-      .from(schema.appInstallations)
-      .where(eq(schema.appInstallations.appId, appId))
+    const [installation] = await db.select().from(appInstallations).where(eq(appInstallations.appId, appId))
     await appService.uninstall(SHOP, installation!.id)
-    const left = await db.select().from(schema.carrierServices).where(eq(schema.carrierServices.appId, appId))
+    const left = await db.select().from(carrierServices).where(eq(carrierServices.appId, appId))
     assert.equal(left.length, 0)
   })
 })

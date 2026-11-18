@@ -7,10 +7,11 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { inArray } from 'drizzle-orm'
 import { appService, instanceUrl } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { createJwksResolver, generateKeyPair, verify } from '@shopnex/marketplace-sdk/keys'
 import { verifySessionToken } from '@shopnex/marketplace-sdk/session-token'
 import { Fixtures, SHOP, appToken, call, closeDb, oauthToken, ok, requireApp } from '../lib'
+import { apps as appsTable } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const keys = createJwksResolver({ allowHttp: true })
@@ -70,7 +71,7 @@ before(async () => {
 after(async () => {
   await fx.cleanup()
   // Installations, tokens, their webhooks and app data go with the apps
-  if (apps.length) await db.delete(schema.apps).where(inArray(schema.apps.id, apps))
+  if (apps.length) await db.delete(appsTable).where(inArray(appsTable.id, apps))
   server?.close()
   await closeDb()
 })
@@ -91,8 +92,8 @@ describe('apps: keys', () => {
   test('the private key is never stored', async () => {
     const [row] = await db
       .select()
-      .from(schema.apps)
-      .where(inArray(schema.apps.id, [one.app.id]))
+      .from(appsTable)
+      .where(inArray(appsTable.id, [one.app.id]))
     assert.ok(row?.publicKey)
     assert.ok(!JSON.stringify(row).includes(one.privateKey.slice(5, 40)))
   })

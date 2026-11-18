@@ -52,7 +52,7 @@ const specPath = (specUrl: string) => {
   return pathname + search
 }
 
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${String(c.charCodeAt(0))};`)
 
 const apiReference = new OpenAPIReferencePlugin({
   schemaConverters: [new ZodToJsonSchemaConverter()],

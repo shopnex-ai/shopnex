@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { marketplaceConnectInput } from '@shopnex/api/schemas'
+import { marketplaceConnectInput } from '@shopnex/apps/contract'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'

@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { guardEmbeddedClient } from './embedded-guard'
-import * as schema from './schema'
 import { log } from './log'
 
 // DATABASE_URL is a PostgreSQL connection string, or `pglite:<directory>` / `pglite:memory` for the embedded
@@ -30,7 +29,7 @@ export function requireEmbeddedDatabase() {
 
 type Embedded = { migrate: () => Promise<void> }
 // `$client` is the pg Pool (tests and scripts use it); on the embedded database it is the PGlite instance instead
-type Database = NodePgDatabase<typeof schema> & { $client: Pool }
+type Database = NodePgDatabase & { $client: Pool }
 type Created = { db: Database; embedded?: Embedded; pool?: Pool; migrate?: () => Promise<void> }
 
 // Where the migrations are: SHOPNEX_MIGRATIONS_DIR, next to this module (source), or relative to the working
@@ -60,7 +59,7 @@ async function createEmbedded(): Promise<Created> {
   log.info('embedded PGlite (%s)', location === 'memory' ? 'in memory, lost on exit' : location)
   // One connection: see embedded-guard.ts
   const client = guardEmbeddedClient(new PGlite(location === 'memory' ? undefined : location))
-  const embedded = drizzlePglite({ client, schema })
+  const embedded = drizzlePglite({ client })
   return {
     // Same query API as node-postgres (select, insert, transaction, execute); only the result type of execute differs
     db: embedded as unknown as Database,
@@ -83,7 +82,7 @@ async function createDb(): Promise<Created> {
     }
   })()
   log.info('PostgreSQL %s', target)
-  const db = drizzle({ client: pool, schema })
+  const db = drizzle({ client: pool })
   // Opt-in (create-shopnex sets it): a server-side PostgreSQL is otherwise migrated by `pnpm db:migrate` or the deploy
   const migrateAtStart =
     process.env.SHOPNEX_AUTO_MIGRATE === 'true'
@@ -115,7 +114,6 @@ export type Db = typeof db
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 // Services accept either, so they can run standalone or inside a transaction
 export type Conn = Db | Tx
-export { schema }
 
 // Promise.all for queries on `conn`: parallel on the pool, one after another inside a transaction
 // (a transaction is a single connection, which runs one query at a time — pg warns, and pg 9 will throw).

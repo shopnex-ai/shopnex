@@ -3,9 +3,10 @@
 // reminders (as Shopify's does), and they stop for good once an address unsubscribes.
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { shopnexSecret } from '@shopnex/db/secrets'
 import { EmailError } from './email.errors'
+import { abandonedCartSettings, emailSettings, emailSuppressions } from './email.schema'
 
 export const DEFAULT_DELAY_MINUTES = 60
 /** A reminder two minutes after leaving is a nuisance, one a month later is noise */
@@ -15,10 +16,7 @@ export const MAX_DELAY_MINUTES = 7 * 24 * 60
 export type AbandonedCartSettingsView = { enabled: boolean; delayMinutes: number }
 
 export async function getSettings(shopId: string, conn: Conn = db): Promise<AbandonedCartSettingsView> {
-  const [row] = await conn
-    .select()
-    .from(schema.abandonedCartSettings)
-    .where(eq(schema.abandonedCartSettings.shopId, shopId))
+  const [row] = await conn.select().from(abandonedCartSettings).where(eq(abandonedCartSettings.shopId, shopId))
   return { enabled: row?.enabled ?? false, delayMinutes: row?.delayMinutes ?? DEFAULT_DELAY_MINUTES }
 }
 
@@ -35,9 +33,9 @@ export async function updateSettings(shopId: string, patch: Partial<AbandonedCar
     )
   const values = { ...patch, updatedAt: new Date() }
   await db
-    .insert(schema.abandonedCartSettings)
+    .insert(abandonedCartSettings)
     .values({ shopId, ...values })
-    .onConflictDoUpdate({ target: schema.abandonedCartSettings.shopId, set: values })
+    .onConflictDoUpdate({ target: abandonedCartSettings.shopId, set: values })
   return getSettings(shopId)
 }
 
@@ -75,15 +73,15 @@ export const whoUnsubscribes = readToken
 export async function unsubscribe(token: string) {
   const who = readToken(token)
   if (!who) return false
-  await db.insert(schema.emailSuppressions).values({ shopId: who.shopId, email: who.email }).onConflictDoNothing()
+  await db.insert(emailSuppressions).values({ shopId: who.shopId, email: who.email }).onConflictDoNothing()
   return true
 }
 
 export async function isSuppressed(conn: Conn, shopId: string, email: string) {
   const [row] = await conn
-    .select({ email: schema.emailSuppressions.email })
-    .from(schema.emailSuppressions)
-    .where(and(eq(schema.emailSuppressions.shopId, shopId), eq(schema.emailSuppressions.email, normalize(email))))
+    .select({ email: emailSuppressions.email })
+    .from(emailSuppressions)
+    .where(and(eq(emailSuppressions.shopId, shopId), eq(emailSuppressions.email, normalize(email))))
   return Boolean(row)
 }
 
@@ -91,10 +89,7 @@ export async function isSuppressed(conn: Conn, shopId: string, email: string) {
 export async function offered(shopId: string) {
   const [settings, [email]] = await Promise.all([
     getSettings(shopId),
-    db
-      .select({ active: schema.emailSettings.active })
-      .from(schema.emailSettings)
-      .where(eq(schema.emailSettings.shopId, shopId)),
+    db.select({ active: emailSettings.active }).from(emailSettings).where(eq(emailSettings.shopId, shopId)),
   ])
   return settings.enabled && Boolean(email?.active)
 }

@@ -3,7 +3,7 @@
 // Outbound webhooks (Settings → Webhooks). Domain services write deliveries in the same transaction as
 // the change (outbox), and a worker sends them, signed per the Standard Webhooks spec, with retries.
 import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { apiTokens, shops } from '@shopnex/db/schema'
+import { apiTokens, shops } from '@shopnex/core/schema'
 
 // Topics a shop can subscribe to (`resource.event`, as in the payload's `type`)
 export const WEBHOOK_TOPICS = [

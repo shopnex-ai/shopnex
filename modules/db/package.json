@@ -1,11 +1,10 @@
 {
   "name": "@shopnex/db",
-  "description": "Drizzle client, schema and migrations",
+  "description": "Drizzle client and migrations",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts",
     "./secrets": "./src/secrets.ts"
   },
   "scripts": {

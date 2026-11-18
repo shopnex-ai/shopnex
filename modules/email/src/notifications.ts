@@ -3,24 +3,29 @@
 // change and queues rendered emails in the outbox (email_deliveries); the worker sends them.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
-import type {
-  Customer,
-  EmailTemplate,
-  Fulfillment,
-  MailingAddress,
-  Notification,
-  Order,
-  OrderItem,
-  OrderShippingLine,
-  Shop,
-} from '@shopnex/db/schema'
+import { db, type Conn } from '@shopnex/db'
 import { getSettings as getAbandonedSettings, updateSettings as updateAbandonedSettings } from './abandoned-settings'
 import { DEFAULTS } from './defaults'
 import { send } from './email'
 import { EmailError } from './email.errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
 import { log } from './log'
+import type { OrderEvent } from '@shopnex/orders'
+import { shopMembers } from '@shopnex/tenancy/schema'
+import { type Shop, shops, user } from '@shopnex/core/schema'
+import { emailDeliveries, emailSettings, type EmailTemplate, emailTemplates, type Notification } from './email.schema'
+import {
+  type Fulfillment,
+  fulfillments as fulfillmentsTable,
+  type MailingAddress,
+  type Order,
+  type OrderItem,
+  orderItems,
+  orders,
+  type OrderShippingLine,
+  orderShippingLines,
+} from '@shopnex/orders/schema'
+import { type Customer, customers as customersTable } from '@shopnex/customers/schema'
 
 export type NotificationInfo = {
   notification: Notification
@@ -83,7 +88,7 @@ export type OrderView = Order & {
   customer: Customer | null
 }
 
-export type OrderEvent = 'order.created' | 'order.paid' | 'order.fulfilled' | 'order.cancelled'
+export type { OrderEvent }
 
 // --- Liquid variables (snake_case, Shopify-like names) ---
 
@@ -231,8 +236,8 @@ export const sourceOf = (notification: Notification, row: EmailTemplate | undefi
 export async function templateRows(conn: Conn, shopId: string, notifications: Notification[]) {
   const rows = await conn
     .select()
-    .from(schema.emailTemplates)
-    .where(and(eq(schema.emailTemplates.shopId, shopId), inArray(schema.emailTemplates.notification, notifications)))
+    .from(emailTemplates)
+    .where(and(eq(emailTemplates.shopId, shopId), inArray(emailTemplates.notification, notifications)))
   return new Map(rows.map((r) => [r.notification, r]))
 }
 
@@ -270,20 +275,18 @@ export async function renderEmail(
 const recipientsOf = async (conn: Conn, shopId: string, notification: Notification, order: OrderView) => {
   if (notification !== 'staff_order') return order.email ? [order.email] : []
   const owners = await conn
-    .select({ email: schema.user.email })
-    .from(schema.shopMembers)
-    .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-    .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.role, 'owner')))
+    .select({ email: user.email })
+    .from(shopMembers)
+    .innerJoin(user, eq(user.id, shopMembers.userId))
+    .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.role, 'owner')))
   return owners.map((o) => o.email)
 }
 
 async function wasConfirmed(conn: Conn, orderId: string) {
   const [row] = await conn
-    .select({ id: schema.emailDeliveries.id })
-    .from(schema.emailDeliveries)
-    .where(
-      and(eq(schema.emailDeliveries.orderId, orderId), eq(schema.emailDeliveries.notification, 'order_confirmation')),
-    )
+    .select({ id: emailDeliveries.id })
+    .from(emailDeliveries)
+    .where(and(eq(emailDeliveries.orderId, orderId), eq(emailDeliveries.notification, 'order_confirmation')))
     .limit(1)
   return Boolean(row)
 }
@@ -312,9 +315,9 @@ async function notificationsFor(conn: Conn, event: OrderEvent, order: OrderView)
  */
 export async function notify(conn: Conn, shopId: string, event: OrderEvent, load: () => Promise<OrderView | null>) {
   const [settings] = await conn
-    .select({ active: schema.emailSettings.active })
-    .from(schema.emailSettings)
-    .where(eq(schema.emailSettings.shopId, shopId))
+    .select({ active: emailSettings.active })
+    .from(emailSettings)
+    .where(eq(emailSettings.shopId, shopId))
   if (!settings?.active) return
   try {
     // A savepoint: a failed insert must not abort the caller's transaction
@@ -324,7 +327,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
       const notifications = await notificationsFor(tx, event, order)
       if (notifications.length === 0) return
       const [[row], templates] = await Promise.all([
-        tx.select().from(schema.shops).where(eq(schema.shops.id, shopId)),
+        tx.select().from(shops).where(eq(shops.id, shopId)),
         templateRows(tx, shopId, [...notifications, 'layout']),
       ])
       if (!row) return
@@ -346,7 +349,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
         )
         if (email.problem) log.warn({ notification, shopId }, 'template problem: %s', email.problem.message)
         await tx
-          .insert(schema.emailDeliveries)
+          .insert(emailDeliveries)
           .values(
             to.map((address) => ({
               shopId,
@@ -370,7 +373,7 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
  * staff) and a retry hours later is useless. Throws EMAIL_OFF when the shop doesn't send email.
  */
 export async function sendLoginCode(shopId: string, to: string, code: string) {
-  const [row] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [row] = await db.select().from(shops).where(eq(shops.id, shopId))
   if (!row) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   const shop = await withStorefrontUrl(row)
   const templates = await templateRows(db, shopId, ['login_code', 'layout'])
@@ -454,9 +457,9 @@ export async function update(
     updatedAt: new Date(),
   }
   await db
-    .insert(schema.emailTemplates)
+    .insert(emailTemplates)
     .values({ shopId, notification, ...values })
-    .onConflictDoUpdate({ target: [schema.emailTemplates.shopId, schema.emailTemplates.notification], set: values })
+    .onConflictDoUpdate({ target: [emailTemplates.shopId, emailTemplates.notification], set: values })
   return get(shopId, notification)
 }
 
@@ -468,16 +471,16 @@ export const revert = (shopId: string, notification: Notification) =>
 async function previewOrder(shop: Shop): Promise<{ order: OrderView; sample: boolean }> {
   const [order] = await db
     .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.shopId, shop.id))
-    .orderBy(desc(schema.orders.createdAt))
+    .from(orders)
+    .where(eq(orders.shopId, shop.id))
+    .orderBy(desc(orders.createdAt))
     .limit(1)
   if (order) {
     const [items, shippingLines, fulfillments, customers] = await Promise.all([
-      db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id)),
-      db.select().from(schema.orderShippingLines).where(eq(schema.orderShippingLines.orderId, order.id)),
-      db.select().from(schema.fulfillments).where(eq(schema.fulfillments.orderId, order.id)),
-      order.customerId ? db.select().from(schema.customers).where(eq(schema.customers.id, order.customerId)) : [],
+      db.select().from(orderItems).where(eq(orderItems.orderId, order.id)),
+      db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, order.id)),
+      db.select().from(fulfillmentsTable).where(eq(fulfillmentsTable.orderId, order.id)),
+      order.customerId ? db.select().from(customersTable).where(eq(customersTable.id, order.customerId)) : [],
     ])
     return { order: { ...order, items, shippingLines, fulfillments, customer: customers[0] ?? null }, sample: false }
   }
@@ -562,7 +565,7 @@ function sampleOrder(shop: Shop): OrderView {
 }
 
 async function shopOf(shopId: string) {
-  const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, shopId))
+  const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
   if (!shop) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   return withStorefrontUrl(shop)
 }
@@ -615,18 +618,18 @@ export async function sendTest(shopId: string, notification: Notification, input
 export async function deliveries(shopId: string, limit = 25) {
   return db
     .select({
-      id: schema.emailDeliveries.id,
-      notification: schema.emailDeliveries.notification,
-      orderId: schema.emailDeliveries.orderId,
-      to: schema.emailDeliveries.to,
-      subject: schema.emailDeliveries.subject,
-      status: schema.emailDeliveries.status,
-      attempts: schema.emailDeliveries.attempts,
-      lastError: schema.emailDeliveries.lastError,
-      createdAt: schema.emailDeliveries.createdAt,
+      id: emailDeliveries.id,
+      notification: emailDeliveries.notification,
+      orderId: emailDeliveries.orderId,
+      to: emailDeliveries.to,
+      subject: emailDeliveries.subject,
+      status: emailDeliveries.status,
+      attempts: emailDeliveries.attempts,
+      lastError: emailDeliveries.lastError,
+      createdAt: emailDeliveries.createdAt,
     })
-    .from(schema.emailDeliveries)
-    .where(eq(schema.emailDeliveries.shopId, shopId))
-    .orderBy(desc(schema.emailDeliveries.createdAt))
+    .from(emailDeliveries)
+    .where(eq(emailDeliveries.shopId, shopId))
+    .orderBy(desc(emailDeliveries.createdAt))
     .limit(limit)
 }

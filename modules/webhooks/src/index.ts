@@ -1,4 +1,3 @@
-import './webhooks.hooks'
 export * as webhookService from './endpoints'
 export type { EndpointInput, ListDeliveriesInput } from './endpoints'
 export { emit } from './emit'

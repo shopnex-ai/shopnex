@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { customFieldInput, customFieldPatch } from '@shopnex/api/schemas'
+import { customFieldInput, customFieldPatch } from '@shopnex/custom-fields/contract'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { DialogDeleteButton } from '@/components/admin/dialog-delete-button'
 import {

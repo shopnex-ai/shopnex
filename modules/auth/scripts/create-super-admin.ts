@@ -4,8 +4,9 @@
 import { randomBytes } from 'node:crypto'
 import { parseArgs } from 'node:util'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { auth, SUPER_ADMIN_ROLE, withSignUpAllowed } from '../src'
+import { user } from '@shopnex/core/schema'
 
 const { values } = parseArgs({
   options: {
@@ -21,7 +22,7 @@ if (!email) {
   process.exit(1)
 }
 
-const [existing] = await db.select().from(schema.user).where(eq(schema.user.email, email))
+const [existing] = await db.select().from(user).where(eq(user.email, email))
 
 let generatedPassword: string | undefined
 if (existing) {
@@ -32,7 +33,7 @@ if (existing) {
   await withSignUpAllowed(() => auth.api.signUpEmail({ body: { email, password, name: values.name! } }))
 }
 
-await db.update(schema.user).set({ role: SUPER_ADMIN_ROLE }).where(eq(schema.user.email, email))
+await db.update(user).set({ role: SUPER_ADMIN_ROLE }).where(eq(user.email, email))
 
 console.log(`${existing ? 'Promoted' : 'Created'} super admin: ${email}`)
 if (generatedPassword) console.log(`Password (shown once): ${generatedPassword}`)

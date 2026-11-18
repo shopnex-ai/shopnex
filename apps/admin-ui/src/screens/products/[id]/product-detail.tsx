@@ -6,7 +6,7 @@ import { useController } from 'react-hook-form'
 import { useId } from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { productFields } from '@shopnex/api/schemas'
+import { productFields } from '@shopnex/catalog/contract'
 import {
   FormError,
   SelectField,

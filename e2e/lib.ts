@@ -7,13 +7,20 @@ import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
 import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentMethodService } from '@shopnex/payments'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
 import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
-import { createApiToken, createStorefrontKey, getShopById, type ApiScope } from '@shopnex/tenancy'
+import { storefrontKeyService } from '@shopnex/channels'
+import { createApiToken, getShopById, type ApiScope } from '@shopnex/tenancy'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { apiTokens, shops, user } from '@shopnex/core/schema'
+import { carts, shippingRates } from '@shopnex/cart/schema'
+import { orders } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -92,18 +99,18 @@ export async function requireApp() {
 /** Active variants that can be bought in quantity (stock untracked or ≥ 10), cheapest first */
 export async function sellableVariants(count: number) {
   const rows = await db
-    .select({ id: schema.productVariants.id, priceCents: schema.productVariants.priceCents })
-    .from(schema.productVariants)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
+    .select({ id: productVariants.id, priceCents: productVariants.priceCents })
+    .from(productVariants)
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(
       and(
-        eq(schema.products.shopId, SHOP),
-        eq(schema.products.status, 'active'),
-        or(isNull(schema.productVariants.inventoryQuantity), gte(schema.productVariants.inventoryQuantity, 10)),
-        gte(schema.productVariants.priceCents, 500),
+        eq(products.shopId, SHOP),
+        eq(products.status, 'active'),
+        or(isNull(productVariants.inventoryQuantity), gte(productVariants.inventoryQuantity, 10)),
+        gte(productVariants.priceCents, 500),
       ),
     )
-    .orderBy(asc(schema.productVariants.priceCents))
+    .orderBy(asc(productVariants.priceCents))
   // Distinct prices make the expected numbers easy to tell apart
   const picked = rows.filter((r, i) => rows.findIndex((o) => o.priceCents === r.priceCents) === i).slice(0, count)
   assert.equal(picked.length, count, `Need ${count} active, in-stock variants with different prices in the shop`)
@@ -151,7 +158,7 @@ export class Fixtures {
   async shop() {
     const id = `e2e-${this.run}-${++this.seq}`
     const [shop] = await db
-      .insert(schema.shops)
+      .insert(shops)
       .values({ id, name: `E2E shop ${id}`, slug: id })
       .returning()
     this.shops.push(id)
@@ -159,7 +166,7 @@ export class Fixtures {
   }
 
   async storefrontKey(shopId: string) {
-    return createStorefrontKey(shopId, 'e2e')
+    return storefrontKeyService.create(shopId, 'e2e', undefined, db)
   }
 
   /** The account that owns the invitations made below (invitations need an inviter) */
@@ -167,7 +174,7 @@ export class Fixtures {
   private inviterId() {
     this.inviter ??= (async () => {
       const id = `e2e-inviter-${this.run}`
-      await db.insert(schema.user).values({ id, name: 'E2E inviter', email: `${id}@example.com` })
+      await db.insert(user).values({ id, name: 'E2E inviter', email: `${id}@example.com` })
       this.users.push(id)
       return id
     })()
@@ -177,7 +184,7 @@ export class Fixtures {
   /** A pending invitation written straight to the database; `expiresInMs` < 0 for an expired one */
   async invitation(shopId: string, email: string, role: 'admin' | 'member', expiresInMs = 86400e3) {
     const id = randomBytes(24).toString('base64url')
-    await db.insert(schema.shopInvitations).values({
+    await db.insert(shopInvitations).values({
       id,
       organizationId: shopId,
       email,
@@ -221,25 +228,22 @@ export class Fixtures {
     const id = signUp.body.user.id as string
     const cookie = signUp.cookie!
     if (role === 'outsider' || role === 'superadmin') {
-      await db
-        .update(schema.shopInvitations)
-        .set({ status: 'canceled' })
-        .where(eq(schema.shopInvitations.id, invitationId))
-      if (role === 'superadmin') await db.update(schema.user).set({ role: 'superadmin' }).where(eq(schema.user.id, id))
+      await db.update(shopInvitations).set({ status: 'canceled' }).where(eq(shopInvitations.id, invitationId))
+      if (role === 'superadmin') await db.update(user).set({ role: 'superadmin' }).where(eq(user.id, id))
     } else {
       const accepted = await authCall('/organization/accept-invitation', { invitationId }, cookie)
       assert.equal(accepted.status, 200, JSON.stringify(accepted.body))
       if (role === 'owner') {
         await db
-          .update(schema.shopMembers)
+          .update(shopMembers)
           .set({ role: 'owner' })
-          .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+          .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.userId, id)))
       }
     }
     const [member] = await db
-      .select({ id: schema.shopMembers.id })
-      .from(schema.shopMembers)
-      .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.userId, id)))
+      .select({ id: shopMembers.id })
+      .from(shopMembers)
+      .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.userId, id)))
     return { id, email, memberId: member?.id as string, headers: { cookie } }
   }
 
@@ -307,27 +311,24 @@ export class Fixtures {
     for (const id of this.orders) {
       await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
     }
-    if (this.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.token, this.carts))
-    if (this.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, this.orders))
+    if (this.carts.length) await db.delete(carts).where(inArray(carts.token, this.carts))
+    if (this.orders.length) await db.delete(orders).where(inArray(orders.id, this.orders))
     if (this.paymentMethods.length) {
       await db.delete(paymentMethods).where(inArray(paymentMethods.id, this.paymentMethods))
     }
-    await db.delete(schema.customers).where(inArray(schema.customers.email, [this.email, ...this.shoppers]))
-    if (this.shoppers.length) await db.delete(schema.user).where(inArray(schema.user.email, this.shoppers))
+    await db.delete(customers).where(inArray(customers.email, [this.email, ...this.shoppers]))
+    if (this.shoppers.length) await db.delete(user).where(inArray(user.email, this.shoppers))
     if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
     if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
-      await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.id, this.shippingRates))
+      await db.delete(shippingRates).where(inArray(shippingRates.id, this.shippingRates))
     }
-    if (this.users.length) await db.delete(schema.user).where(inArray(schema.user.id, this.users))
-    if (this.shops.length) await db.delete(schema.shops).where(inArray(schema.shops.id, this.shops))
-    if (this.tokens.length) await db.delete(schema.apiTokens).where(inArray(schema.apiTokens.id, this.tokens))
+    if (this.users.length) await db.delete(user).where(inArray(user.id, this.users))
+    if (this.shops.length) await db.delete(shops).where(inArray(shops.id, this.shops))
+    if (this.tokens.length) await db.delete(apiTokens).where(inArray(apiTokens.id, this.tokens))
     if (this.shopBefore) {
       const { taxesIncluded, taxShipping, nextOrderNumber } = this.shopBefore
-      await db
-        .update(schema.shops)
-        .set({ taxesIncluded, taxShipping, nextOrderNumber })
-        .where(eq(schema.shops.id, SHOP))
+      await db.update(shops).set({ taxesIncluded, taxShipping, nextOrderNumber }).where(eq(shops.id, SHOP))
     }
   }
 }

@@ -1,0 +1,188 @@
+import { ORPCError } from '@orpc/server'
+import { z } from 'zod'
+import { createProcedures, pagination } from '@shopnex/rpc'
+import {
+  analyticsOverviewOutput,
+  fulfillOrderInput,
+  orderCreatedOutput,
+  orderDetailOutput,
+  orderListItemOutput,
+  orderOutput,
+} from './orders.contract'
+import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES } from './orders.schema'
+import * as orderService from './orders'
+import * as orderAnalytics from './analytics'
+import { customFieldUpdates } from '@shopnex/custom-fields/contract'
+
+const { scoped } = createProcedures()
+const countOutput = z.number().int()
+
+const id = z.object({ id: z.uuid() })
+
+const read = scoped('read_orders')
+const write = scoped('write_orders')
+
+const importedAddress = z.object({
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  company: z.string().nullable(),
+  address1: z.string(),
+  address2: z.string().nullable(),
+  city: z.string(),
+  province: z.string().nullable(),
+  countryCode: z.string().regex(/^[A-Z]{2}$/),
+  zip: z.string().nullable(),
+  phone: z.string().nullable(),
+})
+
+const importedOrder = z.object({
+  sourceOrderName: z.string().trim().min(1).max(100),
+  email: z.email(),
+  name: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  financialStatus: z.enum(FINANCIAL_STATUSES),
+  fulfillmentStatus: z.enum(FULFILLMENT_STATUSES),
+  cancelledAt: z.coerce.date().nullable().optional(),
+  fulfilledAt: z.coerce.date().nullable().optional(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  subtotalCents: z.number().int().nonnegative(),
+  shippingCents: z.number().int().nonnegative(),
+  taxCents: z.number().int().nonnegative(),
+  discountCents: z.number().int().nonnegative(),
+  totalCents: z.number().int().nonnegative(),
+  discountCodes: z.array(z.string().max(100)).max(50),
+  shippingTitle: z.string().max(200).nullable().optional(),
+  shippingAddress: importedAddress.nullable().optional(),
+  billingAddress: importedAddress.nullable().optional(),
+  paymentMethodName: z.string().max(200).nullable().optional(),
+  note: z.string().max(10_000).nullable().optional(),
+  createdAt: z.coerce.date(),
+  items: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(500),
+        variantTitle: z.string().max(500).nullable().optional(),
+        sku: z.string().max(200).nullable().optional(),
+        vendor: z.string().max(200).nullable().optional(),
+        imageUrl: z
+          .url({ protocol: /^https?$/ })
+          .nullable()
+          .optional(),
+        unitPriceCents: z.number().int().nonnegative(),
+        quantity: z.number().int().min(1).max(9999),
+        discountCents: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(500),
+})
+
+export const orders = {
+  importHistorical: write
+    .route({ method: 'POST', path: '/admin/orders/import' })
+    .output(z.object({ imported: z.array(orderOutput), skipped: z.array(z.string()) }))
+    .input(z.object({ orders: z.array(importedOrder).min(1).max(50) }))
+    .handler(({ input, context }) => orderService.importHistoricalMany(context.shop.id, input.orders)),
+
+  deleteMany: write
+    .route({ method: 'DELETE', path: '/admin/orders/bulk' })
+    .output(countOutput)
+    .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
+    .handler(({ input, context }) => orderService.removeMany(context.shop.id, input.ids)),
+
+  list: read
+    .route({ method: 'GET', path: '/admin/orders' })
+    .output(z.object({ items: z.array(orderListItemOutput), total: z.number().int() }))
+    .input(
+      pagination.extend({
+        customerId: z.uuid().optional(),
+        financialStatus: z.enum(FINANCIAL_STATUSES).optional(),
+        fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
+        /** true: cancelled only; false: open only */
+        cancelled: z.stringbool().or(z.boolean()).optional(),
+        /** Order number (1001 / #1001), email or customer name */
+        search: z.string().trim().max(200).optional(),
+      }),
+    )
+    .handler(({ input, context }) => orderService.list(context.shop.id, input)),
+
+  get: read
+    .route({ method: 'GET', path: '/admin/orders/{id}' })
+    .output(orderDetailOutput)
+    .input(id)
+    .handler(async ({ input, context }) => {
+      const order = await orderService.getById(context.shop.id, input.id)
+      if (!order) throw new ORPCError('NOT_FOUND')
+      return order
+    }),
+
+  // Only the custom fields change; the order itself is a record of what was sold
+  update: write
+    .route({ method: 'PATCH', path: '/admin/orders/{id}' })
+    .output(orderDetailOutput)
+    .input(id.extend({ customFields: customFieldUpdates }))
+    .handler(async ({ input, context }) => {
+      await orderService.setCustomFields(context.shop.id, input.id, input.customFields)
+      return (await orderService.getById(context.shop.id, input.id))!
+    }),
+
+  // Manual order from the admin (no shipping or payment method; mark it as paid when the money arrives)
+  create: write
+    .route({ method: 'POST', path: '/admin/orders' })
+    .output(orderCreatedOutput)
+    .input(
+      z
+        .object({
+          customerId: z.uuid().optional(),
+          email: z.email().optional(),
+          name: z.string().min(1).optional(),
+          // Each line names a variantId, or a productId for single-variant products
+          items: z
+            .array(
+              z.union([
+                z.object({ variantId: z.uuid(), quantity: z.number().int().min(1).max(999) }),
+                z.object({ productId: z.uuid(), quantity: z.number().int().min(1).max(999) }),
+              ]),
+            )
+            .min(1),
+          // Applied like at checkout; tax needs a shipping address, so manual orders have none
+          discountCode: z.string().trim().min(1).max(100).optional(),
+        })
+        .refine((v) => v.customerId || v.email, { message: 'customerId or email is required' }),
+    )
+    .handler(({ input, context }) => orderService.create(context.shop.id, input)),
+
+  // Shopify "Mark as paid": manual payment received
+  markAsPaid: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/mark-as-paid' })
+    .output(orderOutput)
+    .input(id)
+    .handler(({ input, context }) => orderService.markAsPaid(context.shop.id, input.id)),
+
+  fulfill: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/fulfill' })
+    .output(orderOutput)
+    .input(id.extend(fulfillOrderInput.shape))
+    .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, tracking)),
+}
+
+const timezone = z.string().refine(
+  (tz) => {
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz })
+      return true
+    } catch {
+      return false
+    }
+  },
+  { message: 'Unknown timezone' },
+)
+
+export const analytics = {
+  // Home dashboard: sales, orders, average order value and returning customers vs the previous period
+  overview: scoped('read_orders')
+    .route({ method: 'GET', path: '/admin/analytics/overview' })
+    .output(analyticsOverviewOutput)
+    .input(z.object({ days: z.coerce.number().int().min(1).max(365).default(30), timezone: timezone.default('UTC') }))
+    .handler(({ input, context }) => orderAnalytics.overview(context.shop.id, input)),
+}

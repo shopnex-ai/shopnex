@@ -1,10 +1,13 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
+import { orderOutput } from '@shopnex/orders/contract'
 import { marketplaceService } from '@shopnex/apps'
 import { db } from '@shopnex/db'
 import { createProcedures } from '@shopnex/rpc'
 import {
   availableAppsOutput,
+  cancelOrderInput,
+  refundOrderInput,
   paymentMethodInput,
   paymentMethodOutput,
   paymentSessionOutput,
@@ -16,7 +19,7 @@ import * as paymentsAppService from './methods'
 import type { PaymentSession } from './payments.schema'
 import * as paymentService from './sessions'
 
-const { paymentsApp, shopManager } = createProcedures()
+const { paymentsApp, scoped, shopManager } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -126,4 +129,26 @@ export const paymentMethods = {
     .output(paymentMethodOutput)
     .input(id)
     .handler(async ({ input, context }) => found(await paymentMethodService.remove(context.shop.id, input.id, db))),
+}
+
+// The order routes that send money back through a payments app: orders cannot call payments, so payments has these two. The api package
+// puts them with the rest of /admin/orders.
+const write = scoped('write_orders')
+export const orders = {
+  cancel: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/cancel' })
+    .output(orderOutput)
+    .input(id.extend(cancelOrderInput.shape))
+    // Paid through a payments app: the refund is sent to it and the order shows refunded once it confirms
+    .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options, db)),
+
+  refund: write
+    .route({ method: 'POST', path: '/admin/orders/{id}/refund' })
+    .output(orderOutput)
+    .input(id.extend(refundOrderInput.shape))
+    // Part of what the order took goes back and the order stays open. Paid through a payments app: the refund is sent
+    // to it and the order shows partially refunded (or refunded) once it confirms
+    .handler(({ input: { id, amountCents }, context }) =>
+      paymentService.refundOrder(context.shop.id, id, { amountCents }, db),
+    ),
 }

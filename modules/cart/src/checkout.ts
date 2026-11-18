@@ -3,8 +3,7 @@
 // method (Stripe…) also starts a payment session, and the buyer is sent to its paymentUrl to pay.
 import { variantService } from '@shopnex/catalog'
 import { eq } from 'drizzle-orm'
-import { all, db, schema } from '@shopnex/db'
-import type { MailingAddress } from '@shopnex/db/schema'
+import { all, db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PaymentError, paymentMethodService, paymentService } from '@shopnex/payments'
 import { calculate, taxRateFor, taxService } from '@shopnex/pricing'
@@ -14,6 +13,8 @@ import * as carrierService from './carrier-services'
 import type { QuoteInput } from './carrier-services'
 import { listShippingRates } from './checkout-settings'
 import { CartError } from './cart.errors'
+import { shops } from '@shopnex/core/schema'
+import { type MailingAddress, orders } from '@shopnex/orders/schema'
 
 export type CheckoutInput = {
   email: string
@@ -144,9 +145,9 @@ export async function options(
 export async function taxContext(shopId: string) {
   const [[shop], rates] = await Promise.all([
     db
-      .select({ taxesIncluded: schema.shops.taxesIncluded, taxShipping: schema.shops.taxShipping })
-      .from(schema.shops)
-      .where(eq(schema.shops.id, shopId)),
+      .select({ taxesIncluded: shops.taxesIncluded, taxShipping: shops.taxShipping })
+      .from(shops)
+      .where(eq(shops.id, shopId)),
     taxService.list(shopId, db),
   ])
   return {
@@ -199,12 +200,12 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
   const placed = await placeOrder(shopId, token, input)
   const [order] = await db
     .select({
-      paymentGateway: schema.orders.paymentGateway,
-      financialStatus: schema.orders.financialStatus,
-      cancelledAt: schema.orders.cancelledAt,
+      paymentGateway: orders.paymentGateway,
+      financialStatus: orders.financialStatus,
+      cancelledAt: orders.cancelledAt,
     })
-    .from(schema.orders)
-    .where(eq(schema.orders.id, placed.orderId))
+    .from(orders)
+    .where(eq(orders.id, placed.orderId))
   const payable =
     order &&
     (order.paymentGateway ?? 'manual') !== 'manual' &&
@@ -263,9 +264,9 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput) {
     if (!cart) throw new CartError('CART_NOT_FOUND', 'Cart not found or expired')
     if (cart.status === 'completed' && cart.orderId) {
       const [order] = await tx
-        .select({ orderNumber: schema.orders.orderNumber })
-        .from(schema.orders)
-        .where(eq(schema.orders.id, cart.orderId))
+        .select({ orderNumber: orders.orderNumber })
+        .from(orders)
+        .where(eq(orders.id, cart.orderId))
       return {
         orderId: cart.orderId,
         orderNumber: order!.orderNumber,

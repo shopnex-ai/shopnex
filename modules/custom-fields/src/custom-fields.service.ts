@@ -1,8 +1,7 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, eq, sql } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { CustomFieldValue, CustomFieldValues } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
 import { CustomFieldError } from './custom-fields.errors'
 import {
   customFieldDefinitions,
@@ -10,6 +9,7 @@ import {
   type CustomFieldResource,
   type CustomFieldType,
 } from './custom-fields.schema'
+import { type CustomFieldValue, type CustomFieldValues } from './custom-fields.schema'
 
 export interface CustomFieldInput {
   resource: CustomFieldResource
@@ -30,11 +30,13 @@ export type CustomFieldUpdates = Record<string, CustomFieldValue | null>
 
 export const MAX_TEXT = 1000
 
-const tables = {
-  product: schema.products,
-  order: schema.orders,
-  customer: schema.customers,
-} as const
+// The tables that hold each resource's values, by name: custom-fields sits below the modules that own them (products, orders and
+// customers all call it), so it cannot import their tables. Every one has `shop_id` and `custom_fields`; a test per resource pins this.
+const TABLE_OF = {
+  product: 'products',
+  order: 'orders',
+  customer: 'customers',
+} as const satisfies Record<CustomFieldResource, string>
 
 export async function list(shopId: string, resource: CustomFieldResource | undefined, conn: Conn) {
   return conn
@@ -111,11 +113,10 @@ export async function remove(shopId: string, id: string, conn: Conn) {
       .where(and(eq(customFieldDefinitions.shopId, shopId), eq(customFieldDefinitions.id, id)))
       .returning()
     if (!row) return null
-    const table = tables[row.resource]
-    await tx
-      .update(table)
-      .set({ customFields: sql`${table.customFields} - ${row.key}::text` })
-      .where(and(eq(table.shopId, shopId), sql`${table.customFields} ? ${row.key}::text`))
+    await tx.execute(sql`
+      update ${sql.identifier(TABLE_OF[row.resource])}
+      set custom_fields = custom_fields - ${row.key}::text
+      where shop_id = ${shopId} and custom_fields ? ${row.key}::text`)
     return row
   })
 }

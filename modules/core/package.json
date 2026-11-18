@@ -1,0 +1,25 @@
+{
+  "name": "@shopnex/core",
+  "description": "The tables every module points at: user, shops, apps and api_tokens, with the API scopes",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/core.schema.ts",
+    "./module": "./src/core.module.ts",
+    "./scopes": "./src/scopes.ts",
+    "./slug": "./src/slug.ts"
+  },
+  "scripts": {
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@shopnex/kit": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

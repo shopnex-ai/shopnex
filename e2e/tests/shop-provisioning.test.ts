@@ -3,12 +3,17 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { seedSampleProducts } from '@shopnex/catalog'
 import { channelService, publicationService } from '@shopnex/channels'
 import { createShop } from '@shopnex/tenancy'
 import { Fixtures, closeDb, requireApp } from '../lib'
+import { shopMembers } from '@shopnex/tenancy/schema'
+import { menus } from '@shopnex/content/schema'
+import { shops } from '@shopnex/core/schema'
+import { shippingRates } from '@shopnex/cart/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -22,7 +27,7 @@ before(async () => {
 
 after(async () => {
   // Shop-scoped rows go with the shop (on delete cascade)
-  if (created.length) await db.delete(schema.shops).where(inArray(schema.shops.id, created))
+  if (created.length) await db.delete(shops).where(inArray(shops.id, created))
   await fx.cleanup()
   await closeDb()
 })
@@ -36,19 +41,21 @@ describe('createShop', () => {
 
     const [member] = await db
       .select()
-      .from(schema.shopMembers)
-      .where(and(eq(schema.shopMembers.organizationId, shop.id), eq(schema.shopMembers.userId, owner.id)))
+      .from(shopMembers)
+      .where(and(eq(shopMembers.organizationId, shop.id), eq(shopMembers.userId, owner.id)))
     assert.equal(member?.role, 'owner')
 
-    const rates = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.shopId, shop.id))
+    const rates = await db.select().from(shippingRates).where(eq(shippingRates.shopId, shop.id))
     assert.equal(rates.length, 0)
     const methods = await db.select().from(paymentMethods).where(eq(paymentMethods.shopId, shop.id))
     assert.equal(methods.length, 0)
 
     // The storefront header and footer have links from the first visit, with no product or collection needed
-    const menus = await db.select().from(schema.menus).where(eq(schema.menus.shopId, shop.id))
+    const shopMenus = await db.select().from(menus).where(eq(menus.shopId, shop.id))
     assert.deepEqual(
-      menus.map((m) => [m.handle, m.items.map((i) => i.type)]).sort(([a], [b]) => String(a).localeCompare(String(b))),
+      shopMenus
+        .map((m) => [m.handle, m.items.map((i) => i.type)])
+        .sort(([a], [b]) => String(a).localeCompare(String(b))),
       [
         ['footer', ['search']],
         ['main-menu', ['frontpage', 'catalog']],
@@ -72,16 +79,17 @@ describe('createShop', () => {
     assert.equal(await seedSampleProducts(shop.id), 4)
     // Asking again adds nothing
     assert.equal(await seedSampleProducts(shop.id), 0)
-    const products = await db.select().from(schema.products).where(eq(schema.products.shopId, shop.id))
+    const products = await db.select().from(productsTable).where(eq(productsTable.shopId, shop.id))
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))
     // Published on the Online Store, or the storefront would show an empty catalog
-    const channel = await channelService.getDefault(shop.id)
+    const channel = await channelService.getDefault(shop.id, db)
     const live = await publicationService.liveIds(
       shop.id,
       channel.id,
       'product',
       products.map((p) => p.id),
+      db,
     )
     assert.equal(live.size, 4)
   })

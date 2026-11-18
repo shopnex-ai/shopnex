@@ -1,4 +1,4 @@
-import { collectionInput } from '@shopnex/api/schemas'
+import { collectionInput } from '@shopnex/catalog/contract'
 import { TextField, TextareaField, useZodForm } from '@/components/admin/form'
 import { FieldGroup } from '@/components/ui/field'
 import { GenerateCollectionDescription, GenerateCollectionSeo, htmlToPlainText } from './ai-generate'

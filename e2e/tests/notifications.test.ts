@@ -4,19 +4,22 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { EmailError, emailService, notificationService, notify, type Notification } from '@shopnex/email'
 import { processDue } from '@shopnex/email/worker'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, closeDb, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
+import { shopMembers } from '@shopnex/tenancy/schema'
+import { user } from '@shopnex/core/schema'
+import { emailDeliveries, emailSettings, emailTemplates } from '@shopnex/email/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
 const orderIds: string[] = []
 let variant: { id: string; priceCents: number }
-let settingsBefore: (typeof schema.emailSettings.$inferSelect)[]
-let templatesBefore: (typeof schema.emailTemplates.$inferSelect)[]
+let settingsBefore: (typeof emailSettings.$inferSelect)[]
+let templatesBefore: (typeof emailTemplates.$inferSelect)[]
 
 const address = {
   firstName: 'Ada',
@@ -49,8 +52,7 @@ async function placeOrder(gateway: string, extra: { note?: string } = {}) {
   return order
 }
 
-const deliveriesOf = (orderId: string) =>
-  db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.orderId, orderId))
+const deliveriesOf = (orderId: string) => db.select().from(emailDeliveries).where(eq(emailDeliveries.orderId, orderId))
 
 const kinds = async (orderId: string) => (await deliveriesOf(orderId)).map((d) => `${d.notification}:${d.to}`).sort()
 
@@ -70,9 +72,9 @@ let owners: string[]
 before(async () => {
   await fx.init()
   ;[variant] = (await sellableVariants(1)) as [typeof variant]
-  settingsBefore = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  templatesBefore = await db.select().from(schema.emailTemplates).where(eq(schema.emailTemplates.shopId, SHOP))
-  await db.delete(schema.emailTemplates).where(eq(schema.emailTemplates.shopId, SHOP))
+  settingsBefore = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  templatesBefore = await db.select().from(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
+  await db.delete(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
   const port = await sink.start()
   await emailService.useSmtp(SHOP, {
     preset: 'other',
@@ -84,20 +86,20 @@ before(async () => {
   })
   owners = (
     await db
-      .select({ email: schema.user.email })
-      .from(schema.shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-      .where(and(eq(schema.shopMembers.organizationId, SHOP), eq(schema.shopMembers.role, 'owner')))
+      .select({ email: user.email })
+      .from(shopMembers)
+      .innerJoin(user, eq(user.id, shopMembers.userId))
+      .where(and(eq(shopMembers.organizationId, SHOP), eq(shopMembers.role, 'owner')))
   ).map((o) => o.email)
 })
 
 after(async () => {
   // Nothing this run queued may go out once the real settings are back
-  if (orderIds.length) await db.delete(schema.emailDeliveries).where(inArray(schema.emailDeliveries.orderId, orderIds))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  if (settingsBefore.length) await db.insert(schema.emailSettings).values(settingsBefore)
-  await db.delete(schema.emailTemplates).where(eq(schema.emailTemplates.shopId, SHOP))
-  if (templatesBefore.length) await db.insert(schema.emailTemplates).values(templatesBefore)
+  if (orderIds.length) await db.delete(emailDeliveries).where(inArray(emailDeliveries.orderId, orderIds))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  if (settingsBefore.length) await db.insert(emailSettings).values(settingsBefore)
+  await db.delete(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
+  if (templatesBefore.length) await db.insert(emailTemplates).values(templatesBefore)
   await fx.cleanup()
   await sink.stop()
   await closeDb()
@@ -173,9 +175,9 @@ describe('order notifications', () => {
 
     // Saved straight to the table: the API refuses Liquid that doesn't parse, but a filter error only shows at render
     await db
-      .update(schema.emailTemplates)
+      .update(emailTemplates)
       .set({ subject: '{{ order.name | no_such_filter }}' })
-      .where(and(eq(schema.emailTemplates.shopId, SHOP), eq(schema.emailTemplates.notification, 'order_confirmation')))
+      .where(and(eq(emailTemplates.shopId, SHOP), eq(emailTemplates.notification, 'order_confirmation')))
     const broken = await placeOrder('manual')
     const [fallback] = (await deliveriesOf(broken.id)).filter((d) => d.notification === 'order_confirmation')
     assert.equal(fallback!.subject, `Order #${broken.orderNumber} confirmed`)

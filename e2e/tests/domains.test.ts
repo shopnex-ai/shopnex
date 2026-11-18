@@ -6,9 +6,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, like } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { DomainError, domainService } from '@shopnex/tenancy'
 import { Fixtures, call, closeDb, ok, requireApp } from '../lib'
+import { shopDomains } from '@shopnex/tenancy/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -27,7 +28,7 @@ before(async () => {
 })
 
 after(async () => {
-  await db.delete(schema.shopDomains).where(like(schema.shopDomains.domain, `%-${run}.e2e.example.com`))
+  await db.delete(shopDomains).where(like(shopDomains.domain, `%-${run}.e2e.example.com`))
   await fx.cleanup()
   await closeDb()
 })
@@ -72,7 +73,7 @@ describe('adding a domain', () => {
 
   test('a verified domain cannot be taken by another shop', async () => {
     const mine = ok(await add(owner, host('held')))
-    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, mine.id))
+    await db.update(shopDomains).set({ verifiedAt: new Date() }).where(eq(shopDomains.id, mine.id))
     await assert.rejects(domainService.addDomain(otherShop, host('held')), { code: 'DOMAIN_TAKEN' })
     assert.ok((await list()).domains.some((x: any) => x.id === mine.id && x.verified))
   })

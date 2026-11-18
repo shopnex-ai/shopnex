@@ -1,6 +1,7 @@
 // What the docs build reads to generate reference pages (apps/docs/scripts/generate-reference.ts), so those
 // pages cannot drift from the code. Not used at runtime.
-export { API_SCOPES, API_SCOPE_DESCRIPTIONS, SHOP_ROLES, SHOP_ROLE_DESCRIPTIONS } from '@shopnex/db/schema'
+export { API_SCOPES, API_SCOPE_DESCRIPTIONS } from '@shopnex/core/schema'
+export { SHOP_ROLES, SHOP_ROLE_DESCRIPTIONS } from '@shopnex/tenancy/schema'
 export { ENV_VARS } from './env-vars'
 export { appService } from '@shopnex/apps'
 export { INVITATION_EXPIRES_IN_DAYS, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from '@shopnex/auth'
@@ -13,4 +14,4 @@ export {
   WEBHOOK_TOPICS,
   WEBHOOK_TOPIC_DESCRIPTIONS,
 } from '@shopnex/webhooks'
-export { webhookPayloads } from './routers/admin/outputs'
+export { webhookPayloads } from './webhook-payloads'

@@ -4,18 +4,32 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema": "./src/customers.schema.ts",
+    "./contract": "./src/customers.contract.ts",
+    "./router": "./src/customers.router.ts",
+    "./module": "./src/customers.module.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@orpc/server": "catalog:",
     "@shopnex/auth": "workspace:*",
+    "@shopnex/core": "workspace:*",
     "@shopnex/custom-fields": "workspace:*",
     "@shopnex/db": "workspace:*",
-    "@shopnex/email": "workspace:*",
+    "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
   }
 }

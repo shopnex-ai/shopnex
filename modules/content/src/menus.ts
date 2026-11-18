@@ -1,30 +1,37 @@
 // Navigation menus (admin: Online store → Navigation). Business logic only; every query is scoped by shopId.
 // Item trees are validated by the API layer (menuInput); here, collection and product links are checked to
 // belong to the shop, and `resolve` turns them into storefront links.
+import { randomUUID } from 'node:crypto'
 import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
-import type { StoredMenuItem } from '@shopnex/db/schema'
+import { type Conn } from '@shopnex/db'
 import { ContentError } from './content.errors'
+import { menus, pages, type StoredMenuItem } from './content.schema'
+import { collections as collectionsTable } from '@shopnex/catalog/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
-export type MenuInput = { handle: string; title: string; items: StoredMenuItem[] }
-
-export async function list(shopId: string, conn: Conn = db) {
-  return conn.select().from(schema.menus).where(eq(schema.menus.shopId, shopId)).orderBy(asc(schema.menus.createdAt))
+export interface MenuInput {
+  handle: string
+  title: string
+  items: StoredMenuItem[]
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function list(shopId: string, conn: Conn) {
+  return conn.select().from(menus).where(eq(menus.shopId, shopId)).orderBy(asc(menus.createdAt))
+}
+
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.menus)
-    .where(and(eq(schema.menus.shopId, shopId), eq(schema.menus.id, id)))
+    .from(menus)
+    .where(and(eq(menus.shopId, shopId), eq(menus.id, id)))
   return row ?? null
 }
 
-export async function getByHandle(shopId: string, handle: string, conn: Conn = db) {
+export async function getByHandle(shopId: string, handle: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.menus)
-    .where(and(eq(schema.menus.shopId, shopId), eq(schema.menus.handle, handle)))
+    .from(menus)
+    .where(and(eq(menus.shopId, shopId), eq(menus.handle, handle)))
   return row ?? null
 }
 
@@ -39,9 +46,9 @@ function resourceIds(items: StoredMenuItem[], type: ResourceType) {
 // Links may only point at this shop's collections, products and pages
 async function assertResources(conn: Conn, shopId: string, items: StoredMenuItem[]) {
   for (const [type, table] of [
-    ['collection', schema.collections],
-    ['product', schema.products],
-    ['page', schema.pages],
+    ['collection', collectionsTable],
+    ['product', productsTable],
+    ['page', pages],
   ] as const) {
     const ids = resourceIds(items, type)
     if (!ids.length) continue
@@ -62,37 +69,39 @@ async function assertHandleFree(conn: Conn, shopId: string, handle: string, exce
   }
 }
 
-export async function create(shopId: string, input: MenuInput) {
-  return db.transaction(async (tx) => {
+export async function create(shopId: string, input: MenuInput, conn: Conn) {
+  return conn.transaction(async (tx) => {
     await assertHandleFree(tx, shopId, input.handle)
     await assertResources(tx, shopId, input.items)
     const [row] = await tx
-      .insert(schema.menus)
+      .insert(menus)
       .values({ shopId, handle: input.handle, title: input.title, items: input.items })
       .returning()
-    return row!
+    if (!row) throw new Error('The menu was not saved')
+    return row
   })
 }
 
 // Returns null when the menu isn't in this shop
-export async function update(shopId: string, id: string, patch: Partial<MenuInput>) {
-  return db.transaction(async (tx) => {
+export async function update(shopId: string, id: string, patch: Partial<MenuInput>, conn: Conn) {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     if (patch.handle !== undefined) await assertHandleFree(tx, shopId, patch.handle, id)
     if (patch.items !== undefined) await assertResources(tx, shopId, patch.items)
     const [row] = await tx
-      .update(schema.menus)
+      .update(menus)
       .set({ ...patch, updatedAt: new Date() })
-      .where(eq(schema.menus.id, id))
+      .where(eq(menus.id, id))
       .returning()
-    return row!
+    if (!row) throw new Error('The menu was not saved')
+    return row
   })
 }
 
-export async function remove(shopId: string, id: string) {
-  const [row] = await db
-    .delete(schema.menus)
-    .where(and(eq(schema.menus.shopId, shopId), eq(schema.menus.id, id)))
+export async function remove(shopId: string, id: string, conn: Conn) {
+  const [row] = await conn
+    .delete(menus)
+    .where(and(eq(menus.shopId, shopId), eq(menus.id, id)))
     .returning()
   return row ?? null
 }
@@ -114,39 +123,39 @@ const PATHS = { frontpage: '/', catalog: '/collections/all', search: '/search' }
  * that is gone or not active, or a page that is gone or hidden, are left out (with their sub-items), so
  * storefronts never show dead links.
  */
-export async function resolve(shopId: string, items: StoredMenuItem[], conn: Conn = db): Promise<ResolvedMenuItem[]> {
+export async function resolve(shopId: string, items: StoredMenuItem[], conn: Conn): Promise<ResolvedMenuItem[]> {
   const collectionIds = resourceIds(items, 'collection')
   const productIds = resourceIds(items, 'product')
   const pageIds = resourceIds(items, 'page')
-  const [collections, products, pages] = await Promise.all([
+  const [collections, products, pageRows] = await Promise.all([
     collectionIds.length
       ? conn
-          .select({ id: schema.collections.id, slug: schema.collections.slug })
-          .from(schema.collections)
-          .where(and(eq(schema.collections.shopId, shopId), inArray(schema.collections.id, collectionIds)))
+          .select({ id: collectionsTable.id, slug: collectionsTable.slug })
+          .from(collectionsTable)
+          .where(and(eq(collectionsTable.shopId, shopId), inArray(collectionsTable.id, collectionIds)))
       : [],
     productIds.length
       ? conn
-          .select({ id: schema.products.id, slug: schema.products.slug })
-          .from(schema.products)
+          .select({ id: productsTable.id, slug: productsTable.slug })
+          .from(productsTable)
           .where(
             and(
-              eq(schema.products.shopId, shopId),
-              eq(schema.products.status, 'active'),
-              inArray(schema.products.id, productIds),
+              eq(productsTable.shopId, shopId),
+              eq(productsTable.status, 'active'),
+              inArray(productsTable.id, productIds),
             ),
           )
       : [],
     pageIds.length
       ? conn
-          .select({ id: schema.pages.id, slug: schema.pages.handle })
-          .from(schema.pages)
+          .select({ id: pages.id, slug: pages.handle })
+          .from(pages)
           .where(
             and(
-              eq(schema.pages.shopId, shopId),
-              isNotNull(schema.pages.publishedAt),
-              lte(schema.pages.publishedAt, new Date()),
-              inArray(schema.pages.id, pageIds),
+              eq(pages.shopId, shopId),
+              isNotNull(pages.publishedAt),
+              lte(pages.publishedAt, new Date()),
+              inArray(pages.id, pageIds),
             ),
           )
       : [],
@@ -154,7 +163,7 @@ export async function resolve(shopId: string, items: StoredMenuItem[], conn: Con
   const slugs = {
     collection: new Map(collections.map((c) => [c.id, c.slug])),
     product: new Map(products.map((p) => [p.id, p.slug])),
-    page: new Map(pages.map((p) => [p.id, p.slug])),
+    page: new Map(pageRows.map((p) => [p.id, p.slug])),
   }
   const segment = { collection: 'collections', product: 'products', page: 'pages' } as const
 
@@ -176,4 +185,33 @@ export async function resolve(shopId: string, items: StoredMenuItem[], conn: Con
       return [{ ...rest, resourceId: rest.resourceId ?? null, url, handle, items: walk(children) }]
     })
   return walk(items)
+}
+
+/**
+ * The storefront's menus, so a new shop has working navigation from the first visit: the header (`main-menu`)
+ * and the footer (`footer`), the two handles every bundled theme reads. Every link needs no content (the front
+ * page, the catalog, search), so the menus are valid before there is a product or collection.
+ * Never replaces an existing menu: a merchant who deleted or rebuilt theirs keeps it that way.
+ */
+export async function seedDefault(conn: Conn, shopId: string) {
+  await conn
+    .insert(menus)
+    .values([
+      {
+        shopId,
+        handle: 'main-menu',
+        title: 'Main menu',
+        items: [
+          { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
+          { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
+        ],
+      },
+      {
+        shopId,
+        handle: 'footer',
+        title: 'Footer menu',
+        items: [{ id: randomUUID(), title: 'Search', type: 'search', items: [] }],
+      },
+    ])
+    .onConflictDoNothing()
 }

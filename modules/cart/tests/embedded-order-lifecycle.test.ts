@@ -5,18 +5,21 @@
 // @shopnex/db turns such a query into an error, and each step has a timeout, so a regression fails instead of hanging.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { emailDeliveries, emailSettings } from '@shopnex/email/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'embedded-order-lifecycle-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { channelService } = await import('@shopnex/channels')
 const { productService } = await import('@shopnex/catalog')
 const { orderService } = await import('@shopnex/orders')
+// The confirmation email is what email does when orders say an order was created: it only does it once its module is loaded
+await import('@shopnex/email')
 const { cartService, checkoutService } = await import('../src')
 const { eq } = await import('drizzle-orm')
 const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')
@@ -43,7 +46,7 @@ before(async () => {
   await prepareDatabase()
   const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
   variantId = product.variants[0]!.id
-  await db.insert(schema.emailSettings).values({
+  await db.insert(emailSettings).values({
     shopId: SHOP,
     config: {
       preset: 'custom',
@@ -71,7 +74,7 @@ after(() => {
 
 describe('an order on the embedded database, with email and a webhook on', () => {
   test('placing it queues the confirmation email and the webhook', { timeout: 30_000 }, async () => {
-    const channel = await channelService.resolve(SHOP, undefined)
+    const channel = await channelService.resolve(SHOP, undefined, db)
     const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 2 }])
     const placed = await within(
       10_000,
@@ -97,7 +100,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
     const emails = await within(
       5_000,
       'reading the outbox',
-      db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.orderId, orderId)),
+      db.select().from(emailDeliveries).where(eq(emailDeliveries.orderId, orderId)),
     )
     assert.ok(
       emails.some((e) => e.notification === 'order_confirmation' && e.to === 'buyer@example.com'),
@@ -132,7 +135,7 @@ describe('an order on the embedded database, with email and a webhook on', () =>
   })
 
   test('cancelling another order queues order.cancelled', { timeout: 30_000 }, async () => {
-    const channel = await channelService.resolve(SHOP, undefined)
+    const channel = await channelService.resolve(SHOP, undefined, db)
     const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 1 }])
     const placed = await within(
       10_000,

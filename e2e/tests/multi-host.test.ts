@@ -6,14 +6,17 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
+import { shops, user } from '@shopnex/core/schema'
 
 process.env.TENANCY_MODE = 'multi'
 process.env.ROOT_DOMAIN = 'shopnex.test'
 process.env.APP_URL = 'https://admin.shopnex.test'
 
 const { eq, inArray } = await import('drizzle-orm')
-const { db, schema } = await import('@shopnex/db')
-const { DomainError, createShop, createStorefrontKey, domainService, getShopById, resolveStorefrontShop, updateShop } =
+const { db } = await import('@shopnex/db')
+const { shopDomains } = await import('@shopnex/tenancy/schema')
+const { storefrontKeyService } = await import('@shopnex/channels')
+const { DomainError, createShop, domainService, getShopById, resolveStorefrontShop, updateShop } =
   await import('@shopnex/tenancy')
 
 const run = randomBytes(3).toString('hex')
@@ -30,14 +33,14 @@ const shopIds: string[] = []
 // Shops inserted with a slug createShop would never produce (a reserved name, characters a host can't have)
 async function rawShop(slug: string) {
   const id = `e2e-host-${run}-${slug.replace(/\W/g, '')}`
-  await db.insert(schema.shops).values({ id, name: id, slug })
+  await db.insert(shops).values({ id, name: id, slug })
   shopIds.push(id)
   return id
 }
 
 before(async () => {
   ownerId = `e2e-host-owner-${run}`
-  await db.insert(schema.user).values({ id: ownerId, name: 'E2E host owner', email: `${ownerId}@example.com` })
+  await db.insert(user).values({ id: ownerId, name: 'E2E host owner', email: `${ownerId}@example.com` })
   acme = await createShop({ ownerId, name: `E2E Acme ${run}` })
   beta = await createShop({ ownerId, name: `E2E Beta ${run}` })
   shopIds.push(acme.id, beta.id)
@@ -45,8 +48,8 @@ before(async () => {
 
 after(async () => {
   // Domains, keys, channels and the rest of a shop's rows go with it (on delete cascade)
-  await db.delete(schema.shops).where(inArray(schema.shops.id, shopIds))
-  await db.delete(schema.user).where(eq(schema.user.id, ownerId))
+  await db.delete(shops).where(inArray(shops.id, shopIds))
+  await db.delete(user).where(eq(user.id, ownerId))
   await db.$client.end()
 })
 
@@ -99,7 +102,7 @@ describe('<slug>.ROOT_DOMAIN', () => {
   })
 
   test('a publishable key beats the host', async () => {
-    const key = await createStorefrontKey(beta.id, 'e2e')
+    const key = await storefrontKeyService.create(beta.id, 'e2e', undefined, db)
     const r = await resolve(sub(acme), { 'x-shopnex-key': key.token })
     assert.ok(r.ok && r.shop.id === beta.id)
     assert.deepEqual(await resolve(sub(acme), { 'x-shopnex-key': 'pk_nope' }), { ok: false, reason: 'invalid_key' })
@@ -120,7 +123,7 @@ describe('storefront URL', () => {
     const domain = `shop-${run}.beta.example`
     const { id } = await domainService.addDomain(beta.id, domain)
     assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${sub(beta)}`, 'unverified does nothing')
-    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, id))
+    await db.update(shopDomains).set({ verifiedAt: new Date() }).where(eq(shopDomains.id, id))
     assert.equal((await getShopById(beta.id))?.storefrontUrl, `https://${domain}`)
     assert.equal((await getShopById(acme.id))?.storefrontUrl, `https://${sub(acme)}`)
     await domainService.removeDomain(beta.id, id)
@@ -147,7 +150,7 @@ describe('custom domains', () => {
     const row = await domainService.addDomain(acme.id, domain)
     assert.deepEqual(await resolve(domain), { ok: false, reason: 'shop_not_found' }, 'unverified')
 
-    await db.update(schema.shopDomains).set({ verifiedAt: new Date() }).where(eq(schema.shopDomains.id, row.id))
+    await db.update(shopDomains).set({ verifiedAt: new Date() }).where(eq(shopDomains.id, row.id))
     const r = await resolve(domain)
     assert.ok(r.ok && r.shop.id === acme.id, 'verified')
     // The subdomain keeps working next to it

@@ -1,5 +1,4 @@
 export * as customerService from './customers'
 export * as accountService from './accounts'
-export { AccountError, type AccountErrorCode } from './accounts'
-export * as privacyService from './privacy'
-export { PrivacyError, type PrivacyErrorCode } from './privacy'
+export { AccountError, type AccountErrorCode, type SendLoginCode } from './accounts'
+export { type Customer, type NewCustomer } from './customers.schema'

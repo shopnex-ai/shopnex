@@ -3,9 +3,11 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { revokeApiToken } from '@shopnex/tenancy'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, requireApp } from '../lib'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { user } from '@shopnex/core/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36).toUpperCase()
@@ -69,7 +71,7 @@ describe('sessions', () => {
 
   test('a banned account cannot sign in', async () => {
     const banned = await fx.account('member')
-    await db.update(schema.user).set({ banned: true }).where(eq(schema.user.id, banned.id))
+    await db.update(user).set({ banned: true }).where(eq(user.id, banned.id))
     const r = await authCall('/sign-in/email', { email: banned.email, password: PASSWORD })
     assert.equal(r.status, 403, JSON.stringify(r.body))
   })
@@ -80,7 +82,7 @@ describe('sign-up is by invitation only', () => {
     const email = fx.email
     const r = await authCall('/sign-up/email', { name: 'Nobody', email, password: PASSWORD })
     assert.equal(r.status, 403, JSON.stringify(r.body))
-    const [row] = await db.select().from(schema.user).where(eq(schema.user.email, email))
+    const [row] = await db.select().from(user).where(eq(user.email, email))
     assert.equal(row, undefined)
   })
 
@@ -93,7 +95,7 @@ describe('sign-up is by invitation only', () => {
   test('a cancelled invitation does not count', async () => {
     const email = fx.email.replace('e2e-', 'e2e-cancelled-')
     const id = await fx.invitation(SHOP, email, 'member')
-    await db.update(schema.shopInvitations).set({ status: 'canceled' }).where(eq(schema.shopInvitations.id, id))
+    await db.update(shopInvitations).set({ status: 'canceled' }).where(eq(shopInvitations.id, id))
     assert.equal((await authCall('/sign-up/email', { name: 'Gone', email, password: PASSWORD })).status, 403)
   })
 
@@ -109,9 +111,9 @@ describe('sign-up is by invitation only', () => {
     const r = await authCall('/organization/accept-invitation', { invitationId: id }, outsider.headers.cookie)
     assert.notEqual(r.status, 200)
     const [row] = await db
-      .select({ userId: schema.shopMembers.userId })
-      .from(schema.shopMembers)
-      .where(eq(schema.shopMembers.userId, outsider.id))
+      .select({ userId: shopMembers.userId })
+      .from(shopMembers)
+      .where(eq(shopMembers.userId, outsider.id))
     assert.equal(row, undefined, 'the outsider is still in no shop')
   })
 })

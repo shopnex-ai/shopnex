@@ -3,15 +3,18 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { sessionSecret } from '@shopnex/db/secrets'
 import { isMultiTenant, isOpenSignup } from '@shopnex/tenancy'
 import type { SocialProvider } from './providers'
+import { account, session, verification } from './auth.schema'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed, createShopForNewAccount } from './sign-up-policy'
 import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
 import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
+import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
+import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
 
 // A provider is enabled only when both its credentials are set.
 // OAuth callback URL to register: {APP_URL}/api/auth/callback/{provider}
@@ -48,13 +51,13 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
-      user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
-      shops: schema.shops,
-      shopMembers: schema.shopMembers,
-      shopInvitations: schema.shopInvitations,
+      user: userTable,
+      session,
+      account,
+      verification,
+      shops: shopsTable,
+      shopMembers: shopMembers,
+      shopInvitations: shopInvitations,
     },
   }),
   emailAndPassword: { enabled: true },
@@ -130,6 +133,7 @@ export type Session = typeof auth.$Infer.Session
 export type { SocialProvider } from './providers'
 export { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE, isSuperAdmin } from './roles'
 export { withSignUpAllowed } from './sign-up-policy'
+export { setActiveShop } from './active-shop'
 export { takeRate } from './rate-limit'
 export { clientIp } from './signup-limit'
 export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

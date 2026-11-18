@@ -3,11 +3,14 @@
 // It asserts with plain SQL on discount_redemptions, so it does not care which module owns the table.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { orders } from '../src/orders.schema'
+import { customers } from '@shopnex/customers/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { discountService } = await import('@shopnex/pricing')
@@ -22,15 +25,15 @@ let orderNumber = 900_000
 
 before(async () => {
   await prepareDatabase()
-  const [channel] = await db.select({ id: schema.channels.id }).from(schema.channels).limit(1)
+  const [channel] = await db.select({ id: channels.id }).from(channels).limit(1)
   assert.ok(channel, 'the migrations seed a channel')
   channelId = channel.id
 })
 
 after(async () => {
   await db.delete(discounts).where(eq(discounts.shopId, SHOP))
-  await db.delete(schema.orders).where(eq(schema.orders.shopId, SHOP))
-  await db.delete(schema.customers).where(eq(schema.customers.shopId, SHOP))
+  await db.delete(orders).where(eq(orders.shopId, SHOP))
+  await db.delete(customers).where(eq(customers.shopId, SHOP))
   await db.$client.end?.()
 })
 
@@ -42,7 +45,7 @@ const redemptions = async (discountId: string) =>
 
 async function customer(name: string) {
   const [row] = await db
-    .insert(schema.customers)
+    .insert(customers)
     .values({ shopId: SHOP, email: `${name}-${run}@example.com` })
     .returning()
   return row!
@@ -50,7 +53,7 @@ async function customer(name: string) {
 
 async function order(conn: Parameters<typeof discountService.redeem>[0], customerId: string | null) {
   const [row] = await conn
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId: SHOP,
       orderNumber: ++orderNumber,
@@ -127,7 +130,7 @@ describe('what the database does with a redemption', () => {
     const d = await discount({ code: 'CASCADE' })
     const { order: placed } = await place('CASCADE', null)
     assert.equal(await redemptions(d.id), 1)
-    await db.delete(schema.orders).where(eq(schema.orders.id, placed!.id))
+    await db.delete(orders).where(eq(orders.id, placed!.id))
     assert.equal(await redemptions(d.id), 0)
   })
 
@@ -135,7 +138,7 @@ describe('what the database does with a redemption', () => {
     const d = await discount({ code: 'SETNULL', oncePerCustomer: true })
     const buyer = await customer('setnull')
     await place('SETNULL', buyer.id)
-    await db.delete(schema.customers).where(eq(schema.customers.id, buyer.id))
+    await db.delete(customers).where(eq(customers.id, buyer.id))
     assert.equal(await redemptions(d.id), 1)
     const rows = await db.execute(sql`select customer_id from discount_redemptions where discount_id = ${d.id}`)
     assert.equal(rows.rows[0]!.customer_id, null)

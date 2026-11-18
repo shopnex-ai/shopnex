@@ -2,8 +2,9 @@
 // Discard drops them too (they used to have a separate Save that the page's Save ignored).
 import { expect, test } from './test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, PASSWORD, call, ok, requireApp } from '../lib'
+import { products } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -37,7 +38,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  if (productId) await db.delete(schema.products).where(eq(schema.products.id, productId))
+  if (productId) await db.delete(products).where(eq(products.id, productId))
   if (defId) {
     const owner = await fx.account('owner')
     await call('DELETE', `/admin/custom-fields/${defId}`, undefined, owner.headers)

@@ -4,7 +4,7 @@ import { createHmac } from 'node:crypto'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, webhookDeliveries } = fx
+const { db, webhookDeliveries } = fx
 const { processDue: processDueIn, RETRY_DELAYS_S } = await import('../src/worker')
 const processDue = (opts: Parameters<typeof processDueIn>[0]) => processDueIn(opts, db)
 const { eq } = await import('drizzle-orm')

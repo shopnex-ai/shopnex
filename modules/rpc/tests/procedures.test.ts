@@ -3,7 +3,6 @@
 import assert from 'node:assert/strict'
 import { before, describe, test } from 'node:test'
 import { ORPCError, call } from '@orpc/server'
-import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
 import { defineError } from '@shopnex/kit'
 import {
   assertRpcConfigured,
@@ -12,7 +11,9 @@ import {
   domainErrorMapper,
   pagination,
   type Resolvers,
+  type ShopRole,
 } from '../src'
+import { type ApiScope, type ApiToken, type Shop } from '@shopnex/core/schema'
 
 const NoteError = defineError('NoteError', { MISSING: 'NOT_FOUND', DUPLICATE: 'CONFLICT' })
 const OtherError = defineError('OtherError', { BROKEN: 'BAD_REQUEST' })
@@ -41,7 +42,7 @@ const refused = (code: string, message?: RegExp) => (error: unknown) =>
 
 // What the fake login knows
 const calls = { session: 0, token: 0 }
-let signedIn: { session: { activeOrganizationId: string }; user: { id: string } } | null = null
+let signedIn: { session: { activeOrganizationId: string }; user: { id: string; email: string } } | null = null
 let membership: { shop: Shop; role: ShopRole; superAdmin: boolean } | null = null
 let bearers: Record<string, { shop: Shop; token: ApiToken }> = {}
 
@@ -137,13 +138,13 @@ describe('with resolvers', () => {
   test('authed: no session is UNAUTHORIZED, a session is given to the handler', async () => {
     reset()
     await assert.rejects(run(procedures.authed.handler(() => 'x')), refused('UNAUTHORIZED'))
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     assert.equal(await run(procedures.authed.handler(({ context }) => context.user.id)), 'u1')
   })
 
   test('admin: a member of the active shop gets the shop and role, anyone else is FORBIDDEN', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     await assert.rejects(run(procedures.admin.handler(() => 'x')), refused('FORBIDDEN', /Not a member of this shop/))
     membership = { shop, role: 'member', superAdmin: false }
     assert.deepEqual(
@@ -154,7 +155,7 @@ describe('with resolvers', () => {
 
   test('adminOrToken: a bearer token wins over the cookie and is never a staff member', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     membership = { shop, role: 'admin', superAdmin: false }
     bearers.sk_good = { shop, token: token(['read_discounts']) }
     const who = procedures.adminOrToken.handler(({ context }) => [context.token !== null, context.role, context.userId])
@@ -171,7 +172,7 @@ describe('with resolvers', () => {
       refused('UNAUTHORIZED', /Invalid or revoked API token/),
     )
     await assert.rejects(run(who), refused('UNAUTHORIZED'))
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     membership = { shop, role: 'owner', superAdmin: false }
     assert.deepEqual(await run(who), [null, 'owner', 'u1'])
     // Not a bearer header: the session decides
@@ -180,7 +181,7 @@ describe('with resolvers', () => {
 
   test('scoped: staff always pass, a token needs the scope (write includes read)', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     membership = { shop, role: 'member', superAdmin: false }
     bearers.sk_read = { shop, token: token(['read_discounts']) }
     bearers.sk_write = { shop, token: token(['write_discounts']) }
@@ -199,7 +200,7 @@ describe('with resolvers', () => {
 
   test('the app routes want an installed app’s own token: staff and plain API tokens are FORBIDDEN', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     membership = { shop, role: 'admin', superAdmin: false }
     bearers.sk_plain = { shop, token: token(['write_payment_sessions', 'write_ai_capabilities', 'write_shipping']) }
     bearers.sk_app = {
@@ -220,7 +221,7 @@ describe('with resolvers', () => {
 
   test('shopManager: owners, admins and super admins, not members, and not tokens', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     const manage = procedures.shopManager.handler(() => 'ok')
     membership = { shop, role: 'member', superAdmin: false }
     await assert.rejects(run(manage), refused('FORBIDDEN', /owner or admin/))
@@ -234,7 +235,7 @@ describe('with resolvers', () => {
 
   test('webhookManager: owners and admins or a token (it only sees its own), not members', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     bearers.sk_hook = { shop, token: token(['read_orders']) }
     const hooks = procedures.webhookManager.handler(() => 'ok')
     membership = { shop, role: 'member', superAdmin: false }
@@ -246,7 +247,7 @@ describe('with resolvers', () => {
 
   test('superAdminOnly: only a super admin', async () => {
     reset()
-    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1' } }
+    signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     const platform = procedures.superAdminOnly.handler(() => 'ok')
     membership = { shop, role: 'owner', superAdmin: false }
     await assert.rejects(run(platform), refused('FORBIDDEN', /super admin/))

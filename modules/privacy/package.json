@@ -1,0 +1,38 @@
+{
+  "name": "@shopnex/privacy",
+  "description": "A customer's personal data: what the shop hands over on request and what it removes",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contract": "./src/privacy.contract.ts",
+    "./router": "./src/privacy.router.ts",
+    "./module": "./src/privacy.module.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@orpc/server": "catalog:",
+    "@shopnex/auth": "workspace:*",
+    "@shopnex/cart": "workspace:*",
+    "@shopnex/core": "workspace:*",
+    "@shopnex/custom-fields": "workspace:*",
+    "@shopnex/customers": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/email": "workspace:*",
+    "@shopnex/kit": "workspace:*",
+    "@shopnex/orders": "workspace:*",
+    "@shopnex/rpc": "workspace:*",
+    "@shopnex/tenancy": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@shopnex/channels": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

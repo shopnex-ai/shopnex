@@ -25,50 +25,81 @@
 
 /modules
 
-- /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
-- /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
+- /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later). It recognises the request (`configureRpc`) and mounts every module's routes under the names the API has always had; it has no routes or logic of its own
+- /storefront # the public Storefront API (`storefront-sdk`'s contract, implemented): products, collections, pages, menus, the theme, the cart, customer accounts and checkout, for any storefront. No tables or contract of its own; it sits above the modules it reads, and answers their domain errors with the contract's typed ones
+- /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants), and the admin product and collection routes
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
-- /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
-- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `db` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
-- /customers # shop-scoped customers, guests matched by email (customerService)
-- /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
-- /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
+- /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list (or a dependency it lists and never uses), a module without a manifest (apart from api, db, kit, log and rpc), a manifest that disagrees with package.json, a cycle, a table outside a `*.schema.ts`, a foreign key that points against the graph, or a dependency graph in this document that differs from the manifests
+- /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
+- /customers # shop-scoped customers, guests matched by email (customerService), storefront sign-in codes (accountService) and the admin customer routes
+- /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService), and the two routes for it; no tables of its own → uses customers, orders, carts, emails
+- /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent), shipping rates and carrier services, and their admin routes
+- /orders # orders + line items with price snapshots, status transitions (orderService), the dashboard numbers (orderAnalytics) and the admin order routes → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
 - /auth # Better Auth integration
-- /db # drizzle client + the core table schemas (src/schema/<domain>.ts) + migrations (one history for all tables). A module may own its tables in `modules/<name>/src/<name>.schema.ts` (custom-fields does): `pnpm db:generate` and the privacy test find them by that name, and CI fails when the schema and the migrations disagree
+- /core # the tables every module points at: `user`, `shops`, `apps`, `api_tokens`, with the API scopes, the scope helpers and `SLUG_PATTERN`. No routes; it depends on `kit` and `drizzle-orm` only (`modules:check` enforces it)
+- /db # the drizzle client and the migrations (one history for all tables). It has no tables of its own: every table is in a module's `src/<name>.schema.ts`, which `pnpm db:generate` and the privacy test find by that name, and CI fails when the schemas and the migrations disagree
 - /theme # themes + component definitions
 - /apps # installable apps: custom apps, OAuth authorization codes, installations (each backed by an API token); marketplace connection + catalog sync
 - /webhooks # outbound webhooks: endpoints, `emit()` (outbox, same transaction as the change), delivery worker
 - /ai # AI capabilities: built-in providers (Claude, OpenAI; Settings → AI), apps that provide capabilities, running one, generations → uses apps, catalog
 
-Domain modules (catalog, customers, orders): business logic only — no HTTP/oRPC/Hono imports;
+Domain modules (catalog, customers, orders…): business logic in services with no HTTP/oRPC/Hono imports;
 every service takes `shopId` first and an optional `conn` (db or transaction). Dependencies only point
-one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in `modules/api`. Today's graph
+one way, with no cycles; domain errors (e.g. `OrderError`) are answered with their status by `rpc`. Today's graph
 (a module imports only what is on its right):
 
 ```text
-db        →
-channels  → db
-pricing   → db, rpc
-drafts    → db
-webhooks  → db, rpc, tenancy   (owns webhook_endpoints and webhook_deliveries; tenancy tells it when an API token is revoked)
-theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its table; apps fills it through replaceStore)
-tenancy   → db, channels
-auth      → db, tenancy
-files     → db, rpc, tenancy, webhooks
-email     → db, tenancy, webhooks
-rpc       → db   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
-custom-fields → db, rpc
-catalog   → db, channels, custom-fields, webhooks
-content   → db, catalog
-customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
-orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks
-payments  → db, apps, orders, email, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
-cart      → db, apps, catalog, channels, orders, payments, pricing
-apps      → db, tenancy, theme
-ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
-api       → everything above (transport only)
+<!-- modules:graph:start -->
+ai → apps, catalog, content, core, db, rpc, tenancy
+api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
+apps → core, db, rpc, tenancy, theme
+auth → content, core, db, tenancy
+cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
+catalog → channels, core, custom-fields, db, rpc, webhooks
+channels → core, db, rpc
+content → catalog, core, db, rpc
+core → (nothing)
+custom-fields → core, db, rpc
+customers → auth, core, custom-fields, db, rpc, webhooks
+db → (nothing)
+drafts → core, db
+email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
+files → core, db, rpc, tenancy, webhooks
+kit → (nothing)
+log → (nothing)
+orders → catalog, channels, core, custom-fields, customers, db, pricing, rpc, webhooks
+payments → apps, core, customers, db, orders, rpc, webhooks
+pricing → core, db, rpc
+privacy → auth, cart, core, custom-fields, customers, db, email, orders, rpc, tenancy, webhooks
+rpc → core
+storefront → auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
+tenancy → channels, content, core, db, rpc, webhooks
+theme → core, db, drafts, rpc
+webhooks → core, db, rpc
+<!-- modules:graph:end -->
 ```
+
+The block above is generated from the manifests (`node scripts/modules-check.mjs --write` rewrites it, and `pnpm modules:check` fails when it is out
+of date). The edges that are not obvious, and why they run the way they do:
+
+- **core** holds the tables every module points at (`user`, `shops`, `apps`, `api_tokens`) and the pure scope helpers. It depends on `kit` only.
+- **db** is the connection and the migrations: it has no tables and imports no module. Every table is in a module's `src/<name>.schema.ts`.
+- **customers, orders, cart and email** are layered by their tables: carts point at orders and customers, orders at customers, `email_deliveries` at
+  orders and carts. So `email` sits above `orders` and `cart` (it reads them), and `orders` cannot call it: it announces `orderEvent`, which email
+  listens to.
+- **privacy** has no tables. It reads what customers, orders, carts and emails hold, so it sits above all of them; its export and erase routes
+  are put under `/admin/customers` by the api package.
+- **Routes that need a higher module live in that module**: cancelling and refunding an order send the refund to a payments app, so they are
+  `payments` routes; the api package puts them back under `/admin/orders`, so the API is unchanged.
+- **channels and custom-fields sit below the modules that own the rows they touch.** Deleting a channel that has orders is refused by the database's
+  foreign key (channels turns it into `CHANNEL_IN_USE`); removing a custom field clears its values from the products, orders and customers tables
+  by name. Neither imports those tables.
+- **customers** does not send email: `requestLoginCode` takes the sender as a parameter, and the one storefront route that calls it passes it.
+- **tenancy** calls `content` (default menus when a shop is created) and `webhooks` (a revoked token's subscriptions) as ordinary dependencies.
+- **apps** owns `appUninstalled`; payments, ai and cart listen to it. **orders** owns `orderEvent`; email listens to it.
+- **storefront** implements the published Storefront API on top of cart, catalog, content, customers, orders, theme and the rest. Nothing depends on it but `api`, which mounts it.
+- **api** mounts every module's routes and does nothing else.
 
 ## Writing a module
 
@@ -101,7 +132,7 @@ Rules for `index.ts`, the same as Nest's: no barrel files inside a module.
   entry cannot create an import cycle.
 - Keep the root entry small: the service, the errors and the types. Do not re-export the router, the manifest or anything
   else that drags in more.
-- Code that runs in the browser (the admin UI's forms, `@shopnex/api/schemas`) imports only `/schema` or `/contract`.
+- Code that runs in the browser (the admin UI's forms) imports only `/schema` or `/contract` of a module, and `pnpm bundle:check` fails if server code gets in.
   The root entry exports the service, which pulls in the database client, and a browser bundle that reaches it fails with
   `Buffer is not defined`. `pnpm bundle:check` (also in CI) bundles every `@shopnex/...` entry the admin UI's `.tsx` files
   import, and every module's `*.contract.ts` and `*.schema.ts`, for the browser, and fails when server code comes along.
@@ -141,13 +172,21 @@ transaction, and adding the same id again replaces it (a module loaded twice doe
 export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn>('app.uninstalled')
 // apps.ts, in the uninstall transaction:   await appUninstalled.run(tx, { shopId, appId })
 // payments.hooks.ts:                       appUninstalled.on('payments.method', (conn, { shopId, appId }) => …)
-// tenancy.hooks.ts / webhooks.hooks.ts:    the same for apiTokenRevoked: a revoked token takes its webhook subscriptions with it
+// orders.hooks.ts:                         orderEvent: an order was created, paid, fulfilled or cancelled (orders and payments run it)
+// email.hooks.ts:                          orderEvent.on('email.notifications', (conn, { shopId, event, load }) => notify(…))
 ```
 
+Use a hook only when the owner really cannot depend on the module that reacts. Most cases are not that: `tenancy` calls `content` when it
+creates a shop and `webhooks` when it revokes a token, as ordinary dependencies (the cycle that once forced hooks there was
+`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). Two are left: `appUninstalled` (payments, ai and cart need apps)
+and `orderEvent` (email reads orders and its tables point at them, so orders cannot call it). `appUninstalled` has three listeners: payments, ai and cart.
+
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
-file that registers it, and a test that goes through the real route guards it (`modules/api/tests/uninstall-hooks.test.ts`).
-Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or revokes a token without going through the API
-(a script, an e2e test calling `appService.uninstall`) has to import the module's entry, or its cleanup is silently skipped.
+file that registers it, and tests in `modules/api/tests` guard it: `uninstall-hooks.test.ts` goes through the real route, and `hooks.test.ts` loads the
+whole API and lists the listeners every hook must have (a new listener has to be added there, a missing import fails it).
+Importing only `/schema` or `/contract` registers nothing: code that uninstalls an app or changes an order without going through the API
+(a script, an e2e test calling `appService.uninstall` or `orderService.fulfill`) has to import the module's entry (`@shopnex/email`, `@shopnex/payments`…),
+or its side effects (the cleanup, the emails) are silently skipped.
 
 ## API layout
 

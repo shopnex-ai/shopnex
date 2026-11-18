@@ -4,6 +4,7 @@
 // sign-up on (every account gets a shop), and fails instead of hanging if anything blocks.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -12,11 +13,13 @@ process.env.OPEN_SIGNUP = 'true'
 process.env.SHOPNEX_SECRET ??= 'embedded-signup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { shopMembers } = await import('@shopnex/tenancy/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { eq } = await import('drizzle-orm')
+const { menus } = await import('@shopnex/content/schema')
 
 /** Fails the test, instead of hanging it, when `work` doesn't finish: on the embedded database that is the bug */
 async function within<T>(ms: number, what: string, work: Promise<T>): Promise<T> {
@@ -50,12 +53,15 @@ describe('open sign-up on the embedded database', () => {
     const members = await within(
       5_000,
       'reading the members',
-      db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, user.id)),
+      db.select().from(shopMembers).where(eq(shopMembers.userId, user.id)),
     )
     assert.equal(members.length, 1, 'the new account owns one shop')
     assert.equal(members[0]!.role, 'owner')
-    const [shop] = await db.select().from(schema.shops).where(eq(schema.shops.id, members[0]!.organizationId))
+    const [shop] = await db.select().from(shops).where(eq(shops.id, members[0]!.organizationId))
     assert.ok(shop, 'the shop exists')
+    // The menus come from content's shopCreated listener: signing up has to load content, not rely on the API app having done it
+    const menuRows = await db.select().from(menus).where(eq(menus.shopId, shop.id))
+    assert.deepEqual(menuRows.map((m) => m.handle).sort(), ['footer', 'main-menu'])
   })
 
   test('a second account gets a shop of its own', { timeout: 40_000 }, async () => {
@@ -64,9 +70,9 @@ describe('open sign-up on the embedded database', () => {
       'signing up the second account',
       auth.api.signUpEmail({ body: { name: 'Bob', email: 'bob@example.com', password: 'correct-horse-battery' } }),
     )
-    const members = await db.select().from(schema.shopMembers).where(eq(schema.shopMembers.userId, user.id))
+    const members = await db.select().from(shopMembers).where(eq(shopMembers.userId, user.id))
     assert.equal(members.length, 1)
-    const all = await db.select().from(schema.shops)
+    const all = await db.select().from(shops)
     assert.ok(all.length >= 2)
   })
 })

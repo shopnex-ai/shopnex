@@ -5,10 +5,13 @@
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { instanceSigner, instanceUrl, serverUrl } from '@shopnex/apps'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { signRatesRequest, type RatesRequest } from '@shopnex/marketplace-sdk/shipping'
 import { CartError } from './cart.errors'
 import { log } from './log'
+import { appInstallations } from '@shopnex/apps/schema'
+import { apps } from '@shopnex/core/schema'
+import { carrierServices } from './cart.schema'
 
 // Checkout waits for these, so keep it short
 const TIMEOUT_MS = 5000
@@ -44,7 +47,7 @@ const origin = (url: string) => {
  * registered app URL), so an app can't point ShopNex at someone else's server. Staff's name and switch stay.
  */
 export async function configure(shopId: string, appId: string, input: ConfigureInput) {
-  const [app] = await db.select().from(schema.apps).where(eq(schema.apps.id, appId))
+  const [app] = await db.select().from(apps).where(eq(apps.id, appId))
   if (!app) throw new CartError('NOT_A_CARRIER_APP', 'Only an installed app can configure a carrier service')
   const appOrigin = origin(app.appUrl)
   if (!appOrigin || origin(input.ratesUrl) !== appOrigin) {
@@ -52,18 +55,18 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
   }
   const [existing] = await db
     .select()
-    .from(schema.carrierServices)
-    .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, appId)))
+    .from(carrierServices)
+    .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.appId, appId)))
   if (existing) {
     const [service] = await db
-      .update(schema.carrierServices)
+      .update(carrierServices)
       .set({ ratesUrl: input.ratesUrl, ready: input.ready, updatedAt: new Date() })
-      .where(eq(schema.carrierServices.id, existing.id))
+      .where(eq(carrierServices.id, existing.id))
       .returning()
     return service!
   }
   const [service] = await db
-    .insert(schema.carrierServices)
+    .insert(carrierServices)
     .values({ shopId, appId, name: input.name, ratesUrl: input.ratesUrl, ready: input.ready })
     .returning()
   return service!
@@ -72,23 +75,23 @@ export async function configure(shopId: string, appId: string, input: ConfigureI
 export async function list(shopId: string, opts: { usableOnly?: boolean } = {}, conn: Conn = db) {
   return conn
     .select()
-    .from(schema.carrierServices)
+    .from(carrierServices)
     .where(
       and(
-        eq(schema.carrierServices.shopId, shopId),
-        opts.usableOnly ? eq(schema.carrierServices.active, true) : undefined,
-        opts.usableOnly ? eq(schema.carrierServices.ready, true) : undefined,
+        eq(carrierServices.shopId, shopId),
+        opts.usableOnly ? eq(carrierServices.active, true) : undefined,
+        opts.usableOnly ? eq(carrierServices.ready, true) : undefined,
       ),
     )
-    .orderBy(asc(schema.carrierServices.createdAt))
+    .orderBy(asc(carrierServices.createdAt))
 }
 
 /** Staff: rename or switch off. Null when the service isn't in this shop. */
 export async function update(shopId: string, id: string, patch: { name?: string; active?: boolean }) {
   const [service] = await db
-    .update(schema.carrierServices)
+    .update(carrierServices)
     .set({ ...patch, updatedAt: new Date() })
-    .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.id, id)))
+    .where(and(eq(carrierServices.shopId, shopId), eq(carrierServices.id, id)))
     .returning()
   return service ?? null
 }
@@ -100,21 +103,21 @@ export async function update(shopId: string, id: string, patch: { name?: string;
  */
 export async function availableApps(shopId: string) {
   const rows = await db
-    .select({ app: schema.apps, installationId: schema.appInstallations.id })
-    .from(schema.apps)
+    .select({ app: apps, installationId: appInstallations.id })
+    .from(apps)
     .leftJoin(
-      schema.appInstallations,
+      appInstallations,
       and(
-        eq(schema.appInstallations.appId, schema.apps.id),
-        eq(schema.appInstallations.shopId, shopId),
-        isNull(schema.appInstallations.uninstalledAt),
+        eq(appInstallations.appId, apps.id),
+        eq(appInstallations.shopId, shopId),
+        isNull(appInstallations.uninstalledAt),
       ),
     )
     .where(
       and(
-        sql`'write_shipping' = any(${schema.apps.scopes})`,
-        sql`not ('write_products' = any(${schema.apps.scopes}))`,
-        isNull(schema.apps.delistedAt),
+        sql`'write_shipping' = any(${apps.scopes})`,
+        sql`not ('write_products' = any(${apps.scopes}))`,
+        isNull(apps.delistedAt),
       ),
     )
   return rows

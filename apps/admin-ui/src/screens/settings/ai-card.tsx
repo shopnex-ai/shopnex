@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { z } from 'zod'
-import { aiSettingsInput } from '@shopnex/api/schemas'
+import { aiSettingsInput } from '@shopnex/ai/contract'
 import { FormError, SelectField, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

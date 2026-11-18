@@ -6,15 +6,27 @@ import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type 
 import { variantService } from '@shopnex/catalog'
 import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
-import { all, db, schema, type Conn } from '@shopnex/db'
+import { all, db, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
-import { notify } from '@shopnex/email'
 import { calculate, taxService } from '@shopnex/pricing'
 import { checkDiscount, redeemDiscount } from './discount-redemptions'
-import type { CancelReason, FinancialStatus, FulfillmentStatus, MailingAddress } from '@shopnex/db/schema'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
+import { orderEvent } from './orders.hooks'
+import { shops } from '@shopnex/core/schema'
+import {
+  type CancelReason,
+  type FinancialStatus,
+  fulfillments as fulfillmentsTable,
+  type FulfillmentStatus,
+  type MailingAddress,
+  orderItems,
+  orders,
+  orderShippingLines,
+  orderTransactions,
+} from './orders.schema'
+import { customers } from '@shopnex/customers/schema'
 
 export type OrderLineInput =
   | { variantId: string; quantity: number }
@@ -93,39 +105,35 @@ export function shippingPrice(rate: { priceCents: number; freeAboveCents: number
 
 // `search` matches the order number (1001 or #1001), the order email or the customer's name
 export async function list(shopId: string, opts: ListOrdersInput, conn: Conn = db) {
-  const filters: (SQL | undefined)[] = [eq(schema.orders.shopId, shopId)]
-  if (opts.customerId) filters.push(eq(schema.orders.customerId, opts.customerId))
-  if (opts.financialStatus) filters.push(eq(schema.orders.financialStatus, opts.financialStatus))
-  if (opts.fulfillmentStatus) filters.push(eq(schema.orders.fulfillmentStatus, opts.fulfillmentStatus))
+  const filters: (SQL | undefined)[] = [eq(orders.shopId, shopId)]
+  if (opts.customerId) filters.push(eq(orders.customerId, opts.customerId))
+  if (opts.financialStatus) filters.push(eq(orders.financialStatus, opts.financialStatus))
+  if (opts.fulfillmentStatus) filters.push(eq(orders.fulfillmentStatus, opts.fulfillmentStatus))
   if (opts.cancelled !== undefined) {
-    filters.push(opts.cancelled ? isNotNull(schema.orders.cancelledAt) : isNull(schema.orders.cancelledAt))
+    filters.push(opts.cancelled ? isNotNull(orders.cancelledAt) : isNull(orders.cancelledAt))
   }
   if (opts.search) {
     const pattern = `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`
     const number = /^#?(\d{1,9})$/.exec(opts.search.trim())?.[1]
     filters.push(
       or(
-        ilike(schema.orders.email, pattern),
-        ilike(schema.customers.name, pattern),
-        number ? eq(schema.orders.orderNumber, Number(number)) : undefined,
+        ilike(orders.email, pattern),
+        ilike(customers.name, pattern),
+        number ? eq(orders.orderNumber, Number(number)) : undefined,
       ),
     )
   }
   const where = and(...filters)
   const [rows, [counted]] = await Promise.all([
     conn
-      .select({ order: schema.orders, customerName: schema.customers.name })
-      .from(schema.orders)
-      .leftJoin(schema.customers, eq(schema.customers.id, schema.orders.customerId))
+      .select({ order: orders, customerName: customers.name })
+      .from(orders)
+      .leftJoin(customers, eq(customers.id, orders.customerId))
       .where(where)
-      .orderBy(desc(schema.orders.createdAt))
+      .orderBy(desc(orders.createdAt))
       .limit(opts.limit)
       .offset(opts.offset),
-    conn
-      .select({ total: count() })
-      .from(schema.orders)
-      .leftJoin(schema.customers, eq(schema.customers.id, schema.orders.customerId))
-      .where(where),
+    conn.select({ total: count() }).from(orders).leftJoin(customers, eq(customers.id, orders.customerId)).where(where),
   ])
   return { items: rows.map((r) => ({ ...r.order, customerName: r.customerName })), total: counted?.total ?? 0 }
 }
@@ -133,24 +141,24 @@ export async function list(shopId: string, opts: ListOrdersInput, conn: Conn = d
 export async function getById(shopId: string, id: string, conn: Conn = db) {
   const [order] = await conn
     .select()
-    .from(schema.orders)
-    .where(and(eq(schema.orders.shopId, shopId), eq(schema.orders.id, id)))
+    .from(orders)
+    .where(and(eq(orders.shopId, shopId), eq(orders.id, id)))
   if (!order) return null
   const [items, shippingLines, transactions, fulfillments, customer] = await all(conn, [
-    () => conn.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id)),
-    () => conn.select().from(schema.orderShippingLines).where(eq(schema.orderShippingLines.orderId, id)),
+    () => conn.select().from(orderItems).where(eq(orderItems.orderId, id)),
+    () => conn.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, id)),
     () =>
       conn
         .select()
-        .from(schema.orderTransactions)
-        .where(eq(schema.orderTransactions.orderId, id))
-        .orderBy(schema.orderTransactions.processedAt),
+        .from(orderTransactions)
+        .where(eq(orderTransactions.orderId, id))
+        .orderBy(orderTransactions.processedAt),
     () =>
       conn
         .select()
-        .from(schema.fulfillments)
-        .where(eq(schema.fulfillments.orderId, id))
-        .orderBy(schema.fulfillments.createdAt),
+        .from(fulfillmentsTable)
+        .where(eq(fulfillmentsTable.orderId, id))
+        .orderBy(fulfillmentsTable.createdAt),
     () => (order.customerId ? customerService.getById(shopId, order.customerId, conn) : Promise.resolve(null)),
   ])
 
@@ -160,9 +168,9 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
 export async function removeMany(shopId: string, ids: string[]) {
   if (!ids.length) return 0
   const deleted = await db
-    .delete(schema.orders)
-    .where(and(eq(schema.orders.shopId, shopId), inArray(schema.orders.id, ids)))
-    .returning({ id: schema.orders.id })
+    .delete(orders)
+    .where(and(eq(orders.shopId, shopId), inArray(orders.id, ids)))
+    .returning({ id: orders.id })
   return deleted.length
 }
 
@@ -178,9 +186,9 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
     for (const input of inputs) {
       const marker = `[Imported order ${input.sourceOrderName}]`
       const [existing] = await tx
-        .select({ id: schema.orders.id })
-        .from(schema.orders)
-        .where(and(eq(schema.orders.shopId, shopId), sql`left(${schema.orders.note}, ${marker.length}) = ${marker}`))
+        .select({ id: orders.id })
+        .from(orders)
+        .where(and(eq(orders.shopId, shopId), sql`left(${orders.note}, ${marker.length}) = ${marker}`))
         .limit(1)
       if (existing) {
         skipped.push(input.sourceOrderName)
@@ -197,14 +205,14 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         tx,
       )
       const [shop] = await tx
-        .update(schema.shops)
-        .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
-        .where(eq(schema.shops.id, shopId))
-        .returning({ orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1` })
+        .update(shops)
+        .set({ nextOrderNumber: sql`${shops.nextOrderNumber} + 1` })
+        .where(eq(shops.id, shopId))
+        .returning({ orderNumber: sql<number>`${shops.nextOrderNumber} - 1` })
       if (!shop) throw new OrderError('CUSTOMER_NOT_FOUND', 'Shop not found')
       const importedNote = `${marker}${input.note ? `\n${input.note}` : ''}`
       const [order] = await tx
-        .insert(schema.orders)
+        .insert(orders)
         .values({
           shopId,
           orderNumber: shop.orderNumber,
@@ -234,7 +242,7 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
           updatedAt: input.createdAt,
         })
         .returning()
-      await tx.insert(schema.orderItems).values(
+      await tx.insert(orderItems).values(
         input.items.map((item) => ({
           orderId: order!.id,
           productId: null,
@@ -250,7 +258,7 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
         })),
       )
       if (input.shippingTitle && input.shippingCents > 0) {
-        await tx.insert(schema.orderShippingLines).values({
+        await tx.insert(orderShippingLines).values({
           orderId: order!.id,
           title: input.shippingTitle,
           code: null,
@@ -260,7 +268,7 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
       }
       if (input.fulfillmentStatus === 'fulfilled') {
         await tx
-          .insert(schema.fulfillments)
+          .insert(fulfillmentsTable)
           .values({ orderId: order!.id, createdAt: input.fulfilledAt ?? input.createdAt })
       }
       imported.push(order!)
@@ -359,14 +367,14 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     // Next order number, taken under the shop row's lock (concurrent checkouts get consecutive numbers).
     // Prices are in the shop's currency; record it so the order stays correct if the shop changes it later.
     const [shop] = await tx
-      .update(schema.shops)
-      .set({ nextOrderNumber: sql`${schema.shops.nextOrderNumber} + 1` })
-      .where(eq(schema.shops.id, shopId))
+      .update(shops)
+      .set({ nextOrderNumber: sql`${shops.nextOrderNumber} + 1` })
+      .where(eq(shops.id, shopId))
       .returning({
-        orderNumber: sql<number>`${schema.shops.nextOrderNumber} - 1`,
-        currency: schema.shops.currency,
-        taxesIncluded: schema.shops.taxesIncluded,
-        taxShipping: schema.shops.taxShipping,
+        orderNumber: sql<number>`${shops.nextOrderNumber} - 1`,
+        currency: shops.currency,
+        taxesIncluded: shops.taxesIncluded,
+        taxShipping: shops.taxShipping,
       })
 
     // Tax follows the shipping address (no address, e.g. a manual order: no tax)
@@ -387,7 +395,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
     }
 
     const [order] = await tx
-      .insert(schema.orders)
+      .insert(orders)
       .values({
         shopId,
         orderNumber: shop!.orderNumber,
@@ -413,12 +421,12 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       })
       .returning()
     const items = await tx
-      .insert(schema.orderItems)
+      .insert(orderItems)
       .values(lines.map((l, i) => ({ ...l, orderId: order!.id, discountCents: totals.lineDiscountCents[i]! })))
       .returning()
     const shippingLines = input.shipping
       ? await tx
-          .insert(schema.orderShippingLines)
+          .insert(orderShippingLines)
           .values({
             orderId: order!.id,
             title: input.shipping.title,
@@ -430,7 +438,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       : []
     if (discount?.discount) await redeemDiscount(tx, discount.discount, order!)
     await emit(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
-    await notify(tx, shopId, 'order.created', () => getById(shopId, order!.id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.created', load: () => getById(shopId, order!.id, tx) })
     return { ...order!, items, shippingLines }
   })
 }
@@ -439,18 +447,18 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
 async function lockOrder(tx: Conn, shopId: string, id: string) {
   const [order] = await tx
     .select()
-    .from(schema.orders)
-    .where(and(eq(schema.orders.shopId, shopId), eq(schema.orders.id, id)))
+    .from(orders)
+    .where(and(eq(orders.shopId, shopId), eq(orders.id, id)))
     .for('update')
   if (!order) throw new OrderError('ORDER_NOT_FOUND', 'Order not found')
   return order
 }
 
-const touch = (tx: Conn, id: string, patch: Partial<typeof schema.orders.$inferInsert>) =>
+const touch = (tx: Conn, id: string, patch: Partial<typeof orders.$inferInsert>) =>
   tx
-    .update(schema.orders)
+    .update(orders)
     .set({ ...patch, updatedAt: new Date() })
-    .where(eq(schema.orders.id, id))
+    .where(eq(orders.id, id))
     .returning()
     .then((rows) => rows[0]!)
 
@@ -474,16 +482,16 @@ export async function markAsPaid(shopId: string, id: string) {
       throw new OrderError('INVALID_STATUS_TRANSITION', `Order is already ${order.financialStatus.replace('_', ' ')}`)
     }
     const [paid] = await tx
-      .select({ cents: sql<number>`coalesce(sum(${schema.orderTransactions.amountCents}), 0)::int` })
-      .from(schema.orderTransactions)
+      .select({ cents: sql<number>`coalesce(sum(${orderTransactions.amountCents}), 0)::int` })
+      .from(orderTransactions)
       .where(
         and(
-          eq(schema.orderTransactions.orderId, id),
-          eq(schema.orderTransactions.kind, 'sale'),
-          eq(schema.orderTransactions.status, 'success'),
+          eq(orderTransactions.orderId, id),
+          eq(orderTransactions.kind, 'sale'),
+          eq(orderTransactions.status, 'success'),
         ),
       )
-    await tx.insert(schema.orderTransactions).values({
+    await tx.insert(orderTransactions).values({
       orderId: id,
       kind: 'sale',
       status: 'success',
@@ -493,7 +501,7 @@ export async function markAsPaid(shopId: string, id: string) {
     })
     const updated = await touch(tx, id, { financialStatus: 'paid' })
     await emit(tx, shopId, 'order.paid', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.paid', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.paid', load: () => getById(shopId, id, tx) })
     return updated
   })
 }
@@ -508,7 +516,7 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
     if (order.fulfillmentStatus === 'fulfilled') {
       throw new OrderError('INVALID_STATUS_TRANSITION', 'Order is already fulfilled')
     }
-    await tx.insert(schema.fulfillments).values({
+    await tx.insert(fulfillmentsTable).values({
       orderId: id,
       trackingCompany: tracking.trackingCompany || null,
       trackingNumber: tracking.trackingNumber || null,
@@ -516,7 +524,7 @@ export async function fulfill(shopId: string, id: string, tracking: FulfillInput
     })
     const updated = await touch(tx, id, { fulfillmentStatus: 'fulfilled' })
     await emit(tx, shopId, 'order.fulfilled', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.fulfilled', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.fulfilled', load: () => getById(shopId, id, tx) })
     return updated
   })
 }
@@ -543,7 +551,7 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
       throw new OrderError('INVALID_STATUS_TRANSITION', 'The order is no longer unpaid')
     }
     if (input.restock) {
-      const items = await tx.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, id))
+      const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, id))
       for (const item of items) {
         if (item.variantId) await variantService.restock(shopId, item.variantId, item.quantity, tx)
       }
@@ -558,7 +566,7 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
       const money = await moneyOf(tx, id)
       const manual = (order.paymentGateway ?? 'manual') === 'manual'
       if (money.left > 0) {
-        await tx.insert(schema.orderTransactions).values({
+        await tx.insert(orderTransactions).values({
           orderId: id,
           kind: 'refund',
           status: manual ? 'success' : 'pending',
@@ -573,7 +581,7 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
     }
     const updated = await touch(tx, id, { cancelledAt: new Date(), cancelReason: input.reason, financialStatus })
     await emit(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
-    await notify(tx, shopId, 'order.cancelled', () => getById(shopId, id, tx))
+    await orderEvent.run(tx, { shopId, event: 'order.cancelled', load: () => getById(shopId, id, tx) })
     return updated
   })
 }
@@ -585,13 +593,13 @@ export async function cancel(shopId: string, id: string, input: CancelInput) {
 export async function moneyOf(tx: Conn, orderId: string) {
   const rows = await tx
     .select({
-      kind: schema.orderTransactions.kind,
-      status: schema.orderTransactions.status,
-      cents: sql<number>`coalesce(sum(${schema.orderTransactions.amountCents}), 0)::int`,
+      kind: orderTransactions.kind,
+      status: orderTransactions.status,
+      cents: sql<number>`coalesce(sum(${orderTransactions.amountCents}), 0)::int`,
     })
-    .from(schema.orderTransactions)
-    .where(eq(schema.orderTransactions.orderId, orderId))
-    .groupBy(schema.orderTransactions.kind, schema.orderTransactions.status)
+    .from(orderTransactions)
+    .where(eq(orderTransactions.orderId, orderId))
+    .groupBy(orderTransactions.kind, orderTransactions.status)
   const sum = (kind: string[], status: string) =>
     rows.filter((r) => kind.includes(r.kind) && r.status === status).reduce((n, r) => n + r.cents, 0)
   const taken = sum(['sale', 'capture'], 'success')
@@ -620,7 +628,7 @@ export async function refund(shopId: string, id: string, input: { amountCents: n
       )
     }
     const manual = (order.paymentGateway ?? 'manual') === 'manual'
-    await tx.insert(schema.orderTransactions).values({
+    await tx.insert(orderTransactions).values({
       orderId: id,
       kind: 'refund',
       status: manual ? 'success' : 'pending',

@@ -9,7 +9,7 @@
 // published on its own, apart from the document's.
 import { sql } from 'drizzle-orm'
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { shops } from '@shopnex/db/schema'
+import { shops } from '@shopnex/core/schema'
 
 export type ThemeRole = 'live' | 'unpublished'
 
