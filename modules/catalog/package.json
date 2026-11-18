@@ -7,7 +7,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@shopnex/channels": "workspace:*",
@@ -19,6 +20,9 @@
     "sanitize-html": "^2.18.1"
   },
   "devDependencies": {
-    "@types/sanitize-html": "^2.16.2"
+    "@shopnex/core": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/sanitize-html": "^2.16.2",
+    "tsx": "^4.23.15"
   }
 }

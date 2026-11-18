@@ -812,9 +812,18 @@ importers:
         specifier: ^2.18.1
         version: 2.18.1
     devDependencies:
+      '@shopnex/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
       '@types/sanitize-html':
         specifier: ^2.16.2
         version: 2.16.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
 
   modules/channels:
     dependencies:
