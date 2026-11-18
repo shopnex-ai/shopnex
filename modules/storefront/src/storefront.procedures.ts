@@ -26,67 +26,81 @@ export const defined = <C extends keyof StorefrontErrorMap>(code: C, message: st
   return new ORPCError(code, { defined: true, status: config.status, message, data })
 }
 
+const badRequest = (error: { message: string; code: string }, cause?: Error) =>
+  new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, ...(cause && { cause }) })
+
+// Each returns the contract's typed error for a domain error, or undefined when the contract has no name for it
+function fromCart(error: CartError) {
+  switch (error.code) {
+    case 'CART_NOT_FOUND':
+      return defined('NOT_FOUND', error.message)
+    case 'CART_COMPLETED':
+      return defined('CART_COMPLETED', error.message)
+    case 'EMPTY_CART':
+      return defined('EMPTY_CART', error.message)
+    case 'LINE_NOT_FOUND':
+      return defined('LINE_NOT_FOUND', error.message, { lineIds: error.data.lineIds ?? [] })
+    case 'VARIANT_NOT_FOUND':
+      return defined('MERCHANDISE_NOT_FOUND', error.message, { merchandiseIds: error.data.variantIds ?? [] })
+    case 'OUT_OF_STOCK':
+      // Without a variant id the data wouldn't match the contract; leave it to be logged
+      return error.data.variantId
+        ? defined('OUT_OF_STOCK', error.message, {
+            merchandiseId: error.data.variantId,
+            available: error.data.available ?? 0,
+          })
+        : undefined
+    case 'INVALID_SHIPPING_RATE':
+    case 'INVALID_PAYMENT_METHOD':
+      return badRequest(error)
+  }
+}
+
+function fromAccount(error: AccountError) {
+  switch (error.code) {
+    case 'INVALID_CODE':
+      return defined('INVALID_CODE', error.message)
+    case 'TOO_MANY_REQUESTS':
+      return defined('TOO_MANY_REQUESTS', error.message)
+    case 'INVALID_EMAIL':
+      return badRequest(error)
+  }
+}
+
+function fromOrder(error: OrderError) {
+  if (error.code === 'OUT_OF_STOCK' && error.data.variantId) {
+    return defined('OUT_OF_STOCK', error.message, {
+      merchandiseId: error.data.variantId,
+      available: error.data.available ?? 0,
+    })
+  }
+  if (error.code === 'VARIANT_NOT_FOUND') {
+    return defined('MERCHANDISE_NOT_FOUND', error.message, { merchandiseIds: error.data.variantIds ?? [] })
+  }
+  return badRequest(error, error)
+}
+
+function fromEmail(error: EmailError) {
+  if (error.code !== 'EMAIL_OFF' && error.code !== 'EMAIL_FAILED') return undefined
+  // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available
+  if (error.code === 'EMAIL_FAILED') log.error({ err: error }, 'sign-in code email failed')
+  return defined('CUSTOMER_LOGIN_UNAVAILABLE', 'Sign-in is not available right now')
+}
+
+function typedError(error: unknown) {
+  if (error instanceof CartError) return fromCart(error)
+  if (error instanceof AccountError) return fromAccount(error)
+  if (error instanceof CustomFieldError) return badRequest(error)
+  if (error instanceof EmailError) return fromEmail(error)
+  if (error instanceof OrderError) return fromOrder(error)
+  return undefined
+}
+
 const storefrontErrors = base.middleware(async ({ next }) => {
   try {
     return await next()
   } catch (error) {
-    if (error instanceof CartError) {
-      switch (error.code) {
-        case 'CART_NOT_FOUND':
-          throw defined('NOT_FOUND', error.message)
-        case 'CART_COMPLETED':
-          throw defined('CART_COMPLETED', error.message)
-        case 'EMPTY_CART':
-          throw defined('EMPTY_CART', error.message)
-        case 'LINE_NOT_FOUND':
-          throw defined('LINE_NOT_FOUND', error.message, { lineIds: error.data.lineIds ?? [] })
-        case 'VARIANT_NOT_FOUND':
-          throw defined('MERCHANDISE_NOT_FOUND', error.message, { merchandiseIds: error.data.variantIds ?? [] })
-        case 'OUT_OF_STOCK':
-          // Without a variant id the data wouldn't match the contract; fall through and log it
-          if (error.data.variantId) {
-            throw defined('OUT_OF_STOCK', error.message, {
-              merchandiseId: error.data.variantId,
-              available: error.data.available ?? 0,
-            })
-          }
-          break
-        case 'INVALID_SHIPPING_RATE':
-        case 'INVALID_PAYMENT_METHOD':
-          throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
-      }
-    }
-    if (error instanceof AccountError) {
-      switch (error.code) {
-        case 'INVALID_CODE':
-          throw defined('INVALID_CODE', error.message)
-        case 'TOO_MANY_REQUESTS':
-          throw defined('TOO_MANY_REQUESTS', error.message)
-        case 'INVALID_EMAIL':
-          throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
-      }
-    }
-    if (error instanceof CustomFieldError) {
-      throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code } })
-    }
-    if (error instanceof EmailError && (error.code === 'EMAIL_OFF' || error.code === 'EMAIL_FAILED')) {
-      // Details (SMTP errors) stay in the logs; the shopper only learns that sign-in isn't available
-      if (error.code === 'EMAIL_FAILED') log.error({ err: error }, 'sign-in code email failed')
-      throw defined('CUSTOMER_LOGIN_UNAVAILABLE', 'Sign-in is not available right now')
-    }
-    if (error instanceof OrderError) {
-      if (error.code === 'OUT_OF_STOCK' && error.data.variantId) {
-        throw defined('OUT_OF_STOCK', error.message, {
-          merchandiseId: error.data.variantId,
-          available: error.data.available ?? 0,
-        })
-      }
-      if (error.code === 'VARIANT_NOT_FOUND') {
-        throw defined('MERCHANDISE_NOT_FOUND', error.message, { merchandiseIds: error.data.variantIds ?? [] })
-      }
-      throw new ORPCError('BAD_REQUEST', { message: error.message, data: { code: error.code }, cause: error })
-    }
-    throw error
+    throw typedError(error) ?? error
   }
 })
 

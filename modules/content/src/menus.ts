@@ -9,7 +9,11 @@ import { menus, pages, type StoredMenuItem } from './content.schema'
 import { collections as collectionsTable } from '@shopnex/catalog/schema'
 import { products as productsTable } from '@shopnex/catalog/schema'
 
-export type MenuInput = { handle: string; title: string; items: StoredMenuItem[] }
+export interface MenuInput {
+  handle: string
+  title: string
+  items: StoredMenuItem[]
+}
 
 export async function list(shopId: string, conn: Conn = db) {
   return conn.select().from(menus).where(eq(menus.shopId, shopId)).orderBy(asc(menus.createdAt))
@@ -73,7 +77,8 @@ export async function create(shopId: string, input: MenuInput) {
       .insert(menus)
       .values({ shopId, handle: input.handle, title: input.title, items: input.items })
       .returning()
-    return row!
+    if (!row) throw new Error('The menu was not saved')
+    return row
   })
 }
 
@@ -88,7 +93,8 @@ export async function update(shopId: string, id: string, patch: Partial<MenuInpu
       .set({ ...patch, updatedAt: new Date() })
       .where(eq(menus.id, id))
       .returning()
-    return row!
+    if (!row) throw new Error('The menu was not saved')
+    return row
   })
 }
 

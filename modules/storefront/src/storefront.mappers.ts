@@ -1,8 +1,7 @@
 // Mapping: the module services' rows → the public contract's shapes (only what the contract exposes), the customer token check, and the
 // opaque cursor paging. Pure helpers of the storefront routes.
 import { ORPCError } from '@orpc/server'
-import { clientIp } from '@shopnex/auth'
-import { cartService, checkoutService, type CartView } from '@shopnex/cart'
+import { type CartView } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
 import {
   collectionService,
@@ -25,11 +24,9 @@ import type {
   Product,
   ProductVariant,
 } from '@shopnex/storefront-sdk'
-import { menuService, pageService, type Page as PageRow, type ResolvedMenuItem } from '@shopnex/content'
-import { themeService, verifyPreviewToken } from '@shopnex/theme'
+import { type Page as PageRow, type ResolvedMenuItem } from '@shopnex/content'
 import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
-import { sendLoginCode } from '@shopnex/email'
 import { db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
@@ -263,8 +260,8 @@ const encodeCursor = (offset: number) => Buffer.from(JSON.stringify({ o: offset 
 function decodeCursor(cursor: string | undefined): number {
   if (!cursor) return 0
   try {
-    const { o } = JSON.parse(Buffer.from(cursor, 'base64url').toString())
-    if (Number.isInteger(o) && o >= 0) return o
+    const { o } = JSON.parse(Buffer.from(cursor, 'base64url').toString()) as { o?: unknown }
+    if (typeof o === 'number' && Number.isInteger(o) && o >= 0) return o
   } catch {
     // fall through
   }
@@ -320,15 +317,12 @@ export async function activeProduct(
   currency: string,
   channelId: string,
 ) {
-  if (
-    !row ||
-    row.status !== 'active' ||
-    !(await publicationService.isLive(row.shopId, channelId, 'product', row.id, db))
-  ) {
+  if (row?.status !== 'active' || !(await publicationService.isLive(row.shopId, channelId, 'product', row.id, db))) {
     throw new ORPCError('NOT_FOUND')
   }
   const [product] = await withLiveCollections(await productService.withDetails([row]), row.shopId, channelId)
-  return toProduct(product!, currency, await fieldsView(row.shopId, 'product'))
+  if (!product) throw new ORPCError('NOT_FOUND')
+  return toProduct(product, currency, await fieldsView(row.shopId, 'product'))
 }
 
 // A product names only the collections published on the storefront's channel

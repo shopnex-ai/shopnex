@@ -2,7 +2,7 @@
 // say about it. The Configuration page is generated from this. tests/env-vars.test.ts fails when code reads a
 // variable that is not listed here, or a listed one is no longer read, so the page cannot drift from the code.
 
-export type EnvVar = {
+export interface EnvVar {
   /** Name, or a pattern like `<NAME>_APP_INTERNAL_URL` (never matched against the code) */
   name: string
   required: boolean

@@ -6,7 +6,7 @@ import { sanitizeHtml, slugify } from '@shopnex/catalog'
 import { ContentError } from './content.errors'
 import { pages } from './content.schema'
 
-export type PageInput = {
+export interface PageInput {
   title: string
   /** Generated from the title when omitted */
   handle?: string
@@ -69,7 +69,7 @@ async function assertHandleFree(conn: Conn, shopId: string, handle: string, exce
 async function freeHandle(conn: Conn, shopId: string, title: string) {
   const base = slugify(title, 'page')
   for (let n = 1; ; n++) {
-    const handle = n === 1 ? base : `${base}-${n}`
+    const handle = n === 1 ? base : `${base}-${String(n)}`
     if (!(await getByHandle(shopId, handle, conn))) return handle
   }
 }
@@ -96,7 +96,8 @@ export async function create(shopId: string, input: PageInput) {
         publishedAt: input.published === false ? null : new Date(),
       })
       .returning()
-    return row!
+    if (!row) throw new Error('The page was not saved')
+    return row
   })
 }
 
@@ -118,7 +119,8 @@ export async function update(shopId: string, id: string, patch: Partial<PageInpu
       })
       .where(eq(pages.id, id))
       .returning()
-    return row!
+    if (!row) throw new Error('The page was not saved')
+    return row
   })
 }
 

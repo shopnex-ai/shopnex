@@ -40,7 +40,9 @@ const SEND_PER_SHOP = 200
 const CHECK_PER_EMAIL = 10
 const CHECK_PER_IP = 30
 
-type Visitor = { ip?: string | null }
+interface Visitor {
+  ip?: string | null
+}
 
 /** Counts one use of each limit in order and stops at the first one that is used up: the seconds to wait, or null */
 async function overLimit(limits: [key: string, max: number][]) {
@@ -85,13 +87,13 @@ export async function requestLoginCode(shopId: string, rawEmail: string, send: S
     return
   }
   // Better Auth runs the sender inside the request; keep its failure (a shop with email off) to rethrow as is
-  let failure: unknown
+  let failure: Error | undefined
   await withOtpSender(
     async (to, code) => {
       try {
         await send(to, code)
       } catch (error) {
-        failure = error
+        failure = error instanceof Error ? error : new Error(String(error))
       }
     },
     () => auth.api.sendVerificationOTP({ body: { email, type: 'sign-in' } }),
@@ -158,7 +160,7 @@ export async function fromToken(shopId: string, token: string | null | undefined
 }
 
 export async function signOut(token: string) {
-  await auth.api.signOut({ headers: bearer(token) }).catch(() => {})
+  await auth.api.signOut({ headers: bearer(token) }).catch(() => undefined)
 }
 
 export async function updateProfile(

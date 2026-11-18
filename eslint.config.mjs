@@ -20,6 +20,14 @@ const strictModules = [
   'modules/ai',
   'modules/webhooks',
   'modules/channels',
+  'modules/kit',
+  'modules/rpc',
+  'modules/customers',
+  'modules/content',
+  'modules/privacy',
+  'modules/api',
+  'modules/storefront',
+  'modules/log',
 ]
 
 // Connection-bound modules: their code never imports the shared `db`. Every function that queries takes the `conn`
