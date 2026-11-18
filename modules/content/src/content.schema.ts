@@ -37,7 +37,7 @@ export type MenuItemType = (typeof MENU_ITEM_TYPES)[number]
 /** Up to 3 levels (top level, and two below), like Shopify */
 export const MENU_MAX_DEPTH = 3
 
-export type StoredMenuItem = {
+export interface StoredMenuItem {
   /** Stable within the menu (the admin generates it) */
   id: string
   title: string

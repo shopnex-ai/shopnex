@@ -44,8 +44,8 @@ const menuItem = <T extends z.ZodType>(children: T) =>
     })
     .transform((item) => ({
       ...item,
-      resourceId: linksResource(item.type) ? item.resourceId! : null,
-      url: item.type === 'http' ? item.url! : null,
+      resourceId: linksResource(item.type) ? (item.resourceId ?? null) : null,
+      url: item.type === 'http' ? (item.url ?? null) : null,
     }))
 
 // Typed like the stored tree (recursive), but the third level can't have sub-items

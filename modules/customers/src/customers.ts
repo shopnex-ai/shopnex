@@ -75,7 +75,13 @@ export async function update(
       ...patch,
       ...(patch.email && { email: normalizeEmail(patch.email) }),
       ...(customFields && {
-        customFields: await customFieldService.merge(shopId, 'customer', customFields, existing!.customFields, conn),
+        customFields: await customFieldService.merge(
+          shopId,
+          'customer',
+          customFields,
+          existing?.customFields ?? {},
+          conn,
+        ),
       }),
       updatedAt: new Date(),
     })
@@ -96,5 +102,9 @@ export async function removeMany(shopId: string, ids: string[]) {
 
 // Used by checkout: guests are matched by email within the shop
 export async function findOrCreateByEmail(shopId: string, input: CustomerInput, conn: Conn = db) {
-  return (await create(shopId, input, conn)) ?? (await getByEmail(shopId, input.email, conn))!
+  const created = await create(shopId, input, conn)
+  if (created) return created
+  const found = await getByEmail(shopId, input.email, conn)
+  if (!found) throw new Error('The customer was neither created nor found')
+  return found
 }

@@ -80,8 +80,10 @@ function serializeError(error: Error, depth: number, seen: WeakSet<object>): Ser
   return out
 }
 
+const dateValue = (value: Date) => (Number.isNaN(value.getTime()) ? null : value.toISOString())
+
 /** What is safe to write: errors reduced, secrets redacted, cycles and depth cut, long strings shortened */
-function clean(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
+function clean(value: unknown, depth = 0, seen = new WeakSet()): unknown {
   if (value instanceof Error) return serializeError(value, depth, seen)
   if (typeof value === 'string') {
     return value.length > MAX_STRING
@@ -90,7 +92,7 @@ function clean(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown
   }
   if (typeof value === 'bigint') return value.toString()
   if (typeof value === 'function' || typeof value === 'symbol') return undefined
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  if (value instanceof Date) return dateValue(value)
   if (typeof value !== 'object' || value === null) return value
   if (seen.has(value)) return '[Circular]'
   if (depth >= MAX_DEPTH) return '[Object]'
@@ -170,16 +172,29 @@ function describeError(error: SerializedError): string {
 function formatValue(value: unknown): string {
   if (typeof value === 'string') return /^[\w./:@-]+$/.test(value) ? value : JSON.stringify(value)
   if (value === undefined) return 'undefined'
-  return JSON.stringify(value) ?? String(value)
+  const json = JSON.stringify(value) as string | undefined
+  return json ?? (typeof value === 'symbol' || typeof value === 'function' ? value.toString() : 'undefined')
 }
 
 const WRITE: Record<Level, (line: string) => void> = {
-  trace: (line) => console.debug(line),
-  debug: (line) => console.debug(line),
-  info: (line) => console.info(line),
-  warn: (line) => console.warn(line),
-  error: (line) => console.error(line),
-  fatal: (line) => console.error(line),
+  trace: (line) => {
+    console.debug(line)
+  },
+  debug: (line) => {
+    console.debug(line)
+  },
+  info: (line) => {
+    console.info(line)
+  },
+  warn: (line) => {
+    console.warn(line)
+  },
+  error: (line) => {
+    console.error(line)
+  },
+  fatal: (line) => {
+    console.error(line)
+  },
 }
 
 function make(name: string | undefined, bindings: Bindings): Logger {

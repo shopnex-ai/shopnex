@@ -1,13 +1,10 @@
-import { os } from '@orpc/server'
-import { configureRpc, createProcedures, type Context } from '@shopnex/rpc'
+import { configureRpc, createProcedures } from '@shopnex/rpc'
 import { appService } from '@shopnex/apps'
 import { auth, isSuperAdmin } from '@shopnex/auth'
 import { hasScope } from '@shopnex/core/scopes'
 import { resolveAdminShop, resolveApiToken } from '@shopnex/tenancy'
 
 export { createContext, type Context } from '@shopnex/rpc'
-
-const base = os.$context<Context>()
 
 // What rpc needs to recognise a request. Registered here, once, because api is the layer that knows about logins, API
 // tokens and shops: rpc itself depends on none of them, so a module below auth or tenancy can have routes too.

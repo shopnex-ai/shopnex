@@ -24,11 +24,16 @@ export interface Hook<Payload, Conn = unknown> {
 const REGISTRY = Symbol.for('shopnex.hooks')
 
 export function defineHook<Payload, Conn = unknown>(name: string): Hook<Payload, Conn> {
-  const store = ((globalThis as Record<symbol, Map<string, Map<string, unknown>> | undefined>)[REGISTRY] ??= new Map())
-  const listeners = (store.get(name) ?? store.set(name, new Map()).get(name)!) as Map<
+  const store = ((globalThis as Record<symbol, Map<string, Map<string, unknown>> | undefined>)[REGISTRY] ??= new Map<
     string,
-    HookListener<Payload, Conn>
-  >
+    Map<string, unknown>
+  >())
+  let byName = store.get(name)
+  if (!byName) {
+    byName = new Map<string, unknown>()
+    store.set(name, byName)
+  }
+  const listeners = byName as Map<string, HookListener<Payload, Conn>>
   return {
     on: (id, listener) => void listeners.set(id, listener),
     async run(conn, payload) {

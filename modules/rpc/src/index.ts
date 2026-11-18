@@ -10,7 +10,9 @@ import { type ApiScope, type ApiToken, type Shop } from '@shopnex/core/schema'
 // The roles a member can have in a shop (tenancy's ShopRole is the same union; rpc does not depend on tenancy)
 export type ShopRole = 'owner' | 'admin' | 'member'
 
-export type Context = { headers: Headers }
+export interface Context {
+  headers: Headers
+}
 
 export function createContext(headers: Headers): Context {
   return { headers }
@@ -114,7 +116,7 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
   })
 
   // Who is calling an admin API procedure: staff (token null) or an API token (role and userId null)
-  type ApiCaller = {
+  interface ApiCaller {
     shop: Shop
     token: ApiToken | null
     role: ShopRole | null

@@ -36,7 +36,10 @@ export const storefrontRouter = storefront.router({
       name: context.shop.name,
       handle: context.shop.slug,
       currencyCode: context.shop.currency,
-      seo: { title: context.shop.seoTitle || null, description: context.shop.seoDescription || null },
+      seo: {
+        title: context.shop.seoTitle === '' ? null : context.shop.seoTitle,
+        description: context.shop.seoDescription === '' ? null : context.shop.seoDescription,
+      },
       cookieBanner: context.shop.cookieBanner,
     })),
   },
@@ -179,7 +182,7 @@ export const storefrontRouter = storefront.router({
       // Preview: the draft of the library copy the editor is on (a copy of this storefront's theme)
       const copyId = input.previewToken ? verifyPreviewToken(input.previewToken, context.shop.id) : null
       const copy = copyId ? await themeService.get(context.shop.id, copyId, db) : null
-      if (copy && copy.themeId === input.themeId) return { document: copy.draft, preview: true }
+      if (copy?.themeId === input.themeId) return { document: copy.draft, preview: true }
       const live = await themeService.getLive(context.shop.id, db)
       return { document: live?.themeId === input.themeId ? live.published : null, preview: false }
     }),
@@ -262,7 +265,7 @@ export const storefrontRouter = storefront.router({
       const customer = await signedIn(context)
       const order = await orderService.getById(context.shop.id, input.id)
       // Someone else's order looks like a missing one
-      if (!order || order.customerId !== customer.id) throw defined('NOT_FOUND', 'Order not found')
+      if (order?.customerId !== customer.id) throw defined('NOT_FOUND', 'Order not found')
       return toCustomerOrder(order, await fieldsView(context.shop.id, 'order'))
     }),
   },

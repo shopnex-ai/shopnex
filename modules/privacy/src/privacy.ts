@@ -207,7 +207,7 @@ export async function erase(shopId: string, customerId: string) {
       const numbers = open.map((o) => o.orderNumber).sort((a, b) => a - b)
       throw new PrivacyError(
         'HAS_OPEN_ORDERS',
-        `This customer has orders that are not finished: ${numbers.map((n) => `#${n}`).join(', ')}. Fulfil or cancel them first.`,
+        `This customer has orders that are not finished: ${numbers.map((n) => `#${String(n)}`).join(', ')}. Fulfil or cancel them first.`,
         { orderNumbers: numbers },
       )
     }
