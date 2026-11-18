@@ -11,9 +11,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { like } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { API, Fixtures, call, closeDb, ok, requireApp } from '../lib'
 import { API_SCOPES } from '@shopnex/core/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -69,7 +70,7 @@ after(async () => {
   for (const undo of cleanup.reverse()) await undo().catch(() => {})
   await fx.cleanup()
   // Placing the manual order created a customer from its email
-  await db.delete(schema.customers).where(like(schema.customers.email, 'e2e-iso-%'))
+  await db.delete(customers).where(like(customers.email, 'e2e-iso-%'))
   await closeDb()
 })
 

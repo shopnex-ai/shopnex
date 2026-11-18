@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { appInstallations } from '@shopnex/apps/schema'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const fx = await import('./fixtures')
 const { db, schema, SHOP, behavior, received } = fx
@@ -14,9 +15,9 @@ const { eq } = await import('drizzle-orm')
 
 const returnUrl = 'https://shop.test/thanks'
 const refused = (code: string) => (e: unknown) => e instanceof PaymentError && e.code === code
-const orderRow = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
+const orderRow = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const transactionsOf = (orderId: string) =>
-  db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, orderId))
+  db.select().from(orderTransactions).where(eq(orderTransactions.orderId, orderId))
 const inThePast = () => new Date(Date.now() - 60_000)
 
 before(async () => {
@@ -264,7 +265,7 @@ describe('refunds', () => {
     const payment = await sessions.startPayment(SHOP, o.id, { returnUrl, paymentMethodId: method.id })
     await sessions.resolve(SHOP, app.id, payment.id, { externalId: 'pi_paid' })
     const [refund] = await db
-      .insert(schema.orderTransactions)
+      .insert(orderTransactions)
       .values({
         orderId: o.id,
         kind: 'refund',
@@ -296,14 +297,11 @@ describe('refunds', () => {
 
   test('the app resolving the refund marks it successful and the order refunded once everything taken is back', async () => {
     const { app, o, refund } = await paidOrder()
-    await db
-      .update(schema.orderTransactions)
-      .set({ amountCents: 2500 })
-      .where(eq(schema.orderTransactions.id, refund.id))
+    await db.update(orderTransactions).set({ amountCents: 2500 }).where(eq(orderTransactions.id, refund.id))
     await sessions.startRefunds(SHOP, o.id)
     const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.transactionId, refund.id))
     await sessions.resolve(SHOP, app.id, session!.id, { externalId: 're_1' })
-    const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund.id))
+    const [after] = await db.select().from(orderTransactions).where(eq(orderTransactions.id, refund.id))
     assert.equal(after?.status, 'success')
     assert.equal((await orderRow(o.id)).financialStatus, 'refunded')
   })
@@ -312,10 +310,7 @@ describe('refunds', () => {
     const down = await paidOrder()
     behavior.refund = 'fail'
     await sessions.startRefunds(SHOP, down.o.id)
-    const [failed] = await db
-      .select()
-      .from(schema.orderTransactions)
-      .where(eq(schema.orderTransactions.id, down.refund.id))
+    const [failed] = await db.select().from(orderTransactions).where(eq(orderTransactions.id, down.refund.id))
     assert.equal(failed?.status, 'failure')
     assert.match(failed?.errorMessage ?? '', /^Payments app unavailable: /)
     const [refundSession] = await db
@@ -328,10 +323,7 @@ describe('refunds', () => {
     const gone = await paidOrder()
     await db.update(appInstallations).set({ uninstalledAt: new Date() }).where(eq(appInstallations.appId, gone.app.id))
     await sessions.startRefunds(SHOP, gone.o.id)
-    const [lost] = await db
-      .select()
-      .from(schema.orderTransactions)
-      .where(eq(schema.orderTransactions.id, gone.refund.id))
+    const [lost] = await db.select().from(orderTransactions).where(eq(orderTransactions.id, gone.refund.id))
     assert.equal(lost?.status, 'failure')
     assert.match(lost?.errorMessage ?? '', /no longer installed/)
     assert.equal(received.length, 0, 'an app that is no longer installed is not asked')
@@ -342,7 +334,7 @@ describe('refunds', () => {
     await sessions.startRefunds(SHOP, o.id)
     const [session] = await db.select().from(paymentSessions).where(eq(paymentSessions.transactionId, refund.id))
     await sessions.reject(SHOP, app.id, session!.id, { reason: 'Refund window closed' })
-    const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund.id))
+    const [after] = await db.select().from(orderTransactions).where(eq(orderTransactions.id, refund.id))
     assert.equal(after?.status, 'failure')
     assert.equal(after?.errorMessage, 'Refund window closed')
   })
@@ -373,7 +365,7 @@ describe('expiry', () => {
     const payment = await sessions.startPayment(SHOP, o.id, { returnUrl, paymentMethodId: method.id })
     await sessions.resolve(SHOP, app.id, payment.id, {})
     const [refund] = await db
-      .insert(schema.orderTransactions)
+      .insert(orderTransactions)
       .values({
         orderId: o.id,
         kind: 'refund',
@@ -389,7 +381,7 @@ describe('expiry', () => {
       .set({ expiresAt: inThePast() })
       .where(eq(paymentSessions.transactionId, refund!.id))
     await sessions.expireDue(undefined)
-    const [after] = await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.id, refund!.id))
+    const [after] = await db.select().from(orderTransactions).where(eq(orderTransactions.id, refund!.id))
     assert.equal(after?.status, 'error')
     assert.equal(after?.errorMessage, 'The payments app never confirmed this refund')
   })

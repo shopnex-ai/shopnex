@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentsAppRequest } from '@shopnex/marketplace-sdk/payments'
@@ -15,6 +15,7 @@ import { orderService } from '@shopnex/orders'
 import { paymentService } from '@shopnex/payments'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 import { apps } from '@shopnex/core/schema'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 
@@ -107,7 +108,7 @@ async function checkout() {
 }
 
 const order = async (id: string) => {
-  const [row] = await db.select().from(schema.orders).where(eq(schema.orders.id, id))
+  const [row] = await db.select().from(orders).where(eq(orders.id, id))
   return row!
 }
 const sessionOf = (orderId: string) => received.filter((r) => r.kind === 'payment' && r.orderId === orderId).at(-1)!
@@ -158,10 +159,7 @@ describe('payments app: payment sessions', () => {
     const resolved = ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_e2e' }, auth))
     assert.equal(resolved.status, 'resolved')
     ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_e2e' }, auth))
-    const sales = await db
-      .select()
-      .from(schema.orderTransactions)
-      .where(eq(schema.orderTransactions.orderId, placed.orderId))
+    const sales = await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, placed.orderId))
     assert.equal(sales.length, 1, 'resolving twice records one sale')
     assert.equal(sales[0]!.externalId, 'pi_e2e')
     assert.equal((await order(placed.orderId)).financialStatus, 'paid')
@@ -178,10 +176,7 @@ describe('payments app: payment sessions', () => {
     assert.equal((await order(placed.orderId)).financialStatus, 'paid')
     // …once: the same event again doesn't record a second sale
     ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_late' }, auth))
-    const sales = await db
-      .select()
-      .from(schema.orderTransactions)
-      .where(eq(schema.orderTransactions.orderId, placed.orderId))
+    const sales = await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, placed.orderId))
     assert.equal(sales.length, 1)
   })
 

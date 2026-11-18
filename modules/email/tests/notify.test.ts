@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSettings, emailTemplates } from '../src/email.schema'
+import { orders } from '@shopnex/orders/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -36,7 +37,7 @@ async function cleanup() {
   await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
   await db.delete(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
   if (made.users.length) await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))
-  if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
+  if (made.orders.length) await db.delete(orders).where(inArray(orders.id, made.orders))
   if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
 }
@@ -63,10 +64,10 @@ async function owner() {
   return `${id}@shop.test`
 }
 
-async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
+async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
   const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
   const [row] = await db
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId: SHOP,
       orderNumber: ++orderNumber,
@@ -190,9 +191,9 @@ describe('being called twice and failing', () => {
     const o = await order()
     await db.transaction(async (tx) => {
       await notify(tx, SHOP, 'order.created', () => Promise.reject(new Error('load failed')))
-      await tx.update(schema.orders).set({ note: 'still written' }).where(eq(schema.orders.id, o.id))
+      await tx.update(orders).set({ note: 'still written' }).where(eq(orders.id, o.id))
     })
-    const [after] = await db.select().from(schema.orders).where(eq(schema.orders.id, o.id))
+    const [after] = await db.select().from(orders).where(eq(orders.id, o.id))
     assert.equal(after?.note, 'still written')
   })
 

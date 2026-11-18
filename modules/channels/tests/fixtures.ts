@@ -7,7 +7,7 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { resourcePublications, storefrontKeys } = await import('../src/channels.schema')
 requireEmbeddedDatabase()
-const { eq, inArray } = await import('drizzle-orm')
+const { eq, inArray, sql } = await import('drizzle-orm')
 
 export { db, schema, prepareDatabase }
 export const SHOP = 'default'
@@ -44,15 +44,12 @@ export async function product() {
 }
 
 let orderNumber = 900_000
+// An order, by table name: channels sits below orders and cannot import their table, not even in a test
 export const orderOn = async (channelId: string) =>
-  db.insert(schema.orders).values({
-    shopId: SHOP,
-    orderNumber: ++orderNumber,
-    channelId,
-    email: 'buyer@example.com',
-    subtotalCents: 1000,
-    totalCents: 1000,
-  })
+  db.execute(
+    sql`insert into orders (shop_id, order_number, channel_id, email, subtotal_cents, total_cents)
+        values (${SHOP}, ${++orderNumber}, ${channelId}, 'buyer@example.com', 1000, 1000)`,
+  )
 
 export const storefrontKey = async (channelId: string, revoked = false) =>
   db.insert(storefrontKeys).values({
@@ -66,7 +63,7 @@ export const storefrontKey = async (channelId: string, revoked = false) =>
 
 /** Everything the tests made, and the default channel and publications they caused */
 export async function cleanup() {
-  await db.delete(schema.orders).where(inArray(schema.orders.shopId, [SHOP, OTHER_SHOP]))
+  await db.execute(sql`delete from orders where shop_id in (${SHOP}, ${OTHER_SHOP})`)
   await db.delete(resourcePublications).where(inArray(resourcePublications.shopId, [SHOP, OTHER_SHOP]))
   await db.delete(storefrontKeys).where(inArray(storefrontKeys.shopId, [SHOP, OTHER_SHOP]))
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))

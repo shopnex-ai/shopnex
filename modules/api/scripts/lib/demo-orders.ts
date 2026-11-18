@@ -6,6 +6,14 @@ import { and, eq, inArray, like, sql } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
 import { db, schema } from '@shopnex/db'
 import { shops } from '@shopnex/core/schema'
+import {
+  fulfillments as fulfillmentsTable,
+  orderItems,
+  orders,
+  orderShippingLines,
+  orderTransactions,
+} from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const DEMO_DOMAIN = '@demo.shopnex.test'
 const DISCOUNT_CODE = 'WELCOME10'
@@ -37,24 +45,21 @@ const minutesAgo = (minutes: number) => sql`localtimestamp - make_interval(mins 
 
 export async function deleteDemoOrders(shopId: string) {
   const demo = await db
-    .select({ id: schema.customers.id })
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), like(schema.customers.email, `%${DEMO_DOMAIN}`)))
+    .select({ id: customers.id })
+    .from(customers)
+    .where(and(eq(customers.shopId, shopId), like(customers.email, `%${DEMO_DOMAIN}`)))
   if (!demo.length) return 0
   const ids = demo.map((c) => c.id)
   // Order rows (items, transactions, fulfillments) cascade
-  await db.delete(schema.orders).where(inArray(schema.orders.customerId, ids))
-  await db.delete(schema.customers).where(inArray(schema.customers.id, ids))
+  await db.delete(orders).where(inArray(orders.customerId, ids))
+  await db.delete(customers).where(inArray(customers.id, ids))
   return ids.length
 }
 
 // Removes every order of the shop (not just the sample ones) and restarts numbering at #1001, so the seeded
 // history is the only thing the analytics see. Customers stay, except the sample ones.
 export async function deleteAllOrders(shopId: string) {
-  const removed = await db
-    .delete(schema.orders)
-    .where(eq(schema.orders.shopId, shopId))
-    .returning({ id: schema.orders.id })
+  const removed = await db.delete(orders).where(eq(orders.shopId, shopId)).returning({ id: orders.id })
   await deleteDemoOrders(shopId)
   await db.update(shops).set({ nextOrderNumber: 1001 }).where(eq(shops.id, shopId))
   return removed.length
@@ -62,9 +67,9 @@ export async function deleteAllOrders(shopId: string) {
 
 export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: number } = {}) {
   const [existing] = await db
-    .select({ id: schema.customers.id })
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), like(schema.customers.email, `%${DEMO_DOMAIN}`)))
+    .select({ id: customers.id })
+    .from(customers)
+    .where(and(eq(customers.shopId, shopId), like(customers.email, `%${DEMO_DOMAIN}`)))
     .limit(1)
   if (existing) throw new Error('Demo orders already exist for this shop (use --replace to regenerate them).')
 
@@ -173,7 +178,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
     for (const [index, ago] of firstOrder) {
       const p = people[index]!
       const [row] = await tx
-        .insert(schema.customers)
+        .insert(customers)
         .values({
           shopId,
           email: p.email,
@@ -181,7 +186,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
           createdAt: minutesAgo(ago),
           updatedAt: minutesAgo(ago),
         })
-        .returning({ id: schema.customers.id })
+        .returning({ id: customers.id })
       customerIds.set(index, row!.id)
     }
 
@@ -205,7 +210,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
       }
 
       const [order] = await tx
-        .insert(schema.orders)
+        .insert(orders)
         .values({
           shopId,
           channelId: channel.id,
@@ -229,12 +234,12 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
           createdAt: minutesAgo(o.ago),
           updatedAt: minutesAgo(o.ago),
         })
-        .returning({ id: schema.orders.id })
+        .returning({ id: orders.id })
       const orderId = order!.id
 
       // Spread the order discount over the lines; the last line takes the rounding remainder
       let left = discountCents
-      await tx.insert(schema.orderItems).values(
+      await tx.insert(orderItems).values(
         o.lines.map((l, i) => {
           const share =
             i === o.lines.length - 1 ? left : Math.round((discountCents * l.v.priceCents * l.quantity) / subtotalCents)
@@ -255,10 +260,10 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
         }),
       )
       await tx
-        .insert(schema.orderShippingLines)
+        .insert(orderShippingLines)
         .values({ orderId, title: SHIPPING.title, code: SHIPPING.code, priceCents: shippingCents })
       if (paid) {
-        await tx.insert(schema.orderTransactions).values({
+        await tx.insert(orderTransactions).values({
           orderId,
           kind: 'sale',
           status: 'success',
@@ -269,7 +274,7 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
         })
       }
       if (o.outcome === 'fulfilled') {
-        await tx.insert(schema.fulfillments).values({
+        await tx.insert(fulfillmentsTable).values({
           orderId,
           trackingCompany: 'DHL',
           trackingNumber: `DEMO${String(orderNumber).padStart(8, '0')}`,

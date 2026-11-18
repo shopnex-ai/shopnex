@@ -30,10 +30,10 @@
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
-- /customers # shop-scoped customers, guests matched by email (customerService)
-- /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService); no tables or routes of its own → uses customers, orders, carts, emails
+- /customers # shop-scoped customers, guests matched by email (customerService), storefront sign-in codes (accountService) and the admin customer routes
+- /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService), and the two routes for it; no tables of its own → uses customers, orders, carts, emails
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent), shipping rates and carrier services, and their admin routes
-- /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
+- /orders # orders + line items with price snapshots, status transitions (orderService), the dashboard numbers (orderAnalytics) and the admin order routes → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
 - /auth # Better Auth integration
 - /core # the tables every module points at: `user`, `shops`, `apps`, `api_tokens`, with the API scopes. No logic and no routes; it depends on `kit` and `drizzle-orm` only (`modules:check` enforces it), so `db` can depend on it without a cycle
@@ -51,7 +51,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are mapped to 400s in
 ```text
 core      →   (the tables every module points at, and the pure scope helpers `hasScope` and `normalizeScopes` in `@shopnex/core/scopes`)
 db        → core
-channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db while orders and carts, which point at it, are still there; deleting a channel that has orders is refused by the database's foreign key, so it never reads orders)
+channels  → db, rpc   (owns storefront_keys and resource_publications; the channels table stays in db until its module moves (orders and carts point at it); deleting a channel that has orders is refused by the database's foreign key, so it never reads orders)
 pricing   → db, rpc
 drafts    → db
 webhooks  → db, rpc, core   (owns webhook_endpoints and webhook_deliveries; tenancy removes a revoked token's subscriptions by calling it)
@@ -59,16 +59,16 @@ theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its 
 tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
-email     → db, core, cart, catalog, orders, rpc, storefront-sdk, tenancy, webhooks   (owns email_settings, email_templates, email_deliveries, abandoned_cart_settings and email_suppressions; sits above orders: it reads them and email_deliveries points at orders and carts, which are still tables in db; listens to orderEvent; the settings and notification routes are here)
+email     → db, core, cart, catalog, customers, orders, rpc, storefront-sdk, tenancy, webhooks   (owns email_settings, email_templates, email_deliveries, abandoned_cart_settings and email_suppressions; sits above orders: it reads them and email_deliveries points at orders and carts (their modules); listens to orderEvent; the settings and notification routes are here)
 rpc       → core   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc   (clears a deleted field's values from the products, orders and customers tables by name: it sits below the modules that own them)
-catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db while orders and carts, which point at them, are still there; the product and collection routes are here)
+catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db until their module moves (orders and carts point at them); the product and collection routes are here)
 content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
-customers → db, auth, custom-fields, webhooks   (sign-in codes link a login to the customer; the code is sent by the sender the storefront route passes in, customers cannot call email)
-privacy   → db, auth, cart, core, email, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
-orders    → db, catalog, channels, custom-fields, customers, pricing, webhooks   (declares orderEvent; email listens)
-payments  → db, apps, orders, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
-cart      → db, core, apps, catalog, marketplace-sdk, orders, payments, pricing, rpc   (owns carts, cart_lines, shipping_rates and carrier_services; carts point at orders, customers, channels and variants, which are still tables in db; listens to appUninstalled for a carrier app's service; the shipping and carrier service routes are here, the storefront cart routes stay in api)
+customers → db, core, auth, custom-fields, rpc, webhooks   (owns customers, which orders and carts point at; sign-in codes link a login to the customer, sent by the sender the storefront route passes in; a customer's export and erase are privacy's routes, put with /admin/customers by the api package)
+privacy   → db, auth, cart, core, custom-fields, customers, email, orders, rpc, tenancy, webhooks   (a customer's export and erase and their two routes; no tables of its own; reads what customers, orders, carts and emails hold, so it sits above them)
+orders    → db, core, catalog, channels, custom-fields, customers, pricing, rpc, storefront-sdk, webhooks   (owns orders, order_items, order_shipping_lines, order_transactions, fulfillments and discount_redemptions; declares orderEvent, email listens; cancelling and refunding an order are payments' routes, because they send the refund to the app: the api package puts them with /admin/orders)
+payments  → db, apps, core, customers, orders, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method; the order cancel and refund routes are here)
+cart      → db, core, apps, catalog, customers, marketplace-sdk, orders, payments, pricing, rpc   (owns carts, cart_lines, shipping_rates and carrier_services; carts point at orders and customers (their modules) and at channels and variants (still tables in db); listens to appUninstalled for a carrier app's service; the shipping and carrier service routes are here, the storefront cart routes stay in api)
 apps      → db, tenancy, theme, rpc, marketplace-sdk, storefront-sdk   (owns app_installations, app_authorization_codes, app_data, instance_keys and marketplace_connection; the apps registry table stays in db with the other foundation tables; owns appUninstalled)
 ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
 api       → everything above (transport only)

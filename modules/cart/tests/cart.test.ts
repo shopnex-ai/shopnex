@@ -5,6 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 import { carts } from '../src/cart.schema'
+import { orders } from '@shopnex/orders/schema'
 
 const { db, schema, eq, cartService, SHOP, OTHER_SHOP } = fx
 const { CartError } = await import('../src')
@@ -438,7 +439,7 @@ describe('what checkout uses', () => {
       .markCompleted(db, row.id, { id: MISSING, customerId: null, email: 'buyer@example.test' })
       .catch(() => undefined)
     const o = await db
-      .insert(schema.orders)
+      .insert(orders)
       .values({
         shopId: SHOP,
         orderNumber: 910_001,

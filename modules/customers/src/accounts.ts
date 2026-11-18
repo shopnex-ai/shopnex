@@ -4,12 +4,12 @@
 // cookie and sends it back with each request.
 import { and, eq } from 'drizzle-orm'
 import { auth, takeRate, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
-import { db, schema } from '@shopnex/db'
-import type { Customer } from '@shopnex/db/schema'
+import { db } from '@shopnex/db'
 import { emit } from '@shopnex/webhooks'
 import * as customers from './customers'
 import { log } from './log'
 import { user as userTable } from '@shopnex/core/schema'
+import { type Customer, customers as customersTable } from './customers.schema'
 
 export type AccountErrorCode = 'INVALID_EMAIL' | 'TOO_MANY_REQUESTS' | 'INVALID_CODE'
 
@@ -105,9 +105,9 @@ async function linkCustomer(shopId: string, user: { id: string; email: string; n
   if (existing) {
     if (existing.userId === user.id) return existing
     const [linked] = await db
-      .update(schema.customers)
+      .update(customersTable)
       .set({ userId: user.id, updatedAt: new Date() })
-      .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, existing.id)))
+      .where(and(eq(customersTable.shopId, shopId), eq(customersTable.id, existing.id)))
       .returning()
     if (linked) await emit(db, shopId, 'customer.updated', () => linked)
     return linked ?? existing
@@ -152,8 +152,8 @@ export async function fromToken(shopId: string, token: string | null | undefined
   if (!session) return null
   const [customer] = await db
     .select()
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.userId, session.user.id)))
+    .from(customersTable)
+    .where(and(eq(customersTable.shopId, shopId), eq(customersTable.userId, session.user.id)))
   return customer ?? null
 }
 

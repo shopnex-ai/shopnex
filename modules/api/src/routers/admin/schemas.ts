@@ -30,6 +30,9 @@ export {
   variantsInput,
 } from '@shopnex/catalog/contract'
 export { carrierServiceConfigureInput, shippingRateInput } from '@shopnex/cart/contract'
+export { customerInput } from '@shopnex/customers/contract'
+export { fulfillOrderInput } from '@shopnex/orders/contract'
+export { cancelOrderInput, refundOrderInput } from '@shopnex/payments/contract'
 export { menuInput, pageInput } from '@shopnex/content/contract'
 export {
   abandonedCartSettingsInput,
@@ -49,23 +52,17 @@ export {
   customFieldValues,
 } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
-import { customers, CANCEL_REASONS, CHANNEL_TYPES } from '@shopnex/db/schema'
+import { CHANNEL_TYPES } from '@shopnex/db/schema'
 import { STAFF_ROLES } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, shops } from '@shopnex/core/schema'
 import { NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
 import { shippingRates } from '@shopnex/cart/schema'
+import { CANCEL_REASONS } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const nonNegative = (s: z.ZodNumber) => s.nonnegative()
-
-export const customerInput = createInsertSchema(customers, {
-  email: () => z.email(),
-  name: (s) => s.min(1),
-  phone: (s) => s.min(1),
-})
-  .pick({ email: true, name: true, phone: true })
-  .extend({ customFields: customFieldUpdates.optional() })
 
 export { API_SCOPES, type ApiScope } from '@shopnex/core/schema'
 
@@ -86,23 +83,7 @@ export {
   type FinancialStatus,
   type FulfillmentStatus,
   type MailingAddress,
-} from '@shopnex/db/schema'
-
-export const cancelOrderInput = z.object({
-  reason: z.enum(CANCEL_REASONS),
-  restock: z.boolean(),
-})
-
-export const refundOrderInput = z.object({
-  // In the smallest unit of the order's currency (cents), above zero and at most what is left to refund
-  amountCents: z.number().int().positive(),
-})
-
-export const fulfillOrderInput = z.object({
-  trackingCompany: z.string().trim().max(100).optional(),
-  trackingNumber: z.string().trim().max(100).optional(),
-  trackingUrl: z.union([z.url({ protocol: /^https?$/ }).max(500), z.literal('')]).optional(),
-})
+} from '@shopnex/orders/schema'
 
 export { webhookEndpointInput } from '@shopnex/webhooks/contract'
 export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/webhooks/schema'

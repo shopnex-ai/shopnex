@@ -13,9 +13,9 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { orders } from '@shopnex/db/schema'
 import { shops } from '@shopnex/core/schema'
 import { carts } from '@shopnex/cart/schema'
+import { orders } from '@shopnex/orders/schema'
 
 // Presets only prefill the form; every provider is configured the same way (all of them offer SMTP)
 export const SMTP_PRESETS = ['resend', 'postmark', 'sendgrid', 'mailgun', 'ses', 'brevo', 'gmail', 'other'] as const

@@ -4,7 +4,7 @@
 // Erase anonymizes instead of deleting where the shop has to keep its books: an order stays (number, date, items, totals,
 // tax, payments, shipping country) but loses who it was for. Everything else that identifies the person goes.
 import { and, eq, inArray, or, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { session } from '@shopnex/auth/schema'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
@@ -12,6 +12,8 @@ import { shopMembers } from '@shopnex/tenancy/schema'
 import { user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
+import { orderItems, orders as ordersTable, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -38,8 +40,8 @@ const isOpen = (o: { cancelledAt: Date | null; fulfillmentStatus: string; financ
 // The customer's orders: linked to the record, or placed with the same address
 const theirOrders = (shopId: string, customerId: string, email: string) =>
   and(
-    eq(schema.orders.shopId, shopId),
-    or(eq(schema.orders.customerId, customerId), eq(sql`lower(${schema.orders.email})`, email)),
+    eq(ordersTable.shopId, shopId),
+    or(eq(ordersTable.customerId, customerId), eq(sql`lower(${ordersTable.email})`, email)),
   )
 const theirCarts = (shopId: string, customerId: string, email: string) =>
   and(
@@ -51,22 +53,22 @@ const theirCarts = (shopId: string, customerId: string, email: string) =>
 export async function exportData(shopId: string, customerId: string) {
   const [customer] = await db
     .select()
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, customerId)))
+    .from(customers)
+    .where(and(eq(customers.shopId, shopId), eq(customers.id, customerId)))
   if (!customer) return null
   const email = customer.email.toLowerCase()
 
   const orders = await db
     .select()
-    .from(schema.orders)
+    .from(ordersTable)
     .where(theirOrders(shopId, customerId, email))
-    .orderBy(schema.orders.orderNumber)
+    .orderBy(ordersTable.orderNumber)
   const orderIds = orders.map((o) => o.id)
   const [items, shippingLines, transactions] = orderIds.length
     ? await Promise.all([
-        db.select().from(schema.orderItems).where(inArray(schema.orderItems.orderId, orderIds)),
-        db.select().from(schema.orderShippingLines).where(inArray(schema.orderShippingLines.orderId, orderIds)),
-        db.select().from(schema.orderTransactions).where(inArray(schema.orderTransactions.orderId, orderIds)),
+        db.select().from(orderItems).where(inArray(orderItems.orderId, orderIds)),
+        db.select().from(orderShippingLines).where(inArray(orderShippingLines.orderId, orderIds)),
+        db.select().from(orderTransactions).where(inArray(orderTransactions.orderId, orderIds)),
       ])
     : [[], [], []]
 
@@ -184,21 +186,21 @@ export async function erase(shopId: string, customerId: string) {
   const result = await db.transaction(async (tx) => {
     const [customer] = await tx
       .select()
-      .from(schema.customers)
-      .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, customerId)))
+      .from(customers)
+      .where(and(eq(customers.shopId, shopId), eq(customers.id, customerId)))
       .for('update')
     if (!customer) throw new PrivacyError('CUSTOMER_NOT_FOUND', 'Customer not found')
     const email = customer.email.toLowerCase()
 
     const orders = await tx
       .select({
-        id: schema.orders.id,
-        orderNumber: schema.orders.orderNumber,
-        cancelledAt: schema.orders.cancelledAt,
-        fulfillmentStatus: schema.orders.fulfillmentStatus,
-        financialStatus: schema.orders.financialStatus,
+        id: ordersTable.id,
+        orderNumber: ordersTable.orderNumber,
+        cancelledAt: ordersTable.cancelledAt,
+        fulfillmentStatus: ordersTable.fulfillmentStatus,
+        financialStatus: ordersTable.financialStatus,
       })
-      .from(schema.orders)
+      .from(ordersTable)
       .where(theirOrders(shopId, customerId, email))
     const open = orders.filter(isOpen)
     if (open.length > 0) {
@@ -212,9 +214,7 @@ export async function erase(shopId: string, customerId: string) {
     const orderIds = orders.map((o) => o.id)
 
     // Orders: who they were for goes; the shipping country and region stay (tax is reported by place of delivery)
-    const anonymousAddress = (
-      column: typeof schema.orders.shippingAddress | typeof schema.orders.billingAddress,
-    ) => sql`
+    const anonymousAddress = (column: typeof ordersTable.shippingAddress | typeof ordersTable.billingAddress) => sql`
       case when ${column} is null then null else jsonb_build_object(
         'firstName', null, 'lastName', null, 'company', null,
         'address1', ${ERASED_TEXT}::text, 'address2', null, 'city', ${ERASED_TEXT}::text,
@@ -222,16 +222,16 @@ export async function erase(shopId: string, customerId: string) {
         'zip', null, 'phone', null) end`
     if (orderIds.length > 0) {
       await tx
-        .update(schema.orders)
+        .update(ordersTable)
         .set({
           email: ERASED_EMAIL,
           phone: null,
           note: null,
-          shippingAddress: anonymousAddress(schema.orders.shippingAddress),
-          billingAddress: anonymousAddress(schema.orders.billingAddress),
+          shippingAddress: anonymousAddress(ordersTable.shippingAddress),
+          billingAddress: anonymousAddress(ordersTable.billingAddress),
           updatedAt: new Date(),
         })
-        .where(inArray(schema.orders.id, orderIds))
+        .where(inArray(ordersTable.id, orderIds))
     }
 
     // Carts: the address a checkout was started with
@@ -273,7 +273,7 @@ export async function erase(shopId: string, customerId: string) {
       .where(and(eq(webhookDeliveries.shopId, shopId), sql`strpos(lower(${webhookDeliveries.body}), ${email}) > 0`))
       .returning({ id: webhookDeliveries.id })
 
-    await tx.delete(schema.customers).where(eq(schema.customers.id, customerId))
+    await tx.delete(customers).where(eq(customers.id, customerId))
 
     // The storefront login goes with the customer, unless it is also someone else's: staff of any shop, a platform
     // admin, or the customer of another shop (one login can serve several)
@@ -286,9 +286,9 @@ export async function erase(shopId: string, customerId: string) {
         .where(eq(shopMembers.userId, customer.userId))
         .limit(1)
       const [elsewhere] = await tx
-        .select({ id: schema.customers.id })
-        .from(schema.customers)
-        .where(eq(schema.customers.userId, customer.userId))
+        .select({ id: customers.id })
+        .from(customers)
+        .where(eq(customers.userId, customer.userId))
         .limit(1)
       if (user && !staff && !elsewhere && user.role !== 'superadmin') {
         await tx.delete(userTable).where(eq(userTable.id, customer.userId))

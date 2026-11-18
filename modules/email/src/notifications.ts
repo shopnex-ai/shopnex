@@ -3,8 +3,7 @@
 // change and queues rendered emails in the outbox (email_deliveries); the worker sends them.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
-import type { Customer, Fulfillment, MailingAddress, Order, OrderItem, OrderShippingLine } from '@shopnex/db/schema'
+import { db, type Conn } from '@shopnex/db'
 import { getSettings as getAbandonedSettings, updateSettings as updateAbandonedSettings } from './abandoned-settings'
 import { DEFAULTS } from './defaults'
 import { send } from './email'
@@ -15,6 +14,18 @@ import type { OrderEvent } from '@shopnex/orders'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { type Shop, shops, user } from '@shopnex/core/schema'
 import { emailDeliveries, emailSettings, type EmailTemplate, emailTemplates, type Notification } from './email.schema'
+import {
+  type Fulfillment,
+  fulfillments as fulfillmentsTable,
+  type MailingAddress,
+  type Order,
+  type OrderItem,
+  orderItems,
+  orders,
+  type OrderShippingLine,
+  orderShippingLines,
+} from '@shopnex/orders/schema'
+import { type Customer, customers as customersTable } from '@shopnex/customers/schema'
 
 export type NotificationInfo = {
   notification: Notification
@@ -460,16 +471,16 @@ export const revert = (shopId: string, notification: Notification) =>
 async function previewOrder(shop: Shop): Promise<{ order: OrderView; sample: boolean }> {
   const [order] = await db
     .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.shopId, shop.id))
-    .orderBy(desc(schema.orders.createdAt))
+    .from(orders)
+    .where(eq(orders.shopId, shop.id))
+    .orderBy(desc(orders.createdAt))
     .limit(1)
   if (order) {
     const [items, shippingLines, fulfillments, customers] = await Promise.all([
-      db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, order.id)),
-      db.select().from(schema.orderShippingLines).where(eq(schema.orderShippingLines.orderId, order.id)),
-      db.select().from(schema.fulfillments).where(eq(schema.fulfillments.orderId, order.id)),
-      order.customerId ? db.select().from(schema.customers).where(eq(schema.customers.id, order.customerId)) : [],
+      db.select().from(orderItems).where(eq(orderItems.orderId, order.id)),
+      db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, order.id)),
+      db.select().from(fulfillmentsTable).where(eq(fulfillmentsTable.orderId, order.id)),
+      order.customerId ? db.select().from(customersTable).where(eq(customersTable.id, order.customerId)) : [],
     ])
     return { order: { ...order, items, shippingLines, fulfillments, customer: customers[0] ?? null }, sample: false }
   }

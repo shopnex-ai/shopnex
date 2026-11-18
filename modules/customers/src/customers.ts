@@ -1,10 +1,10 @@
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, count, desc, eq, ilike, inArray, or, type SQL } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
-import type { NewCustomer } from '@shopnex/db/schema'
+import { db, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
+import { customers, type NewCustomer } from './customers.schema'
 
 type CustomerInput = Pick<NewCustomer, 'email' | 'name' | 'phone' | 'userId'> & { customFields?: CustomFieldUpdates }
 
@@ -12,21 +12,15 @@ const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
 // `search` matches email or name (case-insensitive, substring)
 export async function list(shopId: string, opts: { limit: number; offset: number; search?: string }, conn: Conn = db) {
-  const filters: (SQL | undefined)[] = [eq(schema.customers.shopId, shopId)]
+  const filters: (SQL | undefined)[] = [eq(customers.shopId, shopId)]
   if (opts.search) {
     const pattern = `%${opts.search.replace(/[\\%_]/g, '\\$&')}%`
-    filters.push(or(ilike(schema.customers.email, pattern), ilike(schema.customers.name, pattern)))
+    filters.push(or(ilike(customers.email, pattern), ilike(customers.name, pattern)))
   }
   const where = and(...filters)
   const [items, [counted]] = await Promise.all([
-    conn
-      .select()
-      .from(schema.customers)
-      .where(where)
-      .orderBy(desc(schema.customers.createdAt))
-      .limit(opts.limit)
-      .offset(opts.offset),
-    conn.select({ total: count() }).from(schema.customers).where(where),
+    conn.select().from(customers).where(where).orderBy(desc(customers.createdAt)).limit(opts.limit).offset(opts.offset),
+    conn.select({ total: count() }).from(customers).where(where),
   ])
   return { items, total: counted?.total ?? 0 }
 }
@@ -34,23 +28,23 @@ export async function list(shopId: string, opts: { limit: number; offset: number
 export async function getById(shopId: string, id: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, id)))
+    .from(customers)
+    .where(and(eq(customers.shopId, shopId), eq(customers.id, id)))
   return row ?? null
 }
 
 export async function getByEmail(shopId: string, email: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.email, normalizeEmail(email))))
+    .from(customers)
+    .where(and(eq(customers.shopId, shopId), eq(customers.email, normalizeEmail(email))))
   return row ?? null
 }
 
 // Returns null when the email is already taken in this shop
 export async function create(shopId: string, { customFields, ...input }: CustomerInput, conn: Conn = db) {
   const [row] = await conn
-    .insert(schema.customers)
+    .insert(customers)
     .values({
       ...input,
       email: normalizeEmail(input.email),
@@ -76,7 +70,7 @@ export async function update(
   const existing = customFields ? await getById(shopId, id, conn) : null
   if (customFields && !existing) return null
   const [row] = await conn
-    .update(schema.customers)
+    .update(customers)
     .set({
       ...patch,
       ...(patch.email && { email: normalizeEmail(patch.email) }),
@@ -85,7 +79,7 @@ export async function update(
       }),
       updatedAt: new Date(),
     })
-    .where(and(eq(schema.customers.shopId, shopId), eq(schema.customers.id, id)))
+    .where(and(eq(customers.shopId, shopId), eq(customers.id, id)))
     .returning()
   if (row) await emit(conn, shopId, 'customer.updated', () => row)
   return row ?? null
@@ -94,9 +88,9 @@ export async function update(
 export async function removeMany(shopId: string, ids: string[]) {
   if (!ids.length) return 0
   const deleted = await db
-    .delete(schema.customers)
-    .where(and(eq(schema.customers.shopId, shopId), inArray(schema.customers.id, ids)))
-    .returning({ id: schema.customers.id })
+    .delete(customers)
+    .where(and(eq(customers.shopId, shopId), inArray(customers.id, ids)))
+    .returning({ id: customers.id })
   return deleted.length
 }
 

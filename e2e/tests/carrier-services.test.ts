@@ -14,6 +14,7 @@ import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp, sellableVarian
 import { appInstallations } from '@shopnex/apps/schema'
 import { apps } from '@shopnex/core/schema'
 import { carrierServices, shippingRates } from '@shopnex/cart/schema'
+import { orderShippingLines } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 
@@ -206,10 +207,7 @@ describe('carrier service: replaces the shop’s own rates', () => {
       shippingAddress: { lastName: 'Tester', ...address },
     })
   const shippingOf = async (orderId: string) => {
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, orderId))
     return line!
   }
   const ids = (o: { shippingRates: { id: string }[] }) => o.shippingRates.map((r) => r.id)
@@ -298,10 +296,7 @@ describe('carrier service: nothing to ship with', () => {
     const [rate] = carrierRates(await options(cart.id))
     const placed = ok(await complete(cart.id))
     fx.order(placed.orderId)
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, placed.orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, placed.orderId))
     assert.equal(line!.priceCents, 900)
     assert.equal(line!.code, rate!.id)
   })
@@ -316,10 +311,7 @@ describe('carrier service: placing the order', () => {
     })
   }
   const shippingOf = async (orderId: string) => {
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, orderId))
     return line!
   }
 

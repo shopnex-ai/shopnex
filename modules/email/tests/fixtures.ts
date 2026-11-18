@@ -11,6 +11,8 @@ import {
   emailTemplates,
 } from '../src/email.schema'
 import { cartLines, carts } from '@shopnex/cart/schema'
+import { orders } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -140,14 +142,14 @@ export async function owner(shopId = SHOP) {
   return `${id}@shop.test`
 }
 
-export async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
+export async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
   const shopId = patch.shopId ?? SHOP
   let [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, shopId))
   channel ??= (
     await db.insert(schema.channels).values({ shopId, handle: 'online-store', name: 'Online Store' }).returning()
   )[0]!
   const [row] = await db
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId,
       orderNumber: ++orderNumber,
@@ -162,9 +164,9 @@ export async function order(patch: Partial<typeof schema.orders.$inferInsert> = 
   return row!
 }
 
-export async function customer(patch: Partial<typeof schema.customers.$inferInsert> = {}) {
+export async function customer(patch: Partial<typeof customers.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.customers)
+    .insert(customers)
     .values({ shopId: SHOP, email: `c-${unique()}@example.test`, ...patch })
     .returning()
   made.customers.push(row!.id)
@@ -227,8 +229,8 @@ export async function cleanup() {
   await db.delete(abandonedCartSettings).where(inArray(abandonedCartSettings.shopId, shopIds))
   await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, shopIds))
   if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
-  if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
-  if (made.customers.length) await db.delete(schema.customers).where(inArray(schema.customers.id, made.customers))
+  if (made.orders.length) await db.delete(orders).where(inArray(orders.id, made.orders))
+  if (made.customers.length) await db.delete(customers).where(inArray(customers.id, made.customers))
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
   if (made.users.length) {
     await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))

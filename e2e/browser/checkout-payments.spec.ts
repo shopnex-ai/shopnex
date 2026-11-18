@@ -14,6 +14,7 @@ import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
 import { Fixtures, SHOP, appToken, call, ok, requireApp } from '../lib'
 import { apps } from '@shopnex/core/schema'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const STOREFRONT_URL = (process.env.STOREFRONT_URL ?? 'http://localhost:4321').replace(/\/$/, '')
 const METHOD = 'E2E provider card'
@@ -96,7 +97,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
+  const placed = await db.select({ id: orders.id }).from(orders).where(eq(orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
   await fx.cleanup()
   if (appId) await db.delete(apps).where(eq(apps.id, appId))
@@ -137,9 +138,8 @@ async function placeOrder(page: Page) {
 const report = (id: string, action: 'resolve' | 'reject' | 'attempt-failed', body: object) =>
   call('POST', `/admin/payment-sessions/${id}/${action}`, body, auth)
 const decline = async (id: string) => ok(await report(id, 'attempt-failed', { reason: 'Your card was declined.' }))
-const orderRow = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
-const sales = (orderId: string) =>
-  db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, orderId))
+const orderRow = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
+const sales = (orderId: string) => db.select().from(orderTransactions).where(eq(orderTransactions.orderId, orderId))
 
 const paidPage = (page: Page) => page.getByText(/Your order is confirmed/)
 

@@ -29,10 +29,10 @@ import { customFieldService, type CustomFieldResource, type CustomFieldValues } 
 import { accountService } from '@shopnex/customers'
 import { sendLoginCode } from '@shopnex/email'
 import { db } from '@shopnex/db'
-import type { Customer as CustomerRow } from '@shopnex/db/schema'
 import { orderService } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
 import { defined, storefront } from '../../orpc'
+import { type Customer as CustomerRow } from '@shopnex/customers/schema'
 
 // ── mapping: internal rows → public contract shapes (only what the contract exposes) ──
 

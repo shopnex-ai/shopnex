@@ -11,6 +11,7 @@ import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { collections } from '@shopnex/catalog/schema'
 import { carts } from '@shopnex/cart/schema'
+import { orders } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -44,7 +45,7 @@ after(async () => {
   await fx.cleanup()
   await db.delete(carts).where(eq(carts.channelId, portal.id))
   await db.delete(storefrontKeys).where(eq(storefrontKeys.channelId, portal.id))
-  await db.delete(schema.orders).where(eq(schema.orders.channelId, portal.id))
+  await db.delete(orders).where(eq(orders.channelId, portal.id))
   await channelService.remove(SHOP, portal.id, db).catch(() => {})
   await db.delete(schema.products).where(inArray(schema.products.id, [product.id]))
   await db.delete(collections).where(eq(collections.id, collection.id))
@@ -144,7 +145,7 @@ describe('carts and orders', () => {
     )
     const done = await fx.complete(cart.id, { countryCode: 'US' }, shippingRateId)
     ok(done)
-    const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, done.body.orderId))
+    const [order] = await db.select().from(orders).where(eq(orders.id, done.body.orderId))
     assert.equal(order!.channelId, portal.id)
 
     const second = ok(

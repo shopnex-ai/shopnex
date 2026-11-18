@@ -1,12 +1,21 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
-import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES, orderService } from '@shopnex/orders'
-import { db } from '@shopnex/db'
-import { paymentService } from '@shopnex/payments'
-import { scoped } from '../../orpc'
-import { pagination } from '../pagination'
-import { cancelOrderInput, customFieldUpdates, fulfillOrderInput, refundOrderInput } from './schemas'
-import { countOutput, orderCreatedOutput, orderDetailOutput, orderListItemOutput, orderOutput } from './outputs'
+import { createProcedures, pagination } from '@shopnex/rpc'
+import {
+  analyticsOverviewOutput,
+  fulfillOrderInput,
+  orderCreatedOutput,
+  orderDetailOutput,
+  orderListItemOutput,
+  orderOutput,
+} from './orders.contract'
+import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES } from './orders.schema'
+import * as orderService from './orders'
+import * as orderAnalytics from './analytics'
+import { customFieldUpdates } from '@shopnex/custom-fields/contract'
+
+const { scoped } = createProcedures()
+const countOutput = z.number().int()
 
 const id = z.object({ id: z.uuid() })
 
@@ -155,21 +164,25 @@ export const orders = {
     .output(orderOutput)
     .input(id.extend(fulfillOrderInput.shape))
     .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, tracking)),
+}
 
-  cancel: write
-    .route({ method: 'POST', path: '/admin/orders/{id}/cancel' })
-    .output(orderOutput)
-    .input(id.extend(cancelOrderInput.shape))
-    // Paid through a payments app: the refund is sent to it and the order shows refunded once it confirms
-    .handler(({ input: { id, ...options }, context }) => paymentService.cancelOrder(context.shop.id, id, options, db)),
+const timezone = z.string().refine(
+  (tz) => {
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz })
+      return true
+    } catch {
+      return false
+    }
+  },
+  { message: 'Unknown timezone' },
+)
 
-  refund: write
-    .route({ method: 'POST', path: '/admin/orders/{id}/refund' })
-    .output(orderOutput)
-    .input(id.extend(refundOrderInput.shape))
-    // Part of what the order took goes back and the order stays open. Paid through a payments app: the refund is sent
-    // to it and the order shows partially refunded (or refunded) once it confirms
-    .handler(({ input: { id, amountCents }, context }) =>
-      paymentService.refundOrder(context.shop.id, id, { amountCents }, db),
-    ),
+export const analytics = {
+  // Home dashboard: sales, orders, average order value and returning customers vs the previous period
+  overview: scoped('read_orders')
+    .route({ method: 'GET', path: '/admin/analytics/overview' })
+    .output(analyticsOverviewOutput)
+    .input(z.object({ days: z.coerce.number().int().min(1).max(365).default(30), timezone: timezone.default('UTC') }))
+    .handler(({ input, context }) => orderAnalytics.overview(context.shop.id, input)),
 }

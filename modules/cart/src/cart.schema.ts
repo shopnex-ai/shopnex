@@ -2,8 +2,10 @@
 // still tables in @shopnex/db until their modules move; shipping rates and carrier services point at nothing but the shop and the app.
 // email_deliveries (in @shopnex/email) points at carts, so email sits above this module.
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { channels, customers, orders, productVariants } from '@shopnex/db/schema'
+import { channels, productVariants } from '@shopnex/db/schema'
 import { apps, shops } from '@shopnex/core/schema'
+import { orders } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 export const CART_STATUSES = ['active', 'completed'] as const
 export type CartStatus = (typeof CART_STATUSES)[number]

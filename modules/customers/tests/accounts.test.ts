@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { user as userTable } from '@shopnex/core/schema'
+import { customers } from '../src/customers.schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -104,18 +105,18 @@ describe('signing in with the code', () => {
     )
     await accountService.signOut(token)
     assert.equal(await accountService.fromToken(SHOP, token), null)
-    await db.delete(schema.customers).where(eq(schema.customers.id, customer.id))
+    await db.delete(customers).where(eq(customers.id, customer.id))
     await db.delete(userTable).where(eq(userTable.id, customer.userId))
   })
 
   test('a guest who ordered before gets the record back, linked to the login', async () => {
     const email = address()
-    const [guest] = await db.insert(schema.customers).values({ shopId: SHOP, email, name: 'Guest' }).returning()
+    const [guest] = await db.insert(customers).values({ shopId: SHOP, email, name: 'Guest' }).returning()
     await accountService.requestLoginCode(SHOP, email, send)
     const { customer } = await accountService.verifyLoginCode(SHOP, email, sent[0]!.code)
     assert.equal(customer.id, guest!.id)
     assert.ok(customer.userId)
-    await db.delete(schema.customers).where(eq(schema.customers.id, guest!.id))
+    await db.delete(customers).where(eq(customers.id, guest!.id))
     await db.delete(userTable).where(eq(userTable.id, customer.userId))
   })
 
@@ -141,11 +142,11 @@ describe('signing in with the code', () => {
 describe('the profile', () => {
   test('the name and phone can change, and the phone can be cleared', async () => {
     const [c] = await db
-      .insert(schema.customers)
+      .insert(customers)
       .values({ shopId: SHOP, email: address(), name: 'A', phone: '+1' })
       .returning()
     const changed = await accountService.updateProfile(SHOP, c!.id, { name: 'B', phone: null })
     assert.deepEqual([changed?.name, changed?.phone], ['B', null])
-    await db.delete(schema.customers).where(eq(schema.customers.id, c!.id))
+    await db.delete(customers).where(eq(customers.id, c!.id))
   })
 })

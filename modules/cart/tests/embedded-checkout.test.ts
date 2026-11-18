@@ -10,6 +10,7 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import type { PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
+import { orders as ordersTable } from '@shopnex/orders/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -147,7 +148,7 @@ describe('checkout with a payments app on the embedded database', () => {
   })
 
   test('the database still answers afterwards', { timeout: 20_000 }, async () => {
-    const orders = await within(5_000, 'reading the orders', db.select().from(schema.orders))
+    const orders = await within(5_000, 'reading the orders', db.select().from(ordersTable))
     assert.ok(orders.length >= 1)
     const again = await within(
       5_000,
@@ -181,7 +182,7 @@ describe('checkout with a payments app on the embedded database', () => {
       const [order] = await within(
         5_000,
         'reading the order',
-        db.select().from(schema.orders).where(eq(schema.orders.id, placed.orderId)),
+        db.select().from(ordersTable).where(eq(ordersTable.id, placed.orderId)),
       )
       assert.equal(order!.financialStatus, 'pending')
       assert.equal(order!.cancelledAt, null)

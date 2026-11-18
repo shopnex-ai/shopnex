@@ -25,6 +25,7 @@ import {
   emailSettings,
 } from './email.schema'
 import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -112,9 +113,9 @@ async function queueOne(cartId: string) {
     const [templates, [customer]] = await Promise.all([
       templateRows(tx, cart.shopId, ['abandoned_cart', 'layout']),
       tx
-        .select({ name: schema.customers.name })
-        .from(schema.customers)
-        .where(and(eq(schema.customers.shopId, cart.shopId), eq(schema.customers.email, cart.email))),
+        .select({ name: customers.name })
+        .from(customers)
+        .where(and(eq(customers.shopId, cart.shopId), eq(customers.email, cart.email))),
     ])
     const scope = {
       shop: shopScope(shop),
