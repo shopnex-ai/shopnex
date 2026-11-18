@@ -1,7 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import * as p from '@clack/prompts'
 import pc from 'picocolors'
-import type { Install } from './install'
 import type { Plan } from './plan'
 import { brand } from '@shopnex/cli-core/theme'
 
@@ -31,10 +30,7 @@ function openBrowser(url: string) {
  * Starts the planned processes, waits until they answer, prints where to open the shop, and stops them all on
  * Ctrl+C or when either exits. Resolves with the exit code.
  */
-export function runPlan(
-  plan: Plan,
-  { open, verbose, install }: { open: boolean; verbose: boolean; install?: Install },
-) {
+export function runPlan(plan: Plan, { open, verbose }: { open: boolean; verbose: boolean }) {
   return new Promise<number>((resolve) => {
     const children: ChildProcess[] = []
     const tails = new Map<string, string[]>() // the last lines of each process, shown if one fails while starting
@@ -48,7 +44,6 @@ export function runPlan(
     const stop = (code: number) => {
       if (stopping) return
       stopping = true
-      install?.stop()
       for (const child of children) {
         try {
           if (child.pid) process.kill(-child.pid, 'SIGTERM') // own process group: pnpm, vite and its workers
@@ -112,7 +107,6 @@ export function runPlan(
         [
           `${pc.bold('Shop ')}  ${brand(plan.storefrontUrl)}`,
           `${pc.bold('Admin')}  ${brand(`${plan.appUrl}/admin`)}  (the first run opens the setup wizard)`,
-          ...(install ? [`${pc.bold('Again')}  ${install.nextTime()}  (in this folder)`] : []),
         ].join('\n'),
         'Open',
       )
