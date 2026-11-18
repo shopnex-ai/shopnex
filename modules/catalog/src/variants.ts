@@ -5,7 +5,7 @@
 //   - variants are the source of truth for price; products.price_cents is a cached minimum (syncPriceCache)
 import { and, asc, eq, inArray, min, ne, notInArray, sql } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
-import { db, type Conn } from '@shopnex/db'
+import { type Conn } from '@shopnex/db'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 // Cycle with ./products is fine: only used inside functions
@@ -134,7 +134,7 @@ async function assertSkusFree(conn: Conn, shopId: string, productId: string, sku
 }
 
 // products.price_cents := lowest variant price (deprecated cache, see schema)
-export async function syncPriceCache(shopId: string, productId: string, conn: Conn = db) {
+export async function syncPriceCache(shopId: string, productId: string, conn: Conn) {
   const [{ lowest } = { lowest: null }] = await conn
     .select({ lowest: min(productVariantsTable.priceCents) })
     .from(productVariantsTable)
@@ -249,7 +249,7 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
 }
 
 // Batch-load options + variants for many products (4 queries, no N+1)
-export async function loadForProducts(productIds: string[], conn: Conn = db) {
+export async function loadForProducts(productIds: string[], conn: Conn) {
   const options = new Map<string, OptionDetail[]>()
   const variants = new Map<string, VariantDetail[]>()
   if (productIds.length === 0) return { options, variants }
@@ -350,7 +350,7 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
   return { options, variants }
 }
 
-export async function listByProduct(shopId: string, productId: string, conn: Conn = db) {
+export async function listByProduct(shopId: string, productId: string, conn: Conn) {
   return conn
     .select()
     .from(productVariantsTable)
@@ -368,7 +368,7 @@ const orderSnapshotFields = {
 }
 
 /** `channelId`: only variants of products published on that channel now */
-export async function getManyByIds(shopId: string, ids: string[], conn: Conn = db, opts: { channelId?: string } = {}) {
+export async function getManyByIds(shopId: string, ids: string[], conn: Conn, opts: { channelId?: string } = {}) {
   if (ids.length === 0) return []
   return conn
     .select({
@@ -389,7 +389,7 @@ export async function getManyByIds(shopId: string, ids: string[], conn: Conn = d
 }
 
 // For orders: all variants of the given products (with product title), scoped to the shop
-export async function listForProducts(shopId: string, productIds: string[], conn: Conn = db) {
+export async function listForProducts(shopId: string, productIds: string[], conn: Conn) {
   if (productIds.length === 0) return []
   return conn
     .select({ variant: productVariantsTable, productTitle: products.title, ...orderSnapshotFields })
@@ -403,8 +403,9 @@ export async function update(
   shopId: string,
   id: string,
   patch: Partial<Pick<VariantInput, 'sku' | 'priceCents' | 'compareAtPriceCents' | 'inventoryQuantity'>>,
+  conn: Conn,
 ) {
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     const [variant] = await tx
       .select()
       .from(productVariantsTable)
@@ -466,7 +467,7 @@ function emitInventoryEvent(conn: Conn, shopId: string, row: StockRow, reason: S
 }
 
 // Atomically takes stock for an order line. Untracked variants always succeed.
-export async function reserveStock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
+export async function reserveStock(shopId: string, variantId: string, quantity: number, conn: Conn) {
   const mine = and(eq(productVariantsTable.shopId, shopId), eq(productVariantsTable.id, variantId))
   const [row] = await conn
     .update(productVariantsTable)
@@ -490,7 +491,7 @@ export async function reserveStock(shopId: string, variantId: string, quantity: 
 }
 
 // Gives stock back (e.g. order cancelled). No-op for untracked or deleted variants.
-export async function restock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
+export async function restock(shopId: string, variantId: string, quantity: number, conn: Conn) {
   const [row] = await conn
     .update(productVariantsTable)
     .set({ inventoryQuantity: sql`${productVariantsTable.inventoryQuantity} + ${quantity}` })

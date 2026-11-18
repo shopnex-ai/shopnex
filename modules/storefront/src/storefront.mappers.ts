@@ -320,15 +320,18 @@ export async function activeProduct(
   if (row?.status !== 'active' || !(await publicationService.isLive(row.shopId, channelId, 'product', row.id, db))) {
     throw new ORPCError('NOT_FOUND')
   }
-  const [product] = await withLiveCollections(await productService.withDetails([row]), row.shopId, channelId)
+  const [product] = await withLiveCollections(await productService.withDetails([row], db), row.shopId, channelId)
   if (!product) throw new ORPCError('NOT_FOUND')
   return toProduct(product, currency, await fieldsView(row.shopId, 'product'))
 }
 
 // A product names only the collections published on the storefront's channel
 export async function withLiveCollections(products: ProductWithDetails[], shopId: string, channelId: string) {
-  const live = await collectionService.liveSlugs(shopId, channelId, [
-    ...new Set(products.flatMap((p) => p.collectionSlugs)),
-  ])
+  const live = await collectionService.liveSlugs(
+    shopId,
+    channelId,
+    [...new Set(products.flatMap((p) => p.collectionSlugs))],
+    db,
+  )
   return products.map((p) => ({ ...p, collectionSlugs: p.collectionSlugs.filter((slug) => live.has(slug)) }))
 }

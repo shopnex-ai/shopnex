@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The dashboard numbers: sales and orders per day over a period with the one before it, what counts as a sale, returning customers, the
 // five best sellers, and the work waiting on staff.
 import assert from 'node:assert/strict'
@@ -43,7 +44,7 @@ async function order(
     .returning()
   return o!
 }
-const overview = (days = 7, timezone = 'UTC') => orderAnalytics.overview(SHOP, { days, timezone })
+const overview = (days = 7, timezone = 'UTC') => orderAnalytics.overview(SHOP, { days, timezone }, db)
 
 describe('the period', () => {
   test('one entry per day, oldest first, ending today, each with the same day of the period before', async () => {
@@ -131,10 +132,14 @@ describe('best sellers and work waiting', () => {
         }),
       )
     for (const [i, p] of hits.entries()) {
-      const o = await fx.orderService.create(SHOP, {
-        email: 'a@example.test',
-        items: [{ productId: p.id, quantity: 2 }],
-      })
+      const o = await fx.orderService.create(
+        SHOP,
+        {
+          email: 'a@example.test',
+          items: [{ productId: p.id, quantity: 2 }],
+        },
+        db,
+      )
       void i
       void o
     }
@@ -157,7 +162,7 @@ describe('best sellers and work waiting', () => {
 
   test('a product deleted since is shown as it was ordered', async () => {
     const p = await fx.product({ title: 'Gone soon', priceCents: 500 })
-    await fx.orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 1 }] })
+    await fx.orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 1 }] }, db)
     await db.delete(products).where(eq(products.id, p.id))
     const [top] = (await overview(7)).topProducts
     assert.deepEqual([top?.title, top?.productId, top?.salesCents], ['Gone soon', null, 500])

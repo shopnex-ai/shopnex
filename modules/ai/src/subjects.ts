@@ -33,10 +33,10 @@ export const toAiProduct = (p: ProductWithDetails, currency: string): AiProduct 
   collections: p.collectionSlugs,
 })
 
-export async function product(shopId: string, id: string, currency: string): Promise<AiProduct> {
-  const row = await productService.getById(shopId, id)
+export async function product(shopId: string, id: string, currency: string, conn: Conn): Promise<AiProduct> {
+  const row = await productService.getById(shopId, id, conn)
   if (!row) throw new AiError('SUBJECT_NOT_FOUND', 'Product not found')
-  const [details] = await productService.withDetails([row])
+  const [details] = await productService.withDetails([row], conn)
   if (!details) throw new AiError('SUBJECT_NOT_FOUND', 'Product not found')
   return toAiProduct(details, currency)
 }

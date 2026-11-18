@@ -1,7 +1,7 @@
 // The demo catalog: 4 collections, 19 products. Every product is tagged "demo", which is how the sample
 // orders know which products to use (so they work next to products you added yourself).
 import { collectionService, productService, type ProductInput } from '@shopnex/catalog'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { and, eq } from 'drizzle-orm'
 import { products } from '@shopnex/catalog/schema'
 
@@ -230,16 +230,20 @@ export async function seedDemoCatalog(shopId: string) {
   const collections = []
   const productIds: string[] = []
   for (const group of catalog) {
-    const collection = await collectionService.create(shopId, {
-      title: group.collection,
-      description: group.description,
-      imageUrl: group.products[0]?.images?.[0]?.url,
-    })
+    const collection = await collectionService.create(
+      shopId,
+      {
+        title: group.collection,
+        description: group.description,
+        imageUrl: group.products[0]?.images?.[0]?.url,
+      },
+      db,
+    )
     collections.push(collection)
     for (const input of group.products) {
-      const product = await productService.create(shopId, { ...input, tags: [...(input.tags ?? []), 'demo'] })
+      const product = await productService.create(shopId, { ...input, tags: [...(input.tags ?? []), 'demo'] }, db)
       productIds.push(product.id)
-      await collectionService.addProduct(shopId, collection.id, product.id)
+      await collectionService.addProduct(shopId, collection.id, product.id, db)
     }
   }
   return { collections, productIds }

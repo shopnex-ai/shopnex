@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
 import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { paymentMethodService } from '@shopnex/payments'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
@@ -261,12 +261,16 @@ export class Fixtures {
   }
 
   async shippingRate(priceCents: number) {
-    const rate = await checkoutSettings.createShippingRate(SHOP, {
-      name: 'E2E shipping',
-      priceCents,
-      freeAboveCents: null,
-      active: true,
-    })
+    const rate = await checkoutSettings.createShippingRate(
+      SHOP,
+      {
+        name: 'E2E shipping',
+        priceCents,
+        freeAboveCents: null,
+        active: true,
+      },
+      db,
+    )
     this.shippingRates.push(rate.id)
     return rate
   }
@@ -309,7 +313,7 @@ export class Fixtures {
   // Restoring the order counter assumes nobody else placed an order meanwhile (fine on a dev database)
   async cleanup() {
     for (const id of this.orders) {
-      await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
+      await orderService.cancel(SHOP, id, { reason: 'other', restock: true }, db).catch(() => {})
     }
     if (this.carts.length) await db.delete(carts).where(inArray(carts.token, this.carts))
     if (this.orders.length) await db.delete(orders).where(inArray(orders.id, this.orders))

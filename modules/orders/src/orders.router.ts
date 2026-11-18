@@ -1,3 +1,5 @@
+import { db } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { createProcedures, pagination } from '@shopnex/rpc'
@@ -82,13 +84,13 @@ export const orders = {
     .route({ method: 'POST', path: '/admin/orders/import' })
     .output(z.object({ imported: z.array(orderOutput), skipped: z.array(z.string()) }))
     .input(z.object({ orders: z.array(importedOrder).min(1).max(50) }))
-    .handler(({ input, context }) => orderService.importHistoricalMany(context.shop.id, input.orders)),
+    .handler(({ input, context }) => orderService.importHistoricalMany(context.shop.id, input.orders, db)),
 
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/orders/bulk' })
     .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
-    .handler(({ input, context }) => orderService.removeMany(context.shop.id, input.ids)),
+    .handler(({ input, context }) => orderService.removeMany(context.shop.id, input.ids, db)),
 
   list: read
     .route({ method: 'GET', path: '/admin/orders' })
@@ -104,14 +106,14 @@ export const orders = {
         search: z.string().trim().max(200).optional(),
       }),
     )
-    .handler(({ input, context }) => orderService.list(context.shop.id, input)),
+    .handler(({ input, context }) => orderService.list(context.shop.id, input, db)),
 
   get: read
     .route({ method: 'GET', path: '/admin/orders/{id}' })
     .output(orderDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const order = await orderService.getById(context.shop.id, input.id)
+      const order = await orderService.getById(context.shop.id, input.id, db)
       if (!order) throw new ORPCError('NOT_FOUND')
       return order
     }),
@@ -122,8 +124,8 @@ export const orders = {
     .output(orderDetailOutput)
     .input(id.extend({ customFields: customFieldUpdates }))
     .handler(async ({ input, context }) => {
-      await orderService.setCustomFields(context.shop.id, input.id, input.customFields)
-      return (await orderService.getById(context.shop.id, input.id))!
+      await orderService.setCustomFields(context.shop.id, input.id, input.customFields, db)
+      return (await orderService.getById(context.shop.id, input.id, db))!
     }),
 
   // Manual order from the admin (no shipping or payment method; mark it as paid when the money arrives)
@@ -150,20 +152,20 @@ export const orders = {
         })
         .refine((v) => v.customerId || v.email, { message: 'customerId or email is required' }),
     )
-    .handler(({ input, context }) => orderService.create(context.shop.id, input)),
+    .handler(({ input, context }) => orderService.create(context.shop.id, input, db)),
 
   // Shopify "Mark as paid": manual payment received
   markAsPaid: write
     .route({ method: 'POST', path: '/admin/orders/{id}/mark-as-paid' })
     .output(orderOutput)
     .input(id)
-    .handler(({ input, context }) => orderService.markAsPaid(context.shop.id, input.id)),
+    .handler(({ input, context }) => orderService.markAsPaid(context.shop.id, input.id, db)),
 
   fulfill: write
     .route({ method: 'POST', path: '/admin/orders/{id}/fulfill' })
     .output(orderOutput)
     .input(id.extend(fulfillOrderInput.shape))
-    .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, tracking)),
+    .handler(({ input: { id, ...tracking }, context }) => orderService.fulfill(context.shop.id, id, db, tracking)),
 }
 
 const timezone = z.string().refine(
@@ -184,5 +186,5 @@ export const analytics = {
     .route({ method: 'GET', path: '/admin/analytics/overview' })
     .output(analyticsOverviewOutput)
     .input(z.object({ days: z.coerce.number().int().min(1).max(365).default(30), timezone: timezone.default('UTC') }))
-    .handler(({ input, context }) => orderAnalytics.overview(context.shop.id, input)),
+    .handler(({ input, context }) => orderAnalytics.overview(context.shop.id, input, db)),
 }

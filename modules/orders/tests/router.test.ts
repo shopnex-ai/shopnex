@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The admin order and dashboard routes, called through the real router with fake resolvers and an in-memory database: the scopes they need,
 // input checks, how each order error is answered, and what they answer. (Cancelling and refunding are @shopnex/payments' routes.)
 import assert from 'node:assert/strict'
@@ -7,7 +8,7 @@ import { hasScope } from '@shopnex/core/scopes'
 import type { ApiScope } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 
-const { SHOP, OTHER_SHOP } = fx
+const { SHOP, OTHER_SHOP, db } = fx
 const { configureRpc } = await import('@shopnex/rpc')
 const { ordersModule } = await import('../src/orders.module')
 const { customFieldService } = await import('@shopnex/custom-fields')
@@ -174,10 +175,14 @@ describe('what is refused', () => {
     const p = await fx.product({}, OTHER_SHOP)
     const theirs = await (
       await import('../src')
-    ).orderService.create(OTHER_SHOP, {
-      email: 'x@example.test',
-      items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
-    })
+    ).orderService.create(
+      OTHER_SHOP,
+      {
+        email: 'x@example.test',
+        items: [{ variantId: p.variants[0]!.id, quantity: 1 }],
+      },
+      db,
+    )
     await assert.rejects(run(orders.get, { id: theirs.id }), refused('NOT_FOUND'))
     await assert.rejects(run(orders.fulfill, { id: theirs.id }), refused('NOT_FOUND'))
   })
@@ -209,7 +214,7 @@ describe('what is refused', () => {
 
   test('list takes cancelled as a flag or the text true/false', async () => {
     const o = await fx.place()
-    await (await import('../src')).orderService.cancel(SHOP, o.id, { reason: 'other', restock: false })
+    await (await import('../src')).orderService.cancel(SHOP, o.id, { reason: 'other', restock: false }, db)
     for (const flag of [true, 'true'])
       assert.equal((await run<{ total: number }>(orders.list, { ...page, cancelled: flag })).total, 1)
     for (const flag of [false, 'false'])

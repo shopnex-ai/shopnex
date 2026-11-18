@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // What the storefront route tests share: the embedded database, the module's router, and a shop with a catalog, content, a theme, carts and
 // customers to read through the public API. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { call } from '@orpc/server'
@@ -80,11 +81,15 @@ export async function quietChannel() {
 }
 
 export const product = (patch: Partial<Parameters<typeof productService.create>[1]> = {}, shopId = SHOP) =>
-  productService.create(shopId, {
-    title: `Tee ${unique()}`,
-    ...(patch.variants ? {} : { priceCents: 2500 }),
-    ...patch,
-  } as never)
+  productService.create(
+    shopId,
+    {
+      title: `Tee ${unique()}`,
+      ...(patch.variants ? {} : { priceCents: 2500 }),
+      ...patch,
+    } as never,
+    db,
+  )
 
 export async function customerWithToken(email = `shopper-${unique()}@example.test`) {
   let code = ''

@@ -5,7 +5,7 @@ import { publicationService } from '@shopnex/channels'
 import { publicationsInput, publicationsOutput } from '@shopnex/channels/contract'
 import { apps } from '@shopnex/core/schema'
 import { customFieldService } from '@shopnex/custom-fields'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { createProcedures, pagination } from '@shopnex/rpc'
 import {
   collectionDetailOutput,
@@ -69,13 +69,13 @@ export const products = {
   addSamples: write
     .route({ method: 'POST', path: '/admin/products/samples' })
     .output(countOutput)
-    .handler(({ context }) => seedSampleProducts(context.shop.id)),
+    .handler(({ context }) => seedSampleProducts(context.shop.id, db)),
 
   deleteMany: write
     .route({ method: 'DELETE', path: '/admin/products/bulk' })
     .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
-    .handler(({ input, context }) => productService.removeMany(context.shop.id, input.ids)),
+    .handler(({ input, context }) => productService.removeMany(context.shop.id, input.ids, db)),
 
   list: read
     .route({ method: 'GET', path: '/admin/products' })
@@ -93,10 +93,10 @@ export const products = {
         customFields: await customFieldService.parseFilters(context.shop.id, 'product', customField ?? [], {}, db),
       }
       const [rows, total] = await Promise.all([
-        productService.list(context.shop.id, filtered),
-        productService.count(context.shop.id, filtered),
+        productService.list(context.shop.id, filtered, db),
+        productService.count(context.shop.id, filtered, db),
       ])
-      return { items: await withPublications(context.shop.id, await productService.withDetails(rows)), total }
+      return { items: await withPublications(context.shop.id, await productService.withDetails(rows, db)), total }
     }),
 
   // Images, options, variants, collection slugs (the list also has `publications`; get those with GET …/publications)
@@ -105,9 +105,9 @@ export const products = {
     .output(productOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      const product = await productService.getById(context.shop.id, input.id)
+      const product = await productService.getById(context.shop.id, input.id, db)
       if (!product) throw new ORPCError('NOT_FOUND')
-      return (await productService.withDetails([product]))[0]!
+      return (await productService.withDetails([product], db))[0]!
     }),
 
   publications: readPublications
@@ -115,7 +115,7 @@ export const products = {
     .output(publicationsOutput)
     .input(z.object({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      if (!(await productService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      if (!(await productService.getById(context.shop.id, input.id, db))) throw new ORPCError('NOT_FOUND')
       return (await publicationService.listFor(context.shop.id, 'product', [input.id], db)).get(input.id)!
     }),
 
@@ -125,7 +125,7 @@ export const products = {
     .output(publicationsOutput)
     .input(publicationsInput.extend({ id: z.uuid() }))
     .handler(async ({ input, context }) => {
-      const publications = await productService.setPublications(context.shop.id, input.id, input.publications)
+      const publications = await productService.setPublications(context.shop.id, input.id, input.publications, db)
       if (!publications) throw new ORPCError('NOT_FOUND')
       return publications
     }),
@@ -145,7 +145,7 @@ export const products = {
     )
     .handler(async ({ input, context }) => {
       await checkFulfilledBy(context.token, input.fulfilledBy)
-      return productService.create(context.shop.id, input)
+      return productService.create(context.shop.id, input, db)
     }),
 
   // Partial update; `images` replaces the whole set when given
@@ -155,7 +155,7 @@ export const products = {
     .input(productFields.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
       await checkFulfilledBy(context.token, patch.fulfilledBy)
-      const product = await productService.update(context.shop.id, id, patch)
+      const product = await productService.update(context.shop.id, id, patch, db)
       if (!product) throw new ORPCError('NOT_FOUND')
       return product
     }),
@@ -166,7 +166,7 @@ export const products = {
     .output(productOutput)
     .input(variantsInput.extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...variants }, context }) => {
-      const product = await productService.setVariants(context.shop.id, id, variants)
+      const product = await productService.setVariants(context.shop.id, id, variants, db)
       if (!product) throw new ORPCError('NOT_FOUND')
       return product
     }),
@@ -177,7 +177,7 @@ export const products = {
     .output(variantRowOutput)
     .input(variantInput.omit({ options: true }).partial().extend({ variantId: z.uuid() }))
     .handler(async ({ input: { variantId, ...patch }, context }) => {
-      const variant = await variantService.update(context.shop.id, variantId, patch)
+      const variant = await variantService.update(context.shop.id, variantId, patch, db)
       if (!variant) throw new ORPCError('NOT_FOUND')
       return variant
     }),
@@ -188,7 +188,7 @@ type CollectionRow = NonNullable<Awaited<ReturnType<typeof collectionService.get
 // A collection with its product count and the channels it is published on
 async function withExtras(shopId: string, rows: CollectionRow[]) {
   const ids = rows.map((r) => r.id)
-  const counts = await collectionService.productCounts(shopId, ids)
+  const counts = await collectionService.productCounts(shopId, ids, db)
   const publications = await publicationService.listFor(shopId, 'collection', ids, db)
   return rows.map((r) => ({
     ...r,
@@ -203,7 +203,7 @@ export const collections = {
     .output(z.array(collectionDetailOutput))
     .input(pagination)
     .handler(async ({ input, context }) =>
-      withExtras(context.shop.id, await collectionService.list(context.shop.id, input)),
+      withExtras(context.shop.id, await collectionService.list(context.shop.id, input, db)),
     ),
 
   get: read
@@ -211,7 +211,7 @@ export const collections = {
     .output(collectionDetailOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      const row = await collectionService.getById(context.shop.id, input.id)
+      const row = await collectionService.getById(context.shop.id, input.id, db)
       if (!row) throw new ORPCError('NOT_FOUND')
       return (await withExtras(context.shop.id, [row]))[0]!
     }),
@@ -221,7 +221,7 @@ export const collections = {
     .output(publicationsOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      if (!(await collectionService.getById(context.shop.id, input.id, db))) throw new ORPCError('NOT_FOUND')
       return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
     }),
 
@@ -231,7 +231,7 @@ export const collections = {
     .output(publicationsOutput)
     .input(publicationsInput.extend(id.shape))
     .handler(async ({ input, context }) => {
-      if (!(await collectionService.getById(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      if (!(await collectionService.getById(context.shop.id, input.id, db))) throw new ORPCError('NOT_FOUND')
       await publicationService.set(context.shop.id, 'collection', input.id, input.publications, db)
       return (await publicationService.listFor(context.shop.id, 'collection', [input.id], db)).get(input.id)!
     }),
@@ -240,14 +240,14 @@ export const collections = {
     .route({ method: 'DELETE', path: '/admin/collections/bulk' })
     .output(countOutput)
     .input(z.object({ ids: z.array(z.uuid()).min(1).max(100) }))
-    .handler(({ input, context }) => collectionService.removeMany(context.shop.id, input.ids)),
+    .handler(({ input, context }) => collectionService.removeMany(context.shop.id, input.ids, db)),
 
   update: write
     .route({ method: 'PATCH', path: '/admin/collections/{id}' })
     .output(collectionOutput)
     .input(collectionInput.partial().extend({ id: z.uuid() }))
     .handler(async ({ input: { id, ...patch }, context }) => {
-      const row = await collectionService.update(context.shop.id, id, patch)
+      const row = await collectionService.update(context.shop.id, id, patch, db)
       if (!row) throw new ORPCError('NOT_FOUND')
       return row
     }),
@@ -257,7 +257,7 @@ export const collections = {
     .output(okOutput)
     .input(id)
     .handler(async ({ input, context }) => {
-      if (!(await collectionService.remove(context.shop.id, input.id))) throw new ORPCError('NOT_FOUND')
+      if (!(await collectionService.remove(context.shop.id, input.id, db))) throw new ORPCError('NOT_FOUND')
       return { ok: true }
     }),
 
@@ -265,20 +265,20 @@ export const collections = {
     .route({ method: 'GET', path: '/admin/collections/{id}/products' })
     .output(z.array(collectionProductOutput))
     .input(id)
-    .handler(({ input, context }) => collectionService.listProducts(context.shop.id, input.id)),
+    .handler(({ input, context }) => collectionService.listProducts(context.shop.id, input.id, db)),
 
   create: write
     .route({ method: 'POST', path: '/admin/collections' })
     .output(collectionOutput)
     .input(collectionInput)
-    .handler(({ input, context }) => collectionService.create(context.shop.id, input)),
+    .handler(({ input, context }) => collectionService.create(context.shop.id, input, db)),
 
   addProduct: write
     .route({ method: 'POST', path: '/admin/collections/{id}/products' })
     .output(okOutput)
     .input(membership)
     .handler(async ({ input, context }) => {
-      await collectionService.addProduct(context.shop.id, input.id, input.productId)
+      await collectionService.addProduct(context.shop.id, input.id, input.productId, db)
       return { ok: true }
     }),
 
@@ -287,7 +287,7 @@ export const collections = {
     .output(okOutput)
     .input(membership)
     .handler(async ({ input, context }) => {
-      await collectionService.removeProduct(context.shop.id, input.id, input.productId)
+      await collectionService.removeProduct(context.shop.id, input.id, input.productId, db)
       return { ok: true }
     }),
 }

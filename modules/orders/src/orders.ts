@@ -6,7 +6,7 @@ import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type 
 import { variantService } from '@shopnex/catalog'
 import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
-import { all, db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { calculate, taxService } from '@shopnex/pricing'
 import { checkDiscount, redeemDiscount } from './discount-redemptions'
@@ -104,7 +104,7 @@ export function shippingPrice(rate: { priceCents: number; freeAboveCents: number
 }
 
 // `search` matches the order number (1001 or #1001), the order email or the customer's name
-export async function list(shopId: string, opts: ListOrdersInput, conn: Conn = db) {
+export async function list(shopId: string, opts: ListOrdersInput, conn: Conn) {
   const filters: (SQL | undefined)[] = [eq(orders.shopId, shopId)]
   if (opts.customerId) filters.push(eq(orders.customerId, opts.customerId))
   if (opts.financialStatus) filters.push(eq(orders.financialStatus, opts.financialStatus))
@@ -124,21 +124,27 @@ export async function list(shopId: string, opts: ListOrdersInput, conn: Conn = d
     )
   }
   const where = and(...filters)
-  const [rows, [counted]] = await Promise.all([
-    conn
-      .select({ order: orders, customerName: customers.name })
-      .from(orders)
-      .leftJoin(customers, eq(customers.id, orders.customerId))
-      .where(where)
-      .orderBy(desc(orders.createdAt))
-      .limit(opts.limit)
-      .offset(opts.offset),
-    conn.select({ total: count() }).from(orders).leftJoin(customers, eq(customers.id, orders.customerId)).where(where),
+  const [rows, [counted]] = await all(conn, [
+    () =>
+      conn
+        .select({ order: orders, customerName: customers.name })
+        .from(orders)
+        .leftJoin(customers, eq(customers.id, orders.customerId))
+        .where(where)
+        .orderBy(desc(orders.createdAt))
+        .limit(opts.limit)
+        .offset(opts.offset),
+    () =>
+      conn
+        .select({ total: count() })
+        .from(orders)
+        .leftJoin(customers, eq(customers.id, orders.customerId))
+        .where(where),
   ])
   return { items: rows.map((r) => ({ ...r.order, customerName: r.customerName })), total: counted?.total ?? 0 }
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [order] = await conn
     .select()
     .from(orders)
@@ -165,9 +171,9 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return { ...order, items, shippingLines, transactions, fulfillments, customer }
 }
 
-export async function removeMany(shopId: string, ids: string[]) {
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
-  const deleted = await db
+  const deleted = await conn
     .delete(orders)
     .where(and(eq(orders.shopId, shopId), inArray(orders.id, ids)))
     .returning({ id: orders.id })
@@ -178,8 +184,8 @@ export async function removeMany(shopId: string, ids: string[]) {
  * Adds historical imported orders without reserving stock, capturing payment, or sending order notifications.
  * Orders whose source name was already imported are skipped, so re-uploading a file is safe.
  */
-export async function importHistoricalMany(shopId: string, inputs: ImportedOrderInput[]) {
-  return db.transaction(async (tx) => {
+export async function importHistoricalMany(shopId: string, inputs: ImportedOrderInput[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     const channel = await channelService.getDefault(shopId, tx)
     const imported = []
     const skipped: string[] = []
@@ -278,7 +284,7 @@ export async function importHistoricalMany(shopId: string, inputs: ImportedOrder
 }
 
 // Pass `conn` to run inside an outer transaction (e.g. checkout completing a cart atomically)
-export async function create(shopId: string, input: CreateOrderInput, conn: Conn = db) {
+export async function create(shopId: string, input: CreateOrderInput, conn: Conn) {
   if (input.items.length === 0) throw new OrderError('EMPTY_ORDER', 'Order has no items')
 
   return conn.transaction(async (tx) => {
@@ -463,8 +469,8 @@ const touch = (tx: Conn, id: string, patch: Partial<typeof orders.$inferInsert>)
     .then((rows) => rows[0]!)
 
 // Sets the order's custom field values (null clears one); throws ORDER_NOT_FOUND
-export async function setCustomFields(shopId: string, id: string, updates: CustomFieldUpdates) {
-  return db.transaction(async (tx) => {
+export async function setCustomFields(shopId: string, id: string, updates: CustomFieldUpdates, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const order = await lockOrder(tx, shopId, id)
     const customFields = await customFieldService.merge(shopId, 'order', updates, order.customFields, tx)
     await touch(tx, id, { customFields })
@@ -474,8 +480,8 @@ export async function setCustomFields(shopId: string, id: string, updates: Custo
 }
 
 // Manual payment received (Shopify "Mark as paid"): records a successful sale for the outstanding amount
-export async function markAsPaid(shopId: string, id: string) {
-  return db.transaction(async (tx) => {
+export async function markAsPaid(shopId: string, id: string, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const order = await lockOrder(tx, shopId, id)
     if (order.cancelledAt) throw new OrderError('ORDER_CANCELLED', 'Order is cancelled')
     if (order.financialStatus !== 'pending' && order.financialStatus !== 'partially_paid') {
@@ -509,8 +515,8 @@ export async function markAsPaid(shopId: string, id: string) {
 export type FulfillInput = { trackingCompany?: string; trackingNumber?: string; trackingUrl?: string }
 
 // Ships every item (partial fulfillment comes later). Allowed before payment, as in Shopify.
-export async function fulfill(shopId: string, id: string, tracking: FulfillInput = {}) {
-  return db.transaction(async (tx) => {
+export async function fulfill(shopId: string, id: string, conn: Conn, tracking: FulfillInput = {}) {
+  return conn.transaction(async (tx) => {
     const order = await lockOrder(tx, shopId, id)
     if (order.cancelledAt) throw new OrderError('ORDER_CANCELLED', 'Order is cancelled')
     if (order.fulfillmentStatus === 'fulfilled') {
@@ -540,8 +546,8 @@ export type CancelInput = {
 // recorded as a refund transaction). Paid through a payments app: the refund transaction stays pending and the
 // order paid until the app confirms it (@shopnex/payments sends it a refund session).
 // Fulfilled orders can't be cancelled (returns come later).
-export async function cancel(shopId: string, id: string, input: CancelInput) {
-  return db.transaction(async (tx) => {
+export async function cancel(shopId: string, id: string, input: CancelInput, conn: Conn) {
+  return conn.transaction(async (tx) => {
     const order = await lockOrder(tx, shopId, id)
     if (order.cancelledAt) throw new OrderError('ORDER_CANCELLED', 'Order is already cancelled')
     if (order.fulfillmentStatus !== 'unfulfilled') {
@@ -613,11 +619,11 @@ export async function moneyOf(tx: Conn, orderId: string) {
  * Manual payment methods: recorded as refunded at once, staff send the money back themselves. Paid through a payments
  * app: a pending refund is booked and the order changes only when the app confirms (@shopnex/payments sends it).
  */
-export async function refund(shopId: string, id: string, input: { amountCents: number }) {
+export async function refund(shopId: string, id: string, input: { amountCents: number }, conn: Conn) {
   if (!Number.isInteger(input.amountCents) || input.amountCents <= 0) {
     throw new OrderError('INVALID_REFUND', 'Refund an amount above zero, in whole cents')
   }
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     const order = await lockOrder(tx, shopId, id)
     const money = await moneyOf(tx, id)
     if (money.left <= 0) throw new OrderError('INVALID_REFUND', 'Nothing is left to refund on this order')

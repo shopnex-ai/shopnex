@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The small pure helpers: slugs (how a title becomes a URL handle and how a free one is found) and merchant HTML.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
@@ -40,20 +41,20 @@ describe('finding a free slug', () => {
   test('the base if free, else base-2, base-3 within the shop; another shop’s slugs do not count', async () => {
     const { db } = fx
     assert.equal(await nextFreeSlug(db, products, SHOP, 'shirt'), 'shirt')
-    await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
-    await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
+    await productService.create(SHOP, { title: 'Shirt', priceCents: 100 }, db)
+    await productService.create(SHOP, { title: 'Shirt', priceCents: 100 }, db)
     assert.equal(await nextFreeSlug(db, products, SHOP, 'shirt'), 'shirt-3')
     assert.equal(await nextFreeSlug(db, products, OTHER_SHOP, 'shirt'), 'shirt')
   })
 
   test('isSlugTaken is per shop and per table, and can leave one row out', async () => {
     const { db } = fx
-    const p = await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
+    const p = await productService.create(SHOP, { title: 'Shirt', priceCents: 100 }, db)
     assert.equal(await isSlugTaken(db, products, SHOP, 'shirt'), true)
     assert.equal(await isSlugTaken(db, products, SHOP, 'shirt', p.id), false)
     assert.equal(await isSlugTaken(db, products, OTHER_SHOP, 'shirt'), false)
     assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), false)
-    await collectionService.create(SHOP, { title: 'Shirt' })
+    await collectionService.create(SHOP, { title: 'Shirt' }, db)
     assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), true)
   })
 })

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 import { orders, orderTransactions } from '@shopnex/orders/schema'
@@ -28,9 +28,9 @@ after(async () => {
 
 /** A paid order for two units, paid by a manual method */
 async function paidOrder() {
-  const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 2 }] })
+  const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 2 }] }, db)
   fx.order(placed.id)
-  await orderService.markAsPaid(SHOP, placed.id)
+  await orderService.markAsPaid(SHOP, placed.id, db)
   return { id: placed.id, total: placed.totalCents }
 }
 
@@ -74,7 +74,7 @@ describe('partial refunds', () => {
   })
 
   test('an order that was not paid has nothing to refund', async () => {
-    const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 1 }] })
+    const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 1 }] }, db)
     fx.order(placed.id)
     const res = await refund(placed.id, 100)
     assert.equal(res.status, 400, JSON.stringify(res.body))

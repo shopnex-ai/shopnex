@@ -10,7 +10,7 @@ import { z } from 'zod'
 import { webhookPayloads } from '@shopnex/api/reference'
 import { productService } from '@shopnex/catalog'
 import { privacyService } from '@shopnex/privacy'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { WEBHOOK_TOPICS, webhookDeliveries, type WebhookTopic } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -216,7 +216,7 @@ before(async () => {
 
 after(async () => {
   await fx.cleanup()
-  if (productId) await productService.removeMany(SHOP, [productId])
+  if (productId) await productService.removeMany(SHOP, [productId], db)
   await closeDb()
 })
 

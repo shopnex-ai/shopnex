@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { seedSampleProducts } from '@shopnex/catalog'
 import { channelService, publicationService } from '@shopnex/channels'
@@ -76,9 +76,9 @@ describe('createShop', () => {
   test('sample products are active, scoped to the shop and on its Online Store', async () => {
     const shop = await createShop({ ownerId: owner.id, name: 'E2E Samples' })
     created.push(shop.id)
-    assert.equal(await seedSampleProducts(shop.id), 4)
+    assert.equal(await seedSampleProducts(shop.id, db), 4)
     // Asking again adds nothing
-    assert.equal(await seedSampleProducts(shop.id), 0)
+    assert.equal(await seedSampleProducts(shop.id, db), 0)
     const products = await db.select().from(productsTable).where(eq(productsTable.shopId, shop.id))
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))

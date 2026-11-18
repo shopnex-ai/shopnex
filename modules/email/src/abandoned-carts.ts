@@ -5,7 +5,7 @@
 // is no longer `active`), and the worker checks again right before sending.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, asc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm'
-import { db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { isSuppressed, unsubscribeToken } from './abandoned-settings'
 import {
   appUrl,
@@ -60,11 +60,11 @@ async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
 }
 
 /** Carts that have waited out their shop's delay, in shops that send abandoned cart emails and haven't been reminded */
-async function dueCarts() {
+async function dueCarts(conn: Conn) {
   const carts = cartsTable
   const cartLines = cartLinesTable
   const emailDeliveries = emailDeliveriesTable
-  return db
+  return conn
     .select({ id: carts.id })
     .from(carts)
     .innerJoin(settings, and(eq(settings.shopId, carts.shopId), eq(settings.enabled, true)))
@@ -87,8 +87,8 @@ async function dueCarts() {
     .limit(BATCH)
 }
 
-async function queueOne(cartId: string) {
-  await db.transaction(async (tx) => {
+async function queueOne(cartId: string, conn: Conn) {
+  await conn.transaction(async (tx) => {
     // Another instance may be on the same cart: whoever locks it first queues it
     const [cart] = await tx
       .select()
@@ -111,12 +111,14 @@ async function queueOne(cartId: string) {
     const lines = await linesOf(tx, cart.id)
     if (lines.length === 0) return skip('Nothing left in the cart')
     const shop = await withStorefrontUrl(row, tx)
-    const [templates, [customer]] = await Promise.all([
-      templateRows(tx, cart.shopId, ['abandoned_cart', 'layout']),
-      tx
-        .select({ name: customers.name })
-        .from(customers)
-        .where(and(eq(customers.shopId, cart.shopId), eq(customers.email, cart.email))),
+    const cartEmail = cart.email
+    const [templates, [customer]] = await all(tx, [
+      () => templateRows(tx, cart.shopId, ['abandoned_cart', 'layout']),
+      () =>
+        tx
+          .select({ name: customers.name })
+          .from(customers)
+          .where(and(eq(customers.shopId, cart.shopId), eq(customers.email, cartEmail))),
     ])
     const scope = {
       shop: shopScope(shop),
@@ -142,11 +144,11 @@ async function queueOne(cartId: string) {
 }
 
 /** One pass: queues the reminders that are due. Returns how many carts it handled. */
-export async function queueDue() {
-  const due = await dueCarts()
+export async function queueDue(conn: Conn) {
+  const due = await dueCarts(conn)
   for (const { id } of due) {
     try {
-      await queueOne(id)
+      await queueOne(id, conn)
     } catch (error) {
       log.error({ err: error, cartId: id }, 'abandoned cart failed')
     }
@@ -158,13 +160,13 @@ export async function queueDue() {
  * Whether a queued reminder should still go out: the cart is still open and its owner hasn't unsubscribed since.
  * Returns the reason it shouldn't, or null.
  */
-export async function reasonToSkip(delivery: { shopId: string; cartId: string | null; to: string }) {
+export async function reasonToSkip(delivery: { shopId: string; cartId: string | null; to: string }, conn: Conn) {
   if (!delivery.cartId) return null
-  const [cart] = await db
+  const [cart] = await conn
     .select({ status: cartsTable.status })
     .from(cartsTable)
     .where(eq(cartsTable.id, delivery.cartId))
   if (cart?.status !== 'active') return 'Checkout was completed'
-  if (await isSuppressed(db, delivery.shopId, delivery.to)) return 'Unsubscribed'
+  if (await isSuppressed(conn, delivery.shopId, delivery.to)) return 'Unsubscribed'
   return null
 }
