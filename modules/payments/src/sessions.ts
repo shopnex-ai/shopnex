@@ -4,7 +4,7 @@
 // waiting on the network, and the app may call resolve before it even answers.
 import { and, desc, eq, gt, isNotNull, isNull, lte, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import {
   signPaymentsRequest,
   type PaymentSessionRequest,
@@ -19,6 +19,8 @@ import { only } from './rows'
 import { paymentSessions, paymentMethods, type PaymentSession } from './payments.schema'
 import { appInstallations } from '@shopnex/apps/schema'
 import { shops } from '@shopnex/core/schema'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 // The buyer has an hour to pay; after that the unpaid order is cancelled and its stock released
 const PAYMENT_TTL_MS = 60 * 60_000
@@ -108,8 +110,8 @@ export async function startPayment(
   const prepared = await conn.transaction(async (tx) => {
     const [order] = await tx
       .select()
-      .from(schema.orders)
-      .where(and(eq(schema.orders.shopId, shopId), eq(schema.orders.id, orderId)))
+      .from(orders)
+      .where(and(eq(orders.shopId, shopId), eq(orders.id, orderId)))
       .for('update')
     if (!order) throw new PaymentError('NOT_PAYABLE', 'Order not found')
     if (order.cancelledAt) throw new PaymentError('NOT_PAYABLE', 'This order was cancelled')
@@ -165,10 +167,7 @@ export async function startPayment(
         .returning(),
     )
     const [customer] = order.customerId
-      ? await tx
-          .select({ name: schema.customers.name })
-          .from(schema.customers)
-          .where(eq(schema.customers.id, order.customerId))
+      ? await tx.select({ name: customers.name }).from(customers).where(eq(customers.id, order.customerId))
       : []
     const request: PaymentSessionRequest = {
       kind: 'payment',
@@ -231,16 +230,16 @@ export async function latestPayment(shopId: string, orderId: string, conn: Conn)
  */
 export async function startRefunds(shopId: string, orderId: string, conn: Conn) {
   const pending = await conn
-    .select({ transaction: schema.orderTransactions, order: schema.orders })
-    .from(schema.orderTransactions)
-    .innerJoin(schema.orders, eq(schema.orders.id, schema.orderTransactions.orderId))
-    .leftJoin(paymentSessions, eq(paymentSessions.transactionId, schema.orderTransactions.id))
+    .select({ transaction: orderTransactions, order: orders })
+    .from(orderTransactions)
+    .innerJoin(orders, eq(orders.id, orderTransactions.orderId))
+    .leftJoin(paymentSessions, eq(paymentSessions.transactionId, orderTransactions.id))
     .where(
       and(
-        eq(schema.orders.shopId, shopId),
-        eq(schema.orderTransactions.orderId, orderId),
-        eq(schema.orderTransactions.kind, 'refund'),
-        eq(schema.orderTransactions.status, 'pending'),
+        eq(orders.shopId, shopId),
+        eq(orderTransactions.orderId, orderId),
+        eq(orderTransactions.kind, 'refund'),
+        eq(orderTransactions.status, 'pending'),
         isNull(paymentSessions.id),
       ),
     )
@@ -262,9 +261,9 @@ export async function startRefunds(shopId: string, orderId: string, conn: Conn) 
     const live = paid && (await installed(conn, shopId, paid.session.appId))
     const fail = (errorMessage: string) =>
       conn
-        .update(schema.orderTransactions)
+        .update(orderTransactions)
         .set({ status: 'failure', errorMessage, processedAt: new Date() })
-        .where(eq(schema.orderTransactions.id, transaction.id))
+        .where(eq(orderTransactions.id, transaction.id))
     if (!paid || !url || !live) {
       await fail('The payments app is no longer installed: refund this payment with the provider')
       continue
@@ -356,14 +355,14 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
   return conn.transaction(async (tx) => {
     const session = await lockSession(tx, shopId, appId, id)
     if (session.status === 'resolved') return session
-    const [order] = await tx.select().from(schema.orders).where(eq(schema.orders.id, session.orderId)).for('update')
+    const [order] = await tx.select().from(orders).where(eq(orders.id, session.orderId)).for('update')
     if (!order) throw new Error('The order of the payment session is gone')
     const now = new Date()
     let transactionId = session.transactionId
     if (session.kind === 'payment') {
       const sale = only(
         await tx
-          .insert(schema.orderTransactions)
+          .insert(orderTransactions)
           .values({
             orderId: session.orderId,
             kind: 'sale',
@@ -373,13 +372,10 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
             currency: session.currency,
             externalId: input.externalId ?? null,
           })
-          .returning({ id: schema.orderTransactions.id }),
+          .returning({ id: orderTransactions.id }),
       )
       transactionId = sale.id
-      await tx
-        .update(schema.orders)
-        .set({ financialStatus: 'paid', updatedAt: now })
-        .where(eq(schema.orders.id, session.orderId))
+      await tx.update(orders).set({ financialStatus: 'paid', updatedAt: now }).where(eq(orders.id, session.orderId))
       await emit(tx, shopId, 'order.paid', () => orderService.getById(shopId, session.orderId, tx))
       await orderEvent.run(tx, {
         shopId,
@@ -389,16 +385,16 @@ export async function resolve(shopId: string, appId: string, id: string, input: 
     } else {
       if (session.transactionId) {
         await tx
-          .update(schema.orderTransactions)
+          .update(orderTransactions)
           .set({ status: 'success', externalId: input.externalId ?? null, processedAt: now })
-          .where(eq(schema.orderTransactions.id, session.transactionId))
+          .where(eq(orderTransactions.id, session.transactionId))
       }
       // Refunded once everything taken is back; until then the order shows what part
       const money = await orderService.moneyOf(tx, session.orderId)
       await tx
-        .update(schema.orders)
+        .update(orders)
         .set({ financialStatus: money.refunded >= money.taken ? 'refunded' : 'partially_refunded', updatedAt: now })
-        .where(eq(schema.orders.id, session.orderId))
+        .where(eq(orders.id, session.orderId))
     }
     const updated = only(
       await tx
@@ -426,9 +422,9 @@ export async function reject(shopId: string, appId: string, id: string, input: {
     if (session.status !== 'pending') return session
     if (session.kind === 'refund' && session.transactionId) {
       await tx
-        .update(schema.orderTransactions)
+        .update(orderTransactions)
         .set({ status: 'failure', errorMessage: input.reason, processedAt: new Date() })
-        .where(eq(schema.orderTransactions.id, session.transactionId))
+        .where(eq(orderTransactions.id, session.transactionId))
     }
     const updated = only(
       await tx
@@ -481,9 +477,9 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
       await close(tx, session.id, 'expired', 'Not completed in time')
       if (session.kind === 'refund' && session.transactionId) {
         await tx
-          .update(schema.orderTransactions)
+          .update(orderTransactions)
           .set({ status: 'error', errorMessage: 'The payments app never confirmed this refund', processedAt: now })
-          .where(eq(schema.orderTransactions.id, session.transactionId))
+          .where(eq(orderTransactions.id, session.transactionId))
       }
     }
     return due.length
@@ -491,22 +487,22 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
 
   const later = alias(paymentSessions, 'later')
   const abandoned = await conn
-    .selectDistinct({ shopId: schema.orders.shopId, orderId: schema.orders.id })
+    .selectDistinct({ shopId: orders.shopId, orderId: orders.id })
     .from(paymentSessions)
-    .innerJoin(schema.orders, eq(schema.orders.id, paymentSessions.orderId))
+    .innerJoin(orders, eq(orders.id, paymentSessions.orderId))
     .where(
       and(
         eq(paymentSessions.kind, 'payment'),
         lte(paymentSessions.expiresAt, now),
-        isNull(schema.orders.cancelledAt),
-        eq(schema.orders.financialStatus, 'pending'),
+        isNull(orders.cancelledAt),
+        eq(orders.financialStatus, 'pending'),
         notExists(
           conn
             .select({ id: later.id })
             .from(later)
             .where(
               and(
-                eq(later.orderId, schema.orders.id),
+                eq(later.orderId, orders.id),
                 eq(later.kind, 'payment'),
                 or(eq(later.status, 'pending'), gt(later.expiresAt, now)),
               ),
@@ -527,24 +523,24 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
   // being worked on (partly or fully fulfilled) are left alone, and an order paid since it was picked is skipped.
   const open = alias(paymentSessions, 'open')
   const stale = await conn
-    .select({ shopId: schema.orders.shopId, orderId: schema.orders.id })
-    .from(schema.orders)
-    .innerJoin(shops, eq(shops.id, schema.orders.shopId))
+    .select({ shopId: orders.shopId, orderId: orders.id })
+    .from(orders)
+    .innerJoin(shops, eq(shops.id, orders.shopId))
     .where(
       and(
         isNotNull(shops.unpaidOrderExpiryHours),
-        isNull(schema.orders.cancelledAt),
-        eq(schema.orders.financialStatus, 'pending'),
-        eq(schema.orders.fulfillmentStatus, 'unfulfilled'),
+        isNull(orders.cancelledAt),
+        eq(orders.financialStatus, 'pending'),
+        eq(orders.fulfillmentStatus, 'unfulfilled'),
         // created_at is written by the database clock (default now()), so compare it with the database clock
-        sql`${schema.orders.createdAt} <= now() - make_interval(hours => ${shops.unpaidOrderExpiryHours})`,
+        sql`${orders.createdAt} <= now() - make_interval(hours => ${shops.unpaidOrderExpiryHours})`,
         notExists(
           conn
             .select({ id: open.id })
             .from(open)
             .where(
               and(
-                eq(open.orderId, schema.orders.id),
+                eq(open.orderId, orders.id),
                 eq(open.kind, 'payment'),
                 eq(open.status, 'pending'),
                 gt(open.expiresAt, now),

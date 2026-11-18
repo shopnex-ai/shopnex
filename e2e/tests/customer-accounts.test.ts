@@ -6,7 +6,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { takeRate } from '@shopnex/auth'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { rateLimits } from '@shopnex/auth/schema'
 import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
@@ -15,6 +15,7 @@ import { smtpSink } from '../smtp-sink'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { user } from '@shopnex/core/schema'
 import { emailSettings } from '@shopnex/email/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -128,7 +129,7 @@ describe('customer accounts', () => {
     test('a guest signs in with the code and finds the order they placed before', async () => {
       const email = person()
       const guestOrder = await placeOrder(email)
-      const [guest] = await db.select().from(schema.customers).where(eq(schema.customers.email, email))
+      const [guest] = await db.select().from(customers).where(eq(customers.email, email))
       assert.equal(guest?.userId, null, 'a guest has no login yet')
 
       ok(await requestCode(email))
@@ -142,7 +143,7 @@ describe('customer accounts', () => {
       assert.ok(token)
       assert.equal(customer.email, email)
       assert.equal(customer.id, guest!.id, 'the guest customer record is the account')
-      const [linked] = await db.select().from(schema.customers).where(eq(schema.customers.id, guest!.id))
+      const [linked] = await db.select().from(customers).where(eq(customers.id, guest!.id))
       assert.ok(linked?.userId)
 
       const reused = await signIn(email, code)

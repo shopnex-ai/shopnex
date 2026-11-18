@@ -4,13 +4,13 @@ import { aiModule } from '@shopnex/ai/module'
 import { cartModule } from '@shopnex/cart/module'
 import { catalogModule } from '@shopnex/catalog/module'
 import { appsModule } from '@shopnex/apps/module'
-import { analytics as adminAnalytics } from './routers/admin/analytics'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
-import { customers as adminCustomers } from './routers/admin/customers'
+import { customersModule } from '@shopnex/customers/module'
+import { ordersModule } from '@shopnex/orders/module'
 import { paymentsModule } from '@shopnex/payments/module'
+import { privacyModule } from '@shopnex/privacy/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { filesModule } from '@shopnex/files/module'
-import { orders as adminOrders } from './routers/admin/orders'
 import { channelsModule } from '@shopnex/channels/module'
 import { contentModule } from '@shopnex/content/module'
 import { emailModule } from '@shopnex/email/module'
@@ -36,9 +36,12 @@ export const router = {
     products: tagged('Admin · Products').router(catalogModule.router.products),
     collections: tagged('Admin · Collections').router(catalogModule.router.collections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
-    customers: tagged('Admin · Customers').router(adminCustomers),
-    orders: tagged('Admin · Orders').router(adminOrders),
-    analytics: tagged('Admin · Analytics').router(adminAnalytics),
+    customers: tagged('Admin · Customers').router({
+      ...customersModule.router.customers,
+      ...privacyModule.router.customers,
+    }),
+    orders: tagged('Admin · Orders').router({ ...ordersModule.router.orders, ...paymentsModule.router.orders }),
+    analytics: tagged('Admin · Analytics').router(ordersModule.router.analytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
     themes: tagged('Admin · Themes').router(themeModule.router),
     menus: tagged('Admin · Navigation').router(contentModule.router.menus),

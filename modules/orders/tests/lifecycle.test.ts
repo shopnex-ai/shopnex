@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { fulfillments, orders, orderTransactions } from '../src/orders.schema'
 
 const { db, schema, eq, orderService, SHOP } = fx
 const { OrderError } = await import('../src')
@@ -10,15 +11,14 @@ const { customFieldService } = await import('@shopnex/custom-fields')
 
 const refused = (code: string) => (e: unknown) => e instanceof OrderError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
-const row = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
-const transactions = (id: string) =>
-  db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, id))
+const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
+const transactions = (id: string) => db.select().from(orderTransactions).where(eq(orderTransactions.orderId, id))
 const stockOf = async (variantId: string) =>
   (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, variantId)))[0]!.inventoryQuantity
-const asPaid = (id: string) => db.update(schema.orders).set({ financialStatus: 'paid' }).where(eq(schema.orders.id, id))
+const asPaid = (id: string) => db.update(orders).set({ financialStatus: 'paid' }).where(eq(orders.id, id))
 const sale = (orderId: string, amountCents: number, gateway = 'manual') =>
   db
-    .insert(schema.orderTransactions)
+    .insert(orderTransactions)
     .values({ orderId, kind: 'sale', status: 'success', gateway, amountCents, currency: 'USD' })
 
 before(async () => {
@@ -43,7 +43,7 @@ describe('marking an order paid', () => {
   test('a partly paid order records only what is outstanding', async () => {
     const o = await fx.place()
     await sale(o.id, 1000)
-    await db.update(schema.orders).set({ financialStatus: 'partially_paid' }).where(eq(schema.orders.id, o.id))
+    await db.update(orders).set({ financialStatus: 'partially_paid' }).where(eq(orders.id, o.id))
     await orderService.markAsPaid(SHOP, o.id)
     assert.deepEqual(
       (await transactions(o.id)).map((t) => t.amountCents).sort((a, b) => a - b),
@@ -95,7 +95,7 @@ describe('shipping an order', () => {
       trackingUrl: 'https://ups.example/1Z999',
     })
     assert.deepEqual([shipped.fulfillmentStatus, shipped.financialStatus], ['fulfilled', 'pending'])
-    const [f] = await db.select().from(schema.fulfillments).where(eq(schema.fulfillments.orderId, o.id))
+    const [f] = await db.select().from(fulfillments).where(eq(fulfillments.orderId, o.id))
     assert.deepEqual(
       [f?.status, f?.trackingCompany, f?.trackingNumber, f?.trackingUrl],
       ['success', 'UPS', '1Z999', 'https://ups.example/1Z999'],
@@ -105,7 +105,7 @@ describe('shipping an order', () => {
   test('blank tracking is none', async () => {
     const o = await fx.place()
     await orderService.fulfill(SHOP, o.id, { trackingCompany: '', trackingNumber: '' })
-    const [f] = await db.select().from(schema.fulfillments).where(eq(schema.fulfillments.orderId, o.id))
+    const [f] = await db.select().from(fulfillments).where(eq(fulfillments.orderId, o.id))
     assert.deepEqual([f?.trackingCompany, f?.trackingNumber, f?.trackingUrl], [null, null, null])
   })
 
@@ -117,7 +117,7 @@ describe('shipping an order', () => {
     await orderService.cancel(SHOP, c.id, { reason: 'other', restock: false })
     await assert.rejects(orderService.fulfill(SHOP, c.id), refused('ORDER_CANCELLED'))
     await assert.rejects(orderService.fulfill(SHOP, MISSING), refused('ORDER_NOT_FOUND'))
-    assert.equal((await db.select().from(schema.fulfillments).where(eq(schema.fulfillments.orderId, o.id))).length, 1)
+    assert.equal((await db.select().from(fulfillments).where(eq(fulfillments.orderId, o.id))).length, 1)
   })
 
   test('tells webhooks order.fulfilled', async () => {
@@ -316,7 +316,7 @@ describe('refunding part of an order', () => {
       ['refund', 'failure', 77],
     ]
     for (const [kind, status, amountCents] of kinds)
-      await db.insert(schema.orderTransactions).values({
+      await db.insert(orderTransactions).values({
         orderId: o.id,
         kind: kind as never,
         status: status as never,

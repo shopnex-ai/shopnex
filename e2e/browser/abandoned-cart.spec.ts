@@ -4,11 +4,12 @@
 // The delay is a shop setting, so the test sets it to the shortest and ages the carts instead of waiting.
 import { expect, test, type Page } from './test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, SHOP, requireApp, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
 import { abandonedCartSettings, emailDeliveries, emailSettings, emailSuppressions } from '@shopnex/email/schema'
 import { carts } from '@shopnex/cart/schema'
+import { orders } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
@@ -48,7 +49,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
+  const placed = await db.select({ id: orders.id }).from(orders).where(eq(orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
   await db.delete(emailSuppressions).where(eq(emailSuppressions.email, fx.email))
   await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
@@ -145,8 +146,8 @@ test('a shopper who finishes the order is not reminded', async ({ page }) => {
   await expect(page.getByText(/Transfer the total to IBAN E2E-0000/)).toBeVisible()
 
   // The order is paid for (here by the shop owner marking the bank transfer as received)
-  const [order] = await db.select().from(schema.orders).where(eq(schema.orders.email, fx.email))
-  await db.update(schema.orders).set({ financialStatus: 'paid' }).where(eq(schema.orders.id, order!.id))
+  const [order] = await db.select().from(orders).where(eq(orders.email, fx.email))
+  await db.update(orders).set({ financialStatus: 'paid' }).where(eq(orders.id, order!.id))
 
   await age(cart.id)
   // Long enough for the worker to look at it several times

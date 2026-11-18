@@ -6,7 +6,7 @@ import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { productService } from '@shopnex/catalog'
 import { customerService } from '@shopnex/customers'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { session as sessionTable } from '@shopnex/auth/schema'
 import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
@@ -14,6 +14,8 @@ import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { user } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { carts } from '@shopnex/cart/schema'
+import { orderItems, orders, orderTransactions } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -105,7 +107,7 @@ async function buyer(label: string, opts: { open?: boolean } = {}) {
 }
 
 const ordersOf = async (customerEmail: string, ids: string[]) =>
-  (await db.select().from(schema.orders).where(eq(schema.orders.shopId, SHOP))).filter(
+  (await db.select().from(orders).where(eq(orders.shopId, SHOP))).filter(
     (o) => ids.includes(o.id) && (customerEmail === '*' || o.email === customerEmail),
   )
 
@@ -124,7 +126,7 @@ describe('export', () => {
       ipAddress: '203.0.113.9',
       userAgent: 'E2E browser',
     })
-    await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, customer.id))
+    await db.update(customers).set({ userId }).where(eq(customers.id, customer.id))
     // A checkout started with the address, a mail sent to it, and an unsubscribe
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 1 }])
     await db.update(carts).set({ email }).where(eq(carts.token, cart.id))
@@ -254,7 +256,7 @@ describe('erase', () => {
     const userId = randomUUID()
     userIds.push(userId)
     await db.insert(user).values({ id: userId, name: 'Gone', email: `login-${run}-gone@example.com` })
-    await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, customer.id))
+    await db.update(customers).set({ userId }).where(eq(customers.id, customer.id))
 
     const result = ok(await call('POST', `/admin/customers/${customer.id}/erase`, undefined, owner))
     assert.deepEqual(result, {
@@ -271,7 +273,7 @@ describe('erase', () => {
     assert.equal((await db.select().from(user).where(eq(user.id, userId))).length, 0)
 
     // The order stays as a record, without the buyer
-    const [order] = await db.select().from(schema.orders).where(eq(schema.orders.id, finished.id))
+    const [order] = await db.select().from(orders).where(eq(orders.id, finished.id))
     assert.equal(order!.orderNumber, finished.orderNumber)
     assert.equal(order!.totalCents, finished.totalCents)
     assert.equal(order!.financialStatus, 'paid')
@@ -289,13 +291,10 @@ describe('erase', () => {
       assert.equal(a!.countryCode, 'DE', 'the delivery country stays: tax is reported by it')
       assert.equal(a!.province, 'BE')
     }
-    const items = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, finished.id))
+    const items = await db.select().from(orderItems).where(eq(orderItems.orderId, finished.id))
     assert.equal(items.length, 1)
     assert.equal(items[0]!.quantity, 2)
-    const sales = await db
-      .select()
-      .from(schema.orderTransactions)
-      .where(eq(schema.orderTransactions.orderId, finished.id))
+    const sales = await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, finished.id))
     assert.ok(
       sales.some((t) => t.kind === 'sale'),
       'the payment is still on the books',
@@ -357,7 +356,7 @@ describe('erase', () => {
   test('a login that is also staff, or another shop’s customer, is left alone', async () => {
     const { customer } = await buyer('staff')
     const staff = await fx.account('admin')
-    await db.update(schema.customers).set({ userId: staff.id }).where(eq(schema.customers.id, customer.id))
+    await db.update(customers).set({ userId: staff.id }).where(eq(customers.id, customer.id))
     const result = ok(await call('POST', `/admin/customers/${customer.id}/erase`, undefined, owner))
     assert.equal(result.loginAccountDeleted, false)
     assert.equal((await db.select().from(user).where(eq(user.id, staff.id))).length, 1)
@@ -367,8 +366,8 @@ describe('erase', () => {
     const userId = randomUUID()
     userIds.push(userId)
     await db.insert(user).values({ id: userId, name: 'Shared', email: `login-${run}-shared@example.com` })
-    await db.update(schema.customers).set({ userId }).where(eq(schema.customers.id, shared.customer.id))
-    await db.insert(schema.customers).values({ shopId: other.id, email: shared.email, userId })
+    await db.update(customers).set({ userId }).where(eq(customers.id, shared.customer.id))
+    await db.insert(customers).values({ shopId: other.id, email: shared.email, userId })
     ok(await call('POST', `/admin/customers/${shared.customer.id}/erase`, undefined, owner))
     assert.equal((await db.select().from(user).where(eq(user.id, userId))).length, 1, 'still the other shop’s login')
   })

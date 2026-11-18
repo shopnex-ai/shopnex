@@ -11,7 +11,15 @@ const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@
 requireEmbeddedDatabase()
 const { CustomFieldError, customFieldService: fields } = await import('../src')
 const { customFieldDefinitions } = await import('../src/custom-fields.schema')
-const { eq } = await import('drizzle-orm')
+const { eq, sql } = await import('drizzle-orm')
+
+// The tables of customers and orders, by name: custom-fields sits below them and cannot import their tables, not even in a test
+const valuesOf = async (table: 'customers' | 'orders', id: string) =>
+  (
+    await db.execute<{ custom_fields: unknown }>(
+      sql`select custom_fields from ${sql.identifier(table)} where id = ${id}`,
+    )
+  ).rows[0]?.custom_fields
 
 const SHOP = 'default'
 
@@ -159,18 +167,18 @@ describe('remove', () => {
   test('deletes the definition and the values stored under its key, and nothing else', async () => {
     const f = await fields.create(SHOP, { resource: 'customer', key: 'rm_me', label: 'x', type: 'text' }, db)
     await fields.create(SHOP, { resource: 'customer', key: 'rm_keep', label: 'x', type: 'text' }, db)
-    const [customer] = await db
-      .insert(schema.customers)
-      .values({ shopId: SHOP, email: 'remove@example.com', customFields: { rm_me: 'gone', rm_keep: 'stays' } })
-      .returning()
+    const customer = (
+      await db.execute<{ id: string }>(
+        sql`insert into customers (shop_id, email, custom_fields) values (${SHOP}, 'remove@example.com', ${JSON.stringify({ rm_me: 'gone', rm_keep: 'stays' })}::jsonb) returning id`,
+      )
+    ).rows[0]!
     const removed = await fields.remove(SHOP, f.id, db)
     assert.equal(removed?.key, 'rm_me')
     assert.deepEqual(
       (await fields.list(SHOP, 'customer', db)).map((d) => d.key).filter((k) => k.startsWith('rm_')),
       ['rm_keep'],
     )
-    const [after] = await db.select().from(schema.customers).where(eq(schema.customers.id, customer!.id))
-    assert.deepEqual(after?.customFields, { rm_keep: 'stays' })
+    assert.deepEqual(await valuesOf('customers', customer.id), { rm_keep: 'stays' })
   })
 
   test('clears the value from products and orders too, only in the shop and only under that key', async () => {
@@ -188,42 +196,36 @@ describe('remove', () => {
         customFields: { rm_prod: 'a', rm_ord: 'kept' },
       })
       .returning()
-    const [order] = await db
-      .insert(schema.orders)
-      .values({
-        shopId: SHOP,
-        orderNumber: 990_001,
-        channelId: (await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP)))[0]!.id,
-        email: 'rm@example.com',
-        subtotalCents: 1,
-        totalCents: 1,
-        customFields: { rm_ord: 'b', rm_prod: 'kept' },
-      })
-      .returning()
+    const channelId = (await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP)))[0]!.id
+    const order = (
+      await db.execute<{ id: string }>(
+        sql`insert into orders (shop_id, order_number, channel_id, email, subtotal_cents, total_cents, custom_fields)
+            values (${SHOP}, 990001, ${channelId}, 'rm@example.com', 1, 1, ${JSON.stringify({ rm_ord: 'b', rm_prod: 'kept' })}::jsonb) returning id`,
+      )
+    ).rows[0]!
     await fields.remove(SHOP, onProduct.id, db)
     await fields.remove(SHOP, onOrder.id, db)
     const [p] = await db.select().from(schema.products).where(eq(schema.products.id, product!.id))
-    const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, order!.id))
     assert.deepEqual(
       p?.customFields,
       { rm_ord: 'kept' },
       'a product keeps a value under a key that belongs to another resource',
     )
-    assert.deepEqual(o?.customFields, { rm_prod: 'kept' })
+    assert.deepEqual(await valuesOf('orders', order.id), { rm_prod: 'kept' })
     await db.delete(schema.products).where(eq(schema.products.id, product!.id))
-    await db.delete(schema.orders).where(eq(schema.orders.id, order!.id))
+    await db.execute(sql`delete from orders where id = ${order.id}`)
   })
 
   test('leaves another shop’s values under the same key alone', async () => {
     await db.insert(shops).values({ id: 'cf-other', name: 'Other', slug: 'cf-other' }).onConflictDoNothing()
     const f = await fields.create(SHOP, { resource: 'customer', key: 'rm_shared', label: 'x', type: 'text' }, db)
-    const [theirs] = await db
-      .insert(schema.customers)
-      .values({ shopId: 'cf-other', email: 'theirs@example.com', customFields: { rm_shared: 'theirs' } })
-      .returning()
+    const theirs = (
+      await db.execute<{ id: string }>(
+        sql`insert into customers (shop_id, email, custom_fields) values ('cf-other', 'theirs@example.com', ${JSON.stringify({ rm_shared: 'theirs' })}::jsonb) returning id`,
+      )
+    ).rows[0]!
     await fields.remove(SHOP, f.id, db)
-    const [after] = await db.select().from(schema.customers).where(eq(schema.customers.id, theirs!.id))
-    assert.deepEqual(after?.customFields, { rm_shared: 'theirs' })
+    assert.deepEqual(await valuesOf('customers', theirs.id), { rm_shared: 'theirs' })
     await db.delete(shops).where(eq(shops.id, 'cf-other'))
   })
 

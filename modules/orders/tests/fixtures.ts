@@ -2,6 +2,8 @@
 // read what was sent, and the cleanup of everything an order causes. Importing this file picks the database, so it must come before anything
 // imports @shopnex/db.
 import { shops } from '@shopnex/core/schema'
+import { orders } from '../src/orders.schema'
+import { customers } from '@shopnex/customers/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -114,8 +116,8 @@ export async function place(patch: Partial<Parameters<typeof orderService.create
 export async function cleanup() {
   const shopIds = [SHOP, OTHER_SHOP]
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, shopIds))
-  await db.delete(schema.orders).where(inArray(schema.orders.shopId, shopIds))
-  await db.delete(schema.customers).where(inArray(schema.customers.shopId, shopIds))
+  await db.delete(orders).where(inArray(orders.shopId, shopIds))
+  await db.delete(customers).where(inArray(customers.shopId, shopIds))
   const { taxRates } = await import('@shopnex/pricing/schema')
   await db.delete(taxRates).where(inArray(taxRates.shopId, shopIds))
   if (made.discounts.length) await discountService.removeMany(SHOP, made.discounts, db)

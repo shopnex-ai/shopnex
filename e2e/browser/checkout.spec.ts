@@ -4,6 +4,7 @@ import { expect, test } from './test'
 import { and, eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, requireApp } from '../lib'
+import { orders } from '@shopnex/orders/schema'
 
 const STOREFRONT_URL = (process.env.STOREFRONT_URL ?? 'http://localhost:4321').replace(/\/$/, '')
 
@@ -35,7 +36,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // The order was placed through the browser, so Fixtures doesn't know it yet
-  const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
+  const placed = await db.select({ id: orders.id }).from(orders).where(eq(orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
   await fx.cleanup()
 })

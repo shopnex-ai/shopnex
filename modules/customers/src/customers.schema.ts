@@ -1,6 +1,7 @@
+// Shop-scoped customers. Orders and carts point at this table, so it is the first of the commerce tables to be reached.
 import { jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { shops, user } from '@shopnex/core/schema'
-import type { CustomFieldValues } from './custom-field-values'
+import type { CustomFieldValues } from '@shopnex/db/schema'
 
 // Shop-scoped customer records. userId links a storefront login when there is one;
 // guests (checkout without an account) have none.

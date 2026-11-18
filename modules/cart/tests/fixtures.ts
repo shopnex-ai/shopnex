@@ -2,6 +2,8 @@
 // afterwards. Importing this file picks the database, so it must come before anything imports @shopnex/db.
 import { shops } from '@shopnex/core/schema'
 import { carrierServices, carts, shippingRates } from '../src/cart.schema'
+import { orders } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'cart-test-secret-0123456789-abcdefghij'
@@ -100,8 +102,8 @@ export const trackApp = (id: string) => made.apps.push(id)
 export async function cleanup() {
   const shopIds = [SHOP, OTHER_SHOP]
   await db.delete(carts).where(inArray(carts.shopId, shopIds))
-  await db.delete(schema.orders).where(inArray(schema.orders.shopId, shopIds))
-  await db.delete(schema.customers).where(inArray(schema.customers.shopId, shopIds))
+  await db.delete(orders).where(inArray(orders.shopId, shopIds))
+  await db.delete(customers).where(inArray(customers.shopId, shopIds))
   await db.delete(shippingRates).where(inArray(shippingRates.shopId, shopIds))
   await db.delete(carrierServices).where(inArray(carrierServices.shopId, shopIds))
   const { taxRates } = await import('@shopnex/pricing/schema')

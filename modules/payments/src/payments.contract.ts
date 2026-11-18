@@ -2,6 +2,7 @@
 // Zod, no oRPC or server code.
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { CANCEL_REASONS } from '@shopnex/orders/schema'
 import { paymentMethods } from './payments.schema'
 import { apps } from '@shopnex/core/schema'
 
@@ -64,4 +65,15 @@ export const paymentsAppOutput = createSelectSchema(paymentMethods).pick({
   gateway: true,
   ready: true,
   active: true,
+})
+
+// Cancelling and refunding an order: its routes are here because they send the refund to the payments app
+export const cancelOrderInput = z.object({
+  reason: z.enum(CANCEL_REASONS),
+  restock: z.boolean(),
+})
+
+export const refundOrderInput = z.object({
+  // In the smallest unit of the order's currency (cents), above zero and at most what is left to refund
+  amountCents: z.number().int().positive(),
 })

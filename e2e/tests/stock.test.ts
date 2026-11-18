@@ -9,6 +9,7 @@ import { db, schema } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { orders } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -55,7 +56,7 @@ before(async () => {
 
 after(async () => {
   for (const id of directOrders) await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
-  if (directOrders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, directOrders))
+  if (directOrders.length) await db.delete(orders).where(inArray(orders.id, directOrders))
   await fx.cleanup()
   if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
   await closeDb()

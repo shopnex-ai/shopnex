@@ -13,5 +13,5 @@ export {
   type Order,
   type OrderItem,
   type TaxLine,
-} from '@shopnex/db/schema'
+} from './orders.schema'
 export * as orderAnalytics from './analytics'

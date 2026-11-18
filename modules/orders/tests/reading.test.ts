@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { orderItems, orders, orderTransactions } from '../src/orders.schema'
 
 const { db, schema, eq, orderService, customerService, SHOP, OTHER_SHOP } = fx
 
@@ -22,17 +23,17 @@ describe('the list', () => {
     const ada = await fx.customer({ name: 'Ada' })
     const [a, b, c] = [await fx.place({ customerId: ada.id }), await fx.place(), await fx.place()]
     await db
-      .update(schema.orders)
+      .update(orders)
       .set({ createdAt: new Date(Date.now() - 3000) })
-      .where(eq(schema.orders.id, a.id))
+      .where(eq(orders.id, a.id))
     await db
-      .update(schema.orders)
+      .update(orders)
       .set({ createdAt: new Date(Date.now() - 2000) })
-      .where(eq(schema.orders.id, b.id))
+      .where(eq(orders.id, b.id))
     await db
-      .update(schema.orders)
+      .update(orders)
       .set({ createdAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.orders.id, c.id))
+      .where(eq(orders.id, c.id))
     const p = await fx.product({}, OTHER_SHOP)
     await orderService.create(OTHER_SHOP, {
       email: 'x@example.test',
@@ -116,7 +117,7 @@ describe('one order', () => {
     })
     assert.equal(await orderService.removeMany(SHOP, [a.id, theirs.id, MISSING]), 1)
     assert.equal(await orderService.removeMany(SHOP, []), 0)
-    assert.equal((await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, a.id))).length, 0)
+    assert.equal((await db.select().from(orderItems).where(eq(orderItems.orderId, a.id))).length, 0)
     assert.ok(await orderService.getById(SHOP, b.id))
     assert.ok(await orderService.getById(OTHER_SHOP, theirs.id))
   })
@@ -200,8 +201,7 @@ describe('importing history', () => {
       [first.orderNumber + 1, first.orderNumber + 2],
     )
     assert.equal(
-      (await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, imported[0]!.id)))
-        .length,
+      (await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, imported[0]!.id))).length,
       0,
     )
     assert.equal((await sent()).length, 1, 'only the real order was announced')

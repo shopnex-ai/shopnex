@@ -1,5 +1,3 @@
 export * from './channels'
 export * from './catalog'
-export * from './customers'
-export * from './orders'
 export * from './custom-field-values'

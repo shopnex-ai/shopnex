@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops } from '@shopnex/core/schema'
+import { customers } from '../src/customers.schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -36,7 +37,7 @@ after(async () => {
 
 async function cleanup() {
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER]))
-  await db.delete(schema.customers).where(inArray(schema.customers.shopId, [SHOP, OTHER]))
+  await db.delete(customers).where(inArray(customers.shopId, [SHOP, OTHER]))
   const { customFieldDefinitions } = await import('@shopnex/custom-fields/schema')
   await db.delete(customFieldDefinitions).where(inArray(customFieldDefinitions.shopId, [SHOP, OTHER]))
 }

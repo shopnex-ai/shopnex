@@ -3,6 +3,7 @@
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { apps } from '@shopnex/core/schema'
+import { orders } from '@shopnex/orders/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -104,10 +105,10 @@ export async function paymentsApp(
 
 let orderNumber = 800_000
 /** An unpaid order of 25.00 USD, unless said otherwise */
-export async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
+export async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
   const [channel] = await db.select({ id: schema.channels.id }).from(schema.channels).limit(1)
   const [row] = await db
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId: SHOP,
       orderNumber: ++orderNumber,
@@ -127,7 +128,7 @@ export async function sessionOf(id: string) {
 }
 
 export async function cleanup() {
-  await db.delete(schema.orders).where(eq(schema.orders.shopId, SHOP))
+  await db.delete(orders).where(eq(orders.shopId, SHOP))
   await db.delete(paymentMethods).where(eq(paymentMethods.shopId, SHOP))
   await db.delete(appInstallations).where(eq(appInstallations.shopId, SHOP))
   await db.delete(apps).where(eq(apps.source, 'custom'))

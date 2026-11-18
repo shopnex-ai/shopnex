@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { orders } from '../src/orders.schema'
 
 const { db, schema, eq, SHOP, OTHER_SHOP } = fx
 const { orderAnalytics } = await import('../src')
@@ -20,13 +21,13 @@ after(fx.cleanup)
 /** An order of this total, placed this many days ago */
 async function order(
   daysAgo: number,
-  patch: Partial<typeof schema.orders.$inferInsert> & { customerId?: string | null; shopId?: string } = {},
+  patch: Partial<typeof orders.$inferInsert> & { customerId?: string | null; shopId?: string } = {},
 ) {
   const shopId = patch.shopId ?? SHOP
   await fx.onlineStore(shopId)
   const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, shopId))
   const [o] = await db
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId,
       orderNumber: Math.floor(Math.random() * 1e8),

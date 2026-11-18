@@ -7,6 +7,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { apps, shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 import { carts, shippingRates } from '../src/cart.schema'
+import { orderItems, orders, orderShippingLines } from '@shopnex/orders/schema'
 
 const { db, schema, eq, cartService, SHOP } = fx
 const { checkoutService, carrierService, CartError } = await import('../src')
@@ -208,7 +209,7 @@ describe('placing the order', () => {
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 2 }])
     return { rate, method, p, c }
   }
-  const order = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
+  const order = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 
   test('makes the order from the cart with its prices, the rate and the method, and completes the cart; a manual method is not paid yet', async () => {
     const { rate, method, c } = await ready()
@@ -232,7 +233,7 @@ describe('placing the order', () => {
       [4000, 500, 4500, 'pending', 'manual', 'Gift', (await fx.onlineStore()).id],
     )
     assert.equal(o.email, 'buyer@example.test')
-    const [item] = await db.select().from(schema.orderItems).where(eq(schema.orderItems.orderId, o.id))
+    const [item] = await db.select().from(orderItems).where(eq(orderItems.orderId, o.id))
     assert.deepEqual([item?.title, item?.quantity, item?.unitPriceCents], ['Tee', 2, 2000])
     const done = await cartService.findByToken(SHOP, c.token)
     assert.deepEqual([done?.status, done?.orderId, done?.email], ['completed', o.id, 'buyer@example.test'])
@@ -253,7 +254,7 @@ describe('placing the order', () => {
     const placed = await checkoutService.complete(SHOP, c.token, { email: 'buyer@example.test' }, RETURN)
     const o = await order(placed.orderId)
     assert.equal(o.shippingCents, 500)
-    const lines = await db.select().from(schema.orderShippingLines).where(eq(schema.orderShippingLines.orderId, o.id))
+    const lines = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, o.id))
     assert.deepEqual(
       lines.map((l) => [l.title, l.code]),
       [['Standard', rate.id]],
@@ -276,7 +277,7 @@ describe('placing the order', () => {
       [again.orderId, again.orderNumber, again.alreadyCompleted],
       [first.orderId, first.orderNumber, true],
     )
-    assert.equal((await db.select().from(schema.orders).where(eq(schema.orders.shopId, SHOP))).length, 1)
+    assert.equal((await db.select().from(orders).where(eq(orders.shopId, SHOP))).length, 1)
   })
 
   test('takes the stock for the order, and an item that sold out meanwhile makes the whole checkout fail with nothing placed', async () => {
@@ -290,7 +291,7 @@ describe('placing the order', () => {
       checkoutService.complete(SHOP, c.token, { email: 'buyer@example.test' }, RETURN),
       (e: unknown) => e instanceof Error,
     )
-    assert.equal((await db.select().from(schema.orders).where(eq(schema.orders.shopId, SHOP))).length, 0)
+    assert.equal((await db.select().from(orders).where(eq(orders.shopId, SHOP))).length, 0)
     assert.equal((await cartService.findByToken(SHOP, c.token))?.status, 'active')
     await db
       .update(schema.productVariants)
@@ -385,12 +386,9 @@ describe('placing the order with a carrier service', () => {
       { email: 'a@example.test', shippingAddress: to, shippingRateId: shown.shippingRates[0]!.id },
       RETURN,
     )
-    const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, placed.orderId))
+    const [o] = await db.select().from(orders).where(eq(orders.id, placed.orderId))
     assert.deepEqual([o?.shippingCents, o?.totalCents], [1500, 3500])
-    const [line] = await db
-      .select()
-      .from(schema.orderShippingLines)
-      .where(eq(schema.orderShippingLines.orderId, placed.orderId))
+    const [line] = await db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, placed.orderId))
     assert.deepEqual([line?.title, line?.code], ['Air', `carrier:${service.id}:air`])
   })
 
@@ -406,10 +404,7 @@ describe('placing the order with a carrier service', () => {
       { email: 'a@example.test', shippingAddress: to },
       RETURN,
     )
-    assert.equal(
-      (await db.select().from(schema.orders).where(eq(schema.orders.id, placed.orderId)))[0]?.shippingCents,
-      400,
-    )
+    assert.equal((await db.select().from(orders).where(eq(orders.id, placed.orderId)))[0]?.shippingCents, 400)
   })
 
   test('a rate the carrier no longer offers is INVALID_SHIPPING_RATE', async () => {
@@ -448,7 +443,7 @@ describe('placing the order with a carrier service', () => {
       (e: unknown) =>
         e instanceof CartError && e.code === 'INVALID_SHIPPING_RATE' && /can't ship to this address/.test(e.message),
     )
-    assert.equal((await db.select().from(schema.orders).where(eq(schema.orders.shopId, SHOP))).length, 0)
+    assert.equal((await db.select().from(orders).where(eq(orders.shopId, SHOP))).length, 0)
   })
 
   test('a carrier that is down falls back to the shop’s flat rates', async () => {
@@ -461,9 +456,6 @@ describe('placing the order with a carrier service', () => {
       { email: 'a@example.test', shippingAddress: to, shippingRateId: flat.id },
       RETURN,
     )
-    assert.equal(
-      (await db.select().from(schema.orders).where(eq(schema.orders.id, placed.orderId)))[0]?.shippingCents,
-      700,
-    )
+    assert.equal((await db.select().from(orders).where(eq(orders.id, placed.orderId)))[0]?.shippingCents, 700)
   })
 })

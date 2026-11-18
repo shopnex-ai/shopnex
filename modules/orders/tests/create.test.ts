@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
+import { orders } from '../src/orders.schema'
 
 const { db, schema, eq, orderService, SHOP, OTHER_SHOP } = fx
 const { OrderError } = await import('../src')
@@ -11,10 +12,10 @@ const { OrderError } = await import('../src')
 const refused = (code: string) => (e: unknown) => e instanceof OrderError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
 const variantOf = (p: Awaited<ReturnType<typeof fx.product>>) => p.variants[0]!.id
-const row = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
+const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const stockOf = async (variantId: string) =>
   (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, variantId)))[0]!.inventoryQuantity
-const orderCount = async () => (await db.select().from(schema.orders).where(eq(schema.orders.shopId, SHOP))).length
+const orderCount = async () => (await db.select().from(orders).where(eq(orders.shopId, SHOP))).length
 
 before(async () => {
   await fx.prepareDatabase()

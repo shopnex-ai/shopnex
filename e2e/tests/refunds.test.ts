@@ -3,9 +3,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 
@@ -34,9 +35,9 @@ async function paidOrder() {
 }
 
 const refund = (id: string, amountCents: number) => call('POST', `/admin/orders/${id}/refund`, { amountCents }, admin)
-const row = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
+const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const refunds = async (id: string) =>
-  (await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, id)))
+  (await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, id)))
     .filter((t) => t.kind === 'refund')
     .map((t) => ({ cents: t.amountCents, status: t.status }))
 

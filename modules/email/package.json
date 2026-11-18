@@ -19,6 +19,7 @@
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/core": "workspace:*",
+    "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",

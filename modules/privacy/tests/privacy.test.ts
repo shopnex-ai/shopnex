@@ -5,6 +5,8 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops, user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { carts } from '@shopnex/cart/schema'
+import { orderItems, orders, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
+import { customers } from '@shopnex/customers/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -44,8 +46,8 @@ async function cleanup() {
   await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, [SHOP, OTHER]))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER]))
   if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
-  if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
-  if (made.customers.length) await db.delete(schema.customers).where(inArray(schema.customers.id, made.customers))
+  if (made.orders.length) await db.delete(orders).where(inArray(orders.id, made.orders))
+  if (made.customers.length) await db.delete(customers).where(inArray(customers.id, made.customers))
   await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))
   if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0
@@ -71,9 +73,9 @@ async function user(patch: Partial<typeof userTable.$inferInsert> = {}) {
   return row!
 }
 
-async function customer(patch: Partial<typeof schema.customers.$inferInsert> = {}, shopId = SHOP) {
+async function customer(patch: Partial<typeof customers.$inferInsert> = {}, shopId = SHOP) {
   const [row] = await db
-    .insert(schema.customers)
+    .insert(customers)
     .values({ shopId, email: `c-${unique()}@example.test`, name: 'Ada Buyer', phone: '+100', ...patch })
     .returning()
   made.customers.push(row!.id)
@@ -93,9 +95,9 @@ const address = {
   phone: '+100',
 }
 
-async function order(patch: Partial<typeof schema.orders.$inferInsert> = {}) {
+async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.orders)
+    .insert(orders)
     .values({
       shopId: SHOP,
       orderNumber: ++orderNumber,
@@ -169,11 +171,9 @@ describe('exportData', () => {
   test('an order comes with its items, shipping lines and transactions', async () => {
     const c = await customer()
     const o = await order({ customerId: c.id })
-    await db
-      .insert(schema.orderItems)
-      .values({ orderId: o.id, title: 'Shirt', unitPriceCents: 500, quantity: 2, sku: 'S-1' })
-    await db.insert(schema.orderShippingLines).values({ orderId: o.id, title: 'Standard', priceCents: 100 })
-    await db.insert(schema.orderTransactions).values({
+    await db.insert(orderItems).values({ orderId: o.id, title: 'Shirt', unitPriceCents: 500, quantity: 2, sku: 'S-1' })
+    await db.insert(orderShippingLines).values({ orderId: o.id, title: 'Standard', priceCents: 100 })
+    await db.insert(orderTransactions).values({
       orderId: o.id,
       kind: 'sale',
       status: 'success',
@@ -265,7 +265,7 @@ describe('erase', () => {
       assert.match(e.message, new RegExp(`#${String(orderNumber - 2)}, #${String(orderNumber - 1)}`))
       return true
     })
-    assert.ok((await db.select().from(schema.customers).where(eq(schema.customers.id, c.id)))[0])
+    assert.ok((await db.select().from(customers).where(eq(customers.id, c.id)))[0])
   })
 
   test('a cancelled order is never open, even unpaid and unfulfilled', async () => {
@@ -288,7 +288,7 @@ describe('erase', () => {
     const result = await privacyService.erase(SHOP, c.id)
     assert.equal(result.ordersAnonymized, 2)
     for (const id of [linked.id, byEmail.id]) {
-      const [o] = await db.select().from(schema.orders).where(eq(schema.orders.id, id))
+      const [o] = await db.select().from(orders).where(eq(orders.id, id))
       assert.deepEqual([o?.email, o?.phone, o?.note], ['erased@erased.invalid', null, null])
       assert.deepEqual(
         [
@@ -302,7 +302,7 @@ describe('erase', () => {
       assert.deepEqual([o?.shippingAddress?.countryCode, o?.shippingAddress?.province], ['FR', 'IDF'])
       assert.equal(o?.totalCents, 1000)
     }
-    const [kept] = await db.select().from(schema.orders).where(eq(schema.orders.id, unrelated.id))
+    const [kept] = await db.select().from(orders).where(eq(orders.id, unrelated.id))
     assert.equal(kept?.email, 'someone@example.test')
   })
 
@@ -375,7 +375,7 @@ describe('erase', () => {
     ])
     const result = await privacyService.erase(SHOP, c.id)
     assert.equal(result.webhookDeliveriesDeleted, 1)
-    assert.equal((await db.select().from(schema.customers).where(eq(schema.customers.id, c.id))).length, 0)
+    assert.equal((await db.select().from(customers).where(eq(customers.id, c.id))).length, 0)
     const left = await db.select().from(webhookDeliveries).where(eq(webhookDeliveries.endpointId, endpoint!.id))
     assert.deepEqual(
       left.map((d) => d.body),

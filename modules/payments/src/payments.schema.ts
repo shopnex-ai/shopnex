@@ -5,8 +5,8 @@
 // amount it decides, sends it to the app, and the app resolves or rejects it through the Admin API. Only
 // ShopNex changes the order: an app can say "paid" for a session, never for an arbitrary order or amount.
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { orders, orderTransactions } from '@shopnex/db/schema'
 import { apps, shops } from '@shopnex/core/schema'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 // 'manual': paid outside ShopNex (bank transfer, cash on delivery…) and marked as paid by staff.
 // 'app': a payments app (Stripe…) takes the payment; it registers the method itself (Shopify paymentsAppConfigure)
