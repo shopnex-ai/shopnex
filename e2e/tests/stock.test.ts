@@ -5,11 +5,12 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { orders } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -36,9 +37,9 @@ async function tracked(stock: number) {
 
 const stockOf = async (variantId: string) => {
   const [row] = await db
-    .select({ stock: schema.productVariants.inventoryQuantity })
-    .from(schema.productVariants)
-    .where(eq(schema.productVariants.id, variantId))
+    .select({ stock: productVariants.inventoryQuantity })
+    .from(productVariants)
+    .where(eq(productVariants.id, variantId))
   return row!.stock
 }
 
@@ -58,7 +59,7 @@ after(async () => {
   for (const id of directOrders) await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
   if (directOrders.length) await db.delete(orders).where(inArray(orders.id, directOrders))
   await fx.cleanup()
-  if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
+  if (productIds.length) await db.delete(products).where(inArray(products.id, productIds))
   await closeDb()
 })
 
@@ -106,10 +107,7 @@ describe('stock', () => {
   test('stock that drops after the cart was made is refused at checkout and nothing is taken', async () => {
     const variantId = await tracked(2)
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 2 }])
-    await db
-      .update(schema.productVariants)
-      .set({ inventoryQuantity: 1 })
-      .where(eq(schema.productVariants.id, variantId))
+    await db.update(productVariants).set({ inventoryQuantity: 1 }).where(eq(productVariants.id, variantId))
 
     const refused = await fx.complete(cart.id, { countryCode: 'US' }, shippingRateId)
     assert.equal(refused.status, 400, JSON.stringify(refused.body))

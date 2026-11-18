@@ -8,8 +8,9 @@ import { apps, shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 import { carts, shippingRates } from '../src/cart.schema'
 import { orderItems, orders, orderShippingLines } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, cartService, SHOP } = fx
+const { db, eq, cartService, SHOP } = fx
 const { checkoutService, carrierService, CartError } = await import('../src')
 const { taxService } = await import('@shopnex/pricing')
 
@@ -284,9 +285,9 @@ describe('placing the order', () => {
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 5 }] })
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 3 }])
     await db
-      .update(schema.productVariants)
+      .update(productVariants)
       .set({ inventoryQuantity: 1 })
-      .where(eq(schema.productVariants.id, variantOf(p)))
+      .where(eq(productVariants.id, variantOf(p)))
     await assert.rejects(
       checkoutService.complete(SHOP, c.token, { email: 'buyer@example.test' }, RETURN),
       (e: unknown) => e instanceof Error,
@@ -294,14 +295,14 @@ describe('placing the order', () => {
     assert.equal((await db.select().from(orders).where(eq(orders.shopId, SHOP))).length, 0)
     assert.equal((await cartService.findByToken(SHOP, c.token))?.status, 'active')
     await db
-      .update(schema.productVariants)
+      .update(productVariants)
       .set({ inventoryQuantity: 5 })
-      .where(eq(schema.productVariants.id, variantOf(p)))
+      .where(eq(productVariants.id, variantOf(p)))
     await checkoutService.complete(SHOP, c.token, { email: 'buyer@example.test' }, RETURN)
     const [v] = await db
       .select()
-      .from(schema.productVariants)
-      .where(eq(schema.productVariants.id, variantOf(p)))
+      .from(productVariants)
+      .where(eq(productVariants.id, variantOf(p)))
     assert.equal(v?.inventoryQuantity, 2)
   })
 
@@ -326,7 +327,7 @@ describe('placing the order', () => {
     )
     const p = await fx.product()
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 1 }])
-    await db.update(schema.products).set({ status: 'archived' }).where(eq(schema.products.id, p.id))
+    await db.update(products).set({ status: 'archived' }).where(eq(products.id, p.id))
     await assert.rejects(
       checkoutService.complete(SHOP, c.token, { email: 'a@example.test' }, RETURN),
       (e: unknown) =>

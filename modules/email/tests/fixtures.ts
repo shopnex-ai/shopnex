@@ -13,18 +13,20 @@ import {
 import { cartLines, carts } from '@shopnex/cart/schema'
 import { orders } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 delete process.env.TENANCY_MODE
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { shopMembers } = await import('@shopnex/tenancy/schema')
 
-export { db, schema, prepareDatabase, eq }
+export { db, prepareDatabase, eq }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'email-other-shop'
 
@@ -144,9 +146,9 @@ export async function owner(shopId = SHOP) {
 
 export async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
   const shopId = patch.shopId ?? SHOP
-  let [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, shopId))
+  let [channel] = await db.select().from(channels).where(eq(channels.shopId, shopId))
   channel ??= (
-    await db.insert(schema.channels).values({ shopId, handle: 'online-store', name: 'Online Store' }).returning()
+    await db.insert(channels).values({ shopId, handle: 'online-store', name: 'Online Store' }).returning()
   )[0]!
   const [row] = await db
     .insert(orders)
@@ -174,14 +176,14 @@ export async function customer(patch: Partial<typeof customers.$inferInsert> = {
 }
 
 /** A product with one variant, for the lines of a cart */
-export async function variant(patch: Partial<typeof schema.productVariants.$inferInsert> = {}) {
+export async function variant(patch: Partial<typeof productVariants.$inferInsert> = {}) {
   const [product] = await db
-    .insert(schema.products)
+    .insert(products)
     .values({ shopId: SHOP, slug: `p-${unique()}`, title: 'Linen shirt', priceCents: 2500 })
     .returning()
   made.products.push(product!.id)
   const [row] = await db
-    .insert(schema.productVariants)
+    .insert(productVariants)
     .values({
       shopId: SHOP,
       productId: product!.id,
@@ -198,7 +200,7 @@ export async function variant(patch: Partial<typeof schema.productVariants.$infe
 export async function cart(
   opts: { email?: string | null; idleMinutes?: number; lines?: number; status?: 'active' | 'completed' } = {},
 ) {
-  const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
+  const [channel] = await db.select().from(channels).where(eq(channels.shopId, SHOP))
   const idle = new Date(Date.now() - (opts.idleMinutes ?? 0) * 60_000)
   const [row] = await db
     .insert(carts)
@@ -231,7 +233,7 @@ export async function cleanup() {
   if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
   if (made.orders.length) await db.delete(orders).where(inArray(orders.id, made.orders))
   if (made.customers.length) await db.delete(customers).where(inArray(customers.id, made.customers))
-  if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
+  if (made.products.length) await db.delete(products).where(inArray(products.id, made.products))
   if (made.users.length) {
     await db.delete(shopMembers).where(inArray(shopMembers.userId, made.users))
     await db.delete(userTable).where(inArray(userTable.id, made.users))

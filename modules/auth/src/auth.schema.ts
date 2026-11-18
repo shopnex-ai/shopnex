@@ -1,5 +1,5 @@
 // The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
-// history in modules/db/migrations. The `user` table stays in @shopnex/db/schema: it is one of the foundation tables that
+// history in modules/db/migrations. The `user` table is @shopnex/core's: it is one of the foundation tables that
 // every module points at (shops, user, apps, api_tokens).
 // Tables required by Better Auth (drizzle adapter), and the counters for rate limits
 import { index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'

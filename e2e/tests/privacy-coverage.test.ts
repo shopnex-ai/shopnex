@@ -7,9 +7,9 @@ import { describe, test } from 'node:test'
 import { getTableConfig } from 'drizzle-orm/pg-core'
 import { existsSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import * as core from '@shopnex/db/schema'
+import * as core from '@shopnex/core/schema'
 
-// The core tables, and the ones a module owns (modules/<name>/src/*.schema.ts): a table cannot leave the check by moving
+// The foundation tables, and the ones a module owns (modules/<name>/src/*.schema.ts): a table cannot leave the check by moving
 const modulesDir = fileURLToPath(new URL('../../modules/', import.meta.url))
 const moduleSchemaFiles = readdirSync(modulesDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && existsSync(`${modulesDir}${entry.name}/src`))

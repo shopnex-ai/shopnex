@@ -1,8 +1,9 @@
 // The demo catalog: 4 collections, 19 products. Every product is tagged "demo", which is how the sample
 // orders know which products to use (so they work next to products you added yourself).
 import { collectionService, productService, type ProductInput } from '@shopnex/catalog'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { and, eq } from 'drizzle-orm'
+import { products } from '@shopnex/catalog/schema'
 
 // Picsum gives every seed a stable photo; the second image stands in for a detail shot
 const image = (seed: string) => ({ url: `https://picsum.photos/seed/${seed}/900/900`, alt: seed.replaceAll('-', ' ') })
@@ -220,9 +221,9 @@ const catalog: { collection: string; description: string; products: ProductInput
 
 export async function seedDemoCatalog(shopId: string) {
   const [existing] = await db
-    .select({ id: schema.products.id })
-    .from(schema.products)
-    .where(and(eq(schema.products.shopId, shopId), eq(schema.products.vendor, 'Maison Lune')))
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.shopId, shopId), eq(products.vendor, 'Maison Lune')))
     .limit(1)
   if (existing) throw new Error('The demo products already exist in this shop.')
 

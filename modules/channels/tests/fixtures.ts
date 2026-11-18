@@ -1,20 +1,30 @@
 import { shops } from '@shopnex/core/schema'
+import { integer, pgTable, text, uuid } from 'drizzle-orm/pg-core'
+import { channels } from '../src/channels.schema'
 // What the channels tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { resourcePublications, storefrontKeys } = await import('../src/channels.schema')
 requireEmbeddedDatabase()
 const { eq, inArray, sql } = await import('drizzle-orm')
 
-export { db, schema, prepareDatabase }
+export { db, prepareDatabase }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'channels-other-shop'
 
 let counter = 0
 const unique = () => `${Date.now().toString(36)}${(++counter).toString(36)}`
+// A resource to publish: the products table, by name and only the columns a test needs (channels sits below catalog, so it cannot import it)
+export const products = pgTable('products', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shopId: text('shop_id').notNull(),
+  slug: text('slug').notNull(),
+  title: text('title').notNull(),
+  priceCents: integer('price_cents').notNull(),
+})
 const made = { channels: [] as string[], products: [] as string[] }
 
 export async function otherShop() {
@@ -25,9 +35,9 @@ export async function otherShop() {
 }
 
 /** A channel made directly (the service creates the default one itself) */
-export async function channel(patch: Partial<typeof schema.channels.$inferInsert> = {}) {
+export async function channel(patch: Partial<typeof channels.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.channels)
+    .insert(channels)
     .values({ shopId: SHOP, handle: `ch-${unique()}`, name: 'Test channel', ...patch })
     .returning()
   made.channels.push(row!.id)
@@ -36,7 +46,7 @@ export async function channel(patch: Partial<typeof schema.channels.$inferInsert
 
 export async function product() {
   const [row] = await db
-    .insert(schema.products)
+    .insert(products)
     .values({ shopId: SHOP, slug: `p-${unique()}`, title: 'Linen shirt', priceCents: 2500 })
     .returning()
   made.products.push(row!.id)
@@ -66,8 +76,8 @@ export async function cleanup() {
   await db.execute(sql`delete from orders where shop_id in (${SHOP}, ${OTHER_SHOP})`)
   await db.delete(resourcePublications).where(inArray(resourcePublications.shopId, [SHOP, OTHER_SHOP]))
   await db.delete(storefrontKeys).where(inArray(storefrontKeys.shopId, [SHOP, OTHER_SHOP]))
-  if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
-  await db.delete(schema.channels).where(inArray(schema.channels.shopId, [SHOP, OTHER_SHOP]))
+  if (made.products.length) await db.delete(products).where(inArray(products.id, made.products))
+  await db.delete(channels).where(inArray(channels.shopId, [SHOP, OTHER_SHOP]))
   made.channels.length = 0
   made.products.length = 0
 }

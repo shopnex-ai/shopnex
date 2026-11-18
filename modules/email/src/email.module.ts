@@ -9,7 +9,7 @@ import {
   emailTemplates,
 } from './email.schema'
 
-// It sits above orders and carts: it reads them, and email_deliveries points at them (which are still tables in db)
+// It sits above orders and carts: it reads them, and email_deliveries points at them
 export const emailModule = defineModule({
   name: 'email',
   dependsOn: ['cart', 'catalog', 'core', 'customers', 'db', 'orders', 'rpc', 'storefront-sdk', 'tenancy', 'webhooks'],

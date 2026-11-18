@@ -10,7 +10,7 @@ delete process.env.ROOT_DOMAIN
 process.env.APP_URL = 'http://admin.example.test:3000'
 const fx = await import('./fixtures')
 
-const { db, schema, eq } = fx
+const { db, eq } = fx
 const { staffService, StaffError, platformService, domainService, DomainError } = await import('../src')
 
 const refused = (Err: typeof StaffError | typeof DomainError, code: string) => (e: unknown) =>

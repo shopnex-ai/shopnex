@@ -4,7 +4,7 @@
 // which is also how a previous run is recognised (a domain nothing else uses, since --replace deletes by it) and replaced.
 import { and, eq, inArray, like, sql } from 'drizzle-orm'
 import { channelService } from '@shopnex/channels'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { shops } from '@shopnex/core/schema'
 import {
   fulfillments as fulfillmentsTable,
@@ -14,6 +14,7 @@ import {
   orderTransactions,
 } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { products as productsTable, productVariants } from '@shopnex/catalog/schema'
 
 const DEMO_DOMAIN = '@demo.shopnex.test'
 const DISCOUNT_CODE = 'WELCOME10'
@@ -79,23 +80,23 @@ export async function seedDemoOrders(shopId: string, { days = 90 }: { days?: num
 
   const variants = await db
     .select({
-      productId: schema.products.id,
-      productTitle: schema.products.title,
-      vendor: schema.products.vendor,
-      tags: schema.products.tags,
-      variantId: schema.productVariants.id,
-      variantTitle: schema.productVariants.title,
-      optionsKey: schema.productVariants.optionsKey,
-      sku: schema.productVariants.sku,
-      priceCents: schema.productVariants.priceCents,
+      productId: productsTable.id,
+      productTitle: productsTable.title,
+      vendor: productsTable.vendor,
+      tags: productsTable.tags,
+      variantId: productVariants.id,
+      variantTitle: productVariants.title,
+      optionsKey: productVariants.optionsKey,
+      sku: productVariants.sku,
+      priceCents: productVariants.priceCents,
       imageUrl: sql<
         string | null
-      >`(select pi.url from product_images pi where pi.product_id = ${schema.products.id} order by pi.position limit 1)`,
+      >`(select pi.url from product_images pi where pi.product_id = ${productsTable.id} order by pi.position limit 1)`,
     })
-    .from(schema.productVariants)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(and(eq(schema.products.shopId, shopId), eq(schema.products.status, 'active')))
-    .orderBy(schema.products.title, schema.productVariants.optionsKey)
+    .from(productVariants)
+    .innerJoin(productsTable, eq(productsTable.id, productVariants.productId))
+    .where(and(eq(productsTable.shopId, shopId), eq(productsTable.status, 'active')))
+    .orderBy(productsTable.title, productVariants.optionsKey)
   if (!variants.length) throw new Error('The shop has no active products to order. Seed the catalog first.')
 
   // Use the demo catalog when it is there, so a shop's own products don't skew the numbers

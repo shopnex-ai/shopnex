@@ -8,7 +8,7 @@ import { apiTokens } from '@shopnex/core/schema'
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
 const { router } = await import('../src/router')

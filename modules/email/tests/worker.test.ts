@@ -6,7 +6,7 @@ import * as fx from './fixtures'
 import { emailDeliveries } from '../src/email.schema'
 import { carts } from '@shopnex/cart/schema'
 
-const { db, schema, eq, SHOP, behavior, received } = fx
+const { db, eq, SHOP, behavior, received } = fx
 const { processDue } = await import('../src/worker')
 const { abandonedCartService } = await import('../src')
 

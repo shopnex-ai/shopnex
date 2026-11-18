@@ -6,7 +6,7 @@ import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type 
 import { variantService } from '@shopnex/catalog'
 import { channelService } from '@shopnex/channels'
 import { customerService } from '@shopnex/customers'
-import { all, db, schema, type Conn } from '@shopnex/db'
+import { all, db, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { calculate, taxService } from '@shopnex/pricing'
 import { checkDiscount, redeemDiscount } from './discount-redemptions'

@@ -9,13 +9,13 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { appService } = await import('../src')
 const { createClientAssertion } = await import('@shopnex/marketplace-sdk/keys')
 
-export { db, schema, prepareDatabase, eq, appService }
+export { db, prepareDatabase, eq, appService }
 export const SHOP = 'default'
 /** The audience of a client assertion: this instance's public origin (APP_URL) */
 export const AUDIENCE = 'http://shop.test'

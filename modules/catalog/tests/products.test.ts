@@ -4,8 +4,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { productImages } from '../src/catalog.schema'
+import { productVariants } from '../src/catalog.schema'
 
-const { db, schema, eq, productService, collectionService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
+const { db, eq, productService, collectionService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
 const refused = (code: string) => (e: unknown) => e instanceof CatalogError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
 const page = { limit: 50, offset: 0 }
@@ -277,10 +278,7 @@ describe('deleting products', () => {
     assert.equal(await productService.removeMany(SHOP, [a.id, other.id, MISSING]), 1)
     assert.equal(await productService.removeMany(SHOP, []), 0)
     assert.ok(await productService.getById(OTHER_SHOP, other.id), 'another shop’s product stays')
-    assert.equal(
-      (await db.select().from(schema.productVariants).where(eq(schema.productVariants.productId, a.id))).length,
-      0,
-    )
+    assert.equal((await db.select().from(productVariants).where(eq(productVariants.productId, a.id))).length, 0)
     assert.equal((await db.select().from(productImages).where(eq(productImages.productId, a.id))).length, 0)
     assert.deepEqual(titles(await productService.list(SHOP, { ...page, channelId: ch.id })), ['B'])
     const { publicationService } = await import('@shopnex/channels')

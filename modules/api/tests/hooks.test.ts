@@ -4,12 +4,13 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { emailDeliveries, emailSettings } from '@shopnex/email/schema'
 import { orders } from '@shopnex/orders/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 // What the API itself loads: its router mounts every module
@@ -56,7 +57,7 @@ describe('who listens', () => {
 
 describe('an order change reaches the email queue', () => {
   test('fulfilling an order queues the shipping confirmation, in the same transaction', async () => {
-    const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
+    const [channel] = await db.select().from(channels).where(eq(channels.shopId, SHOP))
     const [order] = await db
       .insert(orders)
       .values({

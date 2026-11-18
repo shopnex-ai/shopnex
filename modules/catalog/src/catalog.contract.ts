@@ -5,8 +5,16 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { publicationsOutput } from '@shopnex/channels/contract'
 import { customFieldUpdates, customFieldValues } from '@shopnex/custom-fields/contract'
-import { PRODUCT_STATUSES, SLUG_PATTERN, productVariants, products } from '@shopnex/db/schema'
-import { collections, productImages, productOptionValues, productOptions } from './catalog.schema'
+import { SLUG_PATTERN } from '@shopnex/core/slug'
+import {
+  PRODUCT_STATUSES,
+  collections,
+  productImages,
+  productOptionValues,
+  productOptions,
+  productVariants,
+  products,
+} from './catalog.schema'
 
 export const slug = z.string().min(1).max(120).regex(SLUG_PATTERN, 'Use lowercase letters, digits and single hyphens')
 

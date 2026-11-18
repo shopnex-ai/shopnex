@@ -8,13 +8,14 @@ import type { AddressInfo } from 'node:net'
 import { expect, test, type Page } from './test'
 import { and, eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
 import { Fixtures, SHOP, appToken, call, ok, requireApp } from '../lib'
 import { apps } from '@shopnex/core/schema'
 import { orders, orderTransactions } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const STOREFRONT_URL = (process.env.STOREFRONT_URL ?? 'http://localhost:4321').replace(/\/$/, '')
 const METHOD = 'E2E provider card'
@@ -31,10 +32,10 @@ const requests: PaymentSessionRequest[] = []
 
 async function buyableProductSlug() {
   const rows = await db
-    .select({ slug: schema.products.slug, stock: schema.productVariants.inventoryQuantity })
-    .from(schema.products)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.productId, schema.products.id))
-    .where(and(eq(schema.products.shopId, SHOP), eq(schema.products.status, 'active')))
+    .select({ slug: products.slug, stock: productVariants.inventoryQuantity })
+    .from(products)
+    .innerJoin(productVariants, eq(productVariants.productId, products.id))
+    .where(and(eq(products.shopId, SHOP), eq(products.status, 'active')))
   const slugs = [...new Set(rows.map((r) => r.slug))]
   const found = slugs.find((s) => rows.filter((r) => r.slug === s).every((r) => r.stock === null || r.stock >= 10))
   if (!found) throw new Error('Need an active product with all variants in stock')

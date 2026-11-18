@@ -9,7 +9,7 @@ import { customers } from '../src/customers.schema'
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')

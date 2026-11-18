@@ -5,8 +5,9 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 import { orders } from '../src/orders.schema'
+import { productVariants } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, orderService, SHOP, OTHER_SHOP } = fx
+const { db, eq, orderService, SHOP, OTHER_SHOP } = fx
 const { OrderError } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof OrderError && e.code === code
@@ -14,7 +15,7 @@ const MISSING = '00000000-0000-4000-8000-000000000000'
 const variantOf = (p: Awaited<ReturnType<typeof fx.product>>) => p.variants[0]!.id
 const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const stockOf = async (variantId: string) =>
-  (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, variantId)))[0]!.inventoryQuantity
+  (await db.select().from(productVariants).where(eq(productVariants.id, variantId)))[0]!.inventoryQuantity
 const orderCount = async () => (await db.select().from(orders).where(eq(orders.shopId, SHOP))).length
 
 before(async () => {
@@ -70,9 +71,9 @@ describe('what an order is made of', () => {
       items: [{ variantId: variantOf(p), quantity: 1 }],
     })
     await db
-      .update(schema.productVariants)
+      .update(productVariants)
       .set({ priceCents: 9999 })
-      .where(eq(schema.productVariants.id, variantOf(p)))
+      .where(eq(productVariants.id, variantOf(p)))
     assert.equal((await orderService.getById(SHOP, o.id))?.items[0]?.unitPriceCents, 1000)
   })
 

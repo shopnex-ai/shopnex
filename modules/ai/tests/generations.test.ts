@@ -6,7 +6,7 @@ import * as fx from './fixtures'
 import { user } from '@shopnex/core/schema'
 import { productImages } from '@shopnex/catalog/schema'
 
-const { db, schema, SHOP, aiGenerations } = fx
+const { db, SHOP, aiGenerations } = fx
 const service = (await import('../src')).aiService
 type Capability = keyof typeof import('@shopnex/marketplace-sdk/ai').aiCapabilities
 // bindConn would lose run's generic, and with it the type of the output

@@ -5,7 +5,7 @@
 // is no longer `active`), and the worker checks again right before sending.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, asc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { isSuppressed, unsubscribeToken } from './abandoned-settings'
 import {
   appUrl,
@@ -26,6 +26,7 @@ import {
 } from './email.schema'
 import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
 import { customers } from '@shopnex/customers/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -36,11 +37,11 @@ const GRACE_MS = 24 * 3600_000
 // wait for the transaction for ever on the embedded database (one connection)
 async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
   const rows = await conn
-    .select({ line: cartLinesTable, variant: schema.productVariants, product: schema.products })
+    .select({ line: cartLinesTable, variant: productVariants, product: products })
     .from(cartLinesTable)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.id, cartLinesTable.variantId))
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(and(eq(cartLinesTable.cartId, cartId), eq(schema.products.status, 'active')))
+    .innerJoin(productVariants, eq(productVariants.id, cartLinesTable.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
+    .where(and(eq(cartLinesTable.cartId, cartId), eq(products.status, 'active')))
     .orderBy(asc(cartLinesTable.createdAt), asc(cartLinesTable.id))
   const productIds = [...new Set(rows.map((r) => r.product.id))]
   const images = productIds.length

@@ -5,19 +5,20 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { apps } from '@shopnex/core/schema'
 import { collections } from '@shopnex/catalog/schema'
+import { products } from '@shopnex/catalog/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { pages } = await import('@shopnex/content/schema')
 const { appInstallations } = await import('@shopnex/apps/schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { aiGenerations, aiProviders, aiSettings } = await import('../src/ai.schema')
 
-export { db, schema, prepareDatabase, aiGenerations, aiProviders, aiSettings }
+export { db, prepareDatabase, aiGenerations, aiProviders, aiSettings }
 export const SHOP = 'default'
 
 // ── the fake AI app
@@ -93,9 +94,9 @@ export async function aiApp(opts: { name?: string; installed?: boolean; capabili
   return app!
 }
 
-export async function product(patch: Partial<typeof schema.products.$inferInsert> = {}) {
+export async function product(patch: Partial<typeof products.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.products)
+    .insert(products)
     .values({ shopId: SHOP, slug: `ai-${unique()}`, title: 'Linen shirt', priceCents: 2500, ...patch })
     .returning()
   created.products.push(row!.id)
@@ -125,7 +126,7 @@ export async function cleanup() {
   await db.delete(aiGenerations).where(eq(aiGenerations.shopId, SHOP))
   await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP))
   if (created.apps.length) await db.delete(apps).where(inArray(apps.id, created.apps))
-  if (created.products.length) await db.delete(schema.products).where(inArray(schema.products.id, created.products))
+  if (created.products.length) await db.delete(products).where(inArray(products.id, created.products))
   if (created.collections.length) await db.delete(collections).where(inArray(collections.id, created.collections))
   if (created.pages.length) await db.delete(pages).where(inArray(pages.id, created.pages))
   for (const list of Object.values(created)) list.length = 0

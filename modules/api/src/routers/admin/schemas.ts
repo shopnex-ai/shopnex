@@ -52,7 +52,6 @@ export {
   customFieldValues,
 } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
-import { CHANNEL_TYPES } from '@shopnex/db/schema'
 import { STAFF_ROLES } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
@@ -61,6 +60,7 @@ import { NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
 import { shippingRates } from '@shopnex/cart/schema'
 import { CANCEL_REASONS } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { CHANNEL_TYPES } from '@shopnex/channels/schema'
 
 const nonNegative = (s: z.ZodNumber) => s.nonnegative()
 

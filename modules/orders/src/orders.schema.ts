@@ -3,10 +3,12 @@
 // shipping lines, payment transactions and fulfillments.
 import { sql } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { channels, products, productVariants, type CustomFieldValues } from '@shopnex/db/schema'
 import { customers } from '@shopnex/customers/schema'
 import { shops } from '@shopnex/core/schema'
 import { discounts } from '@shopnex/pricing/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
+import { type CustomFieldValues } from '@shopnex/custom-fields/schema'
 
 // Shopify displayFinancialStatus (lowercase). Manual payments stay `pending` until marked as paid.
 export const FINANCIAL_STATUSES = [

@@ -2,11 +2,12 @@
 // provider. Only what the copy needs, nothing about orders or customers.
 import { and, asc, count, desc, eq, sql } from 'drizzle-orm'
 import { htmlToText, productService, type ProductWithDetails } from '@shopnex/catalog'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import type { AiCollection, AiPage, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { AiError } from './ai.errors'
 import { pages } from '@shopnex/content/schema'
 import { collections as collectionsTable, productCollections } from '@shopnex/catalog/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
 const MAX_VARIANTS = 50
 const MAX_COLLECTION_PRODUCTS = 30
@@ -49,12 +50,12 @@ export async function collection(shopId: string, id: string, conn: Conn): Promis
   const [members, [total]] = await Promise.all([
     conn
       .select({
-        title: schema.products.title,
-        productType: schema.products.productType,
-        tags: schema.products.tags,
+        title: productsTable.title,
+        productType: productsTable.productType,
+        tags: productsTable.tags,
       })
       .from(productCollections)
-      .innerJoin(schema.products, eq(schema.products.id, productCollections.productId))
+      .innerJoin(productsTable, eq(productsTable.id, productCollections.productId))
       .where(eq(productCollections.collectionId, id))
       .orderBy(asc(productCollections.position))
       .limit(MAX_COLLECTION_PRODUCTS),
@@ -84,7 +85,7 @@ export async function page(shopId: string, id: string | undefined, conn: Conn): 
 
 /** What the shop sells: its collections, the product types and tags in use (most used first), a sample of products */
 export async function catalog(shopId: string, conn: Conn): Promise<NonNullable<AiRunRequest['shop']['catalog']>> {
-  const mine = eq(schema.products.shopId, shopId)
+  const mine = eq(productsTable.shopId, shopId)
   const [collections, types, tags, products] = await Promise.all([
     conn
       .select({ handle: collectionsTable.slug, title: collectionsTable.title })
@@ -93,24 +94,24 @@ export async function catalog(shopId: string, conn: Conn): Promise<NonNullable<A
       .orderBy(asc(collectionsTable.createdAt))
       .limit(CATALOG_LISTED),
     conn
-      .select({ value: schema.products.productType, n: count() })
-      .from(schema.products)
-      .where(and(mine, sql`${schema.products.productType} <> ''`))
-      .groupBy(schema.products.productType)
+      .select({ value: productsTable.productType, n: count() })
+      .from(productsTable)
+      .where(and(mine, sql`${productsTable.productType} <> ''`))
+      .groupBy(productsTable.productType)
       .orderBy(desc(count()))
       .limit(CATALOG_LISTED),
     conn
-      .select({ value: sql<string>`unnest(${schema.products.tags})`, n: count() })
-      .from(schema.products)
+      .select({ value: sql<string>`unnest(${productsTable.tags})`, n: count() })
+      .from(productsTable)
       .where(mine)
       .groupBy(sql`1`)
       .orderBy(desc(count()))
       .limit(CATALOG_LISTED),
     conn
-      .select({ title: schema.products.title, productType: schema.products.productType })
-      .from(schema.products)
-      .where(and(mine, eq(schema.products.status, 'active')))
-      .orderBy(desc(schema.products.createdAt))
+      .select({ title: productsTable.title, productType: productsTable.productType })
+      .from(productsTable)
+      .where(and(mine, eq(productsTable.status, 'active')))
+      .orderBy(desc(productsTable.createdAt))
       .limit(CATALOG_SAMPLE),
   ])
   return {

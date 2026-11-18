@@ -4,6 +4,10 @@ import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { shops } from '@shopnex/core/schema'
 
+// What a record holds for the shop's custom fields, by key (products, orders and customers keep a jsonb column of these)
+export type CustomFieldValue = string | number | boolean
+export type CustomFieldValues = Record<string, CustomFieldValue>
+
 // The records a shop can add its own fields to
 export const CUSTOM_FIELD_RESOURCES = ['product', 'order', 'customer'] as const
 export type CustomFieldResource = (typeof CUSTOM_FIELD_RESOURCES)[number]

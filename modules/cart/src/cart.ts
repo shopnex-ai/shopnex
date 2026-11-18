@@ -3,12 +3,13 @@
 import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
-import { all, db, schema, type Conn } from '@shopnex/db'
+import { all, db, type Conn } from '@shopnex/db'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
 import { productImages } from '@shopnex/catalog/schema'
 import { type Cart, cartLines, carts, type CartStatus } from './cart.schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999
@@ -87,10 +88,10 @@ export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
   const [fresh] = await conn.select().from(carts).where(eq(carts.id, cart.id))
   const [shop] = await conn.select({ currency: shops.currency }).from(shops).where(eq(shops.id, cart.shopId))
   const rows = await conn
-    .select({ line: cartLines, variant: schema.productVariants, product: schema.products })
+    .select({ line: cartLines, variant: productVariants, product: products })
     .from(cartLines)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.id, cartLines.variantId))
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
+    .innerJoin(productVariants, eq(productVariants.id, cartLines.variantId))
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(eq(cartLines.cartId, cart.id))
     .orderBy(asc(cartLines.createdAt), asc(cartLines.id))
   const productIds = [...new Set(rows.map((r) => r.product.id))]

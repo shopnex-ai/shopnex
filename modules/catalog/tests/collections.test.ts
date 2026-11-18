@@ -4,7 +4,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { productCollections } from '../src/catalog.schema'
 
-const { db, schema, eq, productService, collectionService, CatalogError, SHOP, OTHER_SHOP } = fx
+const { db, eq, productService, collectionService, CatalogError, SHOP, OTHER_SHOP } = fx
 const refused = (code: string) => (e: unknown) => e instanceof CatalogError && e.code === code
 const MISSING = '00000000-0000-4000-8000-000000000000'
 const page = { limit: 50, offset: 0 }

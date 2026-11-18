@@ -1,7 +1,7 @@
 // Pages (admin: Online store → Pages): About, FAQ, Shipping policy… Business logic only; every query is
 // scoped by shopId. Bodies are sanitized on write, since storefronts render them as is.
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
 import { ContentError } from './content.errors'
 import { pages } from './content.schema'

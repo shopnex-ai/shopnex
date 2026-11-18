@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP, OTHER_SHOP, webhookDeliveries } = fx
+const { db, SHOP, OTHER_SHOP, webhookDeliveries } = fx
 const { bindConn } = await import('@shopnex/kit')
 const webhookServiceIn = (await import('../src')).webhookService
 const webhookService = bindConn(webhookServiceIn, db)

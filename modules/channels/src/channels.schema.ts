@@ -1,15 +1,41 @@
 // The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
-// history in modules/db/migrations. The `channels` table itself stays in @shopnex/db/schema for now (orders and carts, still
-// in that package, point at it); the Online Store and the other channels are this module's all the same.
+// history in modules/db/migrations.
+import { boolean, index, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { shops } from '@shopnex/core/schema'
+
+// Where a shop sells (Shopify: sales channels): the Online Store, a headless storefront, later POS and the like.
+// What a channel shows is decided by resource_publications; storefront keys, carts and orders belong to one.
+export const CHANNEL_TYPES = ['online_store', 'headless'] as const
+export type ChannelType = (typeof CHANNEL_TYPES)[number]
+
+// Every shop has this channel (created lazily, and by the migration for existing shops); it can't be deleted
+export const DEFAULT_CHANNEL_HANDLE = 'online-store'
+
+export const channels = pgTable(
+  'channels',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    // Unique per shop
+    handle: text('handle').notNull(),
+    name: text('name').notNull(),
+    type: text('type').$type<ChannelType>().notNull().default('headless'),
+    // New products and collections are published here when they're created (as the Online Store does in Shopify)
+    autoPublish: boolean('auto_publish').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('channels_shop_handle_idx').on(t.shopId, t.handle)],
+)
+
+export type Channel = typeof channels.$inferSelect
+
 // Which resources each channel shows (Shopify: ResourcePublication). A resource is on a channel when it has a
 // row here with published_at in the past (a future date schedules it); products also need status "active".
 // Polymorphic like entity_drafts: resource_type says which table resource_id is in, so collections now and
 // pages, menus or anything else later need no new table. There's no FK to the resource: the module that
 // deletes it deletes its publications (publicationService.removeFor).
-import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { channels } from '@shopnex/db/schema'
-import { shops } from '@shopnex/core/schema'
-
 export const PUBLISHABLE_TYPES = ['product', 'collection'] as const
 export type PublishableType = (typeof PUBLISHABLE_TYPES)[number]
 

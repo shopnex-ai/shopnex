@@ -10,7 +10,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'shopper-login-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { currentOtpSender, isOtpPath, withOtpSender, withOtpSignIn } = await import('../src/shopper-login')

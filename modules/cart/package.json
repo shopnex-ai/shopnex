@@ -18,6 +18,7 @@
     "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
+    "@shopnex/channels": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",
@@ -33,7 +34,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@shopnex/channels": "workspace:*",
     "@shopnex/email": "workspace:*",
     "@shopnex/webhooks": "workspace:*",
     "@types/node": "catalog:",

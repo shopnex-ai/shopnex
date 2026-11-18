@@ -597,9 +597,6 @@ importers:
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db
-      '@shopnex/drafts':
-        specifier: workspace:*
-        version: link:../drafts
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
@@ -753,6 +750,9 @@ importers:
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@shopnex/core':
         specifier: workspace:*
         version: link:../core
@@ -793,9 +793,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@shopnex/channels':
-        specifier: workspace:*
-        version: link:../channels
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
@@ -1030,9 +1027,6 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.5.16
         version: 0.5.16
-      '@shopnex/core':
-        specifier: workspace:*
-        version: link:../core
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
@@ -1138,6 +1132,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
@@ -1310,6 +1307,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
@@ -1399,6 +1399,9 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

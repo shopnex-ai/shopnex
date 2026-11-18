@@ -6,8 +6,9 @@ import { shops } from '@shopnex/core/schema'
 import * as fx from './fixtures'
 import { carts } from '../src/cart.schema'
 import { orders } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, cartService, SHOP, OTHER_SHOP } = fx
+const { db, eq, cartService, SHOP, OTHER_SHOP } = fx
 const { CartError } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof CartError && e.code === code
@@ -254,9 +255,9 @@ describe('how a cart is shown', () => {
     const p = await fx.product({ priceCents: 1000 })
     const c = await fx.cart([{ variantId: variantOf(p), quantity: 2 }])
     await db
-      .update(schema.productVariants)
+      .update(productVariants)
       .set({ priceCents: 1300 })
-      .where(eq(schema.productVariants.id, variantOf(p)))
+      .where(eq(productVariants.id, variantOf(p)))
     const again = await cartService.get(SHOP, c.token)
     assert.deepEqual([again.lines[0]?.unitPriceCents, again.subtotalCents], [1300, 2600])
   })
@@ -289,10 +290,10 @@ describe('how a cart is shown', () => {
       [true, true],
     )
     await db
-      .update(schema.productVariants)
+      .update(productVariants)
       .set({ inventoryQuantity: 3 })
-      .where(eq(schema.productVariants.id, variantOf(p)))
-    await db.update(schema.products).set({ status: 'archived' }).where(eq(schema.products.id, q.id))
+      .where(eq(productVariants.id, variantOf(p)))
+    await db.update(products).set({ status: 'archived' }).where(eq(products.id, q.id))
     assert.deepEqual(
       (await cartService.get(SHOP, c.token)).lines.map((l) => l.available),
       [false, false],

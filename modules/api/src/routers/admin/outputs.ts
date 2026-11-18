@@ -69,7 +69,6 @@ export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@sh
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { customFieldValues } from './schemas'
-import { CHANNEL_TYPES, channels, PRODUCT_STATUSES, productVariants, products } from '@shopnex/db/schema'
 import { shopDomains, shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
@@ -89,6 +88,8 @@ import {
   orderTransactions,
 } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { PRODUCT_STATUSES, products, productVariants } from '@shopnex/catalog/schema'
+import { CHANNEL_TYPES, channels } from '@shopnex/channels/schema'
 
 // --- everything else the admin routes answer ---
 

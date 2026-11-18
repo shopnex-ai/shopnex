@@ -2,7 +2,8 @@
 // or server code.
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { CHANNEL_TYPES, SLUG_PATTERN, channels } from '@shopnex/db/schema'
+import { SLUG_PATTERN } from '@shopnex/core/slug'
+import { CHANNEL_TYPES, channels } from './channels.schema'
 import { storefrontKeys } from './channels.schema'
 
 // Settings → Channels. The handle and type are fixed once created.

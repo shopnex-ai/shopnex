@@ -5,7 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { menus } from '../src/content.schema'
 
-const { db, schema, eq, menuService, pageService, item, SHOP, OTHER_SHOP } = fx
+const { db, eq, menuService, pageService, item, SHOP, OTHER_SHOP } = fx
 const { ContentError, MENU_MAX_DEPTH, MENU_ITEM_TYPES, seedDefaultMenu } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof ContentError && e.code === code

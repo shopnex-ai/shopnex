@@ -10,7 +10,7 @@ process.env.SHOPNEX_SECRET ??= 'sign-up-policy-test-secret-0123456789'
 delete process.env.TENANCY_MODE
 delete process.env.OPEN_SIGNUP
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { shopInvitations } = await import('@shopnex/tenancy/schema')
 requireEmbeddedDatabase()
 const { assertSignUpAllowed, createShopForNewAccount, withSignUpAllowed } = await import('../src/sign-up-policy')

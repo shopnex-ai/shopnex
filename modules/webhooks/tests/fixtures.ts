@@ -7,13 +7,13 @@ import { apiTokens, shops } from '@shopnex/core/schema'
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { generateSecret } = await import('../src/sign')
 const { webhookDeliveries, webhookEndpoints } = await import('../src/webhooks.schema')
 
-export { db, schema, prepareDatabase, webhookDeliveries, webhookEndpoints }
+export { db, prepareDatabase, webhookDeliveries, webhookEndpoints }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'webhooks-other-shop'
 

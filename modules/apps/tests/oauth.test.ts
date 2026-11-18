@@ -6,7 +6,7 @@ import * as fx from './fixtures'
 import { appAuthorizationCodes, appInstallations } from '../src/apps.schema'
 import { apps } from '@shopnex/core/schema'
 
-const { db, schema, eq, appService, SHOP, REDIRECT } = fx
+const { db, eq, appService, SHOP, REDIRECT } = fx
 const { AppError } = await import('../src/apps.errors')
 const { decodeJwt, createClientAssertion } = await import('@shopnex/marketplace-sdk/keys')
 const { APP_INSTALLED_PATH } = await import('@shopnex/marketplace-sdk/lifecycle')

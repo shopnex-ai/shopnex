@@ -4,8 +4,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { productOptions } from '../src/catalog.schema'
+import { productVariants } from '../src/catalog.schema'
 
-const { db, schema, eq, productService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
+const { db, eq, productService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
 const { DEFAULT_VARIANT_TITLE } = await import('../src')
 const { optionsKey } = await import('../src/variants')
 const refused = (code: string) => (e: unknown) => e instanceof CatalogError && e.code === code
@@ -150,10 +151,7 @@ describe('replacing the variants of a product', () => {
       'M is gone',
     )
     assert.deepEqual(after!.options[0]!.values, ['S', 'L'])
-    assert.equal(
-      (await db.select().from(schema.productVariants).where(eq(schema.productVariants.productId, before.id))).length,
-      2,
-    )
+    assert.equal((await db.select().from(productVariants).where(eq(productVariants.productId, before.id))).length, 2)
   })
 
   test('dropping an option removes its values and the links, and the variants re-key to the combination that is left', async () => {
@@ -334,7 +332,7 @@ describe('stock for orders', () => {
     return p.variants[0]!
   }
   const stockOf = async (id: string) =>
-    (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, id)))[0]!.inventoryQuantity
+    (await db.select().from(productVariants).where(eq(productVariants.id, id)))[0]!.inventoryQuantity
 
   test('reserveStock takes the quantity when there is enough and says so; not enough leaves it alone and says no', async () => {
     const v = await stocked(5)

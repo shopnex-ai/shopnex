@@ -5,8 +5,9 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { abandonedCartSettings, emailDeliveries, emailSuppressions } from '../src/email.schema'
 import { carts } from '@shopnex/cart/schema'
+import { products } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, SHOP, OTHER_SHOP } = fx
+const { db, eq, SHOP, OTHER_SHOP } = fx
 const { abandonedCartService, queueAbandonedCartEmails, EmailError } = await import('../src')
 const { reasonToSkip } = await import('../src/abandoned-carts')
 
@@ -183,7 +184,7 @@ describe('which checkouts are reminded', () => {
 
   test('a cart whose products are no longer for sale is skipped for having nothing left', async () => {
     const c = await fx.cart({ idleMinutes: 90 })
-    await db.update(schema.products).set({ status: 'archived' })
+    await db.update(products).set({ status: 'archived' })
     await queueAbandonedCartEmails()
     const [delivery] = await deliveriesOf(c.id)
     assert.deepEqual([delivery?.status, delivery?.lastError], ['skipped', 'Nothing left in the cart'])

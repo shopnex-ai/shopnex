@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
 import { customFieldDefinitions } from '@shopnex/custom-fields/schema'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 
 const fx = new Fixtures()

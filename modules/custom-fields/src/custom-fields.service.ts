@@ -2,7 +2,6 @@
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { Conn } from '@shopnex/db'
-import type { CustomFieldValue, CustomFieldValues } from '@shopnex/db/schema'
 import { CustomFieldError } from './custom-fields.errors'
 import {
   customFieldDefinitions,
@@ -10,6 +9,7 @@ import {
   type CustomFieldResource,
   type CustomFieldType,
 } from './custom-fields.schema'
+import { type CustomFieldValue, type CustomFieldValues } from './custom-fields.schema'
 
 export interface CustomFieldInput {
   resource: CustomFieldResource

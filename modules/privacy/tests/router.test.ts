@@ -5,12 +5,13 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { ORPCError, call } from '@orpc/server'
 import { hasScope } from '@shopnex/core/scopes'
 import type { ApiScope } from '@shopnex/core/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
@@ -63,7 +64,7 @@ const refused = (code: string) => (e: unknown) => e instanceof ORPCError && e.co
 const customer = async () =>
   (await db.insert(customersTable).values({ shopId: SHOP, email: 'ada@example.test', name: 'Ada' }).returning())[0]!
 async function order(customerId: string, patch: Partial<typeof ordersTable.$inferInsert> = {}) {
-  const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
+  const [channel] = await db.select().from(channels).where(eq(channels.shopId, SHOP))
   return (
     await db
       .insert(ordersTable)

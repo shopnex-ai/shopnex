@@ -5,7 +5,7 @@ import { appInstallations } from '@shopnex/apps/schema'
 import { apps } from '@shopnex/core/schema'
 
 const fx = await import('./fixtures')
-const { db, schema, SHOP } = fx
+const { db, SHOP } = fx
 const { paymentMethods } = await import('../src/payments.schema')
 const { bindConn } = await import('@shopnex/kit')
 const methods = bindConn(await import('../src/methods'), db)

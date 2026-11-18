@@ -3,7 +3,7 @@
 // method (Stripe…) also starts a payment session, and the buyer is sent to its paymentUrl to pay.
 import { variantService } from '@shopnex/catalog'
 import { eq } from 'drizzle-orm'
-import { all, db, schema } from '@shopnex/db'
+import { all, db } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PaymentError, paymentMethodService, paymentService } from '@shopnex/payments'
 import { calculate, taxRateFor, taxService } from '@shopnex/pricing'

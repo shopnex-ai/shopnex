@@ -13,7 +13,7 @@ process.env.SIGNUP_RATE_GLOBAL = '2'
 process.env.SHOPNEX_SECRET ??= 'open-signup-limits-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { SIGNUP_LIMIT_MESSAGE, resetSignupLimits } = await import('../src/signup-limit')

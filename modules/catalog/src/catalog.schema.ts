@@ -1,9 +1,88 @@
-import { index, integer, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { products, productVariants } from '@shopnex/db/schema'
+// The catalog's tables: products with their variants, images, options and collections.
+import { sql } from 'drizzle-orm'
+import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import type { CustomFieldValues } from '@shopnex/custom-fields/schema'
 import { shops } from '@shopnex/core/schema'
 
-// products and product_variants are still defined in @shopnex/db: orders and cart have foreign keys into them, and db cannot import a
-// module that imports db. They move here when those two do. Everything else of the catalog is below.
+export const PRODUCT_STATUSES = ['draft', 'active', 'archived'] as const
+export type ProductStatus = (typeof PRODUCT_STATUSES)[number]
+
+export const products = pgTable(
+  'products',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    // URL handle, unique per shop
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    // Only `active` products are visible to storefronts
+    status: text('status').$type<ProductStatus>().notNull().default('active'),
+    // Plain text; descriptionHtml (sanitized on write) wins when set
+    description: text('description'),
+    descriptionHtml: text('description_html'),
+    vendor: text('vendor').notNull().default(''),
+    // Which app fulfills this product (its client id, e.g. app_cj_dropshipping); null = the shop ships it itself.
+    // Carrier apps use it to quote only the products they ship.
+    fulfilledBy: text('fulfilled_by'),
+    productType: text('product_type').notNull().default(''),
+    tags: text('tags')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    seoTitle: text('seo_title'),
+    seoDescription: text('seo_description'),
+    // Values of the shop's custom fields (custom_field_definitions), by key
+    customFields: jsonb('custom_fields').$type<CustomFieldValues>().notNull().default({}),
+    // DEPRECATED cache of the lowest variant price (variants are the source of truth).
+    // Kept in sync by the catalog service; to be dropped once nothing reads it.
+    priceCents: integer('price_cents').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('products_shop_created_idx').on(t.shopId, t.createdAt),
+    index('products_shop_status_idx').on(t.shopId, t.status),
+    uniqueIndex('products_shop_slug_idx').on(t.shopId, t.slug),
+  ],
+)
+
+// Shopify-style options → values → variants. A product without options has exactly one
+// hidden "default" variant (optionsKey = ''), so every product is priced the same way.
+export const productVariants = pgTable(
+  'product_variants',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    // Canonical option combination, e.g. "Color=Black|Size=M" ('' for the default variant).
+    // Unique per product: one variant per combination, and stable across option edits.
+    optionsKey: text('options_key').notNull(),
+    title: text('title').notNull(),
+    sku: text('sku'),
+    priceCents: integer('price_cents').notNull(),
+    compareAtPriceCents: integer('compare_at_price_cents'),
+    // NULL = not tracked (always available)
+    inventoryQuantity: integer('inventory_quantity'),
+    // Optional per-variant image (URL, usually one of the product's images)
+    imageUrl: text('image_url'),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('product_variants_product_options_idx').on(t.productId, t.optionsKey),
+    uniqueIndex('product_variants_shop_sku_idx')
+      .on(t.shopId, t.sku)
+      .where(sql`${t.sku} is not null`),
+    index('product_variants_product_idx').on(t.productId, t.position),
+  ],
+)
 
 // Ordered by position (0 = primary image)
 export const productImages = pgTable(
@@ -100,3 +179,7 @@ export type ProductImage = typeof productImages.$inferSelect
 export type Collection = typeof collections.$inferSelect
 export type NewCollection = typeof collections.$inferInsert
 export type ProductOption = typeof productOptions.$inferSelect
+
+export type Product = typeof products.$inferSelect
+export type NewProduct = typeof products.$inferInsert
+export type ProductVariant = typeof productVariants.$inferSelect

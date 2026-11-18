@@ -5,7 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { emailDeliveries, emailTemplates } from '../src/email.schema'
 
-const { db, schema, eq, SHOP, received } = fx
+const { db, eq, SHOP, received } = fx
 const { notificationService, sendLoginCode, checkLiquid, EmailError } = await import('../src')
 const { render } = await import('../src/liquid')
 const { DEFAULTS } = await import('../src/defaults')

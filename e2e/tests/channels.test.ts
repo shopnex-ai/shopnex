@@ -5,13 +5,14 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { channelService, storefrontKeyService } from '@shopnex/channels'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { collections } from '@shopnex/catalog/schema'
 import { carts } from '@shopnex/cart/schema'
 import { orders } from '@shopnex/orders/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -47,7 +48,7 @@ after(async () => {
   await db.delete(storefrontKeys).where(eq(storefrontKeys.channelId, portal.id))
   await db.delete(orders).where(eq(orders.channelId, portal.id))
   await channelService.remove(SHOP, portal.id, db).catch(() => {})
-  await db.delete(schema.products).where(inArray(schema.products.id, [product.id]))
+  await db.delete(productsTable).where(inArray(productsTable.id, [product.id]))
   await db.delete(collections).where(eq(collections.id, collection.id))
   await closeDb()
 })

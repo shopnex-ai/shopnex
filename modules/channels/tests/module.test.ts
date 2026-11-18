@@ -20,7 +20,7 @@ describe('channels manifest', () => {
       const schema = (await import(`${srcDir}${file}`)) as Record<string, unknown>
       for (const value of Object.values(schema)) if (is(value, PgTable)) exported.add(value)
     }
-    assert.equal(exported.size, 2)
+    assert.equal(exported.size, 3)
     assert.deepEqual(new Set(Object.values(channelsModule.tables)), exported)
   })
 
