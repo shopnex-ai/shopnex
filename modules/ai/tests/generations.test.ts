@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { user } from '@shopnex/core/schema'
+import { productImages } from '@shopnex/catalog/schema'
 
 const { db, schema, SHOP, aiGenerations } = fx
 const service = (await import('../src')).aiService
@@ -219,9 +220,7 @@ describe('run: what comes back is cleaned', () => {
   test('image text can only name images the product has, once each', async () => {
     await fx.aiApp({ capabilities: ['product.image_alt'] })
     const product = await fx.product()
-    await db
-      .insert(schema.productImages)
-      .values({ productId: product.id, url: 'https://img.example/a.jpg', position: 0 })
+    await db.insert(productImages).values({ productId: product.id, url: 'https://img.example/a.jpg', position: 0 })
     fx.answers({
       images: [
         { position: 0, alt: 'A shirt' },

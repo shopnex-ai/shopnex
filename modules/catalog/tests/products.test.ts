@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { productImages } from '../src/catalog.schema'
 
 const { db, schema, eq, productService, collectionService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
 const refused = (code: string) => (e: unknown) => e instanceof CatalogError && e.code === code
@@ -280,10 +281,7 @@ describe('deleting products', () => {
       (await db.select().from(schema.productVariants).where(eq(schema.productVariants.productId, a.id))).length,
       0,
     )
-    assert.equal(
-      (await db.select().from(schema.productImages).where(eq(schema.productImages.productId, a.id))).length,
-      0,
-    )
+    assert.equal((await db.select().from(productImages).where(eq(productImages.productId, a.id))).length, 0)
     assert.deepEqual(titles(await productService.list(SHOP, { ...page, channelId: ch.id })), ['B'])
     const { publicationService } = await import('@shopnex/channels')
     const links = await publicationService.listFor(SHOP, 'product', [a.id, b.id], db)

@@ -1,5 +1,6 @@
 import { and, eq, like, ne, or } from 'drizzle-orm'
 import { schema, type Conn } from '@shopnex/db'
+import { collections } from './catalog.schema'
 export { SLUG_PATTERN } from '@shopnex/db/schema'
 
 // "Été 2026!" → "ete-2026". Matches the backfill in migration 0005 for ASCII titles.
@@ -13,7 +14,7 @@ export function slugify(input: string, fallback = 'item'): string {
   return slug || fallback
 }
 
-type SluggedTable = typeof schema.products | typeof schema.collections
+type SluggedTable = typeof schema.products | typeof collections
 
 export async function isSlugTaken(conn: Conn, table: SluggedTable, shopId: string, slug: string, excludeId?: string) {
   const [row] = await conn

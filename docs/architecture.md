@@ -26,7 +26,7 @@
 /modules
 
 - /api # Hono app + oRPC router (mounted by admin-ui at /api; can run standalone later)
-- /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants)
+- /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants), and the admin product and collection routes
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list, a manifest that disagrees with package.json, or a cycle, and with `--report` lists what moving tables into modules will have to solve (tables reached across modules, foreign keys against the graph)
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
@@ -58,10 +58,10 @@ theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its 
 tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
-email     → db, tenancy, webhooks
+email     → db, catalog, tenancy, webhooks
 rpc       → core   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc
-catalog   → db, channels, custom-fields, webhooks
+catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db while orders and carts, which point at them, are still there; the product and collection routes are here)
 content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
 customers → db, auth, custom-fields, email, webhooks   (sign-in codes link a login to the customer)
 orders    → db, catalog, channels, custom-fields, customers, email, pricing, webhooks

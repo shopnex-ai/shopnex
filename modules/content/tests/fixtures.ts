@@ -1,5 +1,6 @@
 import { menus, pages, type MenuItemType, type StoredMenuItem } from '../src/content.schema'
 import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
+import { collections } from '@shopnex/catalog/schema'
 // What the content tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 
@@ -52,9 +53,9 @@ export async function product(patch: Partial<typeof schema.products.$inferInsert
   return row!
 }
 
-export async function collection(patch: Partial<typeof schema.collections.$inferInsert> = {}) {
+export async function collection(patch: Partial<typeof collections.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.collections)
+    .insert(collections)
     .values({ shopId: SHOP, slug: `c-${unique()}`, title: 'Summer', ...patch })
     .returning()
   made.collections.push(row!.id)
@@ -73,8 +74,7 @@ export async function cleanup() {
   await db.delete(menus).where(inArray(menus.shopId, shops))
   await db.delete(pages).where(inArray(pages.shopId, shops))
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
-  if (made.collections.length)
-    await db.delete(schema.collections).where(inArray(schema.collections.id, made.collections))
+  if (made.collections.length) await db.delete(collections).where(inArray(collections.id, made.collections))
   if (made.shops.length) await db.delete(shopsTable).where(inArray(shopsTable.id, made.shops))
   if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))
   for (const list of Object.values(made)) list.length = 0

@@ -18,6 +18,7 @@ import { verifyAiRequest, type AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp } from '../lib'
 import { apps } from '@shopnex/core/schema'
+import { collections as collectionsTable } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 
@@ -299,7 +300,7 @@ describe('AI app: image alt text, classification, collections and pages', () => 
   after(async () => {
     if (collectionId) {
       await db.delete(aiGenerations).where(eq(aiGenerations.subjectId, collectionId))
-      await db.delete(schema.collections).where(eq(schema.collections.id, collectionId))
+      await db.delete(collectionsTable).where(eq(collectionsTable.id, collectionId))
     }
   })
 

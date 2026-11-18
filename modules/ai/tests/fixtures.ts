@@ -4,6 +4,7 @@
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { apps } from '@shopnex/core/schema'
+import { collections } from '@shopnex/catalog/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -101,9 +102,9 @@ export async function product(patch: Partial<typeof schema.products.$inferInsert
   return row!
 }
 
-export async function collection(patch: Partial<typeof schema.collections.$inferInsert> = {}) {
+export async function collection(patch: Partial<typeof collections.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.collections)
+    .insert(collections)
     .values({ shopId: SHOP, slug: `ai-${unique()}`, title: 'Summer', ...patch })
     .returning()
   created.collections.push(row!.id)
@@ -125,8 +126,7 @@ export async function cleanup() {
   await db.delete(aiSettings).where(eq(aiSettings.shopId, SHOP))
   if (created.apps.length) await db.delete(apps).where(inArray(apps.id, created.apps))
   if (created.products.length) await db.delete(schema.products).where(inArray(schema.products.id, created.products))
-  if (created.collections.length)
-    await db.delete(schema.collections).where(inArray(schema.collections.id, created.collections))
+  if (created.collections.length) await db.delete(collections).where(inArray(collections.id, created.collections))
   if (created.pages.length) await db.delete(pages).where(inArray(pages.id, created.pages))
   for (const list of Object.values(created)) list.length = 0
 }

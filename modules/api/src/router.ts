@@ -1,6 +1,7 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
 import { aiModule } from '@shopnex/ai/module'
+import { catalogModule } from '@shopnex/catalog/module'
 import { appsModule } from '@shopnex/apps/module'
 import { analytics as adminAnalytics } from './routers/admin/analytics'
 import { shippingRates as adminShippingRates } from './routers/admin/checkout-settings'
@@ -8,7 +9,6 @@ import {
   carrierServices as adminCarrierServices,
   carrierServicesApp as adminCarrierServicesApp,
 } from './routers/admin/carrier-services'
-import { collections as adminCollections } from './routers/admin/collections'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
 import { customers as adminCustomers } from './routers/admin/customers'
 import { paymentsModule } from '@shopnex/payments/module'
@@ -17,7 +17,6 @@ import { email as adminEmail } from './routers/admin/email'
 import { filesModule } from '@shopnex/files/module'
 import { notifications as adminNotifications } from './routers/admin/notifications'
 import { orders as adminOrders } from './routers/admin/orders'
-import { products as adminProducts } from './routers/admin/products'
 import { channelsModule } from '@shopnex/channels/module'
 import { contentModule } from '@shopnex/content/module'
 import { tenancyModule } from '@shopnex/tenancy/module'
@@ -39,8 +38,8 @@ export const router = {
   marketplace: tagged('Marketplace').router(appsModule.router.marketplace),
   admin: {
     shop: tagged('Admin · Shop').router(tenancyModule.router.shop),
-    products: tagged('Admin · Products').router(adminProducts),
-    collections: tagged('Admin · Collections').router(adminCollections),
+    products: tagged('Admin · Products').router(catalogModule.router.products),
+    collections: tagged('Admin · Collections').router(catalogModule.router.collections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
     customers: tagged('Admin · Customers').router(adminCustomers),
     orders: tagged('Admin · Orders').router(adminOrders),

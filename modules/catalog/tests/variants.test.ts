@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { productOptions } from '../src/catalog.schema'
 
 const { db, schema, eq, productService, variantService, CatalogError, SHOP, OTHER_SHOP } = fx
 const { DEFAULT_VARIANT_TITLE } = await import('../src')
@@ -56,6 +57,12 @@ describe('what a set of options and variants must look like', () => {
       invalid,
     )
     await assert.rejects(create([], [{ priceCents: 1 }, { priceCents: 2 }]), invalid)
+    await assert.rejects(
+      create([], []),
+      invalid,
+      'a new product with an empty list is refused here, not by the database',
+    )
+    assert.equal(await productService.count(SHOP, { search: 'V' }), 1, 'and leaves no product behind')
   })
 
   test('each variant picks exactly one value of every option, and one that exists', async () => {
@@ -161,10 +168,7 @@ describe('replacing the variants of a product', () => {
       ['Size'],
     )
     assert.equal(next!.variants.length, 1)
-    assert.equal(
-      (await db.select().from(schema.productOptions).where(eq(schema.productOptions.productId, p.id))).length,
-      1,
-    )
+    assert.equal((await db.select().from(productOptions).where(eq(productOptions.productId, p.id))).length, 1)
   })
 
   test('turning a product with variants into a simple one leaves the default variant', async () => {

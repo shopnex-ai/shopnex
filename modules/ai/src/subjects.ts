@@ -6,6 +6,7 @@ import { schema, type Conn } from '@shopnex/db'
 import type { AiCollection, AiPage, AiProduct, AiRunRequest } from '@shopnex/marketplace-sdk/ai'
 import { AiError } from './ai.errors'
 import { pages } from '@shopnex/content/schema'
+import { collections as collectionsTable, productCollections } from '@shopnex/catalog/schema'
 
 const MAX_VARIANTS = 50
 const MAX_COLLECTION_PRODUCTS = 30
@@ -42,8 +43,8 @@ export async function product(shopId: string, id: string, currency: string): Pro
 export async function collection(shopId: string, id: string, conn: Conn): Promise<AiCollection> {
   const [row] = await conn
     .select()
-    .from(schema.collections)
-    .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+    .from(collectionsTable)
+    .where(and(eq(collectionsTable.shopId, shopId), eq(collectionsTable.id, id)))
   if (!row) throw new AiError('SUBJECT_NOT_FOUND', 'Collection not found')
   const [members, [total]] = await Promise.all([
     conn
@@ -52,12 +53,12 @@ export async function collection(shopId: string, id: string, conn: Conn): Promis
         productType: schema.products.productType,
         tags: schema.products.tags,
       })
-      .from(schema.productCollections)
-      .innerJoin(schema.products, eq(schema.products.id, schema.productCollections.productId))
-      .where(eq(schema.productCollections.collectionId, id))
-      .orderBy(asc(schema.productCollections.position))
+      .from(productCollections)
+      .innerJoin(schema.products, eq(schema.products.id, productCollections.productId))
+      .where(eq(productCollections.collectionId, id))
+      .orderBy(asc(productCollections.position))
       .limit(MAX_COLLECTION_PRODUCTS),
-    conn.select({ n: count() }).from(schema.productCollections).where(eq(schema.productCollections.collectionId, id)),
+    conn.select({ n: count() }).from(productCollections).where(eq(productCollections.collectionId, id)),
   ])
   return {
     id: row.id,
@@ -86,10 +87,10 @@ export async function catalog(shopId: string, conn: Conn): Promise<NonNullable<A
   const mine = eq(schema.products.shopId, shopId)
   const [collections, types, tags, products] = await Promise.all([
     conn
-      .select({ handle: schema.collections.slug, title: schema.collections.title })
-      .from(schema.collections)
-      .where(eq(schema.collections.shopId, shopId))
-      .orderBy(asc(schema.collections.createdAt))
+      .select({ handle: collectionsTable.slug, title: collectionsTable.title })
+      .from(collectionsTable)
+      .where(eq(collectionsTable.shopId, shopId))
+      .orderBy(asc(collectionsTable.createdAt))
       .limit(CATALOG_LISTED),
     conn
       .select({ value: schema.products.productType, n: count() })

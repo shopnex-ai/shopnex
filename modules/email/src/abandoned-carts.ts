@@ -18,6 +18,7 @@ import {
 } from './notifications'
 import { log } from './log'
 import { shops } from '@shopnex/core/schema'
+import { productImages } from '@shopnex/catalog/schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -37,9 +38,9 @@ async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
   const productIds = [...new Set(rows.map((r) => r.product.id))]
   const images = productIds.length
     ? await conn
-        .select({ productId: schema.productImages.productId, url: schema.productImages.url })
-        .from(schema.productImages)
-        .where(and(inArray(schema.productImages.productId, productIds), eq(schema.productImages.position, 0)))
+        .select({ productId: productImages.productId, url: productImages.url })
+        .from(productImages)
+        .where(and(inArray(productImages.productId, productIds), eq(productImages.position, 0)))
     : []
   return rows.map(({ line, variant, product }) => ({
     title: product.title,

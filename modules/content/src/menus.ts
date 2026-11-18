@@ -6,6 +6,7 @@ import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
 import { db, schema, type Conn } from '@shopnex/db'
 import { ContentError } from './content.errors'
 import { menus, pages, type StoredMenuItem } from './content.schema'
+import { collections as collectionsTable } from '@shopnex/catalog/schema'
 
 export type MenuInput = { handle: string; title: string; items: StoredMenuItem[] }
 
@@ -40,7 +41,7 @@ function resourceIds(items: StoredMenuItem[], type: ResourceType) {
 // Links may only point at this shop's collections, products and pages
 async function assertResources(conn: Conn, shopId: string, items: StoredMenuItem[]) {
   for (const [type, table] of [
-    ['collection', schema.collections],
+    ['collection', collectionsTable],
     ['product', schema.products],
     ['page', pages],
   ] as const) {
@@ -122,9 +123,9 @@ export async function resolve(shopId: string, items: StoredMenuItem[], conn: Con
   const [collections, products, pageRows] = await Promise.all([
     collectionIds.length
       ? conn
-          .select({ id: schema.collections.id, slug: schema.collections.slug })
-          .from(schema.collections)
-          .where(and(eq(schema.collections.shopId, shopId), inArray(schema.collections.id, collectionIds)))
+          .select({ id: collectionsTable.id, slug: collectionsTable.slug })
+          .from(collectionsTable)
+          .where(and(eq(collectionsTable.shopId, shopId), inArray(collectionsTable.id, collectionIds)))
       : [],
     productIds.length
       ? conn

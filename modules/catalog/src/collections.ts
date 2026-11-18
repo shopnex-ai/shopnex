@@ -7,6 +7,7 @@ import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
+import { collections, productCollections } from './catalog.schema'
 
 export type CollectionInput = {
   title: string
@@ -26,14 +27,14 @@ export async function list(
 ) {
   return conn
     .select()
-    .from(schema.collections)
+    .from(collections)
     .where(
       and(
-        eq(schema.collections.shopId, shopId),
-        opts.channelId ? publicationService.liveOn('collection', opts.channelId, schema.collections.id) : undefined,
+        eq(collections.shopId, shopId),
+        opts.channelId ? publicationService.liveOn('collection', opts.channelId, collections.id) : undefined,
       ),
     )
-    .orderBy(asc(schema.collections.createdAt))
+    .orderBy(asc(collections.createdAt))
     .limit(opts.limit)
     .offset(opts.offset)
 }
@@ -41,16 +42,16 @@ export async function list(
 export async function getById(shopId: string, id: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.collections)
-    .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+    .from(collections)
+    .where(and(eq(collections.shopId, shopId), eq(collections.id, id)))
   return row ?? null
 }
 
 export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
   const [row] = await conn
     .select()
-    .from(schema.collections)
-    .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.slug, slug)))
+    .from(collections)
+    .where(and(eq(collections.shopId, shopId), eq(collections.slug, slug)))
   return row ?? null
 }
 
@@ -58,13 +59,13 @@ export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
 export async function liveSlugs(shopId: string, channelId: string, slugs: string[], conn: Conn = db) {
   if (!slugs.length) return new Set<string>()
   const rows = await conn
-    .select({ slug: schema.collections.slug })
-    .from(schema.collections)
+    .select({ slug: collections.slug })
+    .from(collections)
     .where(
       and(
-        eq(schema.collections.shopId, shopId),
-        inArray(schema.collections.slug, slugs),
-        publicationService.liveOn('collection', channelId, schema.collections.id),
+        eq(collections.shopId, shopId),
+        inArray(collections.slug, slugs),
+        publicationService.liveOn('collection', channelId, collections.id),
       ),
     )
   return new Set(rows.map((r) => r.slug))
@@ -74,15 +75,15 @@ export async function create(shopId: string, input: CollectionInput) {
   return db.transaction(async (tx) => {
     let slug: string
     if (input.slug) {
-      if (await isSlugTaken(tx, schema.collections, shopId, input.slug)) {
+      if (await isSlugTaken(tx, collections, shopId, input.slug)) {
         throw new CatalogError('SLUG_TAKEN', `Slug "${input.slug}" is already used by another collection`)
       }
       slug = input.slug
     } else {
-      slug = await nextFreeSlug(tx, schema.collections, shopId, slugify(input.title, 'collection'))
+      slug = await nextFreeSlug(tx, collections, shopId, slugify(input.title, 'collection'))
     }
     const [row] = await tx
-      .insert(schema.collections)
+      .insert(collections)
       .values({
         shopId,
         slug,
@@ -104,15 +105,11 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
   return db.transaction(async (tx) => {
     const existing = await getById(shopId, id, tx)
     if (!existing) return null
-    if (
-      patch.slug &&
-      patch.slug !== existing.slug &&
-      (await isSlugTaken(tx, schema.collections, shopId, patch.slug, id))
-    ) {
+    if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, collections, shopId, patch.slug, id))) {
       throw new CatalogError('SLUG_TAKEN', `Slug "${patch.slug}" is already used by another collection`)
     }
     const [row] = await tx
-      .update(schema.collections)
+      .update(collections)
       .set({
         updatedAt: new Date(),
         ...(patch.title !== undefined && { title: patch.title }),
@@ -125,7 +122,7 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
         ...(patch.seo?.title !== undefined && { seoTitle: patch.seo.title }),
         ...(patch.seo?.description !== undefined && { seoDescription: patch.seo.description }),
       })
-      .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+      .where(and(eq(collections.shopId, shopId), eq(collections.id, id)))
       .returning()
     return row ?? null
   })
@@ -134,8 +131,8 @@ export async function update(shopId: string, id: string, patch: Partial<Collecti
 // Products stay; only their membership rows cascade away
 export async function remove(shopId: string, id: string) {
   const [row] = await db
-    .delete(schema.collections)
-    .where(and(eq(schema.collections.shopId, shopId), eq(schema.collections.id, id)))
+    .delete(collections)
+    .where(and(eq(collections.shopId, shopId), eq(collections.id, id)))
     .returning()
   if (row) await publicationService.removeFor(shopId, 'collection', [id], db)
   return row ?? null
@@ -144,9 +141,9 @@ export async function remove(shopId: string, id: string) {
 export async function removeMany(shopId: string, ids: string[]) {
   if (!ids.length) return 0
   const deleted = await db
-    .delete(schema.collections)
-    .where(and(eq(schema.collections.shopId, shopId), inArray(schema.collections.id, ids)))
-    .returning({ id: schema.collections.id })
+    .delete(collections)
+    .where(and(eq(collections.shopId, shopId), inArray(collections.id, ids)))
+    .returning({ id: collections.id })
   await publicationService.removeFor(
     shopId,
     'collection',
@@ -160,11 +157,11 @@ export async function removeMany(shopId: string, ids: string[]) {
 export async function productCounts(shopId: string, ids: string[], conn: Conn = db) {
   if (!ids.length) return new Map<string, number>()
   const rows = await conn
-    .select({ id: schema.productCollections.collectionId, n: count() })
-    .from(schema.productCollections)
-    .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
-    .where(and(eq(schema.collections.shopId, shopId), inArray(schema.productCollections.collectionId, ids)))
-    .groupBy(schema.productCollections.collectionId)
+    .select({ id: productCollections.collectionId, n: count() })
+    .from(productCollections)
+    .innerJoin(collections, eq(collections.id, productCollections.collectionId))
+    .where(and(eq(collections.shopId, shopId), inArray(productCollections.collectionId, ids)))
+    .groupBy(productCollections.collectionId)
   return new Map(rows.map((r) => [r.id, r.n]))
 }
 
@@ -172,11 +169,11 @@ export async function productCounts(shopId: string, ids: string[], conn: Conn = 
 export async function listProducts(shopId: string, collectionId: string, conn: Conn = db) {
   return conn
     .select({ id: schema.products.id, title: schema.products.title, status: schema.products.status })
-    .from(schema.productCollections)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productCollections.productId))
-    .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
-    .where(and(eq(schema.collections.shopId, shopId), eq(schema.productCollections.collectionId, collectionId)))
-    .orderBy(asc(schema.productCollections.position))
+    .from(productCollections)
+    .innerJoin(schema.products, eq(schema.products.id, productCollections.productId))
+    .innerJoin(collections, eq(collections.id, productCollections.collectionId))
+    .where(and(eq(collections.shopId, shopId), eq(productCollections.collectionId, collectionId)))
+    .orderBy(asc(productCollections.position))
 }
 
 // Idempotent; new products go to the end of the collection
@@ -190,11 +187,11 @@ export async function addProduct(shopId: string, collectionId: string, productId
       throw new CatalogError('PRODUCT_NOT_FOUND', 'Product not found')
     }
     const [{ last } = { last: null }] = await tx
-      .select({ last: max(schema.productCollections.position) })
-      .from(schema.productCollections)
-      .where(eq(schema.productCollections.collectionId, collectionId))
+      .select({ last: max(productCollections.position) })
+      .from(productCollections)
+      .where(eq(productCollections.collectionId, collectionId))
     await tx
-      .insert(schema.productCollections)
+      .insert(productCollections)
       .values({ collectionId, productId, position: (last ?? -1) + 1 })
       .onConflictDoNothing()
   })
@@ -205,8 +202,6 @@ export async function removeProduct(shopId: string, collectionId: string, produc
     throw new CatalogError('COLLECTION_NOT_FOUND', 'Collection not found')
   }
   await db
-    .delete(schema.productCollections)
-    .where(
-      and(eq(schema.productCollections.collectionId, collectionId), eq(schema.productCollections.productId, productId)),
-    )
+    .delete(productCollections)
+    .where(and(eq(productCollections.collectionId, collectionId), eq(productCollections.productId, productId)))
 }
