@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { isEdge } from '@shopnex/cli-core/bundle'
 
 const GITIGNORE = `# ShopNex: secrets and local data stay out of git
@@ -7,6 +7,29 @@ const GITIGNORE = `# ShopNex: secrets and local data stay out of git
 .pglite/
 apps/*/.pglite/
 apps/*/app-key
+`
+
+const readme = (name: string) => `# ${name}
+
+A ShopNex shop, started with \`npx create-shopnex\`.
+
+## Run it
+
+From the folder above this one:
+
+\`\`\`sh
+npx create-shopnex ${name}
+\`\`\`
+
+- Admin: http://localhost:3000/admin (the first run opens the setup wizard: create the owner account)
+- Storefront: http://localhost:4321
+- Ctrl+C stops everything.
+
+## What is here
+
+- \`.env\`: the shop's settings and secrets. Keep it out of git. Change \`DATABASE_URL\` to use PostgreSQL.
+- \`.pglite/\`: the embedded trial database. It is for trying ShopNex out, not for production.
+- \`docker-compose.yml\`: for a real shop, see https://shopnex.ai for the self-hosting docs.
 `
 
 /** The compose file of the self-hosting docs, from the tag of this version (the latest main for an edge build) */
@@ -25,6 +48,9 @@ export async function writeScaffold(
   mkdirSync(shopDir, { recursive: true })
   const gitignore = join(shopDir, '.gitignore')
   if (!existsSync(gitignore)) writeFileSync(gitignore, GITIGNORE)
+
+  const readmeFile = join(shopDir, 'README.md')
+  if (!existsSync(readmeFile)) writeFileSync(readmeFile, readme(basename(shopDir)))
 
   const compose = join(shopDir, 'docker-compose.yml')
   if (existsSync(compose)) return
