@@ -24,6 +24,7 @@ import {
   emailDeliveries as emailDeliveriesTable,
   emailSettings,
 } from './email.schema'
+import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
 
 const BATCH = 20
 // A cart that went quiet longer ago than its delay plus this is left alone: turning the feature on must not mail
@@ -34,12 +35,12 @@ const GRACE_MS = 24 * 3600_000
 // wait for the transaction for ever on the embedded database (one connection)
 async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
   const rows = await conn
-    .select({ line: schema.cartLines, variant: schema.productVariants, product: schema.products })
-    .from(schema.cartLines)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.id, schema.cartLines.variantId))
+    .select({ line: cartLinesTable, variant: schema.productVariants, product: schema.products })
+    .from(cartLinesTable)
+    .innerJoin(schema.productVariants, eq(schema.productVariants.id, cartLinesTable.variantId))
     .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(and(eq(schema.cartLines.cartId, cartId), eq(schema.products.status, 'active')))
-    .orderBy(asc(schema.cartLines.createdAt), asc(schema.cartLines.id))
+    .where(and(eq(cartLinesTable.cartId, cartId), eq(schema.products.status, 'active')))
+    .orderBy(asc(cartLinesTable.createdAt), asc(cartLinesTable.id))
   const productIds = [...new Set(rows.map((r) => r.product.id))]
   const images = productIds.length
     ? await conn
@@ -58,7 +59,8 @@ async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
 
 /** Carts that have waited out their shop's delay, in shops that send abandoned cart emails and haven't been reminded */
 async function dueCarts() {
-  const { carts, cartLines } = schema
+  const carts = cartsTable
+  const cartLines = cartLinesTable
   const emailDeliveries = emailDeliveriesTable
   return db
     .select({ id: carts.id })
@@ -88,8 +90,8 @@ async function queueOne(cartId: string) {
     // Another instance may be on the same cart: whoever locks it first queues it
     const [cart] = await tx
       .select()
-      .from(schema.carts)
-      .where(and(eq(schema.carts.id, cartId), eq(schema.carts.status, 'active')))
+      .from(cartsTable)
+      .where(and(eq(cartsTable.id, cartId), eq(cartsTable.status, 'active')))
       .for('update', { skipLocked: true })
     if (!cart?.email) return
     const [row] = await tx.select().from(shops).where(eq(shops.id, cart.shopId))
@@ -157,9 +159,9 @@ export async function queueDue() {
 export async function reasonToSkip(delivery: { shopId: string; cartId: string | null; to: string }) {
   if (!delivery.cartId) return null
   const [cart] = await db
-    .select({ status: schema.carts.status })
-    .from(schema.carts)
-    .where(eq(schema.carts.id, delivery.cartId))
+    .select({ status: cartsTable.status })
+    .from(cartsTable)
+    .where(eq(cartsTable.id, delivery.cartId))
   if (cart?.status !== 'active') return 'Checkout was completed'
   if (await isSuppressed(db, delivery.shopId, delivery.to)) return 'Unsubscribed'
   return null

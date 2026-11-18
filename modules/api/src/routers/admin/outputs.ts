@@ -40,6 +40,8 @@ export {
   productOutput,
   variantRowOutput,
 } from '@shopnex/catalog/contract'
+export { carrierServiceOutput, shippingRateOutput } from '@shopnex/cart/contract'
+export { availableAppsOutput } from '@shopnex/payments/contract'
 export { menuOutput, pageOutput } from '@shopnex/content/contract'
 export {
   abandonedCartSettingsOutput,
@@ -59,8 +61,6 @@ import {
   CANCEL_REASONS,
   CHANNEL_TYPES,
   channels,
-  shippingRates,
-  carrierServices,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
@@ -80,6 +80,7 @@ import { productOutput } from '@shopnex/catalog/contract'
 import { menus, pages, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, apiTokens, apps, shops } from '@shopnex/core/schema'
 import { emailDeliveries, NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
+import { carrierServices, shippingRates } from '@shopnex/cart/schema'
 
 export const orderOutput = createSelectSchema(orders, {
   financialStatus: z.enum(FINANCIAL_STATUSES),
@@ -96,16 +97,6 @@ export const orderDetailOutput = orderOutput.extend({
   customer: createSelectSchema(customers, { customFields: customFieldValues }).nullable(),
 })
 
-export const carrierServiceOutput = createSelectSchema(carrierServices).pick({
-  id: true,
-  appId: true,
-  name: true,
-  /** The merchant's switch in Settings → Shipping */
-  active: true,
-  /** The app has what it needs to quote rates */
-  ready: true,
-})
-
 // --- everything else the admin routes answer ---
 
 /** Deleting or toggling something: `{ ok: true }` */
@@ -114,9 +105,6 @@ export const okOutput = z.object({ ok: z.boolean() })
 export const countOutput = z.number().int()
 
 const scopes = z.array(z.enum(API_SCOPES))
-
-// Channels, checkout settings
-export const shippingRateOutput = createSelectSchema(shippingRates)
 
 export const customerOutput = createSelectSchema(customers, { customFields: customFieldValues })
 
@@ -167,22 +155,6 @@ export const orderListItemOutput = orderOutput.extend({ customerName: z.string()
 export const orderCreatedOutput = orderOutput.extend({
   items: z.array(createSelectSchema(orderItems)),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
-})
-
-/** Apps a shop can install for a job (payments, shipping) */
-export const availableAppsOutput = z.object({
-  instanceUrl: z.string(),
-  apps: z.array(
-    createSelectSchema(apps).pick({
-      id: true,
-      name: true,
-      description: true,
-      iconUrl: true,
-      appUrl: true,
-      clientId: true,
-      redirectUrls: true,
-    }),
-  ),
 })
 
 // Domains, email, storage, files, notifications

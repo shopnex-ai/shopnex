@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@shopnex/auth": "workspace:*",
+    "@shopnex/cart": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/email": "workspace:*",

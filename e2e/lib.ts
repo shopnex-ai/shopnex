@@ -17,6 +17,7 @@ import { storefrontKeyService } from '@shopnex/channels'
 import { createApiToken, getShopById, type ApiScope } from '@shopnex/tenancy'
 import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { apiTokens, shops, user } from '@shopnex/core/schema'
+import { carts, shippingRates } from '@shopnex/cart/schema'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -307,7 +308,7 @@ export class Fixtures {
     for (const id of this.orders) {
       await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
     }
-    if (this.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.token, this.carts))
+    if (this.carts.length) await db.delete(carts).where(inArray(carts.token, this.carts))
     if (this.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, this.orders))
     if (this.paymentMethods.length) {
       await db.delete(paymentMethods).where(inArray(paymentMethods.id, this.paymentMethods))
@@ -317,7 +318,7 @@ export class Fixtures {
     if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
     if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
-      await db.delete(schema.shippingRates).where(inArray(schema.shippingRates.id, this.shippingRates))
+      await db.delete(shippingRates).where(inArray(shippingRates.id, this.shippingRates))
     }
     if (this.users.length) await db.delete(user).where(inArray(user.id, this.users))
     if (this.shops.length) await db.delete(shops).where(inArray(shops.id, this.shops))

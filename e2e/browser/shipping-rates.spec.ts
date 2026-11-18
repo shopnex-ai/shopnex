@@ -2,8 +2,9 @@
 // rewritten to "NaN"), and a valid amount saves as minor units.
 import { expect, test } from './test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, requireApp } from '../lib'
+import { shippingRates } from '@shopnex/cart/schema'
 
 const fx = new Fixtures()
 const NAME = `E2E money rate ${Date.now()}`
@@ -14,7 +15,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  await db.delete(schema.shippingRates).where(eq(schema.shippingRates.name, NAME))
+  await db.delete(shippingRates).where(eq(shippingRates.name, NAME))
   await fx.cleanup()
 })
 
@@ -47,7 +48,7 @@ test('the Free from input keeps junk as typed and saves a valid amount', async (
   await dialog.getByRole('button', { name: 'Add rate' }).click()
   await expect(dialog).toBeHidden()
 
-  const [row] = await db.select().from(schema.shippingRates).where(eq(schema.shippingRates.name, NAME))
+  const [row] = await db.select().from(shippingRates).where(eq(shippingRates.name, NAME))
   expect(row?.shopId).toBe(SHOP)
   expect(row?.priceCents).toBe(500)
   expect(row?.freeAboveCents).toBe(4950)

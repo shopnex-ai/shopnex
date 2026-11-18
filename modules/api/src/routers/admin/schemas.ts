@@ -29,6 +29,7 @@ export {
   variantInput,
   variantsInput,
 } from '@shopnex/catalog/contract'
+export { carrierServiceConfigureInput, shippingRateInput } from '@shopnex/cart/contract'
 export { menuInput, pageInput } from '@shopnex/content/contract'
 export {
   abandonedCartSettingsInput,
@@ -48,12 +49,13 @@ export {
   customFieldValues,
 } from '@shopnex/custom-fields/contract'
 import { AI_CAPABILITIES, aiCapabilities, type AiCapability } from '@shopnex/marketplace-sdk/ai'
-import { customers, CANCEL_REASONS, shippingRates, CHANNEL_TYPES } from '@shopnex/db/schema'
+import { customers, CANCEL_REASONS, CHANNEL_TYPES } from '@shopnex/db/schema'
 import { STAFF_ROLES } from '@shopnex/tenancy/schema'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { MENU_ITEM_TYPES, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, shops } from '@shopnex/core/schema'
 import { NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
+import { shippingRates } from '@shopnex/cart/schema'
 
 const nonNegative = (s: z.ZodNumber) => s.nonnegative()
 
@@ -86,13 +88,6 @@ export {
   type MailingAddress,
 } from '@shopnex/db/schema'
 
-// Settings → Shipping / Payments (money in minor units)
-export const shippingRateInput = createInsertSchema(shippingRates, {
-  name: (s) => s.trim().min(1).max(100),
-  priceCents: nonNegative,
-  freeAboveCents: nonNegative,
-}).pick({ name: true, priceCents: true, freeAboveCents: true, active: true })
-
 export const cancelOrderInput = z.object({
   reason: z.enum(CANCEL_REASONS),
   restock: z.boolean(),
@@ -111,16 +106,6 @@ export const fulfillOrderInput = z.object({
 
 export { webhookEndpointInput } from '@shopnex/webhooks/contract'
 export { WEBHOOK_TOPICS, type WebhookTopic } from '@shopnex/webhooks/schema'
-
-// Carrier services (Shopify carrierServiceCreate)
-export const carrierServiceConfigureInput = z.object({
-  /** Shown at checkout next to the rates when the service is first created, e.g. "CJ Dropshipping" (staff can rename it) */
-  name: z.string().trim().min(1).max(100),
-  /** Receives signed RatesRequests; must be on the app's own origin */
-  ratesUrl: z.url({ protocol: /^https?$/ }),
-  /** false hides it at checkout (e.g. until the merchant has connected the carrier) */
-  ready: z.boolean(),
-})
 
 export {
   AI_CAPABILITIES,

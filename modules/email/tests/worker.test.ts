@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { emailDeliveries } from '../src/email.schema'
+import { carts } from '@shopnex/cart/schema'
 
 const { db, schema, eq, SHOP, behavior, received } = fx
 const { processDue } = await import('../src/worker')
@@ -153,7 +154,7 @@ describe('what is dropped, not retried', () => {
             .returning()
         )[0]!,
       )
-    await db.update(schema.carts).set({ status: 'completed' }).where(eq(schema.carts.id, done.id))
+    await db.update(carts).set({ status: 'completed' }).where(eq(carts.id, done.id))
     await abandonedCartService.unsubscribe(abandonedCartService.unsubscribeToken(SHOP, 'gone@example.test'))
     await processDue()
     assert.deepEqual(

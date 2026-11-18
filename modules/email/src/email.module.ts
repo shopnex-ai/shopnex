@@ -12,7 +12,7 @@ import {
 // It sits above orders and carts: it reads them, and email_deliveries points at them (which are still tables in db)
 export const emailModule = defineModule({
   name: 'email',
-  dependsOn: ['catalog', 'core', 'db', 'orders', 'rpc', 'storefront-sdk', 'tenancy', 'webhooks'],
+  dependsOn: ['cart', 'catalog', 'core', 'db', 'orders', 'rpc', 'storefront-sdk', 'tenancy', 'webhooks'],
   tables: { abandonedCartSettings, emailDeliveries, emailSettings, emailSuppressions, emailTemplates },
   router: { email: emailRoutes, notifications: notificationRoutes },
 })

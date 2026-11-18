@@ -9,7 +9,7 @@
 // Codes are only stored as SHA-256 hashes.
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, asc, desc, eq, isNull, lt, sql } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { appUninstalled } from './apps.hooks'
 import {
   decodeJwt,
@@ -518,12 +518,9 @@ export async function uninstall(shopId: string, installationId: string) {
     if (!installation) return null
     if (installation.apiTokenId) await revokeTokenById(shopId, installation.apiTokenId, tx)
     // What other modules keep for the app goes with it: a payments app's method leaves checkout (orders keep their gateway
-    // snapshot), an AI app's capabilities stop being offered (its generations stay in the shop's history)
+    // snapshot), an AI app's capabilities stop being offered (its generations stay in the shop's history), a carrier app's service
+    // leaves checkout
     await appUninstalled.run(tx, { shopId, appId: installation.appId })
-    // So does a carrier app's service: its rates stop being offered at checkout
-    await tx
-      .delete(schema.carrierServices)
-      .where(and(eq(schema.carrierServices.shopId, shopId), eq(schema.carrierServices.appId, installation.appId)))
     const [updated] = await tx
       .update(appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })

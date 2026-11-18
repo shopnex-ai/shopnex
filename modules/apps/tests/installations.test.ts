@@ -1,4 +1,4 @@
-// Installing without the consent screen, the catalog and installed lists, uninstalling (the token, the hook, the carrier service), the
+// Installing without the consent screen, the catalog and installed lists, uninstalling (the token, the hook), the
 // session token the embedded page gets, and the data an app keeps per shop.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
@@ -203,23 +203,6 @@ describe('uninstalling', () => {
     assert.equal(await appService.uninstall(other.id, i.id), null)
     assert.equal(await appService.uninstall(SHOP, '00000000-0000-4000-8000-000000000000'), null)
     assert.ok(await appService.getInstallation(SHOP, a.app.id))
-  })
-
-  test('takes the app’s carrier service off checkout, and only this app’s', async () => {
-    const [a, b] = [await fx.newApp(), await fx.newApp()]
-    const i = await install(a.app)
-    await install(b.app)
-    for (const app of [a.app, b.app])
-      await db
-        .insert(schema.carrierServices)
-        .values({ shopId: SHOP, appId: app.id, name: 'Rates', ratesUrl: 'http://127.0.0.1:1/rates' })
-    await appService.uninstall(SHOP, i.id)
-    const left = await db.select().from(schema.carrierServices).where(eq(schema.carrierServices.shopId, SHOP))
-    assert.deepEqual(
-      left.map((c) => c.appId),
-      [b.app.id],
-    )
-    await db.delete(schema.carrierServices).where(eq(schema.carrierServices.shopId, SHOP))
   })
 
   test('tells the listeners of appUninstalled inside the transaction, and a listener that fails undoes the uninstall', async () => {

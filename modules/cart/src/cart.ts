@@ -4,11 +4,11 @@ import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
 import { all, db, schema, type Conn } from '@shopnex/db'
-import type { Cart, CartStatus } from '@shopnex/db/schema'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
 import { productImages } from '@shopnex/catalog/schema'
+import { type Cart, cartLines, carts, type CartStatus } from './cart.schema'
 
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999
@@ -70,14 +70,8 @@ const expiry = () => new Date(Date.now() + CART_TTL_MS)
 export async function findByToken(shopId: string | null, token: string, conn: Conn = db): Promise<Cart | null> {
   const [cart] = await conn
     .select()
-    .from(schema.carts)
-    .where(
-      and(
-        eq(schema.carts.token, token),
-        shopId ? eq(schema.carts.shopId, shopId) : undefined,
-        gt(schema.carts.expiresAt, new Date()),
-      ),
-    )
+    .from(carts)
+    .where(and(eq(carts.token, token), shopId ? eq(carts.shopId, shopId) : undefined, gt(carts.expiresAt, new Date())))
   return cart ?? null
 }
 
@@ -90,15 +84,15 @@ async function requireActive(shopId: string, token: string, conn: Conn) {
 
 export async function view(cart: Cart, conn: Conn = db): Promise<CartView> {
   // Re-read so updatedAt reflects changes made earlier in this transaction
-  const [fresh] = await conn.select().from(schema.carts).where(eq(schema.carts.id, cart.id))
+  const [fresh] = await conn.select().from(carts).where(eq(carts.id, cart.id))
   const [shop] = await conn.select({ currency: shops.currency }).from(shops).where(eq(shops.id, cart.shopId))
   const rows = await conn
-    .select({ line: schema.cartLines, variant: schema.productVariants, product: schema.products })
-    .from(schema.cartLines)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.id, schema.cartLines.variantId))
+    .select({ line: cartLines, variant: schema.productVariants, product: schema.products })
+    .from(cartLines)
+    .innerJoin(schema.productVariants, eq(schema.productVariants.id, cartLines.variantId))
     .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(eq(schema.cartLines.cartId, cart.id))
-    .orderBy(asc(schema.cartLines.createdAt), asc(schema.cartLines.id))
+    .where(eq(cartLines.cartId, cart.id))
+    .orderBy(asc(cartLines.createdAt), asc(cartLines.id))
   const productIds = [...new Set(rows.map((r) => r.product.id))]
   const [images, details] = await all(conn, [
     async () =>
@@ -187,9 +181,7 @@ async function setLines(conn: Conn, cart: Cart, lines: LineInput[]) {
   for (const l of lines) {
     const variant = found.get(l.variantId)!
     if (l.quantity <= 0) {
-      await conn
-        .delete(schema.cartLines)
-        .where(and(eq(schema.cartLines.cartId, cart.id), eq(schema.cartLines.variantId, l.variantId)))
+      await conn.delete(cartLines).where(and(eq(cartLines.cartId, cart.id), eq(cartLines.variantId, l.variantId)))
       continue
     }
     const quantity = Math.min(l.quantity, MAX_LINE_QUANTITY)
@@ -201,21 +193,21 @@ async function setLines(conn: Conn, cart: Cart, lines: LineInput[]) {
       })
     }
     await conn
-      .insert(schema.cartLines)
+      .insert(cartLines)
       .values({ cartId: cart.id, variantId: l.variantId, quantity })
-      .onConflictDoUpdate({ target: [schema.cartLines.cartId, schema.cartLines.variantId], set: { quantity } })
+      .onConflictDoUpdate({ target: [cartLines.cartId, cartLines.variantId], set: { quantity } })
   }
   await touch(conn, cart.id)
 }
 
 const touch = (conn: Conn, cartId: string) =>
-  conn.update(schema.carts).set({ updatedAt: new Date(), expiresAt: expiry() }).where(eq(schema.carts.id, cartId))
+  conn.update(carts).set({ updatedAt: new Date(), expiresAt: expiry() }).where(eq(carts.id, cartId))
 
 async function currentLines(conn: Conn, cartId: string) {
   return conn
-    .select({ id: schema.cartLines.id, variantId: schema.cartLines.variantId, quantity: schema.cartLines.quantity })
-    .from(schema.cartLines)
-    .where(eq(schema.cartLines.cartId, cartId))
+    .select({ id: cartLines.id, variantId: cartLines.variantId, quantity: cartLines.quantity })
+    .from(cartLines)
+    .where(eq(cartLines.cartId, cartId))
 }
 
 // Turn "add 2" into "set to existing + 2" (same variant merges into one line)
@@ -242,7 +234,7 @@ async function resolveLineIds(conn: Conn, cartId: string, lineIds: string[]) {
 export async function create(shopId: string, channelId: string, lines: LineInput[] = []) {
   return db.transaction(async (tx) => {
     const [cart] = await tx
-      .insert(schema.carts)
+      .insert(carts)
       .values({ shopId, channelId, token: newToken(), expiresAt: expiry() })
       .returning()
     if (lines.length) await setLines(tx, cart!, mergeAdds([], lines))
@@ -287,9 +279,7 @@ export async function removeLines(shopId: string, token: string, lineIds: string
   return db.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await resolveLineIds(tx, cart.id, lineIds)
-    await tx
-      .delete(schema.cartLines)
-      .where(and(eq(schema.cartLines.cartId, cart.id), inArray(schema.cartLines.id, lineIds)))
+    await tx.delete(cartLines).where(and(eq(cartLines.cartId, cart.id), inArray(cartLines.id, lineIds)))
     await touch(tx, cart.id)
     return view(cart, tx)
   })
@@ -301,9 +291,9 @@ export async function setDiscountCode(shopId: string, token: string, code: strin
   return db.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await tx
-      .update(schema.carts)
+      .update(carts)
       .set({ discountCode: code?.trim() || null, updatedAt: new Date(), expiresAt: expiry() })
-      .where(eq(schema.carts.id, cart.id))
+      .where(eq(carts.id, cart.id))
     return view(cart, tx)
   })
 }
@@ -312,18 +302,18 @@ export async function setDiscountCode(shopId: string, token: string, code: strin
 export async function lockForCheckout(conn: Conn, shopId: string, token: string) {
   const [cart] = await conn
     .select()
-    .from(schema.carts)
-    .where(and(eq(schema.carts.token, token), eq(schema.carts.shopId, shopId), gt(schema.carts.expiresAt, new Date())))
+    .from(carts)
+    .where(and(eq(carts.token, token), eq(carts.shopId, shopId), gt(carts.expiresAt, new Date())))
     .for('update')
   return cart ?? null
 }
 
 export async function lineInputs(conn: Conn, cartId: string): Promise<LineInput[]> {
   return conn
-    .select({ variantId: schema.cartLines.variantId, quantity: schema.cartLines.quantity })
-    .from(schema.cartLines)
-    .where(eq(schema.cartLines.cartId, cartId))
-    .orderBy(asc(schema.cartLines.createdAt))
+    .select({ variantId: cartLines.variantId, quantity: cartLines.quantity })
+    .from(cartLines)
+    .where(eq(cartLines.cartId, cartId))
+    .orderBy(asc(cartLines.createdAt))
 }
 
 export async function markCompleted(
@@ -332,7 +322,7 @@ export async function markCompleted(
   order: { id: string; customerId: string | null; email: string },
 ) {
   await conn
-    .update(schema.carts)
+    .update(carts)
     .set({
       status: 'completed',
       orderId: order.id,
@@ -340,7 +330,7 @@ export async function markCompleted(
       email: order.email,
       updatedAt: sql`now()`,
     })
-    .where(eq(schema.carts.id, cartId))
+    .where(eq(carts.id, cartId))
 }
 
 /**
@@ -349,9 +339,7 @@ export async function markCompleted(
  */
 export async function setReminderContact(token: string, email: string, conn: Conn = db) {
   await conn
-    .update(schema.carts)
+    .update(carts)
     .set({ email: email.trim().toLowerCase(), updatedAt: sql`now()` })
-    .where(
-      and(eq(schema.carts.token, token), eq(schema.carts.status, 'active'), gt(schema.carts.expiresAt, new Date())),
-    )
+    .where(and(eq(carts.token, token), eq(carts.status, 'active'), gt(carts.expiresAt, new Date())))
 }

@@ -32,7 +32,7 @@
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService)
 - /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService); no tables or routes of its own → uses customers, orders, carts, emails
-- /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent)
+- /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent), shipping rates and carrier services, and their admin routes
 - /orders # orders + line items with price snapshots, status transitions (orderService) → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
 - /auth # Better Auth integration
@@ -59,17 +59,17 @@ theme     → db, drafts, rpc, storefront-sdk   (the Theme Store catalog is its 
 tenancy   → db, channels, content, webhooks, core, rpc   (owns shop_members, shop_invitations and shop_domains; shops and api_tokens stay in db with the other foundation tables; no connection injection, like auth: its resolvers are request entry points)
 auth      → db, tenancy   (owns session, account, verification and rate_limits; the user table stays in db with the other foundation tables)
 files     → db, rpc, tenancy, webhooks
-email     → db, core, catalog, orders, rpc, storefront-sdk, tenancy, webhooks   (owns email_settings, email_templates, email_deliveries, abandoned_cart_settings and email_suppressions; sits above orders: it reads them and email_deliveries points at orders and carts, which are still tables in db; listens to orderEvent; the settings and notification routes are here)
+email     → db, core, cart, catalog, orders, rpc, storefront-sdk, tenancy, webhooks   (owns email_settings, email_templates, email_deliveries, abandoned_cart_settings and email_suppressions; sits above orders: it reads them and email_deliveries points at orders and carts, which are still tables in db; listens to orderEvent; the settings and notification routes are here)
 rpc       → core   (the route building blocks; knows nothing of logins, tokens or shops: modules/api registers those with `configureRpc`)
 custom-fields → db, rpc   (clears a deleted field's values from the products, orders and customers tables by name: it sits below the modules that own them)
 catalog   → db, core, channels, custom-fields, rpc, webhooks   (owns product_images, collections, product_collections, product_options, product_option_values and variant_option_values; products and product_variants stay in db while orders and carts, which point at them, are still there; the product and collection routes are here)
 content   → db, catalog, rpc   (owns pages and menus and seedDefaultMenu, which tenancy calls when it creates a shop)
 customers → db, auth, custom-fields, webhooks   (sign-in codes link a login to the customer; the code is sent by the sender the storefront route passes in, customers cannot call email)
-privacy   → db, auth, core, email, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
+privacy   → db, auth, cart, core, email, tenancy, webhooks   (a customer's export and erase; no tables or routes of its own; reads what customers, orders, carts and emails hold, so it sits above them)
 orders    → db, catalog, channels, custom-fields, customers, pricing, webhooks   (declares orderEvent; email listens)
 payments  → db, apps, orders, webhooks, rpc, marketplace-sdk   (owns payment_methods: the checkout settings and a payments app's own method)
-cart      → db, apps, catalog, channels, orders, payments, pricing
-apps      → db, tenancy, theme, rpc, marketplace-sdk, storefront-sdk   (owns app_installations, app_authorization_codes, app_data, instance_keys and marketplace_connection; the apps registry table stays in db with the other foundation tables; owns appUninstalled and runs the carrier-service cleanup itself until cart is a module)
+cart      → db, core, apps, catalog, marketplace-sdk, orders, payments, pricing, rpc   (owns carts, cart_lines, shipping_rates and carrier_services; carts point at orders, customers, channels and variants, which are still tables in db; listens to appUninstalled for a carrier app's service; the shipping and carrier service routes are here, the storefront cart routes stay in api)
+apps      → db, tenancy, theme, rpc, marketplace-sdk, storefront-sdk   (owns app_installations, app_authorization_codes, app_data, instance_keys and marketplace_connection; the apps registry table stays in db with the other foundation tables; owns appUninstalled)
 ai        → db, apps, catalog, tenancy, rpc, marketplace-sdk   (owns ai_providers, ai_settings, ai_generations; apps tells it when an app is uninstalled)
 api       → everything above (transport only)
 ```
@@ -151,8 +151,8 @@ export const appUninstalled = defineHook<{ shopId: string; appId: string }, Conn
 
 Use a hook only when the owner really cannot depend on the module that reacts. Most cases are not that: `tenancy` calls `content` when it
 creates a shop and `webhooks` when it revokes a token, as ordinary dependencies (the cycle that once forced hooks there was
-`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). Two are left: `appUninstalled` (payments and ai need apps)
-and `orderEvent` (email reads orders and its tables point at them, so orders cannot call it).
+`webhooks → tenancy` for the scope helpers, which now live in `@shopnex/core/scopes`). Two are left: `appUninstalled` (payments, ai and cart need apps)
+and `orderEvent` (email reads orders and its tables point at them, so orders cannot call it). `appUninstalled` has three listeners: payments, ai and cart.
 
 A listener only runs in a process that loaded its module, so the module's entry points (`index.ts` and `*.module.ts`) import the
 file that registers it, and tests in `modules/api/tests` guard it: `uninstall-hooks.test.ts` goes through the real route, and `hooks.test.ts` loads the

@@ -10,6 +10,7 @@ import {
   emailSuppressions,
   emailTemplates,
 } from '../src/email.schema'
+import { cartLines, carts } from '@shopnex/cart/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -198,7 +199,7 @@ export async function cart(
   const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
   const idle = new Date(Date.now() - (opts.idleMinutes ?? 0) * 60_000)
   const [row] = await db
-    .insert(schema.carts)
+    .insert(carts)
     .values({
       shopId: SHOP,
       channelId: channel!.id,
@@ -213,7 +214,7 @@ export async function cart(
   made.carts.push(row!.id)
   for (let i = 0; i < (opts.lines ?? 1); i++) {
     const { variant: v } = await variant()
-    await db.insert(schema.cartLines).values({ cartId: row!.id, variantId: v.id, quantity: 2 })
+    await db.insert(cartLines).values({ cartId: row!.id, variantId: v.id, quantity: 2 })
   }
   return row!
 }
@@ -225,7 +226,7 @@ export async function cleanup() {
   await db.delete(emailTemplates).where(inArray(emailTemplates.shopId, shopIds))
   await db.delete(abandonedCartSettings).where(inArray(abandonedCartSettings.shopId, shopIds))
   await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, shopIds))
-  if (made.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.id, made.carts))
+  if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
   if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
   if (made.customers.length) await db.delete(schema.customers).where(inArray(schema.customers.id, made.customers))
   if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))

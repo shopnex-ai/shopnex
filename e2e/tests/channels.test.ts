@@ -10,6 +10,7 @@ import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 import { storefrontKeys } from '@shopnex/channels/schema'
 import { collections } from '@shopnex/catalog/schema'
+import { carts } from '@shopnex/cart/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -41,7 +42,7 @@ before(async () => {
 
 after(async () => {
   await fx.cleanup()
-  await db.delete(schema.carts).where(eq(schema.carts.channelId, portal.id))
+  await db.delete(carts).where(eq(carts.channelId, portal.id))
   await db.delete(storefrontKeys).where(eq(storefrontKeys.channelId, portal.id))
   await db.delete(schema.orders).where(eq(schema.orders.channelId, portal.id))
   await channelService.remove(SHOP, portal.id, db).catch(() => {})
