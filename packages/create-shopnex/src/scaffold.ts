@@ -3,6 +3,7 @@ import { basename, join } from 'node:path'
 import { isEdge } from '@shopnex/cli-core/bundle'
 
 const GITIGNORE = `# ShopNex: secrets and local data stay out of git
+node_modules/
 .env
 .pglite/
 apps/*/.pglite/
@@ -15,11 +16,14 @@ A ShopNex shop, started with \`npx create-shopnex\`.
 
 ## Run it
 
-From the folder above this one:
+In this folder:
 
 \`\`\`sh
-npx create-shopnex ${name}
+npm install   # once
+npm start     # or: npm run dev
 \`\`\`
+
+Or from the folder above, without installing: \`npx create-shopnex ${name}\`.
 
 - Admin: http://localhost:3000/admin (the first run opens the setup wizard: create the owner account)
 - Storefront: http://localhost:4321
@@ -31,6 +35,23 @@ npx create-shopnex ${name}
 - \`.pglite/\`: the embedded trial database. It is for trying ShopNex out, not for production.
 - \`docker-compose.yml\`: for a real shop, see https://shopnex.ai for the self-hosting docs.
 `
+
+/** package.json: `npm start` runs this shop again, with the same create-shopnex version that made the folder */
+const packageJson = (name: string, version: string) =>
+  JSON.stringify(
+    {
+      name:
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9._-]+/g, '-')
+          .replace(/^[._-]+/, '') || 'shopnex-shop',
+      private: true,
+      scripts: { start: 'create-shopnex .', dev: 'create-shopnex .' },
+      dependencies: { 'create-shopnex': version },
+    },
+    null,
+    2,
+  ) + '\n'
 
 /** The compose file of the self-hosting docs, from the tag of this version (the latest main for an edge build) */
 export const composeUrl = (version: string) =>
@@ -48,6 +69,9 @@ export async function writeScaffold(
   mkdirSync(shopDir, { recursive: true })
   const gitignore = join(shopDir, '.gitignore')
   if (!existsSync(gitignore)) writeFileSync(gitignore, GITIGNORE)
+
+  const pkgFile = join(shopDir, 'package.json')
+  if (!existsSync(pkgFile)) writeFileSync(pkgFile, packageJson(basename(shopDir), version))
 
   const readmeFile = join(shopDir, 'README.md')
   if (!existsSync(readmeFile)) writeFileSync(readmeFile, readme(basename(shopDir)))
