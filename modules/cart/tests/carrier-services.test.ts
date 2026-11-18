@@ -10,7 +10,7 @@ import { appInstallations } from '@shopnex/apps/schema'
 import * as fx from './fixtures'
 import { carrierServices } from '../src/cart.schema'
 
-const { db, schema, eq, SHOP, OTHER_SHOP } = fx
+const { db, eq, SHOP, OTHER_SHOP } = fx
 const { carrierService, CartError } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof CartError && e.code === code

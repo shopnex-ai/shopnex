@@ -1,4 +1,4 @@
-import type { FinancialStatus, FulfillmentStatus } from '@shopnex/api/schemas'
+import type { FinancialStatus, FulfillmentStatus } from '@shopnex/orders/schema'
 import { Badge } from '@/components/ui/badge'
 
 // Shopify's labels: payment and fulfillment are shown separately

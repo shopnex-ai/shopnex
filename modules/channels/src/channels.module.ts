@@ -1,11 +1,10 @@
 import { defineModule } from '@shopnex/kit'
 import { channels, storefrontKeys as storefrontKeyRoutes } from './channels.router'
-import { resourcePublications, storefrontKeys } from './channels.schema'
+import { channels as channelsTable, resourcePublications, storefrontKeys } from './channels.schema'
 
-// The `channels` table is in @shopnex/db/schema for now (see channels.schema.ts), so it is not listed here
 export const channelsModule = defineModule({
   name: 'channels',
   dependsOn: ['core', 'db', 'rpc'],
-  tables: { storefrontKeys, resourcePublications },
+  tables: { channels: channelsTable, resourcePublications, storefrontKeys },
   router: { channels, storefrontKeys: storefrontKeyRoutes },
 })

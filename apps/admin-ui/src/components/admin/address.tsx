@@ -1,4 +1,4 @@
-import type { MailingAddress } from '@shopnex/api/schemas'
+import type { MailingAddress } from '@shopnex/orders/schema'
 import { countryName } from '@/lib/countries'
 
 // Postal block, one line per part (format is the same for every country for now)

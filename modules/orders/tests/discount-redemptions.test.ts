@@ -5,11 +5,12 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { orders } from '../src/orders.schema'
 import { customers } from '@shopnex/customers/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { discountService } = await import('@shopnex/pricing')
@@ -24,7 +25,7 @@ let orderNumber = 900_000
 
 before(async () => {
   await prepareDatabase()
-  const [channel] = await db.select({ id: schema.channels.id }).from(schema.channels).limit(1)
+  const [channel] = await db.select({ id: channels.id }).from(channels).limit(1)
   assert.ok(channel, 'the migrations seed a channel')
   channelId = channel.id
 })

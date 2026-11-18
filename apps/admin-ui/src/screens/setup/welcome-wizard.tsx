@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useRouter } from '@tanstack/react-router'
-import { shopInput } from '@shopnex/api/schemas'
+import { shopInput } from '@shopnex/tenancy/contract'
 import { FormError, SelectField, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'

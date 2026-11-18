@@ -1,5 +1,5 @@
 // The tables of this module. `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one
-// history in modules/db/migrations. `shops` and `api_tokens` stay in @shopnex/db/schema with the other foundation tables
+// history in modules/db/migrations. `shops` and `api_tokens` are @shopnex/core's, with the other foundation tables
 // (shops, user, apps, api_tokens): every module points at them. Shops are Better Auth "organizations" (organization plugin,
 // renamed via modelName); TS keys must match Better Auth field names, DB columns use shop_* naming.
 import { sql } from 'drizzle-orm'

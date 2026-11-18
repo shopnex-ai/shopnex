@@ -4,13 +4,15 @@ import { shops } from '@shopnex/core/schema'
 import { carrierServices, carts, shippingRates } from '../src/cart.schema'
 import { orders } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { products } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'cart-test-secret-0123456789-abcdefghij'
 process.env.APP_URL = 'http://localhost:3000'
 delete process.env.TENANCY_MODE
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
@@ -20,7 +22,7 @@ const { discountService } = await import('@shopnex/pricing')
 const { paymentMethodService } = await import('@shopnex/payments')
 const { cartService } = await import('../src')
 
-export { db, schema, prepareDatabase, eq, cartService }
+export { db, prepareDatabase, eq, cartService }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'cart-other-shop'
 
@@ -37,7 +39,7 @@ export const onlineStore = (shopId = SHOP) => channelService.resolve(shopId, und
 /** A channel that new products are not put on */
 export async function quietChannel() {
   const [row] = await db
-    .insert(schema.channels)
+    .insert(channels)
     .values({ shopId: SHOP, handle: `quiet-${unique()}`, name: 'Quiet', autoPublish: false })
     .returning()
   made.channels.push(row!.id)
@@ -113,9 +115,9 @@ export async function cleanup() {
     await db.delete(paymentMethods).where(inArray(paymentMethods.id, made.methods))
   }
   if (made.discounts.length) await discountService.removeMany(SHOP, made.discounts, db)
-  await db.delete(schema.products).where(inArray(schema.products.shopId, shopIds))
+  await db.delete(products).where(inArray(products.shopId, shopIds))
   const { apps } = await import('@shopnex/core/schema')
   if (made.apps.length) await db.delete(apps).where(inArray(apps.id, made.apps))
-  if (made.channels.length) await db.delete(schema.channels).where(inArray(schema.channels.id, made.channels))
+  if (made.channels.length) await db.delete(channels).where(inArray(channels.id, made.channels))
   for (const list of Object.values(made)) list.length = 0
 }

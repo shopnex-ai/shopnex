@@ -7,12 +7,13 @@ import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { carts } from '@shopnex/cart/schema'
 import { orderItems, orders, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
@@ -54,12 +55,9 @@ async function cleanup() {
 }
 
 const channelId = async (shopId = SHOP) => {
-  const [row] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, shopId))
+  const [row] = await db.select().from(channels).where(eq(channels.shopId, shopId))
   if (row) return row.id
-  const [made] = await db
-    .insert(schema.channels)
-    .values({ shopId, handle: 'online-store', name: 'Online Store' })
-    .returning()
+  const [made] = await db.insert(channels).values({ shopId, handle: 'online-store', name: 'Online Store' }).returning()
   return made!.id
 }
 

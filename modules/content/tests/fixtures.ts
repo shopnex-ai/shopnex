@@ -1,18 +1,19 @@
 import { menus, pages, type MenuItemType, type StoredMenuItem } from '../src/content.schema'
 import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
 import { collections } from '@shopnex/catalog/schema'
+import { products } from '@shopnex/catalog/schema'
 // What the content tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { menuService, pageService } = await import('../src')
 
-export { db, schema, prepareDatabase, eq, menuService, pageService }
+export { db, prepareDatabase, eq, menuService, pageService }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'content-other-shop'
 
@@ -44,9 +45,9 @@ export async function user() {
   return row!
 }
 
-export async function product(patch: Partial<typeof schema.products.$inferInsert> = {}) {
+export async function product(patch: Partial<typeof products.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.products)
+    .insert(products)
     .values({ shopId: SHOP, slug: `p-${unique()}`, title: 'Linen shirt', priceCents: 2500, ...patch })
     .returning()
   made.products.push(row!.id)
@@ -73,7 +74,7 @@ export async function cleanup() {
   const shops = [SHOP, OTHER_SHOP]
   await db.delete(menus).where(inArray(menus.shopId, shops))
   await db.delete(pages).where(inArray(pages.shopId, shops))
-  if (made.products.length) await db.delete(schema.products).where(inArray(schema.products.id, made.products))
+  if (made.products.length) await db.delete(products).where(inArray(products.id, made.products))
   if (made.collections.length) await db.delete(collections).where(inArray(collections.id, made.collections))
   if (made.shops.length) await db.delete(shopsTable).where(inArray(shopsTable.id, made.shops))
   if (made.users.length) await db.delete(userTable).where(inArray(userTable.id, made.users))

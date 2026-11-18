@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { seedSampleProducts } from '@shopnex/catalog'
 import { channelService, publicationService } from '@shopnex/channels'
@@ -13,6 +13,7 @@ import { shopMembers } from '@shopnex/tenancy/schema'
 import { menus } from '@shopnex/content/schema'
 import { shops } from '@shopnex/core/schema'
 import { shippingRates } from '@shopnex/cart/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const created: string[] = []
@@ -78,7 +79,7 @@ describe('createShop', () => {
     assert.equal(await seedSampleProducts(shop.id), 4)
     // Asking again adds nothing
     assert.equal(await seedSampleProducts(shop.id), 0)
-    const products = await db.select().from(schema.products).where(eq(schema.products.shopId, shop.id))
+    const products = await db.select().from(productsTable).where(eq(productsTable.shopId, shop.id))
     assert.equal(products.length, 4)
     assert.ok(products.every((p) => p.status === 'active'))
     // Published on the Online Store, or the storefront would show an empty catalog

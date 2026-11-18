@@ -1,11 +1,10 @@
 {
   "name": "@shopnex/db",
-  "description": "Drizzle client, schema and migrations",
+  "description": "Drizzle client and migrations",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts",
     "./secrets": "./src/secrets.ts"
   },
   "scripts": {
@@ -17,7 +16,6 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
-    "@shopnex/core": "workspace:*",
     "@shopnex/log": "workspace:*",
     "drizzle-orm": "catalog:",
     "pg": "^8.23.1"

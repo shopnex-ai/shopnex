@@ -10,7 +10,7 @@ process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'embedded-setup-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { menus } = await import('@shopnex/content/schema')
 const { shopMembers } = await import('@shopnex/tenancy/schema')
 // These tests delete rows: never against a real database

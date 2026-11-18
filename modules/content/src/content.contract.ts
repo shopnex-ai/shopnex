@@ -2,7 +2,7 @@
 // code.
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
-import { SLUG_PATTERN } from '@shopnex/db/schema'
+import { SLUG_PATTERN } from '@shopnex/core/slug'
 import { MENU_ITEM_TYPES, menus, pages, type StoredMenuItem } from './content.schema'
 
 // The same handle and search engine fields as products and collections have in the api schemas (written out here until catalog is a

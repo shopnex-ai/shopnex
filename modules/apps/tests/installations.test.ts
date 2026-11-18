@@ -6,7 +6,7 @@ import * as fx from './fixtures'
 import { appInstallations } from '../src/apps.schema'
 import { type ApiScope, apiTokens, apps } from '@shopnex/core/schema'
 
-const { db, schema, eq, appService, SHOP } = fx
+const { db, eq, appService, SHOP } = fx
 const { AppError } = await import('../src/apps.errors')
 const { appUninstalled } = await import('../src')
 const { decodeSessionToken } = await import('@shopnex/marketplace-sdk/session-token')

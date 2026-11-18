@@ -5,13 +5,13 @@
 //   - variants are the source of truth for price; products.price_cents is a cached minimum (syncPriceCache)
 import { and, asc, eq, inArray, min, ne, notInArray, sql } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
-import { db, schema, type Conn } from '@shopnex/db'
-import type { ProductVariant } from '@shopnex/db/schema'
+import { db, type Conn } from '@shopnex/db'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 // Cycle with ./products is fine: only used inside functions
 import { emitProductEvent } from './products'
 import { productImages, productOptionValues, productOptions, variantOptionValues } from './catalog.schema'
+import { products, type ProductVariant, productVariants as productVariantsTable } from './catalog.schema'
 
 export type OptionInput = { name: string; values: string[] }
 
@@ -120,13 +120,13 @@ function validate(input: VariantsInput) {
 async function assertSkusFree(conn: Conn, shopId: string, productId: string, skus: string[]) {
   if (skus.length === 0) return
   const [clash] = await conn
-    .select({ sku: schema.productVariants.sku })
-    .from(schema.productVariants)
+    .select({ sku: productVariantsTable.sku })
+    .from(productVariantsTable)
     .where(
       and(
-        eq(schema.productVariants.shopId, shopId),
-        inArray(schema.productVariants.sku, skus),
-        ne(schema.productVariants.productId, productId),
+        eq(productVariantsTable.shopId, shopId),
+        inArray(productVariantsTable.sku, skus),
+        ne(productVariantsTable.productId, productId),
       ),
     )
     .limit(1)
@@ -136,14 +136,14 @@ async function assertSkusFree(conn: Conn, shopId: string, productId: string, sku
 // products.price_cents := lowest variant price (deprecated cache, see schema)
 export async function syncPriceCache(shopId: string, productId: string, conn: Conn = db) {
   const [{ lowest } = { lowest: null }] = await conn
-    .select({ lowest: min(schema.productVariants.priceCents) })
-    .from(schema.productVariants)
-    .where(and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.productId, productId)))
+    .select({ lowest: min(productVariantsTable.priceCents) })
+    .from(productVariantsTable)
+    .where(and(eq(productVariantsTable.shopId, shopId), eq(productVariantsTable.productId, productId)))
   if (lowest != null) {
     await conn
-      .update(schema.products)
+      .update(products)
       .set({ priceCents: lowest, updatedAt: new Date() })
-      .where(and(eq(schema.products.shopId, shopId), eq(schema.products.id, productId)))
+      .where(and(eq(products.shopId, shopId), eq(products.id, productId)))
   }
 }
 
@@ -201,13 +201,13 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
   // 3. Variants: upsert by combination key, delete combinations that are gone
   const existingVariants = await conn
     .select()
-    .from(schema.productVariants)
-    .where(eq(schema.productVariants.productId, productId))
+    .from(productVariantsTable)
+    .where(eq(productVariantsTable.productId, productId))
   const byKey = new Map(existingVariants.map((v) => [v.optionsKey, v]))
   const keepKeys = new Set(variants.map((v) => v.key))
   const removedVariantIds = existingVariants.filter((v) => !keepKeys.has(v.optionsKey)).map((v) => v.id)
   if (removedVariantIds.length) {
-    await conn.delete(schema.productVariants).where(inArray(schema.productVariants.id, removedVariantIds))
+    await conn.delete(productVariantsTable).where(inArray(productVariantsTable.id, removedVariantIds))
   }
 
   const savedIds: string[] = []
@@ -224,13 +224,13 @@ export async function applyVariants(conn: Conn, shopId: string, productId: strin
     }
     const existing = byKey.get(v.key)
     if (existing) {
-      await conn.update(schema.productVariants).set(fields).where(eq(schema.productVariants.id, existing.id))
+      await conn.update(productVariantsTable).set(fields).where(eq(productVariantsTable.id, existing.id))
       savedIds.push(existing.id)
     } else {
       const [row] = await conn
-        .insert(schema.productVariants)
+        .insert(productVariantsTable)
         .values({ ...fields, shopId, productId, optionsKey: v.key })
-        .returning({ id: schema.productVariants.id })
+        .returning({ id: productVariantsTable.id })
       savedIds.push(row!.id)
     }
   }
@@ -273,9 +273,9 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
     : []
   const variantRows = await conn
     .select()
-    .from(schema.productVariants)
-    .where(inArray(schema.productVariants.productId, productIds))
-    .orderBy(asc(schema.productVariants.position))
+    .from(productVariantsTable)
+    .where(inArray(productVariantsTable.productId, productIds))
+    .orderBy(asc(productVariantsTable.position))
   const linkRows = variantRows.length
     ? await conn
         .select({
@@ -353,18 +353,18 @@ export async function loadForProducts(productIds: string[], conn: Conn = db) {
 export async function listByProduct(shopId: string, productId: string, conn: Conn = db) {
   return conn
     .select()
-    .from(schema.productVariants)
-    .where(and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.productId, productId)))
-    .orderBy(asc(schema.productVariants.position))
+    .from(productVariantsTable)
+    .where(and(eq(productVariantsTable.shopId, shopId), eq(productVariantsTable.productId, productId)))
+    .orderBy(asc(productVariantsTable.position))
 }
 
 // For orders: variants (with product title) by id, scoped to the shop
 // Product details copied onto order lines: vendor, and the image (variant's own, else the product's first)
 const orderSnapshotFields = {
-  productVendor: schema.products.vendor,
+  productVendor: products.vendor,
   imageUrl: sql<
     string | null
-  >`coalesce(${schema.productVariants.imageUrl}, (select ${productImages.url} from ${productImages} where ${productImages.productId} = ${schema.products.id} order by ${productImages.position} limit 1))`,
+  >`coalesce(${productVariantsTable.imageUrl}, (select ${productImages.url} from ${productImages} where ${productImages.productId} = ${products.id} order by ${productImages.position} limit 1))`,
 }
 
 /** `channelId`: only variants of products published on that channel now */
@@ -372,18 +372,18 @@ export async function getManyByIds(shopId: string, ids: string[], conn: Conn = d
   if (ids.length === 0) return []
   return conn
     .select({
-      variant: schema.productVariants,
-      productTitle: schema.products.title,
-      productStatus: schema.products.status,
+      variant: productVariantsTable,
+      productTitle: products.title,
+      productStatus: products.status,
       ...orderSnapshotFields,
     })
-    .from(schema.productVariants)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
+    .from(productVariantsTable)
+    .innerJoin(products, eq(products.id, productVariantsTable.productId))
     .where(
       and(
-        eq(schema.productVariants.shopId, shopId),
-        inArray(schema.productVariants.id, ids),
-        opts.channelId ? publicationService.liveOn('product', opts.channelId, schema.products.id) : undefined,
+        eq(productVariantsTable.shopId, shopId),
+        inArray(productVariantsTable.id, ids),
+        opts.channelId ? publicationService.liveOn('product', opts.channelId, products.id) : undefined,
       ),
     )
 }
@@ -392,10 +392,10 @@ export async function getManyByIds(shopId: string, ids: string[], conn: Conn = d
 export async function listForProducts(shopId: string, productIds: string[], conn: Conn = db) {
   if (productIds.length === 0) return []
   return conn
-    .select({ variant: schema.productVariants, productTitle: schema.products.title, ...orderSnapshotFields })
-    .from(schema.productVariants)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
-    .where(and(eq(schema.productVariants.shopId, shopId), inArray(schema.productVariants.productId, productIds)))
+    .select({ variant: productVariantsTable, productTitle: products.title, ...orderSnapshotFields })
+    .from(productVariantsTable)
+    .innerJoin(products, eq(products.id, productVariantsTable.productId))
+    .where(and(eq(productVariantsTable.shopId, shopId), inArray(productVariantsTable.productId, productIds)))
 }
 
 // Partial update of one variant (price, SKU, stock). Returns null if not in this shop.
@@ -407,27 +407,27 @@ export async function update(
   return db.transaction(async (tx) => {
     const [variant] = await tx
       .select()
-      .from(schema.productVariants)
-      .where(and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.id, id)))
+      .from(productVariantsTable)
+      .where(and(eq(productVariantsTable.shopId, shopId), eq(productVariantsTable.id, id)))
     if (!variant) return null
     const sku = patch.sku === undefined ? undefined : patch.sku?.trim() || null
     if (sku) {
       const [clash] = await tx
-        .select({ id: schema.productVariants.id })
-        .from(schema.productVariants)
+        .select({ id: productVariantsTable.id })
+        .from(productVariantsTable)
         .where(
           and(
-            eq(schema.productVariants.shopId, shopId),
-            eq(schema.productVariants.sku, sku),
-            ne(schema.productVariants.id, id),
+            eq(productVariantsTable.shopId, shopId),
+            eq(productVariantsTable.sku, sku),
+            ne(productVariantsTable.id, id),
           ),
         )
       if (clash) throw new CatalogError('SKU_TAKEN', `SKU "${sku}" is already used`)
     }
     const [updated] = await tx
-      .update(schema.productVariants)
+      .update(productVariantsTable)
       .set({ ...patch, ...(sku !== undefined && { sku }), updatedAt: new Date() })
-      .where(eq(schema.productVariants.id, id))
+      .where(eq(productVariantsTable.id, id))
       .returning()
     await syncPriceCache(shopId, variant.productId, tx)
     await emitProductEvent(tx, shopId, variant.productId, 'product.updated')
@@ -467,45 +467,45 @@ function emitInventoryEvent(conn: Conn, shopId: string, row: StockRow, reason: S
 
 // Atomically takes stock for an order line. Untracked variants always succeed.
 export async function reserveStock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
-  const mine = and(eq(schema.productVariants.shopId, shopId), eq(schema.productVariants.id, variantId))
+  const mine = and(eq(productVariantsTable.shopId, shopId), eq(productVariantsTable.id, variantId))
   const [row] = await conn
-    .update(schema.productVariants)
-    .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} - ${quantity}` })
-    .where(and(mine, sql`${schema.productVariants.inventoryQuantity} >= ${quantity}`))
+    .update(productVariantsTable)
+    .set({ inventoryQuantity: sql`${productVariantsTable.inventoryQuantity} - ${quantity}` })
+    .where(and(mine, sql`${productVariantsTable.inventoryQuantity} >= ${quantity}`))
     .returning({
-      id: schema.productVariants.id,
-      productId: schema.productVariants.productId,
-      sku: schema.productVariants.sku,
-      inventoryQuantity: schema.productVariants.inventoryQuantity,
+      id: productVariantsTable.id,
+      productId: productVariantsTable.productId,
+      sku: productVariantsTable.sku,
+      inventoryQuantity: productVariantsTable.inventoryQuantity,
     })
   if (row) {
     await emitInventoryEvent(conn, shopId, row, 'order', -quantity)
     return true
   }
   const [untracked] = await conn
-    .select({ id: schema.productVariants.id })
-    .from(schema.productVariants)
-    .where(and(mine, sql`${schema.productVariants.inventoryQuantity} is null`))
+    .select({ id: productVariantsTable.id })
+    .from(productVariantsTable)
+    .where(and(mine, sql`${productVariantsTable.inventoryQuantity} is null`))
   return !!untracked
 }
 
 // Gives stock back (e.g. order cancelled). No-op for untracked or deleted variants.
 export async function restock(shopId: string, variantId: string, quantity: number, conn: Conn = db) {
   const [row] = await conn
-    .update(schema.productVariants)
-    .set({ inventoryQuantity: sql`${schema.productVariants.inventoryQuantity} + ${quantity}` })
+    .update(productVariantsTable)
+    .set({ inventoryQuantity: sql`${productVariantsTable.inventoryQuantity} + ${quantity}` })
     .where(
       and(
-        eq(schema.productVariants.shopId, shopId),
-        eq(schema.productVariants.id, variantId),
-        sql`${schema.productVariants.inventoryQuantity} is not null`,
+        eq(productVariantsTable.shopId, shopId),
+        eq(productVariantsTable.id, variantId),
+        sql`${productVariantsTable.inventoryQuantity} is not null`,
       ),
     )
     .returning({
-      id: schema.productVariants.id,
-      productId: schema.productVariants.productId,
-      sku: schema.productVariants.sku,
-      inventoryQuantity: schema.productVariants.inventoryQuantity,
+      id: productVariantsTable.id,
+      productId: productVariantsTable.productId,
+      sku: productVariantsTable.sku,
+      inventoryQuantity: productVariantsTable.inventoryQuantity,
     })
   if (row) await emitInventoryEvent(conn, shopId, row, 'restock', quantity)
 }

@@ -1,11 +1,12 @@
-// What a buyer is putting in, and what a shop offers at checkout. Carts point at orders, customers, channels and variants, which are
-// still tables in @shopnex/db until their modules move; shipping rates and carrier services point at nothing but the shop and the app.
+// What a buyer is putting in, and what a shop offers at checkout. Carts point at orders, customers, channels and variants; shipping rates
+// and carrier services point at nothing but the shop and the app.
 // email_deliveries (in @shopnex/email) points at carts, so email sits above this module.
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { channels, productVariants } from '@shopnex/db/schema'
 import { apps, shops } from '@shopnex/core/schema'
 import { orders } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { productVariants } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
 
 export const CART_STATUSES = ['active', 'completed'] as const
 export type CartStatus = (typeof CART_STATUSES)[number]

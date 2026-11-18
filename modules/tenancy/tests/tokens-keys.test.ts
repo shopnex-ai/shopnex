@@ -7,7 +7,7 @@ import { apiTokens, apps } from '@shopnex/core/schema'
 delete process.env.TENANCY_MODE
 const fx = await import('./fixtures')
 
-const { db, schema, eq } = fx
+const { db, eq } = fx
 const { inArray } = await import('drizzle-orm')
 const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')
 const tenancy = await import('../src')

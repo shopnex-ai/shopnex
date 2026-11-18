@@ -4,8 +4,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { fulfillments, orders, orderTransactions } from '../src/orders.schema'
+import { productVariants } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, orderService, SHOP } = fx
+const { db, eq, orderService, SHOP } = fx
 const { OrderError } = await import('../src')
 const { customFieldService } = await import('@shopnex/custom-fields')
 
@@ -14,7 +15,7 @@ const MISSING = '00000000-0000-4000-8000-000000000000'
 const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const transactions = (id: string) => db.select().from(orderTransactions).where(eq(orderTransactions.orderId, id))
 const stockOf = async (variantId: string) =>
-  (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, variantId)))[0]!.inventoryQuantity
+  (await db.select().from(productVariants).where(eq(productVariants.id, variantId)))[0]!.inventoryQuantity
 const asPaid = (id: string) => db.update(orders).set({ financialStatus: 'paid' }).where(eq(orders.id, id))
 const sale = (orderId: string, amountCents: number, gateway = 'manual') =>
   db

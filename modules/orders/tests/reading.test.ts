@@ -4,8 +4,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { orderItems, orders, orderTransactions } from '../src/orders.schema'
+import { productVariants } from '@shopnex/catalog/schema'
 
-const { db, schema, eq, orderService, customerService, SHOP, OTHER_SHOP } = fx
+const { db, eq, orderService, customerService, SHOP, OTHER_SHOP } = fx
 
 const MISSING = '00000000-0000-4000-8000-000000000000'
 const page = { limit: 50, offset: 0 }
@@ -206,8 +207,7 @@ describe('importing history', () => {
     )
     assert.equal((await sent()).length, 1, 'only the real order was announced')
     assert.equal(
-      (await db.select().from(schema.productVariants).where(eq(schema.productVariants.id, p.variants[0]!.id)))[0]
-        ?.inventoryQuantity,
+      (await db.select().from(productVariants).where(eq(productVariants.id, p.variants[0]!.id)))[0]?.inventoryQuantity,
       5,
     )
   })

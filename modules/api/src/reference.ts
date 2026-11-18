@@ -14,4 +14,4 @@ export {
   WEBHOOK_TOPICS,
   WEBHOOK_TOPIC_DESCRIPTIONS,
 } from '@shopnex/webhooks'
-export { webhookPayloads } from './routers/admin/outputs'
+export { webhookPayloads } from './webhook-payloads'

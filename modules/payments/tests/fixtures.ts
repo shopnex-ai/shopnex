@@ -4,18 +4,19 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { apps } from '@shopnex/core/schema'
 import { orders } from '@shopnex/orders/schema'
+import { channels } from '@shopnex/channels/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 process.env.APP_URL = 'http://shop.test'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { appInstallations } = await import('@shopnex/apps/schema')
 const { paymentMethods, paymentSessions } = await import('../src/payments.schema')
 requireEmbeddedDatabase()
 const { eq } = await import('drizzle-orm')
 
-export { db, schema, prepareDatabase }
+export { db, prepareDatabase }
 export const SHOP = 'default'
 
 // ── the fake payments app
@@ -106,7 +107,7 @@ export async function paymentsApp(
 let orderNumber = 800_000
 /** An unpaid order of 25.00 USD, unless said otherwise */
 export async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
-  const [channel] = await db.select({ id: schema.channels.id }).from(schema.channels).limit(1)
+  const [channel] = await db.select({ id: channels.id }).from(channels).limit(1)
   const [row] = await db
     .insert(orders)
     .values({

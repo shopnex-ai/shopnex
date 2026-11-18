@@ -2,8 +2,9 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { channels } from '../src/channels.schema'
 
-const { db, schema, SHOP, OTHER_SHOP } = fx
+const { db, SHOP, OTHER_SHOP } = fx
 const { storefrontKeyService, ChannelError } = await import('../src')
 
 before(async () => {
@@ -17,11 +18,11 @@ describe('storefront keys', () => {
   test('a key is pk_ and random, reads the Online Store unless a channel is named, and lists newest first', async () => {
     const key = await storefrontKeyService.create(SHOP, 'Web', undefined, db)
     assert.match(key.token, /^pk_[A-Za-z0-9_-]{32}$/)
-    const store = (await db.select().from(schema.channels).where(fx.eq(schema.channels.shopId, SHOP))).find(
+    const store = (await db.select().from(channels).where(fx.eq(channels.shopId, SHOP))).find(
       (c) => c.handle === 'online-store',
     )
     assert.equal(key.channelId, store?.id)
-    const [channel] = await db.insert(schema.channels).values({ shopId: SHOP, handle: 'app', name: 'App' }).returning()
+    const [channel] = await db.insert(channels).values({ shopId: SHOP, handle: 'app', name: 'App' }).returning()
     await new Promise((r) => setTimeout(r, 5))
     const second = await storefrontKeyService.create(SHOP, 'App', channel!.id, db)
     assert.equal(second.channelId, channel!.id)
@@ -33,7 +34,7 @@ describe('storefront keys', () => {
 
   test('a channel that is not the shop’s is refused, and no key is made', async () => {
     const [theirs] = await db
-      .insert(schema.channels)
+      .insert(channels)
       .values({ shopId: OTHER_SHOP, handle: 'theirs', name: 'Theirs' })
       .returning()
     await assert.rejects(

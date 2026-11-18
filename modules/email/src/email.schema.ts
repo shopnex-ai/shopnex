@@ -1,5 +1,5 @@
 // How a shop sends email (Settings → Email): any SMTP server. Off by default; messages are then only logged.
-// email_deliveries points at orders and carts, which are still defined in @shopnex/db: that is why this module sits above them.
+// email_deliveries points at orders and carts: that is why this module sits above them.
 import { sql } from 'drizzle-orm'
 import {
   boolean,

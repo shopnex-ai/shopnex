@@ -5,7 +5,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { emailSettings } from '../src/email.schema'
 
-const { db, schema, eq, SHOP, behavior, received } = fx
+const { db, eq, SHOP, behavior, received } = fx
 const { emailService, EmailError } = await import('../src')
 const { encryptSecret } = await import('@shopnex/db/secrets')
 

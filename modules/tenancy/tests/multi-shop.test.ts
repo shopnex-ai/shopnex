@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shopDomains } from '../src/tenancy.schema'
 import { shops } from '@shopnex/core/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.TENANCY_MODE = 'multi'
@@ -12,7 +13,7 @@ process.env.APP_URL = 'https://admin.example.test'
 delete process.env.STOREFRONT_URL
 const fx = await import('./fixtures')
 
-const { db, schema, eq } = fx
+const { db, eq } = fx
 const tenancy = await import('../src')
 const { storefrontKeyService } = await import('@shopnex/channels')
 
@@ -37,7 +38,7 @@ describe('which shop a storefront host means', () => {
       const found = await tenancy.resolveStorefrontShop(hostHeaders(host))
       assert.equal(found.ok && found.shop.id, s.id, host)
     }
-    const channel = (await db.select().from(schema.channels).where(eq(schema.channels.shopId, s.id)))[0]
+    const channel = (await db.select().from(channels).where(eq(channels.shopId, s.id)))[0]
     const found = await tenancy.resolveStorefrontShop(hostHeaders('acme.shops.example.test'))
     assert.equal(found.ok && found.channelId, channel?.id)
   })

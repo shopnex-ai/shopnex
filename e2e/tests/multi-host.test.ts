@@ -13,7 +13,7 @@ process.env.ROOT_DOMAIN = 'shopnex.test'
 process.env.APP_URL = 'https://admin.shopnex.test'
 
 const { eq, inArray } = await import('drizzle-orm')
-const { db, schema } = await import('@shopnex/db')
+const { db } = await import('@shopnex/db')
 const { shopDomains } = await import('@shopnex/tenancy/schema')
 const { storefrontKeyService } = await import('@shopnex/channels')
 const { DomainError, createShop, domainService, getShopById, resolveStorefrontShop, updateShop } =

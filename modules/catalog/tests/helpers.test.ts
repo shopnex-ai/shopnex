@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { collections } from '../src/catalog.schema'
+import { products } from '../src/catalog.schema'
 
 const { productService, collectionService, SHOP, OTHER_SHOP } = fx
 const { slugify, SLUG_PATTERN, sanitizeHtml, htmlToText, escapeHtml } = await import('../src')
@@ -37,20 +38,20 @@ describe('slugify', () => {
 
 describe('finding a free slug', () => {
   test('the base if free, else base-2, base-3 within the shop; another shop’s slugs do not count', async () => {
-    const { db, schema } = fx
-    assert.equal(await nextFreeSlug(db, schema.products, SHOP, 'shirt'), 'shirt')
+    const { db } = fx
+    assert.equal(await nextFreeSlug(db, products, SHOP, 'shirt'), 'shirt')
     await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
     await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
-    assert.equal(await nextFreeSlug(db, schema.products, SHOP, 'shirt'), 'shirt-3')
-    assert.equal(await nextFreeSlug(db, schema.products, OTHER_SHOP, 'shirt'), 'shirt')
+    assert.equal(await nextFreeSlug(db, products, SHOP, 'shirt'), 'shirt-3')
+    assert.equal(await nextFreeSlug(db, products, OTHER_SHOP, 'shirt'), 'shirt')
   })
 
   test('isSlugTaken is per shop and per table, and can leave one row out', async () => {
-    const { db, schema } = fx
+    const { db } = fx
     const p = await productService.create(SHOP, { title: 'Shirt', priceCents: 100 })
-    assert.equal(await isSlugTaken(db, schema.products, SHOP, 'shirt'), true)
-    assert.equal(await isSlugTaken(db, schema.products, SHOP, 'shirt', p.id), false)
-    assert.equal(await isSlugTaken(db, schema.products, OTHER_SHOP, 'shirt'), false)
+    assert.equal(await isSlugTaken(db, products, SHOP, 'shirt'), true)
+    assert.equal(await isSlugTaken(db, products, SHOP, 'shirt', p.id), false)
+    assert.equal(await isSlugTaken(db, products, OTHER_SHOP, 'shirt'), false)
     assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), false)
     await collectionService.create(SHOP, { title: 'Shirt' })
     assert.equal(await isSlugTaken(db, collections, SHOP, 'shirt'), true)

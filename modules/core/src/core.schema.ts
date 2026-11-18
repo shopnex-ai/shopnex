@@ -1,6 +1,6 @@
 // The tables every module points at: user (the account), shops, apps (the registry) and api_tokens, with the scopes a token can
 // hold. They belong to no single module: a table of any module may reference them, and none of them may reference a module. So this
-// package imports nothing from the modules or from @shopnex/db (the tables still in db point at these), only drizzle-orm.
+// package imports nothing from the modules or from @shopnex/db, only drizzle-orm.
 // `pnpm db:generate` finds them through modules/*/src/*.schema.ts; the migrations stay one history in modules/db/migrations.
 //
 // Shops are Better Auth "organizations" (organization plugin, renamed via modelName): TS keys must match Better Auth field

@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { resourcePublications } from '../src/channels.schema'
+import { channels } from '../src/channels.schema'
 
-const { db, schema, SHOP, OTHER_SHOP } = fx
+const { db, products, SHOP, OTHER_SHOP } = fx
 const { channelService, publicationService, ChannelError } = await import('../src')
 
 const refused = (code: string) => (e: unknown) => e instanceof ChannelError && e.code === code
@@ -61,7 +62,7 @@ describe('set', () => {
     const p = await fx.product()
     const mine = await fx.channel()
     const [theirs] = await db
-      .insert(schema.channels)
+      .insert(channels)
       .values({ shopId: OTHER_SHOP, handle: 'theirs', name: 'Theirs' })
       .returning()
     await assert.rejects(
@@ -125,9 +126,9 @@ describe('what is live', () => {
       db,
     )
     const found = await db
-      .select({ id: schema.products.id })
-      .from(schema.products)
-      .where(publicationService.liveOn('product', ch.id, schema.products.id))
+      .select({ id: products.id })
+      .from(products)
+      .where(publicationService.liveOn('product', ch.id, products.id))
     const ids = found.map((r) => r.id)
     assert.ok(ids.includes(live.id))
     assert.ok(!ids.includes(scheduled.id))

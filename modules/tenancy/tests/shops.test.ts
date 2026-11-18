@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shopDomains, shopMembers } from '../src/tenancy.schema'
 import { shops } from '@shopnex/core/schema'
+import { channels as channelsTable } from '@shopnex/channels/schema'
 
 // Set before the modules load: they read these when first imported
 delete process.env.TENANCY_MODE
@@ -11,7 +12,7 @@ delete process.env.ROOT_DOMAIN
 delete process.env.STOREFRONT_URL
 const fx = await import('./fixtures')
 
-const { db, schema } = fx
+const { db } = fx
 const tenancy = await import('../src')
 const { menus } = await import('@shopnex/content/schema')
 const { storefrontKeyService } = await import('@shopnex/channels')
@@ -104,7 +105,7 @@ describe('createShop, for a new account', () => {
     )
     const shopMenus = await db.select().from(menus).where(eq(menus.shopId, s.id))
     assert.deepEqual(shopMenus.map((m) => m.handle).sort(), ['footer', 'main-menu'])
-    const channels = await db.select().from(schema.channels).where(eq(schema.channels.shopId, s.id))
+    const channels = await db.select().from(channelsTable).where(eq(channelsTable.shopId, s.id))
     assert.deepEqual(
       channels.map((c) => c.handle),
       ['online-store'],
@@ -151,7 +152,7 @@ describe('which shop the storefront lands in', () => {
     assert.equal(found.ok, true)
     if (!found.ok) return
     assert.equal(found.shop.id, 'default')
-    const store = await db.select().from(schema.channels).where(eq(schema.channels.shopId, 'default'))
+    const store = await db.select().from(channelsTable).where(eq(channelsTable.shopId, 'default'))
     assert.equal(found.channelId, store.find((c) => c.handle === 'online-store')?.id)
   })
 

@@ -6,7 +6,7 @@ import { shops } from '@shopnex/core/schema'
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { CustomFieldError, customFieldService: fields } = await import('../src')
@@ -14,7 +14,7 @@ const { customFieldDefinitions } = await import('../src/custom-fields.schema')
 const { eq, sql } = await import('drizzle-orm')
 
 // The tables of customers and orders, by name: custom-fields sits below them and cannot import their tables, not even in a test
-const valuesOf = async (table: 'customers' | 'orders', id: string) =>
+const valuesOf = async (table: 'customers' | 'orders' | 'products', id: string) =>
   (
     await db.execute<{ custom_fields: unknown }>(
       sql`select custom_fields from ${sql.identifier(table)} where id = ${id}`,
@@ -186,17 +186,14 @@ describe('remove', () => {
       await fields.create(SHOP, { resource: 'product', key: 'rm_prod', label: 'x', type: 'text' }, db),
       await fields.create(SHOP, { resource: 'order', key: 'rm_ord', label: 'x', type: 'text' }, db),
     ]
-    const [product] = await db
-      .insert(schema.products)
-      .values({
-        shopId: SHOP,
-        slug: 'rm-prod',
-        title: 'P',
-        priceCents: 1,
-        customFields: { rm_prod: 'a', rm_ord: 'kept' },
-      })
-      .returning()
-    const channelId = (await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP)))[0]!.id
+    const product = (
+      await db.execute<{ id: string }>(
+        sql`insert into products (shop_id, slug, title, price_cents, custom_fields)
+            values (${SHOP}, 'rm-prod', 'P', 1, ${JSON.stringify({ rm_prod: 'a', rm_ord: 'kept' })}::jsonb) returning id`,
+      )
+    ).rows[0]!
+    const channelId = (await db.execute<{ id: string }>(sql`select id from channels where shop_id = ${SHOP} limit 1`))
+      .rows[0]!.id
     const order = (
       await db.execute<{ id: string }>(
         sql`insert into orders (shop_id, order_number, channel_id, email, subtotal_cents, total_cents, custom_fields)
@@ -205,14 +202,13 @@ describe('remove', () => {
     ).rows[0]!
     await fields.remove(SHOP, onProduct.id, db)
     await fields.remove(SHOP, onOrder.id, db)
-    const [p] = await db.select().from(schema.products).where(eq(schema.products.id, product!.id))
     assert.deepEqual(
-      p?.customFields,
+      await valuesOf('products', product.id),
       { rm_ord: 'kept' },
       'a product keeps a value under a key that belongs to another resource',
     )
     assert.deepEqual(await valuesOf('orders', order.id), { rm_prod: 'kept' })
-    await db.delete(schema.products).where(eq(schema.products.id, product!.id))
+    await db.execute(sql`delete from products where id = ${product.id}`)
     await db.execute(sql`delete from orders where id = ${order.id}`)
   })
 

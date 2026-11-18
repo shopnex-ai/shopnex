@@ -4,12 +4,14 @@
 import { shops } from '@shopnex/core/schema'
 import { orders } from '../src/orders.schema'
 import { customers } from '@shopnex/customers/schema'
+import { products } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 delete process.env.TENANCY_MODE
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
@@ -20,7 +22,7 @@ const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/
 const { orderService } = await import('../src')
 const { customerService } = await import('@shopnex/customers')
 
-export { db, schema, prepareDatabase, eq, orderService, customerService }
+export { db, prepareDatabase, eq, orderService, customerService }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'orders-other-shop'
 
@@ -36,7 +38,7 @@ export const onlineStore = (shopId = SHOP) => channelService.resolve(shopId, und
 
 export async function quietChannel() {
   const [row] = await db
-    .insert(schema.channels)
+    .insert(channels)
     .values({ shopId: SHOP, handle: `quiet-${unique()}`, name: 'Quiet', autoPublish: false })
     .returning()
   made.channels.push(row!.id)
@@ -121,8 +123,8 @@ export async function cleanup() {
   const { taxRates } = await import('@shopnex/pricing/schema')
   await db.delete(taxRates).where(inArray(taxRates.shopId, shopIds))
   if (made.discounts.length) await discountService.removeMany(SHOP, made.discounts, db)
-  await db.delete(schema.products).where(inArray(schema.products.shopId, shopIds))
-  if (made.channels.length) await db.delete(schema.channels).where(inArray(schema.channels.id, made.channels))
+  await db.delete(products).where(inArray(products.shopId, shopIds))
+  if (made.channels.length) await db.delete(channels).where(inArray(channels.id, made.channels))
   await db
     .update(shops)
     .set({ nextOrderNumber: 1001, currency: 'USD', taxesIncluded: false, taxShipping: false })

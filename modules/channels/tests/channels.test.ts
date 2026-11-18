@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { storefrontKeys } from '../src/channels.schema'
+import { channels } from '../src/channels.schema'
 
-const { db, schema, SHOP, OTHER_SHOP } = fx
+const { db, SHOP, OTHER_SHOP } = fx
 const { channelService, DEFAULT_CHANNEL_HANDLE, ChannelError } = await import('../src')
 const { isForeignKeyViolation } = await import('../src/channels')
 
@@ -49,7 +50,7 @@ describe('the Online Store', () => {
     assert.equal(first.autoPublish, true)
     const again = await channelService.getDefault(SHOP, db)
     assert.equal(again.id, first.id)
-    assert.equal((await db.select().from(schema.channels)).filter((c) => c.shopId === SHOP).length, 1)
+    assert.equal((await db.select().from(channels)).filter((c) => c.shopId === SHOP).length, 1)
   })
 
   test('concurrent first uses still make one', async () => {

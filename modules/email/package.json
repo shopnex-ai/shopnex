@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@orpc/server": "catalog:",
+    "@shopnex/channels": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

@@ -1,17 +1,19 @@
 import { shops as shopsTable } from '@shopnex/core/schema'
 import { collections } from '../src/catalog.schema'
+import { products } from '../src/catalog.schema'
+import { channels } from '@shopnex/channels/schema'
 // What the catalog tests share: the embedded database and a few rows. Importing this file picks the database, so it must come
 // before anything imports @shopnex/db.
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 const { productService, collectionService, variantService, CatalogError } = await import('../src')
 const { webhookDeliveries, webhookEndpoints } = await import('@shopnex/webhooks/schema')
 
-export { db, schema, prepareDatabase, eq, productService, collectionService, variantService, CatalogError }
+export { db, prepareDatabase, eq, productService, collectionService, variantService, CatalogError }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'catalog-other-shop'
 
@@ -27,9 +29,9 @@ export async function otherShop() {
 }
 
 /** A channel made directly; `autoPublish` is what makes new products and collections land on it */
-export async function channel(patch: Partial<typeof schema.channels.$inferInsert> = {}) {
+export async function channel(patch: Partial<typeof channels.$inferInsert> = {}) {
   const [row] = await db
-    .insert(schema.channels)
+    .insert(channels)
     .values({ shopId: SHOP, handle: `ch-${unique()}`, name: 'Test channel', autoPublish: false, ...patch })
     .returning()
   madeChannels.push(row!.id)
@@ -58,9 +60,9 @@ export async function deliveries(endpointId: string) {
 /** Everything the tests made. Products and collections go first (their images, options, variants and links cascade). */
 export async function cleanup() {
   const shops = [SHOP, OTHER_SHOP]
-  await db.delete(schema.products).where(inArray(schema.products.shopId, shops))
+  await db.delete(products).where(inArray(products.shopId, shops))
   await db.delete(collections).where(inArray(collections.shopId, shops))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, shops))
-  if (madeChannels.length) await db.delete(schema.channels).where(inArray(schema.channels.id, madeChannels))
+  if (madeChannels.length) await db.delete(channels).where(inArray(channels.id, madeChannels))
   madeChannels.length = 0
 }

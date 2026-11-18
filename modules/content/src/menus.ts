@@ -3,10 +3,11 @@
 // belong to the shop, and `resolve` turns them into storefront links.
 import { randomUUID } from 'node:crypto'
 import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { ContentError } from './content.errors'
 import { menus, pages, type StoredMenuItem } from './content.schema'
 import { collections as collectionsTable } from '@shopnex/catalog/schema'
+import { products as productsTable } from '@shopnex/catalog/schema'
 
 export type MenuInput = { handle: string; title: string; items: StoredMenuItem[] }
 
@@ -42,7 +43,7 @@ function resourceIds(items: StoredMenuItem[], type: ResourceType) {
 async function assertResources(conn: Conn, shopId: string, items: StoredMenuItem[]) {
   for (const [type, table] of [
     ['collection', collectionsTable],
-    ['product', schema.products],
+    ['product', productsTable],
     ['page', pages],
   ] as const) {
     const ids = resourceIds(items, type)
@@ -129,13 +130,13 @@ export async function resolve(shopId: string, items: StoredMenuItem[], conn: Con
       : [],
     productIds.length
       ? conn
-          .select({ id: schema.products.id, slug: schema.products.slug })
-          .from(schema.products)
+          .select({ id: productsTable.id, slug: productsTable.slug })
+          .from(productsTable)
           .where(
             and(
-              eq(schema.products.shopId, shopId),
-              eq(schema.products.status, 'active'),
-              inArray(schema.products.id, productIds),
+              eq(productsTable.shopId, shopId),
+              eq(productsTable.status, 'active'),
+              inArray(productsTable.id, productIds),
             ),
           )
       : [],

@@ -9,4 +9,4 @@ export {
   type CustomFieldResource,
   type CustomFieldType,
 } from './custom-fields.schema'
-export type { CustomFieldValue, CustomFieldValues } from '@shopnex/db/schema'
+export type { CustomFieldValue, CustomFieldValues } from './custom-fields.schema'

@@ -4,12 +4,12 @@ import { shops, user as userTable } from '@shopnex/core/schema'
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { shopInvitations, shopMembers } = await import('../src/tenancy.schema')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
 
-export { db, schema, prepareDatabase, eq }
+export { db, prepareDatabase, eq }
 
 let counter = 0
 export const unique = () => `${Date.now().toString(36)}${(++counter).toString(36)}`

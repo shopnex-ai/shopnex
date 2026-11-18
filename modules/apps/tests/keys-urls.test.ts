@@ -5,7 +5,7 @@ import { after, afterEach, before, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { instanceKeys } from '../src/apps.schema'
 
-const { db, schema } = fx
+const { db } = fx
 const keys = await import('../src/keys')
 const { serverUrl } = await import('../src')
 const { rememberInternalUrl } = await import('../src/internal-url')

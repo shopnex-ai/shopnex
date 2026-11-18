@@ -4,7 +4,7 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { pages } from '../src/content.schema'
 
-const { db, schema, eq, pageService, SHOP, OTHER_SHOP } = fx
+const { db, eq, pageService, SHOP, OTHER_SHOP } = fx
 const { ContentError } = await import('../src')
 
 const taken = (e: unknown) => e instanceof ContentError && e.code === 'HANDLE_TAKEN'

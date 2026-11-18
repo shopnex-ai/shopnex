@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP, aiSettings } = fx
+const { db, SHOP, aiSettings } = fx
 const { bindConn } = await import('@shopnex/kit')
 const aiSettingsService = bindConn((await import('../src')).aiSettingsService, db)
 const { AiError } = await import('../src/ai.errors')

@@ -5,12 +5,13 @@ import { after, before, beforeEach, describe, test } from 'node:test'
 import { user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSettings, emailTemplates } from '../src/email.schema'
 import { orders } from '@shopnex/orders/schema'
+import { channels } from '@shopnex/channels/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
@@ -65,7 +66,7 @@ async function owner() {
 }
 
 async function order(patch: Partial<typeof orders.$inferInsert> = {}) {
-  const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, SHOP))
+  const [channel] = await db.select().from(channels).where(eq(channels.shopId, SHOP))
   const [row] = await db
     .insert(orders)
     .values({

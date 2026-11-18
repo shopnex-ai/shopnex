@@ -33,13 +33,13 @@ describe('the public surface', () => {
 })
 
 describe('catalog manifest', () => {
-  test('tables lists every table the schema file exports (products and product_variants are still db’s)', async () => {
+  test('tables lists every table the schema file exports', async () => {
     const { is } = await import('drizzle-orm')
     const { PgTable } = await import('drizzle-orm/pg-core')
     const { catalogModule } = await import('../src/catalog.module')
     const schema = (await import('../src/catalog.schema')) as Record<string, unknown>
     const exported = new Set(Object.values(schema).filter((v) => is(v, PgTable)))
-    assert.equal(exported.size, 6)
+    assert.equal(exported.size, 8)
     assert.deepEqual(new Set(Object.values(catalogModule.tables)), exported)
   })
 

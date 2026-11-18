@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gte, inArray, isNull, or } from 'drizzle-orm'
 import { instanceUrl } from '@shopnex/apps'
 import { checkoutSettings } from '@shopnex/cart'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { paymentMethodService } from '@shopnex/payments'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
@@ -20,6 +20,7 @@ import { apiTokens, shops, user } from '@shopnex/core/schema'
 import { carts, shippingRates } from '@shopnex/cart/schema'
 import { orders } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 export const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 export const API = `${APP_URL}/api/v1`
@@ -98,18 +99,18 @@ export async function requireApp() {
 /** Active variants that can be bought in quantity (stock untracked or ≥ 10), cheapest first */
 export async function sellableVariants(count: number) {
   const rows = await db
-    .select({ id: schema.productVariants.id, priceCents: schema.productVariants.priceCents })
-    .from(schema.productVariants)
-    .innerJoin(schema.products, eq(schema.products.id, schema.productVariants.productId))
+    .select({ id: productVariants.id, priceCents: productVariants.priceCents })
+    .from(productVariants)
+    .innerJoin(products, eq(products.id, productVariants.productId))
     .where(
       and(
-        eq(schema.products.shopId, SHOP),
-        eq(schema.products.status, 'active'),
-        or(isNull(schema.productVariants.inventoryQuantity), gte(schema.productVariants.inventoryQuantity, 10)),
-        gte(schema.productVariants.priceCents, 500),
+        eq(products.shopId, SHOP),
+        eq(products.status, 'active'),
+        or(isNull(productVariants.inventoryQuantity), gte(productVariants.inventoryQuantity, 10)),
+        gte(productVariants.priceCents, 500),
       ),
     )
-    .orderBy(asc(schema.productVariants.priceCents))
+    .orderBy(asc(productVariants.priceCents))
   // Distinct prices make the expected numbers easy to tell apart
   const picked = rows.filter((r, i) => rows.findIndex((o) => o.priceCents === r.priceCents) === i).slice(0, count)
   assert.equal(picked.length, count, `Need ${count} active, in-stock variants with different prices in the shop`)

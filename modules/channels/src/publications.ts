@@ -3,9 +3,10 @@
 // Whether the resource itself exists, and is the shop's, is for the caller to check: only it knows the table.
 import { and, eq, exists, inArray, lte, sql, type AnyColumn } from 'drizzle-orm'
 import { QueryBuilder } from 'drizzle-orm/pg-core'
-import { schema, type Conn } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { ChannelError } from './channels.errors'
 import { resourcePublications, type PublishableType } from './channels.schema'
+import { channels } from './channels.schema'
 
 const t = resourcePublications
 
@@ -22,7 +23,7 @@ export interface PublicationInput {
 
 /**
  * For queries on the resource's table: true when the resource is on the channel
- * (`.where(publicationService.liveOn('product', channelId, schema.products.id))`).
+ * (`.where(publicationService.liveOn('product', channelId, products.id))`).
  */
 export const liveOn = (type: PublishableType, channelId: string, resourceId: AnyColumn) =>
   exists(
@@ -83,9 +84,9 @@ export async function set(shopId: string, type: PublishableType, id: string, ite
   const channelIds = [...wanted.keys()]
   if (channelIds.length) {
     const own = await conn
-      .select({ id: schema.channels.id })
-      .from(schema.channels)
-      .where(and(eq(schema.channels.shopId, shopId), inArray(schema.channels.id, channelIds)))
+      .select({ id: channels.id })
+      .from(channels)
+      .where(and(eq(channels.shopId, shopId), inArray(channels.id, channelIds)))
     if (own.length !== channelIds.length) throw new ChannelError('CHANNEL_NOT_FOUND', 'Channel not found')
   }
   const run = async (tx: Conn) => {
@@ -121,9 +122,9 @@ export async function set(shopId: string, type: PublishableType, id: string, ite
 /** For a newly created resource: publishes it on the channels that want new resources (the Online Store) */
 export async function autoPublish(shopId: string, type: PublishableType, id: string, conn: Conn) {
   const auto = await conn
-    .select({ id: schema.channels.id })
-    .from(schema.channels)
-    .where(and(eq(schema.channels.shopId, shopId), eq(schema.channels.autoPublish, true)))
+    .select({ id: channels.id })
+    .from(channels)
+    .where(and(eq(channels.shopId, shopId), eq(channels.autoPublish, true)))
   if (!auto.length) return
   await conn
     .insert(t)

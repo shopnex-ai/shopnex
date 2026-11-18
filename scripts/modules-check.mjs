@@ -1,25 +1,27 @@
 #!/usr/bin/env node
 // `pnpm modules:check` reads modules/* and checks the module graph.
 //
-// Errors (exit 1): a module imports a module its package.json doesn't list; a cycle between modules; a manifest
-// (`src/<name>.module.ts`) whose `name` or `dependsOn` differs from the folder and package.json.
-// Reported only (what moving tables into modules will have to solve): tables a module reaches into that belong to
-// another module, and foreign keys that point against the dependency graph. `--report` prints the lists in full.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+// Errors (exit 1):
+//   - a module imports a module its package.json doesn't list, or lists one it never imports;
+//   - a cycle between modules;
+//   - a module without a manifest (`src/<name>.module.ts`), except the few that are tooling (NO_MANIFEST below), or a manifest whose `name` or
+//     `dependsOn` differs from the folder and package.json;
+//   - a table defined anywhere but a module's `src/*.schema.ts` (it would get no migration and escape the privacy test);
+//   - a foreign key that points against the dependency graph (a table that references a module's table without depending on that module);
+//   - the graph in docs/architecture.md differing from the manifests (`node scripts/modules-check.mjs --write` rewrites it).
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const modulesDir = join(root, 'modules')
-const full = process.argv.includes('--report')
 
 // Tooling every module may use without it being part of the module graph (not compared with a manifest's dependsOn)
 const INFRA = new Set(['kit', 'log'])
-// db schema file → the module that owns its tables (null: no module owns them yet)
-const FILE_OWNER = { themes: 'theme', checkout: 'cart', 'rate-limits': null, 'custom-field-values': 'db' }
-// Tables that belong to the core although a module's file defines them: every other table points at the shop
-const CORE_TABLES = new Set(['shops'])
+// Modules that are tooling, not part of the product: they have no manifest (the connection, the module kit, the logger, the route
+// building blocks, and the API that mounts every other module)
+const NO_MANIFEST = new Set(['api', 'db', 'kit', 'log', 'rpc'])
 
 const read = (file) => readFileSync(file, 'utf8')
 const walk = (dir) =>
@@ -57,7 +59,6 @@ for (const entry of readdirSync(modulesDir, { withFileTypes: true })) {
 }
 
 const errors = []
-const notes = []
 
 // ── imports against package.json, and the package name against the folder
 for (const [name, m] of mods) {
@@ -66,11 +67,12 @@ for (const [name, m] of mods) {
     if (!m.declared.has(dep)) errors.push(`${name}: imports @shopnex/${dep} but package.json does not list it`)
   for (const dep of m.declared)
     if (mods.has(dep) && !m.imported.has(dep) && !INFRA.has(dep) && m.files.length)
-      notes.push(`${name}: lists @shopnex/${dep} but src never imports it`)
+      errors.push(`${name}: lists @shopnex/${dep} but src never imports it`)
+  if (!m.manifestFile && !NO_MANIFEST.has(name)) errors.push(`${name}: has no manifest (src/${name}.module.ts)`)
 }
 
-// ── core is the bottom of the graph: the tables every module (and the tables still in db) point at. It may use the module kit and nothing
-// else of ours, in code or in package.json, or db could not depend on it without a cycle.
+// ── core is the bottom of the graph: the tables every module points at. It may use the module kit and nothing else of ours, in code or
+// in package.json.
 const core = mods.get('core')
 if (core) {
   for (const dep of [...core.imported, ...core.declared])
@@ -119,13 +121,12 @@ for (const [name, m] of mods) {
     if (!manifest.dependsOn.has(d)) errors.push(`${name}: package.json lists ${d}, dependsOn does not`)
 }
 
-// ── tables must be where drizzle-kit, the privacy test and this report look for them: modules/db/src/schema/*.ts, or a
-// module's own src/*.schema.ts. A table in any other file would get no migration (so the migration check, finding no change,
-// would pass) and would be missing from the privacy check.
+// ── tables must be where drizzle-kit and the privacy test look for them: a module's own src/*.schema.ts. A table in any other file would
+// get no migration (so the migration check, finding no change, would pass) and would be missing from the privacy check.
 for (const [name, m] of mods) {
   for (const [file, source] of m.sources) {
     const where = relative(root, file)
-    const allowed = /^modules\/db\/src\/schema\//.test(where) || /^modules\/[^/]+\/src\/[^/]+\.schema\.ts$/.test(where)
+    const allowed = /^modules\/[^/]+\/src\/[^/]+\.schema\.ts$/.test(where)
     if (!allowed && /\bpgTable\(/.test(source))
       errors.push(`${name}: ${where} defines a table but is not a *.schema.ts file, so it would get no migration`)
   }
@@ -152,50 +153,17 @@ const reach = (from, seen = new Set()) => {
   return seen
 }
 
-// ── which module owns each table: the core db schema files, and the *.schema.ts files modules own
+// ── which module owns each table: the *.schema.ts files modules own
 const tableOwner = new Map()
 const tableChunks = []
-const dbSchemaDir = join(modulesDir, 'db', 'src', 'schema')
-const ownerOfFile = (base) => (base in FILE_OWNER ? FILE_OWNER[base] : base)
-const sources = readdirSync(dbSchemaDir)
-  .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
-  .map((f) => ({ path: join(dbSchemaDir, f), owner: ownerOfFile(f.replace(/\.ts$/, '')) }))
 for (const [name, m] of mods)
-  for (const f of m.files.filter((f) => f.endsWith('.schema.ts'))) sources.push({ path: f, owner: name })
-for (const { path, owner } of sources) {
-  const text = read(path)
-  const parts = text.split(/^export const (\w+)\s*=\s*pgTable\(/m)
-  for (let i = 1; i < parts.length; i += 2) {
-    const tableOwnerName = CORE_TABLES.has(parts[i]) ? 'db' : owner
-    tableOwner.set(parts[i], tableOwnerName)
-    tableChunks.push({ table: parts[i], owner: tableOwnerName, body: parts[i + 1] })
+  for (const f of m.files.filter((f) => f.endsWith('.schema.ts'))) {
+    const parts = read(f).split(/^export const (\w+)\s*=\s*pgTable\(/m)
+    for (let i = 1; i < parts.length; i += 2) {
+      tableOwner.set(parts[i], name)
+      tableChunks.push({ table: parts[i], owner: name, body: parts[i + 1] })
+    }
   }
-}
-
-// ── tables a module reaches into that another module owns
-const reached = []
-for (const [name, m] of mods) {
-  if (name === 'db') continue
-  const names = new Set([...m.text.matchAll(/\bschema\.(\w+)/g)].map((x) => x[1]))
-  for (const block of m.text.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@shopnex\/db\/schema'/g))
-    for (const part of block[1].split(','))
-      names.add(
-        part
-          .trim()
-          .replace(/^type\s+/, '')
-          .split(/\s+as\s+/)[0],
-      )
-  const byOwner = new Map()
-  for (const table of names) {
-    const owner = tableOwner.get(table)
-    if (!owner || owner === name) continue
-    byOwner.set(owner, [...(byOwner.get(owner) ?? []), table])
-  }
-  for (const [owner, tables] of byOwner) {
-    const allowed = owner === 'db' || reach(name).has(owner) || owner === null
-    if (!allowed) reached.push({ module: name, owner, tables })
-  }
-}
 
 // ── foreign keys that point against the graph
 const edges = new Map()
@@ -209,19 +177,43 @@ for (const { table, owner, body } of tableChunks) {
 }
 const against = [...edges].filter(([key]) => {
   const [from, to] = key.split(' → ')
-  return mods.has(from) && mods.has(to) && !reach(from).has(to) && from !== to && to !== 'db' && from !== 'db'
+  return mods.has(from) && mods.has(to) && !reach(from).has(to) && from !== to
 })
+for (const [key, fks] of against) errors.push(`foreign key against the graph: ${key} (${fks.join('; ')})`)
+
+// ── the graph in the docs is generated from the manifests, so it cannot drift: between the two markers, one line per module
+const GRAPH_START = '<!-- modules:graph:start -->'
+const GRAPH_END = '<!-- modules:graph:end -->'
+const docFile = join(root, 'docs', 'architecture.md')
+const graphLines = [...mods]
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(
+    ([name, m]) =>
+      `${name} → ${
+        [...m.declared]
+          .filter((d) => mods.has(d) && !INFRA.has(d))
+          .sort()
+          .join(', ') || '(nothing)'
+      }`,
+  )
+  .join('\n')
+const docText = read(docFile)
+const startAt = docText.indexOf(GRAPH_START)
+const endAt = docText.indexOf(GRAPH_END)
+if (startAt === -1 || endAt === -1) {
+  errors.push(`docs/architecture.md: no ${GRAPH_START} … ${GRAPH_END} block for the module graph`)
+} else {
+  const current = docText.slice(startAt + GRAPH_START.length, endAt).trim()
+  if (process.argv.includes('--write')) {
+    writeFileSync(docFile, `${docText.slice(0, startAt + GRAPH_START.length)}\n${graphLines}\n${docText.slice(endAt)}`)
+  } else if (current !== graphLines) {
+    errors.push('docs/architecture.md: the module graph is out of date; run `node scripts/modules-check.mjs --write`')
+  }
+}
 
 // ── output
 const list = (items, indent = '  ') => items.map((i) => `${indent}${i}`).join('\n')
 console.log(`${mods.size} modules, ${[...mods.values()].filter((m) => m.manifestFile).length} with a manifest.`)
-if (notes.length) console.log(`\nNotes (${notes.length}):\n${list(notes)}`)
-console.log(
-  `\nTables reached across modules, owner not a dependency (${reached.length}): what moving tables must solve${full ? '' : ' (--report lists them)'}`,
-)
-if (full) console.log(list(reached.map((r) => `${r.module} → ${r.owner}: ${r.tables.join(', ')}`)))
-console.log(`\nForeign keys against the graph (${against.length})${full ? '' : ' (--report lists them)'}`)
-if (full) console.log(list(against.map(([key, fks]) => `${key}  (${fks.join('; ')})`)))
 if (errors.length) {
   console.error(`\nErrors (${errors.length}):\n${list(errors)}`)
   process.exit(1)

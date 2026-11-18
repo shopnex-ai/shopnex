@@ -2,7 +2,7 @@
 
 // ✨ Generate for products: description, search listing, image alt text and organization. Each opens the shared dialog
 // (components/admin/ai-dialog); "Use" puts the suggestion into the product form as an unsaved change.
-import { aiCapabilities, AI_LENGTHS, AI_TONES } from '@shopnex/api/schemas'
+import { AI_LENGTHS, AI_TONES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { AiDialog, options } from '@/components/admin/ai-dialog'
 import { CheckboxField, SelectField, TextareaField, useZodForm } from '@/components/admin/form'
 import { Badge } from '@/components/ui/badge'

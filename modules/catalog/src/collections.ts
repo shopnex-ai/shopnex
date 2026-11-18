@@ -2,12 +2,13 @@
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
-import { db, schema, type Conn } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
 import { collections, productCollections } from './catalog.schema'
+import { products } from './catalog.schema'
 
 export type CollectionInput = {
   title: string
@@ -168,9 +169,9 @@ export async function productCounts(shopId: string, ids: string[], conn: Conn = 
 // Members in collection order
 export async function listProducts(shopId: string, collectionId: string, conn: Conn = db) {
   return conn
-    .select({ id: schema.products.id, title: schema.products.title, status: schema.products.status })
+    .select({ id: products.id, title: products.title, status: products.status })
     .from(productCollections)
-    .innerJoin(schema.products, eq(schema.products.id, productCollections.productId))
+    .innerJoin(products, eq(products.id, productCollections.productId))
     .innerJoin(collections, eq(collections.id, productCollections.collectionId))
     .where(and(eq(collections.shopId, shopId), eq(productCollections.collectionId, collectionId)))
     .orderBy(asc(productCollections.position))

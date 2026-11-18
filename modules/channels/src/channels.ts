@@ -1,14 +1,14 @@
 // Sales channels (Shopify: Online Store, headless storefronts, later POS and the like). A channel is where a
 // shop sells; what it shows comes from publications.ts. Every query is scoped by shopId.
 import { and, asc, count, eq, isNull } from 'drizzle-orm'
-import { schema, type Conn } from '@shopnex/db'
-import type { Channel, ChannelType } from '@shopnex/db/schema'
+import type { Conn } from '@shopnex/db'
 import { ChannelError } from './channels.errors'
 import { storefrontKeys } from './channels.schema'
+import { type Channel, channels, type ChannelType, DEFAULT_CHANNEL_HANDLE } from './channels.schema'
 
-const t = schema.channels
+const t = channels
 
-export const DEFAULT_HANDLE = schema.DEFAULT_CHANNEL_HANDLE
+export const DEFAULT_HANDLE = DEFAULT_CHANNEL_HANDLE
 
 export interface ChannelInput {
   name: string

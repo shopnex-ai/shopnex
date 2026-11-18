@@ -1,4 +1,4 @@
-import { CURRENCY_CODES } from '@shopnex/api/schemas'
+import { CURRENCY_CODES } from '@shopnex/tenancy/contract'
 
 const names = new Intl.DisplayNames(['en'], { type: 'currency' })
 

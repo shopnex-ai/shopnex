@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { variantInput } from '@shopnex/api/schemas'
+import { variantInput } from '@shopnex/catalog/contract'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { FormError, IntegerField, MoneyField, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'

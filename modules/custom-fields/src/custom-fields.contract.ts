@@ -1,5 +1,5 @@
 // The shapes of this module's API: what the admin routes accept and answer. Plain Zod, no oRPC or server code, so the
-// admin UI uses the same schemas for its forms (re-exported by @shopnex/api/schemas).
+// admin UI imports the same schemas for its forms.
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import {

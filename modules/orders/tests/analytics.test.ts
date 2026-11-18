@@ -4,8 +4,10 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 import { orders } from '../src/orders.schema'
+import { products } from '@shopnex/catalog/schema'
+import { channels } from '@shopnex/channels/schema'
 
-const { db, schema, eq, SHOP, OTHER_SHOP } = fx
+const { db, eq, SHOP, OTHER_SHOP } = fx
 const { orderAnalytics } = await import('../src')
 
 const DAY = 86_400_000
@@ -25,7 +27,7 @@ async function order(
 ) {
   const shopId = patch.shopId ?? SHOP
   await fx.onlineStore(shopId)
-  const [channel] = await db.select().from(schema.channels).where(eq(schema.channels.shopId, shopId))
+  const [channel] = await db.select().from(channels).where(eq(channels.shopId, shopId))
   const [o] = await db
     .insert(orders)
     .values({
@@ -136,7 +138,7 @@ describe('best sellers and work waiting', () => {
       void i
       void o
     }
-    await db.update(schema.products).set({ title: 'Renamed' }).where(eq(schema.products.id, hits[5]!.id))
+    await db.update(products).set({ title: 'Renamed' }).where(eq(products.id, hits[5]!.id))
     const top = (await overview(7)).topProducts
     assert.equal(top.length, 5)
     assert.deepEqual(
@@ -156,7 +158,7 @@ describe('best sellers and work waiting', () => {
   test('a product deleted since is shown as it was ordered', async () => {
     const p = await fx.product({ title: 'Gone soon', priceCents: 500 })
     await fx.orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 1 }] })
-    await db.delete(schema.products).where(eq(schema.products.id, p.id))
+    await db.delete(products).where(eq(products.id, p.id))
     const [top] = (await overview(7)).topProducts
     assert.deepEqual([top?.title, top?.productId, top?.salesCents], ['Gone soon', null, 500])
   })

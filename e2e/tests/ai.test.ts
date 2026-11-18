@@ -9,7 +9,7 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 // The entry registers what ai does when an app is uninstalled; this test uninstalls through appService, not the API, so it has to load it
 import '@shopnex/ai'
 import { aiGenerations, aiProviders, aiSettings, type AiSettings } from '@shopnex/ai/schema'
@@ -19,6 +19,7 @@ import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { Fixtures, SHOP, appToken, call, closeDb, ok, requireApp } from '../lib'
 import { apps } from '@shopnex/core/schema'
 import { collections as collectionsTable } from '@shopnex/catalog/schema'
+import { products } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 
@@ -94,7 +95,7 @@ after(async () => {
   if (shopSettings) await db.insert(aiSettings).values(shopSettings)
   if (productId) {
     await db.delete(aiGenerations).where(eq(aiGenerations.subjectId, productId))
-    await db.delete(schema.products).where(eq(schema.products.id, productId))
+    await db.delete(products).where(eq(products.id, productId))
   }
   await fx.cleanup()
   // The app owns its providers, installation and token; its generations stay (app id set null): remove ours
