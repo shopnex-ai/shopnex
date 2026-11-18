@@ -49,7 +49,7 @@ version that made the folder. The shop's data stays in the folder, so the same f
   `npx create-shopnex@latest my-shop --with stripe,cj,shippo`, then install them from the admin and enter your keys.
 - **PostgreSQL:** set `DATABASE_URL=postgres://user:password@host:5432/shopnex` in the shop's `.env` and start again.
 - **Not for production.** One process owns the embedded data. Use Docker or PostgreSQL for a real shop.
-- **Every option and how the download is checked:** the [package README](../README.md).
+- **Every option and how the download is checked:** the [package README](https://github.com/shopnex-ai/shopnex/tree/main/packages/create-shopnex#readme).
 
 ## If something goes wrong
 
