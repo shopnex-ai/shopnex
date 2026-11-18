@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Checkout on the embedded database (PGlite), the one `npx create-shopnex` runs on.
 //
 // PGlite has ONE connection. A query that doesn't go through the open transaction waits for that transaction, which
@@ -62,7 +63,7 @@ let variantId: string
 
 async function newCart() {
   const channel = await channelService.resolve(SHOP, undefined, db)
-  const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 1 }])
+  const cart = await cartService.create(SHOP, channel.id, db, [{ variantId, quantity: 1 }])
   return cart.token
 }
 
@@ -80,7 +81,7 @@ before(async () => {
   await new Promise<void>((resolve) => provider.listen(0, '127.0.0.1', resolve))
   providerUrl = `http://127.0.0.1:${(provider.address() as AddressInfo).port}`
 
-  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
+  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 }, db)
   variantId = product.variants[0]!.id
 
   const { app } = await appService.registerApp(
@@ -131,6 +132,7 @@ describe('checkout with a payments app on the embedded database', () => {
         token,
         { email: 'buyer@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
         { returnUrl: RETURN_URL },
+        db,
       ),
     )
     assert.match(placed.paymentUrl ?? '', new RegExp(`^${providerUrl}/pay/`))
@@ -175,6 +177,7 @@ describe('checkout with a payments app on the embedded database', () => {
           token,
           { email: 'buyer2@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
           { returnUrl: RETURN_URL },
+          db,
         ),
       )
       assert.equal(placed.paymentUrl, null)
@@ -196,6 +199,7 @@ describe('checkout with a payments app on the embedded database', () => {
           token,
           { email: 'buyer2@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
           { returnUrl: RETURN_URL },
+          db,
         ),
       )
       assert.equal(retried.alreadyCompleted, true)
@@ -216,12 +220,12 @@ describe('checkout with a payments app on the embedded database', () => {
     const first = await within(
       10_000,
       'the first completion',
-      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }),
+      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }, db),
     )
     const second = await within(
       10_000,
       'the second completion',
-      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }),
+      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }, db),
     )
     assert.equal(second.orderId, first.orderId)
     assert.equal(second.alreadyCompleted, true)
