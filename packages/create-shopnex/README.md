@@ -3,6 +3,9 @@
 Try ShopNex on your machine with one command. It starts the admin (with the API and hosted checkout) and the
 storefront on an embedded database ([PGlite](https://pglite.dev)): no PostgreSQL, no Docker, no clone.
 
+New here? Read [Getting started](getting-started/README.md) first: a short walk-through from the first command to a
+running shop. This page is the full reference.
+
 ## Run it
 
 ```sh
