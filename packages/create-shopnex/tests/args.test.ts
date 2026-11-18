@@ -40,3 +40,8 @@ test('--app and --verbose are read, and are off by default', () => {
   const options = parse(['--app', 'shop', '--verbose'])
   assert.deepEqual([options.app, options.verbose], ['shop', true])
 })
+
+test('--no-install turns the background install off', () => {
+  assert.equal(parse([]).install, true)
+  assert.equal(parse(['--no-install']).install, false)
+})

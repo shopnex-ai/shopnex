@@ -13,6 +13,7 @@ import { writeScaffold } from './scaffold'
 import { resolveShopDir } from '@shopnex/cli-core/paths'
 import { brandBadge } from '@shopnex/cli-core/theme'
 import { assertPortsFree } from '@shopnex/cli-core/ports'
+import { setupInstall } from './install'
 import { runPlan } from './run'
 
 type Pkg = { version: string; engines: { node: string } }
@@ -37,6 +38,7 @@ Options
   --port <n>               admin, API and checkout (default 3000)
   --storefront-port <n>    storefront (default 4321)
   --no-open                do not open the browser
+  --no-install             do not run npm install in the shop folder (what makes npm start work)
   --with <apps>            also start optional apps: stripe, cj, shippo (comma separated, or repeat the flag)
   --app <name>             what to start (default shop; a picker appears once there is more than one)
   --verbose                show the output of the servers while they start
@@ -95,29 +97,41 @@ async function run(argv: string[]) {
     ...extras.map((extra) => ({ port: extra.port, flag: `--with (${extra.name} needs it free)` })),
   ]
   if (!options.dryRun) await assertPortsFree(ports)
+  // npm install of the shop folder runs while the build downloads and the shop starts; its output is shown only with
+  // --verbose, and a failed start stops it
+  const install = options.dryRun
+    ? undefined
+    : setupInstall(shopDir, {
+        enabled: options.install,
+        onLine: options.verbose ? (line) => console.log(`[install]    ${line}`) : undefined,
+      })
+  try {
+    // A dry run never downloads: it shows where the build would be unpacked
+    const root = options.dryRun ? bundleDir(pkg.version) : await resolveBundle({ version: pkg.version })
+    const source = isEdge(pkg.version)
+      ? 'ShopNex edge (the latest build from main, checked on every run)'
+      : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
+    const app = await pickApp(options.app, { interactive })
+    const plan = app.plan({
+      root,
+      shopDir,
+      extras,
+      databaseUrl: shopEnv.databaseUrl,
+      env: shopEnv.rest,
+      port: options.port,
+      storefrontPort: options.storefrontPort,
+      secret: shopEnv.secret,
+      appKeys: loadAppKeys(shopDir, extras, { write: !options.dryRun }),
+    })
 
-  // A dry run never downloads: it shows where the build would be unpacked
-  const root = options.dryRun ? bundleDir(pkg.version) : await resolveBundle({ version: pkg.version })
-  const source = isEdge(pkg.version)
-    ? 'ShopNex edge (the latest build from main, checked on every run)'
-    : `ShopNex ${pkg.version} ${isInstalled(pkg.version) ? '(downloaded)' : '(downloaded on the first run)'}`
-  const app = await pickApp(options.app, { interactive })
-  const plan = app.plan({
-    root,
-    shopDir,
-    extras,
-    databaseUrl: shopEnv.databaseUrl,
-    env: shopEnv.rest,
-    port: options.port,
-    storefrontPort: options.storefrontPort,
-    secret: shopEnv.secret,
-    appKeys: loadAppKeys(shopDir, extras, { write: !options.dryRun }),
-  })
-
-  p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras }), app.label)
-  if (options.dryRun) return p.outro('Dry run: nothing was started.')
-  p.log.warn('This is a trial database: it is not for production.')
-  process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose })
+    p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras }), app.label)
+    if (options.dryRun) return p.outro('Dry run: nothing was started.')
+    p.log.warn('This is a trial database: it is not for production.')
+    process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose, install })
+  } catch (error) {
+    install?.stop()
+    throw error
+  }
 }
 
 export async function main(argv: string[]) {

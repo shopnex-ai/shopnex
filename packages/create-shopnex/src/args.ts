@@ -14,6 +14,8 @@ export type Options = {
   with: string[]
   verbose: boolean
   open: boolean
+  /** Install the shop folder's dependencies in the background (--no-install turns it off) */
+  install: boolean
   dryRun: boolean
   help: boolean
   version: boolean
@@ -26,6 +28,7 @@ const options = {
   with: { type: 'string', multiple: true },
   verbose: { type: 'boolean' },
   'no-open': { type: 'boolean' },
+  'no-install': { type: 'boolean' },
   'dry-run': { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'v' },
@@ -61,6 +64,7 @@ export function parse(argv: string[]): Options {
     with: values.with ?? [],
     verbose: Boolean(values.verbose),
     open: !values['no-open'],
+    install: !values['no-install'],
     dryRun: Boolean(values['dry-run']),
     help: Boolean(values.help),
     version: Boolean(values.version),

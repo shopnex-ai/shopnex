@@ -33,7 +33,8 @@ npm install   # once
 npm start     # or: npm run dev
 ```
 
-Both scripts run `create-shopnex .` with the version that made the folder (pinned in `package.json`). The same works
+`create-shopnex` already ran that install in the background (with the package manager you started it with) while the
+shop was starting; the "Again" row of the start-up box says what to run next time. `--no-install` skips it. Both scripts run `create-shopnex .` with the version that made the folder (pinned in `package.json`). The same works
 from the folder above: `npx create-shopnex@latest shopnex`.
 
 ## What it does, and why you can trust it
@@ -60,6 +61,7 @@ from the folder above: `npx create-shopnex@latest shopnex`.
 | `--port <n>`            | Admin, API and checkout. Default `3000`                                                                   |
 | `--storefront-port <n>` | Storefront. Default `4321`                                                                                |
 | `--no-open`             | Do not open the browser                                                                                   |
+| `--no-install`          | Do not run `npm install` in the shop folder (it runs in the background so `npm start` works next time)    |
 | `--with <apps>`         | Also start optional apps next to the shop: `stripe`, `cj`, `shippo` (comma separated, or repeat the flag) |
 | `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                            |
 | `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                                   |
