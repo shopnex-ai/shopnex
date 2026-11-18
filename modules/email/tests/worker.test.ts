@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { emailDeliveries } from '../src/email.schema'
 
 const { db, schema, eq, SHOP, behavior, received } = fx
 const { processDue } = await import('../src/worker')
@@ -22,10 +23,10 @@ after(async () => {
   await fx.stopSmtp()
 })
 
-async function queued(patch: Partial<typeof schema.emailDeliveries.$inferInsert> = {}) {
+async function queued(patch: Partial<typeof emailDeliveries.$inferInsert> = {}) {
   const o = await fx.order()
   const [row] = await db
-    .insert(schema.emailDeliveries)
+    .insert(emailDeliveries)
     .values({
       shopId: SHOP,
       notification: 'order_confirmation',
@@ -38,8 +39,7 @@ async function queued(patch: Partial<typeof schema.emailDeliveries.$inferInsert>
     .returning()
   return row!
 }
-const row = async (id: string) =>
-  (await db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.id, id)))[0]!
+const row = async (id: string) => (await db.select().from(emailDeliveries).where(eq(emailDeliveries.id, id)))[0]!
 
 describe('sending what is due', () => {
   test('sends it through the shop’s server and marks it sent, with one attempt', async () => {
@@ -82,9 +82,9 @@ describe('when sending fails', () => {
     const delays = [60, 300, 1800, 7200, 10_800]
     for (const [i, seconds] of delays.entries()) {
       await db
-        .update(schema.emailDeliveries)
+        .update(emailDeliveries)
         .set({ nextAttemptAt: new Date(Date.now() - 1000) })
-        .where(eq(schema.emailDeliveries.id, d.id))
+        .where(eq(emailDeliveries.id, d.id))
       const before = Date.now()
       await processDue()
       const after = await row(d.id)
@@ -113,9 +113,9 @@ describe('when sending fails', () => {
     assert.equal((await row(d.id)).status, 'pending')
     await fx.turnOn()
     await db
-      .update(schema.emailDeliveries)
+      .update(emailDeliveries)
       .set({ nextAttemptAt: new Date(Date.now() - 1000) })
-      .where(eq(schema.emailDeliveries.id, d.id))
+      .where(eq(emailDeliveries.id, d.id))
     await processDue()
     assert.deepEqual([(await row(d.id)).status, received.length], ['sent', 1])
   })
@@ -141,7 +141,7 @@ describe('what is dropped, not retried', () => {
       rows.push(
         (
           await db
-            .insert(schema.emailDeliveries)
+            .insert(emailDeliveries)
             .values({
               shopId: SHOP,
               notification: 'abandoned_cart',

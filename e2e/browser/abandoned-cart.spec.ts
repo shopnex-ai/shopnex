@@ -7,12 +7,13 @@ import { eq } from 'drizzle-orm'
 import { db, schema } from '@shopnex/db'
 import { Fixtures, SHOP, requireApp, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
+import { abandonedCartSettings, emailDeliveries, emailSettings, emailSuppressions } from '@shopnex/email/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
 let variantId: string
-let emailBefore: (typeof schema.emailSettings.$inferSelect)[]
-let abandonedBefore: (typeof schema.abandonedCartSettings.$inferSelect)[]
+let emailBefore: (typeof emailSettings.$inferSelect)[]
+let abandonedBefore: (typeof abandonedCartSettings.$inferSelect)[]
 
 // The worker polls every few seconds
 const WORKER_WAIT = 30_000
@@ -24,11 +25,8 @@ test.beforeAll(async () => {
   await fx.shippingRate(500)
   variantId = (await sellableVariants(1))[0]!.id
   const port = await sink.start()
-  emailBefore = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  abandonedBefore = await db
-    .select()
-    .from(schema.abandonedCartSettings)
-    .where(eq(schema.abandonedCartSettings.shopId, SHOP))
+  emailBefore = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  abandonedBefore = await db.select().from(abandonedCartSettings).where(eq(abandonedCartSettings.shopId, SHOP))
   const config = {
     preset: 'other' as const,
     host: '127.0.0.1',
@@ -38,30 +36,29 @@ test.beforeAll(async () => {
     fromEmail: 'shop@example.com',
   }
   await db
-    .insert(schema.emailSettings)
+    .insert(emailSettings)
     .values({ shopId: SHOP, config, active: true })
-    .onConflictDoUpdate({ target: schema.emailSettings.shopId, set: { config, password: null, active: true } })
+    .onConflictDoUpdate({ target: emailSettings.shopId, set: { config, password: null, active: true } })
   const settings = { enabled: true, delayMinutes: 15 }
   await db
-    .insert(schema.abandonedCartSettings)
+    .insert(abandonedCartSettings)
     .values({ shopId: SHOP, ...settings })
-    .onConflictDoUpdate({ target: schema.abandonedCartSettings.shopId, set: settings })
+    .onConflictDoUpdate({ target: abandonedCartSettings.shopId, set: settings })
 })
 
 test.afterAll(async () => {
   const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
-  await db.delete(schema.emailSuppressions).where(eq(schema.emailSuppressions.email, fx.email))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  if (emailBefore.length) await db.insert(schema.emailSettings).values(emailBefore)
-  await db.delete(schema.abandonedCartSettings).where(eq(schema.abandonedCartSettings.shopId, SHOP))
-  if (abandonedBefore.length) await db.insert(schema.abandonedCartSettings).values(abandonedBefore)
+  await db.delete(emailSuppressions).where(eq(emailSuppressions.email, fx.email))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  if (emailBefore.length) await db.insert(emailSettings).values(emailBefore)
+  await db.delete(abandonedCartSettings).where(eq(abandonedCartSettings.shopId, SHOP))
+  if (abandonedBefore.length) await db.insert(abandonedCartSettings).values(abandonedBefore)
   await fx.cleanup()
   await sink.stop()
 })
 
-const deliveriesOf = (cartId: string) =>
-  db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.cartId, cartId))
+const deliveriesOf = (cartId: string) => db.select().from(emailDeliveries).where(eq(emailDeliveries.cartId, cartId))
 
 // A shopper with something in their cart, on the hosted checkout
 async function openCheckout(page: Page) {
@@ -121,9 +118,7 @@ test('an abandoned checkout gets one reminder after the delay, with a way back a
   const unsubscribeUrl = /(https?:\/\/[^\s"'<>]+\/unsubscribe\/[A-Za-z0-9_.-]+)/.exec(message)![1]!
   await page.goto(new URL(unsubscribeUrl).pathname)
   await expect(page.getByText(fx.email)).toBeVisible()
-  expect(
-    await db.select().from(schema.emailSuppressions).where(eq(schema.emailSuppressions.email, fx.email)),
-  ).toHaveLength(0)
+  expect(await db.select().from(emailSuppressions).where(eq(emailSuppressions.email, fx.email))).toHaveLength(0)
   await page.getByRole('button', { name: 'Unsubscribe' }).click()
   await expect(page.getByText(/won't get cart reminders/)).toBeVisible()
 
@@ -133,7 +128,7 @@ test('an abandoned checkout gets one reminder after the delay, with a way back a
   await age(next.id)
   await expect.poll(async () => (await deliveriesOf(next.id))[0]?.status, { timeout: WORKER_WAIT }).toBe('skipped')
   expect(reminders().filter((m) => m.includes(next.token))).toHaveLength(0)
-  await db.delete(schema.emailSuppressions).where(eq(schema.emailSuppressions.email, fx.email))
+  await db.delete(emailSuppressions).where(eq(emailSuppressions.email, fx.email))
 })
 
 test('a shopper who finishes the order is not reminded', async ({ page }) => {
@@ -162,10 +157,7 @@ test('a shopper who finishes the order is not reminded', async ({ page }) => {
 })
 
 test('with the feature off, the email is not kept and nothing is sent', async ({ page }) => {
-  await db
-    .update(schema.abandonedCartSettings)
-    .set({ enabled: false })
-    .where(eq(schema.abandonedCartSettings.shopId, SHOP))
+  await db.update(abandonedCartSettings).set({ enabled: false }).where(eq(abandonedCartSettings.shopId, SHOP))
   try {
     const cart = await openCheckout(page)
     await expect(page.getByLabel('Email')).toBeVisible()
@@ -179,9 +171,6 @@ test('with the feature off, the email is not kept and nothing is sent', async ({
     await new Promise((resolve) => setTimeout(resolve, 8_000))
     expect(await deliveriesOf(cart.id)).toHaveLength(0)
   } finally {
-    await db
-      .update(schema.abandonedCartSettings)
-      .set({ enabled: true })
-      .where(eq(schema.abandonedCartSettings.shopId, SHOP))
+    await db.update(abandonedCartSettings).set({ enabled: true }).where(eq(abandonedCartSettings.shopId, SHOP))
   }
 })

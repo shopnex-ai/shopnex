@@ -3,13 +3,13 @@
 // presets only prefill the form. Saving checks the server accepts the login first.
 import { eq } from 'drizzle-orm'
 import nodemailer from 'nodemailer'
-import { db, schema } from '@shopnex/db'
-import type { EmailSettings, SmtpConfig } from '@shopnex/db/schema'
+import { db } from '@shopnex/db'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
 import { EmailError } from './email.errors'
 import { log } from './log'
+import { type EmailSettings, emailSettings, type SmtpConfig } from './email.schema'
 
 /** Omit password to keep the one already saved */
 export type SmtpInput = SmtpConfig & { password?: string }
@@ -17,7 +17,7 @@ export type SmtpInput = SmtpConfig & { password?: string }
 export type EmailMessage = { to: string; subject: string; text?: string; html?: string; replyTo?: string }
 
 async function settingsRow(shopId: string) {
-  const [row] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, shopId))
+  const [row] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, shopId))
   return row ?? null
 }
 
@@ -108,18 +108,15 @@ export async function useSmtp(shopId: string, input: SmtpInput) {
 
   const values = { config, password: password === null ? null : encryptSecret(password), active: true }
   await db
-    .insert(schema.emailSettings)
+    .insert(emailSettings)
     .values({ shopId, ...values })
-    .onConflictDoUpdate({ target: schema.emailSettings.shopId, set: { ...values, updatedAt: new Date() } })
+    .onConflictDoUpdate({ target: emailSettings.shopId, set: { ...values, updatedAt: new Date() } })
   return getSettings(shopId)
 }
 
 // Stops sending; the setup stays for switching back on
 export async function turnOff(shopId: string) {
-  await db
-    .update(schema.emailSettings)
-    .set({ active: false, updatedAt: new Date() })
-    .where(eq(schema.emailSettings.shopId, shopId))
+  await db.update(emailSettings).set({ active: false, updatedAt: new Date() }).where(eq(emailSettings.shopId, shopId))
   return getSettings(shopId)
 }
 

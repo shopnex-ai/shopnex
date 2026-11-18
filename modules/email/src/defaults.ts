@@ -1,6 +1,6 @@
+import { type Notification } from './email.schema'
 // Built-in Liquid for each notification: what a shop sends until it edits one (Settings → Notifications), and
 // what "Revert to default" goes back to. Simple table HTML with inline styles, the kind email clients render.
-import type { Notification } from '@shopnex/db/schema'
 
 const BUTTON =
   'display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:600;'

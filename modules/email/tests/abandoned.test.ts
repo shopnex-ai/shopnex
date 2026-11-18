@@ -3,14 +3,14 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { abandonedCartSettings, emailDeliveries, emailSuppressions } from '../src/email.schema'
 
 const { db, schema, eq, SHOP, OTHER_SHOP } = fx
 const { abandonedCartService, queueAbandonedCartEmails, EmailError } = await import('../src')
 const { reasonToSkip } = await import('../src/abandoned-carts')
 
 const refused = (code: string) => (e: unknown) => e instanceof EmailError && e.code === code
-const deliveriesOf = (cartId: string) =>
-  db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.cartId, cartId))
+const deliveriesOf = (cartId: string) => db.select().from(emailDeliveries).where(eq(emailDeliveries.cartId, cartId))
 
 before(async () => {
   await fx.prepareDatabase()
@@ -53,7 +53,7 @@ describe('the settings', () => {
       )
     for (const ok of [15, 10_080])
       assert.equal((await abandonedCartService.updateSettings(SHOP, { delayMinutes: ok })).delayMinutes, ok)
-    assert.equal((await db.select().from(schema.abandonedCartSettings)).length, 1)
+    assert.equal((await db.select().from(abandonedCartSettings)).length, 1)
   })
 
   test('the checkout offers the reminder checkbox only when the switch is on and the shop can send email', async () => {
@@ -90,14 +90,14 @@ describe('the unsubscribe link', () => {
       assert.equal(abandonedCartService.whoUnsubscribes(bad), null, bad)
       assert.equal(await abandonedCartService.unsubscribe(bad), false, bad)
     }
-    assert.equal((await db.select().from(schema.emailSuppressions)).length, 0)
+    assert.equal((await db.select().from(emailSuppressions)).length, 0)
   })
 
   test('unsubscribing is recorded once however often the link is used, and only for that shop', async () => {
     const token = abandonedCartService.unsubscribeToken(SHOP, 'Shopper@example.test')
     assert.equal(await abandonedCartService.unsubscribe(token), true)
     assert.equal(await abandonedCartService.unsubscribe(token), true)
-    assert.equal((await db.select().from(schema.emailSuppressions)).length, 1)
+    assert.equal((await db.select().from(emailSuppressions)).length, 1)
     assert.equal(await abandonedCartService.isSuppressed(db, SHOP, ' SHOPPER@example.test'), true)
     assert.equal(await abandonedCartService.isSuppressed(db, OTHER_SHOP, 'shopper@example.test'), false)
     assert.equal(await abandonedCartService.isSuppressed(db, SHOP, 'someone@example.test'), false)
@@ -149,7 +149,7 @@ describe('which checkouts are reminded', () => {
     await fx.cart({ idleMinutes: 90, status: 'completed' })
     await fx.cart({ idleMinutes: 60 + 25 * 60 })
     assert.equal(await queueAbandonedCartEmails(), 0)
-    assert.equal((await db.select().from(schema.emailDeliveries)).length, 0)
+    assert.equal((await db.select().from(emailDeliveries)).length, 0)
   })
 
   test('never in a shop where the switch is off or email is off', async () => {

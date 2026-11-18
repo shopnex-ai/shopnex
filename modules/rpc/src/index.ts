@@ -26,7 +26,7 @@ export interface Register {}
 /** What a handler can read of the signed-in staff member: the registered type, else the least every login has */
 export type StaffSession = Register extends { session: infer S }
   ? S
-  : { session: { activeOrganizationId?: string | null }; user: { id: string } }
+  : { session: { activeOrganizationId?: string | null }; user: { id: string; email: string } }
 
 /** How a request is recognised. Registered once by `modules/api`, which knows about logins, tokens and shops. */
 export interface Resolvers {

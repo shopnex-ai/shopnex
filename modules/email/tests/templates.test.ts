@@ -3,12 +3,13 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { emailDeliveries, emailTemplates } from '../src/email.schema'
 
 const { db, schema, eq, SHOP, received } = fx
 const { notificationService, sendLoginCode, checkLiquid, EmailError } = await import('../src')
 const { render } = await import('../src/liquid')
 const { DEFAULTS } = await import('../src/defaults')
-const { NOTIFICATIONS } = await import('@shopnex/db/schema')
+const { NOTIFICATIONS } = await import('../src/email.schema')
 
 const refused = (code: string) => (e: unknown) => e instanceof EmailError && e.code === code
 
@@ -98,7 +99,7 @@ describe('reading and editing one', () => {
   test('text equal to the default is stored as "default" (null), so later changes to the defaults apply', async () => {
     await notificationService.update(SHOP, 'order_confirmation', { subject: 'Custom' })
     await notificationService.update(SHOP, 'order_confirmation', { subject: DEFAULTS.order_confirmation.subject })
-    const [row] = await db.select().from(schema.emailTemplates).where(eq(schema.emailTemplates.shopId, SHOP))
+    const [row] = await db.select().from(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
     assert.deepEqual([row?.subject, row?.body], [null, null])
     assert.equal((await notificationService.get(SHOP, 'order_confirmation')).customized, false)
   })
@@ -117,7 +118,7 @@ describe('reading and editing one', () => {
       notificationService.update(SHOP, 'order_confirmation', { body: '<p>ok</p>\n<p>{% if %}</p>' }),
       (e: unknown) => e instanceof EmailError && /^Body \(line 2\): /.test(e.message),
     )
-    assert.equal((await db.select().from(schema.emailTemplates)).length, 0)
+    assert.equal((await db.select().from(emailTemplates)).length, 0)
   })
 
   test('turning one off is its own switch: it stays customized or not, and the layout cannot be turned off', async () => {
@@ -222,7 +223,7 @@ describe('recent emails', () => {
     await fx.otherShop()
     const o = await fx.order()
     for (const [i, to] of ['a', 'b', 'c'].entries()) {
-      await db.insert(schema.emailDeliveries).values({
+      await db.insert(emailDeliveries).values({
         shopId: SHOP,
         notification: 'order_confirmation',
         orderId: o.id,
@@ -233,7 +234,7 @@ describe('recent emails', () => {
       })
     }
     await db
-      .insert(schema.emailDeliveries)
+      .insert(emailDeliveries)
       .values({ shopId: fx.OTHER_SHOP, notification: 'layout', to: 'x@example.test', subject: 'x', html: '' })
     const recent = await notificationService.deliveries(SHOP)
     assert.deepEqual(
@@ -254,7 +255,7 @@ describe('the sign-in code email', () => {
     assert.match(received[0]!.raw, /123456/)
     assert.match(received[0]!.raw, /10 minutes/)
     assert.equal(
-      (await db.select().from(schema.emailDeliveries)).length,
+      (await db.select().from(emailDeliveries)).length,
       0,
       'not queued: nobody should see the code in the outbox',
     )

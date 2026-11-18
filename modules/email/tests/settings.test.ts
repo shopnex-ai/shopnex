@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { emailSettings } from '../src/email.schema'
 
 const { db, schema, eq, SHOP, behavior, received } = fx
 const { emailService, EmailError } = await import('../src')
@@ -36,7 +37,7 @@ describe('the settings', () => {
       [settings.smtp?.host, settings.smtp?.username, settings.smtp?.hasPassword],
       ['127.0.0.1', 'login', true],
     )
-    const [stored] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+    const [stored] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
     assert.ok(stored?.password && stored.password !== 'hunter2', 'stored encrypted')
     assert.equal(JSON.stringify(settings).includes('hunter2'), false)
     assert.equal(JSON.stringify(settings).includes(stored.password), false, 'not even the encrypted form')
@@ -60,7 +61,7 @@ describe('saving a setup', () => {
       [saved.smtp?.fromEmail, saved.smtp?.fromName, saved.smtp?.hasPassword],
       ['shop@example.test', 'Test Shop', false],
     )
-    const [row] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+    const [row] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
     assert.deepEqual([row?.active, row?.password], [true, null])
   })
 
@@ -68,7 +69,7 @@ describe('saving a setup', () => {
     await emailService.useSmtp(SHOP, fx.smtpConfig())
     const again = await emailService.useSmtp(SHOP, fx.smtpConfig({ fromName: 'Renamed' }))
     assert.equal(again.smtp?.fromName, 'Renamed')
-    assert.equal((await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))).length, 1)
+    assert.equal((await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))).length, 1)
   })
 
   test('a server that cannot be reached is EMAIL_FAILED, naming the host, and nothing is saved', async () => {

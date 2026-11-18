@@ -41,6 +41,16 @@ export {
   variantRowOutput,
 } from '@shopnex/catalog/contract'
 export { menuOutput, pageOutput } from '@shopnex/content/contract'
+export {
+  abandonedCartSettingsOutput,
+  emailSettingsOutput,
+  notificationDeliveryOutput,
+  notificationListItemOutput,
+  notificationOutput,
+  notificationPreviewOutput,
+  notificationTestOutput,
+  testResultOutput,
+} from '@shopnex/email/contract'
 export { webhookDeliveryOutput, webhookListItemOutput, webhookOutput } from '@shopnex/webhooks/contract'
 import type { WebhookTopic } from '@shopnex/webhooks/schema'
 import { AI_CAPABILITIES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
@@ -48,12 +58,9 @@ import { customFieldValues } from './schemas'
 import {
   CANCEL_REASONS,
   CHANNEL_TYPES,
-  NOTIFICATIONS,
-  SMTP_PRESETS,
   channels,
   shippingRates,
   carrierServices,
-  emailDeliveries,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
   PRODUCT_STATUSES,
@@ -72,6 +79,7 @@ import { appInstallations, marketplaceConnection } from '@shopnex/apps/schema'
 import { productOutput } from '@shopnex/catalog/contract'
 import { menus, pages, type StoredMenuItem } from '@shopnex/content/schema'
 import { API_SCOPES, apiTokens, apps, shops } from '@shopnex/core/schema'
+import { emailDeliveries, NOTIFICATIONS, SMTP_PRESETS } from '@shopnex/email/schema'
 
 export const orderOutput = createSelectSchema(orders, {
   financialStatus: z.enum(FINANCIAL_STATUSES),
@@ -178,65 +186,6 @@ export const availableAppsOutput = z.object({
 })
 
 // Domains, email, storage, files, notifications
-const testSteps = z.array(z.object({ step: z.string(), ok: z.boolean(), error: z.string().optional() }))
-export const testResultOutput = z.object({ ok: z.boolean(), steps: testSteps })
-export const emailSettingsOutput = z.object({
-  provider: z.enum(['off', 'smtp']),
-  smtp: z
-    .object({
-      hasPassword: z.boolean(),
-      preset: z.enum(SMTP_PRESETS),
-      host: z.string(),
-      port: z.number().int(),
-      username: z.string(),
-      fromName: z.string(),
-      fromEmail: z.string(),
-    })
-    .nullable(),
-})
-const notificationBase = {
-  enabled: z.boolean(),
-  customized: z.boolean(),
-  notification: z.enum(NOTIFICATIONS),
-  title: z.string(),
-  description: z.string(),
-  audience: z.enum(['customer', 'staff', 'layout']),
-}
-export const notificationListItemOutput = z.object(notificationBase)
-export const notificationOutput = z.object({
-  ...notificationBase,
-  subject: z.string(),
-  body: z.string(),
-  defaults: z.object({ subject: z.string(), body: z.string() }),
-})
-export const notificationDeliveryOutput = createSelectSchema(emailDeliveries, {
-  notification: z.enum(NOTIFICATIONS),
-  status: z.enum(['pending', 'failed', 'sent', 'skipped']),
-}).pick({
-  id: true,
-  notification: true,
-  orderId: true,
-  to: true,
-  subject: true,
-  status: true,
-  attempts: true,
-  lastError: true,
-  createdAt: true,
-})
-export const abandonedCartSettingsOutput = z.object({
-  enabled: z.boolean(),
-  delayMinutes: z.number().int(),
-  /** Reminders can only go out when the shop sends email (Settings → Email) */
-  emailOn: z.boolean(),
-})
-export const notificationPreviewOutput = z.object({
-  sample: z.boolean(),
-  subject: z.string(),
-  html: z.string(),
-  problem: z.object({ message: z.string(), line: z.number().int().nullable() }).nullable(),
-})
-export const notificationTestOutput = z.object({ to: z.string() })
-
 // Analytics
 const totals = z.object({
   salesCents: z.number(),

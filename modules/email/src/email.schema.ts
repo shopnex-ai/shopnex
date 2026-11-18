@@ -1,4 +1,5 @@
 // How a shop sends email (Settings → Email): any SMTP server. Off by default; messages are then only logged.
+// email_deliveries points at orders and carts, which are still defined in @shopnex/db: that is why this module sits above them.
 import { sql } from 'drizzle-orm'
 import {
   boolean,
@@ -12,8 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { carts } from './cart'
-import { orders } from './orders'
+import { carts, orders } from '@shopnex/db/schema'
 import { shops } from '@shopnex/core/schema'
 
 // Presets only prefill the form; every provider is configured the same way (all of them offer SMTP)

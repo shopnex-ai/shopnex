@@ -10,6 +10,7 @@ import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { emit } from '@shopnex/webhooks'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { user as userTable } from '@shopnex/core/schema'
+import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -79,13 +80,13 @@ export async function exportData(shopId: string, customerId: string) {
 
   const emails = await db
     .select()
-    .from(schema.emailDeliveries)
-    .where(and(eq(schema.emailDeliveries.shopId, shopId), eq(sql`lower(${schema.emailDeliveries.to})`, email)))
-    .orderBy(schema.emailDeliveries.createdAt)
+    .from(emailDeliveries)
+    .where(and(eq(emailDeliveries.shopId, shopId), eq(sql`lower(${emailDeliveries.to})`, email)))
+    .orderBy(emailDeliveries.createdAt)
   const [suppressed] = await db
     .select()
-    .from(schema.emailSuppressions)
-    .where(and(eq(schema.emailSuppressions.shopId, shopId), eq(schema.emailSuppressions.email, email)))
+    .from(emailSuppressions)
+    .where(and(eq(emailSuppressions.shopId, shopId), eq(emailSuppressions.email, email)))
 
   // The storefront login, when the customer has one
   const login = customer.userId ? await db.select().from(userTable).where(eq(userTable.id, customer.userId)) : []
@@ -243,27 +244,27 @@ export async function erase(shopId: string, customerId: string) {
     // Stored emails: the ones sent to this person lose recipient, subject and body. Copies sent to the shop about this
     // person's orders (the "new order" mail) lose the body, which carries the buyer's details. The row stays so a
     // notification is never sent twice.
-    const mine = eq(sql`lower(${schema.emailDeliveries.to})`, email)
+    const mine = eq(sql`lower(${emailDeliveries.to})`, email)
     const aboutThem = or(
       mine,
-      orderIds.length > 0 ? inArray(schema.emailDeliveries.orderId, orderIds) : undefined,
-      cartIds.length > 0 ? inArray(schema.emailDeliveries.cartId, cartIds) : undefined,
+      orderIds.length > 0 ? inArray(emailDeliveries.orderId, orderIds) : undefined,
+      cartIds.length > 0 ? inArray(emailDeliveries.cartId, cartIds) : undefined,
     )
     const toThem = await tx
-      .update(schema.emailDeliveries)
+      .update(emailDeliveries)
       .set({
-        to: sql`'erased-' || ${schema.emailDeliveries.id} || '@erased.invalid'`,
+        to: sql`'erased-' || ${emailDeliveries.id} || '@erased.invalid'`,
         subject: ERASED_TEXT,
         html: '',
         lastError: null,
       })
-      .where(and(eq(schema.emailDeliveries.shopId, shopId), mine))
-      .returning({ id: schema.emailDeliveries.id })
+      .where(and(eq(emailDeliveries.shopId, shopId), mine))
+      .returning({ id: emailDeliveries.id })
     const aboutThemOnly = await tx
-      .update(schema.emailDeliveries)
+      .update(emailDeliveries)
       .set({ html: '', lastError: null })
-      .where(and(eq(schema.emailDeliveries.shopId, shopId), aboutThem))
-      .returning({ id: schema.emailDeliveries.id })
+      .where(and(eq(emailDeliveries.shopId, shopId), aboutThem))
+      .returning({ id: emailDeliveries.id })
 
     // Webhook history: payloads of events about this person (kept 30 days for retries and the log)
     const deliveries = await tx

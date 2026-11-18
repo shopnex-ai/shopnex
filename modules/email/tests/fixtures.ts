@@ -3,6 +3,13 @@
 import { createServer, type Server, type Socket } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { shops, user as userTable } from '@shopnex/core/schema'
+import {
+  abandonedCartSettings,
+  emailDeliveries,
+  emailSettings,
+  emailSuppressions,
+  emailTemplates,
+} from '../src/email.schema'
 
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
@@ -115,12 +122,9 @@ export const smtpConfig = (patch: Record<string, unknown> = {}) => ({
 })
 
 /** Email settings for the shop pointing at the fake server (or somewhere else) */
-export async function turnOn(patch: Partial<typeof schema.emailSettings.$inferInsert> = {}, shopId = SHOP) {
+export async function turnOn(patch: Partial<typeof emailSettings.$inferInsert> = {}, shopId = SHOP) {
   const values = { shopId, active: true, config: smtpConfig(), ...patch }
-  await db
-    .insert(schema.emailSettings)
-    .values(values)
-    .onConflictDoUpdate({ target: schema.emailSettings.shopId, set: values })
+  await db.insert(emailSettings).values(values).onConflictDoUpdate({ target: emailSettings.shopId, set: values })
 }
 
 export async function otherShop() {
@@ -216,11 +220,11 @@ export async function cart(
 
 export async function cleanup() {
   const shopIds = [SHOP, OTHER_SHOP]
-  await db.delete(schema.emailDeliveries).where(inArray(schema.emailDeliveries.shopId, shopIds))
-  await db.delete(schema.emailSettings).where(inArray(schema.emailSettings.shopId, shopIds))
-  await db.delete(schema.emailTemplates).where(inArray(schema.emailTemplates.shopId, shopIds))
-  await db.delete(schema.abandonedCartSettings).where(inArray(schema.abandonedCartSettings.shopId, shopIds))
-  await db.delete(schema.emailSuppressions).where(inArray(schema.emailSuppressions.shopId, shopIds))
+  await db.delete(emailDeliveries).where(inArray(emailDeliveries.shopId, shopIds))
+  await db.delete(emailSettings).where(inArray(emailSettings.shopId, shopIds))
+  await db.delete(emailTemplates).where(inArray(emailTemplates.shopId, shopIds))
+  await db.delete(abandonedCartSettings).where(inArray(abandonedCartSettings.shopId, shopIds))
+  await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, shopIds))
   if (made.carts.length) await db.delete(schema.carts).where(inArray(schema.carts.id, made.carts))
   if (made.orders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, made.orders))
   if (made.customers.length) await db.delete(schema.customers).where(inArray(schema.customers.id, made.customers))

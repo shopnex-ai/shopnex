@@ -14,11 +14,12 @@ import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, sellableVariants
 import { smtpSink } from '../smtp-sink'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { user } from '@shopnex/core/schema'
+import { emailSettings } from '@shopnex/email/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
 let variant: { id: string; priceCents: number }
-let settingsBefore: (typeof schema.emailSettings.$inferSelect)[]
+let settingsBefore: (typeof emailSettings.$inferSelect)[]
 
 const TOKEN = 'x-shopnex-customer-token'
 const as = (token: string) => ({ [TOKEN]: token })
@@ -91,15 +92,15 @@ before(async () => {
   watch(`login-code:shop:${SHOP}`)
   await fx.init()
   ;[variant] = (await sellableVariants(1)) as [typeof variant]
-  settingsBefore = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+  settingsBefore = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
 })
 
 after(async () => {
   await clearLimits()
   await sink.stop()
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  if (settingsBefore.length) await db.insert(schema.emailSettings).values(settingsBefore)
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  if (settingsBefore.length) await db.insert(emailSettings).values(settingsBefore)
   await fx.cleanup()
   await closeDb()
 })
