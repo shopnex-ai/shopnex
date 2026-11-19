@@ -37,7 +37,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
     <div className="space-y-4">
       <PageHeader
         title="Themes"
-        description="How your online store looks"
+
         actions={
           <Button
             variant="outline"

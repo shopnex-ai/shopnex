@@ -17,10 +17,7 @@ export const Route = createFileRoute('/admin/apps')({
 function AppsPending() {
   return (
     <Page>
-      <PageHeader
-        title="Apps"
-        description="Apps add features to your shop and work with its data through the Admin API."
-      />
+      <PageHeader title="Apps" />
       <Skeleton className="h-40 w-full" />
       <Skeleton className="h-56 w-full" />
     </Page>
@@ -35,10 +32,7 @@ function AppsPage() {
   const canManage = isShopManager(tenant)
   return (
     <Page>
-      <PageHeader
-        title="Apps"
-        description="Apps add features to your shop and work with its data through the Admin API."
-      />
+      <PageHeader title="Apps" />
       {canManage ? (
         <>
           <AppCatalogCard shopId={tenant.shop.id} superAdmin={tenant.superAdmin} />
