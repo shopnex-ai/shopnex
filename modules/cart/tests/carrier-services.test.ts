@@ -25,7 +25,7 @@ const requests: {
   headers: Record<string, string | string[] | undefined>
   body: Record<string, unknown>
 }[] = []
-let answer: () => { status: number; body: unknown } = () => ({ status: 200, body: { rates: [] } })
+let answer: (url: string) => { status: number; body: unknown } = () => ({ status: 200, body: { rates: [] } })
 
 before(async () => {
   await fx.prepareDatabase()
@@ -38,7 +38,7 @@ before(async () => {
       headers: req.headers,
       body: body ? (JSON.parse(body) as Record<string, unknown>) : {},
     })
-    const a = answer()
+    const a = answer(req.url ?? '')
     res
       .writeHead(a.status, { 'content-type': 'application/json' })
       .end(typeof a.body === 'string' ? a.body : JSON.stringify(a.body))
@@ -86,14 +86,14 @@ const input = (patch: Partial<Parameters<typeof carrierService.quote>[1]> = {}) 
   items: [{ sku: 'TEE-1', fulfilledBy: null, title: 'Tee', quantity: 2, priceCents: 2000 }],
   ...patch,
 })
-const configured = async (opts: { name?: string; ready?: boolean; shopId?: string } = {}) => {
+const configured = async (opts: { name?: string; ready?: boolean; shopId?: string; path?: string } = {}) => {
   const app = await carrierApp()
   const service = await carrierService.configure(
     opts.shopId ?? SHOP,
     app.id,
     {
       name: opts.name ?? 'Carrier',
-      ratesUrl: `${origin}/rates`,
+      ratesUrl: `${origin}${opts.path ?? '/rates'}`,
       ready: opts.ready ?? true,
     },
     db,
@@ -394,7 +394,7 @@ describe('asking for rates', () => {
   })
 
   test('an app that fails, answers badly or is too chatty gives no rates, and the others still do', async () => {
-    await configured({ name: 'Broken' })
+    await configured({ name: 'Broken', path: '/rates/broken' })
     for (const bad of [
       { status: 500, body: 'oops' },
       { status: 200, body: 'not json' },
@@ -403,12 +403,13 @@ describe('asking for rates', () => {
       { status: 200, body: 'null' },
       { status: 200, body: { rates: [rate('r', 1)], padding: 'x'.repeat(300 * 1024) } },
     ]) {
-      answer = () => bad
+      answer = (url) => (url === '/rates/broken' ? bad : { status: 200, body: { rates: [] } })
       assert.deepEqual(await carrierService.quote(SHOP, input(), db), [], JSON.stringify(bad).slice(0, 60))
     }
-    const { service } = await configured({ name: 'Working' })
-    let n = 0
-    answer = () => (++n === 1 ? { status: 500, body: 'down' } : { status: 200, body: { rates: [rate('ok', 100)] } })
+    const { service } = await configured({ name: 'Working', path: '/rates/working' })
+    // Both services are asked at once, so each answers by its own URL, never by who arrives first
+    answer = (url) =>
+      url === '/rates/broken' ? { status: 500, body: 'down' } : { status: 200, body: { rates: [rate('ok', 100)] } }
     const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => r.id),

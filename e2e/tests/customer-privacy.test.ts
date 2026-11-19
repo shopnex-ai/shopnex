@@ -145,6 +145,7 @@ describe('export', () => {
       to: email,
       subject: 'Thanks for your order',
       html: '<p>Hello Export Privacy, we ship to Privatweg 7</p>',
+      status: 'sent',
     })
     await db.insert(emailSuppressions).values({ shopId: SHOP, email })
     suppressed.push(email)
@@ -221,6 +222,8 @@ describe('erase', () => {
         to: email,
         subject: 'Your order',
         html: '<p>Hello gone Privacy, Privatweg 7</p>',
+        // Not pending: the app's mail worker would pick a pending row up and write its own lastError
+        status: 'failed',
         lastError: `rejected ${email}`,
       })
       .returning()
@@ -233,6 +236,7 @@ describe('erase', () => {
         to: 'merchant@example.com',
         subject: 'New order',
         html: '<p>gone Privacy ordered, ship to Privatweg 7</p>',
+        status: 'sent',
       })
       .returning()
     const [controlMail] = await db
@@ -244,6 +248,7 @@ describe('erase', () => {
         to: control.email,
         subject: 'Control',
         html: '<p>control</p>',
+        status: 'sent',
       })
       .returning()
     const delivery = (body: unknown) => ({
