@@ -91,10 +91,13 @@ and an \`order.created\` webhook.
   return files
 }
 
-/** Writes a new app into the folder `name` (relative to `cwd`); an existing folder must be empty. Returns the folder. */
-export function generateApp({ name, cwd, version }: { name: string | undefined; cwd: string; version: string }) {
+/**
+ * Writes a new app into `<dir>/apps/<name>` when `dir` is a shop folder (it has the .env create-shopnex wrote), and
+ * into `<dir>/<name>` otherwise. An existing folder must be empty. Returns the folder.
+ */
+export function generateApp({ name, dir, version }: { name: string | undefined; dir: string; version: string }) {
   checkName(name)
-  const folder = resolve(cwd, name!)
+  const folder = resolve(existsSync(join(dir, '.env')) ? join(dir, 'apps') : dir, name!)
   if (existsSync(folder) && readdirSync(folder).length > 0) {
     throw new UsageError(`${folder} is not empty. Pick another name, or empty the folder.`)
   }

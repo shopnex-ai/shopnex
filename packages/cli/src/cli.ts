@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { relative, resolve } from 'node:path'
 import * as p from '@clack/prompts'
 import { UnavailableError, UsageError } from '@shopnex/cli-core/errors'
 import { assertNode } from '@shopnex/cli-core/node-version'
@@ -23,7 +24,7 @@ Usage
 Commands
   migrate-db    move the shop's data from the embedded database to PostgreSQL
   generate app <name>
-                make a new ShopNex app in the folder <name>: a page in the admin, app data and a webhook
+                make a new ShopNex app in apps/<name> of the shop folder (or ./<name> outside one)
 
 Options
   --to <url>        migrate-db: the PostgreSQL address, an empty database (postgres://user:password@host:5432/shopnex)
@@ -51,8 +52,10 @@ async function run(argv: string[]) {
     if (!(KINDS as readonly (string | undefined)[]).includes(kind) || extra.length > 0) {
       throw new UsageError(`Usage: shopnex generate app <name> (kinds: ${KINDS.join(', ')}).`)
     }
-    const folder = generateApp({ name, cwd: process.cwd(), version: pkg.version })
-    return void p.outro(`Made ${folder}\nNext: cd ${name}, copy .env.example to .env, then pnpm install and pnpm dev.`)
+    const folder = generateApp({ name, dir: resolve(options.dir), version: pkg.version })
+    return void p.outro(
+      `Made ${folder}\nNext: cd ${relative(process.cwd(), folder) || '.'}, copy .env.example to .env, then pnpm install and pnpm dev.`,
+    )
   }
   await migrateDb({ ...options, version: pkg.version })
 }

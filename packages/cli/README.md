@@ -1,7 +1,42 @@
 # shopnex
 
-Look after a ShopNex shop that you started with [`create-shopnex`](../create-shopnex). One command today:
-`migrate-db`, which moves the shop's data from the embedded database to PostgreSQL.
+Look after a ShopNex shop that you started with [`create-shopnex`](../create-shopnex), and start new apps for it.
+
+| Command                       | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| `shopnex migrate-db`          | Moves the shop's data from the embedded database to PostgreSQL. |
+| `shopnex generate app <name>` | Makes a new ShopNex app in the folder `<name>`, ready to run.   |
+
+Options: `--to <url>` and `--to-env <NAME>` (migrate-db), `--dir <folder>` and `--port <n>` (migrate-db), `-h, --help`
+and `-v, --version`. `npx shopnex@latest --help` prints the same list.
+
+## generate app
+
+Run it in the shop folder that `create-shopnex` made:
+
+```sh
+cd my-shop
+npx shopnex@latest generate app my-app      # makes apps/my-app
+cd apps/my-app
+cp .env.example .env                        # fill in SHOPNEX_CLIENT_ID and SHOPNEX_APP_KEY from your app's page
+pnpm install && pnpm dev                    # npm or yarn work too
+```
+
+It writes a small, self-contained project (the shop can be running):
+
+- `src/server.tsx`: the whole app. A page inside the admin, an endpoint that saves a note in the shop's app data, and
+  an `order.created` webhook.
+- `package.json` (depends on `@shopnex/app` at this CLI's version), `tsconfig.json`, `.env.example`, `.gitignore` and
+  a `README.md` with the steps to run and install it.
+
+The app goes to `<shop folder>/apps/<name>` when the folder has a `.env` (use `--dir` for another shop folder), and to
+`./<name>` anywhere else. `<name>` is the folder and the package name: lowercase letters, numbers, `-`, `_` and `.`. The
+folder must not exist yet or must be empty; nothing is overwritten.
+
+The admin does not find a generated app by itself: it is its own server (port 4500). Register
+`http://localhost:4500` as the App URL and install the app from the admin.
+
+## migrate-db
 
 ```sh
 cd my-shop                      # the folder create-shopnex made (it has the .env)
@@ -12,7 +47,7 @@ npx shopnex@latest migrate-db --to postgres://user:password@host:5432/shopnex
 The new database must exist and be empty. To keep the password out of your shell history, put the address in an
 environment variable and give its name: `--to-env SHOPNEX_TARGET`.
 
-## What it does
+### What it does
 
 1. Checks that the shop is stopped (nothing answers on the admin's port, 3000; use `--port` if you started it on
    another) and that its database is at the schema of this version.
@@ -26,14 +61,14 @@ environment variable and give its name: `--to-env SHOPNEX_TARGET`.
 If anything fails, PostgreSQL is left as empty as it was found, the `.env` is not touched, and the extra copy is
 removed. The old data is only ever read.
 
-## What it does not do
+### What it does not do
 
 - **The optional apps' data** (`apps/<name>/.pglite`: Stripe, CJ Dropshipping, Shippo) is not moved. They start empty
   on PostgreSQL, and the command names the ones that had data.
 - It never merges into a database that already has tables.
 - It does not move data back, or between two PostgreSQL servers (use `pg_dump` for that).
 
-## The version rule
+### The version rule
 
 Like `create-shopnex`, this CLI runs the packaged build of **its own version** (downloaded once into
 `~/.shopnex/app/<version>`, shared with `create-shopnex`). A shop last started by an older version must be started once
