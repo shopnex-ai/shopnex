@@ -83,11 +83,7 @@ export function MenuList() {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Navigation"
-        description="Menus your storefront shows, like the header and footer links."
-        actions={<NewMenuDialog />}
-      />
+      <PageHeader title="Navigation" actions={<NewMenuDialog />} />
       {missingDefaults.length > 0 && (
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-3 text-sm">

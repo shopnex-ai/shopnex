@@ -45,7 +45,6 @@ export function CollectionList() {
     <div className="space-y-4">
       <PageHeader
         title="Collections"
-        description="Group products to show them together in your store and navigation."
         actions={
           <Button size="sm" render={<Link to="/admin/collections/new" />}>
             <PlusIcon />

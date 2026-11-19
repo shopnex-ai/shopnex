@@ -45,7 +45,6 @@ export function PageList() {
     <div className="space-y-4">
       <PageHeader
         title="Pages"
-        description="About, FAQ, shipping and return policies… Add them to a menu under Navigation."
         actions={
           <Button
             size="sm"

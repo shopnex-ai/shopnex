@@ -106,7 +106,6 @@ export function DiscountList({ currency }: { currency: string }) {
     <div className="space-y-4">
       <PageHeader
         title="Discounts"
-        description="Codes buyers enter at checkout. One code per order."
         actions={
           <div className="flex gap-2">
             <ImportDiscountsDialog currency={currency} />
