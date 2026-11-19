@@ -13,6 +13,8 @@ import {
   SunIcon,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { cn } from 'cn'
 import { Link, useLocation, useRouteContext } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
@@ -73,10 +75,31 @@ const initials = (text: string) =>
     .map((part) => part[0]!.toUpperCase())
     .join('')
 
+/** True while a scrolling element has more below what is in view: a hint that the list goes on */
+function useMoreBelow(ref: React.RefObject<HTMLElement | null>, key: unknown) {
+  const [more, setMore] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setMore(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      observer.disconnect()
+    }
+  }, [ref, key])
+  return more
+}
+
 export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUser }) {
   const inSettings = useLocation({
     select: (location) => location.pathname === '/admin/settings' || location.pathname.startsWith('/admin/settings/'),
   })
+  const content = useRef<HTMLDivElement>(null)
+  const moreBelow = useMoreBelow(content, inSettings)
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -89,7 +112,10 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
           <SidebarTrigger className="hidden shrink-0 md:inline-flex" />
         </div>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent
+        ref={content}
+        className={cn(moreBelow && '[mask-image:linear-gradient(to_bottom,black_calc(100%-64px),transparent)]')}
+      >
         <SidebarGroup className="pb-0">
           <SidebarMenu>
             <GlobalSearch superAdmin={shop.superAdmin} canManageApps={shop.canManageApps} />
@@ -98,11 +124,11 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
         {(inSettings ? settingsNav : nav).map((group) => (
           <NavGroup key={group.label} {...group} canManageApps={shop.canManageApps} superAdmin={shop.superAdmin} />
         ))}
-        <SidebarGroup className="mt-auto">
+        <SidebarGroup className="mt-auto pb-0">
           <SidebarMenu>
             {!inSettings && (
               <SidebarMenuItem>
-                <SidebarMenuButton render={<Link to="/admin/settings" />} tooltip="Settings" size="sm">
+                <SidebarMenuButton render={<Link to="/admin/settings" />} tooltip="Settings">
                   <SettingsIcon />
                   <span>Settings</span>
                 </SidebarMenuButton>
@@ -112,7 +138,7 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className={cn('border-t border-transparent pt-1', moreBelow && 'border-foreground/15')}>
         <UserMenu user={user} superAdmin={shop.superAdmin} />
       </SidebarFooter>
     </Sidebar>
@@ -293,15 +319,17 @@ function UserMenu({ user, superAdmin }: { user: SidebarUser; superAdmin: boolean
   const { theme, setTheme } = useTheme()
   const signOut = useSignOut()
   const fallback = initials(user.name || user.email)
+  // Shown with a capital first letter (people sign up as "demo"); an email is shown as it is
+  const label = user.name ? user.name.charAt(0).toUpperCase() + user.name.slice(1) : user.email
 
   const identity = (
     <>
-      <Avatar className="size-8 rounded-lg">
-        {user.image && <AvatarImage src={user.image} alt="" />}
+      <Avatar className="size-8 rounded-lg after:rounded-lg">
+        {user.image && <AvatarImage src={user.image} alt="" className="rounded-lg" />}
         <AvatarFallback className="rounded-lg">{fallback}</AvatarFallback>
       </Avatar>
       <div className="grid flex-1 text-left text-sm leading-tight">
-        <span className="truncate font-medium">{user.name || user.email}</span>
+        <span className="truncate font-medium">{label}</span>
         {user.name && <span className="truncate text-xs text-muted-foreground">{user.email}</span>}
       </div>
     </>
@@ -311,8 +339,13 @@ function UserMenu({ user, superAdmin }: { user: SidebarUser; superAdmin: boolean
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}>
-            {identity}
+          {/* A row like the nav items: the email is in the menu it opens */}
+          <DropdownMenuTrigger render={<SidebarMenuButton className="data-popup-open:bg-sidebar-accent" />}>
+            <Avatar className="size-4 rounded-[3px] after:rounded-[3px]">
+              {user.image && <AvatarImage src={user.image} alt="" className="rounded-[3px]" />}
+              <AvatarFallback className="rounded-[3px] text-[9px]">{fallback}</AvatarFallback>
+            </Avatar>
+            <span className="truncate">{label}</span>
             <ChevronsUpDownIcon className="ml-auto" />
           </DropdownMenuTrigger>
           <DropdownMenuContent side={isMobile ? 'bottom' : 'right'} align="end" sideOffset={4} className="min-w-56">
