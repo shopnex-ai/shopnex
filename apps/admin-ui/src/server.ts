@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry'
 import { createLogger } from '@shopnex/log'
 
@@ -36,7 +37,7 @@ function startBackgroundServices() {
     ])
     startDeliveryWorker({ allowPrivateNetworks: !isMultiTenant, instanceSignature, resolveUrl: serverUrl }, db)
     startPaymentsWorker(db)
-    startEmailWorker()
+    startEmailWorker(db)
     marketplaceService.startMarketplaceSync()
     appService.registerBundledApps()
   })().catch((error) => {

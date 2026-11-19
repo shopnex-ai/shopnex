@@ -3,9 +3,10 @@
 // reminders (as Shopify's does), and they stop for good once an address unsubscribes.
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { db, schema, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { shopnexSecret } from '@shopnex/db/secrets'
 import { EmailError } from './email.errors'
+import { abandonedCartSettings, emailSettings, emailSuppressions } from './email.schema'
 
 export const DEFAULT_DELAY_MINUTES = 60
 /** A reminder two minutes after leaving is a nuisance, one a month later is noise */
@@ -14,15 +15,12 @@ export const MAX_DELAY_MINUTES = 7 * 24 * 60
 
 export type AbandonedCartSettingsView = { enabled: boolean; delayMinutes: number }
 
-export async function getSettings(shopId: string, conn: Conn = db): Promise<AbandonedCartSettingsView> {
-  const [row] = await conn
-    .select()
-    .from(schema.abandonedCartSettings)
-    .where(eq(schema.abandonedCartSettings.shopId, shopId))
+export async function getSettings(shopId: string, conn: Conn): Promise<AbandonedCartSettingsView> {
+  const [row] = await conn.select().from(abandonedCartSettings).where(eq(abandonedCartSettings.shopId, shopId))
   return { enabled: row?.enabled ?? false, delayMinutes: row?.delayMinutes ?? DEFAULT_DELAY_MINUTES }
 }
 
-export async function updateSettings(shopId: string, patch: Partial<AbandonedCartSettingsView>) {
+export async function updateSettings(shopId: string, patch: Partial<AbandonedCartSettingsView>, conn: Conn) {
   if (
     patch.delayMinutes !== undefined &&
     (!Number.isInteger(patch.delayMinutes) ||
@@ -34,11 +32,11 @@ export async function updateSettings(shopId: string, patch: Partial<AbandonedCar
       `Wait between ${MIN_DELAY_MINUTES} minutes and ${MAX_DELAY_MINUTES / 60 / 24} days before the reminder`,
     )
   const values = { ...patch, updatedAt: new Date() }
-  await db
-    .insert(schema.abandonedCartSettings)
+  await conn
+    .insert(abandonedCartSettings)
     .values({ shopId, ...values })
-    .onConflictDoUpdate({ target: schema.abandonedCartSettings.shopId, set: values })
-  return getSettings(shopId)
+    .onConflictDoUpdate({ target: abandonedCartSettings.shopId, set: values })
+  return getSettings(shopId, conn)
 }
 
 // --- unsubscribe ---
@@ -72,29 +70,26 @@ function readToken(token: string): { shopId: string; email: string } | null {
 export const whoUnsubscribes = readToken
 
 /** Records the unsubscribe. Returns false for a token that isn't ours. Safe to call again. */
-export async function unsubscribe(token: string) {
+export async function unsubscribe(token: string, conn: Conn) {
   const who = readToken(token)
   if (!who) return false
-  await db.insert(schema.emailSuppressions).values({ shopId: who.shopId, email: who.email }).onConflictDoNothing()
+  await conn.insert(emailSuppressions).values({ shopId: who.shopId, email: who.email }).onConflictDoNothing()
   return true
 }
 
 export async function isSuppressed(conn: Conn, shopId: string, email: string) {
   const [row] = await conn
-    .select({ email: schema.emailSuppressions.email })
-    .from(schema.emailSuppressions)
-    .where(and(eq(schema.emailSuppressions.shopId, shopId), eq(schema.emailSuppressions.email, normalize(email))))
+    .select({ email: emailSuppressions.email })
+    .from(emailSuppressions)
+    .where(and(eq(emailSuppressions.shopId, shopId), eq(emailSuppressions.email, normalize(email))))
   return Boolean(row)
 }
 
 /** Whether the checkout should offer the reminder checkbox: the shop turned it on and can send email */
-export async function offered(shopId: string) {
-  const [settings, [email]] = await Promise.all([
-    getSettings(shopId),
-    db
-      .select({ active: schema.emailSettings.active })
-      .from(schema.emailSettings)
-      .where(eq(schema.emailSettings.shopId, shopId)),
+export async function offered(shopId: string, conn: Conn) {
+  const [settings, [email]] = await all(conn, [
+    () => getSettings(shopId, conn),
+    () => conn.select({ active: emailSettings.active }).from(emailSettings).where(eq(emailSettings.shopId, shopId)),
   ])
   return settings.enabled && Boolean(email?.active)
 }

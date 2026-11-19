@@ -1,42 +1,23 @@
 import { os } from '@orpc/server'
 import { pub, type Context } from './orpc'
 import { aiModule } from '@shopnex/ai/module'
-import { apiTokens as adminApiTokens } from './routers/admin/api-tokens'
-import { analytics as adminAnalytics } from './routers/admin/analytics'
-import {
-  appData as adminAppData,
-  appRegistry as adminAppRegistry,
-  apps as adminApps,
-  marketplaceConnection as adminMarketplace,
-} from './routers/admin/apps'
-import { shippingRates as adminShippingRates } from './routers/admin/checkout-settings'
-import {
-  carrierServices as adminCarrierServices,
-  carrierServicesApp as adminCarrierServicesApp,
-} from './routers/admin/carrier-services'
-import { collections as adminCollections } from './routers/admin/collections'
+import { cartModule } from '@shopnex/cart/module'
+import { catalogModule } from '@shopnex/catalog/module'
+import { appsModule } from '@shopnex/apps/module'
 import { customFieldsModule } from '@shopnex/custom-fields/module'
-import { customers as adminCustomers } from './routers/admin/customers'
+import { customersModule } from '@shopnex/customers/module'
+import { ordersModule } from '@shopnex/orders/module'
 import { paymentsModule } from '@shopnex/payments/module'
+import { privacyModule } from '@shopnex/privacy/module'
 import { pricingModule } from '@shopnex/pricing/module'
-import { email as adminEmail } from './routers/admin/email'
 import { filesModule } from '@shopnex/files/module'
-import { menus as adminMenus } from './routers/admin/menus'
-import { notifications as adminNotifications } from './routers/admin/notifications'
-import { pages as adminPages } from './routers/admin/pages'
-import { orders as adminOrders } from './routers/admin/orders'
-import { products as adminProducts } from './routers/admin/products'
-import { shop as adminShop } from './routers/admin/shop'
-import { platform as adminPlatform } from './routers/admin/platform'
-import { staff as adminStaff } from './routers/admin/staff'
-import { channels as adminChannels } from './routers/admin/channels'
-import { domains as adminDomains } from './routers/admin/domains'
-import { storefrontKeys as adminStorefrontKeys } from './routers/admin/storefront-keys'
+import { channelsModule } from '@shopnex/channels/module'
+import { contentModule } from '@shopnex/content/module'
+import { emailModule } from '@shopnex/email/module'
+import { tenancyModule } from '@shopnex/tenancy/module'
+import { storefrontModule } from '@shopnex/storefront/module'
 import { themeModule } from '@shopnex/theme/module'
 import { webhooksModule } from '@shopnex/webhooks/module'
-import { marketplace } from './routers/marketplace'
-import { oauth } from './routers/oauth'
-import { storefrontRouter } from './routers/storefront'
 
 // Tags group endpoints in the API reference (/api/v1/docs). A bare builder: `.router()` on `pub`/`admin`
 // would apply their middleware a second time.
@@ -45,35 +26,38 @@ const tagged = (tag: string) => os.$context<Context>().tag(tag)
 export const router = {
   health: pub.route({ method: 'GET', path: '/health', tags: ['System'] }).handler(() => ({ ok: true })),
   // Public, contract-first (see @shopnex/storefront-sdk)
-  storefront: storefrontRouter,
+  storefront: storefrontModule.router.storefront,
   // Apps exchange an authorization code for an access token
-  oauth: tagged('OAuth').router(oauth),
+  oauth: tagged('OAuth').router(appsModule.router.oauth),
   // The app marketplace verifies this instance's URL while connecting
-  marketplace: tagged('Marketplace').router(marketplace),
+  marketplace: tagged('Marketplace').router(appsModule.router.marketplace),
   admin: {
-    shop: tagged('Admin · Shop').router(adminShop),
-    products: tagged('Admin · Products').router(adminProducts),
-    collections: tagged('Admin · Collections').router(adminCollections),
+    shop: tagged('Admin · Shop').router(tenancyModule.router.shop),
+    products: tagged('Admin · Products').router(catalogModule.router.products),
+    collections: tagged('Admin · Collections').router(catalogModule.router.collections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
-    customers: tagged('Admin · Customers').router(adminCustomers),
-    orders: tagged('Admin · Orders').router(adminOrders),
-    analytics: tagged('Admin · Analytics').router(adminAnalytics),
+    customers: tagged('Admin · Customers').router({
+      ...customersModule.router.customers,
+      ...privacyModule.router.customers,
+    }),
+    orders: tagged('Admin · Orders').router({ ...ordersModule.router.orders, ...paymentsModule.router.orders }),
+    analytics: tagged('Admin · Analytics').router(ordersModule.router.analytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
     themes: tagged('Admin · Themes').router(themeModule.router),
-    menus: tagged('Admin · Navigation').router(adminMenus),
-    pages: tagged('Admin · Pages').router(adminPages),
+    menus: tagged('Admin · Navigation').router(contentModule.router.menus),
+    pages: tagged('Admin · Pages').router(contentModule.router.pages),
     files: tagged('Admin · Files').router(filesModule.router.files),
-    channels: tagged('Admin · Channels').router(adminChannels),
-    domains: tagged('Admin · Domains').router(adminDomains),
-    storefrontKeys: tagged('Admin · Storefront keys').router(adminStorefrontKeys),
-    staff: tagged('Admin · Staff').router(adminStaff),
-    platform: tagged('Admin · Platform').router(adminPlatform),
+    channels: tagged('Admin · Channels').router(channelsModule.router.channels),
+    domains: tagged('Admin · Domains').router(tenancyModule.router.domains),
+    storefrontKeys: tagged('Admin · Storefront keys').router(channelsModule.router.storefrontKeys),
+    staff: tagged('Admin · Staff').router(tenancyModule.router.staff),
+    platform: tagged('Admin · Platform').router(tenancyModule.router.platform),
     storage: tagged('Admin · Storage').router(filesModule.router.storage),
-    email: tagged('Admin · Email').router(adminEmail),
-    notifications: tagged('Admin · Email').router(adminNotifications),
-    shippingRates: tagged('Admin · Shipping').router(adminShippingRates),
-    carrierServices: tagged('Admin · Shipping').router(adminCarrierServices),
-    carrierServicesApp: tagged('Admin · Carrier apps').router(adminCarrierServicesApp),
+    email: tagged('Admin · Email').router(emailModule.router.email),
+    notifications: tagged('Admin · Email').router(emailModule.router.notifications),
+    shippingRates: tagged('Admin · Shipping').router(cartModule.router.shippingRates),
+    carrierServices: tagged('Admin · Shipping').router(cartModule.router.carrierServices),
+    carrierServicesApp: tagged('Admin · Carrier apps').router(cartModule.router.carrierServicesApp),
     paymentMethods: tagged('Admin · Payments').router(paymentsModule.router.paymentMethods),
     paymentApps: tagged('Admin · Payments').router(paymentsModule.router.paymentApps),
     paymentsApp: tagged('Admin · Payments apps').router(paymentsModule.router.paymentsApp),
@@ -83,11 +67,11 @@ export const router = {
     aiSettings: tagged('Admin · AI').router(aiModule.router.aiSettings),
     aiApp: tagged('Admin · AI apps').router(aiModule.router.aiApp),
     webhooks: tagged('Admin · Webhooks').router(webhooksModule.router),
-    apiTokens: tagged('Admin · API tokens').router(adminApiTokens),
-    apps: tagged('Admin · Apps').router(adminApps),
-    appRegistry: tagged('Admin · App registry').router(adminAppRegistry),
-    appData: tagged('Admin · App data').router(adminAppData),
-    marketplace: tagged('Admin · Marketplace').router(adminMarketplace),
+    apiTokens: tagged('Admin · API tokens').router(tenancyModule.router.apiTokens),
+    apps: tagged('Admin · Apps').router(appsModule.router.apps),
+    appRegistry: tagged('Admin · App registry').router(appsModule.router.appRegistry),
+    appData: tagged('Admin · App data').router(appsModule.router.appData),
+    marketplace: tagged('Admin · Marketplace').router(appsModule.router.marketplaceConnection),
   },
 }
 

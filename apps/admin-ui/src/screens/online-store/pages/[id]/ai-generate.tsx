@@ -2,7 +2,7 @@
 
 // ✨ Generate for pages: a draft of About, FAQ, shipping and the like from what the shop sells and the facts staff give.
 // "Use" puts the draft into the page form as an unsaved change.
-import { AI_LENGTHS, AI_PAGE_KINDS, AI_TONES, aiCapabilities } from '@shopnex/api/schemas'
+import { AI_LENGTHS, AI_PAGE_KINDS, AI_TONES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
 import { AiDialog, options } from '@/components/admin/ai-dialog'
 import { SelectField, TextareaField, useZodForm } from '@/components/admin/form'
 

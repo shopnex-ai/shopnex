@@ -2,6 +2,7 @@
 // the account is made (429), and so is the cap for everyone. Caps are set tiny so the test stays short.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -12,7 +13,7 @@ process.env.SIGNUP_RATE_GLOBAL = '2'
 process.env.SHOPNEX_SECRET ??= 'open-signup-limits-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { SIGNUP_LIMIT_MESSAGE, resetSignupLimits } = await import('../src/signup-limit')
@@ -36,7 +37,7 @@ const signUp = (email: string, ip: string) =>
     }),
   )
 const exists = async (email: string) =>
-  (await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, email))).length === 1
+  (await db.select({ id: user.id }).from(user).where(eq(user.email, email))).length === 1
 
 describe('open sign-up caps', () => {
   test('the first sign-up from an address works', { timeout: 60_000 }, async () => {

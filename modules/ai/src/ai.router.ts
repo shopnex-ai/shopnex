@@ -2,7 +2,7 @@ import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { db } from '@shopnex/db'
 import { createProcedures } from '@shopnex/rpc'
-import { hasScope } from '@shopnex/tenancy'
+import { hasScope } from '@shopnex/core/scopes'
 import {
   aiAppConfigureInput,
   aiAppConfigureOutput,

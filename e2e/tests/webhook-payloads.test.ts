@@ -9,8 +9,8 @@ import { asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { webhookPayloads } from '@shopnex/api/reference'
 import { productService } from '@shopnex/catalog'
-import { privacyService } from '@shopnex/customers'
-import { db } from '@shopnex/db'
+import { privacyService } from '@shopnex/privacy'
+import { db, type Conn } from '@shopnex/db'
 import { WEBHOOK_TOPICS, webhookDeliveries, type WebhookTopic } from '@shopnex/webhooks/schema'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
 
@@ -181,7 +181,7 @@ before(async () => {
     ok(await call('PATCH', `/admin/customers/${customer.id}`, { name: 'Contract Test Renamed' }, token))
     // customer.erased: another customer, so the erasure does not sweep up the payloads of the one used above
     const erased = ok(await call('POST', '/admin/customers', { email: fx.shopper('contract-erased') }, token))
-    await privacyService.erase(SHOP, erased.id)
+    await privacyService.erase(SHOP, erased.id, db)
 
     // order.created, order.updated, order.paid, order.fulfilled; and order.cancelled on a second order placed at
     // checkout, so one order also carries a shipping line
@@ -216,7 +216,7 @@ before(async () => {
 
 after(async () => {
   await fx.cleanup()
-  if (productId) await productService.removeMany(SHOP, [productId])
+  if (productId) await productService.removeMany(SHOP, [productId], db)
   await closeDb()
 })
 

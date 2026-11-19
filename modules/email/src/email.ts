@@ -3,37 +3,37 @@
 // presets only prefill the form. Saving checks the server accepts the login first.
 import { eq } from 'drizzle-orm'
 import nodemailer from 'nodemailer'
-import { db, schema } from '@shopnex/db'
-import type { EmailSettings, SmtpConfig } from '@shopnex/db/schema'
+import { type Conn } from '@shopnex/db'
 import { decryptSecret, encryptSecret } from '@shopnex/db/secrets'
 import { isMultiTenant } from '@shopnex/tenancy'
 import { assertPublicHost } from '@shopnex/webhooks/network'
 import { EmailError } from './email.errors'
 import { log } from './log'
+import { type EmailSettings, emailSettings, type SmtpConfig } from './email.schema'
 
 /** Omit password to keep the one already saved */
 export type SmtpInput = SmtpConfig & { password?: string }
 
 export type EmailMessage = { to: string; subject: string; text?: string; html?: string; replyTo?: string }
 
-async function settingsRow(shopId: string) {
-  const [row] = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, shopId))
+async function settingsRow(shopId: string, conn: Conn) {
+  const [row] = await conn.select().from(emailSettings).where(eq(emailSettings.shopId, shopId))
   return row ?? null
 }
 
 // Never returns the password, only whether one is saved
-export async function getSettings(shopId: string) {
-  const row = await settingsRow(shopId)
+export async function getSettings(shopId: string, conn: Conn) {
+  const row = await settingsRow(shopId, conn)
   return {
     provider: row?.active ? ('smtp' as const) : ('off' as const),
     smtp: row ? { ...row.config, hasPassword: row.password !== null } : null,
   }
 }
 
-async function passwordFor(shopId: string, input: SmtpInput) {
+async function passwordFor(shopId: string, input: SmtpInput, conn: Conn) {
   if (!input.username) return null
   if (input.password) return input.password
-  const row = await settingsRow(shopId)
+  const row = await settingsRow(shopId, conn)
   if (!row?.password) throw new EmailError('PASSWORD_REQUIRED', 'Enter the password')
   return decryptSecret(row.password)
 }
@@ -64,7 +64,7 @@ export type TestStep = { step: 'connect' | 'send'; ok: boolean; error?: string }
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
 // Logs in to the server, then sends a test message to `to` (the staff member running the test)
-export async function test(shopId: string, input: SmtpInput, to: string) {
+export async function test(shopId: string, input: SmtpInput, to: string, conn: Conn) {
   const config = configOf(input)
   const steps: TestStep[] = []
   const run = async (step: TestStep['step'], fn: () => Promise<unknown>) => {
@@ -78,7 +78,7 @@ export async function test(shopId: string, input: SmtpInput, to: string) {
     }
   }
 
-  const transport = await transportFor(config, await passwordFor(shopId, input))
+  const transport = await transportFor(config, await passwordFor(shopId, input, conn))
   if (await run('connect', () => transport.verify())) {
     await run('send', () =>
       transport.sendMail({
@@ -94,9 +94,9 @@ export async function test(shopId: string, input: SmtpInput, to: string) {
 }
 
 // Email goes through this server from now on. The login is checked first, so a broken setup never saves.
-export async function useSmtp(shopId: string, input: SmtpInput) {
+export async function useSmtp(shopId: string, input: SmtpInput, conn: Conn) {
   const config = configOf(input)
-  const password = await passwordFor(shopId, input)
+  const password = await passwordFor(shopId, input, conn)
   const transport = await transportFor(config, password)
   try {
     await transport.verify()
@@ -107,30 +107,27 @@ export async function useSmtp(shopId: string, input: SmtpInput) {
   }
 
   const values = { config, password: password === null ? null : encryptSecret(password), active: true }
-  await db
-    .insert(schema.emailSettings)
+  await conn
+    .insert(emailSettings)
     .values({ shopId, ...values })
-    .onConflictDoUpdate({ target: schema.emailSettings.shopId, set: { ...values, updatedAt: new Date() } })
-  return getSettings(shopId)
+    .onConflictDoUpdate({ target: emailSettings.shopId, set: { ...values, updatedAt: new Date() } })
+  return getSettings(shopId, conn)
 }
 
 // Stops sending; the setup stays for switching back on
-export async function turnOff(shopId: string) {
-  await db
-    .update(schema.emailSettings)
-    .set({ active: false, updatedAt: new Date() })
-    .where(eq(schema.emailSettings.shopId, shopId))
-  return getSettings(shopId)
+export async function turnOff(shopId: string, conn: Conn) {
+  await conn.update(emailSettings).set({ active: false, updatedAt: new Date() }).where(eq(emailSettings.shopId, shopId))
+  return getSettings(shopId, conn)
 }
 
-const activeRow = async (shopId: string): Promise<EmailSettings | null> => {
-  const row = await settingsRow(shopId)
+const activeRow = async (shopId: string, conn: Conn): Promise<EmailSettings | null> => {
+  const row = await settingsRow(shopId, conn)
   return row?.active ? row : null
 }
 
 /** Sends from the shop's address. With email off it's only logged, and `sent` is false. */
-export async function send(shopId: string, email: EmailMessage) {
-  const row = await activeRow(shopId)
+export async function send(shopId: string, email: EmailMessage, conn: Conn) {
+  const row = await activeRow(shopId, conn)
   if (!row) {
     log.info({ shopId, subject: email.subject, to: email.to }, 'email is off, not sent')
     return { sent: false }

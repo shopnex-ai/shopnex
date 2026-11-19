@@ -5,7 +5,7 @@
 // A package's weight is its number of test files: each file boots its own in-memory database, which is most of the cost.
 // Packages are handed out heaviest first, each to the shard that is lightest so far, so the shards come out about even and
 // the same packages land in the same shard on every run. `--list` prints the shards without running anything.
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
@@ -71,9 +71,37 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     all.forEach((s, i) => console.log(`  ${i + 1}: weight ${s.weight}  ${s.names.join(' ')}`))
     process.exit(0)
   }
-  const result = spawnSync('pnpm', [...mine.names.flatMap((name) => ['--filter', name]), 'test'], {
-    cwd: root,
-    stdio: 'inherit',
+  const pnpmArgs = [...mine.names.flatMap((name) => ['--filter', name]), 'test']
+  let result = await run(pnpmArgs)
+  // Node 24.22.0 sometimes dies with a V8 internal error in a test process (a fatal `jit_page` check, seen on unrelated pull
+  // requests in files that boot the in-memory database). That is the runtime, not the test, so a shard that failed and shows
+  // that crash is run once more; any other failure, or a second crash, fails as usual.
+  if (result.code !== 0 && isV8Crash(result.output)) {
+    console.warn('\n::warning::A test process crashed inside V8 (not a test failure). Running the shard once more.\n')
+    result = await run(pnpmArgs)
+  }
+  process.exit(result.code)
+}
+
+/** True when the output holds V8's fatal error from the `jit_page` check (a bug in the runtime, not in a test) */
+export function isV8Crash(output) {
+  return /Fatal error in[^\n]*\n(?:[^\n]*\n){0,3}[^\n]*Check failed: jit_page\.has_value\(\)/.test(output)
+}
+
+// Runs pnpm, showing its output as it comes and keeping a copy to look at afterwards
+function run(args) {
+  return new Promise((resolve) => {
+    const child = spawn('pnpm', args, { cwd: root, stdio: ['inherit', 'pipe', 'pipe'] })
+    let output = ''
+    for (const [from, to] of [
+      [child.stdout, process.stdout],
+      [child.stderr, process.stderr],
+    ]) {
+      from.on('data', (chunk) => {
+        output += chunk
+        to.write(chunk)
+      })
+    }
+    child.on('close', (code) => resolve({ code: code ?? 1, output }))
   })
-  process.exit(result.status ?? 1)
 }

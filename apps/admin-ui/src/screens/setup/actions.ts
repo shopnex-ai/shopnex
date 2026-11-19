@@ -1,5 +1,5 @@
 import { publicFn } from '@/lib/server-fn'
-import { setupInput } from '@shopnex/api/schemas'
+import { setupInput } from '@shopnex/auth/contract'
 import { completeSetup } from '@shopnex/auth/setup'
 
 export type SetupResult = { error?: string }

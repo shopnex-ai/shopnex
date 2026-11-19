@@ -1,15 +1,15 @@
 // A customer's export and erasure only cover the columns somebody remembered. This fails when a column that looks like
 // personal data (an email, a phone number, an address, an IP address) appears in a table that is not accounted for
-// below, so adding one forces a decision: handle it in modules/customers/src/privacy.ts, or say here why not.
+// below, so adding one forces a decision: handle it in modules/privacy/src/privacy.ts, or say here why not.
 // It reads the schema only: no server, no database.
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { getTableConfig } from 'drizzle-orm/pg-core'
 import { existsSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import * as core from '@shopnex/db/schema'
+import * as core from '@shopnex/core/schema'
 
-// The core tables, and the ones a module owns (modules/<name>/src/*.schema.ts): a table cannot leave the check by moving
+// The foundation tables, and the ones a module owns (modules/<name>/src/*.schema.ts): a table cannot leave the check by moving
 const modulesDir = fileURLToPath(new URL('../../modules/', import.meta.url))
 const moduleSchemaFiles = readdirSync(modulesDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && existsSync(`${modulesDir}${entry.name}/src`))
@@ -71,7 +71,7 @@ describe('personal data columns', () => {
       unknown,
       [],
       `New columns that look like personal data: ${unknown.join(', ')}. Add them to the export and the erasure in ` +
-        'modules/customers/src/privacy.ts and list them in HANDLED here, or list them in LEFT_ALONE with the reason.',
+        'modules/privacy/src/privacy.ts and list them in HANDLED here, or list them in LEFT_ALONE with the reason.',
     )
   })
 

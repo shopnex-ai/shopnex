@@ -92,5 +92,5 @@ export function defineError<const T extends Record<string, ErrorStatus>>(
     }
   }
   Object.defineProperty(Domain.prototype, MARK, { value: true })
-  return Domain as unknown as DomainErrorClass<keyof T & string>
+  return Domain
 }

@@ -2,6 +2,7 @@
 // server code that says so (setup, scripts). Open sign-up is another process's configuration: see open-signup-limits.test.ts.
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
+import { shops, user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -9,7 +10,8 @@ process.env.SHOPNEX_SECRET ??= 'sign-up-policy-test-secret-0123456789'
 delete process.env.TENANCY_MODE
 delete process.env.OPEN_SIGNUP
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { shopInvitations } = await import('@shopnex/tenancy/schema')
 requireEmbeddedDatabase()
 const { assertSignUpAllowed, createShopForNewAccount, withSignUpAllowed } = await import('../src/sign-up-policy')
 const { eq } = await import('drizzle-orm')
@@ -21,8 +23,8 @@ const INVITER = 'sign-up-policy-inviter'
 const forbidden = (e: unknown) =>
   e instanceof APIError && e.status === 'FORBIDDEN' && /by invitation only/.test(e.message)
 
-const invite = (patch: Partial<typeof schema.shopInvitations.$inferInsert> = {}) =>
-  db.insert(schema.shopInvitations).values({
+const invite = (patch: Partial<typeof shopInvitations.$inferInsert> = {}) =>
+  db.insert(shopInvitations).values({
     id: `inv-${String(++invitations)}`,
     organizationId: SHOP,
     email: 'invited@example.com',
@@ -35,12 +37,9 @@ const invite = (patch: Partial<typeof schema.shopInvitations.$inferInsert> = {})
 
 before(async () => {
   await prepareDatabase()
-  await db
-    .insert(schema.user)
-    .values({ id: INVITER, name: 'Inviter', email: 'inviter@example.com' })
-    .onConflictDoNothing()
+  await db.insert(user).values({ id: INVITER, name: 'Inviter', email: 'inviter@example.com' }).onConflictDoNothing()
 })
-beforeEach(() => db.delete(schema.shopInvitations).where(eq(schema.shopInvitations.organizationId, SHOP)))
+beforeEach(() => db.delete(shopInvitations).where(eq(shopInvitations.organizationId, SHOP)))
 after(() => {
   // The embedded database keeps the process alive
   setImmediate(() => process.exit())
@@ -60,11 +59,11 @@ describe('assertSignUpAllowed, by invitation', () => {
   test('an invitation that expired, was accepted or was cancelled is no invitation', async () => {
     await invite({ expiresAt: new Date(Date.now() - 1000) })
     await assert.rejects(assertSignUpAllowed('invited@example.com'), forbidden)
-    await db.delete(schema.shopInvitations).where(eq(schema.shopInvitations.organizationId, SHOP))
+    await db.delete(shopInvitations).where(eq(shopInvitations.organizationId, SHOP))
     for (const status of ['accepted', 'canceled', 'rejected']) {
       await invite({ status })
       await assert.rejects(assertSignUpAllowed('invited@example.com'), forbidden, status)
-      await db.delete(schema.shopInvitations).where(eq(schema.shopInvitations.organizationId, SHOP))
+      await db.delete(shopInvitations).where(eq(shopInvitations.organizationId, SHOP))
     }
   })
 
@@ -85,8 +84,8 @@ describe('assertSignUpAllowed, by invitation', () => {
 
 describe('createShopForNewAccount, by invitation', () => {
   test('makes no shop: an invited person joins the shop that invited them', async () => {
-    const before = await db.select().from(schema.shops)
+    const before = await db.select().from(shops)
     await createShopForNewAccount({ id: INVITER, email: 'invited@example.com' })
-    assert.equal((await db.select().from(schema.shops)).length, before.length)
+    assert.equal((await db.select().from(shops)).length, before.length)
   })
 })

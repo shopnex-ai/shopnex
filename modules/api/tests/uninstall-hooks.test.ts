@@ -3,12 +3,14 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { call } from '@orpc/server'
+import { apps } from '@shopnex/core/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { appInstallations } = await import('@shopnex/apps/schema')
 requireEmbeddedDatabase()
 const { configureRpc } = await import('@shopnex/rpc')
 const { router } = await import('../src/router')
@@ -28,7 +30,7 @@ let manualId = ''
 
 async function installedPaymentsApp(name: string) {
   const [app] = await db
-    .insert(schema.apps)
+    .insert(apps)
     .values({
       name,
       appUrl: 'http://127.0.0.1:1',
@@ -38,7 +40,7 @@ async function installedPaymentsApp(name: string) {
     })
     .returning()
   const [installation] = await db
-    .insert(schema.appInstallations)
+    .insert(appInstallations)
     .values({ appId: app!.id, shopId: SHOP, scopes: [] })
     .returning()
   const [method] = await db
@@ -76,7 +78,7 @@ before(async () => {
 
 after(async () => {
   await db.delete(paymentMethods).where(eq(paymentMethods.id, manualId))
-  if (appIds.length) await db.delete(schema.apps).where(inArray(schema.apps.id, appIds))
+  if (appIds.length) await db.delete(apps).where(inArray(apps.id, appIds))
 })
 
 describe('uninstalling an app, through the route', () => {
@@ -124,10 +126,7 @@ describe('uninstalling an app, through the route', () => {
       appUninstalled.on('test.fails', () => undefined)
     }
     assert.equal(await exists(app.method.id), true)
-    const [installation] = await db
-      .select()
-      .from(schema.appInstallations)
-      .where(eq(schema.appInstallations.id, app.installation.id))
+    const [installation] = await db.select().from(appInstallations).where(eq(appInstallations.id, app.installation.id))
     assert.equal(installation?.uninstalledAt, null)
   })
 })

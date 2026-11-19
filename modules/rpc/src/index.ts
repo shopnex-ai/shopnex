@@ -5,9 +5,14 @@
 import { ORPCError, os } from '@orpc/server'
 import { z } from 'zod'
 import { domainErrorData, domainErrorStatus, isDomainError, type ErrorMapper } from '@shopnex/kit'
-import type { ApiScope, ApiToken, Shop, ShopRole } from '@shopnex/db/schema'
+import { type ApiScope, type ApiToken, type Shop } from '@shopnex/core/schema'
 
-export type Context = { headers: Headers }
+// The roles a member can have in a shop (tenancy's ShopRole is the same union; rpc does not depend on tenancy)
+export type ShopRole = 'owner' | 'admin' | 'member'
+
+export interface Context {
+  headers: Headers
+}
 
 export function createContext(headers: Headers): Context {
   return { headers }
@@ -23,7 +28,7 @@ export interface Register {}
 /** What a handler can read of the signed-in staff member: the registered type, else the least every login has */
 export type StaffSession = Register extends { session: infer S }
   ? S
-  : { session: { activeOrganizationId?: string | null }; user: { id: string } }
+  : { session: { activeOrganizationId?: string | null }; user: { id: string; email: string } }
 
 /** How a request is recognised. Registered once by `modules/api`, which knows about logins, tokens and shops. */
 export interface Resolvers {
@@ -111,7 +116,7 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
   })
 
   // Who is calling an admin API procedure: staff (token null) or an API token (role and userId null)
-  type ApiCaller = {
+  interface ApiCaller {
     shop: Shop
     token: ApiToken | null
     role: ShopRole | null

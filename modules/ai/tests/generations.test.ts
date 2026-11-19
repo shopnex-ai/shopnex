@@ -3,8 +3,10 @@
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
+import { user } from '@shopnex/core/schema'
+import { productImages } from '@shopnex/catalog/schema'
 
-const { db, schema, SHOP, aiGenerations } = fx
+const { db, SHOP, aiGenerations } = fx
 const service = (await import('../src')).aiService
 type Capability = keyof typeof import('@shopnex/marketplace-sdk/ai').aiCapabilities
 // bindConn would lose run's generic, and with it the type of the output
@@ -108,7 +110,7 @@ describe('run, through an app', () => {
     const byToken = await aiService.run(SHOP, { capability: 'collection.seo', subjectId: collection.id })
     assert.equal((await generation(byToken.id))!.userId, null)
     const [staff] = await db
-      .insert(schema.user)
+      .insert(user)
       .values({ id: `ai-test-${Date.now()}`, name: 'Staff', email: `ai-test-${Date.now()}@example.test` })
       .returning()
     try {
@@ -120,7 +122,7 @@ describe('run, through an app', () => {
       assert.equal((await generation(byStaff.id))!.userId, staff!.id)
     } finally {
       await fx.cleanup()
-      await db.delete(schema.user).where(eq(schema.user.id, staff!.id))
+      await db.delete(user).where(eq(user.id, staff!.id))
     }
   })
 
@@ -218,9 +220,7 @@ describe('run: what comes back is cleaned', () => {
   test('image text can only name images the product has, once each', async () => {
     await fx.aiApp({ capabilities: ['product.image_alt'] })
     const product = await fx.product()
-    await db
-      .insert(schema.productImages)
-      .values({ productId: product.id, url: 'https://img.example/a.jpg', position: 0 })
+    await db.insert(productImages).values({ productId: product.id, url: 'https://img.example/a.jpg', position: 0 })
     fx.answers({
       images: [
         { position: 0, alt: 'A shirt' },

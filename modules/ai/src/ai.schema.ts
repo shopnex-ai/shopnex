@@ -5,7 +5,7 @@
 // sends only the data the capability needs and returns the answer as a suggestion. Every run is kept as a
 // generation: what was asked, what came back, and whether staff used it.
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
-import { apps, shops, user } from '@shopnex/db/schema'
+import { apps, shops, user } from '@shopnex/core/schema'
 
 // One row per (shop, app, capability): several apps may provide the same capability, staff pick one
 export const aiProviders = pgTable(

@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto'
 import { after, describe, test } from 'node:test'
 import { eq, like } from 'drizzle-orm'
 import { takeRate } from '@shopnex/auth'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
+import { rateLimits } from '@shopnex/auth/schema'
 import { closeDb } from '../lib'
 
 const run = Date.now().toString(36)
@@ -21,12 +22,12 @@ const row = async (k: string) =>
   (
     await db
       .select()
-      .from(schema.rateLimits)
-      .where(eq(schema.rateLimits.key, hashed(k)))
+      .from(rateLimits)
+      .where(eq(rateLimits.key, hashed(k)))
   )[0]
 
 after(async () => {
-  for (const k of used) await db.delete(schema.rateLimits).where(eq(schema.rateLimits.key, hashed(k)))
+  for (const k of used) await db.delete(rateLimits).where(eq(rateLimits.key, hashed(k)))
   await closeDb()
 })
 
@@ -83,8 +84,8 @@ describe('takeRate', () => {
     assert.ok(await row(k), 'stored under the hash')
     const leaks = await db
       .select()
-      .from(schema.rateLimits)
-      .where(like(schema.rateLimits.key, `%${run}%`))
+      .from(rateLimits)
+      .where(like(rateLimits.key, `%${run}%`))
     assert.deepEqual(leaks, [], 'no row is keyed by anything readable that contains the email or address')
     assert.match(hashed(k), /^[0-9a-f]{64}$/)
   })

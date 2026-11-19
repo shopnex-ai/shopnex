@@ -1,15 +1,18 @@
+import type { Conn } from '@shopnex/db'
 // The abandoned cart email job on the embedded database (PGlite, one connection). Queueing a reminder runs in a
 // transaction; reading the cart's lines through the shared handle inside it waits for that transaction for ever and
 // freezes the whole shop. This runs the real job on an in-memory PGlite and fails (instead of hanging) if it blocks.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { abandonedCartSettings, emailDeliveries, emailSettings } from '@shopnex/email/schema'
+import { carts } from '../src/cart.schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'embedded-abandoned-cart-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { channelService } = await import('@shopnex/channels')
@@ -37,12 +40,12 @@ let cartId: string
 
 before(async () => {
   await prepareDatabase()
-  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
+  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 }, db)
   // Email on, abandoned cart reminders on with no delay: a cart with an email is due at once
-  await db.insert(schema.emailSettings).values({
+  await db.insert(emailSettings).values({
     shopId: SHOP,
     config: {
-      preset: 'custom',
+      preset: 'other',
       host: 'localhost',
       port: 25,
       username: '',
@@ -51,12 +54,12 @@ before(async () => {
     },
     active: true,
   })
-  await db.insert(schema.abandonedCartSettings).values({ shopId: SHOP, enabled: true, delayMinutes: 0 })
+  await db.insert(abandonedCartSettings).values({ shopId: SHOP, enabled: true, delayMinutes: 0 })
 
-  const channel = await channelService.resolve(SHOP, undefined)
-  const cart = await cartService.create(SHOP, channel.id, [{ variantId: product.variants[0]!.id, quantity: 2 }])
-  await cartService.setReminderContact(cart.token, 'walked-away@example.com')
-  const [row] = await db.select({ id: schema.carts.id }).from(schema.carts).where(eq(schema.carts.token, cart.token))
+  const channel = await channelService.resolve(SHOP, undefined, db)
+  const cart = await cartService.create(SHOP, channel.id, db, [{ variantId: product.variants[0]!.id, quantity: 2 }])
+  await cartService.setReminderContact(cart.token, 'walked-away@example.com', db)
+  const [row] = await db.select({ id: carts.id }).from(carts).where(eq(carts.token, cart.token))
   cartId = row!.id
 })
 
@@ -67,13 +70,13 @@ after(() => {
 
 describe('abandoned cart emails on the embedded database', () => {
   test('queues the reminder for a due cart instead of freezing', { timeout: 20_000 }, async () => {
-    const handled = await within(10_000, 'queueing the reminders', queueAbandonedCartEmails())
+    const handled = await within(10_000, 'queueing the reminders', queueAbandonedCartEmails(db))
     assert.equal(handled, 1)
 
     const [delivery] = await within(
       5_000,
       'reading the outbox',
-      db.select().from(schema.emailDeliveries).where(eq(schema.emailDeliveries.cartId, cartId)),
+      db.select().from(emailDeliveries).where(eq(emailDeliveries.cartId, cartId)),
     )
     assert.ok(delivery, 'a reminder is queued for the cart')
     assert.equal(delivery.notification, 'abandoned_cart')
@@ -84,7 +87,7 @@ describe('abandoned cart emails on the embedded database', () => {
   })
 
   test('a cart is reminded once: a second pass queues nothing', { timeout: 20_000 }, async () => {
-    const handled = await within(10_000, 'the second pass', queueAbandonedCartEmails())
+    const handled = await within(10_000, 'the second pass', queueAbandonedCartEmails(db))
     assert.equal(handled, 0)
   })
 })

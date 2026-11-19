@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Checkout on the embedded database (PGlite), the one `npx create-shopnex` runs on.
 //
 // PGlite has ONE connection. A query that doesn't go through the open transaction waits for that transaction, which
@@ -10,13 +11,14 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import type { PaymentSessionRequest } from '@shopnex/marketplace-sdk/payments'
+import { orders as ordersTable } from '@shopnex/orders/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'embedded-checkout-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 const { paymentMethods } = await import('@shopnex/payments/schema')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
@@ -60,8 +62,8 @@ let methodId: string
 let variantId: string
 
 async function newCart() {
-  const channel = await channelService.resolve(SHOP, undefined)
-  const cart = await cartService.create(SHOP, channel.id, [{ variantId, quantity: 1 }])
+  const channel = await channelService.resolve(SHOP, undefined, db)
+  const cart = await cartService.create(SHOP, channel.id, db, [{ variantId, quantity: 1 }])
   return cart.token
 }
 
@@ -79,7 +81,7 @@ before(async () => {
   await new Promise<void>((resolve) => provider.listen(0, '127.0.0.1', resolve))
   providerUrl = `http://127.0.0.1:${(provider.address() as AddressInfo).port}`
 
-  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 })
+  const product = await productService.create(SHOP, { title: 'Ceramic Cup', priceCents: 1400 }, db)
   variantId = product.variants[0]!.id
 
   const { app } = await appService.registerApp(
@@ -130,6 +132,7 @@ describe('checkout with a payments app on the embedded database', () => {
         token,
         { email: 'buyer@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
         { returnUrl: RETURN_URL },
+        db,
       ),
     )
     assert.match(placed.paymentUrl ?? '', new RegExp(`^${providerUrl}/pay/`))
@@ -147,7 +150,7 @@ describe('checkout with a payments app on the embedded database', () => {
   })
 
   test('the database still answers afterwards', { timeout: 20_000 }, async () => {
-    const orders = await within(5_000, 'reading the orders', db.select().from(schema.orders))
+    const orders = await within(5_000, 'reading the orders', db.select().from(ordersTable))
     assert.ok(orders.length >= 1)
     const again = await within(
       5_000,
@@ -174,6 +177,7 @@ describe('checkout with a payments app on the embedded database', () => {
           token,
           { email: 'buyer2@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
           { returnUrl: RETURN_URL },
+          db,
         ),
       )
       assert.equal(placed.paymentUrl, null)
@@ -181,7 +185,7 @@ describe('checkout with a payments app on the embedded database', () => {
       const [order] = await within(
         5_000,
         'reading the order',
-        db.select().from(schema.orders).where(eq(schema.orders.id, placed.orderId)),
+        db.select().from(ordersTable).where(eq(ordersTable.id, placed.orderId)),
       )
       assert.equal(order!.financialStatus, 'pending')
       assert.equal(order!.cancelledAt, null)
@@ -195,6 +199,7 @@ describe('checkout with a payments app on the embedded database', () => {
           token,
           { email: 'buyer2@example.com', name: 'Test Buyer', shippingAddress: ADDRESS, paymentMethodId: methodId },
           { returnUrl: RETURN_URL },
+          db,
         ),
       )
       assert.equal(retried.alreadyCompleted, true)
@@ -215,12 +220,12 @@ describe('checkout with a payments app on the embedded database', () => {
     const first = await within(
       10_000,
       'the first completion',
-      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }),
+      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }, db),
     )
     const second = await within(
       10_000,
       'the second completion',
-      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }),
+      checkoutService.complete(SHOP, token, input, { returnUrl: RETURN_URL }, db),
     )
     assert.equal(second.orderId, first.orderId)
     assert.equal(second.alreadyCompleted, true)

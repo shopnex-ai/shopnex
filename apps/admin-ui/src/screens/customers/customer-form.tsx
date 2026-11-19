@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { customerInput } from '@shopnex/api/schemas'
+import { customerInput } from '@shopnex/customers/contract'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
 import { Field, FieldGroup } from '@/components/ui/field'

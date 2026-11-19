@@ -3,12 +3,13 @@
 // every shop. Invitees still accept through Better Auth (/organization/accept-invitation), which reads these rows.
 import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
-import type { StaffRole } from '@shopnex/db/schema'
+import { db } from '@shopnex/db'
 import type { ShopRole } from './resolve'
 
 export { StaffError, type StaffErrorCode } from './tenancy.errors'
 import { StaffError } from './tenancy.errors'
+import { shopInvitations, shopMembers, type StaffRole } from './tenancy.schema'
+import { user } from '@shopnex/core/schema'
 
 // Who is acting: their role in this shop (super admins act as owners) and user id
 export type Actor = { userId: string; role: ShopRole; superAdmin: boolean }
@@ -26,21 +27,18 @@ export async function listMembers(shopId: string) {
   return (
     db
       .select({
-        id: schema.shopMembers.id,
-        userId: schema.shopMembers.userId,
-        role: schema.shopMembers.role,
-        createdAt: schema.shopMembers.createdAt,
-        name: schema.user.name,
-        email: schema.user.email,
+        id: shopMembers.id,
+        userId: shopMembers.userId,
+        role: shopMembers.role,
+        createdAt: shopMembers.createdAt,
+        name: user.name,
+        email: user.email,
       })
-      .from(schema.shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-      .where(eq(schema.shopMembers.organizationId, shopId))
+      .from(shopMembers)
+      .innerJoin(user, eq(user.id, shopMembers.userId))
+      .where(eq(shopMembers.organizationId, shopId))
       // Owners, then admins, then staff (created_at isn't comparable: Better Auth writes it from JS, defaultNow() from the DB)
-      .orderBy(
-        sql`case ${schema.shopMembers.role} when 'owner' then 0 when 'admin' then 1 else 2 end`,
-        asc(schema.user.name),
-      )
+      .orderBy(sql`case ${shopMembers.role} when 'owner' then 0 when 'admin' then 1 else 2 end`, asc(user.name))
   )
 }
 
@@ -48,15 +46,15 @@ export async function listMembers(shopId: string) {
 export async function listInvitations(shopId: string) {
   return db
     .select()
-    .from(schema.shopInvitations)
+    .from(shopInvitations)
     .where(
       and(
-        eq(schema.shopInvitations.organizationId, shopId),
-        eq(schema.shopInvitations.status, 'pending'),
-        gt(schema.shopInvitations.expiresAt, new Date()),
+        eq(shopInvitations.organizationId, shopId),
+        eq(shopInvitations.status, 'pending'),
+        gt(shopInvitations.expiresAt, new Date()),
       ),
     )
-    .orderBy(asc(schema.shopInvitations.createdAt))
+    .orderBy(asc(shopInvitations.createdAt))
 }
 
 // Re-inviting an email replaces its open invitation (fresh link and expiry)
@@ -72,24 +70,24 @@ export async function invite(
   }
   return db.transaction(async (tx) => {
     const [existing] = await tx
-      .select({ id: schema.shopMembers.id })
-      .from(schema.shopMembers)
-      .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-      .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.user.email, email)))
+      .select({ id: shopMembers.id })
+      .from(shopMembers)
+      .innerJoin(user, eq(user.id, shopMembers.userId))
+      .where(and(eq(shopMembers.organizationId, shopId), eq(user.email, email)))
     if (existing) throw new StaffError('ALREADY_MEMBER', `${email} is already a member of this shop`)
 
     await tx
-      .update(schema.shopInvitations)
+      .update(shopInvitations)
       .set({ status: 'canceled' })
       .where(
         and(
-          eq(schema.shopInvitations.organizationId, shopId),
-          eq(sql`lower(${schema.shopInvitations.email})`, email),
-          eq(schema.shopInvitations.status, 'pending'),
+          eq(shopInvitations.organizationId, shopId),
+          eq(sql`lower(${shopInvitations.email})`, email),
+          eq(shopInvitations.status, 'pending'),
         ),
       )
     const [invitation] = await tx
-      .insert(schema.shopInvitations)
+      .insert(shopInvitations)
       .values({
         // The id is the secret in the invite link: random, unguessable
         id: randomBytes(24).toString('base64url'),
@@ -108,13 +106,13 @@ export async function invite(
 // Returns null when there is no open invitation with this id in the shop
 export async function cancelInvitation(shopId: string, id: string) {
   const [invitation] = await db
-    .update(schema.shopInvitations)
+    .update(shopInvitations)
     .set({ status: 'canceled' })
     .where(
       and(
-        eq(schema.shopInvitations.organizationId, shopId),
-        eq(schema.shopInvitations.id, id),
-        eq(schema.shopInvitations.status, 'pending'),
+        eq(shopInvitations.organizationId, shopId),
+        eq(shopInvitations.id, id),
+        eq(shopInvitations.status, 'pending'),
       ),
     )
     .returning()
@@ -124,8 +122,8 @@ export async function cancelInvitation(shopId: string, id: string) {
 async function getMember(shopId: string, memberId: string) {
   const [member] = await db
     .select()
-    .from(schema.shopMembers)
-    .where(and(eq(schema.shopMembers.organizationId, shopId), eq(schema.shopMembers.id, memberId)))
+    .from(shopMembers)
+    .where(and(eq(shopMembers.organizationId, shopId), eq(shopMembers.id, memberId)))
   if (!member) throw new StaffError('NOT_FOUND', 'Member not found')
   return member
 }
@@ -136,11 +134,7 @@ export async function updateRole(shopId: string, actor: Actor, memberId: string,
   if (role === 'admin' && !actor.superAdmin && actor.role !== 'owner') {
     throw new StaffError('FORBIDDEN', 'Only owners can make someone an admin')
   }
-  const [updated] = await db
-    .update(schema.shopMembers)
-    .set({ role })
-    .where(eq(schema.shopMembers.id, memberId))
-    .returning()
+  const [updated] = await db.update(shopMembers).set({ role }).where(eq(shopMembers.id, memberId)).returning()
   return updated!
 }
 
@@ -148,6 +142,6 @@ export async function updateRole(shopId: string, actor: Actor, memberId: string,
 export async function removeMember(shopId: string, actor: Actor, memberId: string) {
   const member = await getMember(shopId, memberId)
   assertCanManage(actor, member)
-  await db.delete(schema.shopMembers).where(eq(schema.shopMembers.id, memberId))
+  await db.delete(shopMembers).where(eq(shopMembers.id, memberId))
   return member
 }

@@ -3,9 +3,10 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 
@@ -27,16 +28,16 @@ after(async () => {
 
 /** A paid order for two units, paid by a manual method */
 async function paidOrder() {
-  const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 2 }] })
+  const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 2 }] }, db)
   fx.order(placed.id)
-  await orderService.markAsPaid(SHOP, placed.id)
+  await orderService.markAsPaid(SHOP, placed.id, db)
   return { id: placed.id, total: placed.totalCents }
 }
 
 const refund = (id: string, amountCents: number) => call('POST', `/admin/orders/${id}/refund`, { amountCents }, admin)
-const row = async (id: string) => (await db.select().from(schema.orders).where(eq(schema.orders.id, id)))[0]!
+const row = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 const refunds = async (id: string) =>
-  (await db.select().from(schema.orderTransactions).where(eq(schema.orderTransactions.orderId, id)))
+  (await db.select().from(orderTransactions).where(eq(orderTransactions.orderId, id)))
     .filter((t) => t.kind === 'refund')
     .map((t) => ({ cents: t.amountCents, status: t.status }))
 
@@ -73,7 +74,7 @@ describe('partial refunds', () => {
   })
 
   test('an order that was not paid has nothing to refund', async () => {
-    const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 1 }] })
+    const placed = await orderService.create(SHOP, { email: fx.email, items: [{ variantId, quantity: 1 }] }, db)
     fx.order(placed.id)
     const res = await refund(placed.id, 100)
     assert.equal(res.status, 400, JSON.stringify(res.body))

@@ -3,18 +3,20 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
+import { user } from '@shopnex/core/schema'
 
 // Set before the modules load: they read these when first imported
 process.env.DATABASE_URL = 'pglite:memory'
 process.env.SHOPNEX_SECRET ??= 'shopper-login-test-secret-0123456789'
 process.env.APP_URL = 'http://localhost:3000'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
 const { currentOtpSender, isOtpPath, withOtpSender, withOtpSignIn } = await import('../src/shopper-login')
 const { SUPER_ADMIN_ROLE, isSuperAdmin } = await import('../src/roles')
 const { takeRate } = await import('../src/rate-limit')
+const { rateLimits } = await import('../src/auth.schema')
 const { eq } = await import('drizzle-orm')
 
 before(prepareDatabase)
@@ -78,7 +80,7 @@ describe('the endpoints over HTTP', () => {
       assert.equal(res.status, 403, path)
       assert.match(await res.text(), /Not available/)
     }
-    const users = await db.select().from(schema.user).where(eq(schema.user.email, 'someone@example.com'))
+    const users = await db.select().from(user).where(eq(user.email, 'someone@example.com'))
     assert.equal(users.length, 0, 'no account was made')
   })
 })
@@ -93,7 +95,7 @@ describe('platform roles', () => {
 })
 
 describe('takeRate: login-code limits shared through the database', () => {
-  const rows = () => db.select().from(schema.rateLimits)
+  const rows = () => db.select().from(rateLimits)
 
   test('lets the first uses through up to max, then says how many seconds until the window ends', async () => {
     assert.equal(await takeRate('t:basic', 3, 60_000), null)
@@ -125,7 +127,7 @@ describe('takeRate: login-code limits shared through the database', () => {
   test('the window starts again once it has ended', async () => {
     await takeRate('t:reset', 1, 60_000)
     assert.notEqual(await takeRate('t:reset', 1, 60_000), null)
-    await db.update(schema.rateLimits).set({ resetAt: new Date(Date.now() - 1000) })
+    await db.update(rateLimits).set({ resetAt: new Date(Date.now() - 1000) })
     assert.equal(await takeRate('t:reset', 1, 60_000), null, 'a new window')
   })
 

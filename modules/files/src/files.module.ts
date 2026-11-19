@@ -4,7 +4,7 @@ import { files as fileRoutes, storage as storageRoutes } from './files.router'
 
 export const filesModule = defineModule({
   name: 'files',
-  dependsOn: ['db', 'rpc', 'tenancy', 'webhooks'],
+  dependsOn: ['core', 'db', 'rpc', 'tenancy', 'webhooks'],
   tables: { files, storageBackends },
   router: { files: fileRoutes, storage: storageRoutes },
 })

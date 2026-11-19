@@ -3,9 +3,10 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import * as fx from './fixtures'
 
-const { db, schema, SHOP, OTHER_SHOP, webhookDeliveries } = fx
+const { db, SHOP, OTHER_SHOP, webhookDeliveries } = fx
 const { bindConn } = await import('@shopnex/kit')
-const webhookService = bindConn((await import('../src')).webhookService, db)
+const webhookServiceIn = (await import('../src')).webhookService
+const webhookService = bindConn(webhookServiceIn, db)
 const { eq } = await import('drizzle-orm')
 
 before(async () => {
@@ -163,5 +164,20 @@ describe('test sends and the delivery log', () => {
     assert.equal(await webhookService.redeliver(OTHER_SHOP, d.id, undefined), null)
     assert.equal(await webhookService.redeliver(SHOP, d.id, token.id), null)
     assert.equal((await fx.deliveryById(d.id))?.status, 'failed')
+  })
+})
+
+describe('removeOfToken: what revoking an API token takes with it', () => {
+  test('removes the endpoints that token made and their deliveries, in the transaction it is given, and no one else’s', async () => {
+    const [gone, stays] = [await fx.apiToken(), await fx.apiToken()]
+    const mine = await webhookService.create(SHOP, input, gone.id)
+    const theirs = await webhookService.create(SHOP, input, stays.id)
+    const staffs = await webhookService.create(SHOP, input, undefined)
+    await fx.delivery(mine.id)
+    await db.transaction((tx) => webhookServiceIn.removeOfToken(gone.id, tx))
+    assert.equal(await webhookService.get(SHOP, mine.id, undefined), null)
+    assert.equal((await fx.deliveriesOf(mine.id)).length, 0)
+    assert.ok(await webhookService.get(SHOP, theirs.id, undefined))
+    assert.ok(await webhookService.get(SHOP, staffs.id, undefined))
   })
 })

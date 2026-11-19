@@ -6,16 +6,21 @@ import { createHash, randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { takeRate } from '@shopnex/auth'
-import { db, schema } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
+import { rateLimits } from '@shopnex/auth/schema'
 import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
 import { Fixtures, PASSWORD, SHOP, authCall, call, closeDb, ok, sellableVariants } from '../lib'
 import { smtpSink } from '../smtp-sink'
+import { shopMembers } from '@shopnex/tenancy/schema'
+import { user } from '@shopnex/core/schema'
+import { emailSettings } from '@shopnex/email/schema'
+import { customers } from '@shopnex/customers/schema'
 
 const fx = new Fixtures()
 const sink = smtpSink()
 let variant: { id: string; priceCents: number }
-let settingsBefore: (typeof schema.emailSettings.$inferSelect)[]
+let settingsBefore: (typeof emailSettings.$inferSelect)[]
 
 const TOKEN = 'x-shopnex-customer-token'
 const as = (token: string) => ({ [TOKEN]: token })
@@ -34,13 +39,17 @@ const address = {
 }
 
 async function placeOrder(email: string) {
-  const order = await orderService.create(SHOP, {
-    email,
-    name: 'Ada Tester',
-    items: [{ variantId: variant.id, quantity: 1 }],
-    shippingAddress: address,
-    payment: { gateway: 'manual', name: 'Bank transfer', instructions: 'IBAN 123' },
-  })
+  const order = await orderService.create(
+    SHOP,
+    {
+      email,
+      name: 'Ada Tester',
+      items: [{ variantId: variant.id, quantity: 1 }],
+      shippingAddress: address,
+      payment: { gateway: 'manual', name: 'Bank transfer', instructions: 'IBAN 123' },
+    },
+    db,
+  )
   fx.order(order.id)
   return order
 }
@@ -65,7 +74,7 @@ const requestCode = (email: string) => call('POST', '/storefront/customer/code',
 const signIn = (email: string, code: string) => call('POST', '/storefront/customer/sign-in', { email, code })
 
 // The limits live in the rate_limits table under a hash of their key (see accounts.ts): the test finds its rows by it
-const limitRow = (key: string) => eq(schema.rateLimits.key, createHash('sha256').update(key).digest('hex'))
+const limitRow = (key: string) => eq(rateLimits.key, createHash('sha256').update(key).digest('hex'))
 const touched = new Set<string>()
 /** A visitor's or mailbox's limit rows are removed after the run: the keys of everything a test asks about */
 const watch = (...keys: string[]) => keys.forEach((k) => touched.add(k))
@@ -75,7 +84,7 @@ const person = (label = 'shopper') => {
   return email
 }
 const clearLimits = async () => {
-  for (const key of touched) await db.delete(schema.rateLimits).where(limitRow(key))
+  for (const key of touched) await db.delete(rateLimits).where(limitRow(key))
   touched.clear()
 }
 const fromIp = (ip: string) => ({ 'x-forwarded-for': ip })
@@ -88,15 +97,15 @@ before(async () => {
   watch(`login-code:shop:${SHOP}`)
   await fx.init()
   ;[variant] = (await sellableVariants(1)) as [typeof variant]
-  settingsBefore = await db.select().from(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
+  settingsBefore = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
 })
 
 after(async () => {
   await clearLimits()
   await sink.stop()
-  await db.delete(schema.emailSettings).where(eq(schema.emailSettings.shopId, SHOP))
-  if (settingsBefore.length) await db.insert(schema.emailSettings).values(settingsBefore)
+  await db.delete(emailSettings).where(eq(emailSettings.shopId, SHOP))
+  if (settingsBefore.length) await db.insert(emailSettings).values(settingsBefore)
   await fx.cleanup()
   await closeDb()
 })
@@ -111,20 +120,24 @@ describe('customer accounts', () => {
   describe('with email on', () => {
     before(async () => {
       const port = await sink.start()
-      await emailService.useSmtp(SHOP, {
-        preset: 'other',
-        host: '127.0.0.1',
-        port,
-        username: '',
-        fromName: 'E2E Shop',
-        fromEmail: 'shop@e2e.test',
-      })
+      await emailService.useSmtp(
+        SHOP,
+        {
+          preset: 'other',
+          host: '127.0.0.1',
+          port,
+          username: '',
+          fromName: 'E2E Shop',
+          fromEmail: 'shop@e2e.test',
+        },
+        db,
+      )
     })
 
     test('a guest signs in with the code and finds the order they placed before', async () => {
       const email = person()
       const guestOrder = await placeOrder(email)
-      const [guest] = await db.select().from(schema.customers).where(eq(schema.customers.email, email))
+      const [guest] = await db.select().from(customers).where(eq(customers.email, email))
       assert.equal(guest?.userId, null, 'a guest has no login yet')
 
       ok(await requestCode(email))
@@ -138,7 +151,7 @@ describe('customer accounts', () => {
       assert.ok(token)
       assert.equal(customer.email, email)
       assert.equal(customer.id, guest!.id, 'the guest customer record is the account')
-      const [linked] = await db.select().from(schema.customers).where(eq(schema.customers.id, guest!.id))
+      const [linked] = await db.select().from(customers).where(eq(customers.id, guest!.id))
       assert.ok(linked?.userId)
 
       const reused = await signIn(email, code)
@@ -161,9 +174,9 @@ describe('customer accounts', () => {
       assert.ok([401, 403].includes(admin.status), `admin API answered ${admin.status}`)
       const [member] = await db
         .select()
-        .from(schema.shopMembers)
-        .innerJoin(schema.user, eq(schema.user.id, schema.shopMembers.userId))
-        .where(and(eq(schema.shopMembers.organizationId, SHOP), eq(schema.user.email, email)))
+        .from(shopMembers)
+        .innerJoin(user, eq(user.id, shopMembers.userId))
+        .where(and(eq(shopMembers.organizationId, SHOP), eq(user.email, email)))
       assert.equal(member, undefined, 'a customer is not a shop member')
 
       ok(await call('POST', '/storefront/customer/sign-out', undefined, as(token)))
@@ -317,7 +330,7 @@ describe('customer accounts', () => {
         const privateIp = visitor()
         watch(`login-code:ip:${SHOP}:${privateIp}`)
         ok(await call('POST', '/storefront/customer/code', { email }, fromIp(privateIp)))
-        const rows = await db.select().from(schema.rateLimits)
+        const rows = await db.select().from(rateLimits)
         const readable = rows.filter(
           (r) => r.key.includes('@') || r.key.includes('2001:db8:') || !/^[0-9a-f]{64}$/.test(r.key),
         )

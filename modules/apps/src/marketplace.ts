@@ -7,21 +7,20 @@ import { and, eq, isNotNull, isNull, notInArray } from 'drizzle-orm'
 import { ORPCError, createMarketplaceClient } from '@shopnex/marketplace-sdk'
 import { SCOPES, type Scope } from '@shopnex/marketplace-sdk/contract'
 import { ThemeDocument } from '@shopnex/storefront-sdk/theme'
-import { db, schema, type Tx } from '@shopnex/db'
+import { db, type Tx } from '@shopnex/db'
 import { themeService } from '@shopnex/theme'
-import { normalizeScopes } from '@shopnex/tenancy'
+import { normalizeScopes } from '@shopnex/core/scopes'
 import { AppError } from './apps.errors'
 import { log } from './log'
+import { appInstallations, marketplaceConnection } from './apps.schema'
+import { apps as appsTable } from '@shopnex/core/schema'
 
 const CONNECTION_ID = 'default'
 // Catalog + installations sync interval (the worker also runs right after connecting)
 const SYNC_INTERVAL_MS = 10 * 60_000
 
 export async function getConnection() {
-  const [connection] = await db
-    .select()
-    .from(schema.marketplaceConnection)
-    .where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+  const [connection] = await db.select().from(marketplaceConnection).where(eq(marketplaceConnection.id, CONNECTION_ID))
   return connection ?? null
 }
 
@@ -63,9 +62,9 @@ export async function connect(input: { marketplaceUrl: string; publicUrl: string
     connectedAt: null,
   }
   await db
-    .insert(schema.marketplaceConnection)
+    .insert(marketplaceConnection)
     .values({ id: CONNECTION_ID, ...pending })
-    .onConflictDoUpdate({ target: schema.marketplaceConnection.id, set: pending })
+    .onConflictDoUpdate({ target: marketplaceConnection.id, set: pending })
   try {
     const { instanceId, instanceKey } = await client({ marketplaceUrl }).instances.connect({
       url: publicUrl,
@@ -73,11 +72,11 @@ export async function connect(input: { marketplaceUrl: string; publicUrl: string
       challenge,
     })
     await db
-      .update(schema.marketplaceConnection)
+      .update(marketplaceConnection)
       .set({ instanceId, instanceKey, connectedAt: new Date(), pendingChallenge: null, lastSyncError: null })
-      .where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+      .where(eq(marketplaceConnection.id, CONNECTION_ID))
   } catch (error) {
-    await db.delete(schema.marketplaceConnection).where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+    await db.delete(marketplaceConnection).where(eq(marketplaceConnection.id, CONNECTION_ID))
     // e.g. INSTANCE_UNVERIFIED: the marketplace couldn't fetch our challenge from publicUrl
     const message = error instanceof ORPCError ? error.message : `Couldn't reach the marketplace at ${marketplaceUrl}`
     throw new AppError('MARKETPLACE_CONNECT_FAILED', message)
@@ -99,13 +98,13 @@ export async function disconnect() {
       .catch((error) => log.error({ err: error }, 'marketplace disconnect failed'))
   }
   await db.transaction(async (tx) => {
-    await tx.delete(schema.marketplaceConnection).where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+    await tx.delete(marketplaceConnection).where(eq(marketplaceConnection.id, CONNECTION_ID))
     // Copies shops already added stay in their libraries
     await themeService.clearStore(tx)
     await tx
-      .update(schema.apps)
+      .update(appsTable)
       .set({ delistedAt: new Date() })
-      .where(and(eq(schema.apps.source, 'marketplace'), isNull(schema.apps.delistedAt)))
+      .where(and(eq(appsTable.source, 'marketplace'), isNull(appsTable.delistedAt)))
   })
   return connection
 }
@@ -137,20 +136,20 @@ export async function sync() {
           updatedAt: new Date(),
         }
         await tx
-          .insert(schema.apps)
+          .insert(appsTable)
           .values({ ...fields, source: 'marketplace', marketplaceAppId: app.id })
-          .onConflictDoUpdate({ target: schema.apps.marketplaceAppId, set: fields })
+          .onConflictDoUpdate({ target: appsTable.marketplaceAppId, set: fields })
       }
       await tx
-        .update(schema.apps)
+        .update(appsTable)
         .set({ delistedAt: new Date() })
         .where(
           and(
-            eq(schema.apps.source, 'marketplace'),
-            isNull(schema.apps.delistedAt),
+            eq(appsTable.source, 'marketplace'),
+            isNull(appsTable.delistedAt),
             apps.length
               ? notInArray(
-                  schema.apps.marketplaceAppId,
+                  appsTable.marketplaceAppId,
                   apps.map((a) => a.id),
                 )
               : undefined,
@@ -159,15 +158,15 @@ export async function sync() {
     })
     await reportInstallations()
     await db
-      .update(schema.marketplaceConnection)
+      .update(marketplaceConnection)
       .set({ lastSyncAt: new Date(), lastSyncError: null })
-      .where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+      .where(eq(marketplaceConnection.id, CONNECTION_ID))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     await db
-      .update(schema.marketplaceConnection)
+      .update(marketplaceConnection)
       .set({ lastSyncError: message })
-      .where(eq(schema.marketplaceConnection.id, CONNECTION_ID))
+      .where(eq(marketplaceConnection.id, CONNECTION_ID))
     throw error
   }
 }
@@ -208,10 +207,10 @@ async function syncThemes(tx: Tx, themes: CatalogThemes) {
 export async function reportInstallations() {
   const connection = await requireConnected()
   const rows = await db
-    .select({ installation: schema.appInstallations, marketplaceAppId: schema.apps.marketplaceAppId })
-    .from(schema.appInstallations)
-    .innerJoin(schema.apps, eq(schema.apps.id, schema.appInstallations.appId))
-    .where(and(isNull(schema.appInstallations.uninstalledAt), isNotNull(schema.apps.marketplaceAppId)))
+    .select({ installation: appInstallations, marketplaceAppId: appsTable.marketplaceAppId })
+    .from(appInstallations)
+    .innerJoin(appsTable, eq(appsTable.id, appInstallations.appId))
+    .where(and(isNull(appInstallations.uninstalledAt), isNotNull(appsTable.marketplaceAppId)))
   await client(connection).installations.sync({
     installations: rows.map((r) => ({
       appId: r.marketplaceAppId!,

@@ -1,3 +1,4 @@
+import { QueryBuilder } from 'drizzle-orm/pg-core'
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import {
@@ -20,13 +21,20 @@ import {
   type SQL,
 } from 'drizzle-orm'
 import { publicationService, type PublicationInput } from '@shopnex/channels'
-import { all, db, schema, type Conn } from '@shopnex/db'
-import type { Product, ProductImage, ProductStatus } from '@shopnex/db/schema'
+import { all, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { isSlugTaken, nextFreeSlug, slugify } from './slug'
+import {
+  collections,
+  productCollections,
+  productImages,
+  productVariants,
+  products,
+  type ProductImage,
+} from './catalog.schema'
 import {
   applyVariants,
   listByProduct,
@@ -37,6 +45,12 @@ import {
   type VariantDetail,
   type VariantInput,
 } from './variants'
+import {
+  type Product,
+  products as productsTable,
+  type ProductStatus,
+  productVariants as productVariantsTable,
+} from './catalog.schema'
 
 export type ImageInput = { url: string; alt?: string | null }
 
@@ -73,23 +87,23 @@ export type ProductWithDetails = Product & {
 }
 
 // Batch-load images, collection slugs, options and variants for many products (no N+1)
-export async function withDetails(rows: Product[], conn: Conn = db): Promise<ProductWithDetails[]> {
+export async function withDetails(rows: Product[], conn: Conn): Promise<ProductWithDetails[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
   const [images, links, { options, variants }] = await all(conn, [
     () =>
       conn
         .select()
-        .from(schema.productImages)
-        .where(inArray(schema.productImages.productId, ids))
-        .orderBy(asc(schema.productImages.position)),
+        .from(productImages)
+        .where(inArray(productImages.productId, ids))
+        .orderBy(asc(productImages.position)),
     () =>
       conn
-        .select({ productId: schema.productCollections.productId, slug: schema.collections.slug })
-        .from(schema.productCollections)
-        .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
-        .where(inArray(schema.productCollections.productId, ids))
-        .orderBy(asc(schema.collections.createdAt)),
+        .select({ productId: productCollections.productId, slug: collections.slug })
+        .from(productCollections)
+        .innerJoin(collections, eq(collections.id, productCollections.collectionId))
+        .where(inArray(productCollections.productId, ids))
+        .orderBy(asc(collections.createdAt)),
     () => loadForProducts(ids, conn),
   ])
   return rows.map((r) => ({
@@ -132,7 +146,6 @@ export type ListOptions = {
 }
 
 function ordering(opts: ListOptions): SQL[] {
-  const { products, productCollections } = schema
   const dir = (col: Parameters<typeof asc>[0], descending: boolean) => (descending ? desc(col) : asc(col))
   if (!opts.sortKey) {
     return opts.collection
@@ -171,21 +184,20 @@ const likeAny = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
 // A variant of the product that satisfies `conditions`
 const someVariant = (...conditions: (SQL | undefined)[]) =>
   exists(
-    db
+    new QueryBuilder()
       .select({ one: sql`1` })
-      .from(schema.productVariants)
-      .where(and(eq(schema.productVariants.productId, schema.products.id), ...conditions)),
+      .from(productVariantsTable)
+      .where(and(eq(productVariantsTable.productId, productsTable.id), ...conditions)),
   )
 
 // The collection filter needs the collection join (see list / count)
 function filters(shopId: string, opts: FilterOptions) {
-  const { products, productVariants } = schema
   const term = opts.search?.trim()
   const priced = opts.minPriceCents !== undefined || opts.maxPriceCents !== undefined
   return and(
     eq(products.shopId, shopId),
     opts.status ? eq(products.status, opts.status) : undefined,
-    opts.collection ? eq(schema.collections.slug, opts.collection) : undefined,
+    opts.collection ? eq(collections.slug, opts.collection) : undefined,
     opts.channelId ? publicationService.liveOn('product', opts.channelId, products.id) : undefined,
     term
       ? or(
@@ -214,14 +226,14 @@ function filters(shopId: string, opts: FilterOptions) {
   )
 }
 
-export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
+export async function list(shopId: string, opts: ListOptions, conn: Conn) {
   const where = filters(shopId, opts)
   if (opts.collection) {
     const rows = await conn
-      .select({ product: schema.products })
-      .from(schema.products)
-      .innerJoin(schema.productCollections, eq(schema.productCollections.productId, schema.products.id))
-      .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+      .select({ product: productsTable })
+      .from(productsTable)
+      .innerJoin(productCollections, eq(productCollections.productId, productsTable.id))
+      .innerJoin(collections, eq(collections.id, productCollections.collectionId))
       .where(where)
       .orderBy(...ordering(opts))
       .limit(opts.limit)
@@ -230,7 +242,7 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
   }
   return conn
     .select()
-    .from(schema.products)
+    .from(productsTable)
     .where(where)
     .orderBy(...ordering(opts))
     .limit(opts.limit)
@@ -238,12 +250,12 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
 }
 
 // Total for the same filters as `list` (admin pagination)
-export async function count(shopId: string, opts: FilterOptions, conn: Conn = db) {
-  const query = conn.select({ total: sqlCount() }).from(schema.products)
+export async function count(shopId: string, opts: FilterOptions, conn: Conn) {
+  const query = conn.select({ total: sqlCount() }).from(productsTable)
   const [row] = await (opts.collection
     ? query
-        .innerJoin(schema.productCollections, eq(schema.productCollections.productId, schema.products.id))
-        .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+        .innerJoin(productCollections, eq(productCollections.productId, productsTable.id))
+        .innerJoin(collections, eq(collections.id, productCollections.collectionId))
         .where(filters(shopId, opts))
     : query.where(filters(shopId, opts)))
   return row?.total ?? 0
@@ -270,8 +282,7 @@ const tally = (values: string[]) => {
 
 // What a filter UI can offer for the products matching `opts` (its own selections included, so a facet
 // keeps listing the values the shopper hasn't picked)
-export async function facets(shopId: string, opts: FilterOptions, conn: Conn = db): Promise<Facets> {
-  const { products, productVariants } = schema
+export async function facets(shopId: string, opts: FilterOptions, conn: Conn): Promise<Facets> {
   const where = filters(shopId, opts)
   const base = conn
     .select({ id: products.id, vendor: products.vendor, productType: products.productType, tags: products.tags })
@@ -279,8 +290,8 @@ export async function facets(shopId: string, opts: FilterOptions, conn: Conn = d
   const rows = await (
     opts.collection
       ? base
-          .innerJoin(schema.productCollections, eq(schema.productCollections.productId, products.id))
-          .innerJoin(schema.collections, eq(schema.collections.id, schema.productCollections.collectionId))
+          .innerJoin(productCollections, eq(productCollections.productId, products.id))
+          .innerJoin(collections, eq(collections.id, productCollections.collectionId))
           .where(where)
       : base.where(where)
   ).limit(FACET_SCAN_LIMIT)
@@ -303,42 +314,43 @@ export async function facets(shopId: string, opts: FilterOptions, conn: Conn = d
   }
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.products)
-    .where(and(eq(schema.products.shopId, shopId), eq(schema.products.id, id)))
+    .from(productsTable)
+    .where(and(eq(productsTable.shopId, shopId), eq(productsTable.id, id)))
   return row ?? null
 }
 
-export async function removeMany(shopId: string, ids: string[]) {
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
-  const deleted = await db
-    .delete(schema.products)
-    .where(and(eq(schema.products.shopId, shopId), inArray(schema.products.id, ids)))
-    .returning({ id: schema.products.id })
+  const deleted = await conn
+    .delete(productsTable)
+    .where(and(eq(productsTable.shopId, shopId), inArray(productsTable.id, ids)))
+    .returning({ id: productsTable.id })
   await publicationService.removeFor(
     shopId,
     'product',
     deleted.map((p) => p.id),
+    conn,
   )
   return deleted.length
 }
 
-export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
+export async function getBySlug(shopId: string, slug: string, conn: Conn) {
   const [row] = await conn
     .select()
-    .from(schema.products)
-    .where(and(eq(schema.products.shopId, shopId), eq(schema.products.slug, slug)))
+    .from(productsTable)
+    .where(and(eq(productsTable.shopId, shopId), eq(productsTable.slug, slug)))
   return row ?? null
 }
 
-export async function getManyByIds(shopId: string, ids: string[], conn: Conn = db) {
+export async function getManyByIds(shopId: string, ids: string[], conn: Conn) {
   if (ids.length === 0) return []
   return conn
     .select()
-    .from(schema.products)
-    .where(and(eq(schema.products.shopId, shopId), inArray(schema.products.id, ids)))
+    .from(productsTable)
+    .where(and(eq(productsTable.shopId, shopId), inArray(productsTable.id, ids)))
 }
 
 // Input → product columns, only for keys present (so partial updates leave the rest alone)
@@ -360,34 +372,36 @@ function contentColumns(input: Partial<ProductInput>) {
 }
 
 async function replaceImages(conn: Conn, productId: string, images: ImageInput[]) {
-  await conn.delete(schema.productImages).where(eq(schema.productImages.productId, productId))
+  await conn.delete(productImages).where(eq(productImages.productId, productId))
   if (images.length) {
     await conn
-      .insert(schema.productImages)
+      .insert(productImages)
       .values(images.map((img, position) => ({ productId, url: img.url, alt: img.alt ?? null, position })))
   }
 }
 
-export async function create(shopId: string, input: ProductInput) {
+export async function create(shopId: string, input: ProductInput, conn: Conn) {
   if (input.variants === undefined && input.priceCents === undefined) {
     throw new CatalogError('INVALID_VARIANTS', 'Provide priceCents (simple product) or variants')
   }
   if (input.variants !== undefined && input.priceCents !== undefined) {
     throw new CatalogError('HAS_VARIANTS', 'Price lives on variants: pass priceCents on each variant instead')
   }
-  return db.transaction(async (tx) => {
+  // Without this, Math.min() of nothing is Infinity below and Postgres refuses it with a message no one can read
+  if (input.variants?.length === 0) throw new CatalogError('INVALID_VARIANTS', 'A product needs at least one variant')
+  return conn.transaction(async (tx) => {
     let slug: string
     if (input.slug) {
-      if (await isSlugTaken(tx, schema.products, shopId, input.slug)) {
+      if (await isSlugTaken(tx, productsTable, shopId, input.slug)) {
         throw new CatalogError('SLUG_TAKEN', `Slug "${input.slug}" is already used by another product`)
       }
       slug = input.slug
     } else {
-      slug = await nextFreeSlug(tx, schema.products, shopId, slugify(input.title, 'product'))
+      slug = await nextFreeSlug(tx, productsTable, shopId, slugify(input.title, 'product'))
     }
     const variants = input.variants ?? [{ priceCents: input.priceCents! }]
     const [product] = await tx
-      .insert(schema.products)
+      .insert(productsTable)
       .values({
         ...contentColumns(input),
         customFields: await customFieldService.merge(shopId, 'product', input.customFields ?? {}, {}, tx),
@@ -412,8 +426,8 @@ type ProductTopic = 'product.created' | 'product.updated'
  * Publishes the product on exactly these channels and queues `product.updated`, so apps that mirror the
  * catalog learn it appeared on or left a channel. Null when there's no such product.
  */
-export async function setPublications(shopId: string, id: string, items: PublicationInput[]) {
-  return db.transaction(async (tx) => {
+export async function setPublications(shopId: string, id: string, items: PublicationInput[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     await publicationService.set(shopId, 'product', id, items, tx)
     await emitProductEvent(tx, shopId, id, 'product.updated')
@@ -422,7 +436,7 @@ export async function setPublications(shopId: string, id: string, items: Publica
 }
 
 async function reload(conn: Conn, id: string) {
-  const [fresh] = await conn.select().from(schema.products).where(eq(schema.products.id, id))
+  const [fresh] = await conn.select().from(productsTable).where(eq(productsTable.id, id))
   return (await withDetails([fresh!], conn))[0]!
 }
 
@@ -443,8 +457,9 @@ export async function setVariants(
   shopId: string,
   id: string,
   input: { options: OptionInput[]; variants: VariantInput[] },
+  conn: Conn,
 ) {
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     await applyVariants(tx, shopId, id, input)
     return withDetailsAndEmit(tx, shopId, id, 'product.updated')
@@ -453,15 +468,16 @@ export async function setVariants(
 
 // Partial update; images, when given, replace the existing set.
 // priceCents is only accepted for simple products (it sets the default variant's price).
-export async function update(shopId: string, id: string, patch: Partial<Omit<ProductInput, 'options' | 'variants'>>) {
-  return db.transaction(async (tx) => {
+export async function update(
+  shopId: string,
+  id: string,
+  patch: Partial<Omit<ProductInput, 'options' | 'variants'>>,
+  conn: Conn,
+) {
+  return conn.transaction(async (tx) => {
     const existing = await getById(shopId, id, tx)
     if (!existing) return null
-    if (
-      patch.slug &&
-      patch.slug !== existing.slug &&
-      (await isSlugTaken(tx, schema.products, shopId, patch.slug, id))
-    ) {
+    if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, productsTable, shopId, patch.slug, id))) {
       throw new CatalogError('SLUG_TAKEN', `Slug "${patch.slug}" is already used by another product`)
     }
     const { images, priceCents, slug } = patch
@@ -478,16 +494,16 @@ export async function update(shopId: string, id: string, patch: Partial<Omit<Pro
         throw new CatalogError('HAS_VARIANTS', 'This product has variants: update the price on each variant')
       }
       await tx
-        .update(schema.productVariants)
+        .update(productVariantsTable)
         .set({ priceCents, updatedAt: new Date() })
-        .where(eq(schema.productVariants.id, variants[0]!.id))
+        .where(eq(productVariantsTable.id, variants[0]!.id))
       await syncPriceCache(shopId, id, tx)
     }
     if (Object.keys(fields).length) {
       await tx
-        .update(schema.products)
+        .update(productsTable)
         .set({ ...fields, updatedAt: new Date() })
-        .where(eq(schema.products.id, id))
+        .where(eq(productsTable.id, id))
     }
     if (images) await replaceImages(tx, id, images)
     return withDetailsAndEmit(tx, shopId, id, 'product.updated')

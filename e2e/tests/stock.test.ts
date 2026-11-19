@@ -5,10 +5,12 @@ import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq, inArray } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
-import { db, schema } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { webhookDeliveries } from '@shopnex/webhooks/schema'
 import { OrderError, orderService } from '@shopnex/orders'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { orders } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -35,9 +37,9 @@ async function tracked(stock: number) {
 
 const stockOf = async (variantId: string) => {
   const [row] = await db
-    .select({ stock: schema.productVariants.inventoryQuantity })
-    .from(schema.productVariants)
-    .where(eq(schema.productVariants.id, variantId))
+    .select({ stock: productVariants.inventoryQuantity })
+    .from(productVariants)
+    .where(eq(productVariants.id, variantId))
   return row!.stock
 }
 
@@ -54,10 +56,11 @@ before(async () => {
 })
 
 after(async () => {
-  for (const id of directOrders) await orderService.cancel(SHOP, id, { reason: 'other', restock: true }).catch(() => {})
-  if (directOrders.length) await db.delete(schema.orders).where(inArray(schema.orders.id, directOrders))
+  for (const id of directOrders)
+    await orderService.cancel(SHOP, id, { reason: 'other', restock: true }, db).catch(() => {})
+  if (directOrders.length) await db.delete(orders).where(inArray(orders.id, directOrders))
   await fx.cleanup()
-  if (productIds.length) await db.delete(schema.products).where(inArray(schema.products.id, productIds))
+  if (productIds.length) await db.delete(products).where(inArray(products.id, productIds))
   await closeDb()
 })
 
@@ -105,10 +108,7 @@ describe('stock', () => {
   test('stock that drops after the cart was made is refused at checkout and nothing is taken', async () => {
     const variantId = await tracked(2)
     const cart = await fx.cart([{ merchandiseId: variantId, quantity: 2 }])
-    await db
-      .update(schema.productVariants)
-      .set({ inventoryQuantity: 1 })
-      .where(eq(schema.productVariants.id, variantId))
+    await db.update(productVariants).set({ inventoryQuantity: 1 }).where(eq(productVariants.id, variantId))
 
     const refused = await fx.complete(cart.id, { countryCode: 'US' }, shippingRateId)
     assert.equal(refused.status, 400, JSON.stringify(refused.body))
@@ -134,10 +134,14 @@ describe('stock', () => {
   test('two lines for one variant are checked together: they cannot take more than is left', async () => {
     const variantId = await tracked(3)
     const order = (lines: number[]) =>
-      orderService.create(SHOP, {
-        email: fx.email,
-        items: lines.map((quantity) => ({ variantId, quantity })),
-      })
+      orderService.create(
+        SHOP,
+        {
+          email: fx.email,
+          items: lines.map((quantity) => ({ variantId, quantity })),
+        },
+        db,
+      )
 
     await assert.rejects(
       order([2, 2]),
@@ -154,11 +158,11 @@ describe('stock', () => {
   test('another shop’s variant id takes and gives back nothing', async () => {
     const variantId = await tracked(3)
     const other = await fx.shop()
-    assert.equal(await variantService.reserveStock(other.id, variantId, 1), false)
-    await variantService.restock(other.id, variantId, 5)
+    assert.equal(await variantService.reserveStock(other.id, variantId, 1, db), false)
+    await variantService.restock(other.id, variantId, 5, db)
     assert.equal(await stockOf(variantId), 3)
     // and the owner's own shop still can
-    assert.equal(await variantService.reserveStock(SHOP, variantId, 1), true)
+    assert.equal(await variantService.reserveStock(SHOP, variantId, 1, db), true)
     assert.equal(await stockOf(variantId), 2)
   })
 

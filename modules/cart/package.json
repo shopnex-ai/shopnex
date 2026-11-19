@@ -4,16 +4,23 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./schema": "./src/cart.schema.ts",
+    "./contract": "./src/cart.contract.ts",
+    "./router": "./src/cart.router.ts",
+    "./module": "./src/cart.module.ts"
   },
   "scripts": {
     "typecheck": "tsc",
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
+    "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/channels": "workspace:*",
+    "@shopnex/core": "workspace:*",
+    "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
@@ -21,11 +28,14 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/pricing": "workspace:*",
-    "@shopnex/webhooks": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@shopnex/rpc": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "^0.8.3",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@shopnex/email": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }

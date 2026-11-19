@@ -2,8 +2,10 @@
 // the admin. Drives the real pages; setup (payment method, shipping rate, owner account) goes through Fixtures.
 import { expect, test } from './test'
 import { and, eq } from 'drizzle-orm'
-import { db, schema } from '@shopnex/db'
+import { db } from '@shopnex/db'
 import { Fixtures, PASSWORD, SHOP, requireApp } from '../lib'
+import { orders } from '@shopnex/orders/schema'
+import { products, productVariants } from '@shopnex/catalog/schema'
 
 const STOREFRONT_URL = (process.env.STOREFRONT_URL ?? 'http://localhost:4321').replace(/\/$/, '')
 
@@ -14,10 +16,10 @@ let owner: Awaited<ReturnType<Fixtures['account']>>
 // A product whose variants can all be bought, so whichever the theme preselects works
 async function buyableProductSlug() {
   const rows = await db
-    .select({ slug: schema.products.slug, stock: schema.productVariants.inventoryQuantity })
-    .from(schema.products)
-    .innerJoin(schema.productVariants, eq(schema.productVariants.productId, schema.products.id))
-    .where(and(eq(schema.products.shopId, SHOP), eq(schema.products.status, 'active')))
+    .select({ slug: products.slug, stock: productVariants.inventoryQuantity })
+    .from(products)
+    .innerJoin(productVariants, eq(productVariants.productId, products.id))
+    .where(and(eq(products.shopId, SHOP), eq(products.status, 'active')))
   const slugs = [...new Set(rows.map((r) => r.slug))]
   const found = slugs.find((s) => rows.filter((r) => r.slug === s).every((r) => r.stock === null || r.stock >= 10))
   if (!found) throw new Error('Need an active product with all variants in stock')
@@ -35,7 +37,7 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // The order was placed through the browser, so Fixtures doesn't know it yet
-  const placed = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.email, fx.email))
+  const placed = await db.select({ id: orders.id }).from(orders).where(eq(orders.email, fx.email))
   for (const { id } of placed) fx.order(id)
   await fx.cleanup()
 })

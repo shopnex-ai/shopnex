@@ -3,6 +3,7 @@
 // database, which has one connection, and the shop freezes.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
+import { shops } from '@shopnex/core/schema'
 
 // Set before the modules load: both are read when first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -10,7 +11,7 @@ process.env.TENANCY_MODE = 'multi'
 process.env.ROOT_DOMAIN = 'shops.example.com'
 process.env.SHOPNEX_SECRET ??= 'embedded-storefront-url-test-secret-0123456789'
 
-const { db, schema, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
+const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 // These tests delete rows: never against a real database
 requireEmbeddedDatabase()
 const { withStorefrontUrl } = await import('../src')
@@ -28,11 +29,11 @@ async function within<T>(ms: number, what: string, work: Promise<T>): Promise<T>
   }
 }
 
-let shop: typeof schema.shops.$inferSelect
+let shop: typeof shops.$inferSelect
 
 before(async () => {
   await prepareDatabase()
-  const [row] = await db.select().from(schema.shops).where(eq(schema.shops.id, 'default'))
+  const [row] = await db.select().from(shops).where(eq(shops.id, 'default'))
   shop = row!
 })
 

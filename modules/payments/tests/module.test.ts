@@ -49,6 +49,7 @@ describe('payments manifest', () => {
 
   test('the routes are there, under the names they were mounted with', () => {
     assert.deepEqual(Object.keys(paymentsModule.router).sort(), [
+      'orders',
       'paymentApps',
       'paymentMethods',
       'paymentSessions',

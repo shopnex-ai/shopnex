@@ -7,7 +7,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { SparklesIcon } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import type { AiCapability, AiOutput } from '@shopnex/api/schemas'
+import type { AiCapability, AiOutput } from '@shopnex/marketplace-sdk/ai'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,

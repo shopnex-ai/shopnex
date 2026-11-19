@@ -8,11 +8,12 @@ import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, test } from 'node:test'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { checkoutSettings } from '@shopnex/cart'
-import { db, schema } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { OrderError, orderService } from '@shopnex/orders'
 import { paymentMethodService, paymentService } from '@shopnex/payments'
 import { getShopById, updateShop } from '@shopnex/tenancy'
 import { Fixtures, SHOP, call, closeDb, ok, requireApp } from '../lib'
+import { orders, orderTransactions } from '@shopnex/orders/schema'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -46,12 +47,16 @@ before(async () => {
     )
   ).id
   rateId = (
-    await checkoutSettings.createShippingRate(shopId, {
-      name: 'E2E shipping',
-      priceCents: 300,
-      freeAboveCents: null,
-      active: true,
-    })
+    await checkoutSettings.createShippingRate(
+      shopId,
+      {
+        name: 'E2E shipping',
+        priceCents: 300,
+        freeAboveCents: null,
+        active: true,
+      },
+      db,
+    )
   ).id
   const product = ok(await call('POST', '/admin/products', { title: `E2E unpaid ${run}`, priceCents: 1500 }, admin))
   productId = product.id
@@ -62,11 +67,11 @@ before(async () => {
 // Each case starts from a full shelf and no limit: whatever it ordered is cancelled (and restocked) afterwards
 afterEach(async () => {
   await updateShop(shopId, { unpaidOrderExpiryHours: null })
-  const open = await db.select({ id: schema.orders.id }).from(schema.orders).where(eq(schema.orders.shopId, shopId))
+  const open = await db.select({ id: orders.id }).from(orders).where(eq(orders.shopId, shopId))
   for (const { id } of open) {
-    await orderService.cancel(shopId, id, { reason: 'other', restock: true }).catch(() => {})
+    await orderService.cancel(shopId, id, { reason: 'other', restock: true }, db).catch(() => {})
   }
-  await db.delete(schema.orders).where(eq(schema.orders.shopId, shopId))
+  await db.delete(orders).where(eq(orders.shopId, shopId))
   ok(await call('PATCH', `/admin/variants/${variantId}`, { inventoryQuantity: STOCK }, admin))
 })
 
@@ -108,21 +113,21 @@ const stock = async () =>
 const orderState = async (id: string) => {
   const [row] = await db
     .select({
-      financialStatus: schema.orders.financialStatus,
-      cancelledAt: schema.orders.cancelledAt,
-      cancelReason: schema.orders.cancelReason,
+      financialStatus: orders.financialStatus,
+      cancelledAt: orders.cancelledAt,
+      cancelReason: orders.cancelReason,
     })
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
+    .from(orders)
+    .where(eq(orders.id, id))
   return row!
 }
 
 /** Moves the order's creation time back (created_at is written by the database clock, so shift it there too) */
 const age = (id: string, hours: number) =>
   db
-    .update(schema.orders)
-    .set({ createdAt: sql`${schema.orders.createdAt} - make_interval(hours => ${hours})` })
-    .where(eq(schema.orders.id, id))
+    .update(orders)
+    .set({ createdAt: sql`${orders.createdAt} - make_interval(hours => ${hours})` })
+    .where(eq(orders.id, id))
 
 describe('with no limit set (the default)', () => {
   test('an unpaid bank-transfer order keeps its stock however old it gets', async () => {
@@ -169,7 +174,7 @@ describe('with a limit set', () => {
   test('a paid order is never cancelled, however old', async () => {
     await updateShop(shopId, { unpaidOrderExpiryHours: 24 })
     const id = await place(2)
-    await orderService.markAsPaid(shopId, id)
+    await orderService.markAsPaid(shopId, id, db)
 
     await age(id, 100)
     await paymentService.expireDue(undefined, db)
@@ -183,7 +188,7 @@ describe('with a limit set', () => {
   test('an unpaid order that has been shipped is left alone', async () => {
     await updateShop(shopId, { unpaidOrderExpiryHours: 24 })
     const id = await place(2)
-    await orderService.fulfill(shopId, id)
+    await orderService.fulfill(shopId, id, db)
 
     await age(id, 100)
     await paymentService.expireDue(undefined, db)
@@ -194,11 +199,11 @@ describe('with a limit set', () => {
 
   test('an order paid after the worker picked it is not cancelled or refunded', async () => {
     const id = await place(2)
-    await orderService.markAsPaid(shopId, id)
+    await orderService.markAsPaid(shopId, id, db)
 
     // What the worker does for an order it picked while it was still unpaid
     await assert.rejects(
-      orderService.cancel(shopId, id, { reason: 'other', restock: true, onlyIfUnpaid: true }),
+      orderService.cancel(shopId, id, { reason: 'other', restock: true, onlyIfUnpaid: true }, db),
       (error) => error instanceof OrderError && error.code === 'INVALID_STATUS_TRANSITION',
     )
 
@@ -206,9 +211,9 @@ describe('with a limit set', () => {
     assert.equal(state.financialStatus, 'paid')
     assert.equal(state.cancelledAt, null)
     const refunds = await db
-      .select({ id: schema.orderTransactions.id })
-      .from(schema.orderTransactions)
-      .where(and(eq(schema.orderTransactions.orderId, id), eq(schema.orderTransactions.kind, 'refund')))
+      .select({ id: orderTransactions.id })
+      .from(orderTransactions)
+      .where(and(eq(orderTransactions.orderId, id), eq(orderTransactions.kind, 'refund')))
     assert.equal(refunds.length, 0, 'no refund was booked')
     assert.equal(await stock(), STOCK - 2, 'and the stock was not put back')
   })
@@ -237,13 +242,13 @@ describe('the setting', () => {
 
       const [risk] = await db
         .select({ atRisk: sql<number>`count(*)::int` })
-        .from(schema.orders)
+        .from(orders)
         .where(
           and(
-            eq(schema.orders.shopId, SHOP),
-            eq(schema.orders.financialStatus, 'pending'),
-            isNull(schema.orders.cancelledAt),
-            sql`${schema.orders.createdAt} <= now() - interval '8760 hours'`,
+            eq(orders.shopId, SHOP),
+            eq(orders.financialStatus, 'pending'),
+            isNull(orders.cancelledAt),
+            sql`${orders.createdAt} <= now() - interval '8760 hours'`,
           ),
         )
       const atRisk = risk?.atRisk ?? 0

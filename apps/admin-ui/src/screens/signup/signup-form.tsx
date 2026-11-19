@@ -1,7 +1,7 @@
 'use client'
 
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { MIN_PASSWORD, setupInput } from '@shopnex/api/schemas'
+import { MIN_PASSWORD, setupInput } from '@shopnex/auth/contract'
 import { authClient } from '@shopnex/auth/client'
 import type { SocialProvider } from '@shopnex/auth/providers'
 import { SocialButtons } from '@/components/auth/social-buttons'

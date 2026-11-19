@@ -1,11 +1,12 @@
 // Admin: Settings → Webhooks. Business logic only; every query is scoped by shopId.
 // `tokenId` (an API token calling): only the endpoints that token created. Omitted for staff, who see all.
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm'
-import { all, schema, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { WEBHOOK_TEST_TOPIC, webhookDeliveries, webhookEndpoints, type WebhookTopic } from './webhooks.schema'
 import { envelope } from './emit'
 import { only } from './rows'
 import { generateSecret } from './sign'
+import { apiTokens } from '@shopnex/core/schema'
 
 export interface EndpointInput {
   url: string
@@ -24,11 +25,11 @@ export async function list(shopId: string, tokenId: string | undefined, conn: Co
   const rows = await conn
     .select({
       endpoint: webhookEndpoints,
-      apiTokenName: schema.apiTokens.name,
-      createdByApp: sql<boolean>`${schema.apiTokens.appId} is not null`,
+      apiTokenName: apiTokens.name,
+      createdByApp: sql<boolean>`${apiTokens.appId} is not null`,
     })
     .from(webhookEndpoints)
-    .leftJoin(schema.apiTokens, eq(schema.apiTokens.id, webhookEndpoints.apiTokenId))
+    .leftJoin(apiTokens, eq(apiTokens.id, webhookEndpoints.apiTokenId))
     .where(owned(shopId, tokenId))
     .orderBy(desc(webhookEndpoints.createdAt))
   return rows.map((r) => ({ ...r.endpoint, apiTokenName: r.apiTokenName, createdByApp: r.createdByApp }))
@@ -84,6 +85,11 @@ export async function rotateSecret(shopId: string, id: string, tokenId: string |
     .where(byShop(shopId, id, tokenId))
     .returning()
   return endpoint ?? null
+}
+
+// Removes the subscriptions an API token made (tenancy calls it, inside the transaction that revokes the token); their pending deliveries go with them
+export async function removeOfToken(tokenId: string, conn: Conn) {
+  await conn.delete(webhookEndpoints).where(eq(webhookEndpoints.apiTokenId, tokenId))
 }
 
 // Queues a `webhook.test` delivery to this endpoint only, whatever it's subscribed to

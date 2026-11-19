@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { notificationParam } from '@shopnex/api/schemas'
+import { notificationParam } from '@shopnex/email/contract'
 import { NotificationEditor } from '@/screens/settings/notifications/notification-editor'
 
 export const Route = createFileRoute('/admin/settings/notifications/$notification')({

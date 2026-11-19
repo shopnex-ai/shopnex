@@ -1,6 +1,6 @@
 // The printable invoice of an order: who issues it, who it is for, the lines, the tax by rate and the total, shown
 // without the admin around it. Uses its own order and tax rate, and puts the shop's business details back.
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { taxService } from '@shopnex/pricing'
 import { getShopById, updateShop } from '@shopnex/tenancy'
@@ -31,23 +31,27 @@ test.beforeAll(async () => {
   )
   await updateShop(SHOP, { taxesIncluded: true, taxShipping: false, ...DETAILS })
   const [variant] = await sellableVariants(1)
-  order = await orderService.create(SHOP, {
-    email: fx.email,
-    items: [{ variantId: variant!.id, quantity: 2 }],
-    shipping: { title: 'E2E standard', code: null, priceCents: 500, freeAboveCents: null },
-    shippingAddress: {
-      firstName: 'Erika',
-      lastName: 'Mustermann',
-      company: null,
-      address1: 'Kundenweg 7',
-      address2: null,
-      city: 'Hamburg',
-      province: null,
-      countryCode: 'HM',
-      zip: '20095',
-      phone: null,
+  order = await orderService.create(
+    SHOP,
+    {
+      email: fx.email,
+      items: [{ variantId: variant!.id, quantity: 2 }],
+      shipping: { title: 'E2E standard', code: null, priceCents: 500, freeAboveCents: null },
+      shippingAddress: {
+        firstName: 'Erika',
+        lastName: 'Mustermann',
+        company: null,
+        address1: 'Kundenweg 7',
+        address2: null,
+        city: 'Hamburg',
+        province: null,
+        countryCode: 'HM',
+        zip: '20095',
+        phone: null,
+      },
     },
-  })
+    db,
+  )
   fx.order(order.id)
 })
 

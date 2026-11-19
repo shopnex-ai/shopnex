@@ -1,3 +1,4 @@
+import { db, type Conn } from '@shopnex/db'
 // The Privacy card on a customer: owners and admins can download the customer's data and erase it, staff cannot see it.
 // The rules of an erasure are in tests/customer-privacy.test.ts; this is the screen.
 import { readFileSync } from 'node:fs'
@@ -17,24 +18,32 @@ test.beforeAll(async () => {
   await fx.init()
   owner = await fx.account('owner')
   member = await fx.account('member')
-  customer = (await customerService.create(SHOP, { email: fx.shopper('browser-privacy'), name: 'Browser Privacy' }))!
+  customer = (await customerService.create(
+    SHOP,
+    { email: fx.shopper('browser-privacy'), name: 'Browser Privacy' },
+    db,
+  ))!
   const [variant] = await sellableVariants(1)
-  order = await orderService.create(SHOP, {
-    customerId: customer.id,
-    items: [{ variantId: variant!.id, quantity: 1 }],
-    shippingAddress: {
-      firstName: 'Browser',
-      lastName: 'Privacy',
-      company: null,
-      address1: 'Datenweg 1',
-      address2: null,
-      city: 'Berlin',
-      province: null,
-      countryCode: 'DE',
-      zip: '10115',
-      phone: null,
+  order = await orderService.create(
+    SHOP,
+    {
+      customerId: customer.id,
+      items: [{ variantId: variant!.id, quantity: 1 }],
+      shippingAddress: {
+        firstName: 'Browser',
+        lastName: 'Privacy',
+        company: null,
+        address1: 'Datenweg 1',
+        address2: null,
+        city: 'Berlin',
+        province: null,
+        countryCode: 'DE',
+        zip: '10115',
+        phone: null,
+      },
     },
-  })
+    db,
+  )
   fx.order(order.id)
 })
 
@@ -92,7 +101,7 @@ test('erasing needs the email typed, is refused while an order is open, then era
   await expect(dialog.getByText('Fulfil or cancel them first')).toBeVisible()
 
   // Cancel the order and try again
-  await orderService.cancel(SHOP, order.id, { reason: 'customer', restock: true })
+  await orderService.cancel(SHOP, order.id, { reason: 'customer', restock: true }, db)
   await confirm.click()
   await expect(page).toHaveURL(/\/admin\/customers$/)
   await expect(page.getByText('Personal data erased')).toBeVisible()

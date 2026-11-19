@@ -1,3 +1,5 @@
+import { db } from '@shopnex/db'
+import type { Conn } from '@shopnex/db'
 import { publicFn } from '@/lib/server-fn'
 import { abandonedCartService } from '@shopnex/email'
 import { getShopById } from '@shopnex/tenancy'
@@ -15,4 +17,4 @@ export const getUnsubscribe = publicFn({ method: 'GET' })
 // A button, not the link itself: mail scanners open links, and that must not unsubscribe anyone
 export const confirmUnsubscribe = publicFn({ method: 'POST' })
   .validator((token: string) => token)
-  .handler(async ({ data: token }) => ({ ok: await abandonedCartService.unsubscribe(token) }))
+  .handler(async ({ data: token }) => ({ ok: await abandonedCartService.unsubscribe(token, db) }))
