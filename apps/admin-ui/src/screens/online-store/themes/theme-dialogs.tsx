@@ -1,5 +1,3 @@
-'use client'
-
 // Rename / publish / delete dialogs for the theme pages, one at a time for the theme they were opened on.
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'

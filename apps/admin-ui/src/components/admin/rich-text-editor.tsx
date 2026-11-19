@@ -1,5 +1,3 @@
-'use client'
-
 // Rich text for merchant content (pages; product and collection descriptions later). Edits HTML, which
 // the API sanitizes on save. "HTML" switches to the source, for pasting embeds or fixing markup.
 import Image from '@tiptap/extension-image'

@@ -1,5 +1,3 @@
-'use client'
-
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImageIcon } from 'lucide-react'
 import { useMemo } from 'react'

@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { PackagePlusIcon } from 'lucide-react'
 import { toast } from 'sonner'

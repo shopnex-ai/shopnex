@@ -1,5 +1,3 @@
-'use client'
-
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CustomFieldsCard } from '@/components/admin/custom-fields-card'

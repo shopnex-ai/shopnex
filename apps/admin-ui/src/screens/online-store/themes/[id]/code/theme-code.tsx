@@ -1,5 +1,3 @@
-'use client'
-
 // Edit code (Shopify-style): the theme's Liquid files on the left, the file in the middle, the storefront on
 // the right. The originals come from the storefront; ShopNex keeps the copy's edited files. Edits autosave to
 // a draft (the preview shows it) and Publish writes the draft to the copy: on the live theme buyers see it then.

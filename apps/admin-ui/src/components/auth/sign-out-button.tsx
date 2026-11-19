@@ -1,5 +1,3 @@
-'use client'
-
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { authClient } from '@shopnex/auth/client'

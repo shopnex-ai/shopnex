@@ -1,5 +1,3 @@
-'use client'
-
 // A theme's picture: the storefront rendered at desktop size and scaled down to fit. On the Themes page it's
 // the live store (what buyers see); in Change theme, each copy's draft. Not interactive; clicking it opens the
 // editor.

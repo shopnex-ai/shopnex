@@ -1,5 +1,3 @@
-'use client'
-
 // Online store → Pages: About, FAQ, Shipping policy… Storefronts show visible pages at /pages/{handle};
 // add them to a menu under Navigation.
 import { useQuery } from '@tanstack/react-query'

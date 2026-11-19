@@ -1,5 +1,3 @@
-'use client'
-
 // Theme editor (Shopify-style): sections on the left, the real storefront in the middle, the selected
 // section's (or the theme's) settings on the right. Every change autosaves the draft and reloads the
 // preview; Publish makes the draft what buyers see (for an unpublished copy: it becomes the live theme).

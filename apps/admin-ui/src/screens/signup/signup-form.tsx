@@ -1,5 +1,3 @@
-'use client'
-
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { MIN_PASSWORD, setupInput } from '@shopnex/auth/contract'
 import { authClient } from '@shopnex/auth/client'

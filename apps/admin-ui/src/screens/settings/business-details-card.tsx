@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { shopInput } from '@shopnex/tenancy/contract'
