@@ -1,5 +1,3 @@
-'use client'
-
 // Hosts an app in an iframe and answers its @shopnex/app-bridge messages (protocol: packages/app-bridge).
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'

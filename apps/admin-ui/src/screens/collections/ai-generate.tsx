@@ -1,5 +1,3 @@
-'use client'
-
 // ✨ Generate for collections: description and search listing. "Use" puts the suggestion into the collection form
 // as an unsaved change; nothing is saved until staff press Save.
 import { AI_LENGTHS, AI_TONES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'

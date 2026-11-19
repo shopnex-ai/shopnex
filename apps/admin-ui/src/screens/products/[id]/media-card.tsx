@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ImageIcon, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'

@@ -1,5 +1,3 @@
-'use client'
-
 // Online store → Themes → Change theme: every theme in the shop. Copies of the themes the storefront includes
 // can be customized and used (published); copies of others wait for a storefront with their theme. The
 // storefront's themes without a copy yet can be added. Marketplace themes will be listed here too.

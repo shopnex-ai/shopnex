@@ -1,5 +1,3 @@
-'use client'
-
 // Settings → Storage: where uploaded images go. The server's disk by default, or any S3-compatible bucket;
 // presets only prefill the form with each provider's endpoint and URL formats.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

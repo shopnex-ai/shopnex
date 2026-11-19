@@ -1,5 +1,3 @@
-'use client'
-
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon, UsersIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'

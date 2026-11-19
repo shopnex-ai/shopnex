@@ -1,5 +1,3 @@
-'use client'
-
 import { z } from 'zod'
 import { FormError, useZodForm } from '@/components/admin/form'
 import { Button } from '@/components/ui/button'
