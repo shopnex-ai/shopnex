@@ -3,6 +3,7 @@ import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
+import { ACTIONS_SLOT, TITLE_SLOT } from '@/components/admin/page-header'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
@@ -101,11 +102,12 @@ function AdminLayout() {
       <SidebarInset>
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
+          <div id={TITLE_SLOT} className="flex min-w-0 items-center gap-2" />
+          <div id={ACTIONS_SLOT} className="ml-auto flex items-center gap-2" />
           {tenant.shop.storefrontUrl && (
             <Button
               variant="ghost"
               size="sm"
-              className="ml-auto"
               render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
             >
               View store
