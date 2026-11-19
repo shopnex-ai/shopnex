@@ -28,7 +28,7 @@ export function StorefrontThumbnail({ url, themeId }: { url: string | null; them
   return (
     <Link
       ref={box}
-      to="/admin/online-store/themes/$id"
+      to="/admin/online-store/editor/$id"
       params={{ id: themeId }}
       aria-label="Customize theme"
       className="relative block aspect-[16/10] w-full overflow-hidden rounded-md border bg-muted ring-offset-background transition hover:ring-2 hover:ring-ring hover:ring-offset-2"

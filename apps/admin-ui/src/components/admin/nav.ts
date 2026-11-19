@@ -59,7 +59,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
       // Theme library and editor; Pages and Navigation are their own entries
-      { href: '/admin/online-store/themes', label: 'Online store', icon: StoreIcon },
+      { href: '/admin/online-store', label: 'Online store', icon: StoreIcon },
       { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
       { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },

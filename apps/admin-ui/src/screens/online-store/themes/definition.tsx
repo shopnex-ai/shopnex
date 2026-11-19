@@ -39,7 +39,7 @@ function NoStorefront() {
 export function ThemesProblem({ children }: { children: React.ReactNode }) {
   return (
     <Page width="narrow">
-      <PageHeader title="Themes" />
+      <PageHeader title="Online store" />
       <Card>
         <CardContent className="text-sm text-muted-foreground">{children}</CardContent>
       </Card>
