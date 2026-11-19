@@ -53,6 +53,7 @@ export function PageList() {
     <div className="space-y-4">
       <PageHeader title="Pages" actions={addButton} />
       <DataTable
+        countKey="pages"
         columns={columns}
         data={data}
         getRowId={(p) => p.id}

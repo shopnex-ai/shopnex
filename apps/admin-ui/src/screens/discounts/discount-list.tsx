@@ -116,6 +116,7 @@ export function DiscountList({ currency }: { currency: string }) {
         }
       />
       <DataTable
+        countKey="discounts"
         columns={columns}
         data={data}
         getRowId={(d) => d.id}

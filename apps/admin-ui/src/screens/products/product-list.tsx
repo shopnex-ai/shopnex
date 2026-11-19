@@ -7,6 +7,7 @@ import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { EmptyState } from '@/components/admin/empty-state'
+import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -101,6 +102,10 @@ export function ProductList({ currency }: { currency: string }) {
     placeholderData: keepPreviousData,
   })
 
+  // Known to be empty (or loaded and empty): no search box above an empty state
+  const known = useListCount('products')
+  const isBlank = !search && (data ? data.items.length === 0 : known === 0)
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -113,10 +118,9 @@ export function ProductList({ currency }: { currency: string }) {
           </div>
         }
       />
-      {(search || data?.items.length !== 0) && (
-        <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />
-      )}
+      {!isBlank && <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />}
       <DataTable
+        countKey={search ? undefined : 'products'}
         columns={columns}
         data={data?.items}
         getRowId={(p) => p.id}

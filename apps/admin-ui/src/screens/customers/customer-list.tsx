@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { EmptyState } from '@/components/admin/empty-state'
+import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Button } from '@/components/ui/button'
@@ -48,6 +49,10 @@ export function CustomerList() {
     placeholderData: keepPreviousData,
   })
 
+  // Known to be empty (or loaded and empty): no search box above an empty state
+  const known = useListCount('customers')
+  const isBlank = !search && (data ? data.items.length === 0 : known === 0)
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -60,10 +65,9 @@ export function CustomerList() {
           </div>
         }
       />
-      {(search || data?.items.length !== 0) && (
-        <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />
-      )}
+      {!isBlank && <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />}
       <DataTable
+        countKey={search ? undefined : 'customers'}
         columns={columns}
         data={data?.items}
         getRowId={(c) => c.id}
