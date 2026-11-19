@@ -6,7 +6,8 @@
 #
 # The app reads <NAME>_APP_URL (its public origin; give ShopNex the same), takes its identity from <NAME>_APP_KEY (STRIPE_APP_KEY: a snxk_… private key; a new
 # key is a new app), and ShopNex stores the shops' settings. CJ Dropshipping also needs APP_DATABASE_URL (a schema of its
-# own in Postgres). Nothing is written to the container: it needs no volume.
+# own in Postgres). Nothing is written to the container: it needs no volume, except Reviews, which keeps its reviews in
+# a SQLite file in /data (DATA_DIR): mount a volume there.
 FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
@@ -21,8 +22,9 @@ FROM node:22-alpine
 ARG APP
 WORKDIR /app
 COPY --from=build /app/apps/${APP}/dist/ ./
+RUN mkdir /data && chown node /data
 USER node
-ENV NODE_ENV=production PORT=4600
+ENV NODE_ENV=production PORT=4600 DATA_DIR=/data
 EXPOSE 4600
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/shopnex/app.js" || exit 1

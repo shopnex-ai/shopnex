@@ -155,6 +155,12 @@ export const ENV_VARS: EnvVar[] = [
     description: 'Public URL of the optional Shippo app. Set it on ShopNex to make the app installable.',
   },
   {
+    name: 'REVIEWS_APP_URL',
+    required: false,
+    description:
+      'Public URL of the optional Reviews app (`apps/reviews`, port 5100). Set it on ShopNex to make the app installable; under Docker set it on the `reviews` service (defaults to `https://reviews.<DOMAIN>` when `DOMAIN` is set in the deploy compose file). The app also reads `REVIEWS_APP_KEY`, `DATA_DIR` (its SQLite file: give the container a volume) and `CLIENT_IP_HEADER` (the header carrying the visitor address behind a proxy, for its rate limits).',
+  },
+  {
     name: 'SHOPNEX_BUNDLED_APPS',
     required: false,
     description:

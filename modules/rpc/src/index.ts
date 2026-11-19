@@ -181,6 +181,13 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     return next({ context: { appId } })
   })
 
+  // Email apps: an installed app's token with the email scope (staff send from Settings → Email, not through this)
+  const emailApp = scoped('write_email').use(({ context, next }) => {
+    const appId = context.token?.appId
+    if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an app's own token can send email this way" })
+    return next({ context: { appId } })
+  })
+
   // Shop settings (keys, etc.): owners/admins of the shop, or a super admin
   const shopManager = admin.use(async ({ context, next }) => {
     if (!context.superAdmin && context.role !== 'owner' && context.role !== 'admin') {
@@ -212,6 +219,7 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     paymentsApp,
     aiApp,
     carrierApp,
+    emailApp,
     shopManager,
     webhookManager,
     superAdminOnly,

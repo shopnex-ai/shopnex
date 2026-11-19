@@ -12,6 +12,7 @@ export {
 } from './notifications'
 export { startEmailWorker } from './worker'
 export { queueDue as queueAbandonedCartEmails } from './abandoned-carts'
+export { APP_EMAILS_PER_HOUR, resetAppEmailLimits } from './app-email'
 export * as abandonedCartService from './abandoned-settings'
 export { EmailError, type EmailErrorCode } from './email.errors'
 export { checkLiquid, type LiquidProblem } from './liquid'

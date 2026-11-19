@@ -44,6 +44,18 @@ export const emailInput = z.discriminatedUnion('provider', [
 // ── what the routes answer
 
 const testSteps = z.array(z.object({ step: z.string(), ok: z.boolean(), error: z.string().optional() }))
+// An app's message to one customer of the shop (see emailApp in @shopnex/rpc): sent from the shop's address
+export const appEmailInput = z
+  .object({
+    to: z.email().max(254),
+    subject: z.string().trim().min(1).max(200),
+    text: z.string().max(100_000).optional(),
+    html: z.string().max(100_000).optional(),
+  })
+  .refine((m) => m.text || m.html, { message: 'Send text, html or both' })
+/** `sent` is false when the shop has no email set up (Settings → Email): nothing went out, try again later */
+export const appEmailOutput = z.object({ sent: z.boolean() })
+
 export const testResultOutput = z.object({ ok: z.boolean(), steps: testSteps })
 export const emailSettingsOutput = z.object({
   provider: z.enum(['off', 'smtp']),

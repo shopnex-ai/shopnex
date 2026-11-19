@@ -7,6 +7,7 @@ const GITIGNORE = `# ShopNex: secrets and local data stay out of git
 .pglite/
 apps/*/.pglite/
 apps/*/app-key
+apps/*/data/
 `
 
 /** The compose file of the self-hosting docs, from the tag of this version (the latest main for an edge build) */

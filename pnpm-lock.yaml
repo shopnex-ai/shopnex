@@ -399,6 +399,28 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  apps/reviews:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.6
+        version: 2.1.8(hono@4.13.18)
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../../packages/app
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.18
+    devDependencies:
+      '@shopnex/marketplace-sdk':
+        specifier: workspace:*
+        version: link:../../packages/marketplace-sdk
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   apps/shippo:
     dependencies:
       '@hono/node-server':
