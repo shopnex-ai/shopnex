@@ -380,7 +380,9 @@ describe('payments app: refunds and expiry', () => {
         )
       }
       await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
-      await new Promise((resolve) => setTimeout(resolve, 400))
+      // The app answers each refund after 50ms; wait for both rather than a fixed time (rule 17 sends only one today)
+      for (let i = 0; i < 40 && refunds.length < 2; i++) await new Promise((resolve) => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       refundResolve = null
 
       const perPayment = refunds.flatMap((r) =>
