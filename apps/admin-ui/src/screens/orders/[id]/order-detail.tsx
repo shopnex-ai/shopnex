@@ -2,7 +2,6 @@
 
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { Fragment, useState } from 'react'
 import { toast } from 'sonner'
@@ -12,6 +11,7 @@ import { AddressLines } from '@/components/admin/address'
 import { CustomFieldsCard } from '@/components/admin/custom-fields-card'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { OrderStatusBadges } from '@/components/admin/order-status'
+import { ProductThumb } from '@/components/admin/product-thumb'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -125,13 +125,7 @@ export function OrderDetail({ id }: { id: string }) {
               <ul className="divide-y">
                 {o.items.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt="" className="size-full object-cover" />
-                      ) : (
-                        <ImageIcon className="size-4 text-muted-foreground" />
-                      )}
-                    </div>
+                    <ProductThumb src={item.imageUrl} />
                     <div className="min-w-0 flex-1 text-sm">
                       {item.productId ? (
                         <Link

@@ -119,6 +119,7 @@ export function OrderList() {
       </div>
       <SearchInput value={search} onSearch={setSearch} placeholder="Search by order number, email or customer" />
       <DataTable
+        countKey={search || view.key ? undefined : 'orders'}
         columns={columns}
         data={data?.items}
         getRowId={(o) => o.id}

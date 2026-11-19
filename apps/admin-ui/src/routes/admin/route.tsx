@@ -9,6 +9,13 @@ import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
 import { isShopManager } from '@/lib/admin-access'
 import { adminContextQuery, installedAppsQuery } from '@/lib/admin-context'
+import {
+  getListCounts,
+  listCountsQuery,
+  listKeyForPath,
+  useLoadOtherListCounts,
+  type ListCounts,
+} from '@/lib/list-counts'
 import { analyticsScript } from '@/lib/analytics'
 import { getAnalyticsConfig } from '@/lib/session.functions'
 import { CreateShopForm } from '@/screens/signup/create-shop-form'
@@ -45,7 +52,18 @@ export const Route = createFileRoute('/admin')({
     const installedApps = canManageApps
       ? await context.queryClient.query({ ...installedAppsQuery, staleTime: 'static' })
       : []
-    return { access, installedApps }
+    // The row count of the list this page shows, so it can draw the right thing before its own request is back. Only
+    // while the server renders the page: a navigation inside the admin must not wait for it.
+    let listCounts = context.queryClient.getQueryData<ListCounts>(listCountsQuery.queryKey)
+    const listKey = listKeyForPath(location.pathname)
+    if (canManageApps && listKey && listCounts?.[listKey] === undefined && typeof window === 'undefined') {
+      const fresh = await getListCounts({ data: { keys: [listKey] } })
+      listCounts = context.queryClient.setQueryData<ListCounts>(listCountsQuery.queryKey, (old) => ({
+        ...old,
+        ...fresh,
+      }))
+    }
+    return { access, installedApps, listCounts }
   },
   // Admin pages only. The root route also serves the hosted checkout, which is the merchant's shoppers: never tracked.
   loader: () => getAnalyticsConfig(),
@@ -59,6 +77,7 @@ export const Route = createFileRoute('/admin')({
 
 function AdminLayout() {
   const { access } = Route.useRouteContext()
+  useLoadOtherListCounts(isShopManager(access.tenant))
   // Decide from the page that is actually rendered (the router's matches, which is what <Outlet /> shows), never from
   // a location: `location` changes the moment a navigation starts and `resolvedLocation` is updated separately from the
   // matches, so either can disagree with the page on screen and wrap it in the wrong chrome (the welcome step inside
