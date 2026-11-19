@@ -13,6 +13,12 @@ export const SCOPE_RESOURCES: readonly { key: string; label: string; hint: strin
     hint: 'Provide AI suggestions, e.g. product descriptions (AI apps)',
   },
   {
+    key: 'email',
+    label: 'Email',
+    grant: 'Send email to your customers',
+    hint: "From your shop's address, through Settings → Email, and only to people who are customers of your shop",
+  },
+  {
     key: 'storefront',
     label: 'Online store',
     grant: 'Add scripts to your online store',

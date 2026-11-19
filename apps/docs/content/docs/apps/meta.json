@@ -9,6 +9,7 @@
     "authentication",
     "marketplace",
     "stripe",
-    "cj-dropshipping"
+    "cj-dropshipping",
+    "reviews"
   ]
 }

@@ -181,6 +181,13 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     return next({ context: { appId } })
   })
 
+  // Email apps: an installed app's token with the email scope (staff send from Settings → Email, not through this)
+  const emailApp = scoped('write_email').use(({ context, next }) => {
+    const appId = context.token?.appId
+    if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an app's own token can send email this way" })
+    return next({ context: { appId } })
+  })
+
   // Storefront apps: an installed app's token with the storefront scope (staff don't register scripts for apps)
   const storefrontApp = scoped('write_storefront').use(({ context, next }) => {
     const appId = context.token?.appId
@@ -219,6 +226,7 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     paymentsApp,
     aiApp,
     carrierApp,
+    emailApp,
     storefrontApp,
     shopManager,
     webhookManager,

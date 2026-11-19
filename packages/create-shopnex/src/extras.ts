@@ -13,6 +13,8 @@ export type Extra = {
   keyEnv: string
   /** Keeps tables of its own: gets a schema in the shop's PostgreSQL (APP_DATABASE_URL) */
   database?: boolean
+  /** Keeps files of its own (a SQLite database): gets a data folder in the shop folder (DATA_DIR) */
+  dataDir?: boolean
 }
 
 export const extras: Extra[] = [
@@ -27,6 +29,15 @@ export const extras: Extra[] = [
     database: true,
   },
   { name: 'shippo', label: 'Shippo', dir: 'shippo', port: 4900, urlEnv: 'SHIPPO_APP_URL', keyEnv: 'SHIPPO_APP_KEY' },
+  {
+    name: 'reviews',
+    label: 'Reviews',
+    dir: 'reviews',
+    port: 5100,
+    urlEnv: 'REVIEWS_APP_URL',
+    keyEnv: 'REVIEWS_APP_KEY',
+    dataDir: true,
+  },
 ]
 
 /** --with stripe,cj (and --with stripe --with cj) → the apps, once each; unknown names are usage errors */

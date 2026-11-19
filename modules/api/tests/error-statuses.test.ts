@@ -23,7 +23,8 @@ const { OrderError } = await import('@shopnex/orders')
 const { PaymentError } = await import('@shopnex/payments')
 const { DomainError, StaffError } = await import('@shopnex/tenancy')
 
-type Status = 'NOT_FOUND' | 'CONFLICT' | 'BAD_REQUEST' | 'FORBIDDEN' | 'UNAUTHORIZED' | 'BAD_GATEWAY'
+type Status =
+  'NOT_FOUND' | 'CONFLICT' | 'BAD_REQUEST' | 'FORBIDDEN' | 'UNAUTHORIZED' | 'BAD_GATEWAY' | 'TOO_MANY_REQUESTS'
 const procedures = createProcedures()
 
 /** What the route answers with when its service throws `error` */
@@ -141,8 +142,8 @@ const cases: Case[] = [
     name: 'EmailError',
     cls: EmailError,
     make: (code, message) => new EmailError(code as never, message),
-    codes: ['EMAIL_FAILED', 'EMAIL_OFF', 'INVALID_TEMPLATE', 'PASSWORD_REQUIRED'],
-    status: () => 'BAD_REQUEST',
+    codes: ['EMAIL_FAILED', 'EMAIL_OFF', 'INVALID_TEMPLATE', 'PASSWORD_REQUIRED', 'RECIPIENT_UNKNOWN', 'SEND_LIMIT'],
+    status: (code) => (code === 'SEND_LIMIT' ? 'TOO_MANY_REQUESTS' : 'BAD_REQUEST'),
   },
   {
     name: 'AppError',
