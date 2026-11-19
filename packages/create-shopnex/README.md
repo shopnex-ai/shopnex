@@ -3,6 +3,9 @@
 Try ShopNex on your machine with one command. It starts the admin (with the API and hosted checkout) and the
 storefront on an embedded database ([PGlite](https://pglite.dev)): no PostgreSQL, no Docker, no clone.
 
+New here? Read [Getting started](getting-started/README.md) first: a short walk-through from the first command to a
+running shop. This page is the full reference.
+
 ## Run it
 
 ```sh
@@ -22,6 +25,18 @@ pnpm create shopnex@latest
 The first run downloads ShopNex (one file, about 15 MB) into `~/.shopnex/app/<version>` (shared by all your shops) and checks its SHA-256; later
 runs start straight away. It prints where to open the shop and the admin and opens the admin's setup wizard (use
 `--no-open` to skip that). Ctrl+C stops everything. Nothing is installed globally.
+
+## Run it again
+
+The shop folder has a `package.json`, so from inside it:
+
+```sh
+cd shopnex
+npm start     # or: npm run dev
+```
+
+No `npm install` first: both scripts run `npx --yes create-shopnex@<version> .`, the version that made the folder, and
+npx fetches it into its cache the first time. The same works from the folder above: `npx create-shopnex@latest shopnex`.
 
 ## What it does, and why you can trust it
 
@@ -73,13 +88,13 @@ SHOPNEX_SECRET=<generated once>   # encrypts the provider keys saved in the admi
 ```
 
 - **PostgreSQL:** set `DATABASE_URL=postgres://user:password@host:5432/shopnex` and start again. The migrations are applied
-  on start (`SHOPNEX_AUTO_MIGRATE`). The data in `.pglite/` is not moved (there is no tool for that yet).
+  on start (`SHOPNEX_AUTO_MIGRATE`). To move the data from `.pglite/`, run `npx shopnex migrate-db` (see [Getting started](getting-started/README.md)).
 - **Other settings** in the file (SMTP, and so on) are passed to the admin. The address, the ports and the build's own
   files are set by the CLI and its flags and win over the file.
 - Do not commit or share it. Without `SHOPNEX_SECRET` the saved provider keys cannot be read: a lost one means a new
   shop.
 
-The first run also writes a `.gitignore` (keeps `.env`, `.pglite/` and the apps' keys out of git) and the
+The first run also writes a `README.md` (how to run the shop again), a `package.json` (for `npm start`), a `.gitignore` (keeps `.env`, `.pglite/` and the apps' keys out of git) and the
 `docker-compose.yml` (fetched from the repository, the file the [self-hosting docs](https://shopnex.ai/docs/self-hosting/docker) describe: ShopNex, the Stripe
 app and PostgreSQL from prebuilt images), for when the shop should run in Docker instead. Existing files are never
 overwritten.
@@ -89,7 +104,7 @@ To start over, delete the shop folder.
 ## Not for production
 
 One process owns the data, so nothing else can open the folder, and the servers listen on `127.0.0.1` only. Use
-Docker or PostgreSQL for a real shop. There is no tool yet to move the data from the embedded database to PostgreSQL.
+Docker or PostgreSQL for a real shop, and move the data with `npx shopnex migrate-db`.
 
 ## Where the build comes from
 
