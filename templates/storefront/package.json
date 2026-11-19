@@ -13,12 +13,12 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/node": "11.1.11",
+    "@astrojs/node": "11.1.13",
     "@nanostores/react": "^2.0.1",
     "@shopnex/storefront-sdk": "workspace:*",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.20",
-    "astro": "^7.4.8",
+    "astro": "^7.4.12",
     "liquidjs": "10.30.1",
     "nanostores": "^1.3.0",
     "react": "^19.2.7",
