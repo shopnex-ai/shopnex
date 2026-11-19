@@ -119,7 +119,7 @@ async function woo(root) {
     site: null,
     notes: [],
   }
-  const res = await get(root + '/wp-json/wc/store/v1/products?per_page=100', 'application/json')
+  const res = await get(root + '/wp-json/wc/store/v1/products?per_page=20', 'application/json')
   const products = json(res) ?? []
   out.products = products.length
   out.totalHeader = res.headers.get('x-wp-total')
