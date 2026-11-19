@@ -25,6 +25,25 @@ export const appInstallations = pgTable(
   (t) => [uniqueIndex('app_installations_app_shop_idx').on(t.appId, t.shopId)],
 )
 
+// The scripts installed apps add to a shop's online store (the storefront loads them on every page). The app
+// replaces its own set for the shop; uninstalling the app removes them. The address is on the app's own origin
+// (checked when it is set), and only bundled and custom apps may have any.
+export const appStorefrontScripts = pgTable(
+  'app_storefront_scripts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    shopId: text('shop_id')
+      .notNull()
+      .references(() => shops.id, { onDelete: 'cascade' }),
+    appId: uuid('app_id')
+      .notNull()
+      .references(() => apps.id, { onDelete: 'cascade' }),
+    src: text('src').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('app_storefront_scripts_shop_app_src_idx').on(t.shopId, t.appId, t.src)],
+)
+
 // One-time codes from the consent screen, exchanged by the app's backend for a token (10 minutes)
 export const appAuthorizationCodes = pgTable(
   'app_authorization_codes',

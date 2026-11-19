@@ -1,0 +1,25 @@
+{
+  "name": "@shopnex/reviews",
+  "private": true,
+  "type": "module",
+  "description": "Bundled reviews app: review requests after fulfillment, moderation in the admin, and a storefront widget, built on @shopnex/app",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.tsx",
+    "start": "tsx --env-file-if-exists=../../.env src/server.tsx",
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "@shopnex/app": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@shopnex/marketplace-sdk": "workspace:*",
+    "@types/node": "catalog:",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
+  }
+}

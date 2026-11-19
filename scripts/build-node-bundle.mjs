@@ -8,7 +8,7 @@
 //
 // Contents: admin/ (the admin, API and checkout server, bundled into a few files; the embedded database is the one
 // package left as a real dependency, because it loads its WebAssembly from next to itself), storefront/ (the built
-// Astro server and the themes), apps/ (the optional Stripe, CJ Dropshipping and Shippo servers, one file each), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
+// Astro server and the themes), apps/ (the optional Stripe, CJ Dropshipping, Shippo and Reviews servers, one file each), migrations/ and manifest.json. Plain JavaScript and WebAssembly, so one file for
 // every OS and CPU. The file layout is what packages/create-shopnex/src/plan.ts (planFromBundle) runs, and what
 // packages/cli (shopnex migrate-db) finds admin/migrate-db.mjs in.
 import { build } from 'esbuild'
@@ -106,7 +106,7 @@ cpSync(join(root, 'templates/storefront/themes'), join(stage, 'storefront/themes
 cpSync(join(root, 'templates/storefront/built'), join(stage, 'storefront/built'), { recursive: true })
 
 // Optional apps (create-shopnex --with): each one is a single file, bundled the way its Docker image is
-for (const app of ['stripe', 'cj-dropshipping', 'shippo']) {
+for (const app of ['stripe', 'cj-dropshipping', 'shippo', 'reviews']) {
   const bundled = spawnSync(process.execPath, [join(root, 'scripts/bundle-app.mjs'), join(root, 'apps', app)], {
     stdio: 'inherit',
   })

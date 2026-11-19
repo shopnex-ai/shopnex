@@ -74,4 +74,8 @@ export const appDataItemOutput = z.object({ key: z.string(), value: z.unknown(),
 export const appDataKeyOutput = z.object({ key: z.string() })
 
 /** Deleting or toggling something: `{ ok: true }` */
+// An app's scripts for a shop's online store (see storefrontApp in @shopnex/rpc): the whole set, each on the app's own origin
+export const storefrontScriptsInput = z.object({ scripts: z.array(z.url().max(2000)).max(5) })
+export const storefrontScriptsOutput = z.object({ scripts: z.array(z.string()) })
+
 export const okOutput = z.object({ ok: z.boolean() })
