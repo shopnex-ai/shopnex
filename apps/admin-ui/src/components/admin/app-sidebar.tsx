@@ -270,19 +270,48 @@ function NavGroup({
               <SidebarMenuButton
                 render={<Link to={item.href} onClick={() => isMobile && setOpenMobile(false)} />}
                 isActive={
-                  item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`)
+                  item.children
+                    ? inGroup(item, pathname) && !item.children.some((c) => onPage(c.href, pathname))
+                    : item.exact
+                      ? pathname === item.href
+                      : pathname === item.href || pathname.startsWith(`${item.href}/`)
                 }
                 tooltip={item.label}
               >
                 <item.icon />
                 <span>{item.label}</span>
               </SidebarMenuButton>
+              {item.children && <NavChildren parent={item} pathname={pathname} />}
               {canManageApps && item.href === '/admin/apps' && <InstalledApps />}
             </SidebarMenuItem>
           ),
         )}
       </SidebarMenu>
     </SidebarGroup>
+  )
+}
+
+const onPage = (href: string, pathname: string) => pathname === href || pathname.startsWith(`${href}/`)
+const inGroup = (item: NavItem, pathname: string) => onPage(item.href, pathname)
+
+// The pages that belong to an item (Online store: Pages, Navigation), shown while you are in the item or one of them.
+// The item itself is highlighted on its own pages, a child on its own.
+function NavChildren({ parent, pathname }: { parent: NavItem; pathname: string }) {
+  const { isMobile, setOpenMobile } = useSidebar()
+  if (!inGroup(parent, pathname)) return null
+  return (
+    <SidebarMenuSub>
+      {(parent.children ?? []).map((c) => (
+        <SidebarMenuSubItem key={c.label}>
+          <SidebarMenuSubButton
+            render={<Link to={c.href} onClick={() => isMobile && setOpenMobile(false)} />}
+            isActive={onPage(c.href, pathname)}
+          >
+            <span>{c.label}</span>
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      ))}
+    </SidebarMenuSub>
   )
 }
 

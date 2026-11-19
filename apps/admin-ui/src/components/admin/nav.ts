@@ -35,7 +35,15 @@ export type NavItem = {
   icon: LucideIcon
   /** Only this exact path is active */ exact?: boolean
   /** Hidden from everyone else */ superAdminOnly?: boolean
+  /** Pages that belong to this one: shown under it while you are in it or in any of them */
+  children?: NavChild[]
   external?: undefined
+}
+
+export type NavChild = {
+  href: NonNullable<ToOptions['to']>
+  label: string
+  icon: LucideIcon
 }
 
 // A link to a page the API serves (not an admin route): opens in a new tab
@@ -58,10 +66,16 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
-      // Theme library and editor; Pages and Navigation are their own entries
-      { href: '/admin/online-store', label: 'Online store', icon: StoreIcon },
-      { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
-      { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
+      {
+        href: '/admin/online-store',
+        label: 'Online store',
+        icon: StoreIcon,
+        // The item itself is the theme page (with the picker and editor); these are its other pages
+        children: [
+          { href: '/admin/online-store/pages', label: 'Pages', icon: NotebookTextIcon },
+          { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
+        ],
+      },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },
