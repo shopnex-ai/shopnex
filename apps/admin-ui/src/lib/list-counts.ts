@@ -50,26 +50,41 @@ export const getListCounts = adminFn
 const listCountsKey = ['list-counts']
 export const listCountsQuery = { queryKey: listCountsKey, queryFn: skipToken, staleTime: Infinity } as const
 
-/** The known row count of a list, or undefined when it is not known (not a manager, or not loaded yet) */
+/** How long a count can be trusted. Older than this (a page left open, then a list opened for the first time) it is
+ * only a guess, and a guess must not put an empty state on a list that has rows. */
+const FRESH_MS = 30_000
+
+/** The known row count of a list, or undefined when it is not known (not a manager, not loaded yet, or too old) */
 export function useListCount(key: ListKey | undefined) {
   const initial = useRouteContext({
     strict: false,
     select: (context) => (context as { listCounts?: ListCounts }).listCounts,
   })
-  const { data } = useQuery({ ...listCountsQuery, initialData: initial ?? {} })
-  return key ? data?.[key] : undefined
+  const { data, dataUpdatedAt } = useQuery({ ...listCountsQuery, initialData: initial ?? {} })
+  return key && Date.now() - dataUpdatedAt < FRESH_MS ? data?.[key] : undefined
 }
 
-/** After the page shows: the counts of the lists the page did not need, so the next list opened has its count */
+/**
+ * After the page shows: the counts of the lists the page did not need, so the next list opened has its count. Also
+ * after anything is changed in this session (a create, an import, a delete): what was counted may be wrong now, so the
+ * counts are dropped and counted again.
+ */
 export function useLoadOtherListCounts(enabled: boolean) {
   const queryClient = useQueryClient()
   useEffect(() => {
     if (!enabled) return
+    // The counts are only a hint for the loading state: when they cannot be had, lists load as they always did
+    const load = (keys: ListKey[]) =>
+      getListCounts({ data: { keys } })
+        .then((counts) => queryClient.setQueryData<ListCounts>(listCountsKey, (old) => ({ ...old, ...counts })))
+        .catch(() => undefined)
     const known = queryClient.getQueryData<ListCounts>(listCountsKey) ?? {}
     const missing = LIST_KEYS.filter((key) => known[key] === undefined)
-    if (missing.length === 0) return
-    void getListCounts({ data: { keys: missing } }).then((counts) =>
-      queryClient.setQueryData<ListCounts>(listCountsKey, (old) => ({ ...old, ...counts })),
-    )
+    if (missing.length > 0) void load(missing)
+    return queryClient.getMutationCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return
+      queryClient.setQueryData<ListCounts>(listCountsKey, {})
+      void load([...LIST_KEYS])
+    })
   }, [queryClient, enabled])
 }

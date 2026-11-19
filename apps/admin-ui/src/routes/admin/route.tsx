@@ -57,11 +57,15 @@ export const Route = createFileRoute('/admin')({
     let listCounts = context.queryClient.getQueryData<ListCounts>(listCountsQuery.queryKey)
     const listKey = listKeyForPath(location.pathname)
     if (canManageApps && listKey && listCounts?.[listKey] === undefined && typeof window === 'undefined') {
-      const fresh = await getListCounts({ data: { keys: [listKey] } })
-      listCounts = context.queryClient.setQueryData<ListCounts>(listCountsQuery.queryKey, (old) => ({
-        ...old,
-        ...fresh,
-      }))
+      try {
+        const fresh = await getListCounts({ data: { keys: [listKey] } })
+        listCounts = context.queryClient.setQueryData<ListCounts>(listCountsQuery.queryKey, (old) => ({
+          ...old,
+          ...fresh,
+        }))
+      } catch {
+        // Only a hint for the loading state: a failure here must not stop the page from loading
+      }
     }
     return { access, installedApps, listCounts }
   },
