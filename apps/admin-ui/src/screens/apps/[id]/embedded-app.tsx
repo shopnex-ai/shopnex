@@ -1,11 +1,12 @@
 // Hosts an app in an iframe and answers its @shopnex/app-bridge messages (protocol: packages/app-bridge).
 import { useNavigate } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
 import { PageHeader } from '@/components/admin/page-header'
 import { client } from '@/lib/orpc'
+import { PreviewLoader } from '@/screens/online-store/themes/preview-loader'
 import { AppIcon, UninstallButton } from '../installed-apps-card'
 
 type Props = { installationId: string; src: string; name: string; iconUrl: string | null }
@@ -18,6 +19,12 @@ type Reply =
 
 export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
+  // The ShopNex loader shows over the app until its page has loaded
+  const [loaded, setLoaded] = useState(false)
+  // The iframe is only mounted in the browser: on a reload the server-rendered one can finish loading before React
+  // attaches onLoad, and the loader would never go away
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const appOrigin = new URL(src).origin
   const navigate = useNavigate()
   // The theme the admin shows, which the app follows (instead of the OS setting)
@@ -98,16 +105,22 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
           />
         }
       />
-      <iframe
-        ref={frame}
-        src={src}
-        title={name}
-        className="w-full flex-1 border-0 bg-background"
-        // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-        allow="clipboard-write"
-        referrerPolicy="no-referrer"
-      />
+      <div className="relative flex-1">
+        {mounted && (
+          <iframe
+            ref={frame}
+            src={src}
+            title={name}
+            className="h-full w-full border-0 bg-background"
+            onLoad={() => setLoaded(true)}
+            // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+            allow="clipboard-write"
+            referrerPolicy="no-referrer"
+          />
+        )}
+        {!loaded && <PreviewLoader />}
+      </div>
     </div>
   )
 }
