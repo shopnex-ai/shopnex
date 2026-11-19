@@ -9,7 +9,7 @@ catalog:
   '@orpc/server': ^1.16.2
   '@types/node': ^22.20.5
   drizzle-orm: ^0.45.4
-  hono: ^4.13.17
+  hono: ^4.13.19
   tailwindcss: ^4.3.5
   zod: ^4.6.7
 patchedDependencies:
