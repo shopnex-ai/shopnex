@@ -1,17 +1,23 @@
 import assert from 'node:assert/strict'
-import { beforeEach, describe, test } from 'node:test'
+import { after, before, beforeEach, describe, test } from 'node:test'
+import { sql } from 'drizzle-orm'
 import { EmailOffError, type Mailer } from '../src/mailer'
 import { sendDue } from '../src/send'
-import { openStore, productKey, ReviewError, type ShopKey, type Store } from '../src/store'
+import { productKey, ReviewError, type ShopKey, type Store } from '../src/store'
+import { testDatabase } from './db'
 
 const shop: ShopKey = { instance: 'https://shop.example.com', shopId: 'default' }
 const other: ShopKey = { instance: 'https://shop.example.com', shopId: 'another' }
 const PRODUCT = '11111111-1111-4111-8111-111111111111'
 
+let db: Awaited<ReturnType<typeof testDatabase>>
 let store: Store
-beforeEach(() => {
-  store = openStore(':memory:')
+before(async () => {
+  db = await testDatabase()
+  store = db.store
 })
+beforeEach(() => db.reset())
+after(() => db.close())
 
 const order = (
   id = 'order-1',
@@ -22,13 +28,13 @@ const order = (
   items,
 })
 
-function review(token: string, input = { rating: 5, body: 'Great mug' }) {
-  return store.submit(token, input)
-}
+const review = (token: string, input = { rating: 5, body: 'Great mug' }) => store.submit(token, input)
+const refused = (code: string) => (e: unknown) => e instanceof ReviewError && e.code === code
+const firstToken = async (key: ShopKey, o = order()) => (await store.addRequests(key, o, 0))[0]!.token
 
 describe('review requests', () => {
-  test('one per distinct product in the order; lines without a product are skipped', () => {
-    const made = store.addRequests(
+  test('one per distinct product in the order; lines without a product are skipped', async () => {
+    const made = await store.addRequests(
       shop,
       order('o1', [
         { productId: PRODUCT, title: 'Mug' },
@@ -42,107 +48,102 @@ describe('review requests', () => {
     assert.notEqual(made[0]!.token, made[1]!.token)
   })
 
-  test('a webhook retry for the same order makes no second request', () => {
-    assert.equal(store.addRequests(shop, order(), 0).length, 1)
-    assert.equal(store.addRequests(shop, order(), 0).length, 0)
+  test('a webhook retry for the same order makes no second request', async () => {
+    assert.equal((await store.addRequests(shop, order(), 0)).length, 1)
+    assert.equal((await store.addRequests(shop, order(), 0)).length, 0)
   })
 
-  test('product ids from a theme (gid://…/uuid) and from the API are the same product', () => {
+  test('the same order number in another shop is its own request', async () => {
+    assert.equal((await store.addRequests(shop, order(), 0)).length, 1)
+    assert.equal((await store.addRequests(other, order(), 0)).length, 1)
+  })
+
+  test('product ids from a theme (gid://…/uuid) and from the API are the same product', async () => {
     assert.equal(productKey(`gid://shopnex/Product/${PRODUCT}`), PRODUCT)
-    store.addRequests(shop, order('o1', [{ productId: `gid://shopnex/Product/${PRODUCT}`, title: 'Mug' }]), 0)
-    assert.equal(store.due(0)[0]!.productId, PRODUCT)
+    await store.addRequests(shop, order('o1', [{ productId: `gid://shopnex/Product/${PRODUCT}`, title: 'Mug' }]), 0)
+    assert.equal((await store.due(0))[0]!.productId, PRODUCT)
   })
 
-  test('only requests whose time has come are due, and only until they are sent', () => {
-    const [soon] = store.addRequests(shop, order('o1'), 1000)
-    store.addRequests(shop, order('o2'), 5000)
+  test('only requests whose time has come are due, and only until they are sent', async () => {
+    const [soon] = await store.addRequests(shop, order('o1'), 1000)
+    await store.addRequests(shop, order('o2'), 5000)
     assert.deepEqual(
-      store.due(2000).map((r) => r.token),
+      (await store.due(2000)).map((r) => r.token),
       [soon!.token],
     )
-    store.markSent(soon!.token, 2000)
-    assert.equal(store.due(2000).length, 0)
-    assert.equal(store.due(9000).length, 1)
+    await store.markSent(soon!.token, 2000)
+    assert.equal((await store.due(2000)).length, 0)
+    assert.equal((await store.due(9000)).length, 1)
   })
 
   test('sendDue sends what is due; a failed send stays due for the next pass', async () => {
-    store.addRequests(shop, order('o1'), 0)
+    await store.addRequests(shop, order('o1'), 0)
     const sent: string[] = []
     const failing: Mailer = () => {
       throw new Error('smtp down')
     }
-    const silence = console.error
-    console.error = () => {}
-    try {
-      const mailerFor = async () => ({ mailer: failing, shopName: 'Shop' })
-      assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor, now: 1 }), 0)
-    } finally {
-      console.error = silence
-    }
-    assert.equal(store.due(1).length, 1)
+    const mailerFor = async () => ({ mailer: failing, shopName: 'Shop' })
+    assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor, now: 1 }), 0)
+    assert.equal((await store.due(1)).length, 1)
     const ok: Mailer = (email) => void sent.push(email.link)
-    const mailerFor = async () => ({ mailer: ok, shopName: 'Shop' })
-    assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor, now: 2 }), 1)
+    const okFor = async () => ({ mailer: ok, shopName: 'Shop' })
+    assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor: okFor, now: 2 }), 1)
     assert.match(sent[0]!, /^https:\/\/reviews\.example\.com\/r\/[\w-]+$/)
-    assert.equal(store.due(3).length, 0)
+    assert.equal((await store.due(3)).length, 0)
   })
 
   test("sendDue uses each shop's own mailer; a shop with email off or unreachable keeps its requests", async () => {
-    store.addRequests(shop, order('o1'), 0)
-    store.addRequests(other, order('o2'), 0)
-    store.addRequests(other, order('o3'), 0)
+    await store.addRequests(shop, order('o1'), 0)
+    await store.addRequests(other, order('o2'), 0)
+    await store.addRequests(other, order('o3'), 0)
     const third: ShopKey = { instance: 'https://third.example.com', shopId: 'default' }
-    store.addRequests(third, order('o4'), 0)
+    await store.addRequests(third, order('o4'), 0)
     const sentBy: string[] = []
     const offCalls: string[] = []
-    const silence = console.error
-    console.error = () => {}
-    try {
-      const mailerFor = async (key: ShopKey) => {
-        if (key.instance === third.instance) throw new Error('uninstalled')
-        if (key.shopId === 'another') {
-          const off: Mailer = () => {
-            offCalls.push(key.shopId)
-            throw new EmailOffError()
-          }
-          return { mailer: off, shopName: 'Off' }
+    const mailerFor = async (key: ShopKey) => {
+      if (key.instance === third.instance) throw new Error('uninstalled')
+      if (key.shopId === 'another') {
+        const off: Mailer = () => {
+          offCalls.push(key.shopId)
+          throw new EmailOffError()
         }
-        return { mailer: ((email) => void sentBy.push(`${email.shopName}:${email.to}`)) as Mailer, shopName: 'Mugs' }
+        return { mailer: off, shopName: 'Off' }
       }
-      assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor, now: 1 }), 1)
-    } finally {
-      console.error = silence
+      return { mailer: ((email) => void sentBy.push(`${email.shopName}:${email.to}`)) as Mailer, shopName: 'Mugs' }
     }
+    assert.equal(await sendDue(store, { appUrl: 'https://reviews.example.com', mailerFor, now: 1 }), 1)
     assert.deepEqual(sentBy, ['Mugs:buyer@example.com'])
     assert.deepEqual(offCalls, ['another'], 'email off is asked once per pass, not once per request')
-    assert.equal(store.due(1).length, 3, 'the other two shops are still waiting')
-    assert.equal(store.unsent(other, 1), 2)
-    assert.equal(store.unsent(shop, 1), 0)
-    assert.equal(store.unsent(other, -1), 0, 'not due yet is not waiting')
+    assert.equal((await store.due(1)).length, 3, 'the other two shops are still waiting')
+    assert.equal(await store.unsent(other, 1), 2)
+    assert.equal(await store.unsent(shop, 1), 0)
+    assert.equal(await store.unsent(other, -1), 0, 'not due yet is not waiting')
   })
 })
 
 describe('reviews', () => {
-  test('a link is single use; the review waits for moderation and is marked verified', () => {
-    const [request] = store.addRequests(shop, order(), 0)
-    assert.deepEqual(store.openRequest(request!.token), { productTitle: 'Mug' })
-    const created = review(request!.token)
+  test('a link is single use; the review waits for moderation and is marked verified', async () => {
+    const [request] = await store.addRequests(shop, order(), 0)
+    assert.deepEqual(await store.openRequest(request!.token), { productTitle: 'Mug' })
+    const created = await review(request!.token)
     assert.equal(created.status, 'pending')
     assert.equal(created.verified, true)
     assert.equal(created.author, 'Anonymous')
-    assert.equal(store.openRequest(request!.token), null)
-    assert.throws(
-      () => review(request!.token),
-      (e) => e instanceof ReviewError && e.code === 'ALREADY_REVIEWED',
-    )
+    assert.equal(await store.openRequest(request!.token), null)
+    await assert.rejects(review(request!.token), refused('ALREADY_REVIEWED'))
   })
 
-  test('unknown links and invalid reviews are refused, and an invalid review does not use the link', () => {
-    assert.throws(
-      () => review('nope'),
-      (e) => e instanceof ReviewError && e.code === 'INVALID_LINK',
-    )
-    const [request] = store.addRequests(shop, order(), 0)
+  test('two people sending the same link at once: one review, one refusal', async () => {
+    const token = await firstToken(shop)
+    const results = await Promise.allSettled([review(token), review(token), review(token)])
+    assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1)
+    for (const r of results) if (r.status === 'rejected') assert.ok(refused('ALREADY_REVIEWED')(r.reason))
+    assert.equal((await store.list(shop)).length, 1)
+  })
+
+  test('unknown links and invalid reviews are refused, and an invalid review does not use the link', async () => {
+    await assert.rejects(review('nope'), refused('INVALID_LINK'))
+    const [request] = await store.addRequests(shop, order(), 0)
     for (const input of [
       { rating: 0, body: 'x' },
       { rating: 6, body: 'x' },
@@ -150,17 +151,24 @@ describe('reviews', () => {
       { rating: 'five', body: 'x' },
       { rating: 5, body: '   ' },
     ]) {
-      assert.throws(
-        () => review(request!.token, input as never),
-        (e) => e instanceof ReviewError && e.code === 'INVALID_REVIEW',
-      )
+      await assert.rejects(review(request!.token, input as never), refused('INVALID_REVIEW'))
     }
-    assert.notEqual(store.openRequest(request!.token), null)
+    assert.notEqual(await store.openRequest(request!.token), null)
   })
 
-  test('long text is cut, not stored whole', () => {
-    const [request] = store.addRequests(shop, order(), 0)
-    const created = store.submit(request!.token, {
+  test('a rating outside 1 to 5 is refused by the database itself, not only by the app', async () => {
+    const token = await firstToken(shop)
+    await assert.rejects(
+      db.database.db.execute(
+        sql`insert into app_reviews.reviews (id, instance, shop_id, token, product_id, product_title, rating, title, body, author, verified, status, created_at)
+            values ('x', 'i', 's', ${token}, 'p', 't', 9, '', 'b', 'a', true, 'pending', 0)`,
+      ),
+    )
+  })
+
+  test('long text is cut, not stored whole', async () => {
+    const [request] = await store.addRequests(shop, order(), 0)
+    const created = await store.submit(request!.token, {
       rating: 5,
       body: 'x'.repeat(9000),
       title: 't'.repeat(500),
@@ -171,30 +179,52 @@ describe('reviews', () => {
     assert.equal(created.author.length, 80)
   })
 
-  test('the storefront sees published reviews only, with their count and average', () => {
-    const tokens = store.addRequests(shop, order('o1', [{ productId: PRODUCT, title: 'Mug' }]), 0)
-    const a = review(tokens[0]!.token, { rating: 5, body: 'a' })
-    const b = store.submit(store.addRequests(shop, order('o2'), 0)[0]!.token, { rating: 2, body: 'b' })
-    const c = store.submit(store.addRequests(shop, order('o3'), 0)[0]!.token, { rating: 4, body: 'c' })
+  test('the storefront sees published reviews only, with their count and average', async () => {
+    const a = await review(await firstToken(shop, order('o1')), { rating: 5, body: 'a' })
+    const b = await review(await firstToken(shop, order('o2')), { rating: 2, body: 'b' })
+    const c = await review(await firstToken(shop, order('o3')), { rating: 4, body: 'c' })
 
-    assert.deepEqual(store.forProduct(shop, PRODUCT), { count: 0, average: null, reviews: [] })
-    store.setStatus(shop, a.id, 'published')
-    store.setStatus(shop, c.id, 'published')
-    store.setStatus(shop, b.id, 'hidden')
-    const shown = store.forProduct(shop, `gid://shopnex/Product/${PRODUCT}`)
+    assert.deepEqual(await store.forProduct(shop, PRODUCT), { count: 0, average: null, reviews: [] })
+    await store.setStatus(shop, a.id, 'published')
+    await store.setStatus(shop, c.id, 'published')
+    await store.setStatus(shop, b.id, 'hidden')
+    const shown = await store.forProduct(shop, `gid://shopnex/Product/${PRODUCT}`)
     assert.equal(shown.count, 2)
     assert.equal(shown.average, 4.5)
     assert.deepEqual(shown.reviews.map((r) => r.body).sort(), ['a', 'c'])
-    assert.deepEqual(store.counts(shop), { pending: 0, published: 2, hidden: 1 })
+    assert.deepEqual(await store.counts(shop), { pending: 0, published: 2, hidden: 1 })
   })
 
-  test("shops never see or change each other's reviews", () => {
-    const created = review(store.addRequests(shop, order(), 0)[0]!.token)
-    assert.equal(store.setStatus(other, created.id, 'published'), false)
-    assert.equal(store.list(other).length, 0)
-    assert.equal(store.setStatus(shop, created.id, 'published'), true)
-    assert.equal(store.forProduct(other, PRODUCT).count, 0)
-    assert.equal(store.forProduct({ ...shop, instance: 'https://elsewhere.example.com' }, PRODUCT).count, 0)
-    assert.equal(store.forProduct(shop, PRODUCT).count, 1)
+  test('the moderation list is newest first and can be filtered by status', async () => {
+    const first = await review(await firstToken(shop, order('o1')), { rating: 5, body: 'first' })
+    await new Promise((r) => setTimeout(r, 5))
+    await review(await firstToken(shop, order('o2')), { rating: 4, body: 'second' })
+    await store.setStatus(shop, first.id, 'published')
+    assert.deepEqual(
+      (await store.list(shop)).map((r) => r.body),
+      ['second', 'first'],
+    )
+    assert.deepEqual(
+      (await store.list(shop, 'pending')).map((r) => r.body),
+      ['second'],
+    )
+  })
+
+  test("shops never see or change each other's reviews", async () => {
+    const created = await review(await firstToken(shop))
+    assert.equal(await store.setStatus(other, created.id, 'published'), false)
+    assert.equal((await store.list(other)).length, 0)
+    assert.equal(await store.setStatus(shop, created.id, 'published'), true)
+    assert.equal((await store.forProduct(other, PRODUCT)).count, 0)
+    assert.equal((await store.forProduct({ ...shop, instance: 'https://elsewhere.example.com' }, PRODUCT)).count, 0)
+    assert.equal((await store.forProduct(shop, PRODUCT)).count, 1)
+  })
+})
+
+describe('the migration', () => {
+  test('applying it again is a no-op', async () => {
+    const { migrationsFolder } = await import('../src/migrations')
+    await db.database.migrate(migrationsFolder())
+    assert.deepEqual(await store.counts(shop), { pending: 0, published: 0, hidden: 0 })
   })
 })

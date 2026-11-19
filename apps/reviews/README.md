@@ -23,15 +23,22 @@ pnpm dev                       # starts the admin and every app whose <NAME>_APP
 pnpm --filter @shopnex/reviews test
 ```
 
-Docker: `docker compose --profile reviews up` (`deploy/docker-compose.yml`). The image keeps its SQLite file in `/data`.
+Docker: `docker compose --profile reviews up` (`deploy/docker-compose.yml`). Reviews live in the `app_reviews` schema of the shop's Postgres (`APP_DATABASE_URL`, set in the compose files), so the container needs no volume.
 
 ## Where things live
 
-| What                               | Where                                                                                          |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Reviews and review requests        | `DATA_DIR/reviews.db` (SQLite, scoped by instance and shop)                                    |
-| Days to wait, whether email is off | the shop's own app storage in ShopNex                                                          |
-| Order webhook                      | made by the app with its own token (`src/webhook.ts`), checked again every time the page opens |
+| What                               | Where                                                                                             |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Reviews and review requests        | the `app_reviews` schema of the shop's Postgres (`APP_DATABASE_URL`), scoped by instance and shop |
+| Days to wait, whether email is off | the shop's own app storage in ShopNex                                                             |
+| Order webhook                      | made by the app with its own token (`src/webhook.ts`), checked again every time the page opens    |
+
+## Database
+
+Like CJ Dropshipping, the app keeps its tables in a Postgres schema of its own (`app_reviews`), next to ShopNex's, and applies
+its migrations when it starts. It reads `APP_DATABASE_URL`, else `DATABASE_URL` when that is a Postgres URL (so `pnpm dev`
+with the shop's `.env` just works). `pglite:<folder>` is the embedded database for trying things out. To change a table, edit
+`src/schema.ts` and run `pnpm --filter @shopnex/reviews generate`: it writes the migration into `drizzle/` and needs no database.
 
 ## Rate limiting
 

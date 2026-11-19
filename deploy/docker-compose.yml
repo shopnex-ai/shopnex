@@ -114,12 +114,13 @@ services:
     restart: unless-stopped
     ports:
       - '5100:5100'
-    volumes:
-      - reviews_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       REVIEWS_APP_URL: ${REVIEWS_APP_URL:-${DOMAIN:+https://reviews.}${DOMAIN:-http://localhost:5100}}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 5100
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       # The header your proxy sets to the visitor's address (x-forwarded-for, cf-connecting-ip), for the rate limits
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       REVIEWS_APP_KEY: ${REVIEWS_APP_KEY:-}
@@ -127,4 +128,3 @@ services:
 volumes:
   db:
   shopnex_data:
-  reviews_data:

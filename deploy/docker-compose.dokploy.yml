@@ -119,12 +119,13 @@ services:
     pull_policy: always
     restart: unless-stopped
     networks: [default, dokploy-network]
-    volumes:
-      - reviews_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       REVIEWS_APP_URL: ${REVIEWS_APP_URL:-http://localhost:5100}
       SHOPNEX_INTERNAL_URL: http://shopnex:3000
       PORT: 5100
+      APP_DATABASE_URL: postgres://shopnex:shopnex@db:5432/shopnex
       # Dokploy's Traefik sets x-forwarded-for: the rate limits tell visitors apart by it
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-forwarded-for}
       REVIEWS_APP_KEY: ${REVIEWS_APP_KEY:-}
@@ -136,4 +137,3 @@ networks:
 volumes:
   db:
   shopnex_data:
-  reviews_data:

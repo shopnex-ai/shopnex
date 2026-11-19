@@ -16,7 +16,7 @@ export async function sendDue(store: Store, options: { appUrl: string; mailerFor
   // Shops that have email off: one answer is enough for this pass, the rest of their requests wait
   const off = new Set<string>()
   let sent = 0
-  for (const request of store.due(now)) {
+  for (const request of await store.due(now)) {
     const key = `${request.instance}|${request.shopId}`
     if (off.has(key)) continue
     if (!mailers.has(key)) {
@@ -37,7 +37,7 @@ export async function sendDue(store: Store, options: { appUrl: string; mailerFor
         shopName: target.shopName,
         link: reviewLink(options.appUrl, request.token),
       })
-      store.markSent(request.token, now)
+      await store.markSent(request.token, now)
       sent++
     } catch (error) {
       if (error instanceof EmailOffError) off.add(key)

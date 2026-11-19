@@ -10,7 +10,7 @@ Reviews is a bundled app. After an order is fulfilled it emails the buyer a priv
 The app runs as its own process next to ShopNex. In local development it listens on port `5100`.
 
 - Set `REVIEWS_APP_URL` to the app's public origin (for example `https://reviews.example.com`) and `REVIEWS_APP_KEY` to its private key (`node scripts/app-keygen.mjs` makes one; keep it, a new key is a new app).
-- Under Docker, start the `reviews` profile: `docker compose --profile reviews up`. It keeps its reviews in a SQLite file in the `reviews_data` volume (`DATA_DIR`, `/data` in the image).
+- Under Docker, start the `reviews` profile: `docker compose --profile reviews up`. The reviews live in a schema of their own (`app_reviews`) in the shop's Postgres, through `APP_DATABASE_URL` (the compose files set it), so they are backed up with the shop and the container needs no volume.
 - With `create-shopnex`: `npx create-shopnex@latest my-shop --with reviews`.
 - To skip it in local development, run `REVIEWS=none pnpm dev`.
 

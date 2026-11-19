@@ -1,7 +1,9 @@
-// The app's own data (SQLite): review requests (one per fulfilled product, with a secret link) and the reviews that
-// come back. Rows are scoped to a shop of an instance: this app serves many ShopNex instances.
+// The app's data access: review requests and reviews, on the app's Postgres schema (see schema.ts). Every method is
+// scoped to a shop of an instance where it matters, so one shop never sees or changes another's rows.
 import { randomBytes, randomUUID } from 'node:crypto'
-import { DatabaseSync } from 'node:sqlite'
+import { and, asc, desc, eq, isNull, lte, sql } from 'drizzle-orm'
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
+import { reviewRequests, reviews } from './schema'
 
 export type ShopKey = { instance: string; shopId: string }
 export type ReviewStatus = 'pending' | 'published' | 'hidden'
@@ -45,75 +47,35 @@ export const productKey = (id: string) => id.trim().split('/').pop() ?? ''
 
 const clean = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '')
 
-export function openStore(path: string) {
-  const db = new DatabaseSync(path)
-  db.exec(`
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS review_requests (
-      token TEXT PRIMARY KEY,
-      instance TEXT NOT NULL,
-      shop_id TEXT NOT NULL,
-      order_id TEXT NOT NULL,
-      product_id TEXT NOT NULL,
-      product_title TEXT NOT NULL,
-      email TEXT NOT NULL,
-      send_after INTEGER NOT NULL,
-      sent_at INTEGER,
-      used_at INTEGER,
-      created_at INTEGER NOT NULL,
-      UNIQUE (instance, shop_id, order_id, product_id)
-    );
-    CREATE TABLE IF NOT EXISTS reviews (
-      id TEXT PRIMARY KEY,
-      instance TEXT NOT NULL,
-      shop_id TEXT NOT NULL,
-      token TEXT NOT NULL UNIQUE,
-      product_id TEXT NOT NULL,
-      product_title TEXT NOT NULL,
-      rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
-      title TEXT NOT NULL,
-      body TEXT NOT NULL,
-      author TEXT NOT NULL,
-      verified INTEGER NOT NULL,
-      status TEXT NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews (instance, shop_id, product_id, status);
-  `)
+const ofShop = (shop: ShopKey) => and(eq(reviews.instance, shop.instance), eq(reviews.shopId, shop.shopId))
 
-  const toReview = (r: Record<string, unknown>): Review => ({
-    id: r.id as string,
-    productId: r.product_id as string,
-    productTitle: r.product_title as string,
-    rating: r.rating as number,
-    title: r.title as string,
-    body: r.body as string,
-    author: r.author as string,
-    verified: r.verified === 1,
+export function openStore(db: NodePgDatabase) {
+  const toReview = (r: typeof reviews.$inferSelect): Review => ({
+    id: r.id,
+    productId: r.productId,
+    productTitle: r.productTitle,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    author: r.author,
+    verified: r.verified,
     status: r.status as ReviewStatus,
-    createdAt: r.created_at as number,
+    createdAt: r.createdAt,
   })
 
   return {
-    db,
-
     /** One request per product in a fulfilled order (a webhook retry makes none). Returns the new ones. */
-    addRequests(
+    async addRequests(
       shop: ShopKey,
       order: { id: string; email: string; items: { productId: string | null; title: string }[] },
       sendAfter: number,
-    ): ReviewRequest[] {
-      const insert = db.prepare(
-        `INSERT OR IGNORE INTO review_requests
-           (token, instance, shop_id, order_id, product_id, product_title, email, send_after, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
+    ): Promise<ReviewRequest[]> {
       const created: ReviewRequest[] = []
       const seen = new Set<string>()
       for (const item of order.items) {
         if (!item.productId || seen.has(item.productId)) continue
         seen.add(item.productId)
-        const request = {
+        const request: ReviewRequest = {
           token: randomBytes(24).toString('base64url'),
           instance: shop.instance,
           shopId: shop.shopId,
@@ -122,144 +84,140 @@ export function openStore(path: string) {
           email: order.email,
           sendAfter,
         }
-        const { changes } = insert.run(
-          request.token,
-          shop.instance,
-          shop.shopId,
-          order.id,
-          request.productId,
-          request.productTitle,
-          request.email,
-          sendAfter,
-          Date.now(),
-        )
-        if (changes) created.push(request)
+        const inserted = await db
+          .insert(reviewRequests)
+          .values({ ...request, orderId: order.id, createdAt: Date.now() })
+          .onConflictDoNothing()
+          .returning({ token: reviewRequests.token })
+        if (inserted.length) created.push(request)
       }
       return created
     },
 
     /** Requests whose time has come and that were not sent yet */
-    due(now: number): ReviewRequest[] {
-      return db
-        .prepare(
-          `SELECT token, instance, shop_id, product_id, product_title, email, send_after FROM review_requests
-           WHERE sent_at IS NULL AND used_at IS NULL AND send_after <= ? ORDER BY send_after LIMIT 100`,
-        )
-        .all(now)
-        .map((r) => ({
-          token: r.token as string,
-          instance: r.instance as string,
-          shopId: r.shop_id as string,
-          productId: r.product_id as string,
-          productTitle: r.product_title as string,
-          email: r.email as string,
-          sendAfter: r.send_after as number,
-        }))
+    async due(now: number): Promise<ReviewRequest[]> {
+      const rows = await db
+        .select()
+        .from(reviewRequests)
+        .where(and(isNull(reviewRequests.sentAt), isNull(reviewRequests.usedAt), lte(reviewRequests.sendAfter, now)))
+        .orderBy(asc(reviewRequests.sendAfter))
+        .limit(100)
+      return rows.map((r) => ({
+        token: r.token,
+        instance: r.instance,
+        shopId: r.shopId,
+        productId: r.productId,
+        productTitle: r.productTitle,
+        email: r.email,
+        sendAfter: r.sendAfter,
+      }))
     },
 
-    markSent(token: string, now: number) {
-      db.prepare('UPDATE review_requests SET sent_at = ? WHERE token = ?').run(now, token)
+    async markSent(token: string, now: number) {
+      await db.update(reviewRequests).set({ sentAt: now }).where(eq(reviewRequests.token, token))
     },
 
     /** What the review page shows for a link; null when it is unknown or already used */
-    openRequest(token: string) {
-      const row = db.prepare('SELECT product_title, used_at FROM review_requests WHERE token = ?').get(token) as
-        { product_title: string; used_at: number | null } | undefined
-      return row && row.used_at === null ? { productTitle: row.product_title } : null
+    async openRequest(token: string) {
+      const [row] = await db
+        .select({ productTitle: reviewRequests.productTitle, usedAt: reviewRequests.usedAt })
+        .from(reviewRequests)
+        .where(eq(reviewRequests.token, token))
+      return row && row.usedAt === null ? { productTitle: row.productTitle } : null
     },
 
     /** A review from a link: single use, held for moderation, and verified because the link went to a buyer */
-    submit(token: string, input: ReviewInput): Review {
+    async submit(token: string, input: ReviewInput): Promise<Review> {
       const rating = Number(input.rating)
       const body = clean(input.body, 5000)
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
         throw new ReviewError('INVALID_REVIEW', 'Choose a rating from 1 to 5')
       }
       if (!body) throw new ReviewError('INVALID_REVIEW', 'Write a few words about the product')
-      db.exec('BEGIN IMMEDIATE')
-      try {
-        const request = db.prepare('SELECT * FROM review_requests WHERE token = ?').get(token) as
-          Record<string, unknown> | undefined
+      // The link row is locked while the review is made, so two submissions of one link can't both go through
+      return db.transaction(async (tx) => {
+        const [request] = await tx.select().from(reviewRequests).where(eq(reviewRequests.token, token)).for('update')
         if (!request) throw new ReviewError('INVALID_LINK', 'This review link is not valid')
-        if (request.used_at !== null) throw new ReviewError('ALREADY_REVIEWED', 'You already reviewed this product')
-        const id = randomUUID()
-        db.prepare(
-          `INSERT INTO reviews
-             (id, instance, shop_id, token, product_id, product_title, rating, title, body, author, verified, status, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?)`,
-        ).run(
-          id,
-          request.instance as string,
-          request.shop_id as string,
-          token,
-          request.product_id as string,
-          request.product_title as string,
-          rating,
-          clean(input.title, 120),
-          body,
-          clean(input.author, 80) || 'Anonymous',
-          Date.now(),
-        )
-        db.prepare('UPDATE review_requests SET used_at = ? WHERE token = ?').run(Date.now(), token)
-        db.exec('COMMIT')
-        return toReview(db.prepare('SELECT * FROM reviews WHERE id = ?').get(id) as Record<string, unknown>)
-      } catch (error) {
-        db.exec('ROLLBACK')
-        throw error
-      }
+        if (request.usedAt !== null) throw new ReviewError('ALREADY_REVIEWED', 'You already reviewed this product')
+        const [row] = await tx
+          .insert(reviews)
+          .values({
+            id: randomUUID(),
+            instance: request.instance,
+            shopId: request.shopId,
+            token,
+            productId: request.productId,
+            productTitle: request.productTitle,
+            rating,
+            title: clean(input.title, 120),
+            body,
+            author: clean(input.author, 80) || 'Anonymous',
+            verified: true,
+            status: 'pending',
+            createdAt: Date.now(),
+          })
+          .returning()
+        await tx.update(reviewRequests).set({ usedAt: Date.now() }).where(eq(reviewRequests.token, token))
+        return toReview(row!)
+      })
     },
 
     /** Moderation list for one shop, newest first */
-    list(shop: ShopKey, status?: ReviewStatus, limit = 100): Review[] {
-      const rows = status
-        ? db
-            .prepare(
-              'SELECT * FROM reviews WHERE instance = ? AND shop_id = ? AND status = ? ORDER BY created_at DESC LIMIT ?',
-            )
-            .all(shop.instance, shop.shopId, status, limit)
-        : db
-            .prepare('SELECT * FROM reviews WHERE instance = ? AND shop_id = ? ORDER BY created_at DESC LIMIT ?')
-            .all(shop.instance, shop.shopId, limit)
+    async list(shop: ShopKey, status?: ReviewStatus, limit = 100): Promise<Review[]> {
+      const rows = await db
+        .select()
+        .from(reviews)
+        .where(and(ofShop(shop), status ? eq(reviews.status, status) : undefined))
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
       return rows.map(toReview)
     },
 
     /** Only within the shop: a review id from another shop changes nothing */
-    setStatus(shop: ShopKey, id: string, status: ReviewStatus) {
-      const { changes } = db
-        .prepare('UPDATE reviews SET status = ? WHERE id = ? AND instance = ? AND shop_id = ?')
-        .run(status, id, shop.instance, shop.shopId)
-      return changes > 0
+    async setStatus(shop: ShopKey, id: string, status: ReviewStatus) {
+      const changed = await db
+        .update(reviews)
+        .set({ status })
+        .where(and(eq(reviews.id, id), ofShop(shop)))
+        .returning({ id: reviews.id })
+      return changed.length > 0
     },
 
     /** What the storefront widget shows: published reviews of a product and their average */
-    forProduct(shop: ShopKey, productId: string, limit = 20) {
-      const product = productKey(productId)
-      const where = "instance = ? AND shop_id = ? AND product_id = ? AND status = 'published'"
-      const { count, average } = db
-        .prepare(`SELECT COUNT(*) AS count, AVG(rating) AS average FROM reviews WHERE ${where}`)
-        .get(shop.instance, shop.shopId, product) as { count: number; average: number | null }
-      const reviews = db
-        .prepare(`SELECT * FROM reviews WHERE ${where} ORDER BY created_at DESC LIMIT ?`)
-        .all(shop.instance, shop.shopId, product, limit)
-        .map(toReview)
-      return { count, average: average === null ? null : Math.round(average * 10) / 10, reviews }
+    async forProduct(shop: ShopKey, productId: string, limit = 20) {
+      const where = and(ofShop(shop), eq(reviews.productId, productKey(productId)), eq(reviews.status, 'published'))
+      const [summary] = await db
+        .select({ count: sql<number>`count(*)::int`, average: sql<string | null>`avg(${reviews.rating})` })
+        .from(reviews)
+        .where(where)
+      const rows = await db.select().from(reviews).where(where).orderBy(desc(reviews.createdAt)).limit(limit)
+      const average = summary!.average === null ? null : Math.round(Number(summary!.average) * 10) / 10
+      return { count: summary!.count, average, reviews: rows.map(toReview) }
     },
 
-    /** Requests of a shop whose time has come but that did not go out (usually: no email server set up yet) */
-    unsent(shop: ShopKey, now: number): number {
-      const row = db
-        .prepare(
-          `SELECT COUNT(*) AS n FROM review_requests
-           WHERE instance = ? AND shop_id = ? AND sent_at IS NULL AND used_at IS NULL AND send_after <= ?`,
+    /** Requests of a shop whose time has come but that did not go out (usually: email is off) */
+    async unsent(shop: ShopKey, now: number): Promise<number> {
+      const [row] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(reviewRequests)
+        .where(
+          and(
+            eq(reviewRequests.instance, shop.instance),
+            eq(reviewRequests.shopId, shop.shopId),
+            isNull(reviewRequests.sentAt),
+            isNull(reviewRequests.usedAt),
+            lte(reviewRequests.sendAfter, now),
+          ),
         )
-        .get(shop.instance, shop.shopId, now) as { n: number }
-      return row.n
+      return row!.n
     },
 
-    counts(shop: ShopKey) {
-      const rows = db
-        .prepare('SELECT status, COUNT(*) AS n FROM reviews WHERE instance = ? AND shop_id = ? GROUP BY status')
-        .all(shop.instance, shop.shopId) as { status: ReviewStatus; n: number }[]
+    async counts(shop: ShopKey) {
+      const rows = await db
+        .select({ status: reviews.status, n: sql<number>`count(*)::int` })
+        .from(reviews)
+        .where(ofShop(shop))
+        .groupBy(reviews.status)
       const by = Object.fromEntries(rows.map((r) => [r.status, r.n]))
       return { pending: by.pending ?? 0, published: by.published ?? 0, hidden: by.hidden ?? 0 }
     },
