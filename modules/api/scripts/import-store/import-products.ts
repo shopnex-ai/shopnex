@@ -1,7 +1,9 @@
 // Reads a public Shopify store (/products.json, /collections.json, /meta.json) and loads a sample into the default shop.
 //   DATABASE_URL=postgres://…/shopnex_main pnpm --filter @shopnex/api exec tsx scripts/import-store/import-products.ts <url> [--max 40]
 // Experiment: see README.md.
+import { randomUUID } from 'node:crypto'
 import { collectionService, productService, type ProductInput } from '@shopnex/catalog'
+import { menuService, pageService } from '@shopnex/content'
 import { db } from '@shopnex/db'
 import { DEFAULT_SHOP_ID } from '@shopnex/tenancy'
 import { assertScratchDb, getJson } from './lib'
@@ -89,37 +91,106 @@ for (const p of shopifyProducts) {
   }
 }
 
-// Collections: the first few that have products among those we took
-let collectionsMade = 0
-const cols =
-  (await getJson(`${origin}/collections.json?limit=250`).catch(() => ({ collections: [] }))).collections ?? []
-let collectionRequests = 0
-for (const c of cols) {
-  // Be polite: a few requests only, and stop at the first refusal
-  if (collectionsMade >= 6 || collectionRequests >= 8) break
+// Collections: one per product type (the store's own collection feeds rate-limit fast, and this needs no requests).
+// The biggest few, with at least 2 products each.
+const byType = new Map<string, { ids: string[]; image: string | null }>()
+for (const p of shopifyProducts) {
+  const id = byHandle.get(p.handle)
+  const type = String(p.product_type ?? '').trim()
+  if (!id || !type) continue
+  const group: { ids: string[]; image: string | null } = byType.get(type) ?? {
+    ids: [],
+    image: p.images?.[0]?.src ?? null,
+  }
+  group.ids.push(id)
+  byType.set(type, group)
+}
+const collectionIds: { id: string; title: string }[] = []
+for (const [type, group] of [...byType.entries()].sort((a, b) => b[1].ids.length - a[1].ids.length).slice(0, 6)) {
+  if (group.ids.length < 2) continue
   try {
-    collectionRequests++
-    const members = (await getJson(`${origin}/collections/${c.handle}/products.json?limit=250`)).products ?? []
-    const ids = members.map((m: any) => byHandle.get(m.handle)).filter(Boolean) as string[]
-    if (!ids.length) continue
-    const col = await collectionService.create(
-      DEFAULT_SHOP_ID,
-      { title: c.title, descriptionHtml: c.body_html || null, imageUrl: c.image?.src ?? null },
-      db,
-    )
-    for (const id of ids) await collectionService.addProduct(DEFAULT_SHOP_ID, col.id, id, db)
-    collectionsMade++
+    const col = await collectionService.create(DEFAULT_SHOP_ID, { title: type, imageUrl: group.image }, db)
+    for (const id of group.ids) await collectionService.addProduct(DEFAULT_SHOP_ID, col.id, id, db)
+    collectionIds.push({ id: col.id, title: type })
   } catch (e) {
-    if (String(e).includes(': 429')) {
-      problems.push('store rate-limited us (429): stopped fetching collections')
-      break
-    }
-    problems.push(`collection ${c.title}: ${e instanceof Error ? e.message.slice(0, 200) : e}`)
+    problems.push(`collection ${type}: ${e instanceof Error ? e.message.slice(0, 200) : e}`)
   }
 }
 
+// Main menu: Home, Shop all, then the collections above (replaces the default menu's items)
+const mainMenu = await menuService.getByHandle(DEFAULT_SHOP_ID, 'main-menu', db)
+if (mainMenu && collectionIds.length) {
+  await menuService.update(
+    DEFAULT_SHOP_ID,
+    mainMenu.id,
+    {
+      items: [
+        { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
+        { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
+        ...collectionIds.map((c) => ({
+          id: randomUUID(),
+          title: c.title,
+          type: 'collection' as const,
+          resourceId: c.id,
+          items: [],
+        })),
+      ],
+    },
+    db,
+  )
+}
+const collectionsMade = collectionIds.length
+
+// Pages: /pages.json has the body. Only the usual shop pages, most useful first (About, Contact, FAQ, shipping,
+// returns, privacy, terms), with a real body: pages built from a theme template come back empty. Capped at 6.
+const PAGE_ORDER = ['about', 'contact', 'faq', 'shipping|deliver', 'return|refund', 'size', 'privacy', 'terms']
+const JUNK_PAGE = /\b(old|test|draft|copy|backup|v\d|bold)\b|\(old\)/i
+const pagesFeed: any[] = (await getJson(`${origin}/pages.json?limit=250`).catch(() => ({ pages: [] }))).pages ?? []
+const rank = (p: any) => PAGE_ORDER.findIndex((word) => new RegExp(word, 'i').test(`${p.handle} ${p.title}`))
+const wanted = pagesFeed
+  .filter(
+    (p) =>
+      rank(p) !== -1 && !JUNK_PAGE.test(`${p.handle} ${p.title}`) && String(p.body_html ?? '').trim().length >= 200,
+  )
+  .sort((x, y) => rank(x) - rank(y))
+const pageIds: { id: string; title: string }[] = []
+for (const p of wanted) {
+  if (pageIds.length >= 6) break
+  try {
+    const page = await pageService.create(
+      DEFAULT_SHOP_ID,
+      { title: String(p.title).slice(0, 200), handle: p.handle, bodyHtml: p.body_html, published: true },
+      db,
+    )
+    pageIds.push({ id: page.id, title: page.title })
+  } catch (e) {
+    problems.push(`page ${p.title}: ${e instanceof Error ? e.message.slice(0, 200) : e}`)
+  }
+}
+// Footer menu: the pages, after the Search link the default footer has
+const footer = await menuService.getByHandle(DEFAULT_SHOP_ID, 'footer', db)
+if (footer && pageIds.length) {
+  await menuService.update(
+    DEFAULT_SHOP_ID,
+    footer.id,
+    {
+      items: [
+        ...pageIds.map((pg) => ({
+          id: randomUUID(),
+          title: pg.title,
+          type: 'page' as const,
+          resourceId: pg.id,
+          items: [],
+        })),
+        { id: randomUUID(), title: 'Search', type: 'search', items: [] },
+      ],
+    },
+    db,
+  )
+}
+
 console.log(
-  `${origin}: ${ok}/${shopifyProducts.length} products, ${collectionsMade} collections, currency ${currency}, ${Date.now() - t0} ms`,
+  `${origin}: ${ok}/${shopifyProducts.length} products, ${collectionsMade} collections, ${pageIds.length} pages, currency ${currency}, ${Date.now() - t0} ms`,
 )
 if (problems.length) console.log('PROBLEMS:\n- ' + problems.join('\n- '))
 await db.$client.end()
