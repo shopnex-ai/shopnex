@@ -1,5 +1,3 @@
-'use client'
-
 // Add or edit one menu item: its name and what it links to (home page, all products, a collection,
 // a product, a page, search, or any address).
 import { useQuery } from '@tanstack/react-query'

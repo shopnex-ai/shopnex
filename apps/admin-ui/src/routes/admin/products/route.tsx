@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
 import { ProductList } from '@/screens/products/product-list'
+import { Page } from '@/components/admin/page'
 
 export const Route = createFileRoute('/admin/products')({ component: ProductsPage })
 function ProductsPage() {
@@ -7,8 +8,8 @@ function ProductsPage() {
   const { access } = Route.useRouteContext()
   if (pathname !== '/admin/products') return <Outlet />
   return (
-    <div className="mx-auto max-w-5xl">
+    <Page>
       <ProductList currency={access.tenant?.shop.currency ?? 'USD'} />
-    </div>
+    </Page>
   )
 }

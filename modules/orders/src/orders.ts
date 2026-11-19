@@ -104,6 +104,13 @@ export function shippingPrice(rate: { priceCents: number; freeAboveCents: number
 }
 
 // `search` matches the order number (1001 or #1001), the order email or the customer's name
+/** How many orders the shop has, counted up to `cap`: enough to know if the list is empty or how many rows to draw, and
+ * as fast for a million rows as for ten. */
+export async function countUpTo(shopId: string, cap: number, conn: Conn) {
+  const rows = await conn.select({ id: orders.id }).from(orders).where(eq(orders.shopId, shopId)).limit(cap)
+  return rows.length
+}
+
 export async function list(shopId: string, opts: ListOrdersInput, conn: Conn) {
   const filters: (SQL | undefined)[] = [eq(orders.shopId, shopId)]
   if (opts.customerId) filters.push(eq(orders.customerId, opts.customerId))

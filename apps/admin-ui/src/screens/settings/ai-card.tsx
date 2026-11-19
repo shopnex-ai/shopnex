@@ -1,5 +1,3 @@
-'use client'
-
 // Settings → AI: built-in AI (Claude or OpenAI) with the shop's own API key. On, it adds ✨ Generate to the product
 // editor; staff review every suggestion before it's saved. Saving checks the key with the provider first.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

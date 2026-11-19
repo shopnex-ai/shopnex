@@ -1,5 +1,3 @@
-'use client'
-
 // ✨ Generate: asks the shop's AI (Settings → AI, or an installed AI app) for a suggestion. "Use" puts it into the form
 // as an unsaved change (or applies it, where the thing saves on its own), so nothing is saved until staff decide.
 // Hidden when no app provides the capability.

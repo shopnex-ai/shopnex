@@ -209,6 +209,18 @@
     0 0 0 1px rgb(255 255 255 / 0.08), 0 4px 8px 0 rgb(0 0 0 / 0.3), 0 12px 24px -4px rgb(0 0 0 / 0.4);
 }
 
+/* The page's actions in the top bar (Import, Export, Create…) are small buttons; the same buttons in a panel keep the
+   default size, and so do those in a dialog the action opens (it is rendered outside the bar) */
+#page-actions :is(button, a) {
+  height: calc(var(--spacing) * 7);
+  gap: calc(var(--spacing) * 1);
+  font-size: 0.8rem;
+}
+#page-actions :is(button, a) svg:not([class*='size-']) {
+  width: calc(var(--spacing) * 3.5);
+  height: calc(var(--spacing) * 3.5);
+}
+
 /* Lists and groups nested in a card: a tinted well with an inner hairline, not a second card */
 @utility surface-inset {
   border-radius: var(--radius-lg);

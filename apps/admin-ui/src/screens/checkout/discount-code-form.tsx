@@ -1,5 +1,3 @@
-'use client'
-
 import { XIcon } from 'lucide-react'
 import { useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from '@tanstack/react-router'

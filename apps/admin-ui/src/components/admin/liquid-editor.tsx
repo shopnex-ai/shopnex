@@ -1,5 +1,3 @@
-'use client'
-
 // CodeMirror with Liquid (HTML inside) highlighting. Uncontrolled: it starts from `value` and reports every
 // change; remount it (a new `key`) to load another file or content. Ctrl/Cmd+S calls `onSave`.
 import { indentWithTab } from '@codemirror/commands'
