@@ -1,10 +1,12 @@
 'use client'
 
+import { ShoppingCartIcon } from 'lucide-react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
 import { FinancialStatusBadge, FulfillmentStatusBadge } from '@/components/admin/order-status'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -124,6 +126,13 @@ export function OrderList() {
         isPending={isPending}
         error={error}
         empty={search ? `No orders match “${search}”.` : view.empty}
+        blank={
+          search || view.key ? undefined : (
+            <EmptyState icon={ShoppingCartIcon} title="Your orders will show up here">
+              When a customer checks out, the order appears in this list.
+            </EmptyState>
+          )
+        }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton

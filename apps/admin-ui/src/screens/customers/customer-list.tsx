@@ -1,11 +1,12 @@
 'use client'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, UsersIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,9 @@ export function CustomerList() {
           </div>
         }
       />
-      <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />
+      {(search || data?.items.length !== 0) && (
+        <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />
+      )}
       <DataTable
         columns={columns}
         data={data?.items}
@@ -67,7 +70,14 @@ export function CustomerList() {
         rowLink={(c) => ({ to: '/admin/customers/$id', params: { id: c.id } })}
         isPending={isPending}
         error={error}
-        empty={search ? `No customers match “${search}”.` : 'No customers yet.'}
+        empty={`No customers match “${search}”.`}
+        blank={
+          search ? undefined : (
+            <EmptyState icon={UsersIcon} title="Add your first customer" action={<NewCustomerButton />}>
+              Customers are added when they check out or sign up, or you can add them yourself.
+            </EmptyState>
+          )
+        }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton

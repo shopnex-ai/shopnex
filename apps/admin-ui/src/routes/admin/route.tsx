@@ -3,6 +3,7 @@ import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
+import { ACTIONS_SLOT, TITLE_SLOT, TopBarContext } from '@/components/admin/page-header'
 import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NavigationProgress } from '@/components/admin/navigation-progress'
 import { ShopnexBrand } from '@/components/admin/shopnex-logo'
@@ -87,36 +88,39 @@ function AdminLayout() {
     )
   }
   return (
-    <SidebarProvider defaultOpen>
-      <NavigationProgress />
-      <AppSidebar
-        shop={{
-          id: tenant.shop.id,
-          name: tenant.shop.name,
-          superAdmin: tenant.superAdmin,
-          canManageApps: isShopManager(tenant),
-        }}
-        user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
-      />
-      <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          {tenant.shop.storefrontUrl && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto"
-              render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
-            >
-              View store
-              <ExternalLinkIcon />
-            </Button>
-          )}
-        </header>
-        <div className="flex-1 p-4 md:p-6">
-          <Outlet />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <TopBarContext.Provider value>
+      <SidebarProvider defaultOpen>
+        <NavigationProgress />
+        <AppSidebar
+          shop={{
+            id: tenant.shop.id,
+            name: tenant.shop.name,
+            superAdmin: tenant.superAdmin,
+            canManageApps: isShopManager(tenant),
+          }}
+          user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
+        />
+        <SidebarInset>
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+            <SidebarTrigger className="-ml-1 md:hidden" />
+            <div id={TITLE_SLOT} className="flex min-w-0 items-center gap-2" />
+            <div id={ACTIONS_SLOT} className="ml-auto flex items-center gap-2" />
+            {tenant.shop.storefrontUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
+              >
+                View store
+                <ExternalLinkIcon />
+              </Button>
+            )}
+          </header>
+          <div className="flex-1 p-4 md:p-6">
+            <Outlet />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </TopBarContext.Provider>
   )
 }

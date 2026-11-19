@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { THEME_DEFINITION_PATH, parseThemeManifest, type ThemeDocument } from '@shopnex/storefront-sdk/theme'
+import { Page } from '@/components/admin/page'
 import { PageHeader } from '@/components/admin/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -37,11 +38,11 @@ function NoStorefront() {
 
 export function ThemesProblem({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader title="Themes" description="How your online store looks" />
+    <Page width="narrow">
+      <PageHeader title="Online store" />
       <Card>
         <CardContent className="text-sm text-muted-foreground">{children}</CardContent>
       </Card>
-    </div>
+    </Page>
   )
 }

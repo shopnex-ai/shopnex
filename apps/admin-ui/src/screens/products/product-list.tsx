@@ -1,11 +1,12 @@
 'use client'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, PackageIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -112,7 +113,9 @@ export function ProductList({ currency }: { currency: string }) {
           </div>
         }
       />
-      <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />
+      {(search || data?.items.length !== 0) && (
+        <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />
+      )}
       <DataTable
         columns={columns}
         data={data?.items}
@@ -120,14 +123,21 @@ export function ProductList({ currency }: { currency: string }) {
         rowLink={(p) => ({ to: '/admin/products/$id', params: { id: p.id } })}
         isPending={isPending}
         error={error}
-        empty={
-          search ? (
-            `No products match “${search}”.`
-          ) : (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <span>No products yet. Create one to start selling, or look around with a few samples.</span>
-              <AddSamplesButton />
-            </div>
+        empty={`No products match “${search}”.`}
+        blank={
+          search ? undefined : (
+            <EmptyState
+              icon={PackageIcon}
+              title="Add your first product"
+              action={
+                <div className="flex flex-wrap justify-center gap-2">
+                  <NewProductButton currency={currency} />
+                  <AddSamplesButton />
+                </div>
+              }
+            >
+              Products are what you sell. Create one, or look around with a few samples.
+            </EmptyState>
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}

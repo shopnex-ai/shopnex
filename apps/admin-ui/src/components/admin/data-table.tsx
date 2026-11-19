@@ -33,7 +33,10 @@ type DataTableProps<TData extends RowData> = {
   rowLink?: (row: TData) => ToOptions
   isPending?: boolean
   error?: Error | null
+  /** A short line inside the table when there are no rows (a search with no match, an empty view) */
   empty?: ReactNode
+  /** When there are no rows at all: shown in place of the table, as a panel. Leave out while a search or filter is on. */
+  blank?: ReactNode
   selectionActions?: (ids: string[], clearSelection: () => void) => ReactNode
   /** Omit for tables that show a fixed slice (e.g. "recent orders") */
   pagination?: PaginationProps
@@ -54,6 +57,7 @@ export function DataTable<TData extends RowData>({
   isPending,
   error,
   empty = 'Nothing here yet.',
+  blank,
   selectionActions,
   pagination,
 }: DataTableProps<TData>) {
@@ -69,6 +73,10 @@ export function DataTable<TData extends RowData>({
     if (window.getSelection()?.toString()) return
     if (e.metaKey || e.ctrlKey) window.open(router.buildLocation(link).href, '_blank')
     else navigate(link)
+  }
+
+  if (blank && !isPending && !error && rows.length === 0) {
+    return <div className="overflow-hidden rounded-xl bg-card shadow-card">{blank}</div>
   }
 
   return (
