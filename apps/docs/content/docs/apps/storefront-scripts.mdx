@@ -18,7 +18,7 @@ A script runs on every page of the store, with the shopper's session, so ShopNex
 
 With the SDK:
 
-```ts
+```ts setup=app
 await shop.storefront.configure({
   scripts: [`${APP_URL}/widget.js?${new URLSearchParams({ instance: shop.instance, shop: shop.shopId })}`],
 })
