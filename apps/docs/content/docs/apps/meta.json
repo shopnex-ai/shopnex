@@ -5,6 +5,7 @@
     "sdk",
     "ai",
     "carrier-services",
+    "storefront-scripts",
     "authentication",
     "marketplace",
     "stripe",

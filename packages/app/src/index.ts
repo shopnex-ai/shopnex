@@ -140,6 +140,15 @@ export type ShopContext = {
       ready: boolean
     }): Promise<{ id: string; name: string; active: boolean; ready: boolean }>
   }
+  /** Apps that add a script to the shop's online store (a widget, a chat button…) */
+  storefront: {
+    /**
+     * Sets the scripts the online store loads on every page for this shop: the whole list, each URL on the app's own
+     * origin (scope write_storefront; not for marketplace apps yet). An empty list removes them. Safe to repeat.
+     * Query parameters are kept, so the app can put what the script needs (the instance, the shop) in its URL.
+     */
+    configure(options: { scripts: string[] }): Promise<void>
+  }
 }
 
 export type Shop = { id: string; name: string; currency: string; [key: string]: unknown }
@@ -267,6 +276,9 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
       },
       shipping: {
         configure: (service) => admin.api.post('/carrier-services/configure', { body: service }),
+      },
+      storefront: {
+        configure: async ({ scripts }) => void (await admin.api.put('/storefront-scripts', { body: { scripts } })),
       },
     }
   }

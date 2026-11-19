@@ -84,6 +84,8 @@ export const API_SCOPES = [
   'write_shipping',
   // Apps that email the shop's customers (review requests…) from the shop's own address, with its email settings
   'write_email',
+  // Apps that add a script to the shop's online store (a reviews widget, a chat button…)
+  'write_storefront',
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 
@@ -107,6 +109,7 @@ export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   read_shipping: 'Carrier services (apps only)',
   write_shipping: 'Register a carrier service (apps only)',
   write_email: "Send email to the shop's customers from the shop's address (apps only)",
+  write_storefront: "Load the app's script on the shop's online store (apps only)",
 }
 
 // custom: registered here by a super admin (private apps). marketplace: synced from the connected marketplace,

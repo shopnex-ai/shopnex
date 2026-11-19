@@ -1488,6 +1488,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/apps':
+        specifier: workspace:*
+        version: link:../apps
       '@shopnex/auth':
         specifier: workspace:*
         version: link:../auth
@@ -1543,9 +1546,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@shopnex/apps':
-        specifier: workspace:*
-        version: link:../apps
       '@shopnex/core':
         specifier: workspace:*
         version: link:../core
@@ -1938,6 +1938,9 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: 5.9.3
         version: 5.9.3

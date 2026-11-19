@@ -188,6 +188,13 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     return next({ context: { appId } })
   })
 
+  // Storefront apps: an installed app's token with the storefront scope (staff don't register scripts for apps)
+  const storefrontApp = scoped('write_storefront').use(({ context, next }) => {
+    const appId = context.token?.appId
+    if (!appId) throw new ORPCError('FORBIDDEN', { message: "Only an app's own token can add storefront scripts" })
+    return next({ context: { appId } })
+  })
+
   // Shop settings (keys, etc.): owners/admins of the shop, or a super admin
   const shopManager = admin.use(async ({ context, next }) => {
     if (!context.superAdmin && context.role !== 'owner' && context.role !== 'admin') {
@@ -220,6 +227,7 @@ export function createProcedures(mapError: ErrorMapper = () => undefined) {
     aiApp,
     carrierApp,
     emailApp,
+    storefrontApp,
     shopManager,
     webhookManager,
     superAdminOnly,

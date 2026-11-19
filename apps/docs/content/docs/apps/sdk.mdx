@@ -38,6 +38,7 @@ app.get('/', async (c) => {
 - `verifyPaymentsRequest(c, 'payment' | 'refund')`, `verifyAiRequest(c)`, `verifyRatesRequest(c)` (see [Carrier services](/docs/apps/carrier-services)) and `verifyWebhook(c)`: checked against the instance's published keys.
 - `ai.configure({ 'product.description': url, … })`: the AI capabilities the app provides for the shop (see [AI](/docs/apps/ai)).
 - `shop.shipping.configure(...)`: registers a carrier service that quotes shipping rates at checkout.
+- `shop.storefront.configure({ scripts: [url] })` (scope `write_storefront`): the scripts the online store loads on every page for this shop, each on the app's own origin (see [Storefront scripts](/docs/apps/storefront-scripts)).
 - `shop.admin.api.post('/email/send', { body: { to, subject, text, html } })` (scope `write_email`): emails one customer of the shop from the shop's address, through Settings → Email, so the app needs no email server of its own. The recipient must be a customer of the shop, and an app can send up to 500 a hour per shop. The answer is `{ sent: false }`, with nothing sent, while the shop has email off: keep the message and try again later.
 - `data.get/set/delete` and `data.getSecret/setSecret`: secrets are AES-GCM encrypted with a key derived from the app key, unreadable in ShopNex's database.
 

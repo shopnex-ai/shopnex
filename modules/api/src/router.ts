@@ -69,6 +69,7 @@ export const router = {
     webhooks: tagged('Admin · Webhooks').router(webhooksModule.router),
     apiTokens: tagged('Admin · API tokens').router(tenancyModule.router.apiTokens),
     apps: tagged('Admin · Apps').router(appsModule.router.apps),
+    storefrontScriptsApp: tagged('Admin · Storefront apps').router(appsModule.router.storefrontScriptsApp),
     appRegistry: tagged('Admin · App registry').router(appsModule.router.appRegistry),
     appData: tagged('Admin · App data').router(appsModule.router.appData),
     marketplace: tagged('Admin · Marketplace').router(appsModule.router.marketplaceConnection),

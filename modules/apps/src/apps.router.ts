@@ -1,6 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { CLIENT_ASSERTION_TYPE } from '@shopnex/marketplace-sdk/keys'
+import { db } from '@shopnex/db'
 import { createProcedures } from '@shopnex/rpc'
 import * as appService from './apps'
 import {
@@ -18,11 +19,13 @@ import {
   marketplaceConnectionOutput,
   okOutput,
   sessionTokenOutput,
+  storefrontScriptsInput,
+  storefrontScriptsOutput,
 } from './apps.contract'
 import { jwks } from './keys'
 import * as marketplaceService from './marketplace'
 
-const { adminOrToken, pub, shopManager, superAdminOnly } = createProcedures()
+const { adminOrToken, pub, shopManager, storefrontApp, superAdminOnly } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
 const found = <T>(row: T | null) => {
@@ -77,6 +80,18 @@ export const apps = {
 }
 
 // Admin → Apps → Marketplace (super admins): this instance's link to the app marketplace
+// Apps that add a script to the online store (a reviews widget…): the app sets the whole list for its shop with its own
+// token (scope write_storefront); the storefront loads it on every page. Uninstalling the app removes it.
+export const storefrontScriptsApp = {
+  configure: storefrontApp
+    .route({ method: 'PUT', path: '/admin/storefront-scripts' })
+    .output(storefrontScriptsOutput)
+    .input(storefrontScriptsInput)
+    .handler(async ({ input, context }) => ({
+      scripts: await appService.configureStorefrontScripts(context.shop.id, context.appId, input.scripts, db),
+    })),
+}
+
 export const marketplaceConnection = {
   get: superAdminOnly
     .route({ method: 'GET', path: '/admin/marketplace' })

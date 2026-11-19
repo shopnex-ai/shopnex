@@ -18,6 +18,12 @@ export const SCOPE_RESOURCES: readonly { key: string; label: string; hint: strin
     grant: 'Send email to your customers',
     hint: "From your shop's address, through Settings → Email, and only to people who are customers of your shop",
   },
+  {
+    key: 'storefront',
+    label: 'Online store',
+    grant: 'Add scripts to your online store',
+    hint: "Runs the app's own script on every page of your store (for example a reviews widget)",
+  },
 ]
 
 export type Access = 'none' | 'read' | 'write'

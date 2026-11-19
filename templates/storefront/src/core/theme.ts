@@ -47,6 +47,7 @@ import { RENDER, createLiquid, type RenderData } from './liquid'
 import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
+import { appHeaderTags } from './app-scripts'
 import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
@@ -300,7 +301,7 @@ const adminOrigin = new URL(browserConfig.baseUrl).origin
  * What the storefront adds to every page's head: Storefront API settings for theme scripts, the preview, the consent
  * runtime and the page's SEO tags (core/seo)
  */
-function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = false) {
+function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = false, apps: string[] = []) {
   const attr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
   return [
     `<meta name="shopnex-url" content="${attr(browserBaseUrl())}">`,
@@ -313,6 +314,8 @@ function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = f
     !preview && `<meta name="shopnex-consent" content="${cookieBanner ? 'banner' : 'off'}">`,
     !preview && `<script type="module" src="${consentScriptUrl()}"></script>`,
     ...seo,
+    // The scripts of installed apps (a reviews widget…) and the page they are on (core/app-scripts)
+    ...apps,
   ]
     .filter(Boolean)
     .join('\n')
@@ -387,7 +390,12 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     template: { name: page.template },
     theme: { id: theme.id, name: theme.definition.name, version: theme.definition.version ?? null },
     content_for_header: new SafeHtml(
-      contentForHeader(loaded.preview, seoTags(page, url, shop, loaded.preview), Boolean(shop?.cookieBanner)),
+      contentForHeader(
+        loaded.preview,
+        seoTags(page, url, shop, loaded.preview),
+        Boolean(shop?.cookieBanner),
+        appHeaderTags(page, shop?.scripts ?? [], loaded.preview),
+      ),
     ),
     [RENDER]: renderData,
   }
