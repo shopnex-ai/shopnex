@@ -1,5 +1,3 @@
-'use client'
-
 import { ShoppingCartIcon } from 'lucide-react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'

@@ -1,5 +1,3 @@
-'use client'
-
 // Theme styles (ThemeDefinition.presets, plus the theme's own defaults): a card per style with its colors.
 // Picking one only changes the draft; a style that brings its own sections asks first, since it replaces
 // the merchant's.

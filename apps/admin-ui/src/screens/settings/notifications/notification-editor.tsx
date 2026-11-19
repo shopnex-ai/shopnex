@@ -1,5 +1,3 @@
-'use client'
-
 // Edit one notification's Liquid: subject and body, with a live preview rendered by the server from the shop's
 // latest order (or a sample one), a test send to yourself, and revert to the built-in default.
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

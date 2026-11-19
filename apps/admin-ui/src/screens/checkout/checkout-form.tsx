@@ -1,5 +1,3 @@
-'use client'
-
 import { PlusIcon } from 'lucide-react'
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useController, useWatch } from 'react-hook-form'

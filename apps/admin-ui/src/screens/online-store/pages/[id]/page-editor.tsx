@@ -1,5 +1,3 @@
-'use client'
-
 // Add (id null) or edit a page: title, content, visibility and its search engine listing.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'

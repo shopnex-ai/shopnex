@@ -1,5 +1,3 @@
-'use client'
-
 // Shared list table: server-paginated data from an oRPC query, rendered with TanStack Table.
 // Sorting/filtering happen on the server, so the table only uses core features.
 import { Link, useNavigate, useRouter, type ToOptions } from '@tanstack/react-router'

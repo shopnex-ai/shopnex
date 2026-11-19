@@ -1,5 +1,3 @@
-'use client'
-
 // ✨ Generate for products: description, search listing, image alt text and organization. Each opens the shared dialog
 // (components/admin/ai-dialog); "Use" puts the suggestion into the product form as an unsaved change.
 import { AI_LENGTHS, AI_TONES, aiCapabilities } from '@shopnex/marketplace-sdk/ai'
