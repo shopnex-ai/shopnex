@@ -35,9 +35,10 @@ import { Route as AdminCollectionsNewRouteImport } from './routes/admin/collecti
 import { Route as AdminCustomersIdRouteImport } from './routes/admin/customers/$id'
 import { Route as AdminInviteIdRouteImport } from './routes/admin/invite/$id'
 import { Route as AdminOauthAuthorizeRouteImport } from './routes/admin/oauth/authorize'
+import { Route as AdminOnlineStoreIndexRouteImport } from './routes/admin/online-store/index'
 import { Route as AdminOnlineStoreNavigationRouteRouteImport } from './routes/admin/online-store/navigation/route'
 import { Route as AdminOnlineStorePagesRouteRouteImport } from './routes/admin/online-store/pages/route'
-import { Route as AdminOnlineStoreThemesRouteRouteImport } from './routes/admin/online-store/themes/route'
+import { Route as AdminOnlineStoreSelectRouteImport } from './routes/admin/online-store/select'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
@@ -56,13 +57,12 @@ import { Route as AdminSettingsStorageRouteImport } from './routes/admin/setting
 import { Route as AdminSettingsStorefrontKeysRouteImport } from './routes/admin/settings/storefront-keys'
 import { Route as AdminSettingsTaxesRouteImport } from './routes/admin/settings/taxes'
 import { Route as AdminSettingsWebhooksRouteImport } from './routes/admin/settings/webhooks'
+import { Route as AdminOnlineStoreEditorIdRouteImport } from './routes/admin/online-store/editor/$id'
 import { Route as AdminOnlineStoreNavigationIdRouteImport } from './routes/admin/online-store/navigation/$id'
 import { Route as AdminOnlineStorePagesIdRouteImport } from './routes/admin/online-store/pages/$id'
-import { Route as AdminOnlineStoreThemesIdRouteImport } from './routes/admin/online-store/themes/$id'
-import { Route as AdminOnlineStoreThemesSelectRouteImport } from './routes/admin/online-store/themes/select'
 import { Route as AdminOrdersIdInvoiceRouteImport } from './routes/admin/orders/$id_.invoice'
 import { Route as AdminSettingsNotificationsNotificationRouteImport } from './routes/admin/settings/notifications/$notification'
-import { Route as AdminOnlineStoreThemesIdCodeRouteImport } from './routes/admin/online-store/themes/$id_.code'
+import { Route as AdminOnlineStoreEditorIdCodeRouteImport } from './routes/admin/online-store/editor/$id_.code'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -194,6 +194,11 @@ const AdminOauthAuthorizeRoute = AdminOauthAuthorizeRouteImport.update({
   path: '/oauth/authorize',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminOnlineStoreIndexRoute = AdminOnlineStoreIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminOnlineStoreRouteRoute,
+} as any)
 const AdminOnlineStoreNavigationRouteRoute =
   AdminOnlineStoreNavigationRouteRouteImport.update({
     id: '/navigation',
@@ -206,12 +211,11 @@ const AdminOnlineStorePagesRouteRoute =
     path: '/pages',
     getParentRoute: () => AdminOnlineStoreRouteRoute,
   } as any)
-const AdminOnlineStoreThemesRouteRoute =
-  AdminOnlineStoreThemesRouteRouteImport.update({
-    id: '/themes',
-    path: '/themes',
-    getParentRoute: () => AdminOnlineStoreRouteRoute,
-  } as any)
+const AdminOnlineStoreSelectRoute = AdminOnlineStoreSelectRouteImport.update({
+  id: '/select',
+  path: '/select',
+  getParentRoute: () => AdminOnlineStoreRouteRoute,
+} as any)
 const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -306,6 +310,12 @@ const AdminSettingsWebhooksRoute = AdminSettingsWebhooksRouteImport.update({
   path: '/webhooks',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminOnlineStoreEditorIdRoute =
+  AdminOnlineStoreEditorIdRouteImport.update({
+    id: '/editor/$id',
+    path: '/editor/$id',
+    getParentRoute: () => AdminOnlineStoreRouteRoute,
+  } as any)
 const AdminOnlineStoreNavigationIdRoute =
   AdminOnlineStoreNavigationIdRouteImport.update({
     id: '/$id',
@@ -317,18 +327,6 @@ const AdminOnlineStorePagesIdRoute = AdminOnlineStorePagesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminOnlineStorePagesRouteRoute,
 } as any)
-const AdminOnlineStoreThemesIdRoute =
-  AdminOnlineStoreThemesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
-  } as any)
-const AdminOnlineStoreThemesSelectRoute =
-  AdminOnlineStoreThemesSelectRouteImport.update({
-    id: '/select',
-    path: '/select',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
-  } as any)
 const AdminOrdersIdInvoiceRoute = AdminOrdersIdInvoiceRouteImport.update({
   id: '/$id_/invoice',
   path: '/$id/invoice',
@@ -340,11 +338,11 @@ const AdminSettingsNotificationsNotificationRoute =
     path: '/$notification',
     getParentRoute: () => AdminSettingsNotificationsRouteRoute,
   } as any)
-const AdminOnlineStoreThemesIdCodeRoute =
-  AdminOnlineStoreThemesIdCodeRouteImport.update({
-    id: '/$id_/code',
-    path: '/$id/code',
-    getParentRoute: () => AdminOnlineStoreThemesRouteRoute,
+const AdminOnlineStoreEditorIdCodeRoute =
+  AdminOnlineStoreEditorIdCodeRouteImport.update({
+    id: '/editor/$id_/code',
+    path: '/editor/$id/code',
+    getParentRoute: () => AdminOnlineStoreRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -370,7 +368,6 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
-  '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
@@ -378,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
+  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -395,20 +393,19 @@ export interface FileRoutesByFullPath {
   '/admin/settings/storefront-keys': typeof AdminSettingsStorefrontKeysRoute
   '/admin/settings/taxes': typeof AdminSettingsTaxesRoute
   '/admin/settings/webhooks': typeof AdminSettingsWebhooksRoute
+  '/admin/online-store/': typeof AdminOnlineStoreIndexRoute
+  '/admin/online-store/editor/$id': typeof AdminOnlineStoreEditorIdRoute
   '/admin/online-store/navigation/$id': typeof AdminOnlineStoreNavigationIdRoute
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
-  '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
-  '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
-  '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
+  '/admin/online-store/editor/$id/code': typeof AdminOnlineStoreEditorIdCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/apps': typeof AdminAppsRouteRouteWithChildren
   '/admin/collections': typeof AdminCollectionsRouteRouteWithChildren
   '/admin/customers': typeof AdminCustomersRouteRouteWithChildren
-  '/admin/online-store': typeof AdminOnlineStoreRouteRouteWithChildren
   '/admin/orders': typeof AdminOrdersRouteRouteWithChildren
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
@@ -425,7 +422,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
-  '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
@@ -433,6 +429,7 @@ export interface FileRoutesByTo {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
+  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -450,13 +447,13 @@ export interface FileRoutesByTo {
   '/admin/settings/storefront-keys': typeof AdminSettingsStorefrontKeysRoute
   '/admin/settings/taxes': typeof AdminSettingsTaxesRoute
   '/admin/settings/webhooks': typeof AdminSettingsWebhooksRoute
+  '/admin/online-store': typeof AdminOnlineStoreIndexRoute
+  '/admin/online-store/editor/$id': typeof AdminOnlineStoreEditorIdRoute
   '/admin/online-store/navigation/$id': typeof AdminOnlineStoreNavigationIdRoute
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
-  '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
-  '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
-  '/admin/online-store/themes/$id/code': typeof AdminOnlineStoreThemesIdCodeRoute
+  '/admin/online-store/editor/$id/code': typeof AdminOnlineStoreEditorIdCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -482,7 +479,6 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/online-store/navigation': typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   '/admin/online-store/pages': typeof AdminOnlineStorePagesRouteRouteWithChildren
-  '/admin/online-store/themes': typeof AdminOnlineStoreThemesRouteRouteWithChildren
   '/admin/settings/notifications': typeof AdminSettingsNotificationsRouteRouteWithChildren
   '/admin/apps/$id': typeof AdminAppsIdRoute
   '/admin/collections/$id': typeof AdminCollectionsIdRoute
@@ -490,6 +486,7 @@ export interface FileRoutesById {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
+  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -507,13 +504,13 @@ export interface FileRoutesById {
   '/admin/settings/storefront-keys': typeof AdminSettingsStorefrontKeysRoute
   '/admin/settings/taxes': typeof AdminSettingsTaxesRoute
   '/admin/settings/webhooks': typeof AdminSettingsWebhooksRoute
+  '/admin/online-store/': typeof AdminOnlineStoreIndexRoute
+  '/admin/online-store/editor/$id': typeof AdminOnlineStoreEditorIdRoute
   '/admin/online-store/navigation/$id': typeof AdminOnlineStoreNavigationIdRoute
   '/admin/online-store/pages/$id': typeof AdminOnlineStorePagesIdRoute
-  '/admin/online-store/themes/$id': typeof AdminOnlineStoreThemesIdRoute
-  '/admin/online-store/themes/select': typeof AdminOnlineStoreThemesSelectRoute
   '/admin/orders/$id_/invoice': typeof AdminOrdersIdInvoiceRoute
   '/admin/settings/notifications/$notification': typeof AdminSettingsNotificationsNotificationRoute
-  '/admin/online-store/themes/$id_/code': typeof AdminOnlineStoreThemesIdCodeRoute
+  '/admin/online-store/editor/$id_/code': typeof AdminOnlineStoreEditorIdCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -540,7 +537,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
-    | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
     | '/admin/collections/$id'
@@ -548,6 +544,7 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
+    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -565,20 +562,19 @@ export interface FileRouteTypes {
     | '/admin/settings/storefront-keys'
     | '/admin/settings/taxes'
     | '/admin/settings/webhooks'
+    | '/admin/online-store/'
+    | '/admin/online-store/editor/$id'
     | '/admin/online-store/navigation/$id'
     | '/admin/online-store/pages/$id'
-    | '/admin/online-store/themes/$id'
-    | '/admin/online-store/themes/select'
     | '/admin/orders/$id/invoice'
     | '/admin/settings/notifications/$notification'
-    | '/admin/online-store/themes/$id/code'
+    | '/admin/online-store/editor/$id/code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin/apps'
     | '/admin/collections'
     | '/admin/customers'
-    | '/admin/online-store'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/settings'
@@ -595,7 +591,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
-    | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
     | '/admin/collections/$id'
@@ -603,6 +598,7 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
+    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -620,13 +616,13 @@ export interface FileRouteTypes {
     | '/admin/settings/storefront-keys'
     | '/admin/settings/taxes'
     | '/admin/settings/webhooks'
+    | '/admin/online-store'
+    | '/admin/online-store/editor/$id'
     | '/admin/online-store/navigation/$id'
     | '/admin/online-store/pages/$id'
-    | '/admin/online-store/themes/$id'
-    | '/admin/online-store/themes/select'
     | '/admin/orders/$id/invoice'
     | '/admin/settings/notifications/$notification'
-    | '/admin/online-store/themes/$id/code'
+    | '/admin/online-store/editor/$id/code'
   id:
     | '__root__'
     | '/'
@@ -651,7 +647,6 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/online-store/navigation'
     | '/admin/online-store/pages'
-    | '/admin/online-store/themes'
     | '/admin/settings/notifications'
     | '/admin/apps/$id'
     | '/admin/collections/$id'
@@ -659,6 +654,7 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
+    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -676,13 +672,13 @@ export interface FileRouteTypes {
     | '/admin/settings/storefront-keys'
     | '/admin/settings/taxes'
     | '/admin/settings/webhooks'
+    | '/admin/online-store/'
+    | '/admin/online-store/editor/$id'
     | '/admin/online-store/navigation/$id'
     | '/admin/online-store/pages/$id'
-    | '/admin/online-store/themes/$id'
-    | '/admin/online-store/themes/select'
     | '/admin/orders/$id_/invoice'
     | '/admin/settings/notifications/$notification'
-    | '/admin/online-store/themes/$id_/code'
+    | '/admin/online-store/editor/$id_/code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -877,6 +873,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOauthAuthorizeRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/online-store/': {
+      id: '/admin/online-store/'
+      path: '/'
+      fullPath: '/admin/online-store/'
+      preLoaderRoute: typeof AdminOnlineStoreIndexRouteImport
+      parentRoute: typeof AdminOnlineStoreRouteRoute
+    }
     '/admin/online-store/navigation': {
       id: '/admin/online-store/navigation'
       path: '/navigation'
@@ -891,11 +894,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOnlineStorePagesRouteRouteImport
       parentRoute: typeof AdminOnlineStoreRouteRoute
     }
-    '/admin/online-store/themes': {
-      id: '/admin/online-store/themes'
-      path: '/themes'
-      fullPath: '/admin/online-store/themes'
-      preLoaderRoute: typeof AdminOnlineStoreThemesRouteRouteImport
+    '/admin/online-store/select': {
+      id: '/admin/online-store/select'
+      path: '/select'
+      fullPath: '/admin/online-store/select'
+      preLoaderRoute: typeof AdminOnlineStoreSelectRouteImport
       parentRoute: typeof AdminOnlineStoreRouteRoute
     }
     '/admin/orders/$id': {
@@ -1024,6 +1027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsWebhooksRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
+    '/admin/online-store/editor/$id': {
+      id: '/admin/online-store/editor/$id'
+      path: '/editor/$id'
+      fullPath: '/admin/online-store/editor/$id'
+      preLoaderRoute: typeof AdminOnlineStoreEditorIdRouteImport
+      parentRoute: typeof AdminOnlineStoreRouteRoute
+    }
     '/admin/online-store/navigation/$id': {
       id: '/admin/online-store/navigation/$id'
       path: '/$id'
@@ -1037,20 +1047,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/online-store/pages/$id'
       preLoaderRoute: typeof AdminOnlineStorePagesIdRouteImport
       parentRoute: typeof AdminOnlineStorePagesRouteRoute
-    }
-    '/admin/online-store/themes/$id': {
-      id: '/admin/online-store/themes/$id'
-      path: '/$id'
-      fullPath: '/admin/online-store/themes/$id'
-      preLoaderRoute: typeof AdminOnlineStoreThemesIdRouteImport
-      parentRoute: typeof AdminOnlineStoreThemesRouteRoute
-    }
-    '/admin/online-store/themes/select': {
-      id: '/admin/online-store/themes/select'
-      path: '/select'
-      fullPath: '/admin/online-store/themes/select'
-      preLoaderRoute: typeof AdminOnlineStoreThemesSelectRouteImport
-      parentRoute: typeof AdminOnlineStoreThemesRouteRoute
     }
     '/admin/orders/$id_/invoice': {
       id: '/admin/orders/$id_/invoice'
@@ -1066,12 +1062,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsNotificationsNotificationRouteImport
       parentRoute: typeof AdminSettingsNotificationsRouteRoute
     }
-    '/admin/online-store/themes/$id_/code': {
-      id: '/admin/online-store/themes/$id_/code'
-      path: '/$id/code'
-      fullPath: '/admin/online-store/themes/$id/code'
-      preLoaderRoute: typeof AdminOnlineStoreThemesIdCodeRouteImport
-      parentRoute: typeof AdminOnlineStoreThemesRouteRoute
+    '/admin/online-store/editor/$id_/code': {
+      id: '/admin/online-store/editor/$id_/code'
+      path: '/editor/$id/code'
+      fullPath: '/admin/online-store/editor/$id/code'
+      preLoaderRoute: typeof AdminOnlineStoreEditorIdCodeRouteImport
+      parentRoute: typeof AdminOnlineStoreRouteRoute
     }
   }
 }
@@ -1142,36 +1138,23 @@ const AdminOnlineStorePagesRouteRouteWithChildren =
     AdminOnlineStorePagesRouteRouteChildren,
   )
 
-interface AdminOnlineStoreThemesRouteRouteChildren {
-  AdminOnlineStoreThemesIdRoute: typeof AdminOnlineStoreThemesIdRoute
-  AdminOnlineStoreThemesSelectRoute: typeof AdminOnlineStoreThemesSelectRoute
-  AdminOnlineStoreThemesIdCodeRoute: typeof AdminOnlineStoreThemesIdCodeRoute
-}
-
-const AdminOnlineStoreThemesRouteRouteChildren: AdminOnlineStoreThemesRouteRouteChildren =
-  {
-    AdminOnlineStoreThemesIdRoute: AdminOnlineStoreThemesIdRoute,
-    AdminOnlineStoreThemesSelectRoute: AdminOnlineStoreThemesSelectRoute,
-    AdminOnlineStoreThemesIdCodeRoute: AdminOnlineStoreThemesIdCodeRoute,
-  }
-
-const AdminOnlineStoreThemesRouteRouteWithChildren =
-  AdminOnlineStoreThemesRouteRoute._addFileChildren(
-    AdminOnlineStoreThemesRouteRouteChildren,
-  )
-
 interface AdminOnlineStoreRouteRouteChildren {
   AdminOnlineStoreNavigationRouteRoute: typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   AdminOnlineStorePagesRouteRoute: typeof AdminOnlineStorePagesRouteRouteWithChildren
-  AdminOnlineStoreThemesRouteRoute: typeof AdminOnlineStoreThemesRouteRouteWithChildren
+  AdminOnlineStoreSelectRoute: typeof AdminOnlineStoreSelectRoute
+  AdminOnlineStoreIndexRoute: typeof AdminOnlineStoreIndexRoute
+  AdminOnlineStoreEditorIdRoute: typeof AdminOnlineStoreEditorIdRoute
+  AdminOnlineStoreEditorIdCodeRoute: typeof AdminOnlineStoreEditorIdCodeRoute
 }
 
 const AdminOnlineStoreRouteRouteChildren: AdminOnlineStoreRouteRouteChildren = {
   AdminOnlineStoreNavigationRouteRoute:
     AdminOnlineStoreNavigationRouteRouteWithChildren,
   AdminOnlineStorePagesRouteRoute: AdminOnlineStorePagesRouteRouteWithChildren,
-  AdminOnlineStoreThemesRouteRoute:
-    AdminOnlineStoreThemesRouteRouteWithChildren,
+  AdminOnlineStoreSelectRoute: AdminOnlineStoreSelectRoute,
+  AdminOnlineStoreIndexRoute: AdminOnlineStoreIndexRoute,
+  AdminOnlineStoreEditorIdRoute: AdminOnlineStoreEditorIdRoute,
+  AdminOnlineStoreEditorIdCodeRoute: AdminOnlineStoreEditorIdCodeRoute,
 }
 
 const AdminOnlineStoreRouteRouteWithChildren =

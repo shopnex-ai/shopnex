@@ -1,11 +1,11 @@
-'use client'
-
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, UsersIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { EmptyState } from '@/components/admin/empty-state'
+import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,10 @@ export function CustomerList() {
     placeholderData: keepPreviousData,
   })
 
+  // Known to be empty (or loaded and empty): no search box above an empty state
+  const known = useListCount('customers')
+  const isBlank = !search && (data ? data.items.length === 0 : known === 0)
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -59,15 +63,23 @@ export function CustomerList() {
           </div>
         }
       />
-      <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />
+      {!isBlank && <SearchInput value={search} onSearch={setSearch} placeholder="Search by name or email" />}
       <DataTable
+        countKey={search ? undefined : 'customers'}
         columns={columns}
         data={data?.items}
         getRowId={(c) => c.id}
         rowLink={(c) => ({ to: '/admin/customers/$id', params: { id: c.id } })}
         isPending={isPending}
         error={error}
-        empty={search ? `No customers match “${search}”.` : 'No customers yet.'}
+        empty={`No customers match “${search}”.`}
+        blank={
+          search ? undefined : (
+            <EmptyState icon={UsersIcon} title="Add your first customer" action={<NewCustomerButton />}>
+              Customers are added when they check out or sign up, or you can add them yourself.
+            </EmptyState>
+          )
+        }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton

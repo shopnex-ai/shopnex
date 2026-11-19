@@ -249,6 +249,17 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn) {
     .offset(opts.offset)
 }
 
+/** How many rows the shop has, counted up to `cap`: enough to know if a list is empty or how many rows to draw, and
+ * as fast for a million rows as for ten. */
+export async function countUpTo(shopId: string, cap: number, conn: Conn) {
+  const rows = await conn
+    .select({ id: productsTable.id })
+    .from(productsTable)
+    .where(eq(productsTable.shopId, shopId))
+    .limit(cap)
+  return rows.length
+}
+
 // Total for the same filters as `list` (admin pagination)
 export async function count(shopId: string, opts: FilterOptions, conn: Conn) {
   const query = conn.select({ total: sqlCount() }).from(productsTable)

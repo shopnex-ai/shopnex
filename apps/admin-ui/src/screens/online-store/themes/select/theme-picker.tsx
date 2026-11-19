@@ -1,5 +1,3 @@
-'use client'
-
 // Online store → Themes → Change theme: every theme in the shop. Copies of the themes the storefront includes
 // can be customized and used (published); copies of others wait for a storefront with their theme. The
 // storefront's themes without a copy yet can be added. Marketplace themes will be listed here too.
@@ -92,7 +90,7 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
       <PageHeader
         title="Change theme"
         description="Choose the theme buyers see. Work on a copy without touching your store, then use it when it’s ready."
-        back={{ to: '/admin/online-store/themes', label: 'Themes' }}
+        back={{ to: '/admin/online-store', label: 'Online store' }}
         actions={
           storefront &&
           current && (
@@ -310,7 +308,7 @@ function CustomizeButton({ theme, disabled }: { theme: Theme; disabled: boolean 
       size="sm"
       variant="outline"
       nativeButton={false}
-      render={<Link to="/admin/online-store/themes/$id" params={{ id: theme.id }} />}
+      render={<Link to="/admin/online-store/editor/$id" params={{ id: theme.id }} />}
     >
       Customize
     </Button>
@@ -367,7 +365,7 @@ function ThemeMenu({ theme, onRename, onDuplicate, onCopySettings, onDelete }: M
           Rename
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() => navigate({ to: '/admin/online-store/themes/$id/code', params: { id: theme.id } })}
+          onClick={() => navigate({ to: '/admin/online-store/editor/$id/code', params: { id: theme.id } })}
         >
           <CodeIcon />
           Edit code

@@ -1,13 +1,15 @@
-'use client'
-
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon } from 'lucide-react'
+import { PackageIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { ProductThumb } from '@/components/admin/product-thumb'
+import { EmptyState } from '@/components/admin/empty-state'
+import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
@@ -45,19 +47,22 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
       header: 'Product',
       cell: ({ row: { original: p } }) => (
         <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-            {p.images[0] ? (
-              <img src={p.images[0].url} alt={p.images[0].alt ?? ''} className="size-full object-cover" />
-            ) : (
-              <ImageIcon className="size-4 text-muted-foreground" />
-            )}
-          </div>
+          <ProductThumb src={p.images[0]?.url} />
           <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>
             {p.title}
           </span>
         </div>
       ),
-      meta: { className: 'w-96 max-w-96' },
+      meta: {
+        className: 'w-96 max-w-96',
+        // The image box and the title, the height of a real row
+        skeleton: (
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-10 shrink-0 rounded-md" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        ),
+      },
     }),
     col.accessor('status', {
       header: 'Status',
@@ -100,6 +105,10 @@ export function ProductList({ currency }: { currency: string }) {
     placeholderData: keepPreviousData,
   })
 
+  // Known to be empty (or loaded and empty): no search box above an empty state
+  const known = useListCount('products')
+  const isBlank = !search && (data ? data.items.length === 0 : known === 0)
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -112,22 +121,30 @@ export function ProductList({ currency }: { currency: string }) {
           </div>
         }
       />
-      <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />
+      {!isBlank && <SearchInput value={search} onSearch={setSearch} placeholder="Search products" />}
       <DataTable
+        countKey={search ? undefined : 'products'}
         columns={columns}
         data={data?.items}
         getRowId={(p) => p.id}
         rowLink={(p) => ({ to: '/admin/products/$id', params: { id: p.id } })}
         isPending={isPending}
         error={error}
-        empty={
-          search ? (
-            `No products match “${search}”.`
-          ) : (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <span>No products yet. Create one to start selling, or look around with a few samples.</span>
-              <AddSamplesButton />
-            </div>
+        empty={`No products match “${search}”.`}
+        blank={
+          search ? undefined : (
+            <EmptyState
+              icon={PackageIcon}
+              title="Add your first product"
+              action={
+                <div className="flex flex-wrap justify-center gap-2">
+                  <NewProductButton currency={currency} />
+                  <AddSamplesButton />
+                </div>
+              }
+            >
+              Products are what you sell. Create one, or look around with a few samples.
+            </EmptyState>
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}

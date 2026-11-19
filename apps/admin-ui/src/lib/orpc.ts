@@ -1,5 +1,3 @@
-'use client'
-
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import type { InferRouterInputs, InferRouterOutputs, RouterClient } from '@orpc/server'

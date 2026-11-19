@@ -1,7 +1,5 @@
-'use client'
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, TicketPercentIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { discountCreateInput } from '@shopnex/pricing/contract'
@@ -19,10 +17,10 @@ import {
   setServerError,
   useZodForm,
 } from '@/components/admin/form'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -107,7 +105,6 @@ export function DiscountList({ currency }: { currency: string }) {
     <div className="space-y-4">
       <PageHeader
         title="Discounts"
-        description="Codes buyers enter at checkout. One code per order."
         actions={
           <div className="flex gap-2">
             <ImportDiscountsDialog currency={currency} />
@@ -116,29 +113,34 @@ export function DiscountList({ currency }: { currency: string }) {
           </div>
         }
       />
-      <Card>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            getRowId={(d) => d.id}
-            isPending={isPending}
-            error={error}
-            empty="No discounts yet."
-            selectionActions={(ids, clearSelection) => (
-              <DeleteSelectedButton
-                ids={ids}
-                entity={ids.length === 1 ? 'discount' : 'discounts'}
-                remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
-                onDeleted={async () => {
-                  clearSelection()
-                  await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
-                }}
-              />
-            )}
+      <DataTable
+        countKey="discounts"
+        columns={columns}
+        data={data}
+        getRowId={(d) => d.id}
+        isPending={isPending}
+        error={error}
+        blank={
+          <EmptyState
+            icon={TicketPercentIcon}
+            title="Create your first discount"
+            action={<DiscountDialog currency={currency} />}
+          >
+            Codes that buyers enter at checkout, one code per order.
+          </EmptyState>
+        }
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'discount' : 'discounts'}
+            remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
+            }}
           />
-        </CardContent>
-      </Card>
+        )}
+      />
     </div>
   )
 }
@@ -224,7 +226,7 @@ function DiscountDialog({ discount, currency }: { discount?: Discount; currency:
         }
       }}
     >
-      <DialogTrigger render={<Button variant={discount ? 'ghost' : 'default'} size="sm" />}>
+      <DialogTrigger render={<Button variant={discount ? 'ghost' : 'default'} size={discount ? 'sm' : 'default'} />}>
         {discount ? (
           'Edit'
         ) : (

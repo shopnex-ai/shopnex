@@ -10,6 +10,9 @@ export const AppError = defineError(
     MARKETPLACE_NOT_CONNECTED: 'BAD_REQUEST',
     MARKETPLACE_CONNECT_FAILED: 'BAD_REQUEST',
     APP_DATA_TOO_LARGE: 'BAD_REQUEST',
+    // storefront scripts: on the app's own origin only, and not for marketplace apps (until listings are reviewed)
+    SCRIPT_URL_INVALID: 'BAD_REQUEST',
+    SCRIPTS_NOT_ALLOWED: 'FORBIDDEN',
     // authorize: shown on the consent page, never redirected (the redirect target can't be trusted)
     invalid_client: 'UNAUTHORIZED',
     invalid_redirect_uri: 'BAD_REQUEST',

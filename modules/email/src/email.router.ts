@@ -5,6 +5,8 @@ import { createProcedures } from '@shopnex/rpc'
 import {
   abandonedCartSettingsInput,
   abandonedCartSettingsOutput,
+  appEmailInput,
+  appEmailOutput,
   emailInput,
   emailSettingsOutput,
   notificationDeliveryOutput,
@@ -19,10 +21,11 @@ import {
   testResultOutput,
 } from './email.contract'
 import * as abandonedCartService from './abandoned-settings'
+import { sendForApp } from './app-email'
 import * as emailService from './email'
 import * as notificationService from './notifications'
 
-const { shopManager } = createProcedures()
+const { shopManager, emailApp } = createProcedures()
 
 // Settings → Email: how the shop sends email (off, or an SMTP server). Owners and admins only; the password
 // is write-only.
@@ -49,6 +52,12 @@ export const email = {
     .handler(({ input, context }) =>
       emailService.test(context.shop.id, { ...input, password: input.password || undefined }, context.user.email, db),
     ),
+  // Apps (scope write_email, an app's own token): email one customer of the shop through these settings
+  send: emailApp
+    .route({ method: 'POST', path: '/admin/email/send' })
+    .output(appEmailOutput)
+    .input(appEmailInput)
+    .handler(({ input, context }) => sendForApp(context.shop.id, context.appId, input, db)),
 }
 
 // Settings → Notifications: the Liquid of the emails ShopNex sends (order confirmation, shipping…), with a

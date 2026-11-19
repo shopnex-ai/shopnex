@@ -202,15 +202,21 @@ describe('with resolvers', () => {
     reset()
     signedIn = { session: { activeOrganizationId: 'shop-1' }, user: { id: 'u1', email: 'u1@example.test' } }
     membership = { shop, role: 'admin', superAdmin: false }
-    bearers.sk_plain = { shop, token: token(['write_payment_sessions', 'write_ai_capabilities', 'write_shipping']) }
-    bearers.sk_app = {
-      shop,
-      token: token(['write_payment_sessions', 'write_ai_capabilities', 'write_shipping'], 'app-7'),
-    }
+    const scopes = [
+      'write_payment_sessions',
+      'write_ai_capabilities',
+      'write_shipping',
+      'write_email',
+      'write_storefront',
+    ] as const
+    bearers.sk_plain = { shop, token: token([...scopes]) }
+    bearers.sk_app = { shop, token: token([...scopes], 'app-7') }
     for (const [name, procedure, who] of [
       ['payments', procedures.paymentsApp, /payments app/],
       ['ai', procedures.aiApp, /AI app/],
       ['carrier', procedures.carrierApp, /carrier app/],
+      ['email', procedures.emailApp, /app's own token/],
+      ['storefront', procedures.storefrontApp, /storefront scripts/],
     ] as const) {
       const handler = procedure.handler(({ context }) => context.appId)
       await assert.rejects(run(handler), refused('FORBIDDEN', who), name)

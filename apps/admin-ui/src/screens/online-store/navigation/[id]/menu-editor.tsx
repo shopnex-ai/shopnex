@@ -1,5 +1,3 @@
-'use client'
-
 // One menu: name, handle and its links (up to 3 levels). Edits stay local until Save, like a form.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {

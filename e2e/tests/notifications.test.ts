@@ -135,11 +135,12 @@ describe('order notifications', () => {
     await notify(db, SHOP, 'order.created', () => orderService.getById(SHOP, order.id, db))
     assert.deepEqual(await kinds(order.id), expected)
 
-    const before = sink.messages.length
     await sendQueued(order.id)
     assert.ok((await deliveriesOf(order.id)).every((d) => d.status === 'sent'))
+    // Not only what arrived after this point: the app's own worker may have sent it first. A delivery is marked sent
+    // after the server accepted the message, so by now the sink has it.
     assert.ok(
-      sink.messages.slice(before).some((m) => m.includes(`To: ${fx.email}`)),
+      sink.messages.some((m) => m.includes(`To: ${fx.email}`) && m.includes(`Order #${order.orderNumber} confirmed`)),
       'the confirmation reached the SMTP server',
     )
   })
