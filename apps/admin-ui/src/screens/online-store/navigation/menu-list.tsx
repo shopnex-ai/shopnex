@@ -110,6 +110,7 @@ export function MenuList() {
         </Card>
       )}
       <DataTable
+        countKey="menus"
         columns={columns}
         data={data}
         getRowId={(m) => m.id}
