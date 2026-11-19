@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/admin/empty-state'
 import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { formatDate } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
@@ -59,7 +60,16 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
           </span>
         </div>
       ),
-      meta: { className: 'w-96 max-w-96' },
+      meta: {
+        className: 'w-96 max-w-96',
+        // The image box and the title, the height of a real row
+        skeleton: (
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-10 shrink-0 rounded-md" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        ),
+      },
     }),
     col.accessor('status', {
       header: 'Status',

@@ -24,7 +24,8 @@ const SKELETON_DELAY_MS = 250
 const SKELETON_DELAY_AFTER_LOAD_MS = 800
 const JUST_LOADED_MS = 3000
 
-const features = tableFeatures({ columnMeta: {} as { className?: string }, rowSelectionFeature })
+// `skeleton`: what a loading row shows in this column, for a cell that is taller or shaped differently than a line of text
+const features = tableFeatures({ columnMeta: {} as { className?: string; skeleton?: ReactNode }, rowSelectionFeature })
 
 type Features = typeof features
 // `any` value: one table mixes columns of different value types
@@ -170,9 +171,15 @@ export function DataTable<TData extends RowData>({
             {loading ? (
               Array.from({ length: known ? Math.min(known, PAGE_SIZE) : 5 }, (_, i) => (
                 <TableRow key={i}>
-                  {[null, ...columns].map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full max-w-40" />
+                  <TableCell className="w-10 min-w-10">
+                    {/* The same box as the real checkbox, so the two line up */}
+                    <div className="-m-2 flex min-h-10 min-w-10 items-center justify-center">
+                      <Skeleton className="size-4 rounded-[4px]" />
+                    </div>
+                  </TableCell>
+                  {columns.map((column, j) => (
+                    <TableCell key={j} className={column.meta?.className}>
+                      {column.meta?.skeleton ?? <Skeleton className="h-4 w-full max-w-40" />}
                     </TableCell>
                   ))}
                 </TableRow>
