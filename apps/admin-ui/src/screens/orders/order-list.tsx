@@ -1,6 +1,6 @@
-import { ShoppingCartIcon } from 'lucide-react'
-;('use client')
+'use client'
 
+import { ShoppingCartIcon } from 'lucide-react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
