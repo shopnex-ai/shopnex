@@ -49,6 +49,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -78,7 +79,16 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
   })
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>{inSettings ? <SettingsHeader /> : <ShopIdentity shop={shop} />}</SidebarHeader>
+      <SidebarHeader>
+        {/* The toggle sits at the end of the header row; in the collapsed rail it goes under the logo */}
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col">
+          <div className="min-w-0 flex-1 group-data-[collapsible=icon]:flex-none">
+            {inSettings ? <SettingsHeader /> : <ShopIdentity shop={shop} />}
+          </div>
+          {/* Below md the sidebar is a sheet that the top bar opens, so there is no toggle here */}
+          <SidebarTrigger className="hidden shrink-0 md:inline-flex" />
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="pb-0">
           <SidebarMenu>
