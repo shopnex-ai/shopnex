@@ -1,4 +1,5 @@
 import { ORPCError } from '@orpc/server'
+import { appService } from '@shopnex/apps'
 import { clientIp } from '@shopnex/auth'
 import { cartService, checkoutService } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
@@ -31,7 +32,7 @@ import { defined, storefront } from './storefront.procedures'
 
 export const storefrontRouter = storefront.router({
   shop: {
-    get: storefront.shop.get.handler(({ context }) => ({
+    get: storefront.shop.get.handler(async ({ context }) => ({
       id: context.shop.id,
       name: context.shop.name,
       handle: context.shop.slug,
@@ -41,6 +42,7 @@ export const storefrontRouter = storefront.router({
         description: context.shop.seoDescription === '' ? null : context.shop.seoDescription,
       },
       cookieBanner: context.shop.cookieBanner,
+      scripts: await appService.storefrontScripts(context.shop.id, db),
     })),
   },
   products: {

@@ -7,7 +7,8 @@
 // files, and is only used when no Postgres URL is set; its Drizzle driver would import it at startup) and an app's drizzle/ migrations folder, which is copied next to the
 // bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that one read is replaced by
 // the file's contents. The same goes for an app's own icon:
-// `readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` becomes the SVG's text.
+// `readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` becomes the SVG's text (a `.js` file the app serves,
+// like the reviews widget, the same way).
 import { build } from 'esbuild'
 import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -34,7 +35,7 @@ const inlineAppBridge = {
   },
 }
 
-const svgRead = /readFileSync\(new URL\('(\.\/[\w.-]+\.svg)', import\.meta\.url\), 'utf8'\)/g
+const svgRead = /readFileSync\(new URL\('(\.\/[\w.-]+\.(?:svg|js))', import\.meta\.url\), 'utf8'\)/g
 const inlineSvgFiles = {
   name: 'inline-svg-files',
   setup(b) {

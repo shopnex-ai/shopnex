@@ -73,7 +73,7 @@ payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
 privacy → auth, cart, core, custom-fields, customers, db, email, orders, rpc, tenancy, webhooks
 rpc → core
-storefront → auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
+storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, rpc, webhooks
 theme → core, db, drafts, rpc
 webhooks → core, db, rpc

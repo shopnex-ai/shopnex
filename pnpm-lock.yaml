@@ -399,6 +399,34 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  apps/reviews:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.6
+        version: 2.1.8(hono@4.13.18)
+      '@shopnex/app':
+        specifier: workspace:*
+        version: link:../../packages/app
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.18
+    devDependencies:
+      '@shopnex/marketplace-sdk':
+        specifier: workspace:*
+        version: link:../../packages/marketplace-sdk
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   apps/shippo:
     dependencies:
       '@hono/node-server':
@@ -1466,6 +1494,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/apps':
+        specifier: workspace:*
+        version: link:../apps
       '@shopnex/auth':
         specifier: workspace:*
         version: link:../auth
@@ -1521,9 +1552,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@shopnex/apps':
-        specifier: workspace:*
-        version: link:../apps
       '@shopnex/core':
         specifier: workspace:*
         version: link:../core
@@ -1916,6 +1944,9 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       typescript:
         specifier: 5.9.3
         version: 5.9.3

@@ -9,6 +9,8 @@ import * as fx from './fixtures'
 
 const { db, eq, sf, run, SHOP, MISSING } = fx
 const { shops } = fx
+const { appService } = await import('@shopnex/apps')
+const { apps } = await import('@shopnex/core/schema')
 
 const refused = (code: string, status?: number) => (e: unknown) =>
   e instanceof ORPCError && e.code === code && (status === undefined || e.status === status)
@@ -34,6 +36,30 @@ describe('the shop and who is asking', () => {
     )
     assert.equal(typeof shop.handle, 'string')
     await db.update(shops).set({ cookieBanner: false }).where(eq(shops.id, SHOP))
+  })
+
+  test('the scripts installed apps add to the online store are part of the shop, and only while installed', async () => {
+    const appUrl = 'http://127.0.0.1:4999'
+    const { app } = await appService.registerApp(
+      { name: `Widget ${Date.now()}`, appUrl, redirectUrls: [], scopes: ['write_storefront'] },
+      null,
+    )
+    try {
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [], 'none to begin with')
+      const installation = await appService.installManaged({
+        appId: app.id,
+        shopId: SHOP,
+        userId: null as unknown as string,
+        scopes: ['write_storefront'],
+      })
+      const src = `${appUrl}/widget.js?shop=${SHOP}`
+      await appService.configureStorefrontScripts(SHOP, app.id, [src], db)
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [src])
+      await appService.uninstall(SHOP, installation.id)
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [], 'gone with the app')
+    } finally {
+      await db.delete(apps).where(eq(apps.id, app.id))
+    }
   })
 
   test('a publishable key is the shop and the channel of the key; an unknown or revoked one is UNAUTHORIZED', async () => {

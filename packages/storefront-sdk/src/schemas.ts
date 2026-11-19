@@ -61,6 +61,12 @@ export const Shop = z.object({
    * storefront decides for itself how to ask; the bundled one does it for every theme.
    */
   cookieBanner: z.boolean(),
+  /**
+   * Scripts installed apps add to the store (a reviews widget…), as full URLs. The bundled storefront loads them on every
+   * page; a custom storefront decides for itself whether to. Already limited to the apps' own origins. Optional because
+   * a storefront (and this SDK) can be newer than the ShopNex it talks to: treat a missing list as none.
+   */
+  scripts: z.array(z.string()).optional(),
 })
 
 // ── catalog ───────────────────────────────────────────────────────────────────
