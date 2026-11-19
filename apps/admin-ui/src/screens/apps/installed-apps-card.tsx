@@ -110,7 +110,7 @@ export function UninstallButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="sm" />}>Uninstall</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" />}>Uninstall</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Uninstall {installation.app.name}?</DialogTitle>
