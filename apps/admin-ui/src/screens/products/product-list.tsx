@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -124,10 +125,9 @@ export function ProductList({ currency }: { currency: string }) {
           search ? (
             `No products match “${search}”.`
           ) : (
-            <div className="flex flex-col items-center gap-3 py-6">
-              <span>No products yet. Create one to start selling, or look around with a few samples.</span>
-              <AddSamplesButton />
-            </div>
+            <EmptyState action={<AddSamplesButton />}>
+              No products yet. Create one to start selling, or look around with a few samples.
+            </EmptyState>
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}

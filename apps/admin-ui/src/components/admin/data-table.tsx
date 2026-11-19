@@ -12,6 +12,7 @@ import {
   type ColumnDef,
   type RowData,
 } from '@tanstack/react-table'
+import { EmptyState } from '@/components/admin/empty-state'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -137,7 +138,7 @@ export function DataTable<TData extends RowData>({
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length + 1} className="py-8 text-center text-muted-foreground">
-                  {empty}
+                  {typeof empty === 'string' ? <EmptyState>{empty}</EmptyState> : empty}
                 </TableCell>
               </TableRow>
             ) : (

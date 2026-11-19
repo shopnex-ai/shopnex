@@ -28,7 +28,8 @@ export function PageHeader({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          {/* Always takes its line, so the content below starts at the same height on every page */}
+          <p className="min-h-5 text-sm text-muted-foreground">{description}</p>
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
