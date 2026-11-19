@@ -154,6 +154,8 @@ const cases: Case[] = [
       'MARKETPLACE_NOT_CONNECTED',
       'MARKETPLACE_CONNECT_FAILED',
       'APP_DATA_TOO_LARGE',
+      'SCRIPT_URL_INVALID',
+      'SCRIPTS_NOT_ALLOWED',
       'invalid_client',
       'invalid_redirect_uri',
       'invalid_scope',
@@ -164,7 +166,9 @@ const cases: Case[] = [
         ? 'NOT_FOUND'
         : code === 'invalid_client'
           ? 'UNAUTHORIZED'
-          : 'BAD_REQUEST',
+          : code === 'SCRIPTS_NOT_ALLOWED'
+            ? 'FORBIDDEN'
+            : 'BAD_REQUEST',
     // OAuth clients look for `error` (RFC 6749 §5.2)
     data: (code) => ({ code, error: code }),
   },

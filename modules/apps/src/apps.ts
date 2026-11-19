@@ -28,7 +28,13 @@ import { instanceSigner, ownKey } from './keys'
 import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'
 import { log } from './log'
-import { appAuthorizationCodes, appData, appInstallations, type AppInstallation } from './apps.schema'
+import {
+  appAuthorizationCodes,
+  appData,
+  appInstallations,
+  appStorefrontScripts,
+  type AppInstallation,
+} from './apps.schema'
 import { API_SCOPES, type ApiScope, apiTokens, type App, apps, shops } from '@shopnex/core/schema'
 
 const hash = (secret: string) => createHash('sha256').update(secret).digest('hex')
@@ -521,6 +527,10 @@ export async function uninstall(shopId: string, installationId: string) {
     // snapshot), an AI app's capabilities stop being offered (its generations stay in the shop's history), a carrier app's service
     // leaves checkout
     await appUninstalled.run(tx, { shopId, appId: installation.appId })
+    // …and its scripts leave the online store
+    await tx
+      .delete(appStorefrontScripts)
+      .where(and(eq(appStorefrontScripts.shopId, shopId), eq(appStorefrontScripts.appId, installation.appId)))
     const [updated] = await tx
       .update(appInstallations)
       .set({ uninstalledAt: new Date(), apiTokenId: null })
@@ -528,6 +538,66 @@ export async function uninstall(shopId: string, installationId: string) {
       .returning()
     return updated!
   })
+}
+
+// --- storefront scripts ---
+
+/** An app may add at most this many scripts to a shop's online store */
+export const MAX_STOREFRONT_SCRIPTS = 5
+
+/**
+ * The scripts this app adds to the shop's online store: replaces its whole set. Each address must be on the app's
+ * own origin (its registered app URL), so an app can't make ShopNex load someone else's script, and marketplace
+ * apps are refused until their listings are reviewed (a script runs on every page of the store, with the
+ * shopper's session). An empty list removes them all. Returns the set as saved.
+ */
+export async function configureStorefrontScripts(shopId: string, appId: string, scripts: string[], conn: Conn) {
+  const [app] = await conn.select().from(apps).where(eq(apps.id, appId))
+  if (!app) throw new AppError('APP_NOT_FOUND', 'App not found')
+  if (app.source === 'marketplace') {
+    throw new AppError('SCRIPTS_NOT_ALLOWED', 'Marketplace apps can not add scripts to the online store yet')
+  }
+  const appOrigin = publicOrigin(app.appUrl)
+  const wanted = [...new Set(scripts)]
+  if (wanted.length > MAX_STOREFRONT_SCRIPTS) {
+    throw new AppError('SCRIPT_URL_INVALID', `At most ${MAX_STOREFRONT_SCRIPTS} scripts`)
+  }
+  for (const src of wanted) {
+    if (!appOrigin || publicOrigin(src) !== appOrigin) {
+      throw new AppError('SCRIPT_URL_INVALID', `A script must be on the app's own origin (${appOrigin ?? app.appUrl})`)
+    }
+  }
+  await conn.transaction(async (tx) => {
+    const mine = and(eq(appStorefrontScripts.shopId, shopId), eq(appStorefrontScripts.appId, appId))
+    const have = await tx.select({ src: appStorefrontScripts.src }).from(appStorefrontScripts).where(mine)
+    for (const { src } of have) {
+      if (!wanted.includes(src))
+        await tx.delete(appStorefrontScripts).where(and(mine, eq(appStorefrontScripts.src, src)))
+    }
+    const kept = new Set(have.map((h) => h.src))
+    const added = wanted.filter((src) => !kept.has(src))
+    if (added.length) await tx.insert(appStorefrontScripts).values(added.map((src) => ({ shopId, appId, src })))
+  })
+  return wanted
+}
+
+/** What the online store loads on every page: the scripts of apps that are installed in this shop now */
+export async function storefrontScripts(shopId: string, conn: Conn) {
+  const rows = await conn
+    .select({ src: appStorefrontScripts.src })
+    .from(appStorefrontScripts)
+    .innerJoin(apps, eq(apps.id, appStorefrontScripts.appId))
+    .innerJoin(
+      appInstallations,
+      and(
+        eq(appInstallations.appId, appStorefrontScripts.appId),
+        eq(appInstallations.shopId, appStorefrontScripts.shopId),
+        isNull(appInstallations.uninstalledAt),
+      ),
+    )
+    .where(and(eq(appStorefrontScripts.shopId, shopId), isNull(apps.delistedAt), sql`${apps.source} <> 'marketplace'`))
+    .orderBy(asc(appStorefrontScripts.createdAt), asc(appStorefrontScripts.src))
+  return [...new Set(rows.map((r) => r.src))]
 }
 
 // --- embedded apps ---

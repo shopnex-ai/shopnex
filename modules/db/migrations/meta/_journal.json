@@ -316,6 +316,13 @@
       "when": 1794584997921,
       "tag": "0044_minor_units",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795100601840,
+      "tag": "0045_app_storefront_scripts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,61 @@
+---
+title: Storefront scripts
+description: Add a script to every page of a shop's online store from an app, with no theme edits.
+---
+
+An app can ask ShopNex to load its own script on every page of a shop's online store: a reviews widget, a chat button, a loyalty badge. The merchant pastes nothing and edits no theme. It works like Shopify's app embeds.
+
+A script runs on every page of the store, with the shopper's session, so ShopNex keeps this narrow: the script must be on the app's own origin, and only bundled and custom apps may use it. Marketplace apps can't until listings are reviewed.
+
+## Flow
+
+1. The app asks for the `write_storefront` scope. The install screen shows it as **Add scripts to your online store**.
+2. The app sets its list of scripts for the shop, once on install and again whenever its settings change.
+3. The bundled storefront reads the list with the shop and adds a `<script src="…" defer>` for each to `{{ content_for_header }}`, so every theme gets it.
+4. Uninstalling the app removes its scripts.
+
+## Register the scripts
+
+With the SDK:
+
+```ts
+await shop.storefront.configure({
+  scripts: [`${APP_URL}/widget.js?${new URLSearchParams({ instance: shop.instance, shop: shop.shopId })}`],
+})
+```
+
+Or the Admin API (`PUT /admin/storefront-scripts`, an app's own token):
+
+```json
+{ "scripts": ["https://app.example.com/widget.js?instance=https%3A%2F%2Fshop.example.com&shop=default"] }
+```
+
+The list is the whole set for this app and shop: send it again to change it, and send `[]` to remove everything. Repeating a call is harmless.
+
+| Rule   |                                                                                                                                                                                                |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Origin | Each URL is on the app's registered app URL (same scheme, host and port), so an app can't point the store at someone else's script. The query string is kept: put what the script needs there. |
+| Scheme | `https`, or `http` on `localhost`.                                                                                                                                                             |
+| Limit  | At most 5 scripts per app and shop.                                                                                                                                                            |
+| Who    | Bundled and custom apps. A marketplace app is answered `403`.                                                                                                                                  |
+
+## What the script can read
+
+The store describes the page in two meta tags, next to `shopnex-url` and `shopnex-key` (the Storefront API address and publishable key):
+
+```html
+<meta name="shopnex-page" content="product" />
+<!-- index, collection, product, page, 404… -->
+<meta name="shopnex-product" content="3f0c…" />
+<!-- on a product page: the product's id (a UUID) -->
+```
+
+`shopnex-page` is on every page; `shopnex-product` only on product pages. A script finds itself with `document.currentScript` and reads its own query string. Neither tag nor script appears in the theme editor's preview.
+
+## Custom storefronts
+
+The scripts are part of the shop in the Storefront API (`shop.scripts`, a list of URLs). The bundled storefront loads them; a storefront you build decides for itself whether to. Anything you load, serve with the same care: it runs with the shopper's session.
+
+## Try it
+
+Build a small app on [`@shopnex/app`](/docs/apps/sdk) that asks for `write_storefront` and calls `shop.storefront.configure` from its `onInstalled` hook, install it from **Admin → Apps**, and view the source of any page of the store: the script tag is in the head, after the SEO tags.

@@ -1,4 +1,14 @@
 {
   "title": "Apps",
-  "pages": ["index", "sdk", "ai", "carrier-services", "authentication", "marketplace", "stripe", "cj-dropshipping"]
+  "pages": [
+    "index",
+    "sdk",
+    "ai",
+    "carrier-services",
+    "storefront-scripts",
+    "authentication",
+    "marketplace",
+    "stripe",
+    "cj-dropshipping"
+  ]
 }
