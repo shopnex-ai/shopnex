@@ -112,18 +112,14 @@ export function MenuList() {
           </CardContent>
         </Card>
       )}
-      <Card>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            getRowId={(m) => m.id}
-            isPending={isPending}
-            error={error}
-            empty="No menus yet."
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={data}
+        getRowId={(m) => m.id}
+        isPending={isPending}
+        error={error}
+        empty="No menus yet."
+      />
     </div>
   )
 }

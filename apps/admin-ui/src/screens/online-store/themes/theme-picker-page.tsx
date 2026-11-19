@@ -1,11 +1,12 @@
 import { useLoaderData } from '@tanstack/react-router'
 import { ThemePicker } from './select/theme-picker'
+import { Page } from '@/components/admin/page'
 
 export function ThemePickerPage() {
   const { storefront, storefrontError } = useLoaderData({ from: '/admin/online-store/themes/select' })
   return (
-    <div className="mx-auto max-w-4xl">
+    <Page>
       <ThemePicker storefront={storefront} storefrontError={storefrontError} />
-    </div>
+    </Page>
   )
 }

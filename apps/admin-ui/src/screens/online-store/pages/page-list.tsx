@@ -9,7 +9,6 @@ import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { formatDate } from '@/lib/format'
 import { orpc, type Outputs } from '@/lib/orpc'
 
@@ -58,18 +57,14 @@ export function PageList() {
           </Button>
         }
       />
-      <Card>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            getRowId={(p) => p.id}
-            isPending={isPending}
-            error={error}
-            empty="No pages yet."
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={data}
+        getRowId={(p) => p.id}
+        isPending={isPending}
+        error={error}
+        empty="No pages yet."
+      />
     </div>
   )
 }

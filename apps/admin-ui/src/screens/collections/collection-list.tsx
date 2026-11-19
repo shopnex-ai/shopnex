@@ -8,7 +8,6 @@ import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { client, orpc, type Outputs } from '@/lib/orpc'
 
 type Collection = Outputs['admin']['collections']['list'][number]
@@ -54,30 +53,26 @@ export function CollectionList() {
           </Button>
         }
       />
-      <Card>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            getRowId={(c) => c.id}
-            rowLink={(c) => ({ to: '/admin/collections/$id', params: { id: c.id } })}
-            isPending={isPending}
-            error={error}
-            empty="No collections yet."
-            selectionActions={(ids, clearSelection) => (
-              <DeleteSelectedButton
-                ids={ids}
-                entity={ids.length === 1 ? 'collection' : 'collections'}
-                remove={(selected) => client.admin.collections.deleteMany({ ids: selected })}
-                onDeleted={async () => {
-                  clearSelection()
-                  await queryClient.invalidateQueries({ queryKey: orpc.admin.collections.key() })
-                }}
-              />
-            )}
+      <DataTable
+        columns={columns}
+        data={data}
+        getRowId={(c) => c.id}
+        rowLink={(c) => ({ to: '/admin/collections/$id', params: { id: c.id } })}
+        isPending={isPending}
+        error={error}
+        empty="No collections yet."
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'collection' : 'collections'}
+            remove={(selected) => client.admin.collections.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.collections.key() })
+            }}
           />
-        </CardContent>
-      </Card>
+        )}
+      />
     </div>
   )
 }

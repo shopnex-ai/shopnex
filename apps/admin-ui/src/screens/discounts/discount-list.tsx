@@ -22,7 +22,6 @@ import {
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -116,29 +115,25 @@ export function DiscountList({ currency }: { currency: string }) {
           </div>
         }
       />
-      <Card>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            getRowId={(d) => d.id}
-            isPending={isPending}
-            error={error}
-            empty="No discounts yet."
-            selectionActions={(ids, clearSelection) => (
-              <DeleteSelectedButton
-                ids={ids}
-                entity={ids.length === 1 ? 'discount' : 'discounts'}
-                remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
-                onDeleted={async () => {
-                  clearSelection()
-                  await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
-                }}
-              />
-            )}
+      <DataTable
+        columns={columns}
+        data={data}
+        getRowId={(d) => d.id}
+        isPending={isPending}
+        error={error}
+        empty="No discounts yet."
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'discount' : 'discounts'}
+            remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
+            }}
           />
-        </CardContent>
-      </Card>
+        )}
+      />
     </div>
   )
 }
