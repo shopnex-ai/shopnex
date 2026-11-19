@@ -4,14 +4,14 @@ import { ThemesProblem } from './definition'
 import { ThemeEditor } from './[id]/theme-editor'
 
 export function ThemeEditorPage() {
-  const { theme, storefront, definition, previewCatalog } = useLoaderData({ from: '/admin/online-store/themes/$id' })
+  const { theme, storefront, definition, previewCatalog } = useLoaderData({ from: '/admin/online-store/editor/$id' })
   if (!definition) {
     return (
       <ThemesProblem>
         {storefront.storefrontError ?? (
           <>
             <strong>{theme.name}</strong> is a copy of a theme this storefront does not include, so it cannot be edited.{' '}
-            <Link to="/admin/online-store/themes" className="underline">
+            <Link to="/admin/online-store" className="underline">
               Back to themes
             </Link>
           </>

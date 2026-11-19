@@ -263,7 +263,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         variant="ghost"
         size="icon-sm"
         nativeButton={false}
-        render={<Link to={theme.live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
+        render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
         aria-label="Back to themes"
         title="Back to themes"
       >
@@ -284,7 +284,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         variant="outline"
         size="sm"
         nativeButton={false}
-        render={<Link to="/admin/online-store/themes/$id" params={{ id }} />}
+        render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
       >
         <PaletteIcon />
         Customize

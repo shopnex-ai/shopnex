@@ -231,7 +231,7 @@ export function ThemeEditor({
           variant="ghost"
           size="icon-sm"
           nativeButton={false}
-          render={<Link to={theme.live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
+          render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
           aria-label="Back to themes"
           title="Back to themes"
         >
@@ -263,7 +263,7 @@ export function ThemeEditor({
           variant="ghost"
           size="sm"
           nativeButton={false}
-          render={<Link to="/admin/online-store/themes/$id/code" params={{ id }} />}
+          render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
         >
           <CodeIcon />
           Edit code

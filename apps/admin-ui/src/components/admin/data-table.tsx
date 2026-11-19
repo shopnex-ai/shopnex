@@ -1,7 +1,9 @@
 // Shared list table: server-paginated data from an oRPC query, rendered with TanStack Table.
 // Sorting/filtering happen on the server, so the table only uses core features.
 import { Link, useNavigate, useRouter, type ToOptions } from '@tanstack/react-router'
-import type { MouseEvent, ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
+import { listCountsQuery, PAGE_SIZE, useListCount, type ListCounts, type ListKey } from '@/lib/list-counts'
 import {
   createColumnHelper,
   rowSelectionFeature,
@@ -14,7 +16,14 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
-const features = tableFeatures({ columnMeta: {} as { className?: string }, rowSelectionFeature })
+/** How long a list loads before it shows skeleton rows */
+const SKELETON_DELAY_MS = 250
+/** Just after the page loads the first request goes out late (after the scripts are loaded and hydrated): wait longer */
+const SKELETON_DELAY_AFTER_LOAD_MS = 800
+const JUST_LOADED_MS = 3000
+
+// `skeleton`: what a loading row shows in this column, for a cell that is taller or shaped differently than a line of text
+const features = tableFeatures({ columnMeta: {} as { className?: string; skeleton?: ReactNode }, rowSelectionFeature })
 
 type Features = typeof features
 // `any` value: one table mixes columns of different value types
@@ -31,10 +40,19 @@ type DataTableProps<TData extends RowData> = {
   rowLink?: (row: TData) => ToOptions
   isPending?: boolean
   error?: Error | null
+  /** A short line inside the table when there are no rows (a search with no match, an empty view) */
   empty?: ReactNode
+  /** When there are no rows at all: shown in place of the table, as a panel. Leave out while a search or filter is on. */
+  blank?: ReactNode
   selectionActions?: (ids: string[], clearSelection: () => void) => ReactNode
   /** Omit for tables that show a fixed slice (e.g. "recent orders") */
   pagination?: PaginationProps
+  /**
+   * Which list this is, when the table shows all of it (no search or filter on). The admin layout knows the row
+   * count of every list, so while the rows load this table draws the right thing at once: the empty state, or
+   * skeleton rows for the rows that are coming. Its own rows keep the count right for the rest of the session.
+   */
+  countKey?: ListKey
 }
 
 type PaginationProps = {
@@ -52,13 +70,36 @@ export function DataTable<TData extends RowData>({
   isPending,
   error,
   empty = 'Nothing here yet.',
+  blank,
   selectionActions,
   pagination,
+  countKey,
 }: DataTableProps<TData>) {
   const navigate = useNavigate()
   const router = useRouter()
   const table = useTable({ features, columns, data: data ?? [], getRowId: (row) => getRowId(row) })
   const rows = table.getRowModel().rows
+
+  const queryClient = useQueryClient()
+  const known = useListCount(countKey)
+  const total = pagination?.total ?? data?.length
+  useEffect(() => {
+    if (!countKey || data === undefined || total === undefined) return
+    const count = Math.min(total, PAGE_SIZE)
+    queryClient.setQueryData<ListCounts>(listCountsQuery.queryKey, (old) =>
+      old && old[countKey] !== count ? { ...old, [countKey]: count } : old,
+    )
+  }, [queryClient, countKey, data, total])
+
+  // The skeleton waits a moment: a list that answers at once, or turns out to be empty, shows no rows that then jump
+  const loading = Boolean(isPending && !data)
+  const [showSkeleton, setShowSkeleton] = useState(false)
+  useEffect(() => {
+    if (!loading) return setShowSkeleton(false)
+    const justLoaded = performance.now() < JUST_LOADED_MS // time since the page started loading
+    const timer = setTimeout(() => setShowSkeleton(true), justLoaded ? SKELETON_DELAY_AFTER_LOAD_MS : SKELETON_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [loading])
   const selectedIds = table.getSelectedRowIds()
 
   const onRowClick = (link: ToOptions) => (e: MouseEvent) => {
@@ -67,6 +108,15 @@ export function DataTable<TData extends RowData>({
     if (window.getSelection()?.toString()) return
     if (e.metaKey || e.ctrlKey) window.open(router.buildLocation(link).href, '_blank')
     else navigate(link)
+  }
+
+  // The count is known: an empty list shows its empty state at once, a list with rows shows skeleton rows to match
+  if (loading && blank && known === 0)
+    return <div className="overflow-hidden rounded-xl bg-card shadow-card">{blank}</div>
+  if (loading && !showSkeleton && !known) return null
+
+  if (blank && !isPending && !error && rows.length === 0) {
+    return <div className="overflow-hidden rounded-xl bg-card shadow-card">{blank}</div>
   }
 
   return (
@@ -116,12 +166,18 @@ export function DataTable<TData extends RowData>({
             ))}
           </TableHeader>
           <TableBody>
-            {isPending && !data ? (
-              Array.from({ length: 5 }, (_, i) => (
+            {loading ? (
+              Array.from({ length: known ? Math.min(known, PAGE_SIZE) : 5 }, (_, i) => (
                 <TableRow key={i}>
-                  {[null, ...columns].map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full max-w-40" />
+                  <TableCell className="w-10 min-w-10">
+                    {/* The same box as the real checkbox, so the two line up */}
+                    <div className="-m-2 flex min-h-10 min-w-10 items-center justify-center">
+                      <Skeleton className="size-4 rounded-[4px]" />
+                    </div>
+                  </TableCell>
+                  {columns.map((column, j) => (
+                    <TableCell key={j} className={column.meta?.className}>
+                      {column.meta?.skeleton ?? <Skeleton className="h-4 w-full max-w-40" />}
                     </TableCell>
                   ))}
                 </TableRow>

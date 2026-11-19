@@ -81,9 +81,16 @@ export function GlobalSearch({ superAdmin, canManageApps }: { superAdmin: boolea
   const productItems = (search && products.data?.items) || []
   const orderItems = (search && orders.data?.items) || []
   const customerItems = (search && customers.data?.items) || []
+  // A page's children are pages of their own in the search (Pages, Navigation); Themes is the page itself
+  const withChildren = (i: NavItem): NavItem[] => [
+    i,
+    ...(i.children ?? []).filter((c) => c.href !== i.href).map((c) => ({ ...c, children: undefined })),
+  ]
   const visible = (items: NavItem[]) => items.filter((i) => !i.superAdminOnly || superAdmin)
   // Pages, settings and actions appear once you type; the box starts empty
-  const pages = search ? visible(nav.flatMap((g) => g.items)).filter((i) => matches(i.label, search)) : []
+  const pages = search
+    ? visible(nav.flatMap((g) => g.items.flatMap(withChildren))).filter((i) => matches(i.label, search))
+    : []
   // Settings pages would crowd the empty state; they show once there is a query
   const settings = search
     ? visible(settingsNav.flatMap((g) => g.items).filter((i): i is NavItem => !i.external)).filter((i) =>
