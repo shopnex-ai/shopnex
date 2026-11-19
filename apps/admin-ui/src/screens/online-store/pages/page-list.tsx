@@ -43,7 +43,7 @@ export function PageList() {
   ]
 
   const addButton = (
-    <Button size="sm" nativeButton={false} render={<Link to="/admin/online-store/pages/$id" params={{ id: 'new' }} />}>
+    <Button nativeButton={false} render={<Link to="/admin/online-store/pages/$id" params={{ id: 'new' }} />}>
       <PlusIcon />
       Add page
     </Button>

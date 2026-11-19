@@ -43,7 +43,7 @@ export function CollectionList() {
   ]
 
   const createButton = (
-    <Button size="sm" render={<Link to="/admin/collections/new" />}>
+    <Button render={<Link to="/admin/collections/new" />}>
       <PlusIcon />
       Create collection
     </Button>

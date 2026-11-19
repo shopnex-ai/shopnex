@@ -227,7 +227,7 @@ function DiscountDialog({ discount, currency }: { discount?: Discount; currency:
         }
       }}
     >
-      <DialogTrigger render={<Button variant={discount ? 'ghost' : 'default'} size="sm" />}>
+      <DialogTrigger render={<Button variant={discount ? 'ghost' : 'default'} size={discount ? 'sm' : 'default'} />}>
         {discount ? (
           'Edit'
         ) : (

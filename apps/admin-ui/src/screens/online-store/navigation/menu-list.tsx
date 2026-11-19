@@ -171,7 +171,7 @@ function NewMenuDialog() {
         }
       }}
     >
-      <DialogTrigger render={<Button size="sm" />}>
+      <DialogTrigger render={<Button />}>
         <PlusIcon />
         Add menu
       </DialogTrigger>
