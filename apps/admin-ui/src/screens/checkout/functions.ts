@@ -5,7 +5,7 @@ import { CartError, cartService, checkoutService } from '@shopnex/cart'
 import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
@@ -20,14 +20,14 @@ const tokenValidator = (token: string) => token
 export const getCheckout = publicFn({ method: 'GET' })
   .validator(tokenValidator)
   .handler(async ({ data: token }) => {
-    const found = await cartService.findByToken(null, token)
+    const found = await cartService.findByToken(null, token, db)
     if (!found) return null
     const shop = await getShopById(found.shopId)
     if (!shop) return null
     const branding = await checkoutBranding(found.shopId, shop.storefrontUrl)
     if (found.status === 'completed' && found.orderId) {
       const [order, payment] = await Promise.all([
-        orderService.getById(found.shopId, found.orderId),
+        orderService.getById(found.shopId, found.orderId, db),
         paymentService.latestPayment(found.shopId, found.orderId, db),
       ])
       return order
@@ -43,11 +43,11 @@ export const getCheckout = publicFn({ method: 'GET' })
           }
         : null
     }
-    const cart = await cartService.view(found)
+    const cart = await cartService.view(found, db)
     const [options, tax, offerReminder] = await Promise.all([
-      checkoutService.options(found.shopId, cart.subtotalCents),
-      checkoutService.taxContext(found.shopId),
-      abandonedCartService.offered(found.shopId),
+      checkoutService.options(found.shopId, cart.subtotalCents, db),
+      checkoutService.taxContext(found.shopId, db),
+      abandonedCartService.offered(found.shopId, db),
     ])
     const lang = getRequest().headers.get('accept-language') ?? ''
     const defaultCountry = /^[a-z]{2,3}-([A-Z]{2})\b/.exec(lang)?.[1] ?? 'US'
@@ -79,11 +79,11 @@ export type RatesAddress = {
 export const quoteRates = publicFn({ method: 'POST' })
   .validator((input: { token: string; address: RatesAddress }) => input)
   .handler(async ({ data }) => {
-    const found = await cartService.findByToken(null, data.token)
+    const found = await cartService.findByToken(null, data.token, db)
     if (!found || found.status === 'completed') return null
     if (!/^[A-Z]{2}$/.test(data.address.countryCode)) return null
-    const cart = await cartService.view(found)
-    const { shippingRates } = await checkoutService.options(found.shopId, cart.subtotalCents, {
+    const cart = await cartService.view(found, db)
+    const { shippingRates } = await checkoutService.options(found.shopId, cart.subtotalCents, db, {
       cart,
       address: data.address,
     })
@@ -99,10 +99,10 @@ export const saveReminderContact = publicFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const email = z.string().trim().email().max(254).safeParse(data.email)
     if (!email.success) return
-    const cart = await cartService.findByToken(null, data.token)
+    const cart = await cartService.findByToken(null, data.token, db)
     if (!cart || cart.status !== 'active') return
-    if (!(await abandonedCartService.offered(cart.shopId))) return
-    await cartService.setReminderContact(data.token, email.data)
+    if (!(await abandonedCartService.offered(cart.shopId, db))) return
+    await cartService.setReminderContact(data.token, email.data, db)
   })
 
 // Anything that isn't meant for the buyer (a failed query, a bug) is logged and replaced by a generic message:
@@ -130,7 +130,7 @@ export const placeOrder = publicFn({ method: 'POST' })
       for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message
       return { error: 'Check the highlighted fields.', fieldErrors, values }
     }
-    const cart = await cartService.findByToken(null, data.token)
+    const cart = await cartService.findByToken(null, data.token, db)
     if (!cart) return { error: 'This cart has expired.', values }
     const { email, phone, shippingRateId, paymentMethodId, note, ...address } = parsed.data
     let paymentUrl: string | null
@@ -148,6 +148,7 @@ export const placeOrder = publicFn({ method: 'POST' })
           note,
         },
         { returnUrl: confirmationUrl(data.token) },
+        db,
       ))
     } catch (error) {
       if (error instanceof OrderError || error instanceof CartError) return { error: error.message, values }
@@ -165,7 +166,7 @@ const confirmationUrl = (token: string) =>
 export const payNow = publicFn({ method: 'POST' })
   .validator(tokenValidator)
   .handler(async ({ data: token }): Promise<{ redirectTo?: string; error?: string }> => {
-    const cart = await cartService.findByToken(null, token)
+    const cart = await cartService.findByToken(null, token, db)
     if (!cart?.orderId) return { error: 'This order is no longer available.' }
     try {
       const session = await paymentService.startPayment(
@@ -189,12 +190,12 @@ export const applyDiscountCode = publicFn({ method: 'POST' })
   .handler(async ({ data }): Promise<DiscountCodeState> => {
     const code = data.code.trim()
     if (!code) return { error: 'Enter a discount code' }
-    const cart = await cartService.findByToken(null, data.token)
+    const cart = await cartService.findByToken(null, data.token, db)
     if (!cart) return { error: 'This cart has expired.' }
     try {
-      const view = await cartService.setDiscountCode(cart.shopId, data.token, code)
+      const view = await cartService.setDiscountCode(cart.shopId, data.token, code, db)
       if (!view.discountCode?.applicable) {
-        await cartService.setDiscountCode(cart.shopId, data.token, null)
+        await cartService.setDiscountCode(cart.shopId, data.token, null, db)
         const discount = await discountService.findByCode(cart.shopId, code, db)
         return {
           error: !discount
@@ -212,10 +213,10 @@ export const applyDiscountCode = publicFn({ method: 'POST' })
 export const removeDiscountCode = publicFn({ method: 'POST' })
   .validator(tokenValidator)
   .handler(async ({ data: token }) => {
-    const cart = await cartService.findByToken(null, token)
+    const cart = await cartService.findByToken(null, token, db)
     if (!cart) return
     try {
-      await cartService.setDiscountCode(cart.shopId, token, null)
+      await cartService.setDiscountCode(cart.shopId, token, null, db)
     } catch (error) {
       if (!(error instanceof CartError)) throw error
     }

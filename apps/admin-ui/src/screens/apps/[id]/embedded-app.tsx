@@ -1,11 +1,10 @@
-'use client'
-
 // Hosts an app in an iframe and answers its @shopnex/app-bridge messages (protocol: packages/app-bridge).
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useTheme } from 'next-themes'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
+import { PageHeader } from '@/components/admin/page-header'
 import { client } from '@/lib/orpc'
 import { AppIcon, UninstallButton } from '../installed-apps-card'
 
@@ -82,22 +81,23 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   }, [theme, appOrigin])
 
   return (
-    // Full-bleed: cancel the layout's padding, fill the height below the header (h-12)
+    // Full-bleed: cancel the layout's padding, fill the height below the top bar (h-12), where the page header is shown
     <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b px-4 text-sm">
-        <Link to="/admin/apps" className="text-muted-foreground hover:text-foreground">
-          Apps
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <AppIcon url={iconUrl} className="size-5 rounded" />
-        <span className="font-medium">{name}</span>
-        <div className="ml-auto">
+      <PageHeader
+        back={{ to: '/admin/apps', label: 'Apps' }}
+        title={
+          <span className="inline-flex items-center gap-2">
+            <AppIcon url={iconUrl} className="size-5 rounded" />
+            {name}
+          </span>
+        }
+        actions={
           <UninstallButton
             installation={{ id: installationId, app: { name } }}
             onUninstalled={() => void navigate({ to: '/admin/apps' })}
           />
-        </div>
-      </div>
+        }
+      />
       <iframe
         ref={frame}
         src={src}

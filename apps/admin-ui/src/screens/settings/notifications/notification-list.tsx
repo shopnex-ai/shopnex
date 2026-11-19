@@ -1,5 +1,3 @@
-'use client'
-
 // Settings → Notifications: the emails ShopNex sends by itself, each with its own Liquid (Edit), and the
 // recent ones with their status.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

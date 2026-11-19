@@ -1,0 +1,56 @@
+---
+title: Reviews
+description: Ask buyers for product reviews after fulfillment, approve them in the admin and show them on the storefront with the bundled Reviews app.
+---
+
+Reviews is a bundled app. After an order is fulfilled it emails the buyer a private link, holds what they write until you approve it, and shows approved reviews on the product page. Every review that comes from a link is marked **Verified buyer**, because the link only exists for a real order.
+
+## Turn it on
+
+The app runs as its own process next to ShopNex. In local development it listens on port `5100`.
+
+- Set `REVIEWS_APP_URL` to the app's public origin (for example `https://reviews.example.com`) and `REVIEWS_APP_KEY` to its private key (`node scripts/app-keygen.mjs` makes one; keep it, a new key is a new app).
+- Under Docker, start the `reviews` profile: `docker compose --profile reviews up`. The reviews live in a schema of their own (`app_reviews`) in the shop's Postgres, through `APP_DATABASE_URL` (the compose files set it), so they are backed up with the shop and the container needs no volume.
+- With `create-shopnex`: `npx create-shopnex@latest my-shop --with reviews`.
+- To skip it in local development, run `REVIEWS=none pnpm dev`.
+
+Install it from **Admin → Apps**. It asks to read products and orders, and to send email to your customers from your shop's address (only to people who are customers of your shop).
+
+## Set it up
+
+1. **Email.** Review requests are sent from your shop's address through **Settings → Email**, the same setup as your order emails, so there is nothing to enter in the app. Until email is on, requests wait and the app tells you how many.
+2. **Days after fulfillment.** How long to wait before asking (default 7, `0` asks right away).
+3. **The widget.** Copy the snippet from the app into a **Custom HTML** section of your product template:
+
+   ```html
+   <div
+     data-shopnex-reviews
+     data-instance="https://shop.example.com"
+     data-shop="default"
+     data-product="{{ product.id }}"
+   ></div>
+   <script src="https://reviews.example.com/widget.js" async></script>
+   ```
+
+## How it works
+
+1. An order is fulfilled. ShopNex sends `order.fulfilled` to the app, which makes one review request per product in the order.
+2. After the delay, the app emails the buyer from your address with a link to a plain review page. The link works once.
+3. The review waits in **Waiting for approval**. **Publish** shows it on the storefront; **Hide** keeps it out.
+4. The widget loads published reviews of the product, with their average.
+
+## Limits and rate limiting
+
+The public routes (the widget's `/public/reviews` and the review link `/r/…`) are rate limited per visitor, per minute: 120 widget calls and 20 link requests. Past that they answer `429` with a `Retry-After` header. The signed ShopNex webhook is not limited.
+
+The app tells visitors apart by their socket address. Behind a proxy that is the proxy, so every visitor would share one limit: set `CLIENT_IP_HEADER` on the app to the header your proxy fills with the visitor's address (`cf-connecting-ip` on Cloudflare, `x-forwarded-for` on most others). The Dokploy file does this for you. Counts are kept in memory, so run one instance of the app.
+
+## Troubleshooting
+
+- **"Turn on email to send review requests":** set up sending in **Settings → Email**. Requests that are due go out within a minute.
+- **Buyers get no email but the app shows no warning:** check the recent emails in Settings → Notifications and your SMTP provider. The app only sees "sent" or "email is off".
+- **"Review requests are not set up":** the app could not subscribe to `order.fulfilled`. Check that ShopNex can reach `REVIEWS_APP_URL` (`REVIEWS_APP_INTERNAL_URL` if its public address is not reachable from the server).
+- **The widget shows nothing or "No reviews yet":** `data-product` must be the product's id, and the review must be published.
+- **Everyone gets "Too many requests":** set `CLIENT_IP_HEADER`, see above.
+
+See the source in `apps/reviews` if you are building your own app.

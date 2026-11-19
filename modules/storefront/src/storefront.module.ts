@@ -6,6 +6,7 @@ import { storefrontRouter } from './storefront.router'
 export const storefrontModule = defineModule({
   name: 'storefront',
   dependsOn: [
+    'apps',
     'auth',
     'cart',
     'catalog',

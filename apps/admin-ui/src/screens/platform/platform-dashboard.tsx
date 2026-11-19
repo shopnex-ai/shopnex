@@ -1,5 +1,3 @@
-'use client'
-
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'

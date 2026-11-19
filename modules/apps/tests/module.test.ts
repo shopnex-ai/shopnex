@@ -20,7 +20,7 @@ describe('apps manifest', () => {
       const schema = (await import(`${srcDir}${file}`)) as Record<string, unknown>
       for (const value of Object.values(schema)) if (is(value, PgTable)) exported.add(value)
     }
-    assert.equal(exported.size, 5)
+    assert.equal(exported.size, 6)
     assert.deepEqual(new Set(Object.values(appsModule.tables)), exported)
   })
 
@@ -36,6 +36,7 @@ describe('apps manifest', () => {
       'marketplace',
       'marketplaceConnection',
       'oauth',
+      'storefrontScriptsApp',
     ])
   })
 })

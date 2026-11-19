@@ -6,7 +6,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { takeRate } from '@shopnex/auth'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { rateLimits } from '@shopnex/auth/schema'
 import { emailService } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
@@ -39,13 +39,17 @@ const address = {
 }
 
 async function placeOrder(email: string) {
-  const order = await orderService.create(SHOP, {
-    email,
-    name: 'Ada Tester',
-    items: [{ variantId: variant.id, quantity: 1 }],
-    shippingAddress: address,
-    payment: { gateway: 'manual', name: 'Bank transfer', instructions: 'IBAN 123' },
-  })
+  const order = await orderService.create(
+    SHOP,
+    {
+      email,
+      name: 'Ada Tester',
+      items: [{ variantId: variant.id, quantity: 1 }],
+      shippingAddress: address,
+      payment: { gateway: 'manual', name: 'Bank transfer', instructions: 'IBAN 123' },
+    },
+    db,
+  )
   fx.order(order.id)
   return order
 }
@@ -116,14 +120,18 @@ describe('customer accounts', () => {
   describe('with email on', () => {
     before(async () => {
       const port = await sink.start()
-      await emailService.useSmtp(SHOP, {
-        preset: 'other',
-        host: '127.0.0.1',
-        port,
-        username: '',
-        fromName: 'E2E Shop',
-        fromEmail: 'shop@e2e.test',
-      })
+      await emailService.useSmtp(
+        SHOP,
+        {
+          preset: 'other',
+          host: '127.0.0.1',
+          port,
+          username: '',
+          fromName: 'E2E Shop',
+          fromEmail: 'shop@e2e.test',
+        },
+        db,
+      )
     })
 
     test('a guest signs in with the code and finds the order they placed before', async () => {

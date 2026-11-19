@@ -1,5 +1,3 @@
-'use client'
-
 // The real storefront in an iframe, showing the draft (preview token in the URL). After each save the
 // editor bumps `reloadKey`; the theme's preview script (`connectThemePreview` from
 // @shopnex/storefront-sdk/theme-preview) reloads in place and keeps its scroll position. A theme that never says "ready" isn't reading the draft: we

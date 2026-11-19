@@ -10,6 +10,13 @@ type CustomerInput = Pick<NewCustomer, 'email' | 'name' | 'phone' | 'userId'> & 
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase()
 
+/** How many rows the shop has, counted up to `cap`: enough to know if a list is empty or how many rows to draw, and
+ * as fast for a million rows as for ten. */
+export async function countUpTo(shopId: string, cap: number, conn: Conn) {
+  const rows = await conn.select({ id: customers.id }).from(customers).where(eq(customers.shopId, shopId)).limit(cap)
+  return rows.length
+}
+
 // `search` matches email or name (case-insensitive, substring)
 export async function list(shopId: string, opts: { limit: number; offset: number; search?: string }, conn: Conn) {
   const filters: (SQL | undefined)[] = [eq(customers.shopId, shopId)]

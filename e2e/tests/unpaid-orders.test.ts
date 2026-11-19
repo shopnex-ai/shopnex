@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 import { after, afterEach, before, describe, test } from 'node:test'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { checkoutSettings } from '@shopnex/cart'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { OrderError, orderService } from '@shopnex/orders'
 import { paymentMethodService, paymentService } from '@shopnex/payments'
 import { getShopById, updateShop } from '@shopnex/tenancy'
@@ -47,12 +47,16 @@ before(async () => {
     )
   ).id
   rateId = (
-    await checkoutSettings.createShippingRate(shopId, {
-      name: 'E2E shipping',
-      priceCents: 300,
-      freeAboveCents: null,
-      active: true,
-    })
+    await checkoutSettings.createShippingRate(
+      shopId,
+      {
+        name: 'E2E shipping',
+        priceCents: 300,
+        freeAboveCents: null,
+        active: true,
+      },
+      db,
+    )
   ).id
   const product = ok(await call('POST', '/admin/products', { title: `E2E unpaid ${run}`, priceCents: 1500 }, admin))
   productId = product.id
@@ -65,7 +69,7 @@ afterEach(async () => {
   await updateShop(shopId, { unpaidOrderExpiryHours: null })
   const open = await db.select({ id: orders.id }).from(orders).where(eq(orders.shopId, shopId))
   for (const { id } of open) {
-    await orderService.cancel(shopId, id, { reason: 'other', restock: true }).catch(() => {})
+    await orderService.cancel(shopId, id, { reason: 'other', restock: true }, db).catch(() => {})
   }
   await db.delete(orders).where(eq(orders.shopId, shopId))
   ok(await call('PATCH', `/admin/variants/${variantId}`, { inventoryQuantity: STOCK }, admin))
@@ -170,7 +174,7 @@ describe('with a limit set', () => {
   test('a paid order is never cancelled, however old', async () => {
     await updateShop(shopId, { unpaidOrderExpiryHours: 24 })
     const id = await place(2)
-    await orderService.markAsPaid(shopId, id)
+    await orderService.markAsPaid(shopId, id, db)
 
     await age(id, 100)
     await paymentService.expireDue(undefined, db)
@@ -184,7 +188,7 @@ describe('with a limit set', () => {
   test('an unpaid order that has been shipped is left alone', async () => {
     await updateShop(shopId, { unpaidOrderExpiryHours: 24 })
     const id = await place(2)
-    await orderService.fulfill(shopId, id)
+    await orderService.fulfill(shopId, id, db)
 
     await age(id, 100)
     await paymentService.expireDue(undefined, db)
@@ -195,11 +199,11 @@ describe('with a limit set', () => {
 
   test('an order paid after the worker picked it is not cancelled or refunded', async () => {
     const id = await place(2)
-    await orderService.markAsPaid(shopId, id)
+    await orderService.markAsPaid(shopId, id, db)
 
     // What the worker does for an order it picked while it was still unpaid
     await assert.rejects(
-      orderService.cancel(shopId, id, { reason: 'other', restock: true, onlyIfUnpaid: true }),
+      orderService.cancel(shopId, id, { reason: 'other', restock: true, onlyIfUnpaid: true }, db),
       (error) => error instanceof OrderError && error.code === 'INVALID_STATUS_TRANSITION',
     )
 

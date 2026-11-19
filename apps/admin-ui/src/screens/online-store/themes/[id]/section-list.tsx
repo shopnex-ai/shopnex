@@ -1,5 +1,3 @@
-'use client'
-
 // A page's sections: drag to reorder, eye to hide, click to edit, "Add section" for the theme's types.
 import {
   DndContext,

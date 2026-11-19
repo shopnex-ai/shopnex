@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { EmailError, emailService, type SmtpInput } from '@shopnex/email'
 import { SHOP, closeDb } from '../lib'
 import { smtpSink } from '../smtp-sink'
@@ -39,7 +39,7 @@ after(async () => {
 
 describe('email', () => {
   test('the test logs in and delivers a message from the shop address, saving nothing', async () => {
-    const result = await emailService.test(SHOP, smtp, 'staff@e2e.test')
+    const result = await emailService.test(SHOP, smtp, 'staff@e2e.test', db)
     assert.deepEqual(result, {
       ok: true,
       steps: [
@@ -57,38 +57,38 @@ describe('email', () => {
 
   test('saved SMTP sends; turned off, messages are only logged', async () => {
     await restore()
-    const saved = await emailService.useSmtp(SHOP, smtp)
+    const saved = await emailService.useSmtp(SHOP, smtp, db)
     assert.equal(saved.provider, 'smtp')
     assert.equal(saved.smtp?.hasPassword, false)
 
     const count = sink.messages.length
-    assert.deepEqual(await emailService.send(SHOP, { to: 'buyer@e2e.test', subject: 'Order #1', text: 'Thanks' }), {
+    assert.deepEqual(await emailService.send(SHOP, { to: 'buyer@e2e.test', subject: 'Order #1', text: 'Thanks' }, db), {
       sent: true,
     })
     assert.equal(sink.messages.length, count + 1)
     assert.match(sink.messages.at(-1) ?? '', /^Subject: Order #1/m)
 
-    assert.equal((await emailService.turnOff(SHOP)).provider, 'off')
-    assert.deepEqual(await emailService.send(SHOP, { to: 'buyer@e2e.test', subject: 'Order #2', text: 'x' }), {
+    assert.equal((await emailService.turnOff(SHOP, db)).provider, 'off')
+    assert.deepEqual(await emailService.send(SHOP, { to: 'buyer@e2e.test', subject: 'Order #2', text: 'x' }, db), {
       sent: false,
     })
     assert.equal(sink.messages.length, count + 1)
     // Off keeps the setup for switching back on
-    assert.equal((await emailService.getSettings(SHOP)).smtp?.host, '127.0.0.1')
+    assert.equal((await emailService.getSettings(SHOP, db)).smtp?.host, '127.0.0.1')
   })
 
   test('a login never goes over an unencrypted connection, and needs a password', async () => {
     await restore()
     // The sink offers no STARTTLS, so a login is refused before the password is sent
     await assert.rejects(
-      emailService.useSmtp(SHOP, { ...smtp, username: 'user', password: 'hunter2' }),
+      emailService.useSmtp(SHOP, { ...smtp, username: 'user', password: 'hunter2' }, db),
       (error) => error instanceof EmailError && error.code === 'EMAIL_FAILED' && /STARTTLS/i.test(error.message),
     )
     const [row] = await db.select().from(emailSettings).where(eq(emailSettings.shopId, SHOP))
     assert.equal(row, undefined, 'nothing saved when the login check fails')
 
     await assert.rejects(
-      emailService.test(SHOP, { ...smtp, username: 'user' }, 'staff@e2e.test'),
+      emailService.test(SHOP, { ...smtp, username: 'user' }, 'staff@e2e.test', db),
       (error) => error instanceof EmailError && error.code === 'PASSWORD_REQUIRED',
     )
   })
@@ -96,9 +96,9 @@ describe('email', () => {
   test('an unreachable server is never saved', async () => {
     await restore()
     await assert.rejects(
-      emailService.useSmtp(SHOP, { ...smtp, port: 1 }),
+      emailService.useSmtp(SHOP, { ...smtp, port: 1 }, db),
       (error) => error instanceof EmailError && error.code === 'EMAIL_FAILED',
     )
-    assert.equal((await emailService.getSettings(SHOP)).provider, previous?.active ? 'smtp' : 'off')
+    assert.equal((await emailService.getSettings(SHOP, db)).provider, previous?.active ? 'smtp' : 'off')
   })
 })

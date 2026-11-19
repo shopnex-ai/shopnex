@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // What cart does when an app is uninstalled: the app's carrier service leaves checkout, and only that app's. (Apps does not know about
 // carrier services: it runs the appUninstalled hook inside the uninstall and cart listens.)
 import assert from 'node:assert/strict'
@@ -32,7 +33,7 @@ async function installedCarrier(name: string, shopId = SHOP) {
     userId: null as unknown as string,
     scopes: ['write_shipping'],
   })
-  await carrierService.configure(shopId, app!.id, { name, ratesUrl: 'http://127.0.0.1:1/rates', ready: true })
+  await carrierService.configure(shopId, app!.id, { name, ratesUrl: 'http://127.0.0.1:1/rates', ready: true }, db)
   return { app: app!, installation }
 }
 
@@ -43,10 +44,10 @@ describe('uninstalling a carrier app', () => {
 
   test('takes the app’s carrier service off checkout, and only this app’s', async () => {
     const [a, b] = [await installedCarrier('A'), await installedCarrier('B')]
-    assert.equal((await carrierService.list(SHOP)).length, 2)
+    assert.equal((await carrierService.list(SHOP, {}, db)).length, 2)
     await appService.uninstall(SHOP, a.installation.id)
     assert.deepEqual(
-      (await carrierService.list(SHOP)).map((s) => s.appId),
+      (await carrierService.list(SHOP, {}, db)).map((s) => s.appId),
       [b.app.id],
     )
   })
@@ -54,14 +55,19 @@ describe('uninstalling a carrier app', () => {
   test('another shop’s service for the same app stays', async () => {
     await fx.otherShop()
     const a = await installedCarrier('A')
-    await carrierService.configure(fx.OTHER_SHOP, a.app.id, {
-      name: 'A',
-      ratesUrl: 'http://127.0.0.1:1/rates',
-      ready: true,
-    })
+    await carrierService.configure(
+      fx.OTHER_SHOP,
+      a.app.id,
+      {
+        name: 'A',
+        ratesUrl: 'http://127.0.0.1:1/rates',
+        ready: true,
+      },
+      db,
+    )
     await appService.uninstall(SHOP, a.installation.id)
-    assert.equal((await carrierService.list(SHOP)).length, 0)
-    assert.equal((await carrierService.list(fx.OTHER_SHOP)).length, 1)
+    assert.equal((await carrierService.list(SHOP, {}, db)).length, 0)
+    assert.equal((await carrierService.list(fx.OTHER_SHOP, {}, db)).length, 1)
     assert.equal((await db.select().from(carrierServices).where(eq(carrierServices.shopId, fx.OTHER_SHOP))).length, 1)
   })
 })

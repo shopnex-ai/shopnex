@@ -1,5 +1,3 @@
-'use client'
-
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'

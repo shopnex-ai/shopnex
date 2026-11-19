@@ -3,7 +3,7 @@
 // change and queues rendered emails in the outbox (email_deliveries); the worker sends them.
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { getSettings as getAbandonedSettings, updateSettings as updateAbandonedSettings } from './abandoned-settings'
 import { DEFAULTS } from './defaults'
 import { send } from './email'
@@ -326,9 +326,9 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
       if (!order) return
       const notifications = await notificationsFor(tx, event, order)
       if (notifications.length === 0) return
-      const [[row], templates] = await Promise.all([
-        tx.select().from(shops).where(eq(shops.id, shopId)),
-        templateRows(tx, shopId, [...notifications, 'layout']),
+      const [[row], templates] = await all(tx, [
+        () => tx.select().from(shops).where(eq(shops.id, shopId)),
+        () => templateRows(tx, shopId, [...notifications, 'layout']),
       ])
       if (!row) return
       const shop = await withStorefrontUrl(row, tx)
@@ -372,11 +372,11 @@ export async function notify(conn: Conn, shopId: string, event: OrderEvent, load
  * Emails a customer their sign-in code right away. Not queued: the code would sit in the outbox (visible to
  * staff) and a retry hours later is useless. Throws EMAIL_OFF when the shop doesn't send email.
  */
-export async function sendLoginCode(shopId: string, to: string, code: string) {
-  const [row] = await db.select().from(shops).where(eq(shops.id, shopId))
+export async function sendLoginCode(shopId: string, to: string, code: string, conn: Conn) {
+  const [row] = await conn.select().from(shops).where(eq(shops.id, shopId))
   if (!row) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   const shop = await withStorefrontUrl(row)
-  const templates = await templateRows(db, shopId, ['login_code', 'layout'])
+  const templates = await templateRows(conn, shopId, ['login_code', 'layout'])
   if (templates.get('login_code')?.enabled === false)
     throw new EmailError('EMAIL_OFF', 'Customer sign-in is turned off')
   const scope = { shop: shopScope(shop), code, expires_in_minutes: LOGIN_CODE_MINUTES }
@@ -387,7 +387,7 @@ export async function sendLoginCode(shopId: string, to: string, code: string) {
     scope,
     { fallback: true },
   )
-  const { sent } = await send(shopId, { to, subject: email.subject, html: email.html })
+  const { sent } = await send(shopId, { to, subject: email.subject, html: email.html }, conn)
   if (!sent) throw new EmailError('EMAIL_OFF', 'This shop does not send email, so customers cannot sign in')
 }
 
@@ -395,13 +395,13 @@ export async function sendLoginCode(shopId: string, to: string, code: string) {
 
 const isCustomized = (row: EmailTemplate | undefined) => row?.subject != null || row?.body != null
 
-export async function list(shopId: string) {
+export async function list(shopId: string, conn: Conn) {
   const rows = await templateRows(
-    db,
+    conn,
     shopId,
     NOTIFICATION_INFO.map((n) => n.notification),
   )
-  const abandoned = await getAbandonedSettings(shopId)
+  const abandoned = await getAbandonedSettings(shopId, conn)
   return NOTIFICATION_INFO.map((info) => {
     const row = rows.get(info.notification)
     const enabled = info.notification === 'abandoned_cart' ? abandoned.enabled : (row?.enabled ?? true)
@@ -411,14 +411,15 @@ export async function list(shopId: string) {
 
 const infoOf = (notification: Notification) => NOTIFICATION_INFO.find((n) => n.notification === notification)!
 
-export async function get(shopId: string, notification: Notification) {
-  const row = (await templateRows(db, shopId, [notification])).get(notification)
+export async function get(shopId: string, notification: Notification, conn: Conn) {
+  const row = (await templateRows(conn, shopId, [notification])).get(notification)
   return {
     ...infoOf(notification),
     ...sourceOf(notification, row),
     defaults: DEFAULTS[notification],
     // Abandoned cart emails are switched in their own settings (off until the shop turns them on)
-    enabled: notification === 'abandoned_cart' ? (await getAbandonedSettings(shopId)).enabled : (row?.enabled ?? true),
+    enabled:
+      notification === 'abandoned_cart' ? (await getAbandonedSettings(shopId, conn)).enabled : (row?.enabled ?? true),
     customized: isCustomized(row),
   }
 }
@@ -443,12 +444,13 @@ export async function update(
   shopId: string,
   notification: Notification,
   input: Partial<TemplateInput> & { enabled?: boolean },
+  conn: Conn,
 ) {
-  const current = await get(shopId, notification)
+  const current = await get(shopId, notification, conn)
   const next = { subject: input.subject ?? current.subject, body: input.body ?? current.body }
   assertValid(next)
   if (notification === 'abandoned_cart' && input.enabled !== undefined)
-    await updateAbandonedSettings(shopId, { enabled: input.enabled })
+    await updateAbandonedSettings(shopId, { enabled: input.enabled }, conn)
   const values = {
     subject: next.subject === DEFAULTS[notification].subject ? null : next.subject,
     body: next.body === DEFAULTS[notification].body ? null : next.body,
@@ -456,31 +458,32 @@ export async function update(
     enabled: notification === 'layout' || notification === 'abandoned_cart' ? true : (input.enabled ?? current.enabled),
     updatedAt: new Date(),
   }
-  await db
+  await conn
     .insert(emailTemplates)
     .values({ shopId, notification, ...values })
     .onConflictDoUpdate({ target: [emailTemplates.shopId, emailTemplates.notification], set: values })
-  return get(shopId, notification)
+  return get(shopId, notification, conn)
 }
 
 /** Back to the built-in subject and body; on/off stays */
-export const revert = (shopId: string, notification: Notification) =>
-  update(shopId, notification, { subject: DEFAULTS[notification].subject, body: DEFAULTS[notification].body })
+export const revert = (shopId: string, notification: Notification, conn: Conn) =>
+  update(shopId, notification, { subject: DEFAULTS[notification].subject, body: DEFAULTS[notification].body }, conn)
 
 // The shop's latest order (so the preview shows real products), or a made-up one for a new shop
-async function previewOrder(shop: Shop): Promise<{ order: OrderView; sample: boolean }> {
-  const [order] = await db
+async function previewOrder(shop: Shop, conn: Conn): Promise<{ order: OrderView; sample: boolean }> {
+  const [order] = await conn
     .select()
     .from(orders)
     .where(eq(orders.shopId, shop.id))
     .orderBy(desc(orders.createdAt))
     .limit(1)
   if (order) {
-    const [items, shippingLines, fulfillments, customers] = await Promise.all([
-      db.select().from(orderItems).where(eq(orderItems.orderId, order.id)),
-      db.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, order.id)),
-      db.select().from(fulfillmentsTable).where(eq(fulfillmentsTable.orderId, order.id)),
-      order.customerId ? db.select().from(customersTable).where(eq(customersTable.id, order.customerId)) : [],
+    const [items, shippingLines, fulfillments, customers] = await all(conn, [
+      () => conn.select().from(orderItems).where(eq(orderItems.orderId, order.id)),
+      () => conn.select().from(orderShippingLines).where(eq(orderShippingLines.orderId, order.id)),
+      () => conn.select().from(fulfillmentsTable).where(eq(fulfillmentsTable.orderId, order.id)),
+      async () =>
+        order.customerId ? conn.select().from(customersTable).where(eq(customersTable.id, order.customerId)) : [],
     ])
     return { order: { ...order, items, shippingLines, fulfillments, customer: customers[0] ?? null }, sample: false }
   }
@@ -564,8 +567,8 @@ function sampleOrder(shop: Shop): OrderView {
   }
 }
 
-async function shopOf(shopId: string) {
-  const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
+async function shopOf(shopId: string, conn: Conn) {
+  const [shop] = await conn.select().from(shops).where(eq(shops.id, shopId))
   if (!shop) throw new EmailError('EMAIL_FAILED', 'Shop not found')
   return withStorefrontUrl(shop)
 }
@@ -574,10 +577,10 @@ async function shopOf(shopId: string) {
  * Renders unsaved Liquid with the shop's latest order (or a sample one), the way it would be sent. Errors are
  * returned, not hidden: the editor shows them. The layout previews around the order confirmation.
  */
-export async function preview(shopId: string, notification: Notification, input: TemplateInput) {
-  const shop = await shopOf(shopId)
-  const { order, sample } = await previewOrder(shop)
-  const templates = await templateRows(db, shopId, ['order_confirmation', 'layout'])
+export async function preview(shopId: string, notification: Notification, input: TemplateInput, conn: Conn) {
+  const shop = await shopOf(shopId, conn)
+  const { order, sample } = await previewOrder(shop, conn)
+  const templates = await templateRows(conn, shopId, ['order_confirmation', 'layout'])
   const [target, source, layout] =
     notification === 'layout'
       ? ([
@@ -606,17 +609,23 @@ export async function preview(shopId: string, notification: Notification, input:
 }
 
 /** Sends the preview to `to` (the staff member asking) through the shop's email settings */
-export async function sendTest(shopId: string, notification: Notification, input: TemplateInput, to: string) {
-  const email = await preview(shopId, notification, input)
+export async function sendTest(
+  shopId: string,
+  notification: Notification,
+  input: TemplateInput,
+  to: string,
+  conn: Conn,
+) {
+  const email = await preview(shopId, notification, input, conn)
   if (email.problem) throw new EmailError('INVALID_TEMPLATE', email.problem.message)
-  const { sent } = await send(shopId, { to, subject: `[Test] ${email.subject}`, html: email.html })
+  const { sent } = await send(shopId, { to, subject: `[Test] ${email.subject}`, html: email.html }, conn)
   if (!sent) throw new EmailError('EMAIL_OFF', 'Email is off. Set up sending in Settings → Email first.')
   return { to }
 }
 
 /** The shop's recent notification emails, newest first (without their HTML) */
-export async function deliveries(shopId: string, limit = 25) {
-  return db
+export async function deliveries(shopId: string, conn: Conn, limit = 25) {
+  return conn
     .select({
       id: emailDeliveries.id,
       notification: emailDeliveries.notification,

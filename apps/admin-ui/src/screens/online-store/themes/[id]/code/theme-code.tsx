@@ -1,5 +1,3 @@
-'use client'
-
 // Edit code (Shopify-style): the theme's Liquid files on the left, the file in the middle, the storefront on
 // the right. The originals come from the storefront; ShopNex keeps the copy's edited files. Edits autosave to
 // a draft (the preview shows it) and Publish writes the draft to the copy: on the live theme buyers see it then.
@@ -265,7 +263,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         variant="ghost"
         size="icon-sm"
         nativeButton={false}
-        render={<Link to={theme.live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
+        render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
         aria-label="Back to themes"
         title="Back to themes"
       >
@@ -286,7 +284,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         variant="outline"
         size="sm"
         nativeButton={false}
-        render={<Link to="/admin/online-store/themes/$id" params={{ id }} />}
+        render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
       >
         <PaletteIcon />
         Customize

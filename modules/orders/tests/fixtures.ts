@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // What the orders tests share: the embedded database, products with variants to sell, customers, discounts, tax rates, a webhook endpoint to
 // read what was sent, and the cleanup of everything an order causes. Importing this file picks the database, so it must come before anything
 // imports @shopnex/db.
@@ -48,7 +49,7 @@ export async function quietChannel() {
 /** A product with its variants */
 export async function product(patch: Partial<Parameters<typeof productService.create>[1]> = {}, shopId = SHOP) {
   const price = patch.variants ? {} : { priceCents: 2500 }
-  return productService.create(shopId, { title: 'Linen shirt', ...price, ...patch } as never)
+  return productService.create(shopId, { title: 'Linen shirt', ...price, ...patch } as never, db)
 }
 
 export async function customer(patch: Partial<Parameters<typeof customerService.create>[1]> = {}, shopId = SHOP) {
@@ -112,11 +113,15 @@ export async function hook(topics: string[]) {
 /** Places an order for one product line, the usual way */
 export async function place(patch: Partial<Parameters<typeof orderService.create>[1]> = {}, quantity = 1) {
   const p = await product()
-  return orderService.create(SHOP, {
-    email: `buyer-${unique()}@example.test`,
-    items: [{ variantId: p.variants[0]!.id, quantity }],
-    ...patch,
-  })
+  return orderService.create(
+    SHOP,
+    {
+      email: `buyer-${unique()}@example.test`,
+      items: [{ variantId: p.variants[0]!.id, quantity }],
+      ...patch,
+    },
+    db,
+  )
 }
 
 export async function cleanup() {

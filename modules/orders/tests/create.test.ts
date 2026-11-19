@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Placing an order: prices come from the catalog, stock is taken and given back as one, the discount and tax rules, the number and the
 // snapshots an order keeps, who the customer is, and everything that makes the whole order fail without leaving anything behind.
 import assert from 'node:assert/strict'
@@ -37,13 +38,17 @@ describe('what an order is made of', () => {
         { options: { Size: 'M' }, priceCents: 1200 },
       ],
     })
-    const o = await orderService.create(SHOP, {
-      email: 'buyer@example.test',
-      items: [
-        { variantId: p.variants[0]!.id, quantity: 2 },
-        { variantId: p.variants[1]!.id, quantity: 1 },
-      ],
-    })
+    const o = await orderService.create(
+      SHOP,
+      {
+        email: 'buyer@example.test',
+        items: [
+          { variantId: p.variants[0]!.id, quantity: 2 },
+          { variantId: p.variants[1]!.id, quantity: 1 },
+        ],
+      },
+      db,
+    )
     assert.deepEqual(
       [o.subtotalCents, o.shippingCents, o.discountCents, o.taxCents, o.totalCents],
       [3200, 0, 0, 0, 3200],
@@ -66,20 +71,28 @@ describe('what an order is made of', () => {
 
   test('a price changed in the catalog afterwards does not change the order', async () => {
     const p = await fx.product({ priceCents: 1000 })
-    const o = await orderService.create(SHOP, {
-      email: 'a@example.test',
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-    })
+    const o = await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+      },
+      db,
+    )
     await db
       .update(productVariants)
       .set({ priceCents: 9999 })
       .where(eq(productVariants.id, variantOf(p)))
-    assert.equal((await orderService.getById(SHOP, o.id))?.items[0]?.unitPriceCents, 1000)
+    assert.equal((await orderService.getById(SHOP, o.id, db))?.items[0]?.unitPriceCents, 1000)
   })
 
   test('a simple product can be ordered by product id; the hidden default variant has no title on the order', async () => {
     const p = await fx.product()
-    const o = await orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 3 }] })
+    const o = await orderService.create(
+      SHOP,
+      { email: 'a@example.test', items: [{ productId: p.id, quantity: 3 }] },
+      db,
+    )
     assert.deepEqual([o.items[0]?.variantId, o.items[0]?.variantTitle, o.items[0]?.quantity], [variantOf(p), null, 3])
   })
 
@@ -96,13 +109,17 @@ describe('what an order is made of', () => {
       ['manual', null, 'pending', 'unfulfilled', null],
     )
     const p = await fx.product()
-    const paid = await orderService.create(SHOP, {
-      email: 'a@example.test',
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-      payment: { gateway: 'stripe', name: 'Card', instructions: null },
-      note: 'Gift',
-      phone: '+1',
-    })
+    const paid = await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+        payment: { gateway: 'stripe', name: 'Card', instructions: null },
+        note: 'Gift',
+        phone: '+1',
+      },
+      db,
+    )
     assert.deepEqual(
       [paid.paymentGateway, paid.paymentMethodName, paid.note, paid.phone],
       ['stripe', 'Card', 'Gift', '+1'],
@@ -125,14 +142,18 @@ describe('what an order is made of', () => {
     const [a, b] = [await fx.place(), await fx.place()]
     assert.deepEqual([a.orderNumber, b.orderNumber], [1001, 1002])
     await assert.rejects(
-      orderService.create(SHOP, { email: 'a@example.test', items: [{ variantId: MISSING, quantity: 1 }] }),
+      orderService.create(SHOP, { email: 'a@example.test', items: [{ variantId: MISSING, quantity: 1 }] }, db),
     )
     assert.equal((await fx.place()).orderNumber, 1003)
     const p = await fx.product({}, OTHER_SHOP)
-    const theirs = await orderService.create(OTHER_SHOP, {
-      email: 'a@example.test',
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-    })
+    const theirs = await orderService.create(
+      OTHER_SHOP,
+      {
+        email: 'a@example.test',
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+      },
+      db,
+    )
     assert.equal(theirs.orderNumber, 1001)
   })
 
@@ -184,11 +205,15 @@ describe('discounts', () => {
   test('a percentage code takes its share off each line, is kept on the order and counted as used', async () => {
     const d = await fx.discount({ type: 'percentage', value: 10 })
     const p = await fx.product({ priceCents: 1000 })
-    const o = await orderService.create(SHOP, {
-      email: 'a@example.test',
-      items: [{ variantId: variantOf(p), quantity: 2 }],
-      discountCode: d.code.toLowerCase(),
-    })
+    const o = await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [{ variantId: variantOf(p), quantity: 2 }],
+        discountCode: d.code.toLowerCase(),
+      },
+      db,
+    )
     assert.deepEqual(
       [o.discountCents, o.totalCents, o.discountCodes, o.items[0]?.discountCents],
       [200, 1800, [d.code], 200],
@@ -238,11 +263,15 @@ describe('discounts', () => {
     const d = await fx.discount({ usageLimit: 1 })
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 0 }] })
     await assert.rejects(
-      orderService.create(SHOP, {
-        email: 'a@example.test',
-        items: [{ variantId: variantOf(p), quantity: 1 }],
-        discountCode: d.code,
-      }),
+      orderService.create(
+        SHOP,
+        {
+          email: 'a@example.test',
+          items: [{ variantId: variantOf(p), quantity: 1 }],
+          discountCode: d.code,
+        },
+        db,
+      ),
       refused('OUT_OF_STOCK'),
     )
     await fx.place({ discountCode: d.code })
@@ -253,12 +282,16 @@ describe('tax', () => {
   test('follows the shipping address: added on top by default, on the products only', async () => {
     await fx.taxRate()
     const p = await fx.product({ priceCents: 1000 })
-    const o = await orderService.create(SHOP, {
-      email: 'a@example.test',
-      items: [{ variantId: variantOf(p), quantity: 1 }],
-      shippingAddress: fx.address,
-      shipping: { title: 'Standard', code: null, priceCents: 500, freeAboveCents: null },
-    })
+    const o = await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [{ variantId: variantOf(p), quantity: 1 }],
+        shippingAddress: fx.address,
+        shipping: { title: 'Standard', code: null, priceCents: 500, freeAboveCents: null },
+      },
+      db,
+    )
     assert.deepEqual([o.taxCents, o.totalCents, o.taxesIncluded], [200, 1000 + 500 + 200, false])
     assert.deepEqual(
       o.taxLines.map((t) => [t.title, t.ratePercent, t.amountCents]),
@@ -276,9 +309,9 @@ describe('tax', () => {
       shippingAddress: fx.address,
       shipping: { title: 'S', code: null, priceCents: 500, freeAboveCents: null },
     }
-    assert.equal((await orderService.create(SHOP, base)).taxCents, 300)
+    assert.equal((await orderService.create(SHOP, base, db)).taxCents, 300)
     await db.update(shops).set({ taxesIncluded: true }).where(eq(shops.id, SHOP))
-    const included = await orderService.create(SHOP, base)
+    const included = await orderService.create(SHOP, base, db)
     assert.deepEqual([included.taxesIncluded, included.totalCents], [true, 1500])
   })
 
@@ -292,13 +325,17 @@ describe('tax', () => {
 describe('stock', () => {
   test('is taken for the quantities ordered, summed per variant across lines', async () => {
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 10 }] })
-    await orderService.create(SHOP, {
-      email: 'a@example.test',
-      items: [
-        { variantId: variantOf(p), quantity: 3 },
-        { productId: p.id, quantity: 2 },
-      ],
-    })
+    await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [
+          { variantId: variantOf(p), quantity: 3 },
+          { productId: p.id, quantity: 2 },
+        ],
+      },
+      db,
+    )
     assert.equal(await stockOf(variantOf(p)), 5)
   })
 
@@ -314,13 +351,17 @@ describe('stock', () => {
       await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 1 }] }),
     ]
     await assert.rejects(
-      orderService.create(SHOP, {
-        email: 'a@example.test',
-        items: [
-          { variantId: variantOf(plenty), quantity: 4 },
-          { variantId: variantOf(scarce), quantity: 2 },
-        ],
-      }),
+      orderService.create(
+        SHOP,
+        {
+          email: 'a@example.test',
+          items: [
+            { variantId: variantOf(plenty), quantity: 4 },
+            { variantId: variantOf(scarce), quantity: 2 },
+          ],
+        },
+        db,
+      ),
       (e: unknown) => {
         assert.ok(e instanceof OrderError)
         assert.equal(e.code, 'OUT_OF_STOCK')
@@ -347,7 +388,7 @@ describe('stock', () => {
   test('tells webhooks inventory.updated for what the order took', async () => {
     const sent = await fx.hook(['inventory.updated'])
     const p = await fx.product({ variants: [{ priceCents: 100, inventoryQuantity: 10 }] })
-    await orderService.create(SHOP, { email: 'a@example.test', items: [{ variantId: variantOf(p), quantity: 4 }] })
+    await orderService.create(SHOP, { email: 'a@example.test', items: [{ variantId: variantOf(p), quantity: 4 }] }, db)
     const [delivery] = await sent()
     assert.deepEqual([delivery?.data.inventoryQuantity, delivery?.data.change, delivery?.data.reason], [6, -4, 'order'])
   })
@@ -374,28 +415,28 @@ describe('who the customer is', () => {
   test('without a customer or an email, or with a customer of another shop, it is CUSTOMER_NOT_FOUND', async () => {
     const p = await fx.product()
     const items = [{ variantId: variantOf(p), quantity: 1 }]
-    await assert.rejects(orderService.create(SHOP, { items }), refused('CUSTOMER_NOT_FOUND'))
-    await assert.rejects(orderService.create(SHOP, { items, customerId: MISSING }), refused('CUSTOMER_NOT_FOUND'))
+    await assert.rejects(orderService.create(SHOP, { items }, db), refused('CUSTOMER_NOT_FOUND'))
+    await assert.rejects(orderService.create(SHOP, { items, customerId: MISSING }, db), refused('CUSTOMER_NOT_FOUND'))
     await fx.otherShop()
     const theirs = await fx.customer({}, OTHER_SHOP)
-    await assert.rejects(orderService.create(SHOP, { items, customerId: theirs.id }), refused('CUSTOMER_NOT_FOUND'))
+    await assert.rejects(orderService.create(SHOP, { items, customerId: theirs.id }, db), refused('CUSTOMER_NOT_FOUND'))
   })
 })
 
 describe('what cannot be ordered', () => {
   test('an order with no lines is EMPTY_ORDER', async () => {
-    await assert.rejects(orderService.create(SHOP, { email: 'a@example.test', items: [] }), refused('EMPTY_ORDER'))
+    await assert.rejects(orderService.create(SHOP, { email: 'a@example.test', items: [] }, db), refused('EMPTY_ORDER'))
   })
 
   test('a variant or product that is unknown or another shop’s is named, and nothing is placed', async () => {
     const theirs = await fx.product({}, OTHER_SHOP)
     for (const items of [[{ variantId: MISSING, quantity: 1 }], [{ variantId: variantOf(theirs), quantity: 1 }]])
       await assert.rejects(
-        orderService.create(SHOP, { email: 'a@example.test', items }),
+        orderService.create(SHOP, { email: 'a@example.test', items }, db),
         (e: unknown) => e instanceof OrderError && e.code === 'VARIANT_NOT_FOUND' && e.data.variantIds?.length === 1,
       )
     await assert.rejects(
-      orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: MISSING, quantity: 1 }] }),
+      orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: MISSING, quantity: 1 }] }, db),
       (e: unknown) => e instanceof OrderError && e.code === 'PRODUCT_NOT_FOUND' && e.data.productIds?.[0] === MISSING,
     )
     assert.equal(await orderCount(), 0)
@@ -410,7 +451,7 @@ describe('what cannot be ordered', () => {
       ],
     })
     await assert.rejects(
-      orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 1 }] }),
+      orderService.create(SHOP, { email: 'a@example.test', items: [{ productId: p.id, quantity: 1 }] }, db),
       refused('VARIANT_REQUIRED'),
     )
   })

@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // Carrier services: apps that quote shipping at checkout. Registering one (on the app's own origin only), staff renaming or switching it
 // off, which apps could still be installed, and asking the services for rates: the signed request, what is accepted of the answer, and that
 // a slow, failing or invalid app only means no rates from it.
@@ -24,7 +25,7 @@ const requests: {
   headers: Record<string, string | string[] | undefined>
   body: Record<string, unknown>
 }[] = []
-let answer: () => { status: number; body: unknown } = () => ({ status: 200, body: { rates: [] } })
+let answer: (url: string) => { status: number; body: unknown } = () => ({ status: 200, body: { rates: [] } })
 
 before(async () => {
   await fx.prepareDatabase()
@@ -37,7 +38,7 @@ before(async () => {
       headers: req.headers,
       body: body ? (JSON.parse(body) as Record<string, unknown>) : {},
     })
-    const a = answer()
+    const a = answer(req.url ?? '')
     res
       .writeHead(a.status, { 'content-type': 'application/json' })
       .end(typeof a.body === 'string' ? a.body : JSON.stringify(a.body))
@@ -85,24 +86,34 @@ const input = (patch: Partial<Parameters<typeof carrierService.quote>[1]> = {}) 
   items: [{ sku: 'TEE-1', fulfilledBy: null, title: 'Tee', quantity: 2, priceCents: 2000 }],
   ...patch,
 })
-const configured = async (opts: { name?: string; ready?: boolean; shopId?: string } = {}) => {
+const configured = async (opts: { name?: string; ready?: boolean; shopId?: string; path?: string } = {}) => {
   const app = await carrierApp()
-  const service = await carrierService.configure(opts.shopId ?? SHOP, app.id, {
-    name: opts.name ?? 'Carrier',
-    ratesUrl: `${origin}/rates`,
-    ready: opts.ready ?? true,
-  })
+  const service = await carrierService.configure(
+    opts.shopId ?? SHOP,
+    app.id,
+    {
+      name: opts.name ?? 'Carrier',
+      ratesUrl: `${origin}${opts.path ?? '/rates'}`,
+      ready: opts.ready ?? true,
+    },
+    db,
+  )
   return { app, service }
 }
 
 describe('registering a service', () => {
   test('creates it for the shop with the name, the rates URL and whether it is ready; on for staff', async () => {
     const app = await carrierApp()
-    const s = await carrierService.configure(SHOP, app.id, {
-      name: 'Carrier',
-      ratesUrl: `${origin}/rates`,
-      ready: false,
-    })
+    const s = await carrierService.configure(
+      SHOP,
+      app.id,
+      {
+        name: 'Carrier',
+        ratesUrl: `${origin}/rates`,
+        ready: false,
+      },
+      db,
+    )
     assert.deepEqual(
       [s.shopId, s.appId, s.name, s.ratesUrl, s.ready, s.active],
       [SHOP, app.id, 'Carrier', `${origin}/rates`, false, true],
@@ -111,12 +122,17 @@ describe('registering a service', () => {
 
   test('registering again updates the same service and keeps the name and switch staff chose', async () => {
     const { app, service } = await configured({ name: 'Original' })
-    await carrierService.update(SHOP, service.id, { name: 'Renamed', active: false })
-    const again = await carrierService.configure(SHOP, app.id, {
-      name: 'Ignored',
-      ratesUrl: `${origin}/v2/rates`,
-      ready: false,
-    })
+    await carrierService.update(SHOP, service.id, { name: 'Renamed', active: false }, db)
+    const again = await carrierService.configure(
+      SHOP,
+      app.id,
+      {
+        name: 'Ignored',
+        ratesUrl: `${origin}/v2/rates`,
+        ready: false,
+      },
+      db,
+    )
     assert.deepEqual(
       [again.id, again.name, again.active, again.ratesUrl, again.ready],
       [service.id, 'Renamed', false, `${origin}/v2/rates`, false],
@@ -126,12 +142,17 @@ describe('registering a service', () => {
 
   test('one service per app and shop: the same app in another shop gets its own', async () => {
     const app = await carrierApp()
-    const a = await carrierService.configure(SHOP, app.id, { name: 'A', ratesUrl: `${origin}/rates`, ready: true })
-    const b = await carrierService.configure(OTHER_SHOP, app.id, {
-      name: 'A',
-      ratesUrl: `${origin}/rates`,
-      ready: true,
-    })
+    const a = await carrierService.configure(SHOP, app.id, { name: 'A', ratesUrl: `${origin}/rates`, ready: true }, db)
+    const b = await carrierService.configure(
+      OTHER_SHOP,
+      app.id,
+      {
+        name: 'A',
+        ratesUrl: `${origin}/rates`,
+        ready: true,
+      },
+      db,
+    )
     assert.notEqual(a.id, b.id)
   })
 
@@ -146,16 +167,16 @@ describe('registering a service', () => {
       '/relative',
     ])
       await assert.rejects(
-        carrierService.configure(SHOP, app.id, { name: 'X', ratesUrl, ready: true }),
+        carrierService.configure(SHOP, app.id, { name: 'X', ratesUrl, ready: true }, db),
         refused('INVALID_RATES_URL'),
         ratesUrl,
       )
-    assert.equal((await carrierService.list(SHOP)).length, 0)
+    assert.equal((await carrierService.list(SHOP, {}, db)).length, 0)
   })
 
   test('an app that does not exist is NOT_A_CARRIER_APP', async () => {
     await assert.rejects(
-      carrierService.configure(SHOP, MISSING, { name: 'X', ratesUrl: `${origin}/rates`, ready: true }),
+      carrierService.configure(SHOP, MISSING, { name: 'X', ratesUrl: `${origin}/rates`, ready: true }, db),
       refused('NOT_A_CARRIER_APP'),
     )
   })
@@ -172,24 +193,24 @@ describe('the shop’s services', () => {
     const { service: b } = await configured({ name: 'B', ready: false })
     const { service: c } = await configured({ name: 'C' })
     await configured({ name: 'Theirs', shopId: OTHER_SHOP })
-    await carrierService.update(SHOP, c.id, { active: false })
+    await carrierService.update(SHOP, c.id, { active: false }, db)
     assert.deepEqual(
-      (await carrierService.list(SHOP)).map((s) => s.id),
+      (await carrierService.list(SHOP, {}, db)).map((s) => s.id),
       [a.id, b.id, c.id],
     )
     assert.deepEqual(
-      (await carrierService.list(SHOP, { usableOnly: true })).map((s) => s.id),
+      (await carrierService.list(SHOP, { usableOnly: true }, db)).map((s) => s.id),
       [a.id],
     )
   })
 
   test('update renames or switches off; null for an unknown service or another shop’s', async () => {
     const { service } = await configured()
-    const u = await carrierService.update(SHOP, service.id, { name: 'Renamed' })
+    const u = await carrierService.update(SHOP, service.id, { name: 'Renamed' }, db)
     assert.deepEqual([u?.name, u?.active], ['Renamed', true])
-    assert.equal((await carrierService.update(SHOP, service.id, { active: false }))?.active, false)
-    assert.equal(await carrierService.update(SHOP, MISSING, { name: 'x' }), null)
-    assert.equal(await carrierService.update(OTHER_SHOP, service.id, { name: 'Hijacked' }), null)
+    assert.equal((await carrierService.update(SHOP, service.id, { active: false }, db))?.active, false)
+    assert.equal(await carrierService.update(SHOP, MISSING, { name: 'x' }, db), null)
+    assert.equal(await carrierService.update(OTHER_SHOP, service.id, { name: 'Hijacked' }, db), null)
   })
 })
 
@@ -201,7 +222,7 @@ describe('apps that could be installed', () => {
     await carrierApp({ name: 'Delisted', delistedAt: new Date() })
     const installed = await carrierApp({ name: 'Installed' })
     await db.insert(appInstallations).values({ appId: installed.id, shopId: SHOP, scopes: ['write_shipping'] })
-    const available = await carrierService.availableApps(SHOP)
+    const available = await carrierService.availableApps(SHOP, db)
     assert.deepEqual(
       available.map((a) => a.name),
       ['Quoting'],
@@ -210,7 +231,7 @@ describe('apps that could be installed', () => {
       [available[0]?.id, available[0]?.clientId, available[0]?.appUrl],
       [quoting.id, quoting.clientId, quoting.appUrl],
     )
-    const elsewhere = await carrierService.availableApps(OTHER_SHOP)
+    const elsewhere = await carrierService.availableApps(OTHER_SHOP, db)
     assert.deepEqual(
       elsewhere.map((a) => a.name).sort(),
       ['Installed', 'Quoting'],
@@ -222,7 +243,7 @@ describe('apps that could be installed', () => {
     const app = await carrierApp({ name: 'Back' })
     await db.insert(appInstallations).values({ appId: app.id, shopId: SHOP, scopes: [], uninstalledAt: new Date() })
     assert.deepEqual(
-      (await carrierService.availableApps(SHOP)).map((a) => a.name),
+      (await carrierService.availableApps(SHOP, db)).map((a) => a.name),
       ['Back'],
     )
   })
@@ -242,7 +263,7 @@ describe('asking for rates', () => {
       status: 200,
       body: { rates: [rate('slow', 900, { description: '  Tracked  ' }), rate('fast', 400)] },
     })
-    const rates = await carrierService.quote(SHOP, input())
+    const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => [r.id, r.title, r.priceCents, r.description, r.carrier]),
       [
@@ -284,7 +305,7 @@ describe('asking for rates', () => {
     await configured({ name: 'Two' })
     let n = 0
     answer = () => ({ status: 200, body: { rates: [rate('r', ++n === 1 ? 700 : 300)] } })
-    const rates = await carrierService.quote(SHOP, input())
+    const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => r.priceCents),
       [300, 700],
@@ -294,11 +315,11 @@ describe('asking for rates', () => {
 
   test('a service that is switched off, not ready, or another shop’s is not asked', async () => {
     const { service: off } = await configured({ name: 'Off' })
-    await carrierService.update(SHOP, off.id, { active: false })
+    await carrierService.update(SHOP, off.id, { active: false }, db)
     await configured({ name: 'Not ready', ready: false })
     await configured({ name: 'Theirs', shopId: OTHER_SHOP })
     answer = () => ({ status: 200, body: { rates: [rate('r', 100)] } })
-    assert.deepEqual(await carrierService.quote(SHOP, input()), [])
+    assert.deepEqual(await carrierService.quote(SHOP, input(), db), [])
     assert.equal(requests.length, 0)
   })
 
@@ -311,6 +332,7 @@ describe('asking for rates', () => {
         input({
           destination: { countryCode: '', province: null, city: null, zip: null, address1: null, address2: null },
         }),
+        db,
       ),
       [],
     )
@@ -343,13 +365,13 @@ describe('asking for rates', () => {
         ],
       },
     })
-    const rates = await carrierService.quote(SHOP, input())
+    const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => r.id.split(':')[2]),
       ['free', 'ok', 'max'],
     )
     answer = () => ({ status: 200, body: { rates: many } })
-    assert.equal((await carrierService.quote(SHOP, input())).length, 20)
+    assert.equal((await carrierService.quote(SHOP, input(), db)).length, 20)
   })
 
   test('a long description is cut to 300 characters and a blank one is none', async () => {
@@ -364,7 +386,7 @@ describe('asking for rates', () => {
         ],
       },
     })
-    const rates = await carrierService.quote(SHOP, input())
+    const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => r.description?.length ?? null),
       [300, null, null],
@@ -372,7 +394,7 @@ describe('asking for rates', () => {
   })
 
   test('an app that fails, answers badly or is too chatty gives no rates, and the others still do', async () => {
-    await configured({ name: 'Broken' })
+    await configured({ name: 'Broken', path: '/rates/broken' })
     for (const bad of [
       { status: 500, body: 'oops' },
       { status: 200, body: 'not json' },
@@ -381,13 +403,14 @@ describe('asking for rates', () => {
       { status: 200, body: 'null' },
       { status: 200, body: { rates: [rate('r', 1)], padding: 'x'.repeat(300 * 1024) } },
     ]) {
-      answer = () => bad
-      assert.deepEqual(await carrierService.quote(SHOP, input()), [], JSON.stringify(bad).slice(0, 60))
+      answer = (url) => (url === '/rates/broken' ? bad : { status: 200, body: { rates: [] } })
+      assert.deepEqual(await carrierService.quote(SHOP, input(), db), [], JSON.stringify(bad).slice(0, 60))
     }
-    const { service } = await configured({ name: 'Working' })
-    let n = 0
-    answer = () => (++n === 1 ? { status: 500, body: 'down' } : { status: 200, body: { rates: [rate('ok', 100)] } })
-    const rates = await carrierService.quote(SHOP, input())
+    const { service } = await configured({ name: 'Working', path: '/rates/working' })
+    // Both services are asked at once, so each answers by its own URL, never by who arrives first
+    answer = (url) =>
+      url === '/rates/broken' ? { status: 500, body: 'down' } : { status: 200, body: { rates: [rate('ok', 100)] } }
+    const rates = await carrierService.quote(SHOP, input(), db)
     assert.deepEqual(
       rates.map((r) => r.id),
       [`carrier:${service.id}:ok`],
@@ -396,7 +419,12 @@ describe('asking for rates', () => {
 
   test('an app that cannot be reached gives no rates', async () => {
     const app = await carrierApp({ appUrl: 'http://127.0.0.1:1/app' })
-    await carrierService.configure(SHOP, app.id, { name: 'Gone', ratesUrl: 'http://127.0.0.1:1/rates', ready: true })
-    assert.deepEqual(await carrierService.quote(SHOP, input()), [])
+    await carrierService.configure(
+      SHOP,
+      app.id,
+      { name: 'Gone', ratesUrl: 'http://127.0.0.1:1/rates', ready: true },
+      db,
+    )
+    assert.deepEqual(await carrierService.quote(SHOP, input(), db), [])
   })
 })

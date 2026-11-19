@@ -6,7 +6,7 @@ import { after, before, describe, test } from 'node:test'
 import { and, eq } from 'drizzle-orm'
 import { productService } from '@shopnex/catalog'
 import { customerService } from '@shopnex/customers'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { session as sessionTable } from '@shopnex/auth/schema'
 import { webhookEndpoints, webhookDeliveries } from '@shopnex/webhooks/schema'
 import { orderService } from '@shopnex/orders'
@@ -79,7 +79,7 @@ after(async () => {
   for (const id of userIds) await db.delete(user).where(eq(user.id, id))
   await db.delete(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP))
   await fx.cleanup()
-  if (productId) await productService.removeMany(SHOP, [productId])
+  if (productId) await productService.removeMany(SHOP, [productId], db)
   await closeDb()
 })
 
@@ -92,20 +92,24 @@ async function buyer(label: string, opts: { open?: boolean } = {}) {
     db,
   ))!
   const place = async () => {
-    const placed = await orderService.create(SHOP, {
-      customerId: customer.id,
-      items: [{ variantId, quantity: 2 }],
-      shippingAddress: address(label, 'Privatweg 7', 'Berlin'),
-      billingAddress: address(label, 'Rechnungsallee 9', 'Hamburg'),
-      note: `Leave with ${label}'s neighbour`,
-      shipping: { title: 'E2E standard', code: null, priceCents: 500, freeAboveCents: null },
-    })
+    const placed = await orderService.create(
+      SHOP,
+      {
+        customerId: customer.id,
+        items: [{ variantId, quantity: 2 }],
+        shippingAddress: address(label, 'Privatweg 7', 'Berlin'),
+        billingAddress: address(label, 'Rechnungsallee 9', 'Hamburg'),
+        note: `Leave with ${label}'s neighbour`,
+        shipping: { title: 'E2E standard', code: null, priceCents: 500, freeAboveCents: null },
+      },
+      db,
+    )
     fx.order(placed.id)
     return placed
   }
   const finished = await place()
-  await orderService.markAsPaid(SHOP, finished.id)
-  await orderService.fulfill(SHOP, finished.id, {})
+  await orderService.markAsPaid(SHOP, finished.id, db)
+  await orderService.fulfill(SHOP, finished.id, db, {})
   const open = opts.open ? await place() : null
   return { email, customer, finished, open }
 }
@@ -141,6 +145,7 @@ describe('export', () => {
       to: email,
       subject: 'Thanks for your order',
       html: '<p>Hello Export Privacy, we ship to Privatweg 7</p>',
+      status: 'sent',
     })
     await db.insert(emailSuppressions).values({ shopId: SHOP, email })
     suppressed.push(email)
@@ -197,7 +202,7 @@ describe('erase', () => {
     assert.equal((await ordersOf(email, [open!.id])).length, 1, 'the order still has its buyer')
 
     // Once the order is cancelled it no longer needs the address
-    await orderService.cancel(SHOP, open!.id, { reason: 'customer', restock: true })
+    await orderService.cancel(SHOP, open!.id, { reason: 'customer', restock: true }, db)
     ok(await call('POST', `/admin/customers/${customer.id}/erase`, undefined, owner))
   })
 
@@ -217,6 +222,8 @@ describe('erase', () => {
         to: email,
         subject: 'Your order',
         html: '<p>Hello gone Privacy, Privatweg 7</p>',
+        // Not pending: the app's mail worker would pick a pending row up and write its own lastError
+        status: 'failed',
         lastError: `rejected ${email}`,
       })
       .returning()
@@ -229,6 +236,7 @@ describe('erase', () => {
         to: 'merchant@example.com',
         subject: 'New order',
         html: '<p>gone Privacy ordered, ship to Privatweg 7</p>',
+        status: 'sent',
       })
       .returning()
     const [controlMail] = await db
@@ -240,6 +248,7 @@ describe('erase', () => {
         to: control.email,
         subject: 'Control',
         html: '<p>control</p>',
+        status: 'sent',
       })
       .returning()
     const delivery = (body: unknown) => ({

@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The admin product and collection routes, called through the real router with fake resolvers and an in-memory database: who may call
 // them (staff, or an API token with the scope), the rule on `fulfilledBy`, how input is checked, and what the routes answer.
 import assert from 'node:assert/strict'
@@ -104,7 +105,7 @@ describe('products', () => {
       refused('BAD_REQUEST'),
     )
     await assert.rejects(run(products.create, { title: 'x', variants: [] }), refused('BAD_REQUEST'))
-    assert.equal(await fx.productService.count(SHOP, {}), 0)
+    assert.equal(await fx.productService.count(SHOP, {}, db), 0)
   })
 
   test('input is checked: an empty title, a bad slug, a negative price and an image that is not http(s) are BAD_REQUEST', async () => {
@@ -140,7 +141,7 @@ describe('products', () => {
 
   test('an unknown product, or another shop’s, is NOT_FOUND; a taken slug is CONFLICT; bad variants are BAD_REQUEST', async () => {
     await fx.otherShop()
-    const theirs = await fx.productService.create(fx.OTHER_SHOP, { title: 'Theirs', priceCents: 1 })
+    const theirs = await fx.productService.create(fx.OTHER_SHOP, { title: 'Theirs', priceCents: 1 }, db)
     await assert.rejects(run(products.get, { id: MISSING }), refused('NOT_FOUND'))
     await assert.rejects(run(products.get, { id: theirs.id }), refused('NOT_FOUND'))
     await assert.rejects(run(products.update, { id: MISSING, title: 'x' }), refused('NOT_FOUND'))

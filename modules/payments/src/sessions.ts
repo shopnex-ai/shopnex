@@ -313,7 +313,7 @@ export async function startRefunds(shopId: string, orderId: string, conn: Conn) 
 
 /** orderService.cancel, then refunds through the payments app when the order was paid through one */
 export async function cancelOrder(shopId: string, orderId: string, input: CancelInput, conn: Conn) {
-  const order = await orderService.cancel(shopId, orderId, input)
+  const order = await orderService.cancel(shopId, orderId, input, conn)
   await startRefunds(shopId, orderId, conn).catch((error: unknown) => {
     log.error({ err: error, orderId }, 'refunds failed')
   })
@@ -322,7 +322,7 @@ export async function cancelOrder(shopId: string, orderId: string, input: Cancel
 
 /** orderService.refund (part of what the order took), then sends it to the payments app when paid through one */
 export async function refundOrder(shopId: string, orderId: string, input: { amountCents: number }, conn: Conn) {
-  const order = await orderService.refund(shopId, orderId, input)
+  const order = await orderService.refund(shopId, orderId, input, conn)
   await startRefunds(shopId, orderId, conn).catch((error: unknown) => {
     log.error({ err: error, orderId }, 'refunds failed')
   })
@@ -512,7 +512,7 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
     )
     .limit(limit)
   for (const { shopId, orderId } of abandoned) {
-    await orderService.cancel(shopId, orderId, { reason: 'declined', restock: true }).catch((error: unknown) => {
+    await orderService.cancel(shopId, orderId, { reason: 'declined', restock: true }, conn).catch((error: unknown) => {
       log.error({ err: error, orderId }, 'cancelling the unpaid order failed')
     })
   }
@@ -553,7 +553,7 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
   let cancelled = 0
   for (const { shopId, orderId } of stale) {
     try {
-      await orderService.cancel(shopId, orderId, { reason: 'other', restock: true, onlyIfUnpaid: true })
+      await orderService.cancel(shopId, orderId, { reason: 'other', restock: true, onlyIfUnpaid: true }, conn)
       cancelled++
     } catch (error) {
       // Paid, cancelled or fulfilled since it was picked: nothing to do

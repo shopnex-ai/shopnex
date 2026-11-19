@@ -1,3 +1,4 @@
+import { QueryBuilder } from 'drizzle-orm/pg-core'
 // Business logic only — no HTTP / oRPC / Hono imports in this module.
 // Every query is scoped by shopId; there is deliberately no unscoped variant.
 import {
@@ -20,7 +21,7 @@ import {
   type SQL,
 } from 'drizzle-orm'
 import { publicationService, type PublicationInput } from '@shopnex/channels'
-import { all, db, type Conn } from '@shopnex/db'
+import { all, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
@@ -86,7 +87,7 @@ export type ProductWithDetails = Product & {
 }
 
 // Batch-load images, collection slugs, options and variants for many products (no N+1)
-export async function withDetails(rows: Product[], conn: Conn = db): Promise<ProductWithDetails[]> {
+export async function withDetails(rows: Product[], conn: Conn): Promise<ProductWithDetails[]> {
   if (rows.length === 0) return []
   const ids = rows.map((r) => r.id)
   const [images, links, { options, variants }] = await all(conn, [
@@ -183,7 +184,7 @@ const likeAny = (term: string) => `%${term.replace(/[\\%_]/g, '\\$&')}%`
 // A variant of the product that satisfies `conditions`
 const someVariant = (...conditions: (SQL | undefined)[]) =>
   exists(
-    db
+    new QueryBuilder()
       .select({ one: sql`1` })
       .from(productVariantsTable)
       .where(and(eq(productVariantsTable.productId, productsTable.id), ...conditions)),
@@ -225,7 +226,7 @@ function filters(shopId: string, opts: FilterOptions) {
   )
 }
 
-export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
+export async function list(shopId: string, opts: ListOptions, conn: Conn) {
   const where = filters(shopId, opts)
   if (opts.collection) {
     const rows = await conn
@@ -248,8 +249,19 @@ export async function list(shopId: string, opts: ListOptions, conn: Conn = db) {
     .offset(opts.offset)
 }
 
+/** How many rows the shop has, counted up to `cap`: enough to know if a list is empty or how many rows to draw, and
+ * as fast for a million rows as for ten. */
+export async function countUpTo(shopId: string, cap: number, conn: Conn) {
+  const rows = await conn
+    .select({ id: productsTable.id })
+    .from(productsTable)
+    .where(eq(productsTable.shopId, shopId))
+    .limit(cap)
+  return rows.length
+}
+
 // Total for the same filters as `list` (admin pagination)
-export async function count(shopId: string, opts: FilterOptions, conn: Conn = db) {
+export async function count(shopId: string, opts: FilterOptions, conn: Conn) {
   const query = conn.select({ total: sqlCount() }).from(productsTable)
   const [row] = await (opts.collection
     ? query
@@ -281,7 +293,7 @@ const tally = (values: string[]) => {
 
 // What a filter UI can offer for the products matching `opts` (its own selections included, so a facet
 // keeps listing the values the shopper hasn't picked)
-export async function facets(shopId: string, opts: FilterOptions, conn: Conn = db): Promise<Facets> {
+export async function facets(shopId: string, opts: FilterOptions, conn: Conn): Promise<Facets> {
   const where = filters(shopId, opts)
   const base = conn
     .select({ id: products.id, vendor: products.vendor, productType: products.productType, tags: products.tags })
@@ -313,7 +325,7 @@ export async function facets(shopId: string, opts: FilterOptions, conn: Conn = d
   }
 }
 
-export async function getById(shopId: string, id: string, conn: Conn = db) {
+export async function getById(shopId: string, id: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(productsTable)
@@ -321,9 +333,9 @@ export async function getById(shopId: string, id: string, conn: Conn = db) {
   return row ?? null
 }
 
-export async function removeMany(shopId: string, ids: string[]) {
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
   if (!ids.length) return 0
-  const deleted = await db
+  const deleted = await conn
     .delete(productsTable)
     .where(and(eq(productsTable.shopId, shopId), inArray(productsTable.id, ids)))
     .returning({ id: productsTable.id })
@@ -331,12 +343,12 @@ export async function removeMany(shopId: string, ids: string[]) {
     shopId,
     'product',
     deleted.map((p) => p.id),
-    db,
+    conn,
   )
   return deleted.length
 }
 
-export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
+export async function getBySlug(shopId: string, slug: string, conn: Conn) {
   const [row] = await conn
     .select()
     .from(productsTable)
@@ -344,7 +356,7 @@ export async function getBySlug(shopId: string, slug: string, conn: Conn = db) {
   return row ?? null
 }
 
-export async function getManyByIds(shopId: string, ids: string[], conn: Conn = db) {
+export async function getManyByIds(shopId: string, ids: string[], conn: Conn) {
   if (ids.length === 0) return []
   return conn
     .select()
@@ -379,7 +391,7 @@ async function replaceImages(conn: Conn, productId: string, images: ImageInput[]
   }
 }
 
-export async function create(shopId: string, input: ProductInput) {
+export async function create(shopId: string, input: ProductInput, conn: Conn) {
   if (input.variants === undefined && input.priceCents === undefined) {
     throw new CatalogError('INVALID_VARIANTS', 'Provide priceCents (simple product) or variants')
   }
@@ -388,7 +400,7 @@ export async function create(shopId: string, input: ProductInput) {
   }
   // Without this, Math.min() of nothing is Infinity below and Postgres refuses it with a message no one can read
   if (input.variants?.length === 0) throw new CatalogError('INVALID_VARIANTS', 'A product needs at least one variant')
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     let slug: string
     if (input.slug) {
       if (await isSlugTaken(tx, productsTable, shopId, input.slug)) {
@@ -425,8 +437,8 @@ type ProductTopic = 'product.created' | 'product.updated'
  * Publishes the product on exactly these channels and queues `product.updated`, so apps that mirror the
  * catalog learn it appeared on or left a channel. Null when there's no such product.
  */
-export async function setPublications(shopId: string, id: string, items: PublicationInput[]) {
-  return db.transaction(async (tx) => {
+export async function setPublications(shopId: string, id: string, items: PublicationInput[], conn: Conn) {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     await publicationService.set(shopId, 'product', id, items, tx)
     await emitProductEvent(tx, shopId, id, 'product.updated')
@@ -456,8 +468,9 @@ export async function setVariants(
   shopId: string,
   id: string,
   input: { options: OptionInput[]; variants: VariantInput[] },
+  conn: Conn,
 ) {
-  return db.transaction(async (tx) => {
+  return conn.transaction(async (tx) => {
     if (!(await getById(shopId, id, tx))) return null
     await applyVariants(tx, shopId, id, input)
     return withDetailsAndEmit(tx, shopId, id, 'product.updated')
@@ -466,8 +479,13 @@ export async function setVariants(
 
 // Partial update; images, when given, replace the existing set.
 // priceCents is only accepted for simple products (it sets the default variant's price).
-export async function update(shopId: string, id: string, patch: Partial<Omit<ProductInput, 'options' | 'variants'>>) {
-  return db.transaction(async (tx) => {
+export async function update(
+  shopId: string,
+  id: string,
+  patch: Partial<Omit<ProductInput, 'options' | 'variants'>>,
+  conn: Conn,
+) {
+  return conn.transaction(async (tx) => {
     const existing = await getById(shopId, id, tx)
     if (!existing) return null
     if (patch.slug && patch.slug !== existing.slug && (await isSlugTaken(tx, productsTable, shopId, patch.slug, id))) {

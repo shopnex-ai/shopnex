@@ -1,5 +1,3 @@
-'use client'
-
 // One input per theme setting field type (ThemeSettingField in @shopnex/storefront-sdk/theme).
 // Controlled: values live in the theme document, every change autosaves.
 import { useQuery } from '@tanstack/react-query'

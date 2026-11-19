@@ -1,5 +1,3 @@
-'use client'
-
 // Theme editor (Shopify-style): sections on the left, the real storefront in the middle, the selected
 // section's (or the theme's) settings on the right. Every change autosaves the draft and reloads the
 // preview; Publish makes the draft what buyers see (for an unpublished copy: it becomes the live theme).
@@ -233,7 +231,7 @@ export function ThemeEditor({
           variant="ghost"
           size="icon-sm"
           nativeButton={false}
-          render={<Link to={theme.live ? '/admin/online-store/themes' : '/admin/online-store/themes/select'} />}
+          render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
           aria-label="Back to themes"
           title="Back to themes"
         >
@@ -265,7 +263,7 @@ export function ThemeEditor({
           variant="ghost"
           size="sm"
           nativeButton={false}
-          render={<Link to="/admin/online-store/themes/$id/code" params={{ id }} />}
+          render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
         >
           <CodeIcon />
           Edit code

@@ -1,3 +1,4 @@
+import type { Conn } from '@shopnex/db'
 // The public Storefront API for what a shopper browses: the shop, products (list, filters, sorting, paging, facets, one), collections, pages,
 // menus and the theme. Through the real router with an in-memory database, the way a storefront calls it. Only what is active and published
 // on the storefront's channel is ever shown.
@@ -8,6 +9,8 @@ import * as fx from './fixtures'
 
 const { db, eq, sf, run, SHOP, MISSING } = fx
 const { shops } = fx
+const { appService } = await import('@shopnex/apps')
+const { apps } = await import('@shopnex/core/schema')
 
 const refused = (code: string, status?: number) => (e: unknown) =>
   e instanceof ORPCError && e.code === code && (status === undefined || e.status === status)
@@ -33,6 +36,30 @@ describe('the shop and who is asking', () => {
     )
     assert.equal(typeof shop.handle, 'string')
     await db.update(shops).set({ cookieBanner: false }).where(eq(shops.id, SHOP))
+  })
+
+  test('the scripts installed apps add to the online store are part of the shop, and only while installed', async () => {
+    const appUrl = 'http://127.0.0.1:4999'
+    const { app } = await appService.registerApp(
+      { name: `Widget ${Date.now()}`, appUrl, redirectUrls: [], scopes: ['write_storefront'] },
+      null,
+    )
+    try {
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [], 'none to begin with')
+      const installation = await appService.installManaged({
+        appId: app.id,
+        shopId: SHOP,
+        userId: null as unknown as string,
+        scopes: ['write_storefront'],
+      })
+      const src = `${appUrl}/widget.js?shop=${SHOP}`
+      await appService.configureStorefrontScripts(SHOP, app.id, [src], db)
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [src])
+      await appService.uninstall(SHOP, installation.id)
+      assert.deepEqual((await run<{ scripts: string[] }>(sf.shop!.get)).scripts, [], 'gone with the app')
+    } finally {
+      await db.delete(apps).where(eq(apps.id, app.id))
+    }
   })
 
   test('a publishable key is the shop and the channel of the key; an unknown or revoked one is UNAUTHORIZED', async () => {
@@ -161,9 +188,9 @@ describe('listing products', () => {
 
   test('a collection shows its published products in its own order; one not published on the channel has no products', async () => {
     const [a, b] = [await fx.product({ title: 'A' }), await fx.product({ title: 'B' })]
-    const live = await fx.collectionService.create(SHOP, { title: 'Picks' })
-    await fx.collectionService.addProduct(SHOP, live.id, b.id)
-    await fx.collectionService.addProduct(SHOP, live.id, a.id)
+    const live = await fx.collectionService.create(SHOP, { title: 'Picks' }, db)
+    await fx.collectionService.addProduct(SHOP, live.id, b.id, db)
+    await fx.collectionService.addProduct(SHOP, live.id, a.id, db)
     assert.deepEqual(
       (await run<Connection>(sf.products!.list, { ...page, collection: live.slug })).nodes.map((n) => n.title),
       ['B', 'A'],
@@ -232,8 +259,8 @@ describe('one product', () => {
         { options: { Size: 'M' }, priceCents: 1200, inventoryQuantity: 0, imageUrl: 'https://example.com/m.png' },
       ],
     })
-    const c = await fx.collectionService.create(SHOP, { title: 'Summer' })
-    await fx.collectionService.addProduct(SHOP, c.id, p.id)
+    const c = await fx.collectionService.create(SHOP, { title: 'Summer' }, db)
+    await fx.collectionService.addProduct(SHOP, c.id, p.id, db)
     const byId = await run<Record<string, any>>(sf.products!.get, { id: p.id })
     const byHandle = await run<Record<string, any>>(sf.products!.getByHandle, { handle: p.slug })
     assert.equal(byId.id, byHandle.id)
@@ -294,11 +321,11 @@ describe('one product', () => {
   test('names only the collections that are published on the channel', async () => {
     const p = await fx.product({ title: 'Tee' })
     const [shown, hidden] = [
-      await fx.collectionService.create(SHOP, { title: 'Shown' }),
-      await fx.collectionService.create(SHOP, { title: 'Hidden' }),
+      await fx.collectionService.create(SHOP, { title: 'Shown' }, db),
+      await fx.collectionService.create(SHOP, { title: 'Hidden' }, db),
     ]
-    await fx.collectionService.addProduct(SHOP, shown.id, p.id)
-    await fx.collectionService.addProduct(SHOP, hidden.id, p.id)
+    await fx.collectionService.addProduct(SHOP, shown.id, p.id, db)
+    await fx.collectionService.addProduct(SHOP, hidden.id, p.id, db)
     const { channel } = await fx.quietChannel()
     const { publicationService } = await import('@shopnex/channels')
     await publicationService.set(SHOP, 'collection', hidden.id, [{ channelId: channel.id }], db)
@@ -314,15 +341,19 @@ describe('one product', () => {
 
 describe('collections', () => {
   test('the published ones, oldest first, paged, with their image and SEO; one by handle', async () => {
-    const a = await fx.collectionService.create(SHOP, {
-      title: 'A',
-      imageUrl: 'https://example.com/a.png',
-      descriptionHtml: '<p>About A</p>',
-      seo: { title: 'SEO A' },
-    })
+    const a = await fx.collectionService.create(
+      SHOP,
+      {
+        title: 'A',
+        imageUrl: 'https://example.com/a.png',
+        descriptionHtml: '<p>About A</p>',
+        seo: { title: 'SEO A' },
+      },
+      db,
+    )
     await new Promise((r) => setTimeout(r, 5))
-    await fx.collectionService.create(SHOP, { title: 'B' })
-    await fx.collectionService.create(SHOP, { title: 'Theirs' }).then(() => undefined)
+    await fx.collectionService.create(SHOP, { title: 'B' }, db)
+    await fx.collectionService.create(SHOP, { title: 'Theirs' }, db).then(() => undefined)
     const list = await run<Connection<Record<string, any>>>(sf.collections!.list, { first: 1 })
     assert.deepEqual([list.nodes.map((c) => c.title), list.pageInfo.hasNextPage], [['A'], true])
     const second = await run<Connection>(sf.collections!.list, { first: 5, after: list.pageInfo.endCursor! })
@@ -344,7 +375,7 @@ describe('collections', () => {
   })
 
   test('one that is not published on the channel, or does not exist, is NOT_FOUND and not listed', async () => {
-    const hidden = await fx.collectionService.create(SHOP, { title: 'Hidden' })
+    const hidden = await fx.collectionService.create(SHOP, { title: 'Hidden' }, db)
     const { channel, key } = await fx.quietChannel()
     assert.deepEqual(
       (await run<Connection>(sf.collections!.list, page, { [fx.PUBLISHABLE_KEY_HEADER]: key })).nodes,
@@ -385,9 +416,9 @@ describe('pages and menus', () => {
     const [p, soldOut, gone] = [
       await fx.product({ title: 'Tee' }),
       await fx.product({ title: 'Withdrawn' }),
-      await fx.collectionService.create(SHOP, { title: 'Gone' }),
+      await fx.collectionService.create(SHOP, { title: 'Gone' }, db),
     ]
-    const c = await fx.collectionService.create(SHOP, { title: 'Summer' })
+    const c = await fx.collectionService.create(SHOP, { title: 'Summer' }, db)
     const [pg, hiddenPage] = [
       await fx.pageService.create(SHOP, { handle: 'about', title: 'About', bodyHtml: '<p>x</p>' }, db),
       await fx.pageService.create(SHOP, { handle: 'hidden', title: 'Hidden', bodyHtml: '<p>x</p>' }, db),
@@ -417,9 +448,9 @@ describe('pages and menus', () => {
       } as never,
       db,
     )
-    await fx.productService.update(SHOP, soldOut.id, { status: 'draft' })
+    await fx.productService.update(SHOP, soldOut.id, { status: 'draft' }, db)
     await fx.pageService.update(SHOP, hiddenPage.id, { published: false }, db)
-    await fx.collectionService.remove(SHOP, gone.id)
+    await fx.collectionService.remove(SHOP, gone.id, db)
     const menu = await run<{ handle: string; items: Array<{ url: string; handle: string | null; items: any[] }> }>(
       sf.menu!.get,
       { handle: 'main' },

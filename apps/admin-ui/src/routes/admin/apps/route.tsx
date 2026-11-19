@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
 import { isShopManager } from '@/lib/admin-access'
 import { NoAccess } from '@/components/admin/no-access'
+import { Page } from '@/components/admin/page'
 import { PageHeader } from '@/components/admin/page-header'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AppCatalogCard } from '@/screens/apps/app-catalog-card'
@@ -15,14 +16,11 @@ export const Route = createFileRoute('/admin/apps')({
 
 function AppsPending() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="Apps"
-        description="Apps add features to your shop and work with its data through the Admin API."
-      />
+    <Page>
+      <PageHeader title="Apps" />
       <Skeleton className="h-40 w-full" />
       <Skeleton className="h-56 w-full" />
-    </div>
+    </Page>
   )
 }
 
@@ -33,11 +31,8 @@ function AppsPage() {
   if (!tenant) return null
   const canManage = isShopManager(tenant)
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="Apps"
-        description="Apps add features to your shop and work with its data through the Admin API."
-      />
+    <Page>
+      <PageHeader title="Apps" />
       {canManage ? (
         <>
           <AppCatalogCard shopId={tenant.shop.id} superAdmin={tenant.superAdmin} />
@@ -46,6 +41,6 @@ function AppsPage() {
       ) : (
         <NoAccess message="Only shop owners and admins can manage apps." />
       )}
-    </div>
+    </Page>
   )
 }

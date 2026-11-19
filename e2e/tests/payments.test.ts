@@ -7,7 +7,7 @@ import type { AddressInfo } from 'node:net'
 import { after, before, describe, test } from 'node:test'
 import { eq } from 'drizzle-orm'
 import { appService } from '@shopnex/apps'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { paymentSessions } from '@shopnex/payments/schema'
 import { createJwksResolver } from '@shopnex/marketplace-sdk/keys'
 import { verifyPaymentsRequest, type PaymentsAppRequest } from '@shopnex/marketplace-sdk/payments'
@@ -330,7 +330,7 @@ describe('payments app: refunds and expiry', () => {
     ok(await call('POST', `/admin/payment-sessions/${id}/resolve`, { externalId: 'pi_left_pending' }, auth))
 
     // orderService.cancel books the refund; going around paymentService.cancelOrder is a send that never happened
-    await orderService.cancel(SHOP, placed.orderId, { reason: 'customer', restock: true })
+    await orderService.cancel(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
     const before = received.filter((r) => r.kind === 'refund' && r.orderId === placed.orderId).length
     assert.equal(before, 0, 'nothing was sent')
 
@@ -380,7 +380,9 @@ describe('payments app: refunds and expiry', () => {
         )
       }
       await paymentService.cancelOrder(SHOP, placed.orderId, { reason: 'customer', restock: true }, db)
-      await new Promise((resolve) => setTimeout(resolve, 400))
+      // The app answers each refund after 50ms; wait for both rather than a fixed time (rule 17 sends only one today)
+      for (let i = 0; i < 40 && refunds.length < 2; i++) await new Promise((resolve) => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       refundResolve = null
 
       const perPayment = refunds.flatMap((r) =>

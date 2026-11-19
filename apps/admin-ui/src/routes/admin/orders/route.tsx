@@ -1,14 +1,15 @@
 import { createFileRoute, Outlet, useLocation } from '@tanstack/react-router'
 import { OrderList } from '@/screens/orders/order-list'
+import { Page } from '@/components/admin/page'
 
 export const Route = createFileRoute('/admin/orders')({ component: OrdersRoute })
 
 function OrdersRoute() {
   const pathname = useLocation({ select: (location) => location.pathname })
   return pathname === '/admin/orders' ? (
-    <div className="mx-auto max-w-5xl">
+    <Page>
       <OrderList />
-    </div>
+    </Page>
   ) : (
     <Outlet />
   )

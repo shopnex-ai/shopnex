@@ -1,5 +1,3 @@
-'use client'
-
 import { useQuery } from '@tanstack/react-query'
 import { TriangleAlertIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
@@ -36,15 +34,10 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Themes"
-        description="How your online store looks"
+        title="Online store"
+
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link to="/admin/online-store/themes/select" />}
-          >
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/admin/online-store/select" />}>
             Change theme
           </Button>
         }
@@ -103,7 +96,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
                 {theme ? (
                   <Button
                     nativeButton={false}
-                    render={<Link to="/admin/online-store/themes/$id" params={{ id: current.id }} />}
+                    render={<Link to="/admin/online-store/editor/$id" params={{ id: current.id }} />}
                   >
                     Customize
                   </Button>

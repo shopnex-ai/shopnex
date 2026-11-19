@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '@shopnex/db'
+import { db, type Conn } from '@shopnex/db'
 import { EmailError, emailService, notificationService, notify, type Notification } from '@shopnex/email'
 import { processDue } from '@shopnex/email/worker'
 import { orderService } from '@shopnex/orders'
@@ -35,18 +35,22 @@ const address = {
 }
 
 async function placeOrder(gateway: string, extra: { note?: string } = {}) {
-  const order = await orderService.create(SHOP, {
-    email: fx.email,
-    name: 'Ada Tester',
-    items: [{ variantId: variant.id, quantity: 2 }],
-    shippingAddress: address,
-    payment: {
-      gateway,
-      name: gateway === 'manual' ? 'Bank transfer' : 'Card',
-      instructions: 'IBAN 123\nUse your order number',
+  const order = await orderService.create(
+    SHOP,
+    {
+      email: fx.email,
+      name: 'Ada Tester',
+      items: [{ variantId: variant.id, quantity: 2 }],
+      shippingAddress: address,
+      payment: {
+        gateway,
+        name: gateway === 'manual' ? 'Bank transfer' : 'Card',
+        instructions: 'IBAN 123\nUse your order number',
+      },
+      ...extra,
     },
-    ...extra,
-  })
+    db,
+  )
   fx.order(order.id)
   orderIds.push(order.id)
   return order
@@ -61,7 +65,7 @@ async function sendQueued(orderId: string) {
   for (let i = 0; i < 50; i++) {
     const pending = (await deliveriesOf(orderId)).filter((d) => d.status === 'pending')
     if (pending.length === 0) return
-    await processDue()
+    await processDue(db)
     await new Promise((resolve) => setTimeout(resolve, 100))
   }
   assert.fail('emails still pending')
@@ -76,14 +80,18 @@ before(async () => {
   templatesBefore = await db.select().from(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
   await db.delete(emailTemplates).where(eq(emailTemplates.shopId, SHOP))
   const port = await sink.start()
-  await emailService.useSmtp(SHOP, {
-    preset: 'other',
-    host: '127.0.0.1',
-    port,
-    username: '',
-    fromName: 'E2E Shop',
-    fromEmail: 'orders@e2e.test',
-  })
+  await emailService.useSmtp(
+    SHOP,
+    {
+      preset: 'other',
+      host: '127.0.0.1',
+      port,
+      username: '',
+      fromName: 'E2E Shop',
+      fromEmail: 'orders@e2e.test',
+    },
+    db,
+  )
   owners = (
     await db
       .select({ email: user.email })
@@ -124,21 +132,22 @@ describe('order notifications', () => {
     }
 
     // The same event again (e.g. a retried request) doesn't queue a second copy
-    await notify(db, SHOP, 'order.created', () => orderService.getById(SHOP, order.id))
+    await notify(db, SHOP, 'order.created', () => orderService.getById(SHOP, order.id, db))
     assert.deepEqual(await kinds(order.id), expected)
 
-    const before = sink.messages.length
     await sendQueued(order.id)
     assert.ok((await deliveriesOf(order.id)).every((d) => d.status === 'sent'))
+    // Not only what arrived after this point: the app's own worker may have sent it first. A delivery is marked sent
+    // after the server accepted the message, so by now the sink has it.
     assert.ok(
-      sink.messages.slice(before).some((m) => m.includes(`To: ${fx.email}`)),
+      sink.messages.some((m) => m.includes(`To: ${fx.email}`) && m.includes(`Order #${order.orderNumber} confirmed`)),
       'the confirmation reached the SMTP server',
     )
   })
 
   test('fulfilling sends the shipping confirmation with tracking', async () => {
     const order = await placeOrder('manual')
-    await orderService.fulfill(SHOP, order.id, {
+    await orderService.fulfill(SHOP, order.id, db, {
       trackingCompany: 'UPS',
       trackingNumber: '1ZE2E',
       trackingUrl: 'https://track.example/1ZE2E',
@@ -153,22 +162,27 @@ describe('order notifications', () => {
   test('an app-paid order is confirmed when paid; cancelled unconfirmed, the buyer hears nothing', async () => {
     const abandoned = await placeOrder('stripe')
     assert.deepEqual(await kinds(abandoned.id), [], 'not confirmed before payment')
-    await orderService.cancel(SHOP, abandoned.id, { reason: 'declined', restock: true })
+    await orderService.cancel(SHOP, abandoned.id, { reason: 'declined', restock: true }, db)
     assert.deepEqual(await kinds(abandoned.id), [], 'no cancellation for an order never confirmed')
 
     const paid = await placeOrder('stripe')
-    await notify(db, SHOP, 'order.paid', () => orderService.getById(SHOP, paid.id))
+    await notify(db, SHOP, 'order.paid', () => orderService.getById(SHOP, paid.id, db))
     assert.ok((await kinds(paid.id)).includes(`order_confirmation:${fx.email}`))
-    await orderService.cancel(SHOP, paid.id, { reason: 'customer', restock: true })
+    await orderService.cancel(SHOP, paid.id, { reason: 'customer', restock: true }, db)
     const cancelled = (await deliveriesOf(paid.id)).find((d) => d.notification === 'order_cancelled')
     assert.ok(cancelled)
     assert.match(cancelled.html, /was cancelled at your request/)
   })
 
   test('edited Liquid is used; a broken edit falls back to the default; a turned-off notification is not sent', async () => {
-    await notificationService.update(SHOP, 'order_confirmation', {
-      subject: 'Thanks {{ order.customer.first_name }}! ({{ order.total_price | money }})',
-    })
+    await notificationService.update(
+      SHOP,
+      'order_confirmation',
+      {
+        subject: 'Thanks {{ order.customer.first_name }}! ({{ order.total_price | money }})',
+      },
+      db,
+    )
     const edited = await placeOrder('manual')
     const [confirmation] = (await deliveriesOf(edited.id)).filter((d) => d.notification === 'order_confirmation')
     assert.match(confirmation!.subject, /^Thanks Ada! \(.+\)$/)
@@ -182,52 +196,72 @@ describe('order notifications', () => {
     const [fallback] = (await deliveriesOf(broken.id)).filter((d) => d.notification === 'order_confirmation')
     assert.equal(fallback!.subject, `Order #${broken.orderNumber} confirmed`)
 
-    await notificationService.update(SHOP, 'staff_order', { enabled: false })
+    await notificationService.update(SHOP, 'staff_order', { enabled: false }, db)
     const quiet = await placeOrder('manual')
     assert.deepEqual(await kinds(quiet.id), [`order_confirmation:${fx.email}`])
 
-    const reverted = await notificationService.revert(SHOP, 'order_confirmation')
+    const reverted = await notificationService.revert(SHOP, 'order_confirmation', db)
     assert.equal(reverted.customized, false)
-    await notificationService.update(SHOP, 'staff_order', { enabled: true })
+    await notificationService.update(SHOP, 'staff_order', { enabled: true }, db)
   })
 
   test('saving refuses Liquid that does not parse, naming the line', async () => {
     await assert.rejects(
-      notificationService.update(SHOP, 'shipping_confirmation', { body: '<p>ok</p>\n{% if order.name %}\n<p>no end' }),
+      notificationService.update(
+        SHOP,
+        'shipping_confirmation',
+        { body: '<p>ok</p>\n{% if order.name %}\n<p>no end' },
+        db,
+      ),
       (error) =>
         error instanceof EmailError && error.code === 'INVALID_TEMPLATE' && /^Body \(line \d+\)/.test(error.message),
     )
   })
 
   test('preview renders unsaved Liquid and shows errors; templates cannot read files', async () => {
-    const ok = await notificationService.preview(SHOP, 'staff_order', {
-      subject: 'Hi {{ shop.name }}',
-      body: '<p>{{ order.name }}</p>',
-    })
+    const ok = await notificationService.preview(
+      SHOP,
+      'staff_order',
+      {
+        subject: 'Hi {{ shop.name }}',
+        body: '<p>{{ order.name }}</p>',
+      },
+      db,
+    )
     assert.equal(ok.problem, null)
     assert.match(ok.html, /<p>#\d+<\/p>/)
 
-    const bad = await notificationService.preview(SHOP, 'staff_order', {
-      subject: 'x',
-      body: '{{ order.name | nope }}',
-    })
+    const bad = await notificationService.preview(
+      SHOP,
+      'staff_order',
+      {
+        subject: 'x',
+        body: '{{ order.name | nope }}',
+      },
+      db,
+    )
     assert.ok(bad.problem)
 
     for (const tag of ["{% render '/etc/passwd' %}", "{% include '../../package.json' %}"]) {
-      const sneaky = await notificationService.preview(SHOP, 'staff_order', { subject: 'x', body: tag })
+      const sneaky = await notificationService.preview(SHOP, 'staff_order', { subject: 'x', body: tag }, db)
       assert.ok(sneaky.problem, `${tag} should fail`)
       assert.doesNotMatch(sneaky.html, /root:|"name":/)
     }
 
-    const layout = await notificationService.preview(SHOP, 'layout', {
-      subject: '',
-      body: '<main>{{ content_for_layout }}</main>',
-    })
+    const layout = await notificationService.preview(
+      SHOP,
+      'layout',
+      {
+        subject: '',
+        body: '<main>{{ content_for_layout }}</main>',
+      },
+      db,
+    )
     assert.match(layout.html, /^<main>[\s\S]*Thank you for your order![\s\S]*<\/main>$/)
   })
 
   test('every notification has an entry', async () => {
-    const list = await notificationService.list(SHOP)
+    const list = await notificationService.list(SHOP, db)
     assert.deepEqual(
       list.map((n) => n.notification).sort(),
       (
