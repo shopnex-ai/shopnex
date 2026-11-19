@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { shopInput } from '@shopnex/tenancy/contract'

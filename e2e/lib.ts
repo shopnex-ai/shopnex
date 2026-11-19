@@ -130,6 +130,7 @@ export class Fixtures {
   private users: string[] = []
   private shops: string[] = []
   private shoppers: string[] = []
+  private prices: { id: string; priceCents: number }[] = []
   private seq = 0
   private readonly run = randomBytes(4).toString('hex')
 
@@ -260,6 +261,17 @@ export class Fixtures {
     this.taxRates.push(id)
   }
 
+  /** Sets a variant's price for this run; cleanup() puts the old price back */
+  async price(variantId: string, priceCents: number) {
+    const [old] = await db
+      .select({ priceCents: productVariants.priceCents })
+      .from(productVariants)
+      .where(eq(productVariants.id, variantId))
+    assert.ok(old, `Variant ${variantId} not found`)
+    if (!this.prices.some((p) => p.id === variantId)) this.prices.push({ id: variantId, priceCents: old.priceCents })
+    await db.update(productVariants).set({ priceCents }).where(eq(productVariants.id, variantId))
+  }
+
   async shippingRate(priceCents: number) {
     const rate = await checkoutSettings.createShippingRate(
       SHOP,
@@ -317,6 +329,9 @@ export class Fixtures {
     }
     if (this.carts.length) await db.delete(carts).where(inArray(carts.token, this.carts))
     if (this.orders.length) await db.delete(orders).where(inArray(orders.id, this.orders))
+    for (const { id, priceCents } of this.prices) {
+      await db.update(productVariants).set({ priceCents }).where(eq(productVariants.id, id))
+    }
     if (this.paymentMethods.length) {
       await db.delete(paymentMethods).where(inArray(paymentMethods.id, this.paymentMethods))
     }

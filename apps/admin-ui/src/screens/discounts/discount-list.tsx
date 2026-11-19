@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon, TicketPercentIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -116,6 +114,7 @@ export function DiscountList({ currency }: { currency: string }) {
         }
       />
       <DataTable
+        countKey="discounts"
         columns={columns}
         data={data}
         getRowId={(d) => d.id}

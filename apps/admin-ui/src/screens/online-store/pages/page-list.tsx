@@ -1,5 +1,3 @@
-'use client'
-
 // Online store → Pages: About, FAQ, Shipping policy… Storefronts show visible pages at /pages/{handle};
 // add them to a menu under Navigation.
 import { useQuery } from '@tanstack/react-query'
@@ -53,6 +51,7 @@ export function PageList() {
     <div className="space-y-4">
       <PageHeader title="Pages" actions={addButton} />
       <DataTable
+        countKey="pages"
         columns={columns}
         data={data}
         getRowId={(p) => p.id}

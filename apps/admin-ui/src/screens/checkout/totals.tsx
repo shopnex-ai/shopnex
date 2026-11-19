@@ -1,5 +1,3 @@
-'use client'
-
 // The order summary (beside the form) and the form share one set of totals: they follow the address
 // and the shipping method as the buyer picks them, with the same math the server uses at placement.
 import { ChevronDownIcon, ShoppingBagIcon } from 'lucide-react'

@@ -1,5 +1,3 @@
-'use client'
-
 // Online store → Navigation: the shop's menus. Storefronts ask for them by handle; Shopify themes and the
 // bundled templates look for "main-menu" (header) and "footer", so those can be created in one click.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -110,6 +108,7 @@ export function MenuList() {
         </Card>
       )}
       <DataTable
+        countKey="menus"
         columns={columns}
         data={data}
         getRowId={(m) => m.id}

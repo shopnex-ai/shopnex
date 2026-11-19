@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowRightIcon, DownloadIcon, ExternalLinkIcon, LoaderCircleIcon, TriangleAlertIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'

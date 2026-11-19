@@ -1,5 +1,3 @@
-'use client'
-
 // Settings → Email: off by default, or any SMTP server. Every popular provider offers SMTP; presets only
 // prefill the form with each one's host, port and username.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

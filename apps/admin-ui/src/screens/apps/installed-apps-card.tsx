@@ -1,5 +1,3 @@
-'use client'
-
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { BlocksIcon } from 'lucide-react'

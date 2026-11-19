@@ -1,5 +1,3 @@
-'use client'
-
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { PlusIcon, LayersIcon } from 'lucide-react'
@@ -53,6 +51,7 @@ export function CollectionList() {
     <div className="space-y-4">
       <PageHeader title="Collections" actions={createButton} />
       <DataTable
+        countKey="collections"
         columns={columns}
         data={data}
         getRowId={(c) => c.id}
