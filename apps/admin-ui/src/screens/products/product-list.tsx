@@ -1,11 +1,12 @@
 'use client'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon, PackageIcon } from 'lucide-react'
+import { PackageIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
+import { ProductThumb } from '@/components/admin/product-thumb'
 import { EmptyState } from '@/components/admin/empty-state'
 import { useListCount } from '@/lib/list-counts'
 import { PageHeader } from '@/components/admin/page-header'
@@ -48,13 +49,7 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
       header: 'Product',
       cell: ({ row: { original: p } }) => (
         <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
-            {p.images[0] ? (
-              <img src={p.images[0].url} alt={p.images[0].alt ?? ''} className="size-full object-cover" />
-            ) : (
-              <ImageIcon className="size-4 text-muted-foreground" />
-            )}
-          </div>
+          <ProductThumb src={p.images[0]?.url} alt={p.images[0]?.alt ?? ''} />
           <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>
             {p.title}
           </span>
