@@ -1,7 +1,7 @@
 # Same stack as docker-compose.yml, without host `ports:`, for Dokploy, Coolify and other platforms whose proxy
 # routes domains to containers over the Docker network. Published host ports (3000, 4600, 4700, 4900) collide with the
 # proxy or with other apps on the server and fail the first deploy. Add domains in the platform instead:
-# shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700, shippo -> 4900. Keep the rest in sync with docker-compose.yml.
+# shopnex -> 3000, stripe -> 4600, cj-dropshipping -> 4700, shippo -> 4900, reviews -> 5100. Keep the rest in sync with docker-compose.yml.
 # Set APP_URL and STRIPE_APP_URL, and pin SHOPNEX_VERSION to a release tag (for example v1.2.3).
 # Optional apps are off by default. CJ Dropshipping: COMPOSE_PROFILES=cj, plus CJ_DROPSHIPPING_APP_URL for its domain.
 # Shippo: COMPOSE_PROFILES=shippo (comma-separate to enable both), plus SHIPPO_APP_URL.
@@ -113,6 +113,22 @@ services:
       PORT: 4900
       SHIPPO_APP_KEY: ${SHIPPO_APP_KEY:-}
 
+  reviews:
+    profiles: [reviews]
+    image: ghcr.io/shopnex-ai/shopnex-reviews:${SHOPNEX_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    networks: [default, dokploy-network]
+    volumes:
+      - reviews_data:/data
+    environment:
+      REVIEWS_APP_URL: ${REVIEWS_APP_URL:-http://localhost:5100}
+      SHOPNEX_INTERNAL_URL: http://shopnex:3000
+      PORT: 5100
+      # Dokploy's Traefik sets x-forwarded-for: the rate limits tell visitors apart by it
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-forwarded-for}
+      REVIEWS_APP_KEY: ${REVIEWS_APP_KEY:-}
+
 networks:
   dokploy-network:
     external: true
@@ -120,3 +136,4 @@ networks:
 volumes:
   db:
   shopnex_data:
+  reviews_data:

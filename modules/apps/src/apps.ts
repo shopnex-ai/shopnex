@@ -679,6 +679,16 @@ const BUNDLED_APPS = [
     description: 'Live shipping rates at checkout from the carriers on your Shippo account (USPS, UPS, FedEx, DHL…).',
     scopes: ['write_shipping'] as ApiScope[],
   },
+  {
+    clientId: 'app_reviews',
+    urlEnv: 'REVIEWS_APP_URL',
+    internalUrl: 'http://reviews:5100',
+    name: 'Reviews',
+    description:
+      'Ask buyers for product reviews after fulfillment, approve them in the admin, and show them on the storefront.',
+    // write_email: ask buyers for a review through the shop's own email settings (to its customers only)
+    scopes: ['read_orders', 'read_products', 'write_email'] as ApiScope[],
+  },
 ]
 
 type BundledApp = (typeof BUNDLED_APPS)[number]

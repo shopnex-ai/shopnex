@@ -47,7 +47,9 @@ export function ConsentPage() {
               return (
                 <li key={r.key} className="px-3 py-2">
                   <div className="font-medium">
-                    {access === 'write' ? 'View and change' : 'View'} {r.label.toLowerCase()}
+                    {access === 'write' && r.grant
+                      ? r.grant
+                      : `${access === 'write' ? 'View and change' : 'View'} ${r.label.toLowerCase()}`}
                   </div>
                   <div className="text-xs text-muted-foreground">{r.hint}</div>
                 </li>
