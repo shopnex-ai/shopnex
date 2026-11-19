@@ -1,5 +1,5 @@
 // 0044 moves every amount from hundredths of the main unit to the currency's smallest unit. Runs the real migrations
-// on an in-memory PGlite: everything up to 0043, some data, then 0044.
+// on an in-memory PGlite: everything up to 0043, some data, then 0044 (whatever migrations follow it are not applied).
 import assert from 'node:assert/strict'
 import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -16,14 +16,16 @@ test('amounts of zero- and three-decimal currencies are rescaled; two-decimal on
   const journal = JSON.parse(await readFile(join(folder, 'meta/_journal.json'), 'utf8')) as {
     entries: { tag: string }[]
   }
-  assert.equal(journal.entries.at(-1)?.tag, TAG, 'the migration is the newest one: move this test when another follows')
+  // Later migrations may follow: only what comes before this one is applied by the runner
+  const at = journal.entries.findIndex((e) => e.tag === TAG)
+  assert.notEqual(at, -1, `${TAG} is in the journal`)
 
   // Everything before it, in a copy of the folder
   const before = await mkdtemp(join(tmpdir(), 'shopnex-migrations-'))
   await cp(folder, before, { recursive: true })
   await writeFile(
     join(before, 'meta/_journal.json'),
-    JSON.stringify({ ...journal, entries: journal.entries.filter((e) => e.tag !== TAG) }),
+    JSON.stringify({ ...journal, entries: journal.entries.slice(0, at) }),
   )
   const client = new PGlite()
   try {
