@@ -1,6 +1,7 @@
 // Reviews for ShopNex: a bundled app on @shopnex/app. Runs next to ShopNex (its own process). Reviews and review
-// requests live in DATA_DIR (SQLite, one file: give the container a volume); each shop's settings (days to wait,
-// whether its email is off) live in that shop's own ShopNex storage. Email goes through the shop's own email settings.
+// requests live in a Postgres schema of its own (app_reviews, APP_DATABASE_URL: no volume, backed up with the shop);
+// each shop's settings (days to wait, whether its email is off) live in that shop's own ShopNex storage. Email goes
+// through the shop's own email settings.
 //
 //   GET  /                      Embedded moderation + setup page (session token)
 //   POST /api/settings          Days to wait before asking for a review
@@ -8,13 +9,15 @@
 //   GET  /public/reviews        Published reviews of a product (the widget; rate limited)
 //   GET  /widget.js             The storefront widget
 //   GET|POST /r/:token          The page a buyer opens from the request email (rate limited)
-import { mkdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { serve } from '@hono/node-server'
 import { createShopnexApp } from '@shopnex/app'
+import { openAppDatabase } from '@shopnex/app/store'
 import { buildApp } from './app'
 import { log } from './log'
 import { emailMailer } from './mailer'
+import { migrationsFolder } from './migrations'
+import { SCHEMA } from './schema'
 import { sendDue } from './send'
 import { openStore } from './store'
 import { ensureWebhook } from './webhook'
@@ -23,10 +26,11 @@ import { ensureWebhook } from './webhook'
 const APP_URL = (process.env.REVIEWS_APP_URL || 'http://localhost:5100').replace(/\/$/, '')
 // Listens on the URL's port unless the platform sets PORT (behind a proxy the public URL has none)
 const PORT = Number(process.env.PORT || new URL(APP_URL).port || 5100)
-const DATA_DIR = process.env.DATA_DIR || '.data'
 
-mkdirSync(DATA_DIR, { recursive: true })
-const store = openStore(join(DATA_DIR, 'reviews.db'))
+// APP_DATABASE_URL, else DATABASE_URL when that is Postgres; pglite:<folder> is the embedded database for trying things out
+const database = await openAppDatabase({ schema: SCHEMA })
+await database.migrate(migrationsFolder())
+const store = openStore(database.db)
 
 // Its identity is REVIEWS_APP_KEY (env only). ShopNex reads the public key from /.well-known/shopnex-app.json
 // (bundled app): see registerBundledApps in @shopnex/apps

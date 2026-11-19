@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
-import { before, describe, test } from 'node:test'
+import { after, before, describe, test } from 'node:test'
 import { Hono } from 'hono'
 import { createShopnexApp } from '@shopnex/app'
 import { generateKeyPair } from '@shopnex/marketplace-sdk/keys'
 import { buildApp } from '../src/app'
 import { clientIp, rateLimit } from '../src/ratelimit'
-import { openStore } from '../src/store'
+import { testDatabase } from './db'
 
 const from = (ip: string) => ({ headers: { 'x-client': ip } })
 
@@ -44,13 +44,17 @@ describe('rateLimit', () => {
 
 describe('the app routes are limited', () => {
   let app: ReturnType<typeof buildApp>
+  let db: Awaited<ReturnType<typeof testDatabase>>
   const shop = { instance: 'https://shop.example.com', shopId: 'default' }
 
+  after(() => db?.close())
+
   before(async () => {
+    db = await testDatabase()
     const shopnex = createShopnexApp({ clientId: 'app_test', appKey: (await generateKeyPair()).privateKey })
     app = buildApp({
       shopnex,
-      store: openStore(':memory:'),
+      store: db.store,
       appUrl: 'https://reviews.example.com',
       icon: '<svg/>',
       widget: '',

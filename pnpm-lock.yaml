@@ -407,6 +407,9 @@ importers:
       '@shopnex/app':
         specifier: workspace:*
         version: link:../../packages/app
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.4(@electric-sql/pglite@0.5.16)(@opentelemetry/api@1.10.0)(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1)
       hono:
         specifier: 'catalog:'
         version: 4.13.18
@@ -417,6 +420,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
       tsx:
         specifier: ^4.23.15
         version: 4.23.15

@@ -98,16 +98,16 @@ services:
       args: { APP: reviews }
     ports:
       - '5100:5100'
-    volumes:
-      - reviews_data:/data
+    depends_on:
+      db: { condition: service_healthy }
     environment:
       REVIEWS_APP_URL: '${REVIEWS_APP_URL:-http://localhost:5100}'
       SHOPNEX_INTERNAL_URL: http://admin:3000
       PORT: 5100
+      APP_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/shopnex
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-}
       REVIEWS_APP_KEY: ${REVIEWS_APP_KEY:-}
 
 volumes:
   db:
   data:
-  reviews_data:

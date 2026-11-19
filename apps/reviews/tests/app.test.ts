@@ -1,19 +1,24 @@
 import assert from 'node:assert/strict'
-import { before, describe, test } from 'node:test'
+import { after, before, describe, test } from 'node:test'
 import { createShopnexApp } from '@shopnex/app'
 import { generateKeyPair } from '@shopnex/marketplace-sdk/keys'
 import { buildApp } from '../src/app'
-import { openStore, type Store } from '../src/store'
+import type { Store } from '../src/store'
+import { testDatabase } from './db'
 
 const shop = { instance: 'https://shop.example.com', shopId: 'default' }
 const PRODUCT = '11111111-1111-4111-8111-111111111111'
 const APP_URL = 'https://reviews.example.com'
 
 let store: Store
+let db: Awaited<ReturnType<typeof testDatabase>>
 let app: ReturnType<typeof buildApp>
 
+after(() => db?.close())
+
 before(async () => {
-  store = openStore(':memory:')
+  db = await testDatabase()
+  store = db.store
   const shopnex = createShopnexApp({ clientId: 'app_test', appKey: (await generateKeyPair()).privateKey })
   app = buildApp({
     shopnex,
@@ -39,7 +44,7 @@ describe('public routes', () => {
   })
 
   test('the review link: form, thanks, and a second use is refused', async () => {
-    const [request] = store.addRequests(
+    const [request] = await store.addRequests(
       shop,
       { id: 'o1', email: 'b@example.com', items: [{ productId: PRODUCT, title: 'Mug <b>' }] },
       0,
@@ -56,7 +61,7 @@ describe('public routes', () => {
     const done = await app.request(`/r/${request!.token}`, form({ rating: '5', body: 'Lovely', author: 'Sam' }))
     assert.equal(done.status, 200)
     assert.match(await done.text(), /Thank you/)
-    assert.equal(store.list(shop, 'pending').length, 1)
+    assert.equal((await store.list(shop, 'pending')).length, 1)
 
     assert.equal((await app.request(`/r/${request!.token}`)).status, 404)
     assert.equal((await app.request(`/r/${request!.token}`, form({ rating: '5', body: 'again' }))).status, 404)
@@ -64,19 +69,19 @@ describe('public routes', () => {
   })
 
   test('/public/reviews: open to any origin, published reviews only, input checked', async () => {
-    const [request] = store.addRequests(
+    const [request] = await store.addRequests(
       shop,
       { id: 'o2', email: 'b@example.com', items: [{ productId: PRODUCT, title: 'Mug' }] },
       0,
     )
-    const pending = store.submit(request!.token, { rating: 4, body: 'Pretty good', author: 'Alex' })
+    const pending = await store.submit(request!.token, { rating: 4, body: 'Pretty good', author: 'Alex' })
     const query = `instance=${encodeURIComponent(shop.instance)}&shop=${shop.shopId}&product=${PRODUCT}`
 
     let res = await app.request(`/public/reviews?${query}`)
     assert.equal(res.headers.get('access-control-allow-origin'), '*')
     assert.equal((await res.json()).count, 0, 'a pending review is not public')
 
-    store.setStatus(shop, pending.id, 'published')
+    await store.setStatus(shop, pending.id, 'published')
     res = await app.request(`/public/reviews?${query}`)
     const data = await res.json()
     assert.equal(data.count, 1)

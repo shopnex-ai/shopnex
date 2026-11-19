@@ -64,7 +64,7 @@ test('shippo is an extra on port 4900', () => {
   assert.deepEqual([shippo?.port, shippo?.urlEnv, shippo?.dir], [4900, 'SHIPPO_APP_URL', 'shippo'])
 })
 
-test('reviews is an extra on port 5100 with a data folder in the shop', () => {
+test('reviews is an extra on port 5100 with a database of its own, in the shop folder on the embedded database', () => {
   const plan = planFromBundle({
     root: '/r',
     shopDir: '/shop',
@@ -78,10 +78,10 @@ test('reviews is an extra on port 5100 with a data folder in the shop', () => {
   })
   const reviews = plan.processes.find((p) => p.name === 'reviews')
   assert.deepEqual(
-    [reviews?.env.PORT, reviews?.env.REVIEWS_APP_URL, reviews?.env.REVIEWS_APP_KEY, reviews?.env.DATA_DIR],
-    ['5100', 'http://localhost:5100', 'snxk_reviews', '/shop/apps/reviews/data'],
+    [reviews?.env.PORT, reviews?.env.REVIEWS_APP_URL, reviews?.env.REVIEWS_APP_KEY, reviews?.env.APP_DATABASE_URL],
+    ['5100', 'http://localhost:5100', 'snxk_reviews', 'pglite:/shop/apps/reviews/.pglite'],
   )
-  assert.equal(reviews?.env.APP_DATABASE_URL, undefined)
+  assert.equal(reviews?.env.DATA_DIR, undefined, 'no folder of its own to keep')
 })
 
 test('with a PostgreSQL shop the app with tables of its own shares its server, in a schema of its own', () => {

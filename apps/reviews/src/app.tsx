@@ -73,10 +73,10 @@ export function buildApp(deps: {
         shopId={shop.shopId}
         appUrl={appUrl}
         delayDays={(await shop.data.get<number>('delay_days')) ?? DEFAULT_DELAY_DAYS}
-        counts={store.counts(key)}
-        pending={store.list(key, 'pending')}
+        counts={await store.counts(key)}
+        pending={await store.list(key, 'pending')}
         emailOff={await readEmailOff(shop)}
-        waiting={store.unsent(key, Date.now())}
+        waiting={await store.unsent(key, Date.now())}
         webhookError={webhookError}
       />,
     )
@@ -97,7 +97,7 @@ export function buildApp(deps: {
     const shop = await shopnex.authenticate(c.req.raw)
     const status = ACTIONS[c.req.param('action')]
     if (!status) return c.json({ error: 'Unknown action' }, 400)
-    const done = store.setStatus({ instance: shop.instance, shopId: shop.shopId }, c.req.param('id'), status)
+    const done = await store.setStatus({ instance: shop.instance, shopId: shop.shopId }, c.req.param('id'), status)
     return done
       ? c.json({ message: status === 'published' ? 'Published' : 'Hidden' })
       : c.json({ error: 'Not found' }, 404)
@@ -109,7 +109,7 @@ export function buildApp(deps: {
     const { event, shop } = await shopnex.verifyWebhook<FulfilledOrder>(c.req.raw)
     if (event.type === 'order.fulfilled' && event.data.email) {
       const days = (await shop.data.get<number>('delay_days')) ?? DEFAULT_DELAY_DAYS
-      store.addRequests({ instance: shop.instance, shopId: shop.shopId }, event.data, Date.now() + days * DAY_MS)
+      await store.addRequests({ instance: shop.instance, shopId: shop.shopId }, event.data, Date.now() + days * DAY_MS)
     }
     return c.body(null, 204)
   })
@@ -118,7 +118,7 @@ export function buildApp(deps: {
 
   app.use('/public/*', cors({ origin: '*', allowMethods: ['GET'] }))
   app.use('/public/*', rateLimit({ bucket: 'public', max: limits.publicReviews, windowMs: MINUTE, ...deps.rateLimit }))
-  app.get('/public/reviews', (c) => {
+  app.get('/public/reviews', async (c) => {
     const shopId = c.req.query('shop')?.slice(0, 100)
     const product = c.req.query('product')?.slice(0, 200)
     let instance: string
@@ -130,7 +130,7 @@ export function buildApp(deps: {
       return c.json({ error: "instance must be the shop's URL" }, 400)
     }
     if (!shopId || !product) return c.json({ error: 'shop and product are required' }, 400)
-    const { count, average, reviews } = store.forProduct({ instance, shopId }, product)
+    const { count, average, reviews } = await store.forProduct({ instance, shopId }, product)
     return c.json(
       {
         count,
@@ -170,17 +170,17 @@ export function buildApp(deps: {
     }),
   )
 
-  app.get('/r/:token', (c) => {
-    const request = store.openRequest(c.req.param('token'))
+  app.get('/r/:token', async (c) => {
+    const request = await store.openRequest(c.req.param('token'))
     return request ? c.html(<ReviewFormPage productTitle={request.productTitle} />) : noLink(c)
   })
 
   app.post('/r/:token', async (c) => {
     const token = c.req.param('token')
-    const request = store.openRequest(token)
+    const request = await store.openRequest(token)
     if (!request) return noLink(c)
     try {
-      store.submit(token, await c.req.parseBody())
+      await store.submit(token, await c.req.parseBody())
     } catch (error) {
       if (!(error instanceof ReviewError)) throw error
       if (error.code === 'INVALID_REVIEW') {

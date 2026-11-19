@@ -99,8 +99,6 @@ export function planFromBundle(input: {
               ? `pglite:${join(shopDir, 'apps', extra.dir, '.pglite')}`
               : databaseUrl,
           }),
-          // Files of its own (Reviews: its SQLite database), kept with the shop
-          ...(extra.dataDir && { DATA_DIR: join(shopDir, 'apps', extra.dir, 'data') }),
         },
         readyUrl: `http://127.0.0.1:${extra.port}/shopnex/app.js`,
       })),
