@@ -49,7 +49,7 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
       header: 'Product',
       cell: ({ row: { original: p } }) => (
         <div className="flex items-center gap-3">
-          <ProductThumb src={p.images[0]?.url} alt={p.images[0]?.alt ?? ''} />
+          <ProductThumb src={p.images[0]?.url} />
           <span className="min-w-0 flex-1 truncate font-medium" title={p.title}>
             {p.title}
           </span>
