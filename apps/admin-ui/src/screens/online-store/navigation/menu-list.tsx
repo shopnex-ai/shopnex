@@ -3,7 +3,7 @@
 // Online store → Navigation: the shop's menus. Storefronts ask for them by handle; Shopify themes and the
 // bundled templates look for "main-menu" (header) and "footer", so those can be created in one click.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, MenuIcon } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ import { menuInput } from '@shopnex/content/contract'
 import { type StoredMenuItem } from '@shopnex/content/schema'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -114,7 +115,11 @@ export function MenuList() {
         getRowId={(m) => m.id}
         isPending={isPending}
         error={error}
-        empty="No menus yet."
+        blank={
+          <EmptyState icon={MenuIcon} title="Add a menu" action={<NewMenuDialog />}>
+            Menus are the header and footer links your storefront shows.
+          </EmptyState>
+        }
       />
     </div>
   )

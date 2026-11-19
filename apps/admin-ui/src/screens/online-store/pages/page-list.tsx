@@ -3,9 +3,10 @@
 // Online store → Pages: About, FAQ, Shipping policy… Storefronts show visible pages at /pages/{handle};
 // add them to a menu under Navigation.
 import { useQuery } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, NotebookTextIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -41,28 +42,27 @@ export function PageList() {
     }),
   ]
 
+  const addButton = (
+    <Button size="sm" nativeButton={false} render={<Link to="/admin/online-store/pages/$id" params={{ id: 'new' }} />}>
+      <PlusIcon />
+      Add page
+    </Button>
+  )
+
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Pages"
-        actions={
-          <Button
-            size="sm"
-            nativeButton={false}
-            render={<Link to="/admin/online-store/pages/$id" params={{ id: 'new' }} />}
-          >
-            <PlusIcon />
-            Add page
-          </Button>
-        }
-      />
+      <PageHeader title="Pages" actions={addButton} />
       <DataTable
         columns={columns}
         data={data}
         getRowId={(p) => p.id}
         isPending={isPending}
         error={error}
-        empty="No pages yet."
+        blank={
+          <EmptyState icon={NotebookTextIcon} title="Add your first page" action={addButton}>
+            Pages like About, FAQ or shipping and return policies. Link them from a menu under Navigation.
+          </EmptyState>
+        }
       />
     </div>
   )

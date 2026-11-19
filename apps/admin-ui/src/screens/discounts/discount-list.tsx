@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, TicketPercentIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { discountCreateInput } from '@shopnex/pricing/contract'
@@ -19,6 +19,7 @@ import {
   setServerError,
   useZodForm,
 } from '@/components/admin/form'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -120,7 +121,15 @@ export function DiscountList({ currency }: { currency: string }) {
         getRowId={(d) => d.id}
         isPending={isPending}
         error={error}
-        empty="No discounts yet."
+        blank={
+          <EmptyState
+            icon={TicketPercentIcon}
+            title="Create your first discount"
+            action={<DiscountDialog currency={currency} />}
+          >
+            Codes that buyers enter at checkout, one code per order.
+          </EmptyState>
+        }
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton
             ids={ids}

@@ -2,10 +2,11 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, LayersIcon } from 'lucide-react'
 import { publishedOn } from '@/components/admin/channel-picker'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
+import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Button } from '@/components/ui/button'
 import { client, orpc, type Outputs } from '@/lib/orpc'
@@ -41,17 +42,16 @@ export function CollectionList() {
     }),
   ]
 
+  const createButton = (
+    <Button size="sm" render={<Link to="/admin/collections/new" />}>
+      <PlusIcon />
+      Create collection
+    </Button>
+  )
+
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Collections"
-        actions={
-          <Button size="sm" render={<Link to="/admin/collections/new" />}>
-            <PlusIcon />
-            Create collection
-          </Button>
-        }
-      />
+      <PageHeader title="Collections" actions={createButton} />
       <DataTable
         columns={columns}
         data={data}
@@ -59,7 +59,11 @@ export function CollectionList() {
         rowLink={(c) => ({ to: '/admin/collections/$id', params: { id: c.id } })}
         isPending={isPending}
         error={error}
-        empty="No collections yet."
+        blank={
+          <EmptyState icon={LayersIcon} title="Group your products into collections" action={createButton}>
+            Collections organize your products in your store and navigation.
+          </EmptyState>
+        }
         selectionActions={(ids, clearSelection) => (
           <DeleteSelectedButton
             ids={ids}
