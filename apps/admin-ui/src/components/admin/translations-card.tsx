@@ -90,6 +90,9 @@ export function TranslationsCard({
   const published = languages.data?.languages ?? []
   const language = chosen && published.includes(chosen) ? chosen : published[0]
 
+  // A shop in one language has nothing to translate into: no card (languages are added in Settings → Languages)
+  if (languages.isPending || (!language && !languages.error)) return null
+
   return (
     <Card>
       <CardHeader>

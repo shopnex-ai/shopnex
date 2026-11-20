@@ -37,6 +37,7 @@ export type NavItem = {
   icon: LucideIcon
   /** Only this exact path is active */ exact?: boolean
   /** Hidden from everyone else */ superAdminOnly?: boolean
+  /** Hidden until the shop has published another language */ needsLanguage?: boolean
   /** Pages that belong to this one: shown under it while you are in it or in any of them */
   children?: NavChild[]
   external?: undefined
@@ -79,7 +80,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
           { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
         ],
       },
-      { href: '/admin/translations', label: 'Translations', icon: LanguagesIcon },
+      { href: '/admin/translations', label: 'Translations', icon: LanguagesIcon, needsLanguage: true },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },
