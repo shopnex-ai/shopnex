@@ -1,0 +1,35 @@
+{%- comment -%}
+  The country picker (Settings → General → Ship-to countries, switched on by the theme's "Show country selector").
+  Only drawn when the shop ships to two or more countries. A plain form, so it works without scripts. Prices stay in
+  {{ localization.currency }}; the choice sets where the order ships to.
+{%- endcomment -%}
+{%- if settings.show_country_selector and localization.available_countries.size > 0 -%}
+  <details class="group relative text-sm">
+    <summary class="flex cursor-pointer list-none items-center gap-1 text-text-dark transition hover:opacity-70">
+      {{ localization.country.name }} · {{ localization.currency }}
+      <svg class="h-3 w-3 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </summary>
+    <form
+      method="post"
+      action="/localization"
+      class="absolute right-0 top-full z-40 mt-2 max-h-72 w-56 overflow-y-auto rounded-md border border-border bg-body p-2 shadow"
+    >
+      <input type="hidden" name="return_to" value="{{ request.path }}">
+      <p class="px-2 py-1 text-xs text-text-light">Ship to</p>
+      {%- for country in localization.available_countries %}
+        <button
+          type="submit"
+          name="country"
+          value="{{ country.iso_code }}"
+          class="flex w-full items-center justify-between rounded px-2 py-1 text-left hover:bg-border {% if country.iso_code == localization.country.iso_code %}font-medium text-text-dark{% else %}text-text-light{% endif %}"
+        >
+          {{ country.name }}
+          {%- if country.iso_code == localization.country.iso_code %}<span aria-hidden="true">✓</span>{% endif -%}
+        </button>
+      {%- endfor %}
+      <p class="px-2 pt-2 text-xs text-text-light">Prices in {{ localization.currency }}</p>
+    </form>
+  </details>
+{%- endif -%}

@@ -4,6 +4,22 @@
   "version": "1.0.0",
   "settings": [
     {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 140
+    },
+    {
       "id": "accent_color",
       "label": "Accent color",
       "info": "Buttons, links and highlights",
@@ -86,6 +102,36 @@
       "label": "Footer text",
       "info": "Defaults to © year and the shop name",
       "type": "text"
+    },
+    {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "type": "url"
     },
     {
       "id": "favicon",

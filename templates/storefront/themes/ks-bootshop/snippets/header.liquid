@@ -5,7 +5,13 @@
 {%- assign menu = linklists['main-menu'] -%}
 <header class="ks-header sticky-top border-bottom">
   <nav class="container ks-navbar" aria-label="Main">
-    <a class="ks-logo" href="/">{{ shop.name }}</a>
+    <a class="ks-logo" href="/">
+      {%- if settings.logo != blank -%}
+        <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="ks-logo-img">
+      {%- else -%}
+        {{ shop.name }}
+      {%- endif -%}
+    </a>
     <div class="collapse ks-menu" id="ks-menu">
       <ul class="ks-menu-list">
         {%- if menu and menu.links.size > 0 -%}

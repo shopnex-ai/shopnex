@@ -7,6 +7,19 @@ import { API_SCOPES, apiTokens, shops } from '@shopnex/core/schema'
 
 const scopes = z.array(z.enum(API_SCOPES))
 
+/** A language tag's shape once canonical: 2 or 3 letters, then subtags such as a script or a region (fr, pt-BR, zh-Hant) */
+export const LANGUAGE_TAG_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
+
+/** The canonical form of a language tag (EN → en, pt-br → pt-BR), or null when it isn't one. Pure: safe in the browser. */
+export function canonicalLanguage(tag: string): string | null {
+  try {
+    const [canonical] = Intl.getCanonicalLocales(tag.trim())
+    return canonical && canonical !== 'und' && LANGUAGE_TAG_PATTERN.test(canonical) ? canonical : null
+  } catch {
+    return null
+  }
+}
+
 // ISO 4217 codes the runtime knows how to format (Node and browsers agree on this list)
 export const CURRENCY_CODES: readonly string[] = Intl.supportedValuesOf('currency')
 
@@ -14,6 +27,9 @@ export const shopInput = createInsertSchema(shops, {
   name: (s) => s.trim().min(1).max(100),
   // Prices are stored in the shop's currency; existing orders keep the currency they were placed in
   currency: () => z.string().refine((c) => CURRENCY_CODES.includes(c), 'Choose a currency'),
+  // A BCP 47 tag (en, fr, pt-BR); stored in its canonical form
+  language: () =>
+    z.string().refine((l) => canonicalLanguage(l) !== null, 'Use a language code such as en, fr or pt-BR'),
   // Checkout's "Continue shopping" link
   storefrontUrl: () => z.url({ protocol: /^https?$/ }).max(500),
   // The homepage's <title> and meta description; empty = the shop name, none
@@ -25,9 +41,12 @@ export const shopInput = createInsertSchema(shops, {
   legalName: (s) => s.trim().max(150),
   businessAddress: (s) => s.trim().max(500),
   taxId: (s) => s.trim().max(50),
+  // ISO 3166-1 alpha-2, upper case
+  shipToCountries: () => z.array(z.string().regex(/^[A-Z]{2}$/)).max(250),
 }).pick({
   name: true,
   currency: true,
+  language: true,
   storefrontUrl: true,
   seoTitle: true,
   seoDescription: true,
@@ -38,6 +57,7 @@ export const shopInput = createInsertSchema(shops, {
   businessAddress: true,
   taxId: true,
   cookieBanner: true,
+  shipToCountries: true,
 })
 
 export const shopOutput = createSelectSchema(shops).extend({

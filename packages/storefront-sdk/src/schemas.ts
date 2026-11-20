@@ -54,6 +54,8 @@ export const Shop = z.object({
   handle: z.string(),
   /** ≠ Shopify nests this as paymentSettings.currencyCode */
   currencyCode: z.string().length(3),
+  /** The language of the storefront, a BCP 47 tag (en, fr, pt-BR) */
+  languageCode: z.string().default('en'),
   /** The homepage's title and meta description (Shopify: Online store → Preferences) */
   seo: Seo,
   /**
@@ -61,6 +63,8 @@ export const Shop = z.object({
    * storefront decides for itself how to ask; the bundled one does it for every theme.
    */
   cookieBanner: z.boolean(),
+  /** ISO 3166-1 alpha-2 codes of the countries the shop sells to. Two or more: a storefront can offer a country picker. */
+  shipToCountries: z.array(z.string()),
   /**
    * Scripts installed apps add to the store (a reviews widget…), as full URLs. The bundled storefront loads them on every
    * page; a custom storefront decides for itself whether to. Already limited to the apps' own origins. Optional because

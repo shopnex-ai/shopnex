@@ -45,10 +45,12 @@
             <div class="ks-hero-overlay"></div>
             <div class="container">
               <div class="ks-hero-content">
-              {%- if forloop.first %}
-                <h1 class="display-4">{{ section.settings[heading_key] }}</h1>
-              {%- else %}
-                <h2 class="display-4">{{ section.settings[heading_key] }}</h2>
+              {%- if section.settings[heading_key] != blank %}
+                {%- if forloop.first %}
+                  <h1 class="display-4">{{ section.settings[heading_key] }}</h1>
+                {%- else %}
+                  <h2 class="display-4">{{ section.settings[heading_key] }}</h2>
+                {%- endif %}
               {%- endif %}
               {%- if section.settings[text_key] != blank %}
                 <p class="lead">{{ section.settings[text_key] }}</p>

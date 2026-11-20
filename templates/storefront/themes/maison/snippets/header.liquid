@@ -25,7 +25,11 @@
       href="/"
       class="font-sf order-1 min-w-0 flex-1 basis-auto truncate text-[18px] tracking-[0.01em] text-ink sm:order-none sm:text-[20px]"
     >
-      {{- shop.name -}}
+      {%- if settings.logo != blank -%}
+        <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="block h-auto max-w-full" />
+      {%- else -%}
+        {{- shop.name -}}
+      {%- endif -%}
     </a>
     <nav
       aria-label="Main"

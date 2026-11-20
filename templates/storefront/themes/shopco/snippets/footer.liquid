@@ -52,7 +52,13 @@
     <div class="mx-auto max-w-[1240px]">
       <div class="flex flex-wrap justify-between gap-x-10 gap-y-8 border-b border-line pb-12">
         <div class="flex max-w-[248px] flex-[1_1_248px] flex-col gap-6">
-          <a href="/" class="font-display text-[29px] md:text-[33px]">{{ shop.name }}</a>
+          <a href="/" class="font-display text-[29px] md:text-[33px]">
+            {%- if settings.logo != blank -%}
+              <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="block h-auto max-w-full" />
+            {%- else -%}
+              {{ shop.name }}
+            {%- endif -%}
+          </a>
           {%- if settings.footer_text != blank %}
             <p class="m-0 text-[14px] leading-[22px] whitespace-pre-line text-soft">{{ settings.footer_text }}</p>
           {%- endif %}
@@ -61,6 +67,8 @@
             {%- if settings.facebook_url != blank %}<a href="{{ settings.facebook_url }}" aria-label="Facebook" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'facebook', class: 'ico-sm' %}</a>{% endif -%}
             {%- if settings.instagram_url != blank %}<a href="{{ settings.instagram_url }}" aria-label="Instagram" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'instagram', class: 'ico-sm' %}</a>{% endif -%}
             {%- if settings.tiktok_url != blank %}<a href="{{ settings.tiktok_url }}" aria-label="TikTok" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'tiktok', class: 'ico-sm' %}</a>{% endif -%}
+            {%- if settings.youtube_url != blank %}<a href="{{ settings.youtube_url }}" aria-label="YouTube" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'youtube', class: 'ico-sm' %}</a>{% endif -%}
+            {%- if settings.pinterest_url != blank %}<a href="{{ settings.pinterest_url }}" aria-label="Pinterest" rel="noopener" target="_blank" class="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-page transition hover:bg-acc hover:text-on-acc">{% render 'icon', name: 'pinterest', class: 'ico-sm' %}</a>{% endif -%}
           {%- endcapture -%}
           {%- if socials != blank %}
             <div class="flex gap-3">{{ socials }}</div>

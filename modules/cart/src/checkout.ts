@@ -387,6 +387,18 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput, c
       throw new CartError('VARIANT_NOT_FOUND', 'Some items are no longer available', { variantIds: unsellable })
     }
 
+    // A shop that lists the countries it sells to doesn't ship anywhere else (an empty list = no limit)
+    const country = input.shippingAddress?.countryCode.toUpperCase()
+    if (country) {
+      const [{ shipToCountries = [] } = {}] = await tx
+        .select({ shipToCountries: shops.shipToCountries })
+        .from(shops)
+        .where(eq(shops.id, shopId))
+      if (shipToCountries.length > 0 && !shipToCountries.includes(country)) {
+        throw new CartError('INVALID_SHIPPING_RATE', "We can't ship to this country")
+      }
+    }
+
     const [rates, methods] = await all(tx, [
       () => listShippingRates(shopId, { activeOnly: true }, tx),
       () => paymentMethodService.list(shopId, { activeOnly: true }, tx),
