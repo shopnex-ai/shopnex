@@ -6,12 +6,12 @@
   <div
     role="dialog"
     aria-modal="true"
-    aria-label="Cart"
+    aria-label="{{ 'general.cart' | t }}"
     class="anim-slide relative flex h-full w-full max-w-lg flex-col overflow-y-auto bg-contrast"
   >
     <div class="flex h-nav shrink-0 items-center justify-between px-6 sm:px-8 md:px-12">
-      <h2 class="max-w-prose text-lead font-bold whitespace-pre-wrap">Cart</h2>
-      <button type="button" data-cart-close aria-label="Close" class="-m-4 cursor-pointer p-4 text-primary transition hover:text-primary/50">
+      <h2 class="max-w-prose text-lead font-bold whitespace-pre-wrap">{{ 'general.cart' | t }}</h2>
+      <button type="button" data-cart-close aria-label="{{ 'general.close' | t }}" class="-m-4 cursor-pointer p-4 text-primary transition hover:text-primary/50">
         {% render 'icon', name: 'close', class: 'icon' %}
       </button>
     </div>
@@ -21,21 +21,21 @@
     <div data-cart-summary class="mt-auto hidden gap-4 border-t border-primary/10 px-6 py-6 sm:px-8 md:px-12 [&.show]:grid">
       <div data-cart-discounts class="grid gap-2"></div>
       <div class="flex items-center justify-between text-lead font-bold">
-        <span>Subtotal</span>
+        <span>{{ 'cart.subtotal' | t }}</span>
         <span data-cart-subtotal></span>
       </div>
-      <p class="m-0 text-fine opacity-60">Taxes and shipping are calculated at checkout.</p>
+      <p class="m-0 text-fine opacity-60">{{ 'cart.taxes_and_shipping_are_calculated_at' | t }}</p>
       <form data-discount-form class="flex gap-4">
         <input
           name="code"
-          placeholder="Discount code"
+          placeholder="{{ 'cart.discount_code' | t }}"
           autocomplete="off"
           class="min-w-0 flex-1 border-x-0 border-t-0 border-b border-primary/20 bg-transparent px-0 py-1 placeholder:text-inherit placeholder:opacity-30 focus:border-primary/50 focus:ring-0 focus:outline-none"
         />
-        <button type="submit" class="cursor-pointer font-bold underline underline-offset-4">Apply</button>
+        <button type="submit" class="cursor-pointer font-bold underline underline-offset-4">{{ 'collection.apply' | t }}</button>
       </form>
       <p data-discount-note class="m-0 hidden text-fine text-accent [&.show]:block"></p>
-      <a data-cart-checkout class="btn w-full">Checkout</a>
+      <a data-cart-checkout class="btn w-full">{{ 'cart.checkout' | t }}</a>
     </div>
   </div>
 </div>

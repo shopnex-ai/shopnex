@@ -1,0 +1,73 @@
+{
+  "cart": {
+    "proceed_to_checkout": "Zur Kasse",
+    "shipping_and_taxes_are_calculated_at": "Versand und Steuern werden an der Kasse berechnet.",
+    "title": "Ihr Warenkorb",
+    "total": "Gesamt"
+  },
+  "collection": {
+    "all_products": "Alle Produkte",
+    "apply": "Anwenden",
+    "clear_all": "Alle löschen",
+    "clear_filters": "Filter zurücksetzen",
+    "filters": "Filter",
+    "first_page": "Erste Seite",
+    "highest_price": "Höchster Preis",
+    "lowest_price": "Niedrigster Preis",
+    "next_page": "Nächste Seite",
+    "no_products_found": "Keine Produkte gefunden",
+    "no_products_found_period": "Keine Produkte gefunden.",
+    "no_products_match_these_filters": "Keine Produkte entsprechen diesen Filtern",
+    "search_for_something": "Suchen Sie nach etwas",
+    "search_products": "Produkte suchen",
+    "see_all_products": "Alle Produkte ansehen",
+    "sort_by_colon": "Sortieren nach:"
+  },
+  "error": {
+    "back_to_the_store": "Zurück zum Shop",
+    "error_404": "Fehler 404",
+    "page_not_found": "Seite nicht gefunden",
+    "the_page_youre_looking_for_doesnt": "Die gesuchte Seite existiert nicht oder wurde verschoben."
+  },
+  "general": {
+    "account": "Konto",
+    "breadcrumb": "Brotkrumennavigation",
+    "close": "Schließen",
+    "home": "Startseite",
+    "main_navigation": "Hauptnavigation",
+    "no": "Nein",
+    "open_cart": "Warenkorb öffnen",
+    "pagination": "Seitennavigation",
+    "search": "Suchen",
+    "shop": "Shop",
+    "skip_to_content": "Zum Inhalt springen",
+    "toggle_menu": "Menü umschalten",
+    "yes": "Ja"
+  },
+  "js": {
+    "cart": {
+      "adding": "Wird hinzugefügt …",
+      "discount": "Rabatt ({{ code }})",
+      "empty": "Ihr Warenkorb ist leer.",
+      "not_enough_stock": "Nicht genug auf Lager",
+      "one_fewer": "Einen weniger",
+      "one_more": "Einen mehr",
+      "remove": "Entfernen"
+    },
+    "product": {
+      "add_to_cart": "In den Warenkorb",
+      "sold_out": "Ausverkauft",
+      "unavailable": "Nicht verfügbar"
+    }
+  },
+  "product": {
+    "add_to_cart": "In den Warenkorb",
+    "choose_options": "Optionen wählen",
+    "from": "Ab",
+    "sale": "Angebot",
+    "sku": "Artikelnummer:",
+    "sold_out": "Ausverkauft",
+    "type_colon": "Typ:",
+    "view_file": "Datei ansehen"
+  }
+}

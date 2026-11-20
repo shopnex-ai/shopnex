@@ -28,7 +28,7 @@
   {%- else -%}
     {%- comment %} No footer menu yet: the catalog and its collections {% endcomment %}
     {%- capture links -%}
-      <a href="/products">All products</a>
+      <a href="/products">{{ 'collection.all_products' | t }}</a>
       {%- for c in collections limit: 5 -%}<a href="{{ c.url }}">{{ c.title }}</a>{%- endfor -%}
     {%- endcapture -%}
     {% render 'footer-column', title: 'Shop', links: links %}

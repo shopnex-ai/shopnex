@@ -17,7 +17,7 @@
         />
       {%- endif %}
       {%- unless product.available %}
-        <span class="absolute top-3 left-3 rounded bg-contrast px-2 py-1 text-fine">Sold out</span>
+        <span class="absolute top-3 left-3 rounded bg-contrast px-2 py-1 text-fine">{{ 'product.sold_out' | t }}</span>
       {%- endunless %}
     </div>
     <div class="grid gap-1">

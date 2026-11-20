@@ -4,15 +4,15 @@
 {%- endcomment -%}
 <div class="relative z-0 flex gap-4 text-copy {{ class }}">
   {%- if product.compare_at_price_max > product.price_min %}
-    <span class="sr-only">Sale price</span>
+    <span class="sr-only">{{ 'product.sale_price' | t }}</span>
     <span>{{ product.price_min | money }}</span>
-    <span class="sr-only">Regular price</span>
+    <span class="sr-only">{{ 'product.regular_price' | t }}</span>
     <s class="opacity-50">{{ product.compare_at_price_max | money }}</s>
   {%- elsif product.price_varies %}
-    <span class="sr-only">Regular price</span>
-    <span>From {{ product.price_min | money }}</span>
+    <span class="sr-only">{{ 'product.regular_price' | t }}</span>
+    <span>{{ 'product.from' | t }} {{ product.price_min | money }}</span>
   {%- else %}
-    <span class="sr-only">Regular price</span>
+    <span class="sr-only">{{ 'product.regular_price' | t }}</span>
     <span>{{ product.price_min | money }}</span>
   {%- endif %}
 </div>

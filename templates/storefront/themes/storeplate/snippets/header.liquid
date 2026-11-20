@@ -40,14 +40,14 @@
             <a
               href="/"
               class="py-2 font-medium transition hover:text-text-dark {% if request.path == '/' %}text-text-dark{% else %}text-text-light{% endif %}"
-              >Home</a
+              >{{ 'general.home' | t }}</a
             >
           </li>
           <li class="group relative">
             <a
               href="/products"
               class="py-2 font-medium transition hover:text-text-dark {% if request.path == '/products' %}text-text-dark{% else %}text-text-light{% endif %}"
-              >Products</a
+              >{{ 'general.products' | t }}</a
             >
           </li>
         {%- endif %}
@@ -57,20 +57,20 @@
     <div class="flex items-center gap-x-6">
       {% render 'language-selector' %}
       {% render 'country-selector' %}
-      <a href="/search" class="text-text-dark" aria-label="Search">
+      <a href="/search" class="text-text-dark" aria-label="{{ 'general.search' | t }}">
         <svg class="block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-3.5-3.5" />
         </svg>
       </a>
       {%- comment %} A React island (src/islands/CartButton.tsx); the cart is only known in the browser {% endcomment %}
-      <a href="{{ routes.account_url }}" class="text-sm text-text-dark transition hover:opacity-70">Account</a>
+      <a href="{{ routes.account_url }}" class="text-sm text-text-dark transition hover:opacity-70">{{ 'general.account' | t }}</a>
       <div data-island="CartButton" class="flex min-w-5 items-center"></div>
       <button
         type="button"
         class="rounded-md border border-border p-1 text-text-dark lg:hidden"
         data-menu-open
-        aria-label="Open menu"
+        aria-label="{{ 'general.open_menu' | t }}"
       >
         <svg class="block h-5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
           <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
@@ -86,7 +86,7 @@
   >
     <div class="mb-14 flex items-center justify-between">
       {% render 'logo' %}
-      <button type="button" class="p-2" data-menu-close aria-label="Close menu">
+      <button type="button" class="p-2" data-menu-close aria-label="{{ 'general.close_menu' | t }}">
         <svg class="block h-5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
           <polygon
             points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
@@ -107,7 +107,7 @@
                 </svg>
               </button>
               <ul class="mt-2 hidden space-y-2 py-2 pl-4">
-                <li><a href="{{ link.url }}" class="nav-dropdown-link">All {{ link.title }}</a></li>
+                <li><a href="{{ link.url }}" class="nav-dropdown-link">{{ 'general.all_of' | t: title: link.title }}</a></li>
                 {%- for child in link.links %}
                   <li><a href="{{ child.url }}" class="nav-dropdown-link">{{ child.title }}</a></li>
                 {%- endfor %}
@@ -118,9 +118,9 @@
           </li>
         {%- endfor %}
       {%- else %}
-        <li><a href="/" class="nav-link {% if request.path == '/' %}text-text-dark{% endif %}">Home</a></li>
+        <li><a href="/" class="nav-link {% if request.path == '/' %}text-text-dark{% endif %}">{{ 'general.home' | t }}</a></li>
         <li>
-          <a href="/products" class="nav-link {% if request.path == '/products' %}text-text-dark{% endif %}">Products</a>
+          <a href="/products" class="nav-link {% if request.path == '/products' %}text-text-dark{% endif %}">{{ 'general.products' | t }}</a>
         </li>
       {%- endif %}
     </ul>

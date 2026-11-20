@@ -1,0 +1,85 @@
+{
+  "cart": {
+    "add_promo_code": "Añadir código promocional",
+    "go_to_checkout": "Ir a la caja",
+    "order_summary": "Resumen del pedido",
+    "shipping_and_taxes_are_calculated_at": "Los gastos de envío y los impuestos se calculan al finalizar la compra.",
+    "subtotal": "Subtotal",
+    "title": "Tu carrito",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "Todos los productos",
+    "apply": "Aplicar",
+    "clear_all": "Borrar todo",
+    "clear_filters": "Borrar filtros",
+    "collections": "Colecciones",
+    "filters": "Filtros",
+    "first_page": "Primera página",
+    "highest_price": "Precio más alto",
+    "lowest_price": "Precio más bajo",
+    "no_products_found": "No se han encontrado productos",
+    "no_products_match_these_filters": "Ningún producto coincide con estos filtros",
+    "nothing_here_yet": "Aún no hay nada aquí",
+    "on_this_page": "en esta página",
+    "search_for_something": "Busca algo",
+    "search_products": "Buscar productos",
+    "see_all_products": "Ver todos los productos",
+    "sort": "Ordenar",
+    "sort_by_colon": "Ordenar por:"
+  },
+  "error": {
+    "keep_shopping": "Seguir comprando",
+    "the_page_youre_looking_for_doesnt": "La página que buscas no existe o se ha movido.",
+    "this_page_isnt_here": "Esta página no está aquí"
+  },
+  "general": {
+    "account": "Cuenta",
+    "add_your_email_tools_form_url": "Añade la URL del formulario de tu herramienta de correo en Ajustes del tema → URL del formulario de boletín para mostrar el formulario de suscripción.",
+    "breadcrumb": "Ruta de navegación",
+    "cart": "Carrito",
+    "close": "Cerrar",
+    "enter_your_email_address": "Introduce tu correo electrónico",
+    "home": "Inicio",
+    "links": "Enlaces",
+    "main_navigation": "Principal",
+    "menu": "Menú",
+    "new_arrivals": "Novedades",
+    "next": "Siguiente",
+    "no": "No",
+    "search": "Buscar",
+    "shop": "Tienda",
+    "subscribe_to_newsletter": "Suscribirse al boletín",
+    "yes": "Sí"
+  },
+  "js": {
+    "cart": {
+      "adding": "Añadiendo…",
+      "code_not_applicable": "«{{ code }}» no se puede aplicar a este carrito.",
+      "discount": "Descuento ({{ code }})",
+      "empty": "Tu carrito está vacío.",
+      "not_enough_stock": "No hay suficiente stock",
+      "one_fewer": "Uno menos",
+      "one_more": "Uno más",
+      "remove": "Quitar",
+      "start_shopping": "Empezar a comprar"
+    },
+    "product": {
+      "add_to_cart": "Añadir al carrito",
+      "sold_out": "Agotado",
+      "unavailable": "No disponible"
+    }
+  },
+  "product": {
+    "add_to_cart": "Añadir al carrito",
+    "from": "Desde",
+    "one_fewer": "Uno menos",
+    "one_more": "Uno más",
+    "product_details": "Detalles del producto",
+    "shipping_returns": "Envíos y devoluciones",
+    "sold_out": "Agotado",
+    "specifications": "Especificaciones",
+    "view_file": "Ver archivo",
+    "you_might_also_like": "También te puede gustar"
+  }
+}

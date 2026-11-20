@@ -27,8 +27,8 @@
 
     {%- if collection.sort_options.size > 0 and collection.products.size > 0 %}
       <label class="flex items-center justify-end gap-2 text-copy">
-        Sort by
-        <select data-sort aria-label="Sort" class="cursor-pointer border-0 bg-transparent py-1 pr-8 pl-0 font-bold focus:ring-0 focus:outline-none">
+        {{ 'collection.sort_by' | t }}
+        <select data-sort aria-label="{{ 'collection.sort' | t }}" class="cursor-pointer border-0 bg-transparent py-1 pr-8 pl-0 font-bold focus:ring-0 focus:outline-none">
           {%- for option in collection.sort_options %}
             <option value="{{ option.url }}" {% if option.selected %}selected{% endif %}>{{ option.name }}</option>
           {%- endfor %}
@@ -37,7 +37,7 @@
     {%- endif %}
 
     {%- if collection.products.size == 0 %}
-      <p class="m-0 py-12 text-copy">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}No products found.{% endif %}</p>
+      <p class="m-0 py-12 text-copy">{% if collection.active_filters.size > 0 %}{{ 'collection.no_products_match_these_filters' | t }}{% elsif search.performed and search.terms == blank %}{{ 'collection.search_for_something' | t }}{% elsif search.performed %}{{ 'collection.no_products_found' | t }}{% else %}{{ 'collection.no_products_found_period' | t }}{% endif %}</p>
     {%- else %}
       <div class="grid grid-flow-row grid-cols-2 gap-2 gap-y-6 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
         {%- for p in collection.products %}
@@ -47,17 +47,17 @@
     {%- endif %}
 
     {%- if paginate.next or paginate.first %}
-      <nav aria-label="Pagination" class="flex items-center justify-between pt-4">
+      <nav aria-label="{{ 'general.pagination' | t }}" class="flex items-center justify-between pt-4">
         {%- if paginate.first %}
           <a href="{{ paginate.first.url }}" class="flex items-center gap-2 font-bold">
-            {% render 'icon', name: 'arrow-left', class: 'icon' %} First page
+            {% render 'icon', name: 'arrow-left', class: 'icon' %} {{ 'collection.first_page' | t }}
           </a>
         {%- else %}
           <span></span>
         {%- endif %}
         {%- if paginate.next %}
           <a href="{{ paginate.next.url }}" class="flex items-center gap-2 font-bold">
-            Next page {% render 'icon', name: 'arrow-right', class: 'icon' %}
+            {{ 'collection.next_page' | t }} {% render 'icon', name: 'arrow-right', class: 'icon' %}
           </a>
         {%- endif %}
       </nav>

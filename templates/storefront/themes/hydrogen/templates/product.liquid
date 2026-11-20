@@ -84,7 +84,7 @@
               {% unless variant.available %}disabled{% endunless %}
               class="btn w-full"
             >
-              <span data-add-label>{% if variant.available %}Add to cart{% else %}Sold out{% endif %}</span>
+              <span data-add-label>{% if variant.available %}{{ 'product.add_to_cart' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif %}</span>
             </button>
           </div>
 
@@ -92,7 +92,7 @@
             <details class="tab mb-10" open>
               <summary>
                 <h2 class="flex justify-between text-lead font-bold">
-                  Description
+                  {{ 'product.description' | t }}
                   <span class="icon-caret h-5 w-5">{% render 'icon', name: 'caret', class: 'h-5 w-5' %}</span>
                 </h2>
               </summary>
@@ -124,7 +124,7 @@
   {%- if recommendations.products.size > 0 %}
     <section class="grid w-full gap-4 py-6 md:gap-8 md:py-8 lg:py-12">
       <div class="px-6 md:px-8 lg:px-12">
-        <h2 class="font-heading text-lead">You may also like</h2>
+        <h2 class="font-heading text-lead">{{ 'product.you_may_also_like' | t }}</h2>
       </div>
       <div class="swimlane hidden-scroll -mt-1 pt-1 md:scroll-px-8 md:px-8 md:pb-8 lg:scroll-px-12 lg:px-12">
         {%- for p in recommendations.products %}

@@ -1,0 +1,82 @@
+{
+  "cart": {
+    "acquisition_bag": "Sac d’acquisition",
+    "proceed_to_checkout": "Passer à la caisse",
+    "shipping_and_taxes_are_calculated_at": "Les frais de livraison et les taxes sont calculés à la caisse.",
+    "title_bag": "Votre sac",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "Tous les produits",
+    "apply": "Appliquer",
+    "clear_all": "Tout effacer",
+    "clear_filters": "Effacer les filtres",
+    "collection": "Collection",
+    "collections": "Collections",
+    "filters": "Filtres",
+    "first_page": "Première page",
+    "grid": "Grille",
+    "highest_price": "Prix le plus élevé",
+    "list": "Liste",
+    "lowest_price": "Prix le plus bas",
+    "next_page": "Page suivante",
+    "no_products_found": "Aucun produit trouvé",
+    "no_products_match_these_filters": "Aucun produit ne correspond à ces filtres",
+    "nothing_in_the_archive_yet": "Rien dans les archives pour l’instant",
+    "on_this_page": "sur cette page",
+    "remove": "Retirer",
+    "search_for_something": "Recherchez quelque chose",
+    "search_the_archive": "Rechercher dans les archives",
+    "see_all_products": "Voir tous les produits",
+    "sort": "Trier",
+    "the_archive": "Les archives",
+    "the_whole_archive": "Toutes les archives →"
+  },
+  "error": {
+    "back_to_the_house": "Retour à la maison",
+    "error_404": "Erreur 404",
+    "not_in_the_archive": "Absent des archives",
+    "the_page_youre_looking_for_doesnt": "La page que vous cherchez n’existe pas ou a été déplacée."
+  },
+  "general": {
+    "account": "Compte",
+    "archive": "Archives",
+    "bag": "Sac",
+    "breadcrumb": "Fil d’Ariane",
+    "home": "Accueil",
+    "main_navigation": "Principal",
+    "no": "Non",
+    "search": "Rechercher",
+    "yes": "Oui"
+  },
+  "js": {
+    "cart": {
+      "adding": "Ajout…",
+      "empty": "Le sac est vide. Ajoutez une pièce des archives, elle vous attendra ici.",
+      "not_enough_stock": "Stock insuffisant",
+      "one_fewer": "Un de moins",
+      "one_more": "Un de plus",
+      "remove": "Retirer"
+    },
+    "product": {
+      "add_to_bag": "Ajouter au sac",
+      "available": "Disponible",
+      "sold_out": "Épuisé",
+      "unavailable": "Indisponible"
+    }
+  },
+  "product": {
+    "add_to_bag": "Ajouter au sac",
+    "also_in_the_archive": "Aussi dans les archives",
+    "availability": "Disponibilité",
+    "available": "Disponible",
+    "choose_options": "Choisir les options",
+    "from": "À partir de",
+    "reference": "Référence",
+    "sold_out": "Épuisé",
+    "specifications": "Caractéristiques",
+    "the_record": "La fiche",
+    "type": "Type",
+    "view_file": "Voir le fichier"
+  }
+}

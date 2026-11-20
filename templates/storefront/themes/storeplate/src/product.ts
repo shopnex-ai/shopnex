@@ -2,6 +2,7 @@
 // option pickers. The chosen variant's price and availability follow the buyer's choices, the gallery shows
 // its image, and it's kept in the URL (?variant=id).
 import type { Product, ProductVariant } from '@shopnex/storefront-sdk'
+import { t } from '@shopnex/storefront-sdk/i18n'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import Swiper from 'swiper'
 import { FreeMode, Navigation, Thumbs } from 'swiper/modules'
@@ -30,13 +31,13 @@ if (form) {
       // A value is available when a variant with it (and the other current choices) can be bought
       const canBuy = product.variants.some((v) => v.availableForSale && matches(v, { ...selection, [name]: value }))
       b.toggleAttribute('data-unavailable', !canBuy)
-      b.title = canBuy ? `${name} ${value}` : `${name} ${value} (out of stock)`
+      b.title = canBuy ? `${name} ${value}` : t('js.product.option_out_of_stock', { name, value })
     }
     q('[data-label]')!.textContent = !variant
-      ? 'Unavailable'
+      ? t('js.product.unavailable')
       : !variant.availableForSale
-        ? 'Out Of Stock'
-        : 'Add To Cart'
+        ? t('js.product.out_of_stock')
+        : t('js.product.add_to_cart')
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToCart = variant.id

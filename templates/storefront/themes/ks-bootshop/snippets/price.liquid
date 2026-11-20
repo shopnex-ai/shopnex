@@ -4,7 +4,7 @@
 {%- endcomment -%}
 <span class="ks-price">
   <span class="ks-price-now{% if product.compare_at_price_max > product.price_min %} ks-price-sale{% endif %}">
-    {%- if product.price_varies %}From {% endif %}{{ product.price_min | money -}}
+    {%- if product.price_varies %}{{ 'product.from' | t }} {% endif %}{{ product.price_min | money -}}
   </span>
   {%- if product.compare_at_price_max > product.price_min %}
     <s class="ks-price-was">{{ product.compare_at_price_max | money }}</s>

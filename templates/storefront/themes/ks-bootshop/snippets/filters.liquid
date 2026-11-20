@@ -9,8 +9,8 @@
 {%- if search.performed and search.terms == blank -%}{%- assign offering = false -%}{%- endif -%}
 {%- if search.performed %}
   <form action="/search" method="get" role="search" class="input-group mb-4" style="max-width: 36rem">
-    <input type="search" name="q" value="{{ search.terms }}" class="form-control" placeholder="Search products" aria-label="Search products" autofocus />
-    <button type="submit" class="btn btn-primary">Search</button>
+    <input type="search" name="q" value="{{ search.terms }}" class="form-control" placeholder="{{ 'collection.search_products' | t }}" aria-label="{{ 'collection.search_products' | t }}" autofocus />
+    <button type="submit" class="btn btn-primary">{{ 'general.search' | t }}</button>
   </form>
 {%- endif %}
 {%- if offering %}
@@ -19,12 +19,12 @@
       {%- for filter in collection.active_filters %}
         <a href="{{ filter.url }}" class="badge rounded-pill text-bg-light border text-decoration-none">{{ filter.label }} ✕</a>
       {%- endfor %}
-      <a href="{{ collection.clear_filters_url }}" class="small">Clear all</a>
+      <a href="{{ collection.clear_filters_url }}" class="small">{{ 'collection.clear_all' | t }}</a>
     </div>
   {%- endif %}
   {%- if collection.filters.size > 0 %}
     <details class="border rounded mb-4" {% if collection.active_filters.size > 0 %}open{% endif %}>
-      <summary class="px-3 py-2 fw-semibold" style="cursor: pointer">Filters</summary>
+      <summary class="px-3 py-2 fw-semibold" style="cursor: pointer">{{ 'collection.filters' | t }}</summary>
       <div class="border-top p-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1.5rem">
         {%- for group in collection.filters %}
           <div>
@@ -34,10 +34,10 @@
                 {%- for field in group.hidden %}
                   <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
                 {%- endfor %}
-                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="form-control form-control-sm" style="width: 6rem" />
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="{{ 'collection.lowest_price' | t }}" class="form-control form-control-sm" style="width: 6rem" />
                 <span aria-hidden="true">–</span>
-                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="form-control form-control-sm" style="width: 6rem" />
-                <button type="submit" class="btn btn-outline-secondary btn-sm">Apply</button>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="{{ 'collection.highest_price' | t }}" class="form-control form-control-sm" style="width: 6rem" />
+                <button type="submit" class="btn btn-outline-secondary btn-sm">{{ 'collection.apply' | t }}</button>
               </form>
             {%- else %}
               <ul class="list-unstyled mb-0" style="max-height: 12rem; overflow-y: auto">

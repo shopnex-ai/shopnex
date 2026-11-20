@@ -14,6 +14,7 @@ import {
   type Cart,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -51,16 +52,16 @@ function renderCart(cart: Cart | null) {
             <div class="flex min-w-0 flex-1 flex-col">
               <div class="flex items-start gap-2">
                 <a href="${href}" class="min-w-0 flex-1 text-[16px] leading-snug font-bold">${esc(m.product.title)}</a>
-                <button type="button" data-line-qty="${line.id}" data-qty="0" aria-label="Remove" class="cursor-pointer text-sale">${icons.trash}</button>
+                <button type="button" data-line-qty="${line.id}" data-qty="0" aria-label="${esc(tr('js.cart.remove'))}" class="cursor-pointer text-sale">${icons.trash}</button>
               </div>
               <div class="flex flex-col text-[12px]">${options}</div>
-              ${line.availableForSale ? '' : '<span class="text-[12px] text-sale">Not enough in stock</span>'}
+              ${line.availableForSale ? '' : `<span class="text-[12px] text-sale">${esc(tr('js.cart.not_enough_stock'))}</span>`}
               <div class="mt-auto flex items-center gap-2 pt-2">
                 <span class="flex-1 text-[20px] font-bold">${formatMoney(line.cost.totalAmount)}</span>
                 <div class="flex items-center gap-4 rounded-full bg-surface px-4 py-2">
-                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}" class="cursor-pointer">${icons.minus}</button>
+                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${esc(line.quantity === 1 ? tr('js.cart.remove') : tr('js.cart.one_fewer'))}" class="cursor-pointer">${icons.minus}</button>
                   <span class="min-w-[2ch] text-center text-[14px] font-medium">${line.quantity}</span>
-                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="One more" class="cursor-pointer">${icons.plus}</button>
+                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="${esc(tr('js.cart.one_more'))}" class="cursor-pointer">${icons.plus}</button>
                 </div>
               </div>
             </div>
@@ -68,8 +69,8 @@ function renderCart(cart: Cart | null) {
         })
         .join('')}</div>`
     : `<div class="flex flex-col items-start gap-4 py-4">
-         <p class="m-0 text-[16px] text-soft">Your cart is empty.</p>
-         <a href="/products" class="btn">Start shopping</a>
+         <p class="m-0 text-[16px] text-soft">${esc(tr('js.cart.empty'))}</p>
+         <a href="/products" class="btn">${esc(tr('js.cart.start_shopping'))}</a>
        </div>`
 
   $('[data-cart-summary]').classList.toggle('show', lines.length > 0)
@@ -79,8 +80,8 @@ function renderCart(cart: Cart | null) {
     .map(
       (d) => `
         <div class="flex items-center justify-between">
-          <span class="flex items-center gap-2 text-soft">Discount (${esc(d.code)})
-            <button type="button" data-discount-remove class="cursor-pointer text-[13px] underline">Remove</button>
+          <span class="flex items-center gap-2 text-soft">${esc(tr('js.cart.discount', { code: d.code }))}
+            <button type="button" data-discount-remove class="cursor-pointer text-[13px] underline">${esc(tr('js.cart.remove'))}</button>
           </span>
           <span class="font-bold text-sale">−${formatMoney(d.discountedAmount)}</span>
         </div>`,
@@ -91,7 +92,7 @@ function renderCart(cart: Cart | null) {
 
   const notApplicable = cart.discountCodes.find((c) => !c.applicable)
   const note = $('[data-discount-note]')
-  note.textContent = notApplicable ? `“${notApplicable.code}” can’t be applied to this cart.` : ''
+  note.textContent = notApplicable ? tr('js.cart.code_not_applicable', { code: notApplicable.code }) : ''
   note.classList.toggle('show', !!notApplicable)
 }
 
@@ -127,7 +128,7 @@ document.addEventListener('click', async (e) => {
     const quantity = Number(add.closest('[data-product-form]')?.querySelector('[data-qty-value]')?.textContent) || 1
     const label = add.innerHTML
     add.disabled = true
-    add.textContent = 'Adding…'
+    add.textContent = tr('js.cart.adding')
     try {
       await addToCart(add.dataset.addToCart!, quantity)
     } catch (error) {
