@@ -37,6 +37,7 @@
     "@shopnex/marketplace-sdk": "workspace:*",
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
+    "@shopnex/gift-cards": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/privacy": "workspace:*",
     "@shopnex/rpc": "workspace:*",

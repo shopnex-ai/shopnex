@@ -26,6 +26,8 @@ export type CartLineView = {
   sku: string | null
   /** Client id of the app that fulfills this product (dropshipping), or null: the shop ships it */
   fulfilledBy: string | null
+  /** A gift card product: it can't be paid for with a gift card */
+  isGiftCard: boolean
   selectedOptions: { name: string; value: string }[]
   productId: string
   productSlug: string
@@ -115,6 +117,7 @@ export async function view(cart: Cart, conn: Conn): Promise<CartView> {
       isDefaultVariant: variant.optionsKey === '',
       sku: variant.sku,
       fulfilledBy: product.fulfilledBy,
+      isGiftCard: product.isGiftCard,
       selectedOptions: detail?.selectedOptions ?? [],
       productId: product.id,
       productSlug: product.slug,

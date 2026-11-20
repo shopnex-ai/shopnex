@@ -10,6 +10,7 @@ import type { getCheckout } from './functions'
 import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
 import { DiscountCodeForm } from './discount-code-form'
+import { GiftCardForm } from './gift-card-form'
 import { OffsitePayment } from './offsite-payment'
 import { SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
 
@@ -39,6 +40,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
         currency={cart.currency}
         lineTotals={cart.lines.map((l) => l.lineTotalCents)}
         discount={cart.discount}
+        giftLinesCents={cart.lines.reduce((sum, l) => sum + (l.isGiftCard ? l.lineTotalCents : 0), 0)}
         tax={tax}
         defaultCountry={data.defaultCountry}
         initialShippingCents={firstRate ? firstRate.priceCents : options.liveRates ? null : 0}
@@ -84,6 +86,11 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
               {cart.lines.length > 0 && (
                 <div className="mt-3 border-t pt-3">
                   <DiscountCodeForm token={cart.token} current={cart.discountCode} />
+                </div>
+              )}
+              {cart.lines.length > 0 && (
+                <div className="mt-3 border-t pt-3">
+                  <GiftCardForm token={cart.token} />
                 </div>
               )}
               {cart.lines.length > 0 && (

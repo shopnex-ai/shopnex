@@ -145,6 +145,10 @@ export const orderShippingLines = pgTable(
   (t) => [index('order_shipping_lines_order_idx').on(t.orderId)],
 )
 
+// The gateway of transactions that are gift card money: spent at checkout (a sale), given back to the card (a refund).
+// Internal, like 'manual': nothing is sent to a payments app for it.
+export const GIFT_CARD_GATEWAY = 'gift_card'
+
 // Shopify OrderTransaction
 export const TRANSACTION_KINDS = ['sale', 'authorization', 'capture', 'refund', 'void'] as const
 export type TransactionKind = (typeof TRANSACTION_KINDS)[number]

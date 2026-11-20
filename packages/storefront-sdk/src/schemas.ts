@@ -394,6 +394,12 @@ export const CheckoutCost = z.object({
   totalTaxAmount: Money.nullable(),
   taxesIncluded: z.boolean(),
   totalAmount: Money,
+  /** What a gift card pays (with `giftCardCode`); null without one, or when the code can't be used (see giftCardError) */
+  giftCardAmount: Money.nullable(),
+  /** Why the gift card code can't be used; null when it can, or none was given */
+  giftCardError: z.string().nullable(),
+  /** What is left for a payment method to take: the total, less the gift card */
+  dueAmount: Money,
 })
 
 export const CheckoutOptions = z.object({

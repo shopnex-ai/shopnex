@@ -52,7 +52,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are answered with the
 ```text
 <!-- modules:graph:start -->
 ai → apps, catalog, content, core, db, rpc, tenancy
-api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
+api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
@@ -66,12 +66,13 @@ db → (nothing)
 drafts → core, db
 email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
 files → core, db, rpc, tenancy, webhooks
+gift-cards → auth, cart, catalog, core, db, orders, rpc
 kit → (nothing)
 log → (nothing)
 orders → catalog, channels, core, custom-fields, customers, db, pricing, rpc, webhooks
 payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
-privacy → auth, cart, core, custom-fields, customers, db, email, orders, rpc, tenancy, webhooks
+privacy → auth, cart, core, custom-fields, customers, db, email, gift-cards, orders, rpc, tenancy, webhooks
 rpc → core
 storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, rpc, webhooks

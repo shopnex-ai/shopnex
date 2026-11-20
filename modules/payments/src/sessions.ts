@@ -2,7 +2,7 @@
 // Payment sessions: ShopNex decides the amount, the app reports the outcome, ShopNex changes the order.
 // Calls to apps happen after the transaction that created the session commits: no row lock is held while
 // waiting on the network, and the app may call resolve before it even answers.
-import { and, desc, eq, gt, isNotNull, isNull, lte, notExists, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, notExists, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Conn } from '@shopnex/db'
 import {
@@ -115,7 +115,12 @@ export async function startPayment(
       .for('update')
     if (!order) throw new PaymentError('NOT_PAYABLE', 'Order not found')
     if (order.cancelledAt) throw new PaymentError('NOT_PAYABLE', 'This order was cancelled')
-    if (order.financialStatus !== 'pending') throw new PaymentError('NOT_PAYABLE', 'This order is already paid')
+    // Partly paid: a gift card took some of it, and the rest is what the buyer pays here
+    if (order.financialStatus !== 'pending' && order.financialStatus !== 'partially_paid') {
+      throw new PaymentError('NOT_PAYABLE', 'This order is already paid')
+    }
+    const dueCents = await orderService.amountDue(tx, orderId, order.totalCents)
+    if (dueCents <= 0) throw new PaymentError('NOT_PAYABLE', 'This order is already paid')
 
     const [last] = await tx
       .select()
@@ -160,7 +165,7 @@ export async function startPayment(
           appId: method.appId,
           paymentMethodId: method.id,
           kind: 'payment',
-          amountCents: order.totalCents,
+          amountCents: dueCents,
           currency: order.currency,
           expiresAt: new Date(Date.now() + PAYMENT_TTL_MS),
         })
@@ -530,7 +535,7 @@ export async function expireDue(limit: number | undefined, conn: Conn) {
       and(
         isNotNull(shops.unpaidOrderExpiryHours),
         isNull(orders.cancelledAt),
-        eq(orders.financialStatus, 'pending'),
+        inArray(orders.financialStatus, ['pending', 'partially_paid']),
         eq(orders.fulfillmentStatus, 'unfulfilled'),
         // created_at is written by the database clock (default now()), so compare it with the database clock
         sql`${orders.createdAt} <= now() - make_interval(hours => ${shops.unpaidOrderExpiryHours})`,

@@ -256,6 +256,33 @@ describe('shop B cannot reach shop A by id', () => {
     assert.equal(ok(await call('GET', `/admin/discounts/${d.id}`, undefined, a)).value, 10)
   })
 
+  isolated('gift cards', async () => {
+    const g = ok(await call('POST', '/admin/gift-cards', { amountCents: 5000 }, a))
+    fx.giftCard(g.id)
+
+    assertRefused(await attack('/admin/gift-cards/{id}', { method: 'GET', path: `/admin/gift-cards/${g.id}` }), 'GET')
+    assertRefused(
+      await attack('/admin/gift-cards/{id}/adjust', {
+        method: 'POST',
+        path: `/admin/gift-cards/${g.id}/adjust`,
+        body: { amountCents: -5000 },
+      }),
+      'adjust',
+    )
+    assertRefused(
+      await attack('/admin/gift-cards/{id}/disable', { method: 'POST', path: `/admin/gift-cards/${g.id}/disable` }),
+      'disable',
+    )
+    assertRefused(
+      await attack('/admin/gift-cards/{id}/enable', { method: 'POST', path: `/admin/gift-cards/${g.id}/enable` }),
+      'enable',
+    )
+
+    const still = ok(await call('GET', `/admin/gift-cards/${g.id}`, undefined, a))
+    assert.equal(still.balanceCents, 5000, 'A’s card keeps its balance')
+    assert.equal(still.active, true, 'A’s card is still active')
+  })
+
   isolated('orders', async () => {
     const p = ok(await call('POST', '/admin/products', { title: `E2E iso order ${run}`, priceCents: 2500 }, a))
     cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [p.id] }, a))

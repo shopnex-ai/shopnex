@@ -14,6 +14,7 @@ import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
 import { orderItems, orders as ordersTable, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
+import { giftCards } from '@shopnex/gift-cards/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
 
@@ -91,6 +92,13 @@ export async function exportData(shopId: string, customerId: string, conn: Conn)
     .from(emailSuppressions)
     .where(and(eq(emailSuppressions.shopId, shopId), eq(emailSuppressions.email, email)))
 
+  // Gift cards sent to them (the code stays out: it is a secret that spends the card)
+  const cards = await conn
+    .select()
+    .from(giftCards)
+    .where(and(eq(giftCards.shopId, shopId), eq(sql`lower(${giftCards.recipientEmail})`, email)))
+    .orderBy(giftCards.createdAt)
+
   // The storefront login, when the customer has one
   const login = customer.userId ? await conn.select().from(userTable).where(eq(userTable.id, customer.userId)) : []
   const sessions = customer.userId ? await conn.select().from(session).where(eq(session.userId, customer.userId)) : []
@@ -121,6 +129,15 @@ export async function exportData(shopId: string, customerId: string, conn: Conn)
           })),
         }
       : null,
+    giftCards: cards.map((g) => ({
+      id: g.id,
+      currency: g.currency,
+      initialCents: g.initialCents,
+      balanceCents: g.balanceCents,
+      recipientEmail: g.recipientEmail,
+      expiresAt: g.expiresAt,
+      createdAt: g.createdAt,
+    })),
     orders: orders.map((o) => ({
       id: o.id,
       orderNumber: o.orderNumber,
@@ -266,6 +283,12 @@ export async function erase(shopId: string, customerId: string, conn: Conn) {
       .set({ html: '', lastError: null })
       .where(and(eq(emailDeliveries.shopId, shopId), aboutThem))
       .returning({ id: emailDeliveries.id })
+
+    // Gift cards sent to them keep their balance (the shop owes it to whoever holds the code) but lose who they were for
+    await tx
+      .update(giftCards)
+      .set({ recipientEmail: null, updatedAt: new Date() })
+      .where(and(eq(giftCards.shopId, shopId), eq(sql`lower(${giftCards.recipientEmail})`, email)))
 
     // Webhook history: payloads of events about this person (kept 30 days for retries and the log)
     const deliveries = await tx

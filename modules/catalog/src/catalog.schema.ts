@@ -1,6 +1,17 @@
 // The catalog's tables: products with their variants, images, options and collections.
 import { sql } from 'drizzle-orm'
-import { index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import type { CustomFieldValues } from '@shopnex/custom-fields/schema'
 import { shops } from '@shopnex/core/schema'
 
@@ -27,6 +38,8 @@ export const products = pgTable(
     // Carrier apps use it to quote only the products they ship.
     fulfilledBy: text('fulfilled_by'),
     productType: text('product_type').notNull().default(''),
+    // Selling it issues a gift card for the price of the variant. Needs no shipping, and can't be paid for with a gift card.
+    isGiftCard: boolean('is_gift_card').notNull().default(false),
     tags: text('tags')
       .array()
       .notNull()

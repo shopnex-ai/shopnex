@@ -306,6 +306,8 @@ export const storefrontContract = {
           city: z.string().trim().max(100).optional(),
           zip: z.string().trim().max(20).optional(),
           address1: z.string().trim().max(200).optional(),
+          /** A gift card code: the cost then shows what it pays and what is left to pay */
+          giftCardCode: z.string().trim().max(40).optional(),
         }),
       )
       .errors(notFound)
@@ -324,6 +326,8 @@ export const storefrontContract = {
           /** From checkout.options; defaults to the first method */
           paymentMethodId: z.uuid().optional(),
           note: z.string().trim().max(1000).optional(),
+          /** Pays what it can of the order; the payment method takes the rest. A code that can't be used refuses the order. */
+          giftCardCode: z.string().trim().max(40).optional(),
         }),
       )
       .errors({ ...cartErrors, EMPTY_CART })
