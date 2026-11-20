@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/domains')({ component: Dom
 function DomainsSettingsPage() {
   return (
     <>
-      <PageHeader title="Domains" description="The addresses your storefront is served on." />
+      <PageHeader title="Domains" />
       <DomainsCard />
     </>
   )

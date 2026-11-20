@@ -9,7 +9,7 @@ function StaffPage() {
   if (!tenant || !session) return null
   return (
     <>
-      <PageHeader title="Staff" description="People who can sign in to this admin." />
+      <PageHeader title="Staff" />
       <StaffManager currentUserId={session.user.id} canManageAdmins={tenant.superAdmin || tenant.role === 'owner'} />
     </>
   )

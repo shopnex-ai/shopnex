@@ -8,7 +8,7 @@ export const Route = createFileRoute('/admin/settings/general')({ component: Gen
 function GeneralSettingsPage() {
   return (
     <>
-      <PageHeader title="General" description="Your shop's name, currency and storefront." />
+      <PageHeader title="General" />
       <ShopSettingsCard />
       <BusinessDetailsCard />
       <CookieBannerCard />
