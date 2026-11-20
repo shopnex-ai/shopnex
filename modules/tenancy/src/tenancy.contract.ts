@@ -25,6 +25,8 @@ export const shopInput = createInsertSchema(shops, {
   legalName: (s) => s.trim().max(150),
   businessAddress: (s) => s.trim().max(500),
   taxId: (s) => s.trim().max(50),
+  // ISO 3166-1 alpha-2, upper case
+  shipToCountries: () => z.array(z.string().regex(/^[A-Z]{2}$/)).max(250),
 }).pick({
   name: true,
   currency: true,
@@ -38,6 +40,7 @@ export const shopInput = createInsertSchema(shops, {
   businessAddress: true,
   taxId: true,
   cookieBanner: true,
+  shipToCountries: true,
 })
 
 export const shopOutput = createSelectSchema(shops).extend({

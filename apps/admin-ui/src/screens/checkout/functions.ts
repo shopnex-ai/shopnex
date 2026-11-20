@@ -50,7 +50,11 @@ export const getCheckout = publicFn({ method: 'GET' })
       abandonedCartService.offered(found.shopId, db),
     ])
     const lang = getRequest().headers.get('accept-language') ?? ''
-    const defaultCountry = /^[a-z]{2,3}-([A-Z]{2})\b/.exec(lang)?.[1] ?? 'US'
+    // A shop that lists the countries it sells to offers only those (an empty list = every country)
+    const listed = countryOptions.filter((c) => shop.shipToCountries.includes(c.value))
+    const countries = listed.length ? listed : countryOptions
+    const browserCountry = /^[a-z]{2,3}-([A-Z]{2})\b/.exec(lang)?.[1] ?? 'US'
+    const defaultCountry = countries.some((c) => c.value === browserCountry) ? browserCountry : countries[0]!.value
     return {
       kind: 'checkout' as const,
       shopName: shop.name,
@@ -63,7 +67,7 @@ export const getCheckout = publicFn({ method: 'GET' })
       offerReminder,
       // Built here, once: Intl names and their order differ between this server and the browser, and a
       // list the browser computes itself fails hydration, which throws away what the buyer already typed
-      countries: countryOptions,
+      countries,
     }
   })
 

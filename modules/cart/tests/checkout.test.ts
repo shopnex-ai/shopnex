@@ -214,6 +214,33 @@ describe('placing the order', () => {
   }
   const order = async (id: string) => (await db.select().from(orders).where(eq(orders.id, id)))[0]!
 
+  test('a shop that lists its ship-to countries refuses an address elsewhere; an empty list has no limit', async () => {
+    const { rate, c } = await ready()
+    const place = () =>
+      checkoutService.complete(
+        SHOP,
+        c.token,
+        { email: 'a@example.test', shippingAddress: ADDRESS, shippingRateId: rate.id },
+        RETURN,
+        db,
+      )
+    try {
+      await db
+        .update(shops)
+        .set({ shipToCountries: ['DE', 'NL'] })
+        .where(eq(shops.id, SHOP))
+      await assert.rejects(place(), refused('INVALID_SHIPPING_RATE'))
+      assert.equal((await cartService.findByToken(SHOP, c.token, db))?.status, 'active')
+      await db
+        .update(shops)
+        .set({ shipToCountries: ['DE', 'FR'] })
+        .where(eq(shops.id, SHOP))
+      assert.equal((await place()).alreadyCompleted, false)
+    } finally {
+      await db.update(shops).set({ shipToCountries: [] }).where(eq(shops.id, SHOP))
+    }
+  })
+
   test('makes the order from the cart with its prices, the rate and the method, and completes the cart; a manual method is not paid yet', async () => {
     const { rate, method, c } = await ready()
     const placed = await checkoutService.complete(
