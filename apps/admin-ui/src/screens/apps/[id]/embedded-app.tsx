@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { client } from '@/lib/orpc'
+import { PreviewLoader } from '@/screens/online-store/themes/preview-loader'
 import { AppIcon, UninstallButton } from '../installed-apps-card'
 
 // A question from the app, waiting for the person's answer
@@ -31,6 +32,12 @@ type Reply =
 
 export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
+  // The ShopNex loader shows over the app until its page has loaded
+  const [loaded, setLoaded] = useState(false)
+  // The iframe is only mounted in the browser: on a reload the server-rendered one can finish loading before React
+  // attaches onLoad, and the loader would never go away
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const appOrigin = new URL(src).origin
   const navigate = useNavigate()
   const [question, setQuestion] = useState<Question | null>(null)
@@ -133,32 +140,40 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
           />
         }
       />
-      <iframe
-        ref={frame}
-        src={src}
-        title={name}
-        className="w-full flex-1 border-0 bg-background"
-        // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-        allow="clipboard-write"
-        referrerPolicy="no-referrer"
-      />
-      <Dialog open={question !== null} onOpenChange={(open) => !open && answer(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{question?.title}</DialogTitle>
-            {question?.message && <DialogDescription>{question.message}</DialogDescription>}
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => answer(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={() => answer(true)}>
-              {question?.label}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="relative flex-1">
+        {mounted && (
+          <>
+            <iframe
+              ref={frame}
+              src={src}
+              title={name}
+              className="h-full w-full border-0 bg-background"
+              onLoad={() => setLoaded(true)}
+              // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+              allow="clipboard-write"
+              referrerPolicy="no-referrer"
+            />
+            <Dialog open={question !== null} onOpenChange={(open) => !open && answer(false)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{question?.title}</DialogTitle>
+                  {question?.message && <DialogDescription>{question.message}</DialogDescription>}
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => answer(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={() => answer(true)}>
+                    {question?.label}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+        {!loaded && <PreviewLoader />}
+      </div>
     </div>
   )
 }

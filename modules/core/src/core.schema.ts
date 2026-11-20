@@ -98,6 +98,9 @@ export const API_SCOPES = [
   'write_email',
   // Apps that add a script to the shop's online store (a reviews widget, a chat button…)
   'write_storefront',
+  // The languages a shop publishes and the translations of its store content (translation apps)
+  'read_translations',
+  'write_translations',
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 
@@ -124,6 +127,8 @@ export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   write_shipping: 'Register a carrier service (apps only)',
   write_email: "Send email to the shop's customers from the shop's address (apps only)",
   write_storefront: "Load the app's script on the shop's online store (apps only)",
+  read_translations: 'The published languages and the translations of products, collections and pages',
+  write_translations: 'The published languages and the translations of products, collections and pages',
 }
 
 // custom: registered here by a super admin (private apps). marketplace: synced from the connected marketplace,
