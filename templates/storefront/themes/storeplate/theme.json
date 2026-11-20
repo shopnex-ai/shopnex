@@ -269,19 +269,19 @@
           "id": "subheading",
           "label": "Subheading",
           "type": "text",
-          "default": "Deal of the Week"
+          "default": "New arrivals"
         },
         {
           "id": "heading",
           "label": "Heading",
           "type": "text",
-          "default": "Get 25% off our new collection"
+          "default": "Discover our new collection"
         },
         {
           "id": "text",
           "label": "Text",
           "type": "textarea",
-          "default": "Fresh arrivals, picked for you. For a limited time only."
+          "default": "Fresh arrivals, picked for you."
         },
         {
           "id": "image",
