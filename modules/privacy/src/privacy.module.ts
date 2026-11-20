@@ -13,6 +13,7 @@ export const privacyModule = defineModule({
     'customers',
     'db',
     'email',
+    'gift-cards',
     'orders',
     'rpc',
     'tenancy',

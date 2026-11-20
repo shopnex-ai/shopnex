@@ -323,6 +323,13 @@
       "when": 1795100601840,
       "tag": "0045_app_storefront_scripts",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795152735303,
+      "tag": "0046_gift_cards",
+      "breakpoints": true
     }
   ]
 }

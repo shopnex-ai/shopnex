@@ -16,6 +16,7 @@ import { Route as AdminAppsRouteRouteImport } from './routes/admin/apps/route'
 import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collections/route'
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminDiscountsRouteImport } from './routes/admin/discounts'
+import { Route as AdminGiftCardsRouteImport } from './routes/admin/gift-cards'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminOnlineStoreRouteRouteImport } from './routes/admin/online-store/route'
 import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/route'
@@ -97,6 +98,11 @@ const AdminCustomersRouteRoute = AdminCustomersRouteRouteImport.update({
 const AdminDiscountsRoute = AdminDiscountsRouteImport.update({
   id: '/discounts',
   path: '/discounts',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminGiftCardsRoute = AdminGiftCardsRouteImport.update({
+  id: '/gift-cards',
+  path: '/gift-cards',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -356,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
+  '/admin/gift-cards': typeof AdminGiftCardsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -410,6 +417,7 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
+  '/admin/gift-cards': typeof AdminGiftCardsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -467,6 +475,7 @@ export interface FileRoutesById {
   '/admin/products': typeof AdminProductsRouteRouteWithChildren
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
+  '/admin/gift-cards': typeof AdminGiftCardsRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -525,6 +534,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/discounts'
+    | '/admin/gift-cards'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -579,6 +589,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/discounts'
+    | '/admin/gift-cards'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -635,6 +646,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/settings'
     | '/admin/discounts'
+    | '/admin/gift-cards'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -738,6 +750,13 @@ declare module '@tanstack/react-router' {
       path: '/discounts'
       fullPath: '/admin/discounts'
       preLoaderRoute: typeof AdminDiscountsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/gift-cards': {
+      id: '/admin/gift-cards'
+      path: '/gift-cards'
+      fullPath: '/admin/gift-cards'
+      preLoaderRoute: typeof AdminGiftCardsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/login': {
@@ -1252,6 +1271,7 @@ interface AdminRouteRouteChildren {
   AdminProductsRouteRoute: typeof AdminProductsRouteRouteWithChildren
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminDiscountsRoute: typeof AdminDiscountsRoute
+  AdminGiftCardsRoute: typeof AdminGiftCardsRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPlatformRoute: typeof AdminPlatformRoute
   AdminSetupRoute: typeof AdminSetupRoute
@@ -1272,6 +1292,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminProductsRouteRoute: AdminProductsRouteRouteWithChildren,
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminDiscountsRoute: AdminDiscountsRoute,
+  AdminGiftCardsRoute: AdminGiftCardsRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminPlatformRoute: AdminPlatformRoute,
   AdminSetupRoute: AdminSetupRoute,

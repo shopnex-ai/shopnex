@@ -19,6 +19,8 @@ const CartErrorBase = defineError('CartError', {
   // checkout: unknown/inactive shipping rate or payment method, or none chosen when the shop requires one
   INVALID_SHIPPING_RATE: 'BAD_REQUEST',
   INVALID_PAYMENT_METHOD: 'BAD_REQUEST',
+  // checkout: the gift card code can't be used (unknown, disabled, expired, empty)
+  GIFT_CARD_NOT_APPLICABLE: 'BAD_REQUEST',
   // a carrier service: not an installed app, or a rates URL outside the app's origin
   NOT_A_CARRIER_APP: 'FORBIDDEN',
   INVALID_RATES_URL: 'BAD_REQUEST',

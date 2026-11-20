@@ -11,6 +11,7 @@ import { db, type Conn } from '@shopnex/db'
 import { paymentMethodService } from '@shopnex/payments'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
+import { giftCards } from '@shopnex/gift-cards/schema'
 import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
 import { storefrontKeyService } from '@shopnex/channels'
@@ -123,6 +124,7 @@ export class Fixtures {
   private carts: string[] = []
   private orders: string[] = []
   private discounts: string[] = []
+  private giftCards: string[] = []
   private taxRates: string[] = []
   private shippingRates: string[] = []
   private paymentMethods: string[] = []
@@ -257,6 +259,10 @@ export class Fixtures {
     this.discounts.push(id)
   }
 
+  giftCard(id: string) {
+    this.giftCards.push(id)
+  }
+
   taxRate(id: string) {
     this.taxRates.push(id)
   }
@@ -338,6 +344,7 @@ export class Fixtures {
     await db.delete(customers).where(inArray(customers.email, [this.email, ...this.shoppers]))
     if (this.shoppers.length) await db.delete(user).where(inArray(user.email, this.shoppers))
     if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
+    if (this.giftCards.length) await db.delete(giftCards).where(inArray(giftCards.id, this.giftCards))
     if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
       await db.delete(shippingRates).where(inArray(shippingRates.id, this.shippingRates))
