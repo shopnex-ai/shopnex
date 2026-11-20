@@ -6,7 +6,7 @@ import { LANGUAGE_HEADER, ORPCError, createStorefrontClient, safe } from '@shopn
 // process.env first: a production build must read these when it starts, not when it was built
 // (import.meta.env is what `astro dev` fills from .env)
 const env = (name: 'SHOPNEX_URL' | 'SHOPNEX_PUBLIC_URL' | 'SHOPNEX_PUBLISHABLE_KEY') =>
-  process.env[name] ?? import.meta.env[name]
+  process.env[name] ?? import.meta.env?.[name]
 
 const baseUrl = env('SHOPNEX_URL') ?? 'http://localhost:3000'
 const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined

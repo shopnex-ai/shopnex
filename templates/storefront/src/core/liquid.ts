@@ -25,6 +25,7 @@ import {
 import { formatMoney, moneyAmount } from '@shopnex/storefront-sdk/money'
 import { THEME_SECTION_ATTRIBUTE } from '@shopnex/storefront-sdk/theme-preview'
 import { ImageDrop, MoneyDrop, SafeHtml } from './drops'
+import { translateKey } from './locales'
 
 /** A section as templates see it (`section.id`, `section.type`, `section.settings`) */
 export type SectionObject = { id: string; type: string; settings: Record<string, unknown> }
@@ -36,7 +37,7 @@ export interface RenderData {
   sections(page: string): SectionObject[]
 }
 
-const dev = import.meta.env.DEV
+const dev = import.meta.env?.DEV ?? false
 
 const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&#34;', "'": '&#39;' })[c]!)
@@ -157,6 +158,13 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
   liquid.registerFilter('money_with_currency', function (this: { context: Context }, value: unknown) {
     const amount = MoneyDrop.unwrap(value)
     return amount ? `${formatMoney(amount, languageOf(this.context))} ${amount.currencyCode}` : ''
+  })
+  // `{{ 'cart.empty' | t }}`: the theme's text (locales/) in the visitor's language. Placeholders and plurals take keyword arguments:
+  // `{{ 'cart.items' | t: count: cart.item_count }}`
+  liquid.registerFilter('t', function (this: { context: Context }, key: unknown, ...args: unknown[]) {
+    const vars: Record<string, unknown> = {}
+    for (const arg of args) if (Array.isArray(arg) && typeof arg[0] === 'string') vars[arg[0]] = arg[1]
+    return translateKey(dir, languageOf(this.context), text(key), vars)
   })
   /** "19.99" (structured data, forms) */
   liquid.registerFilter('money_without_currency', (value: unknown) => {
