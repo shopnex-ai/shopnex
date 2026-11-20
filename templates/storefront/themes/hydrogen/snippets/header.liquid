@@ -35,7 +35,13 @@
 
     <div class="flex w-full items-center gap-12 lg:w-auto">
       {%- if request.page_type == 'index' %}<h1 class="m-0 w-full text-[inherit] font-[inherit] lg:w-auto">{% endif -%}
-      <a href="/" class="font-heading flex h-full w-full flex-grow items-center justify-center self-stretch leading-[3rem] md:leading-[4rem] lg:inline lg:h-auto lg:w-auto lg:leading-none">{{ shop.name }}</a>
+      <a href="/" class="font-heading flex h-full w-full flex-grow items-center justify-center self-stretch leading-[3rem] md:leading-[4rem] lg:inline lg:h-auto lg:w-auto lg:leading-none">
+        {%- if settings.logo != blank -%}
+          <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="mx-auto block h-auto max-w-full lg:mx-0" />
+        {%- else -%}
+          {{ shop.name }}
+        {%- endif -%}
+      </a>
       {%- if request.page_type == 'index' %}</h1>{% endif %}
 
       <nav aria-label="Main" class="hidden gap-8 lg:flex">

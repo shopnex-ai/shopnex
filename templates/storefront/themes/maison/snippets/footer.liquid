@@ -7,6 +7,7 @@
 <footer class="mt-20 border-t border-line bg-tint">
   <div class="eti mx-auto flex max-w-[1240px] flex-col gap-3 px-3 py-5 text-faint sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-6">
     <span>{{ footer_text }}</span>
+    {%- render 'social-links', class: 'flex gap-4', link_class: 'text-soft transition hover:text-acc' %}
     {%- if menu and menu.links.size > 0 %}
       <span class="flex flex-wrap gap-x-5 gap-y-1.5">
         {%- for link in menu.links %}
