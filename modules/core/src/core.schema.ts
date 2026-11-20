@@ -32,6 +32,9 @@ export const shops = pgTable('shops', {
   // ISO 4217; all prices in this shop are in this currency. Not a Better Auth field —
   // organizations created through Better Auth get the DB default.
   currency: text('currency').notNull().default('USD'),
+  // The language of this shop's storefront, a BCP 47 tag (en, fr, pt-BR). It decides how prices and dates are formatted,
+  // the page's lang attribute, and (as themes gain locale files) which text a theme shows. Default English.
+  language: text('language').notNull().default('en'),
   // Where the storefront lives (e.g. https://shop.acme.com): checkout links back to it
   storefrontUrl: text('storefront_url'),
   // Homepage <title> and meta description (Shopify: Online store → Preferences); null = shop name, none
