@@ -11,8 +11,8 @@
 {%- assign main_image = variant.image | default: images.first -%}
 {%- assign excerpt = product.description | strip_html | strip -%}
 <main class="mx-auto max-w-[1100px] px-6">
-  <nav aria-label="Breadcrumb" class="eti flex flex-wrap gap-x-2.5 gap-y-1 pt-10 text-faint" style="font-size:10.5px">
-    <a href="/products" class="transition hover:text-acc">The archive</a>
+  <nav aria-label="{{ 'general.breadcrumb' | t }}" class="eti flex flex-wrap gap-x-2.5 gap-y-1 pt-10 text-faint" style="font-size:10.5px">
+    <a href="/products" class="transition hover:text-acc">{{ 'collection.the_archive' | t }}</a>
     {%- if product.vendor != blank %}
       <span>/</span>
       <span>{{ product.vendor }}</span>
@@ -71,19 +71,19 @@
           class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3 {% if variant.sku == blank %}hidden{% endif %}"
           data-spec-row="sku"
         >
-          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Reference</span>
+          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">{{ 'product.reference' | t }}</span>
           <span class="min-w-0 flex-1 text-[13.5px] text-ink" data-spec="sku">{{ variant.sku }}</span>
         </div>
         {%- if product.type != blank %}
           <div class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3">
-            <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Type</span>
+            <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">{{ 'product.type' | t }}</span>
             <span class="min-w-0 flex-1 text-[13.5px] text-ink">{{ product.type }}</span>
           </div>
         {%- endif %}
         <div class="flex flex-wrap gap-x-[18px] gap-y-1 border-t border-line py-3" data-spec-row="availability">
-          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">Availability</span>
+          <span class="eti w-[140px] flex-none text-faint" style="font-size:10.5px">{{ 'product.availability' | t }}</span>
           <span class="min-w-0 flex-1 text-[13.5px] text-ink" data-spec="availability">
-            {%- if variant.available %}Available{% else %}Sold out{% endif -%}
+            {%- if variant.available %}{{ 'product.available' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif -%}
           </span>
         </div>
         {%- for option in product.options_with_values %}
@@ -125,7 +125,7 @@
           class="btn-keeper flex items-center gap-2 px-[22px] py-[13px] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {% render 'icon-bag' %}
-          <span data-add-label>{% if variant.available %}Add to bag{% else %}Sold out{% endif %}</span>
+          <span data-add-label>{% if variant.available %}{{ 'product.add_to_bag' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif %}</span>
         </button>
       </div>
       {%- if product.tags.size > 0 %}
@@ -140,7 +140,7 @@
 
   {%- if product.description != blank %}
     <section class="border-t border-line pt-10 pb-6">
-      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">The record</h2>
+      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">{{ 'product.the_record' | t }}</h2>
       <div class="rte max-w-[68ch]">{{ product.description }}</div>
     </section>
   {%- endif %}
@@ -149,7 +149,7 @@
 
   {%- if recommendations.products.size > 0 %}
     <section class="border-t border-line pt-10 pb-10">
-      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">Also in the archive</h2>
+      <h2 class="eti m-0 mb-6 text-muted" style="letter-spacing:0.16em">{{ 'product.also_in_the_archive' | t }}</h2>
       {% render 'pieces', products: recommendations.products, grid_only: true %}
     </section>
   {%- endif %}

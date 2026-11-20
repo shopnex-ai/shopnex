@@ -13,9 +13,9 @@
 {%- assign excerpt = product.description | strip_html | strip -%}
 <section class="ks-section ks-py-md">
   <div class="container">
-    <nav aria-label="Breadcrumb" class="small mb-4">
-      <a href="/">Home</a> <span class="text-body-secondary">/</span>
-      <a href="/products">Shop</a> <span class="text-body-secondary">/</span>
+    <nav aria-label="{{ 'general.breadcrumb' | t }}" class="small mb-4">
+      <a href="/">{{ 'general.home' | t }}</a> <span class="text-body-secondary">/</span>
+      <a href="/products">{{ 'general.shop' | t }}</a> <span class="text-body-secondary">/</span>
       {{ product.title }}
     </nav>
 
@@ -84,12 +84,12 @@
           data-add-to-cart="{{ variant.id }}"
           {% unless variant.available %}disabled{% endunless %}
         >
-          <span data-add-label>{% if variant.available %}Add to cart{% else %}Sold out{% endif %}</span>
+          <span data-add-label>{% if variant.available %}{{ 'product.add_to_cart' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif %}</span>
         </button>
 
         <ul class="ks-specs list-unstyled small text-body-secondary">
-          <li data-spec-row="sku"{% if variant.sku == blank %} hidden{% endif %}>SKU: <span data-spec="sku">{{ variant.sku }}</span></li>
-          {%- if product.type != blank %}<li>Type: {{ product.type }}</li>{% endif %}
+          <li data-spec-row="sku"{% if variant.sku == blank %} hidden{% endif %}>{{ 'product.sku' | t }} <span data-spec="sku">{{ variant.sku }}</span></li>
+          {%- if product.type != blank %}<li>{{ 'product.type_colon' | t }} {{ product.type }}</li>{% endif %}
         </ul>
 
         {%- if product.description != blank %}

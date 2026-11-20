@@ -8,12 +8,12 @@
   <header class="relative flex h-nav w-full items-center justify-between gap-4 bg-contrast/80 px-4 leading-none text-primary backdrop-blur-lg md:px-8 lg:gap-8 lg:px-12 lg:py-8">
     <div class="flex w-full items-center justify-start gap-4 lg:hidden">
       <details class="group/menu">
-        <summary aria-label="Menu" class="flex h-8 w-8 cursor-pointer items-center justify-center">
+        <summary aria-label="{{ 'general.menu' | t }}" class="flex h-8 w-8 cursor-pointer items-center justify-center">
           <span class="group-open/menu:hidden">{% render 'icon', name: 'menu', class: 'icon' %}</span>
           <span class="hidden group-open/menu:block">{% render 'icon', name: 'close', class: 'icon' %}</span>
         </summary>
         <nav
-          aria-label="Main"
+          aria-label="{{ 'general.main_navigation' | t }}"
           class="absolute inset-x-0 top-full flex max-h-[80vh] flex-col gap-1 overflow-y-auto bg-contrast px-4 pt-2 pb-6 shadow-border md:px-8"
         >
           {%- if menu -%}
@@ -24,7 +24,7 @@
               {%- endfor %}
             {%- endfor %}
           {%- else -%}
-            <a href="/products" class="py-2 text-lead">Shop</a>
+            <a href="/products" class="py-2 text-lead">{{ 'general.shop' | t }}</a>
             {%- for c in collections limit: 6 %}
               <a href="{{ c.url }}" class="py-1.5 pl-4 text-copy text-primary/60">{{ c.title }}</a>
             {%- endfor %}
@@ -44,13 +44,13 @@
       </a>
       {%- if request.page_type == 'index' %}</h1>{% endif %}
 
-      <nav aria-label="Main" class="hidden gap-8 lg:flex">
+      <nav aria-label="{{ 'general.main_navigation' | t }}" class="hidden gap-8 lg:flex">
         {%- if menu -%}
           {%- for link in menu.links %}
             <a href="{{ link.url }}" class="{% if link.active or link.child_active %}font-bold{% endif %}">{{ link.title }}</a>
           {%- endfor %}
         {%- else -%}
-          <a href="/products">Shop</a>
+          <a href="/products">{{ 'general.shop' | t }}</a>
           {%- for c in collections limit: 4 %}
             <a href="{{ c.url }}">{{ c.title }}</a>
           {%- endfor %}
@@ -60,14 +60,14 @@
 
     <div class="flex w-full items-center justify-end gap-4 lg:w-auto lg:gap-1">
       {% render 'language-selector' %}
-      <a href="{{ routes.account_url }}" class="text-sm underline-offset-4 hover:underline">Account</a>
+      <a href="{{ routes.account_url }}" class="text-sm underline-offset-4 hover:underline">{{ 'general.account' | t }}</a>
       <a href="/search" class="flex h-8 w-8 items-center justify-center">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <span class="sr-only">Search</span>
+        <span class="sr-only">{{ 'general.search' | t }}</span>
       </a>
       <button type="button" data-cart-open class="relative flex h-8 w-8 cursor-pointer items-center justify-center">
         {% render 'icon', name: 'bag', class: 'icon' %}
-        <span class="sr-only">Cart</span>
+        <span class="sr-only">{{ 'general.cart' | t }}</span>
         <span
           data-cart-count
           class="absolute right-0 bottom-0 hidden h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-none text-contrast [&.show]:flex"

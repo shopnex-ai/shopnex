@@ -114,11 +114,11 @@
 
       <div class="flex gap-3 border-t border-line pt-5 md:gap-5 md:pt-6">
         <div class="flex flex-none items-center gap-5 rounded-full bg-surface px-4 py-3 md:px-5">
-          <button type="button" data-qty-step="-1" aria-label="One fewer" class="cursor-pointer">
+          <button type="button" data-qty-step="-1" aria-label="{{ 'product.one_fewer' | t }}" class="cursor-pointer">
             {% render 'icon', name: 'minus', class: 'h-4 w-4 flex-none md:h-5 md:w-5' %}
           </button>
           <span data-qty-value class="min-w-[2ch] text-center text-[14px] font-medium md:text-[16px]">1</span>
-          <button type="button" data-qty-step="1" aria-label="One more" class="cursor-pointer">
+          <button type="button" data-qty-step="1" aria-label="{{ 'product.one_more' | t }}" class="cursor-pointer">
             {% render 'icon', name: 'plus', class: 'h-4 w-4 flex-none md:h-5 md:w-5' %}
           </button>
         </div>
@@ -128,7 +128,7 @@
           {% unless variant.available %}disabled{% endunless %}
           class="btn flex-1 px-6 py-3"
         >
-          <span data-add-label>{% if variant.available %}Add to cart{% else %}Sold out{% endif %}</span>
+          <span data-add-label>{% if variant.available %}{{ 'product.add_to_cart' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif %}</span>
         </button>
       </div>
     </div>
@@ -145,7 +145,7 @@
             aria-selected="true"
             class="flex-1 cursor-pointer border-b-2 border-transparent pb-4 text-[16px] text-soft aria-selected:border-ink aria-selected:font-medium aria-selected:text-ink md:pb-6 md:text-[20px]"
           >
-            Product details
+            {{ 'product.product_details' | t }}
           </button>
         {%- endif %}
         {%- if shipping.size > 0 %}
@@ -156,7 +156,7 @@
             aria-selected="{% if product.description == blank %}true{% else %}false{% endif %}"
             class="flex-1 cursor-pointer border-b-2 border-transparent pb-4 text-[16px] text-soft aria-selected:border-ink aria-selected:font-medium aria-selected:text-ink md:pb-6 md:text-[20px]"
           >
-            Shipping &amp; returns
+            {{ 'product.shipping_returns' | t }}
           </button>
         {%- endif %}
       </div>
@@ -178,7 +178,7 @@
 
   {%- if recommendations.products.size > 0 %}
     <section class="flex flex-col items-center gap-8 pb-12 md:gap-14 md:pb-20">
-      <h2 class="font-display m-0 text-center text-[32px] md:text-[48px]">You might also like</h2>
+      <h2 class="font-display m-0 text-center text-[32px] md:text-[48px]">{{ 'product.you_might_also_like' | t }}</h2>
       <div class="no-scrollbar -mx-4 flex w-[calc(100%+2rem)] snap-x snap-mandatory gap-4 overflow-x-auto px-4 md:mx-0 md:grid md:w-full md:snap-none md:grid-cols-4 md:gap-5 md:overflow-visible md:px-0">
         {%- for p in recommendations.products %}
           <div class="w-[198px] flex-none snap-start md:w-auto">

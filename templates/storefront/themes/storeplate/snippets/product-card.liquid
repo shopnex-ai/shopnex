@@ -14,14 +14,14 @@
       class="mx-auto h-[150px] w-full rounded-md border border-border object-cover md:h-[269px]"
     />
     {%- if product.available == false %}
-      <button type="button" disabled class="{{ button }} cursor-not-allowed">Out Of Stock</button>
+      <button type="button" disabled class="{{ button }} cursor-not-allowed">{{ 'product.out_of_stock' | t }}</button>
     {%- elsif product.variants.size == 1 %}
-      <button type="button" data-add-to-cart="{{ product.variants.first.id }}" aria-label="Add to cart" class="{{ button }}">
-        <span data-label>Add To Cart</span>
+      <button type="button" data-add-to-cart="{{ product.variants.first.id }}" aria-label="{{ 'product.add_to_cart' | t }}" class="{{ button }}">
+        <span data-label>{{ 'product.add_to_cart_button' | t }}</span>
         <span data-spinner hidden>{% render 'icon-loader' %}</span>
       </button>
     {%- else %}
-      <a href="{{ product.url }}" class="{{ button }}">Select Options</a>
+      <a href="{{ product.url }}" class="{{ button }}">{{ 'product.select_options' | t }}</a>
     {%- endif %}
   </div>
   <div class="z-20 py-2 text-center md:py-4">
@@ -30,7 +30,7 @@
     </h2>
     <div class="mt-2 flex flex-wrap items-center justify-center gap-x-2 md:mt-4">
       <span class="text-base font-bold text-text-dark md:text-xl">
-        {%- if product.price_varies %}From {% endif %}{{ product.price_min | money -}}
+        {%- if product.price_varies %}{{ 'product.from' | t }} {% endif %}{{ product.price_min | money -}}
       </span>
       {%- if product.compare_at_price_max > product.price_min %}
         <s class="text-xs font-medium text-text-light md:text-base">{{ product.compare_at_price_max | money }}</s>

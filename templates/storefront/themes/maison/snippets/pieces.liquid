@@ -82,7 +82,7 @@
           <div class="flex flex-[0_1_170px] flex-col gap-1.5">
             {% render 'price', product: p, class: 'text-[14px]' %}
             <span class="eti text-muted" style="font-size:10px">
-              {%- if p.available %}Available{% else %}Sold out{% endif -%}
+              {%- if p.available %}{{ 'product.available' | t }}{% else %}{{ 'product.sold_out' | t }}{% endif -%}
             </span>
             {% render 'bag-button', product: p, class: 'mt-2' %}
           </div>

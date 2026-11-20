@@ -1,0 +1,81 @@
+{
+  "collection": {
+    "all_products": "Todos los productos",
+    "apply": "Aplicar",
+    "clear_all": "Borrar todo",
+    "clear_filters": "Borrar filtros",
+    "collections": "Colecciones",
+    "filters": "Filtros",
+    "first_page": "Primera página",
+    "highest_price": "Precio más alto",
+    "lowest_price": "Precio más bajo",
+    "next_page": "Página siguiente",
+    "no_products_found": "No se han encontrado productos",
+    "no_products_here_yet": "Aún no hay productos",
+    "no_products_match_these_filters": "Ningún producto coincide con estos filtros",
+    "remove": "Quitar",
+    "search_for_something": "Busca algo",
+    "search_products": "Buscar productos",
+    "see_all_products": "Ver todos los productos",
+    "sort_colon": "Ordenar:"
+  },
+  "error": {
+    "back_to_home": "Volver al inicio",
+    "page_not_found": "Página no encontrada",
+    "the_page_youre_looking_for_doesnt": "La página que buscas no existe o se ha movido."
+  },
+  "general": {
+    "account": "Cuenta",
+    "all_of": "Ver todo: {{ title }}",
+    "close_menu": "Cerrar el menú",
+    "home": "Inicio",
+    "no": "No",
+    "open_menu": "Abrir el menú",
+    "products": "Productos",
+    "search": "Buscar",
+    "yes": "Sí"
+  },
+  "js": {
+    "cart": {
+      "browse": "Ver productos",
+      "calculated_at_checkout": "Se calcula al finalizar la compra",
+      "checkout": "Ir a la caja",
+      "close": "Cerrar el carrito",
+      "discount": "Descuento ({{ code }})",
+      "empty": "Tu carrito está vacío.",
+      "increase_quantity": "Aumentar la cantidad",
+      "label": "Tu carrito",
+      "not_enough_stock": "No hay suficiente stock",
+      "open": "Abrir el carrito",
+      "open_count": {
+        "one": "Abrir el carrito, {{ count }} artículo",
+        "other": "Abrir el carrito, {{ count }} artículos"
+      },
+      "reduce_quantity": "Reducir la cantidad",
+      "remove_item": "Quitar el artículo",
+      "shipping_taxes": "Envío e impuestos",
+      "title": "Tu carrito",
+      "total": "Total"
+    },
+    "product": {
+      "add_to_cart": "Añadir al carrito",
+      "option_out_of_stock": "{{ name }} {{ value }} (agotado)",
+      "out_of_stock": "Agotado",
+      "unavailable": "No disponible"
+    }
+  },
+  "product": {
+    "add_to_cart": "Añadir al carrito",
+    "add_to_cart_button": "Añadir al carrito",
+    "description": "Descripción",
+    "details": "Detalles",
+    "from": "Desde",
+    "next_image": "Imagen siguiente",
+    "out_of_stock": "Agotado",
+    "previous_image": "Imagen anterior",
+    "related_products": "Productos relacionados",
+    "select_options": "Elegir opciones",
+    "tags": "Etiquetas:",
+    "view_file": "Ver archivo"
+  }
+}

@@ -2,6 +2,7 @@
 // follow the buyer's choices, and it's kept in the URL (?variant=id).
 import type { Product, ProductVariant } from '@shopnex/storefront-sdk'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const form = document.querySelector<HTMLElement>('[data-product-form]')
 if (form) {
@@ -37,10 +38,10 @@ if (form) {
       b.toggleAttribute('data-unavailable', !canBuy)
     }
     q('[data-add-label]')!.textContent = !variant
-      ? 'Unavailable'
+      ? tr('js.product.unavailable')
       : variant.availableForSale
-        ? 'Add to cart'
-        : 'Sold out'
+        ? tr('js.product.add_to_cart')
+        : tr('js.product.sold_out')
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToCart = variant.id

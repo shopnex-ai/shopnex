@@ -1,0 +1,82 @@
+{
+  "cart": {
+    "acquisition_bag": "Acquisition bag",
+    "proceed_to_checkout": "Proceed to checkout",
+    "shipping_and_taxes_are_calculated_at": "Shipping and taxes are calculated at checkout.",
+    "title_bag": "Your bag",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "All products",
+    "apply": "Apply",
+    "clear_all": "Clear all",
+    "clear_filters": "Clear filters",
+    "collection": "Collection",
+    "collections": "Collections",
+    "filters": "Filters",
+    "first_page": "First page",
+    "grid": "Grid",
+    "highest_price": "Highest price",
+    "list": "List",
+    "lowest_price": "Lowest price",
+    "next_page": "Next page",
+    "no_products_found": "No products found",
+    "no_products_match_these_filters": "No products match these filters",
+    "nothing_in_the_archive_yet": "Nothing in the archive yet",
+    "on_this_page": "on this page",
+    "remove": "Remove",
+    "search_for_something": "Search for something",
+    "search_the_archive": "Search the archive",
+    "see_all_products": "See all products",
+    "sort": "Sort",
+    "the_archive": "The archive",
+    "the_whole_archive": "The whole archive →"
+  },
+  "error": {
+    "back_to_the_house": "Back to the house",
+    "error_404": "Error 404",
+    "not_in_the_archive": "Not in the archive",
+    "the_page_youre_looking_for_doesnt": "The page you’re looking for doesn’t exist or was moved."
+  },
+  "general": {
+    "account": "Account",
+    "archive": "Archive",
+    "bag": "Bag",
+    "breadcrumb": "Breadcrumb",
+    "home": "Home",
+    "main_navigation": "Main",
+    "no": "No",
+    "search": "Search",
+    "yes": "Yes"
+  },
+  "js": {
+    "cart": {
+      "adding": "Adding…",
+      "empty": "The bag is empty. Add a piece from the archive and it waits here.",
+      "not_enough_stock": "Not enough in stock",
+      "one_fewer": "One fewer",
+      "one_more": "One more",
+      "remove": "Remove"
+    },
+    "product": {
+      "add_to_bag": "Add to bag",
+      "available": "Available",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable"
+    }
+  },
+  "product": {
+    "add_to_bag": "Add to bag",
+    "also_in_the_archive": "Also in the archive",
+    "availability": "Availability",
+    "available": "Available",
+    "choose_options": "Choose options",
+    "from": "From",
+    "reference": "Reference",
+    "sold_out": "Sold out",
+    "specifications": "Specifications",
+    "the_record": "The record",
+    "type": "Type",
+    "view_file": "View file"
+  }
+}

@@ -5,7 +5,7 @@
 {%- if settings.show_collections_bar and collections.size > 0 -%}
   <div class="border-b border-line bg-tint">
     <div class="eti no-scrollbar mx-auto flex max-w-[1240px] items-center gap-x-[22px] overflow-x-auto px-3 py-1.5 sm:px-6 sm:py-[9px]">
-      <span class="hidden flex-none text-faint sm:inline">Collections</span>
+      <span class="hidden flex-none text-faint sm:inline">{{ 'collection.collections' | t }}</span>
       {%- for c in collections limit: 8 %}
         <a
           href="{{ c.url }}"
@@ -32,7 +32,7 @@
       {%- endif -%}
     </a>
     <nav
-      aria-label="Main"
+      aria-label="{{ 'general.main_navigation' | t }}"
       class="order-3 flex basis-full flex-wrap items-center gap-x-4 gap-y-2 text-[13.5px] tracking-[0.02em] sm:order-none sm:basis-auto sm:gap-[22px]"
     >
       {%- if menu -%}
@@ -61,14 +61,14 @@
           <a
             href="/"
             class="pb-0.5 transition hover:text-acc {% if request.path == '/' %}border-b border-acc text-acc{% else %}text-soft{% endif %}"
-            >Home</a
+            >{{ 'general.home' | t }}</a
           >
         </div>
         <div class="group relative">
           <a
             href="/products"
             class="pb-0.5 transition hover:text-acc {% if request.path == '/products' %}border-b border-acc text-acc{% else %}text-soft{% endif %}"
-            >Archive</a
+            >{{ 'general.archive' | t }}</a
           >
         </div>
       {%- endif %}
@@ -78,13 +78,13 @@
       href="{{ routes.account_url }}"
       class="order-2 text-[13.5px] text-soft transition hover:text-acc sm:order-none"
     >
-      Account
+      {{ 'general.account' | t }}
     </a>
-    <a href="/search" class="order-2 text-[13.5px] text-soft transition hover:text-acc sm:order-none">Search</a>
+    <a href="/search" class="order-2 text-[13.5px] text-soft transition hover:text-acc sm:order-none">{{ 'general.search' | t }}</a>
     <button
       type="button"
       data-bag-open
-      title="Bag"
+      title="{{ 'general.bag' | t }}"
       class="order-2 flex cursor-pointer items-center gap-1.5 text-[13.5px] text-soft transition hover:text-acc sm:order-none"
     >
       {% render 'icon-bag' %}

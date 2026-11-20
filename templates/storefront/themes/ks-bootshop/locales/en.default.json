@@ -1,0 +1,73 @@
+{
+  "cart": {
+    "proceed_to_checkout": "Proceed to checkout",
+    "shipping_and_taxes_are_calculated_at": "Shipping and taxes are calculated at checkout.",
+    "title": "Your cart",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "All products",
+    "apply": "Apply",
+    "clear_all": "Clear all",
+    "clear_filters": "Clear filters",
+    "filters": "Filters",
+    "first_page": "First page",
+    "highest_price": "Highest price",
+    "lowest_price": "Lowest price",
+    "next_page": "Next page",
+    "no_products_found": "No products found",
+    "no_products_found_period": "No products found.",
+    "no_products_match_these_filters": "No products match these filters",
+    "search_for_something": "Search for something",
+    "search_products": "Search products",
+    "see_all_products": "See all products",
+    "sort_by_colon": "Sort by:"
+  },
+  "error": {
+    "back_to_the_store": "Back to the store",
+    "error_404": "Error 404",
+    "page_not_found": "Page not found",
+    "the_page_youre_looking_for_doesnt": "The page you’re looking for doesn’t exist or was moved."
+  },
+  "general": {
+    "account": "Account",
+    "breadcrumb": "Breadcrumb",
+    "close": "Close",
+    "home": "Home",
+    "main_navigation": "Main",
+    "no": "No",
+    "open_cart": "Open cart",
+    "pagination": "Pagination",
+    "search": "Search",
+    "shop": "Shop",
+    "skip_to_content": "Skip to content",
+    "toggle_menu": "Toggle menu",
+    "yes": "Yes"
+  },
+  "js": {
+    "cart": {
+      "adding": "Adding…",
+      "discount": "Discount ({{ code }})",
+      "empty": "Your cart is empty.",
+      "not_enough_stock": "Not enough in stock",
+      "one_fewer": "One fewer",
+      "one_more": "One more",
+      "remove": "Remove"
+    },
+    "product": {
+      "add_to_cart": "Add to cart",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable"
+    }
+  },
+  "product": {
+    "add_to_cart": "Add to cart",
+    "choose_options": "Choose options",
+    "from": "From",
+    "sale": "Sale",
+    "sku": "SKU:",
+    "sold_out": "Sold out",
+    "type_colon": "Type:",
+    "view_file": "View file"
+  }
+}

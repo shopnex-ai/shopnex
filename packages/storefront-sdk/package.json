@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./contract": "./src/contract.ts",
     "./constants": "./src/constants.ts",
+    "./i18n": "./src/i18n.ts",
     "./cart": "./src/cart.ts",
     "./money": "./src/money.ts",
     "./theme": "./src/theme.ts",

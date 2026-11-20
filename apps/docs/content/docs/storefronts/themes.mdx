@@ -12,6 +12,7 @@ themes/<id>/
   templates/             index, collection, product, page, 404
   sections/<type>.liquid one per section type in theme.json
   snippets/              for {% render 'name' %}
+  locales/               the theme's text: en.default.json, fr.json, pt-BR.json…
   assets/                served at /shopnex/assets/<id>/…, linked with {{ 'file' | asset_url }}
   src/theme.css          → assets/theme.css (Tailwind)
   src/theme.ts           → assets/theme.js (esbuild: TypeScript, npm packages, React islands)
@@ -26,3 +27,30 @@ themes/<id>/
 3. Run `pnpm dev`. It rebuilds `assets/theme.css` and `assets/theme.js` on change; templates and `theme.json` are read on every request in dev.
 
 Built assets are build output and are not committed.
+
+## Text in several languages
+
+A theme keeps the text it writes itself ("Add to cart", "Your cart is empty") in `locales/`, not in the templates. `en.default.json` is the theme's own wording and the fallback; `fr.json`, `pt-BR.json`… translate it. The files are nested JSON, read as dotted keys:
+
+```json
+{
+  "cart": {
+    "empty": "Your cart is empty",
+    "items": { "one": "{{ count }} item", "other": "{{ count }} items" },
+    "discount": "Discount ({{ code }})"
+  },
+  "js": { "cart": { "close": "Close cart" } }
+}
+```
+
+In a template, `{{ 'cart.empty' | t }}` writes the text in the visitor's language (`localization.language`). Keyword arguments fill `{{ placeholders }}` and, with `count`, pick the plural form by the language's own rules:
+
+```liquid
+{{ 'cart.items' | t: count: cart.item_count }}
+{{ 'cart.discount' | t: code: discount.code }}
+```
+
+- A region uses its own file, then its language's (`pt-BR` → `pt`), then the default's. A key a language has no text for falls back to the default **key by key**, so a half-translated theme never shows blanks. A key the theme has no text for shows `translation missing: key`.
+- The text of a section is the merchant's, set in the theme editor: translate the template and snippet text, not the section settings.
+- Keys under `js` are for the theme's scripts. The page embeds them in the visitor's language, and a script reads them with `t('js.cart.close')` from `@shopnex/storefront-sdk/i18n` (same placeholders and plurals).
+- A theme that ships text in several languages is worth a test that every key it uses exists. The bundled themes have one (`templates/storefront/tests/theme-locales.test.ts`).

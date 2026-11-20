@@ -1,0 +1,71 @@
+{
+  "cart": {
+    "checkout": "Finalizar compra",
+    "discount_code": "Código de descuento",
+    "subtotal": "Subtotal",
+    "taxes_and_shipping_are_calculated_at": "Los impuestos y el envío se calculan al finalizar la compra."
+  },
+  "collection": {
+    "all_products": "Todos los productos",
+    "apply": "Aplicar",
+    "clear_all": "Borrar todo",
+    "filters": "Filtros",
+    "first_page": "Primera página",
+    "highest_price": "Precio más alto",
+    "lowest_price": "Precio más bajo",
+    "next_page": "Página siguiente",
+    "no_products_found": "No se han encontrado productos",
+    "no_products_found_period": "No se han encontrado productos.",
+    "no_products_match_these_filters": "Ningún producto coincide con estos filtros",
+    "search_for_something": "Busca algo",
+    "search_products": "Buscar productos",
+    "sort": "Ordenar",
+    "sort_by": "Ordenar por"
+  },
+  "error": {
+    "continue_shopping": "Seguir comprando",
+    "the_page_you_requested_does_not": "La página que pediste no existe."
+  },
+  "general": {
+    "account": "Cuenta",
+    "cart": "Carrito",
+    "close": "Cerrar",
+    "main_navigation": "Principal",
+    "menu": "Menú",
+    "no": "No",
+    "pagination": "Paginación",
+    "search": "Buscar",
+    "shop": "Tienda",
+    "skip_to_content": "Saltar al contenido",
+    "yes": "Sí"
+  },
+  "js": {
+    "cart": {
+      "adding": "Añadiendo…",
+      "code_not_applicable": "«{{ code }}» no se puede aplicar a este carrito.",
+      "continue_shopping": "Seguir comprando",
+      "discount": "Descuento ({{ code }})",
+      "empty": "Parece que aún no has añadido nada, ¡empecemos!",
+      "not_enough_stock": "No hay suficiente stock",
+      "one_fewer": "Uno menos",
+      "one_more": "Uno más",
+      "remove": "Quitar"
+    },
+    "product": {
+      "add_to_cart": "Añadir al carrito",
+      "sold_out": "Agotado",
+      "unavailable": "No disponible"
+    }
+  },
+  "product": {
+    "add_to_cart": "Añadir al carrito",
+    "description": "Descripción",
+    "details": "Detalles",
+    "from": "Desde",
+    "regular_price": "Precio habitual",
+    "sale_price": "Precio de oferta",
+    "sold_out": "Agotado",
+    "view_file": "Ver archivo",
+    "you_may_also_like": "Quizá también te guste"
+  }
+}

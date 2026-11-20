@@ -3,7 +3,7 @@
   {% render 'price', product: product, class: '…' %}
 {%- endcomment -%}
 <span class="flex flex-wrap items-baseline gap-x-2.5 font-mono {{ class }}">
-  <span>{% if product.price_varies %}From {% endif %}{{ product.price_min | money }}</span>
+  <span>{% if product.price_varies %}{{ 'product.from' | t }} {% endif %}{{ product.price_min | money }}</span>
   {%- if product.compare_at_price_max > product.price_min %}
     <s class="text-[0.85em] text-faint">{{ product.compare_at_price_max | money }}</s>
   {%- endif %}

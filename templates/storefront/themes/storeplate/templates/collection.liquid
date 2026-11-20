@@ -16,14 +16,14 @@
   <div class="container">
     <div class="row">
       <aside class="col-12 mb-8 lg:col-3 lg:mb-0">
-        <h3 class="h5 mb-4">Collections</h3>
+        <h3 class="h5 mb-4">{{ 'collection.collections' | t }}</h3>
         <ul class="flex flex-wrap gap-2 lg:flex-col lg:gap-0 lg:space-y-1">
           <li>
             <a
               href="/products"
               class="block rounded-md px-3 py-1 transition hover:text-text-dark max-lg:border max-lg:border-border {% if collection.handle == 'all' %}font-semibold text-text-dark{% else %}text-text-light{% endif %}"
             >
-              All products
+              {{ 'collection.all_products' | t }}
             </a>
           </li>
           {%- for c in collections %}
@@ -49,7 +49,7 @@
           </div>
           <details class="relative z-20">
             <summary class="flex cursor-pointer list-none items-center gap-2 rounded-md border border-border px-4 py-2 font-medium">
-              Sort: {{ current_sort.name }}
+              {{ 'collection.sort_colon' | t }} {{ current_sort.name }}
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
               </svg>
@@ -74,11 +74,11 @@
         {%- if collection.products.size == 0 %}
           <div class="mx-auto pt-5 text-center">
             <img class="mx-auto mb-6" src="{{ 'no-search-found.png' | asset_url }}" alt="" width="211" height="184" />
-            <h2 class="h3 mb-4">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}No products here yet{% endif %}</h2>
+            <h2 class="h3 mb-4">{% if collection.active_filters.size > 0 %}{{ 'collection.no_products_match_these_filters' | t }}{% elsif search.performed and search.terms == blank %}{{ 'collection.search_for_something' | t }}{% elsif search.performed %}{{ 'collection.no_products_found' | t }}{% else %}{{ 'collection.no_products_here_yet' | t }}{% endif %}</h2>
             {%- if collection.clear_filters_url %}
-              <a href="{{ collection.clear_filters_url }}" class="btn btn-outline-primary">Clear filters</a>
+              <a href="{{ collection.clear_filters_url }}" class="btn btn-outline-primary">{{ 'collection.clear_filters' | t }}</a>
             {%- else %}
-              <a href="/products" class="btn btn-outline-primary">See all products</a>
+              <a href="/products" class="btn btn-outline-primary">{{ 'collection.see_all_products' | t }}</a>
             {%- endif %}
           </div>
         {%- else %}
@@ -92,10 +92,10 @@
         {%- if paginate.next or paginate.first %}
           <div class="flex justify-center gap-4 pt-10">
             {%- if paginate.first %}
-              <a class="btn btn-outline-primary" href="{{ paginate.first.url }}">First page</a>
+              <a class="btn btn-outline-primary" href="{{ paginate.first.url }}">{{ 'collection.first_page' | t }}</a>
             {%- endif %}
             {%- if paginate.next %}
-              <a class="btn btn-primary" href="{{ paginate.next.url }}">Next page</a>
+              <a class="btn btn-primary" href="{{ paginate.next.url }}">{{ 'collection.next_page' | t }}</a>
             {%- endif %}
           </div>
         {%- endif %}

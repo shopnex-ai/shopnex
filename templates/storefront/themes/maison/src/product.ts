@@ -2,6 +2,7 @@
 // and image follow the buyer's choices, and it's kept in the URL (?variant=id).
 import type { Product, ProductVariant } from '@shopnex/storefront-sdk'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const form = document.querySelector<HTMLElement>('[data-product-form]')
 if (form) {
@@ -36,7 +37,11 @@ if (form) {
       )
       b.toggleAttribute('data-unavailable', !canBuy)
     }
-    q('[data-add-label]')!.textContent = !variant ? 'Unavailable' : variant.availableForSale ? 'Add to bag' : 'Sold out'
+    q('[data-add-label]')!.textContent = !variant
+      ? tr('js.product.unavailable')
+      : variant.availableForSale
+        ? tr('js.product.add_to_bag')
+        : tr('js.product.sold_out')
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToBag = variant.id
@@ -50,7 +55,9 @@ if (form) {
     compareAtEl.classList.toggle('hidden', !compareAt)
     q('[data-spec="sku"]')!.textContent = variant.sku ?? ''
     q('[data-spec-row="sku"]')!.classList.toggle('hidden', !variant.sku)
-    q('[data-spec="availability"]')!.textContent = variant.availableForSale ? 'Available' : 'Sold out'
+    q('[data-spec="availability"]')!.textContent = variant.availableForSale
+      ? tr('js.product.available')
+      : tr('js.product.sold_out')
     if (variant.image) showImage(new URL(variant.image.url, location.href).href)
     if (!updateUrl) return
     const url = new URL(location.href)

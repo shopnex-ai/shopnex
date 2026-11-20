@@ -1,0 +1,85 @@
+{
+  "cart": {
+    "add_promo_code": "Add promo code",
+    "go_to_checkout": "Go to checkout",
+    "order_summary": "Order summary",
+    "shipping_and_taxes_are_calculated_at": "Shipping and taxes are calculated at checkout.",
+    "subtotal": "Subtotal",
+    "title": "Your cart",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "All products",
+    "apply": "Apply",
+    "clear_all": "Clear all",
+    "clear_filters": "Clear filters",
+    "collections": "Collections",
+    "filters": "Filters",
+    "first_page": "First page",
+    "highest_price": "Highest price",
+    "lowest_price": "Lowest price",
+    "no_products_found": "No products found",
+    "no_products_match_these_filters": "No products match these filters",
+    "nothing_here_yet": "Nothing here yet",
+    "on_this_page": "on this page",
+    "search_for_something": "Search for something",
+    "search_products": "Search products",
+    "see_all_products": "See all products",
+    "sort": "Sort",
+    "sort_by_colon": "Sort by:"
+  },
+  "error": {
+    "keep_shopping": "Keep shopping",
+    "the_page_youre_looking_for_doesnt": "The page you’re looking for doesn’t exist or was moved.",
+    "this_page_isnt_here": "This page isn’t here"
+  },
+  "general": {
+    "account": "Account",
+    "add_your_email_tools_form_url": "Add your email tool’s form URL under Theme settings → Newsletter form URL to show the signup form.",
+    "breadcrumb": "Breadcrumb",
+    "cart": "Cart",
+    "close": "Close",
+    "enter_your_email_address": "Enter your email address",
+    "home": "Home",
+    "links": "Links",
+    "main_navigation": "Main",
+    "menu": "Menu",
+    "new_arrivals": "New arrivals",
+    "next": "Next",
+    "no": "No",
+    "search": "Search",
+    "shop": "Shop",
+    "subscribe_to_newsletter": "Subscribe to newsletter",
+    "yes": "Yes"
+  },
+  "js": {
+    "cart": {
+      "adding": "Adding…",
+      "code_not_applicable": "“{{ code }}” can’t be applied to this cart.",
+      "discount": "Discount ({{ code }})",
+      "empty": "Your cart is empty.",
+      "not_enough_stock": "Not enough in stock",
+      "one_fewer": "One fewer",
+      "one_more": "One more",
+      "remove": "Remove",
+      "start_shopping": "Start shopping"
+    },
+    "product": {
+      "add_to_cart": "Add to cart",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable"
+    }
+  },
+  "product": {
+    "add_to_cart": "Add to cart",
+    "from": "From",
+    "one_fewer": "One fewer",
+    "one_more": "One more",
+    "product_details": "Product details",
+    "shipping_returns": "Shipping & returns",
+    "sold_out": "Sold out",
+    "specifications": "Specifications",
+    "view_file": "View file",
+    "you_might_also_like": "You might also like"
+  }
+}

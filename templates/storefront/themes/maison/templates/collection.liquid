@@ -14,10 +14,10 @@
 <main class="mx-auto max-w-[1240px] px-2 sm:px-6">
   <section class="flex flex-col border-b border-line pt-7 pb-4 sm:pt-12 sm:pb-8">
     <div class="eti mb-[18px] text-acc" style="letter-spacing:0.18em">
-      {%- if search.performed %}Search{% elsif collection.handle == 'all' %}All products{% else %}Collection{% endif -%}
+      {%- if search.performed %}{{ 'general.search' | t }}{% elsif collection.handle == 'all' %}{{ 'collection.all_products' | t }}{% else %}{{ 'collection.collection' | t }}{% endif -%}
     </div>
     <h1 class="font-sf m-0 text-[clamp(30px,4.4vw,46px)] leading-[1.1] tracking-[-0.01em]">
-      {%- if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}The archive{% else %}{{ collection.title }}{% endif -%}
+      {%- if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}{{ 'collection.the_archive' | t }}{% else %}{{ collection.title }}{% endif -%}
     </h1>
     {%- if description != blank %}
       <p class="m-0 mt-5 max-w-[62ch] text-[14.5px] leading-[1.7] text-soft">{{ description }}</p>

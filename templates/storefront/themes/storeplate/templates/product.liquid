@@ -61,7 +61,7 @@
                 <button
                   type="button"
                   data-gallery-prev
-                  aria-label="Previous image"
+                  aria-label="{{ 'product.previous_image' | t }}"
                   class="absolute left-4 rounded-md bg-body p-4 shadow-sm"
                 >
                   {% render 'icon-arrow-left' %}
@@ -69,7 +69,7 @@
                 <button
                   type="button"
                   data-gallery-next
-                  aria-label="Next image"
+                  aria-label="{{ 'product.next_image' | t }}"
                   class="absolute right-4 rounded-md bg-body p-4 shadow-sm"
                 >
                   {% render 'icon-arrow-right' %}
@@ -144,14 +144,14 @@
             {% unless variant.available %}disabled{% endunless %}
             class="btn btn-primary min-w-40 disabled:cursor-not-allowed disabled:opacity-70 max-md:btn-sm"
           >
-            <span data-label>{% if variant.available %}Add To Cart{% else %}Out Of Stock{% endif %}</span>
+            <span data-label>{% if variant.available %}{{ 'product.add_to_cart_button' | t }}{% else %}{{ 'product.out_of_stock' | t }}{% endif %}</span>
             <span data-spinner hidden>{% render 'icon-loader' %}</span>
           </button>
         </div>
 
         {%- if product.tags.size > 0 %}
           <div class="mt-8 flex flex-wrap items-center gap-3">
-            <h5 class="max-md:text-base">Tags:</h5>
+            <h5 class="max-md:text-base">{{ 'product.tags' | t }}</h5>
             {%- for tag in product.tags %}
               <span class="rounded-md bg-light px-2 py-1 text-sm">{{ tag }}</span>
             {%- endfor %}
@@ -167,7 +167,7 @@
     <div class="container">
       <div class="row">
         <div class="col-10 mx-auto mt-12 lg:col-11">
-          <h2 class="h4 mb-4 border-b-2 border-border pb-3">Description</h2>
+          <h2 class="h4 mb-4 border-b-2 border-border pb-3">{{ 'product.description' | t }}</h2>
           <div class="content">{{ product.description }}</div>
         </div>
       </div>
@@ -181,7 +181,7 @@
   <section class="section">
     <div class="container">
       <div class="mb-6 text-center md:mb-14">
-        <h2 class="mb-2">Related Products</h2>
+        <h2 class="mb-2">{{ 'product.related_products' | t }}</h2>
       </div>
       <div class="row">
         {%- for p in recommendations.products %}

@@ -2,6 +2,9 @@
 
 ## Unreleased (additive)
 
+- `@shopnex/storefront-sdk/i18n` (browser-safe, dependency-free): a theme's text in the visitor's language. `t(key, vars?)` for
+  theme scripts (reads the strings the page embeds in `<script id="shopnex-i18n">`, same `{{ placeholders }}` and plural forms as
+  the `t` Liquid filter), and `flattenMessages`, `formatMessage` and `languageChain` for storefronts that load locale files themselves.
 - Languages: `shop.get()` also returns `languages`, the other languages the shop publishes (`languageCode` stays the shop's own).
   Send one in the `x-shopnex-language` header (`LANGUAGE_HEADER`), or pass `language` to `createStorefrontClient`, and
   products, collections and pages come back with their translated text (`title`, `description`, `descriptionHtml`; pages:

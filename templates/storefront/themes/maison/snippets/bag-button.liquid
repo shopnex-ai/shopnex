@@ -4,12 +4,12 @@
 {%- endcomment -%}
 {%- assign classes = 'btn-keeper flex items-center justify-center gap-2 px-4 py-2.5 ' | append: class -%}
 {%- if product.available == false -%}
-  <button type="button" disabled class="{{ classes }} cursor-not-allowed opacity-50">Sold out</button>
+  <button type="button" disabled class="{{ classes }} cursor-not-allowed opacity-50">{{ 'product.sold_out' | t }}</button>
 {%- elsif product.variants.size == 1 -%}
   <button type="button" data-add-to-bag="{{ product.variants.first.id }}" class="{{ classes }}">
     {% render 'icon-bag' %}
-    <span>Add to bag</span>
+    <span>{{ 'product.add_to_bag' | t }}</span>
   </button>
 {%- else -%}
-  <a href="{{ product.url }}" class="{{ classes }}">Choose options</a>
+  <a href="{{ product.url }}" class="{{ classes }}">{{ 'product.choose_options' | t }}</a>
 {%- endif -%}

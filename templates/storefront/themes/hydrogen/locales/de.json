@@ -1,0 +1,71 @@
+{
+  "cart": {
+    "checkout": "Zur Kasse",
+    "discount_code": "Rabattcode",
+    "subtotal": "Zwischensumme",
+    "taxes_and_shipping_are_calculated_at": "Steuern und Versand werden an der Kasse berechnet."
+  },
+  "collection": {
+    "all_products": "Alle Produkte",
+    "apply": "Anwenden",
+    "clear_all": "Alle löschen",
+    "filters": "Filter",
+    "first_page": "Erste Seite",
+    "highest_price": "Höchster Preis",
+    "lowest_price": "Niedrigster Preis",
+    "next_page": "Nächste Seite",
+    "no_products_found": "Keine Produkte gefunden",
+    "no_products_found_period": "Keine Produkte gefunden.",
+    "no_products_match_these_filters": "Keine Produkte entsprechen diesen Filtern",
+    "search_for_something": "Suchen Sie nach etwas",
+    "search_products": "Produkte suchen",
+    "sort": "Sortieren",
+    "sort_by": "Sortieren nach"
+  },
+  "error": {
+    "continue_shopping": "Weiter einkaufen",
+    "the_page_you_requested_does_not": "Die angeforderte Seite existiert nicht."
+  },
+  "general": {
+    "account": "Konto",
+    "cart": "Warenkorb",
+    "close": "Schließen",
+    "main_navigation": "Hauptnavigation",
+    "menu": "Menü",
+    "no": "Nein",
+    "pagination": "Seitennavigation",
+    "search": "Suchen",
+    "shop": "Shop",
+    "skip_to_content": "Zum Inhalt springen",
+    "yes": "Ja"
+  },
+  "js": {
+    "cart": {
+      "adding": "Wird hinzugefügt …",
+      "code_not_applicable": "„{{ code }}“ kann auf diesen Warenkorb nicht angewendet werden.",
+      "continue_shopping": "Weiter einkaufen",
+      "discount": "Rabatt ({{ code }})",
+      "empty": "Sie haben noch nichts hinzugefügt, fangen wir an!",
+      "not_enough_stock": "Nicht genug auf Lager",
+      "one_fewer": "Einen weniger",
+      "one_more": "Einen mehr",
+      "remove": "Entfernen"
+    },
+    "product": {
+      "add_to_cart": "In den Warenkorb",
+      "sold_out": "Ausverkauft",
+      "unavailable": "Nicht verfügbar"
+    }
+  },
+  "product": {
+    "add_to_cart": "In den Warenkorb",
+    "description": "Beschreibung",
+    "details": "Details",
+    "from": "Ab",
+    "regular_price": "Normaler Preis",
+    "sale_price": "Angebotspreis",
+    "sold_out": "Ausverkauft",
+    "view_file": "Datei ansehen",
+    "you_may_also_like": "Das könnte Ihnen auch gefallen"
+  }
+}
