@@ -57,9 +57,9 @@ api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, c
 apps → core, db, rpc, tenancy, theme
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
-catalog → channels, core, custom-fields, db, rpc, webhooks
+catalog → channels, core, custom-fields, db, languages, rpc, webhooks
 channels → core, db, rpc
-content → catalog, core, db, rpc
+content → catalog, core, db, languages, rpc
 core → (nothing)
 custom-fields → core, db, rpc
 customers → auth, core, custom-fields, db, rpc, webhooks
@@ -76,7 +76,7 @@ payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
 privacy → auth, cart, core, custom-fields, customers, db, email, gift-cards, orders, rpc, tenancy, webhooks
 rpc → core
-storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
+storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, languages, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, languages, rpc, webhooks
 theme → core, db, drafts, rpc
 webhooks → core, db, rpc

@@ -1,7 +1,7 @@
 // Records which host each request came in on, for core/shopnex (multi-tenant: the host picks the shop).
 // The host is the Host header the proxy passes on (Caddy keeps the buyer's), never a client-set x-forwarded-host.
 import { defineMiddleware } from 'astro:middleware'
-import { readCountry } from './core/localization'
+import { readCountry, readLanguage } from './core/localization'
 import { requestContext } from './core/shopnex'
 
 // Multi-tenant: the admin's own host (APP_URL) has no shop, so its front page would be a dead end. Send it to the admin,
@@ -20,5 +20,13 @@ export const onRequest = defineMiddleware((context, next) => {
   if (adminHost && host === adminHost && context.url.pathname === '/') return context.redirect('/admin', 302)
   const forwarded = context.request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
   const protocol = forwarded === 'http' || forwarded === 'https' ? forwarded : context.url.protocol.slice(0, -1)
-  return requestContext.run({ host, origin: `${protocol}://${host}`, country: readCountry(context.cookies) }, next)
+  return requestContext.run(
+    {
+      host,
+      origin: `${protocol}://${host}`,
+      country: readCountry(context.cookies),
+      language: readLanguage(context.cookies),
+    },
+    next,
+  )
 })

@@ -117,15 +117,19 @@ export const toCollection = (c: CollectionRow): Collection => ({
 
 const SUMMARY_LENGTH = 150
 
+/** The first words of a page's text, cut at a word boundary */
+export function summarize(html: string) {
+  const text = htmlToText(html)
+  return text.length > SUMMARY_LENGTH ? `${text.slice(0, SUMMARY_LENGTH).replace(/\s+\S*$/, '')}…` : text
+}
+
 export function toPage(p: PageRow): Page {
-  const text = htmlToText(p.bodyHtml)
   return {
     id: p.id,
     handle: p.handle,
     title: p.title,
     body: p.bodyHtml,
-    // Cut at a word boundary
-    bodySummary: text.length > SUMMARY_LENGTH ? `${text.slice(0, SUMMARY_LENGTH).replace(/\s+\S*$/, '')}…` : text,
+    bodySummary: summarize(p.bodyHtml),
     seo: { title: p.seoTitle, description: p.seoDescription },
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),

@@ -154,15 +154,18 @@ export async function forResources(
 }
 
 /** For the module that owns the record: delete its translations along with it */
-export async function removeFor(shopId: string, resource: TranslatableResource, resourceId: string, conn: Conn) {
+export async function removeFor(
+  shopId: string,
+  resource: TranslatableResource,
+  resourceIds: string | string[],
+  conn: Conn,
+) {
+  const ids = Array.isArray(resourceIds) ? resourceIds : [resourceIds]
+  if (!ids.length) return
   await conn
     .delete(translations)
     .where(
-      and(
-        eq(translations.shopId, shopId),
-        eq(translations.resource, resource),
-        eq(translations.resourceId, resourceId),
-      ),
+      and(eq(translations.shopId, shopId), eq(translations.resource, resource), inArray(translations.resourceId, ids)),
     )
 }
 

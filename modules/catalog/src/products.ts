@@ -23,6 +23,7 @@ import {
 import { publicationService, type PublicationInput } from '@shopnex/channels'
 import { all, type Conn } from '@shopnex/db'
 import { customFieldService, type CustomFieldUpdates } from '@shopnex/custom-fields'
+import { languageService } from '@shopnex/languages'
 import { emit } from '@shopnex/webhooks'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
@@ -341,12 +342,9 @@ export async function removeMany(shopId: string, ids: string[], conn: Conn) {
     .delete(productsTable)
     .where(and(eq(productsTable.shopId, shopId), inArray(productsTable.id, ids)))
     .returning({ id: productsTable.id })
-  await publicationService.removeFor(
-    shopId,
-    'product',
-    deleted.map((p) => p.id),
-    conn,
-  )
+  const deletedIds = deleted.map((p) => p.id)
+  await publicationService.removeFor(shopId, 'product', deletedIds, conn)
+  await languageService.removeFor(shopId, 'product', deletedIds, conn)
   return deleted.length
 }
 

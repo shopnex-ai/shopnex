@@ -2,6 +2,11 @@
 
 ## Unreleased (additive)
 
+- Languages: `shop.get()` also returns `languages`, the other languages the shop publishes (`languageCode` stays the shop's own).
+  Send one in the `x-shopnex-language` header (`LANGUAGE_HEADER`), or pass `language` to `createStorefrontClient`, and
+  products, collections and pages come back with their translated text (`title`, `description`, `descriptionHtml`; pages:
+  `title`, `body`, `bodySummary`), field by field with the shop's own text as the fallback. An unpublished or invalid
+  language is ignored. ≠ Shopify: a header for the whole request instead of `@inContext(language:)` on each query.
 - Customer accounts (`customer.*`, `/storefront/customer/…`): `requestCode` emails a sign-in code, `signIn` checks it and
   returns a `token` (a first sign-in creates the account; guest orders with the same email join it), `signOut`,
   `get`, `update`, `orders` (cursor-paged) and `order` (the signed-in customer's own orders, with items, totals,

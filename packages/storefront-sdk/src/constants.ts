@@ -5,5 +5,11 @@ export const PUBLISHABLE_KEY_HEADER = 'x-shopnex-key'
 /** Carries the token from `customer.signIn` on requests for a signed-in customer */
 export const CUSTOMER_TOKEN_HEADER = 'x-shopnex-customer-token'
 
+/**
+ * The language a request is for (a BCP 47 tag the shop has published, see `shop.get()` → `languages`). Products, collections
+ * and pages come back with their translated text where there is one, and in the shop's own language where there is not.
+ */
+export const LANGUAGE_HEADER = 'x-shopnex-language'
+
 /** Path of the public REST API on a ShopNex origin */
 export const API_BASE_PATH = '/api/v1'
