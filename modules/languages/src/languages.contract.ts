@@ -66,6 +66,15 @@ export const translationsQuery = z.object({
   language: language.optional(),
 })
 
+export const translationStatusQuery = z.object({
+  resource: z.enum(TRANSLATABLE_RESOURCES),
+  language,
+})
+
+export const translationStatusOutput = z.array(
+  z.object({ resourceId: z.uuid(), field: z.string(), sourceDigest: z.string() }),
+)
+
 export const translationInput = z.object({
   resource: z.enum(TRANSLATABLE_RESOURCES),
   resourceId: z.uuid(),

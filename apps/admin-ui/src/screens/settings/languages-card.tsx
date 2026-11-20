@@ -84,6 +84,13 @@ export function LanguagesCard() {
                 </li>
               ))}
             </ul>
+            {data!.languages.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                <Link to="/admin/translations" className="underline">
+                  Translate your products, collections and pages
+                </Link>
+              </p>
+            )}
             {data!.languages.length >= MAX_LANGUAGES ? (
               <p className="text-sm text-muted-foreground">A shop can publish up to {MAX_LANGUAGES} languages.</p>
             ) : (

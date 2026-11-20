@@ -147,6 +147,39 @@ describe('translations', () => {
     assert.equal((await languages.forResources(SHOP, 'collection', [product], 'fr', db)).size, 0)
   })
 
+  test('statusOf lists the fingerprint of every translated field of one kind of record in one language', async () => {
+    const other = randomUUID()
+    await languages.publish(SHOP, 'de', db)
+    await title('fr', 'Chemise rouge', 'Red shirt')
+    await title('fr', 'Chemise bleue', 'Blue shirt', other)
+    await languages.translate(
+      SHOP,
+      {
+        resource: 'product',
+        resourceId: product,
+        language: 'de',
+        field: 'title',
+        value: 'Rotes Hemd',
+        source: 'Red shirt',
+      },
+      db,
+    )
+    await languages.translate(
+      SHOP,
+      { resource: 'page', resourceId: product, language: 'fr', field: 'title', value: 'À propos', source: 'About' },
+      db,
+    )
+    const rows = await languages.statusOf(SHOP, 'product', 'fr', db)
+    assert.deepEqual(
+      rows.map((r) => [r.resourceId, r.field, r.sourceDigest]).sort(),
+      [
+        [product, 'title', sourceDigest('Red shirt')],
+        [other, 'title', sourceDigest('Blue shirt')],
+      ].sort(),
+    )
+    assert.equal((await languages.statusOf(OTHER, 'product', 'fr', db)).length, 0)
+  })
+
   test('another shop never sees them, and removeFor deletes a record’s translations', async () => {
     await title('fr', 'Chemise rouge')
     assert.equal((await languages.forResources(OTHER, 'product', [product], 'fr', db)).size, 0)

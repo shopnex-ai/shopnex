@@ -79,6 +79,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
           { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
         ],
       },
+      { href: '/admin/translations', label: 'Translations', icon: LanguagesIcon },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },

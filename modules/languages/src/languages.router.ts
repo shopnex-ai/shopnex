@@ -7,6 +7,8 @@ import {
   languagesOutput,
   translationInput,
   translationOutput,
+  translationStatusOutput,
+  translationStatusQuery,
   translationsQuery,
 } from './languages.contract'
 import * as languageService from './languages'
@@ -45,6 +47,14 @@ export const languages = {
       .handler(({ input, context }) =>
         languageService.translationsOf(context.shop.id, input.resource, input.resourceId, input.language, db),
       ),
+
+    // Which fields of every record of one kind are translated into a language, by the fingerprint of the text they were
+    // translated from (the admin compares it with the record's text now)
+    status: read
+      .route({ method: 'GET', path: '/admin/translations/status' })
+      .output(translationStatusOutput)
+      .input(translationStatusQuery)
+      .handler(({ input, context }) => languageService.statusOf(context.shop.id, input.resource, input.language, db)),
 
     // An empty value removes the translation; answers the stored translation, or null when it was removed
     set: write

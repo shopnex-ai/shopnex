@@ -305,6 +305,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/translations/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.translations.status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/bulk": {
         parameters: {
             query?: never;
@@ -3591,6 +3607,34 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                     } | null;
+                };
+            };
+        };
+    };
+    "admin.languages.translations.status": {
+        parameters: {
+            query: {
+                resource: "product" | "collection" | "page";
+                language: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        resourceId: string;
+                        field: string;
+                        sourceDigest: string;
+                    }[];
                 };
             };
         };

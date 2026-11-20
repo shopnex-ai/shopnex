@@ -61,6 +61,24 @@ export function translationsOf(
     .orderBy(asc(translations.language), asc(translations.field))
 }
 
+/**
+ * For the admin's translation workspace: the fingerprint of every translated field of one kind of record in one language.
+ * The admin compares each with the record's current text to tell translated, outdated and missing apart.
+ */
+export function statusOf(shopId: string, resource: TranslatableResource, language: string, conn: Conn) {
+  return conn
+    .select({
+      resourceId: translations.resourceId,
+      field: translations.field,
+      sourceDigest: translations.sourceDigest,
+    })
+    .from(translations)
+    .where(
+      and(eq(translations.shopId, shopId), eq(translations.resource, resource), eq(translations.language, language)),
+    )
+    .limit(50_000)
+}
+
 export interface TranslateInput {
   resource: TranslatableResource
   resourceId: string

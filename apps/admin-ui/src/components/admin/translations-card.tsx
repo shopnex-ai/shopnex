@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { languageOptions } from '@/lib/languages'
 import { client, orpc } from '@/lib/orpc'
 
-type Resource = 'product' | 'collection' | 'page'
+export type Resource = 'product' | 'collection' | 'page'
 
 /** A field of the record: `html` fields are written in the rich text editor, `text` ones in a line */
 export interface TranslatableField {
@@ -28,12 +28,12 @@ export interface TranslatableField {
   source: string
 }
 
-const plain = (html: string) =>
+export const plain = (html: string) =>
   html
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-const nameOf = (code: string) => languageOptions().find((o) => o.value === code)?.label ?? code
+export const nameOf = (code: string) => languageOptions(code).find((o) => o.value === code)?.label ?? code
 
 export function TranslationsCard({
   resource,
@@ -55,7 +55,14 @@ export function TranslationsCard({
       <CardHeader>
         <CardTitle>Translations</CardTitle>
         <CardDescription>
-          The text shoppers read in another language. Anything left empty shows the original.
+          The text shoppers read in another language. Anything left empty shows the original.{' '}
+          <Link
+            to="/admin/translations"
+            search={{ resource, id: resourceId, language }}
+            className="underline underline-offset-2"
+          >
+            Open in the translation workspace
+          </Link>
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -135,7 +142,16 @@ function LanguageForm({
   )
 }
 
-function TranslationFields({
+export interface TranslationRow {
+  value: string
+  sourceDigest: string
+}
+
+/**
+ * The state of translating one record into one language: what is typed, what changed, which fields are outdated, and saving.
+ * Shared by the card on a record's page and the translation workspace, so both behave the same.
+ */
+export function useTranslationDrafts({
   resource,
   resourceId,
   language,
@@ -147,7 +163,7 @@ function TranslationFields({
   resourceId: string
   language: string
   fields: TranslatableField[]
-  saved: Record<string, { value: string; sourceDigest: string }>
+  saved: Record<string, TranslationRow>
   onSaved: () => Promise<unknown>
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>(() =>
@@ -179,18 +195,43 @@ function TranslationFields({
     },
     onError: (error) => toast.error(error.message),
   })
-  const dirty = fields.some((f) => (drafts[f.key] ?? '') !== (saved[f.key]?.value ?? ''))
+  return {
+    drafts,
+    setDraft: (key: string, value: string) => setDrafts((d) => ({ ...d, [key]: value })),
+    dirty: fields.some((f) => (drafts[f.key] ?? '') !== (saved[f.key]?.value ?? '')),
+    isOutdated,
+    anyOutdated: fields.some(isOutdated),
+    save: (refresh: boolean) => save.mutate(refresh),
+    saving: save.isPending,
+  }
+}
+
+function TranslationFields({
+  resource,
+  resourceId,
+  language,
+  fields,
+  saved,
+  onSaved,
+}: {
+  resource: Resource
+  resourceId: string
+  language: string
+  fields: TranslatableField[]
+  saved: Record<string, TranslationRow>
+  onSaved: () => Promise<unknown>
+}) {
+  const t = useTranslationDrafts({ resource, resourceId, language, fields, saved, onSaved })
 
   return (
     <FieldGroup>
       {fields.map((field) => {
-        const outdated = isOutdated(field)
         const id = `translation-${resource}-${field.key}`
         return (
           <Field key={field.key}>
             <div className="flex items-center gap-2">
               <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
-              {outdated && <Badge variant="outline">Outdated</Badge>}
+              {t.isOutdated(field) && <Badge variant="outline">Outdated</Badge>}
             </div>
             <p className="line-clamp-3 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">
               {(field.kind === 'html' ? plain(field.source) : field.source) || 'Nothing to translate yet'}
@@ -198,14 +239,14 @@ function TranslationFields({
             {field.kind === 'html' ? (
               <RichTextEditor
                 id={id}
-                value={drafts[field.key] ?? ''}
-                onChange={(html) => setDrafts((d) => ({ ...d, [field.key]: html }))}
+                value={t.drafts[field.key] ?? ''}
+                onChange={(html) => t.setDraft(field.key, html)}
               />
             ) : (
               <Input
                 id={id}
-                value={drafts[field.key] ?? ''}
-                onChange={(e) => setDrafts((d) => ({ ...d, [field.key]: e.target.value }))}
+                value={t.drafts[field.key] ?? ''}
+                onChange={(e) => t.setDraft(field.key, e.target.value)}
                 placeholder={field.source}
               />
             )}
@@ -213,13 +254,13 @@ function TranslationFields({
         )
       })}
       <Field orientation="horizontal" className="justify-end">
-        {fields.some(isOutdated) && (
-          <Button type="button" variant="ghost" disabled={save.isPending} onClick={() => save.mutate(true)}>
+        {t.anyOutdated && (
+          <Button type="button" variant="ghost" disabled={t.saving} onClick={() => t.save(true)}>
             Mark as up to date
           </Button>
         )}
-        <Button type="button" variant="outline" disabled={!dirty || save.isPending} onClick={() => save.mutate(false)}>
-          {save.isPending ? 'Saving…' : 'Save translation'}
+        <Button type="button" variant="outline" disabled={!t.dirty || t.saving} onClick={() => t.save(false)}>
+          {t.saving ? 'Saving…' : 'Save translation'}
         </Button>
       </Field>
     </FieldGroup>

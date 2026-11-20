@@ -26,6 +26,7 @@ import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as AdminSignupRouteImport } from './routes/admin/signup'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
+import { Route as AdminTranslationsRouteImport } from './routes/admin/translations'
 import { Route as AdminWelcomeRouteImport } from './routes/admin/welcome'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
@@ -149,6 +150,11 @@ const AdminSignupRoute = AdminSignupRouteImport.update({
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminTranslationsRoute = AdminTranslationsRouteImport.update({
+  id: '/translations',
+  path: '/translations',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
@@ -374,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -430,6 +437,7 @@ export interface FileRoutesByTo {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -605,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -663,6 +674,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -832,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/admin/staff'
       preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/translations': {
+      id: '/admin/translations'
+      path: '/translations'
+      fullPath: '/admin/translations'
+      preLoaderRoute: typeof AdminTranslationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/welcome': {
@@ -1298,6 +1317,7 @@ interface AdminRouteRouteChildren {
   AdminSetupRoute: typeof AdminSetupRoute
   AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminTranslationsRoute: typeof AdminTranslationsRoute
   AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInviteIdRoute: typeof AdminInviteIdRoute
@@ -1319,6 +1339,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminSetupRoute: AdminSetupRoute,
   AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminTranslationsRoute: AdminTranslationsRoute,
   AdminWelcomeRoute: AdminWelcomeRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInviteIdRoute: AdminInviteIdRoute,
