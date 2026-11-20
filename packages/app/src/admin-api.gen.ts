@@ -5026,7 +5026,7 @@ export interface operations {
                             /** Format: uuid */
                             giftCardId: string;
                             /** @enum {string} */
-                            kind: "issue" | "redeem" | "refund" | "adjust";
+                            kind: "issue" | "redeem" | "refund" | "adjust" | "revoke";
                             amountCents: number;
                             balanceAfterCents: number;
                             orderId: string | null;
