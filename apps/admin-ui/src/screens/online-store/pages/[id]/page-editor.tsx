@@ -10,6 +10,7 @@ import { pageInput } from '@shopnex/content/contract'
 import { CheckboxField, FormError, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
+import { TranslationsCard } from '@/components/admin/translations-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -165,6 +166,16 @@ function PageForm({ page }: { page: Page | null }) {
               />
             </CardContent>
           </Card>
+          {page && (
+            <TranslationsCard
+              resource="page"
+              resourceId={page.id}
+              fields={[
+                { key: 'title', label: 'Title', kind: 'text', source: page.title },
+                { key: 'body', label: 'Content', kind: 'html', source: page.bodyHtml },
+              ]}
+            />
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Search engine listing</CardTitle>

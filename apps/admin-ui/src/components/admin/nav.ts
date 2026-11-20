@@ -6,6 +6,7 @@ import {
   CodeIcon,
   CreditCardIcon,
   GlobeIcon,
+  LanguagesIcon,
   HardDriveIcon,
   HouseIcon,
   KeyRoundIcon,
@@ -96,6 +97,7 @@ export const settingsNav: { label: string; items: (NavItem | ExternalNavItem)[] 
       { href: '/admin/settings/staff', label: 'Staff', icon: UserCogIcon },
       { href: '/admin/settings/ai', label: 'AI', icon: SparklesIcon },
       { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
+      { href: '/admin/settings/languages', label: 'Languages', icon: LanguagesIcon },
     ],
   },
   {

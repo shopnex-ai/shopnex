@@ -45,6 +45,7 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/gift-cards": "workspace:*",
+    "@shopnex/languages": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",

@@ -176,6 +176,9 @@ importers:
       '@shopnex/gift-cards':
         specifier: workspace:*
         version: link:../../modules/gift-cards
+      '@shopnex/languages':
+        specifier: workspace:*
+        version: link:../../modules/languages
       '@shopnex/log':
         specifier: workspace:*
         version: link:../../modules/log

@@ -25,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CustomFieldsFormCard, draftOf, toValue } from '@/components/admin/custom-fields-card'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
+import { TranslationsCard } from '@/components/admin/translations-card'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
@@ -265,6 +266,20 @@ function ProductEditor({
             </Card>
 
             <ProductChannelsCard productId={product.id} />
+
+            <TranslationsCard
+              resource="product"
+              resourceId={product.id}
+              fields={[
+                { key: 'title', label: 'Title', kind: 'text', source: product.title },
+                {
+                  key: 'description',
+                  label: 'Description',
+                  kind: 'html',
+                  source: product.descriptionHtml ?? product.description ?? '',
+                },
+              ]}
+            />
 
             <Card>
               <CardHeader>
