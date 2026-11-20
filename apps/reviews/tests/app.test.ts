@@ -86,14 +86,22 @@ describe('public routes', () => {
     const data = await res.json()
     assert.equal(data.count, 1)
     assert.equal(data.average, 4)
+    assert.deepEqual(data.distribution, { 1: 0, 2: 0, 3: 0, 4: 1, 5: 0 })
     assert.deepEqual(Object.keys(data.reviews[0]).sort(), [
       'author',
       'body',
       'createdAt',
       'rating',
+      'reply',
       'title',
       'verified',
     ])
+
+    // paging: limit and offset are clamped, junk falls back to the defaults
+    res = await app.request(`/public/reviews?${query}&limit=abc&offset=-5`)
+    assert.equal((await res.json()).reviews.length, 1)
+    res = await app.request(`/public/reviews?${query}&offset=1`)
+    assert.equal((await res.json()).reviews.length, 0)
 
     assert.equal((await app.request(`/public/reviews?instance=nope&shop=a&product=b`)).status, 400)
     assert.equal((await app.request(`/public/reviews?instance=javascript:alert(1)&shop=a&product=b`)).status, 400)
@@ -106,6 +114,9 @@ describe('admin and webhook routes need proof of who is calling', () => {
     assert.equal((await app.request('/')).status, 401)
     assert.equal((await app.request('/api/settings', { method: 'POST', body: '{}' })).status, 401)
     assert.equal((await app.request('/api/reviews/x/publish', { method: 'POST' })).status, 401)
+    assert.equal((await app.request('/api/reviews/x/reply', { method: 'POST', body: '{}' })).status, 401)
+    assert.equal((await app.request('/api/reviews/x', { method: 'DELETE' })).status, 401)
+    assert.equal((await app.request('/api/publishing', { method: 'POST', body: '{}' })).status, 401)
   })
 
   test('an unsigned webhook is refused', async () => {

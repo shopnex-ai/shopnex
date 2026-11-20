@@ -124,7 +124,7 @@ describe('review requests', () => {
 describe('reviews', () => {
   test('a link is single use; the review waits for moderation and is marked verified', async () => {
     const [request] = await store.addRequests(shop, order(), 0)
-    assert.deepEqual(await store.openRequest(request!.token), { productTitle: 'Mug' })
+    assert.deepEqual(await store.openRequest(request!.token), { productTitle: 'Mug', ...shop })
     const created = await review(request!.token)
     assert.equal(created.status, 'pending')
     assert.equal(created.verified, true)
@@ -184,7 +184,12 @@ describe('reviews', () => {
     const b = await review(await firstToken(shop, order('o2')), { rating: 2, body: 'b' })
     const c = await review(await firstToken(shop, order('o3')), { rating: 4, body: 'c' })
 
-    assert.deepEqual(await store.forProduct(shop, PRODUCT), { count: 0, average: null, reviews: [] })
+    assert.deepEqual(await store.forProduct(shop, PRODUCT), {
+      count: 0,
+      average: null,
+      distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      reviews: [],
+    })
     await store.setStatus(shop, a.id, 'published')
     await store.setStatus(shop, c.id, 'published')
     await store.setStatus(shop, b.id, 'hidden')
@@ -192,6 +197,7 @@ describe('reviews', () => {
     assert.equal(shown.count, 2)
     assert.equal(shown.average, 4.5)
     assert.deepEqual(shown.reviews.map((r) => r.body).sort(), ['a', 'c'])
+    assert.deepEqual(shown.distribution, { 1: 0, 2: 0, 3: 0, 4: 1, 5: 1 })
     assert.deepEqual(await store.counts(shop), { pending: 0, published: 2, hidden: 1 })
   })
 
@@ -218,6 +224,56 @@ describe('reviews', () => {
     assert.equal((await store.forProduct(other, PRODUCT)).count, 0)
     assert.equal((await store.forProduct({ ...shop, instance: 'https://elsewhere.example.com' }, PRODUCT)).count, 0)
     assert.equal((await store.forProduct(shop, PRODUCT)).count, 1)
+  })
+})
+
+describe('replies, deleting, paging and auto-publish', () => {
+  test("a reply is the shop's own, shows with the review, and an empty one removes it", async () => {
+    const created = await review(await firstToken(shop))
+    assert.equal(await store.setReply(other, created.id, 'hi'), false)
+    assert.equal(await store.setReply(shop, created.id, '  Thanks for the kind words!  '), true)
+    assert.equal((await store.list(shop))[0]!.reply, 'Thanks for the kind words!')
+    await store.setStatus(shop, created.id, 'published')
+    assert.equal((await store.forProduct(shop, PRODUCT)).reviews[0]!.reply, 'Thanks for the kind words!')
+    await store.setReply(shop, created.id, '   ')
+    assert.equal((await store.list(shop))[0]!.reply, null)
+  })
+
+  test("deleting is limited to the shop's own reviews", async () => {
+    const created = await review(await firstToken(shop))
+    assert.equal(await store.remove(other, created.id), false)
+    assert.equal(await store.remove(shop, created.id), true)
+    assert.equal(await store.remove(shop, created.id), false)
+    assert.equal((await store.list(shop)).length, 0)
+  })
+
+  test('the storefront pages through published reviews, newest first', async () => {
+    for (const n of [1, 2, 3]) {
+      const made = await review(await firstToken(shop, order(`o${n}`)), { rating: 5, body: `r${n}` })
+      await store.setStatus(shop, made.id, 'published')
+      await new Promise((r) => setTimeout(r, 5))
+    }
+    const first = await store.forProduct(shop, PRODUCT, { limit: 2 })
+    assert.equal(first.count, 3)
+    assert.deepEqual(
+      first.reviews.map((r) => r.body),
+      ['r3', 'r2'],
+    )
+    const rest = await store.forProduct(shop, PRODUCT, { limit: 2, offset: 2 })
+    assert.deepEqual(
+      rest.reviews.map((r) => r.body),
+      ['r1'],
+    )
+  })
+
+  test('auto-publish: off waits, positive lets 4 and 5 stars through, all lets everything through', async () => {
+    const status = async (n: number, rating: number, mode: 'off' | 'positive' | 'all') =>
+      (await store.submit(await firstToken(shop, order(`m${n}`)), { rating, body: 'x' }, mode)).status
+    assert.equal(await status(1, 5, 'off'), 'pending')
+    assert.equal(await status(2, 5, 'positive'), 'published')
+    assert.equal(await status(3, 4, 'positive'), 'published')
+    assert.equal(await status(4, 3, 'positive'), 'pending')
+    assert.equal(await status(5, 1, 'all'), 'published')
   })
 })
 

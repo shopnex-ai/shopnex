@@ -6,8 +6,8 @@ own process.
 - After an order is **fulfilled** (`order.fulfilled` webhook) the app waits N days (default 7, set in the app), then
   emails the buyer a private, single-use link, through the shop's own email settings (Settings → Email, by way of
   `POST /email/send`, scope `write_email`). The app has no email server of its own.
-- The buyer's review waits for the shop's approval (embedded page: Publish / Hide) and is marked **Verified buyer**.
-- A widget (`/widget.js`) shows published reviews on the product page.
+- The buyer's review waits for the shop's approval (embedded page: Publish / Hide / Delete, or auto-publish 4–5 stars or everything) and is marked **Verified buyer**. The shop can reply publicly.
+- A widget (`/widget.js`) shows the average, the rating breakdown and published reviews (with replies, paged) on the product page, plus `aggregateRating` markup.
 - The public routes are rate limited (below).
 
 Scopes it asks for: `read_orders`, `read_products`, `write_email`. Identity: `REVIEWS_APP_KEY` (a `snxk_…` private key, `node scripts/app-keygen.mjs`).
@@ -27,11 +27,11 @@ Docker: `docker compose --profile reviews up` (`deploy/docker-compose.yml`). Rev
 
 ## Where things live
 
-| What                               | Where                                                                                             |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------- |
-| Reviews and review requests        | the `app_reviews` schema of the shop's Postgres (`APP_DATABASE_URL`), scoped by instance and shop |
-| Days to wait, whether email is off | the shop's own app storage in ShopNex                                                             |
-| Order webhook                      | made by the app with its own token (`src/webhook.ts`), checked again every time the page opens    |
+| What                                             | Where                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Reviews and review requests                      | the `app_reviews` schema of the shop's Postgres (`APP_DATABASE_URL`), scoped by instance and shop |
+| Days to wait, publish mode, whether email is off | the shop's own app storage in ShopNex                                                             |
+| Order webhook                                    | made by the app with its own token (`src/webhook.ts`), checked again every time the page opens    |
 
 ## Database
 

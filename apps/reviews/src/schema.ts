@@ -45,6 +45,9 @@ export const reviews = reviewsSchema.table(
     author: text().notNull(),
     verified: boolean().notNull(),
     status: text().notNull(),
+    // The shop's public answer, shown under the review
+    reply: text(),
+    repliedAt: bigint('replied_at', { mode: 'number' }),
     createdAt: bigint('created_at', { mode: 'number' }).notNull(),
   },
   (t) => [

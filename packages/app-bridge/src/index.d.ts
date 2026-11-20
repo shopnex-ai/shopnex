@@ -14,6 +14,11 @@ export type AppBridge = {
   onThemeChange(listener: (theme: Theme) => void): () => void
   /** Shows a toast in the admin */
   toast(message: string, options?: { isError?: boolean }): Promise<void>
+  /**
+   * Asks in a dialog drawn by the admin (title, optional message, the confirm button's label). Resolves to whether the
+   * person confirmed; Cancel and Esc give false. There is no timeout: it waits for the person.
+   */
+  confirm(options: { title: string; message?: string; label?: string }): Promise<boolean>
   /** Navigates the whole admin window (e.g. to restart OAuth: the consent screen can't be framed) */
   redirect(url: string): Promise<void>
 }
