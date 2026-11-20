@@ -2,7 +2,7 @@
 // section's (or the theme's) settings on the right. Every change autosaves the draft and reloads the
 // preview; Publish makes the draft what buyers see (for an unpublished copy: it becomes the live theme).
 import { useMutation } from '@tanstack/react-query'
-import { ArrowLeftIcon, CodeIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
+import { CodeIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -14,7 +14,6 @@ import {
   type ThemeSection,
   type ThemeSettingValue,
 } from '@shopnex/storefront-sdk/theme'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,6 +27,7 @@ import {
 import { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from './preview-frame'
+import { ThemeHeader } from './theme-header'
 import { SectionList } from './section-list'
 import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
@@ -226,69 +226,52 @@ export function ThemeEditor({
   return (
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
     <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          nativeButton={false}
-          render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
-          aria-label="Back to themes"
-          title="Back to themes"
-        >
-          <ArrowLeftIcon />
-        </Button>
-        <div className="mr-auto min-w-0">
-          <h1 className="flex items-center gap-2 text-sm font-semibold">
-            <span className="truncate">
-              {theme.name} · {definition.pages[page]?.name ?? page}
+      {/* Title and actions go in the admin's top bar, like every other page */}
+      <ThemeHeader
+        name={`${theme.name} · ${definition.pages[page]?.name ?? page}`}
+        live={live}
+        actions={
+          <>
+            <span className={cn('text-xs text-muted-foreground', saveState === 'error' && 'text-destructive')}>
+              {status}
             </span>
-            <Badge variant={live ? 'secondary' : 'outline'}>{live ? 'Live' : 'Unpublished'}</Badge>
-          </h1>
-          <p className={cn('text-xs text-muted-foreground', saveState === 'error' && 'text-destructive')}>{status}</p>
-        </div>
-        <div className="flex rounded-md border p-0.5">
-          {(['desktop', 'mobile'] as const).map((d) => (
+            <div className="flex rounded-md border p-0.5">
+              {(['desktop', 'mobile'] as const).map((d) => (
+                <Button
+                  key={d}
+                  variant={device === d ? 'secondary' : 'ghost'}
+                  size="icon-sm"
+                  onClick={() => setDevice(d)}
+                  aria-label={d === 'desktop' ? 'Desktop preview' : 'Mobile preview'}
+                >
+                  {d === 'desktop' ? <MonitorIcon /> : <SmartphoneIcon />}
+                </Button>
+              ))}
+            </div>
             <Button
-              key={d}
-              variant={device === d ? 'secondary' : 'ghost'}
-              size="icon-sm"
-              onClick={() => setDevice(d)}
-              aria-label={d === 'desktop' ? 'Desktop preview' : 'Mobile preview'}
+              variant="ghost"
+              size="sm"
+              nativeButton={false}
+              render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
             >
-              {d === 'desktop' ? <MonitorIcon /> : <SmartphoneIcon />}
+              <CodeIcon />
+              Edit code
             </Button>
-          ))}
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          nativeButton={false}
-          render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
-        >
-          <CodeIcon />
-          Edit code
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          nativeButton={false}
-          render={<a href={storefrontUrl} target="_blank" rel="noopener" />}
-        >
-          View store
-        </Button>
-        {live && published && unpublished && (
-          <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(true)}>
-            Discard
-          </Button>
-        )}
-        <Button
-          size="sm"
-          disabled={!unpublished || publish.isPending}
-          onClick={() => (live ? publish.mutate() : setConfirmPublish(true))}
-        >
-          {publish.isPending ? 'Publishing…' : 'Publish'}
-        </Button>
-      </div>
+            {live && published && unpublished && (
+              <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(true)}>
+                Discard
+              </Button>
+            )}
+            <Button
+              size="sm"
+              disabled={!unpublished || publish.isPending}
+              onClick={() => (live ? publish.mutate() : setConfirmPublish(true))}
+            >
+              {publish.isPending ? 'Publishing…' : 'Publish'}
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex min-h-0 flex-1">
         <aside className="w-64 shrink-0 space-y-4 overflow-y-auto border-r p-3">
