@@ -515,6 +515,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../modules/email
+      '@shopnex/gift-cards':
+        specifier: workspace:*
+        version: link:../modules/gift-cards
       '@shopnex/marketplace-sdk':
         specifier: workspace:*
         version: link:../packages/marketplace-sdk
@@ -1487,6 +1490,9 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
+      '@shopnex/gift-cards':
+        specifier: workspace:*
+        version: link:../gift-cards
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit

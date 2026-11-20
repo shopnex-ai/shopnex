@@ -442,6 +442,9 @@ describe('checking out', () => {
       totalTaxAmount: null,
       taxesIncluded: false,
       totalAmount: money(4500),
+      giftCardAmount: null,
+      giftCardError: null,
+      dueAmount: money(4500),
     })
     assert.deepEqual(o.shippingRates, [{ id: rate.id, title: 'Standard', description: null, price: money(500) }])
     assert.deepEqual(o.paymentMethods, [
