@@ -337,6 +337,13 @@
       "when": 1795159149261,
       "tag": "0047_ship_to_countries",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795161644580,
+      "tag": "0048_shop_language",
+      "breakpoints": true
     }
   ]
 }

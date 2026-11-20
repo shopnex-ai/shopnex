@@ -387,6 +387,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       .returning({
         orderNumber: sql<number>`${shops.nextOrderNumber} - 1`,
         currency: shops.currency,
+        language: shops.language,
         taxesIncluded: shops.taxesIncluded,
         taxShipping: shops.taxShipping,
       })
@@ -418,6 +419,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
         email: customer.email,
         phone: input.phone ?? input.shippingAddress?.phone ?? null,
         currency: shop!.currency,
+        languageCode: shop!.language,
         subtotalCents,
         shippingCents,
         discountCents: totals.discountCents,

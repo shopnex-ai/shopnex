@@ -2067,6 +2067,7 @@ export interface operations {
                         logo: string | null;
                         metadata: string | null;
                         currency: string;
+                        language: string;
                         storefrontUrl: string | null;
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -2099,6 +2100,7 @@ export interface operations {
                 "application/json": {
                     name?: string;
                     currency?: string;
+                    language?: string;
                     storefrontUrl?: string | null;
                     seoTitle?: string | null;
                     seoDescription?: string | null;
@@ -2127,6 +2129,7 @@ export interface operations {
                         logo: string | null;
                         metadata: string | null;
                         currency: string;
+                        language: string;
                         storefrontUrl: string | null;
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -3800,6 +3803,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3901,6 +3905,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3988,6 +3993,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4080,6 +4086,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4224,6 +4231,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4359,6 +4367,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4433,6 +4442,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4507,6 +4517,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4579,6 +4590,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
