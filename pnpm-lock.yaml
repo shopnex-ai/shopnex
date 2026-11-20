@@ -899,6 +899,9 @@ importers:
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/languages':
+        specifier: workspace:*
+        version: link:../languages
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
@@ -979,6 +982,9 @@ importers:
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/languages':
+        specifier: workspace:*
+        version: link:../languages
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
@@ -1628,6 +1634,9 @@ importers:
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
+      '@shopnex/languages':
+        specifier: workspace:*
+        version: link:../languages
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log

@@ -3,6 +3,7 @@
 import { and, asc, count, eq, inArray, max } from 'drizzle-orm'
 import { publicationService } from '@shopnex/channels'
 import { type Conn } from '@shopnex/db'
+import { languageService } from '@shopnex/languages'
 import { CatalogError } from './catalog.errors'
 import { sanitizeHtml } from './html'
 import { getById as getProductById } from './products'
@@ -131,7 +132,10 @@ export async function remove(shopId: string, id: string, conn: Conn) {
     .delete(collections)
     .where(and(eq(collections.shopId, shopId), eq(collections.id, id)))
     .returning()
-  if (row) await publicationService.removeFor(shopId, 'collection', [id], conn)
+  if (row) {
+    await publicationService.removeFor(shopId, 'collection', [id], conn)
+    await languageService.removeFor(shopId, 'collection', id, conn)
+  }
   return row ?? null
 }
 
@@ -141,12 +145,9 @@ export async function removeMany(shopId: string, ids: string[], conn: Conn) {
     .delete(collections)
     .where(and(eq(collections.shopId, shopId), inArray(collections.id, ids)))
     .returning({ id: collections.id })
-  await publicationService.removeFor(
-    shopId,
-    'collection',
-    deleted.map((c) => c.id),
-    conn,
-  )
+  const deletedIds = deleted.map((c) => c.id)
+  await publicationService.removeFor(shopId, 'collection', deletedIds, conn)
+  await languageService.removeFor(shopId, 'collection', deletedIds, conn)
   return deleted.length
 }
 

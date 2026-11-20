@@ -378,8 +378,13 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   const globals = {
     shop: shopObject(shop),
     localization: localizationObject(
-      shop?.shipToCountries ?? [],
-      requestContext.getStore()?.country,
+      {
+        shipTo: shop?.shipToCountries ?? [],
+        country: requestContext.getStore()?.country,
+        shopLanguage: shop?.languageCode ?? 'en',
+        languages: shop?.languages ?? [],
+        language: requestContext.getStore()?.language,
+      },
       shop?.currencyCode ?? null,
     ),
     settings: settingsObject(theme.definition.settings, loaded.settings, loader),

@@ -1,7 +1,7 @@
 // The Storefront API, server side. Every page reads its data through `shopnex`; the browser talks to the
 // same API for the cart (core/cart), with the settings from `browserConfig`.
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { ORPCError, createStorefrontClient, safe } from '@shopnex/storefront-sdk'
+import { LANGUAGE_HEADER, ORPCError, createStorefrontClient, safe } from '@shopnex/storefront-sdk'
 
 // process.env first: a production build must read these when it starts, not when it was built
 // (import.meta.env is what `astro dev` fills from .env)
@@ -16,13 +16,23 @@ const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined
 // API call passes it on as x-forwarded-host; the browser then calls the storefront's own origin.
 const multiTenant = process.env.TENANCY_MODE === 'multi'
 
-export const requestContext = new AsyncLocalStorage<{ host: string; origin: string; country?: string }>()
+export const requestContext = new AsyncLocalStorage<{
+  host: string
+  origin: string
+  country?: string
+  language?: string
+}>()
 
+// The visitor's language (their cookie, see core/localization) goes along too: ShopNex answers products, collections and
+// pages in it where they are translated, so no page or theme has to ask for translations itself
 const hostAwareFetch: typeof fetch = (input, init) => {
-  const host = multiTenant ? requestContext.getStore()?.host : undefined
-  if (!host) return fetch(input, init)
+  const store = requestContext.getStore()
+  const host = multiTenant ? store?.host : undefined
+  const language = store?.language
+  if (!host && !language) return fetch(input, init)
   const request = new Request(input, init)
-  request.headers.set('x-forwarded-host', host)
+  if (host) request.headers.set('x-forwarded-host', host)
+  if (language) request.headers.set(LANGUAGE_HEADER, language)
   return fetch(request)
 }
 

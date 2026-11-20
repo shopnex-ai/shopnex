@@ -16,6 +16,7 @@ export const storefrontModule = defineModule({
     'customers',
     'db',
     'email',
+    'languages',
     'orders',
     'rpc',
     'storefront-sdk',

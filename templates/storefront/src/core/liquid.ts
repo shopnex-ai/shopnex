@@ -141,7 +141,8 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
 
   // Prices are written the way the shop's language writes them (1,234.50 in English, 1 234,50 in French)
   const languageOf = (context: Context) => {
-    const language = context.getSync(['shop', 'language'])
+    // The visitor's language (localization.language), else the shop's own
+    const language = context.getSync(['localization', 'language', 'iso_code']) ?? context.getSync(['shop', 'language'])
     return typeof language === 'string' && language ? language : 'en'
   }
   liquid.registerFilter('money', function (this: { context: Context }, value: unknown) {

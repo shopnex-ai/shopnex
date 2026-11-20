@@ -56,6 +56,8 @@ export const Shop = z.object({
   currencyCode: z.string().length(3),
   /** The language of the storefront, a BCP 47 tag (en, fr, pt-BR) */
   languageCode: z.string().default('en'),
+  /** The other languages the shop publishes (BCP 47 tags). Send one as the `language` option to read the store in it. */
+  languages: z.array(z.string()).default([]),
   /** The homepage's title and meta description (Shopify: Online store → Preferences) */
   seo: Seo,
   /**
