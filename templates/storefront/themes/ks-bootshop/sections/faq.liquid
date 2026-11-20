@@ -1,8 +1,5 @@
-{%- comment -%} FAQ: up to five questions as a Bootstrap accordion; empty ones are skipped {%- endcomment -%}
-<section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
-  <div class="container ks-narrow">
-    {% render 'section-header', heading: section.settings.heading %}
-    <div class="accordion" id="ks-faq-{{ section.id }}">
+{%- comment -%} FAQ: up to five questions as a Bootstrap accordion; empty ones are skipped, and with none the section is not shown {%- endcomment -%}
+{%- capture items -%}
       {%- for i in (1..5) %}
         {%- assign question_key = 'question_' | append: i -%}
         {%- assign answer_key = 'answer_' | append: i -%}
@@ -26,6 +23,14 @@
           </div>
         {%- endif %}
       {%- endfor %}
+{%- endcapture -%}
+{%- if items != blank -%}
+<section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
+  <div class="container ks-narrow">
+    {% render 'section-header', heading: section.settings.heading %}
+    <div class="accordion" id="ks-faq-{{ section.id }}">
+      {{ items }}
     </div>
   </div>
 </section>
+{%- endif -%}
