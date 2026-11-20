@@ -65,6 +65,8 @@ export type ProductInput = {
   /** Client id of the app that fulfills this product (dropshipping); null = the shop ships it itself */
   fulfilledBy?: string | null
   productType?: string
+  /** Selling it issues a gift card (see @shopnex/gift-cards) */
+  isGiftCard?: boolean
   tags?: string[]
   seo?: { title?: string | null; description?: string | null }
   /** Custom field values by key; null clears one (see @shopnex/custom-fields) */
@@ -376,6 +378,7 @@ function contentColumns(input: Partial<ProductInput>) {
     ...(input.vendor !== undefined && { vendor: input.vendor.trim() }),
     ...(input.fulfilledBy !== undefined && { fulfilledBy: input.fulfilledBy }),
     ...(input.productType !== undefined && { productType: input.productType.trim() }),
+    ...(input.isGiftCard !== undefined && { isGiftCard: input.isGiftCard }),
     ...(input.tags !== undefined && { tags: [...new Set(input.tags.map((t) => t.trim()).filter(Boolean))] }),
     ...(input.seo?.title !== undefined && { seoTitle: input.seo.title }),
     ...(input.seo?.description !== undefined && { seoDescription: input.seo.description }),

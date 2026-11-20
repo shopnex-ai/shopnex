@@ -5,15 +5,28 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
 import { PageHeader } from '@/components/admin/page-header'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { client } from '@/lib/orpc'
 import { PreviewLoader } from '@/screens/online-store/themes/preview-loader'
 import { AppIcon, UninstallButton } from '../installed-apps-card'
+
+// A question from the app, waiting for the person's answer
+type Question = { title: string; message?: string; label: string; answer: (confirmed: boolean) => void }
 
 type Props = { installationId: string; src: string; name: string; iconUrl: string | null }
 // AdminMessage without the envelope (Omit on the union would collapse it)
 type Reply =
   | { type: 'session-token'; token: string }
   | { type: 'theme'; theme: 'light' | 'dark' }
+  | { type: 'confirm'; confirmed: boolean }
   | { type: 'error'; message: string }
   | { type: 'ok' }
 
@@ -27,6 +40,7 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   useEffect(() => setMounted(true), [])
   const appOrigin = new URL(src).origin
   const navigate = useNavigate()
+  const [question, setQuestion] = useState<Question | null>(null)
   // The theme the admin shows, which the app follows (instead of the OS setting)
   const { resolvedTheme } = useTheme()
   const theme: 'light' | 'dark' = resolvedTheme === 'dark' ? 'dark' : 'light'
@@ -60,6 +74,22 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
             else toast.success(String(message.message).slice(0, 300))
             reply({ type: 'ok' })
             break
+          case 'confirm': {
+            // One question at a time: a new one answers the old one with no
+            const confirmed = await new Promise<boolean>((answer) =>
+              setQuestion((current) => {
+                current?.answer(false)
+                return {
+                  title: String(message.title).slice(0, 200),
+                  message: message.message === undefined ? undefined : String(message.message).slice(0, 500),
+                  label: message.label === undefined ? 'Confirm' : String(message.label).slice(0, 40),
+                  answer,
+                }
+              }),
+            )
+            reply({ type: 'confirm', confirmed })
+            break
+          }
           case 'redirect': {
             // Leave the iframe only for this admin or the app's own site (e.g. its install/OAuth start)
             const target = new URL(message.url)
@@ -87,6 +117,11 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
     frame.current?.contentWindow?.postMessage(message, appOrigin)
   }, [theme, appOrigin])
 
+  const answer = (confirmed: boolean) => {
+    question?.answer(confirmed)
+    setQuestion(null)
+  }
+
   return (
     // Full-bleed: cancel the layout's padding, fill the height below the top bar (h-12), where the page header is shown
     <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
@@ -107,17 +142,35 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
       />
       <div className="relative flex-1">
         {mounted && (
-          <iframe
-            ref={frame}
-            src={src}
-            title={name}
-            className="h-full w-full border-0 bg-background"
-            onLoad={() => setLoaded(true)}
-            // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-            allow="clipboard-write"
-            referrerPolicy="no-referrer"
-          />
+          <>
+            <iframe
+              ref={frame}
+              src={src}
+              title={name}
+              className="h-full w-full border-0 bg-background"
+              onLoad={() => setLoaded(true)}
+              // Its own origin, so allow-same-origin lets it keep its storage without reaching the admin's
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+              allow="clipboard-write"
+              referrerPolicy="no-referrer"
+            />
+            <Dialog open={question !== null} onOpenChange={(open) => !open && answer(false)}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{question?.title}</DialogTitle>
+                  {question?.message && <DialogDescription>{question.message}</DialogDescription>}
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => answer(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={() => answer(true)}>
+                    {question?.label}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
         {!loaded && <PreviewLoader />}
       </div>

@@ -1,11 +1,12 @@
 export * as orderService from './orders'
-export { orderEvent, type OrderEvent } from './orders.hooks'
+export { orderCreditRefunded, orderEvent, orderFullyRefunded, type OrderEvent } from './orders.hooks'
 export type { CancelInput, CreateOrderInput, FulfillInput, ListOrdersInput, OrderLineInput } from './orders'
 export { OrderError, type OrderErrorCode, type OrderErrorData } from './orders.errors'
 export {
   CANCEL_REASONS,
   FINANCIAL_STATUSES,
   FULFILLMENT_STATUSES,
+  GIFT_CARD_GATEWAY,
   type CancelReason,
   type FinancialStatus,
   type FulfillmentStatus,

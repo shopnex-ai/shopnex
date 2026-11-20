@@ -52,6 +52,7 @@ function fromCart(error: CartError) {
         : undefined
     case 'INVALID_SHIPPING_RATE':
     case 'INVALID_PAYMENT_METHOD':
+    case 'GIFT_CARD_NOT_APPLICABLE':
       return badRequest(error)
   }
 }

@@ -70,6 +70,8 @@ export const API_SCOPES = [
   'write_customers',
   'read_discounts',
   'write_discounts',
+  'read_gift_cards',
+  'write_gift_cards',
   // Sales channels and what's published on them
   'read_publications',
   'write_publications',
@@ -100,6 +102,8 @@ export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   write_customers: 'Customers',
   read_discounts: 'Discounts',
   write_discounts: 'Discounts',
+  read_gift_cards: 'Gift cards',
+  write_gift_cards: 'Gift cards',
   read_publications: 'What is published on each sales channel',
   write_publications: 'What is published on each sales channel',
   read_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',

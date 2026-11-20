@@ -5,6 +5,7 @@ export const SCOPE_RESOURCES: readonly { key: string; label: string; hint: strin
   { key: 'orders', label: 'Orders', hint: 'Orders, payments and fulfillments' },
   { key: 'customers', label: 'Customers', hint: 'Customer names, emails and phones' },
   { key: 'discounts', label: 'Discounts', hint: 'Discount codes and their usage' },
+  { key: 'gift_cards', label: 'Gift cards', hint: 'Gift cards, their balances and history' },
   { key: 'shipping', label: 'Shipping', hint: 'Quote shipping rates at checkout (carrier services)' },
   { key: 'payment_sessions', label: 'Payment sessions', hint: 'Take payments and refunds (payments apps)' },
   {

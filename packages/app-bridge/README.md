@@ -1,6 +1,6 @@
 # @shopnex/app-bridge
 
-Lightweight browser client for embedded apps running inside the ShopNex admin. It communicates with the host admin window via `postMessage` to retrieve short-lived session tokens, make authenticated backend requests without third-party cookies, display toast notifications, and trigger top-level window redirects.
+Lightweight browser client for embedded apps running inside the ShopNex admin. It communicates with the host admin window via `postMessage` to retrieve short-lived session tokens, make authenticated backend requests without third-party cookies, display toast notifications, ask for confirmation in an admin dialog, and trigger top-level window redirects.
 
 ## Installation
 
@@ -36,6 +36,9 @@ const token = await bridge.getSessionToken()
 // Match the admin's theme ('light' | 'dark'), now and when it changes, instead of the OS setting
 document.documentElement.dataset.theme = await bridge.getTheme()
 const stop = bridge.onThemeChange((theme) => (document.documentElement.dataset.theme = theme))
+
+// Ask in a dialog drawn by the admin; true when the person confirms, false on Cancel or Esc (it waits, no timeout)
+const ok = await bridge.confirm({ title: 'Delete this review?', message: "This can't be undone.", label: 'Delete' })
 
 // Redirect the parent admin window (e.g. to restart OAuth when framed)
 await bridge.redirect('https://example.com/oauth/authorize')

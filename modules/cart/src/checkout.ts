@@ -2,7 +2,7 @@
 // Manual payment methods leave the order `pending` (financially) until staff mark it as paid; a payments app
 // method (Stripe…) also starts a payment session, and the buyer is sent to its paymentUrl to pay.
 import { variantService } from '@shopnex/catalog'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { all, type Conn } from '@shopnex/db'
 import { orderService } from '@shopnex/orders'
 import { PaymentError, paymentMethodService, paymentService } from '@shopnex/payments'
@@ -14,6 +14,8 @@ import type { QuoteInput } from './carrier-services'
 import { listShippingRates } from './checkout-settings'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
+import { products } from '@shopnex/catalog/schema'
+import { checkoutCredit, type CheckoutCredit } from './cart.hooks'
 import { type MailingAddress, orders } from '@shopnex/orders/schema'
 
 export type CheckoutInput = {
@@ -26,6 +28,8 @@ export type CheckoutInput = {
   /** Defaults to the shop's first active method */
   paymentMethodId?: string
   note?: string
+  /** A gift card code: pays what it can of the order (see checkoutCredit) */
+  giftCardCode?: string
 }
 
 type AddressFields = {
@@ -171,7 +175,7 @@ export async function estimate(
   shopId: string,
   cart: CartView,
   conn: Conn,
-  input: { shippingRateId?: string; address?: QuoteAddress } = {},
+  input: { shippingRateId?: string; address?: QuoteAddress; giftCardCode?: string; visitorIp?: string | null } = {},
 ) {
   const [{ shippingRates }, tax] = await all(conn, [
     () => options(shopId, cart.subtotalCents, conn, { cart, address: input.address }),
@@ -187,12 +191,76 @@ export async function estimate(
     taxesIncluded: tax.taxesIncluded,
     taxShipping: tax.taxShipping,
   })
-  return { ...totals, taxCents: input.address ? totals.taxCents : null }
+  // What a gift card would pay. Without an address tax is unknown, so this is the total without it.
+  const giftCardLinesCents = cart.lines.reduce(
+    (sum, l, i) => sum + (l.isGiftCard ? l.lineTotalCents - totals.lineDiscountCents[i]! : 0),
+    0,
+  )
+  const credit = input.giftCardCode?.trim()
+    ? await runCredit(conn, {
+        shopId,
+        code: input.giftCardCode,
+        currency: cart.currency,
+        ip: input.visitorIp ?? null,
+        eligibleCents: Math.max(0, totals.totalCents - giftCardLinesCents),
+        orderId: null,
+      })
+    : { credits: [], error: null }
+  const creditCents = credit.credits.reduce((sum, c) => sum + c.amountCents, 0)
+  return {
+    ...totals,
+    taxCents: input.address ? totals.taxCents : null,
+    credits: credit.credits,
+    creditError: credit.error,
+    /** What is left for a payment method to take */
+    dueCents: totals.totalCents - creditCents,
+  }
+}
+
+// What the order's gift card products cost (after their share of discounts): a gift card can't pay for another gift card
+async function giftCardLines(
+  tx: Conn,
+  items: { productId: string | null; unitPriceCents: number; quantity: number; discountCents: number }[],
+) {
+  const productIds = items.flatMap((i) => (i.productId ? [i.productId] : []))
+  if (productIds.length === 0) return 0
+  const gift = new Set(
+    (
+      await tx
+        .select({ id: products.id, isGiftCard: products.isGiftCard })
+        .from(products)
+        .where(inArray(products.id, productIds))
+    )
+      .filter((p) => p.isGiftCard)
+      .map((p) => p.id),
+  )
+  return items.reduce(
+    (sum, i) => (i.productId && gift.has(i.productId) ? sum + i.unitPriceCents * i.quantity - i.discountCents : sum),
+    0,
+  )
+}
+
+async function runCredit(
+  conn: Conn,
+  payload: {
+    shopId: string
+    code: string
+    currency: string
+    ip: string | null
+    eligibleCents: number
+    orderId: string | null
+  },
+): Promise<{ credits: CheckoutCredit[]; error: string | null }> {
+  const state = { ...payload, credits: [] as CheckoutCredit[], error: null as string | null }
+  await checkoutCredit.run(conn, state)
+  return { credits: state.credits, error: state.error }
 }
 
 export type CompleteOptions = {
   /** Where a payments app sends the buyer back after paying: the order's confirmation page */
   returnUrl: string
+  /** The visitor's address, for limits on guessing gift card codes */
+  visitorIp?: string | null
 }
 
 /**
@@ -201,6 +269,22 @@ export type CompleteOptions = {
  * unpaid, and completing again retries. Completing an unpaid, already completed cart picks the payment up again.
  */
 export async function complete(shopId: string, token: string, input: CheckoutInput, opts: CompleteOptions, conn: Conn) {
+  // A gift card code is checked before the order is placed, outside its transaction: wrong guesses are counted against the
+  // visitor there (the counters use the shared connection), and a code that can't be used says so before anything is created
+  if (input.giftCardCode?.trim()) {
+    const found = await cartService.findByToken(shopId, token, conn)
+    if (found && found.status !== 'completed') {
+      const check = await runCredit(conn, {
+        shopId,
+        code: input.giftCardCode,
+        currency: (await cartService.view(found, conn)).currency,
+        ip: opts.visitorIp ?? null,
+        eligibleCents: Number.MAX_SAFE_INTEGER,
+        orderId: null,
+      })
+      if (check.error) throw new CartError('GIFT_CARD_NOT_APPLICABLE', check.error)
+    }
+  }
   const placed = await placeOrder(shopId, token, input, conn)
   const [order] = await conn
     .select({
@@ -210,10 +294,11 @@ export async function complete(shopId: string, token: string, input: CheckoutInp
     })
     .from(orders)
     .where(eq(orders.id, placed.orderId))
+  // Partly paid (a gift card took some): the rest is paid with the method. Fully paid: nothing to start.
   const payable =
     order &&
     (order.paymentGateway ?? 'manual') !== 'manual' &&
-    order.financialStatus === 'pending' &&
+    (order.financialStatus === 'pending' || order.financialStatus === 'partially_paid') &&
     !order.cancelledAt
   if (!payable) return { ...placed, paymentUrl: null, paymentError: null }
   try {
@@ -347,6 +432,19 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput, c
       },
       tx,
     )
+    // A gift card pays first; what is left goes to the payment method. A code that can't be used refuses the order.
+    if (input.giftCardCode?.trim()) {
+      const giftCardLinesCents = await giftCardLines(tx, order.items)
+      const spend = await runCredit(tx, {
+        shopId,
+        code: input.giftCardCode,
+        currency: order.currency,
+        ip: null,
+        eligibleCents: Math.max(0, order.totalCents - giftCardLinesCents),
+        orderId: order.id,
+      })
+      if (spend.error) throw new CartError('GIFT_CARD_NOT_APPLICABLE', spend.error)
+    }
     await cartService.markCompleted(tx, cart.id, order)
     return {
       orderId: order.id,

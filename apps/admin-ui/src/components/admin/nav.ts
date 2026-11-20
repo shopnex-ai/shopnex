@@ -20,6 +20,7 @@ import {
   ShoppingCartIcon,
   SparklesIcon,
   StoreIcon,
+  GiftIcon,
   TicketPercentIcon,
   TruckIcon,
   UserCogIcon,
@@ -66,6 +67,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
+      { href: '/admin/gift-cards', label: 'Gift cards', icon: GiftIcon },
       {
         href: '/admin/online-store',
         label: 'Online store',

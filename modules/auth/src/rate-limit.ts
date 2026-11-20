@@ -2,7 +2,7 @@
 // doesn't clear them. In-memory counters, like signup-limit.ts, are per process: with several replicas the real limit
 // is the cap times the number of replicas, and a restart gives everyone a fresh allowance.
 import { createHash } from 'node:crypto'
-import { lt, sql } from 'drizzle-orm'
+import { and, eq, gt, lt, sql } from 'drizzle-orm'
 import { db } from '@shopnex/db'
 import { rateLimits } from './auth.schema'
 
@@ -42,4 +42,19 @@ export async function takeRate(key: string, max: number, windowMs: number): Prom
   }
   if (!row) throw new Error('rate limit upsert returned no row')
   return row.count <= max ? null : row.waitS
+}
+
+/**
+ * Whether `key` has used up `max` in its open window, without counting a use: the seconds until the window ends, or null.
+ * For limits that count only some uses (failed guesses): ask first, then `takeRate` when the use failed.
+ */
+export async function rateLeft(key: string, max: number): Promise<number | null> {
+  const [row] = await db
+    .select({
+      count: rateLimits.count,
+      waitS: sql<number>`greatest(1, ceil(extract(epoch from (${rateLimits.resetAt} - now()))))::int`,
+    })
+    .from(rateLimits)
+    .where(and(eq(rateLimits.key, id(key)), gt(rateLimits.resetAt, sql`now()`)))
+  return row && row.count >= max ? row.waitS : null
 }
