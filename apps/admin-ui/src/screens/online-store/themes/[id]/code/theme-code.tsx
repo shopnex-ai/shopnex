@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
 import { Button } from '@/components/ui/button'
 import { Workspace, WorkspaceBody } from '@/components/admin/workspace'
+import { WorkspaceTabs } from '@/components/admin/workspace-tabs'
 import {
   Dialog,
   DialogClose,
@@ -88,6 +89,8 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   const [generation, setGeneration] = useState(0)
   const [problem, setProblem] = useState<(Problem & { path: string }) | null>(null)
   const [showPreview, setShowPreview] = useState(true)
+  // On a phone one pane is shown at a time; from lg up the file list, the code and the preview sit side by side
+  const [pane, setPane] = useState<'files' | 'code' | 'preview'>('code')
   const [previewPage, setPreviewPage] = useState('home')
   const [reloadKey, setReloadKey] = useState(0)
   const [confirm, setConfirm] = useState<'reset' | 'delete' | 'publish' | 'discard' | null>(null)
@@ -282,12 +285,13 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
             render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
           >
             <PaletteIcon />
-            Customize
+            <span className="max-md:hidden">Customize</span>
           </Button>
           {storefrontUrl && (
             <Button
               variant="ghost"
               size="icon-sm"
+              className="max-lg:hidden"
               onClick={() => setShowPreview((s) => !s)}
               aria-label={showPreview ? 'Hide preview' : 'Show preview'}
               title={showPreview ? 'Hide preview' : 'Show preview'}
@@ -300,7 +304,13 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
               Discard
             </Button>
           )}
-          <Button variant="outline" size="sm" disabled={!dirtyPaths.length || save.isPending} onClick={onSave}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="max-md:hidden"
+            disabled={!dirtyPaths.length || save.isPending}
+            onClick={onSave}
+          >
             {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Save now' : 'Saved to draft'}
           </Button>
           <Button
@@ -335,8 +345,23 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
     <Workspace>
       {header}
 
+      <WorkspaceTabs
+        tabs={[
+          { id: 'files', label: 'Files' },
+          { id: 'code', label: 'Code' },
+          ...(storefrontUrl ? [{ id: 'preview' as const, label: 'Preview' }] : []),
+        ]}
+        value={pane}
+        onChange={setPane}
+      />
+
       <WorkspaceBody>
-        <aside className="w-60 shrink-0 space-y-4 overflow-y-auto border-r p-3">
+        <aside
+          className={cn(
+            'w-full shrink-0 space-y-4 overflow-y-auto border-r p-3 md:w-60',
+            pane !== 'files' && 'max-md:hidden',
+          )}
+        >
           {THEME_CODE_FOLDERS.map((folder) => (
             <div key={folder}>
               <div className="mb-1 flex items-center justify-between px-1">
@@ -362,9 +387,12 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
                     <li key={path}>
                       <button
                         type="button"
-                        onClick={() => setSelected(path)}
+                        onClick={() => {
+                          setSelected(path)
+                          setPane('code')
+                        }}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left font-mono text-xs hover:bg-muted',
+                          'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left md:py-1 font-mono text-xs hover:bg-muted',
                           selected === path && 'bg-muted font-medium',
                         )}
                       >
@@ -392,7 +420,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
           ))}
         </aside>
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className={cn('flex min-w-0 flex-1 flex-col', pane !== 'code' && 'max-md:hidden')}>
           <div className="flex items-center gap-2 border-b px-3 py-1.5">
             <span className="mr-auto truncate font-mono text-xs">
               {selected.replace(/\.liquid$/, '')}
@@ -430,7 +458,12 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         </main>
 
         {storefrontUrl && showPreview && (
-          <aside className="hidden w-[40%] shrink-0 flex-col border-l lg:flex">
+          <aside
+            className={cn(
+              'flex w-full shrink-0 flex-col border-l md:w-[40%] md:max-lg:hidden',
+              pane !== 'preview' && 'max-md:hidden',
+            )}
+          >
             <div className="border-b p-2">
               <PreviewPageSelect
                 definition={definition}
