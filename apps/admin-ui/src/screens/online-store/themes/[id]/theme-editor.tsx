@@ -268,14 +268,6 @@ export function ThemeEditor({
           <CodeIcon />
           Edit code
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          nativeButton={false}
-          render={<a href={storefrontUrl} target="_blank" rel="noopener" />}
-        >
-          View store
-        </Button>
         {live && published && unpublished && (
           <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(true)}>
             Discard
