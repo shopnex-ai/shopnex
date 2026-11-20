@@ -90,9 +90,7 @@ export function buildApp(deps: {
         delayDays={(await shop.data.get<number>('delay_days')) ?? DEFAULT_DELAY_DAYS}
         counts={await store.counts(key)}
         publishMode={(await shop.data.get<AutoPublish>('publish_mode')) ?? 'off'}
-        pending={await store.list(key, 'pending')}
-        published={await store.list(key, 'published', 50)}
-        hidden={await store.list(key, 'hidden', 50)}
+        reviews={await store.list(key, undefined, 300)}
         emailOff={await readEmailOff(shop)}
         waiting={await store.unsent(key, Date.now())}
         webhookError={webhookError}

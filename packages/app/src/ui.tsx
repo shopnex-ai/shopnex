@@ -53,7 +53,7 @@ white-space:nowrap;transition:opacity .15s,background .15s}
 .sx-btn-primary{background:var(--primary);color:var(--primary-fg)}.sx-btn-primary:hover{opacity:.9}
 .sx-btn-secondary{background:var(--card);color:var(--fg);border-color:var(--border)}.sx-btn-secondary:hover{background:var(--muted)}
 .sx-btn-plain{background:transparent;color:var(--fg)}.sx-btn-plain:hover{background:var(--muted)}
-.sx-btn-critical{background:var(--critical);color:#fff}.sx-btn-critical:hover{opacity:.9}
+.sx-btn-critical,.sx-btn.sx-armed{background:var(--critical);color:#fff}.sx-btn-critical:hover,.sx-btn.sx-armed:hover{opacity:.9}
 .sx-cmd{display:flex;gap:.75rem;align-items:center;justify-content:space-between;width:100%;margin-top:.5rem;
 padding:.5rem .75rem;text-align:left;font:inherit;color:inherit;background:var(--muted);border:1px solid var(--border);
 border-radius:var(--radius);cursor:pointer;transition:border-color .15s}
@@ -65,6 +65,28 @@ border-radius:var(--radius);cursor:pointer;transition:border-color .15s}
 border:1px solid var(--border);border-radius:var(--radius)}
 textarea.sx-input{height:auto;min-height:5rem;padding:.5rem .75rem}
 .sx-input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in oklch,var(--ring) 35%,transparent)}
+select.sx-input{appearance:none;-webkit-appearance:none;padding-right:2rem;
+background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E") no-repeat right .7rem center}
+.sx-disclosures{display:flex;flex-direction:column}
+.sx-disclosure{padding:.75rem 0}.sx-disclosure+.sx-disclosure{border-top:1px solid var(--border)}
+.sx-disclosure:first-child{padding-top:0}.sx-disclosure:last-child{padding-bottom:0}
+.sx-disclosure>summary{display:flex;gap:.5rem;align-items:baseline;cursor:pointer;font-weight:500;list-style:none}
+.sx-disclosure>summary::-webkit-details-marker{display:none}
+.sx-disclosure>summary::after{content:'\\203A';margin-left:auto;font-size:1.25rem;line-height:1;color:var(--muted-fg);transition:transform .15s}
+.sx-disclosure[open]>summary::after{transform:rotate(90deg)}
+.sx-disclosure>summary span{font-weight:400;color:var(--muted-fg)}
+.sx-disclosure>div{margin-top:.75rem}.sx-disclosure .sx-field{max-width:30rem}
+.sx-filter-bar{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:-1.25rem -1.25rem 0;
+padding:.75rem 1.25rem;background:var(--card);border-bottom:1px solid var(--border);border-radius:calc(var(--radius) + 4px) calc(var(--radius) + 4px) 0 0}
+.sx-tabs{display:flex;flex-wrap:wrap;gap:.25rem;margin-right:auto}
+.sx-tab{display:inline-flex;gap:.4rem;align-items:center;height:2rem;padding:0 .75rem;font:inherit;font-weight:500;color:var(--muted-fg);
+background:transparent;border:1px solid transparent;border-radius:999px;cursor:pointer}
+.sx-tab:hover{background:var(--muted)}.sx-tab[aria-pressed=true]{color:var(--fg);background:var(--muted);border-color:var(--border)}
+.sx-tab b{font-weight:600;font-size:.8rem}.sx-tab-alert b{color:var(--warning)}
+.sx-filter-bar .sx-input{width:auto;height:2rem}.sx-filter-bar input.sx-input{width:11rem}
+.sx-item{padding:1rem 0;border-top:1px solid var(--border)}
+.sx-empty{padding:1.5rem 0;text-align:center}
+.sx-item[hidden],.sx-panel[hidden],.sx-empty[hidden]{display:none}
 .sx-check{display:flex;gap:.5rem;align-items:center;font-weight:500}
 .sx-badge{display:inline-flex;align-items:center;height:1.375rem;padding:0 .5rem;border-radius:999px;font-size:.75rem;
 font-weight:500;background:var(--muted);color:var(--fg)}
@@ -185,6 +207,133 @@ export function Banner({ tone = 'default', title, children }: PropsWithChildren<
   )
 }
 
+/**
+ * Settings that stay out of the way: one row each (title and a short summary of the current value), opening to the
+ * content. Put them in <Disclosures>.
+ */
+export function Disclosures({ children }: PropsWithChildren) {
+  return <div class="sx-disclosures">{children}</div>
+}
+
+export function Disclosure({
+  title,
+  summary,
+  open,
+  children,
+}: PropsWithChildren<{ title: string; summary?: Child; open?: boolean }>) {
+  return (
+    <details class="sx-disclosure" open={open}>
+      <summary>
+        {title}
+        {summary && <span>{summary}</span>}
+      </summary>
+      <div>{children}</div>
+    </details>
+  )
+}
+
+let filterIds = 0
+
+/**
+ * A list people can narrow down without a request: tabs (with counts), dropdown filters and a search box, then the
+ * <FilterItem>s. It lives in a <Card> and its bar sticks to the top while the list scrolls. The tab and the filters are
+ * kept in the URL hash, so they survive the reload that follows a <Button action reload>. One per page.
+ *
+ *   <Filterable tabs={[{ value: 'open', label: 'Open', count: 3, alert: true }, { value: 'all', label: 'All', count: 9 }]}
+ *     defaultTab="open" filters={[{ name: 'rating', label: 'Any rating', options: [{ value: '5', label: '5 stars' }] }]}
+ *     search="Search" noun="review">
+ *     <FilterItem tab="open" values={{ rating: 5 }} text="the words search looks in">…</FilterItem>
+ *   </Filterable>
+ *
+ * The tab `all` shows every item; any other tab shows the items whose `tab` is its value.
+ */
+export function Filterable({
+  tabs,
+  defaultTab,
+  filters = [],
+  search,
+  noun = 'item',
+  empty = 'Nothing here.',
+  children,
+}: PropsWithChildren<{
+  tabs: {
+    value: string
+    label: string
+    count?: number
+    /** Colour the count: something needs attention */ alert?: boolean
+  }[]
+  defaultTab: string
+  filters?: { name: string; label: string; options: { value: string; label: string }[] }[]
+  /** Placeholder of the search box; leave out for none */
+  search?: string
+  /** Singular, for "12 reviews" */
+  noun?: string
+  /** Shown when no item is in the chosen tab */
+  empty?: string
+}>) {
+  const id = `sx-filter-${++filterIds}`
+  const first = defaultTab.replace(/["\\]/g, '')
+  return (
+    <div id={id} data-sx-filter data-default-tab={defaultTab} data-noun={noun}>
+      {/* Before the script runs, show only the default tab, so the page doesn't flash everything */}
+      {defaultTab !== 'all' && (
+        <style>{raw(`#${id}:not([data-ready]) [data-sx-item]:not([data-sx-tab="${first}"]){display:none}`)}</style>
+      )}
+      <div class="sx-filter-bar">
+        <div class="sx-tabs">
+          {tabs.map((tab) => (
+            <button
+              type="button"
+              class={`sx-tab${tab.alert && tab.count ? ' sx-tab-alert' : ''}`}
+              data-sx-tab-button={tab.value}
+              aria-pressed="false"
+            >
+              {tab.label}
+              {tab.count !== undefined && <b>{tab.count}</b>}
+            </button>
+          ))}
+        </div>
+        {filters.map((filter) => (
+          <select class="sx-input" data-sx-select={filter.name} aria-label={filter.label}>
+            <option value="">{filter.label}</option>
+            {filter.options.map((o) => (
+              <option value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        ))}
+        {search && <input class="sx-input" type="search" placeholder={search} aria-label={search} data-sx-search />}
+      </div>
+      <p class="sx-text sx-subdued sx-small" style="margin:.75rem 0 0" data-sx-count></p>
+      <p class="sx-text sx-subdued sx-empty" data-sx-empty data-empty={empty} hidden></p>
+      {children}
+    </div>
+  )
+}
+
+/** One row of a <Filterable>: in `tab`, matching the filters named in `values`, found by `text` */
+export function FilterItem({
+  tab,
+  values = {},
+  text = '',
+  children,
+}: PropsWithChildren<{ tab: string; values?: Record<string, string | number>; text?: string }>) {
+  const attrs = Object.fromEntries(Object.entries(values).map(([name, value]) => [`data-sx-f-${name}`, String(value)]))
+  return (
+    <div class="sx-item" data-sx-item data-sx-tab={tab} data-sx-text={text.toLowerCase()} {...attrs}>
+      {children}
+    </div>
+  )
+}
+
+/** Hidden until a <Button toggles="id"> is pressed: a reply form, details, an edit form */
+export function Panel({ id, open, children }: PropsWithChildren<{ id: string; open?: boolean }>) {
+  return (
+    <div id={id} class="sx-panel" data-sx-panel hidden={!open}>
+      {children}
+    </div>
+  )
+}
+
 /** A number with a label */
 export function Stat({ label, value }: { label: string; value: Child }) {
   return (
@@ -203,13 +352,16 @@ type ActionProps = {
   reload?: boolean
   /** Toast shown when it succeeds (default: the response's `message`) */
   success?: string
+  /** Two clicks: the first turns the button red and shows this text (e.g. "Click again to delete") for a few seconds */
+  confirm?: string
 }
 
-const actionAttrs = ({ action, method, reload, success }: ActionProps) => ({
+const actionAttrs = ({ action, method, reload, success, confirm }: ActionProps) => ({
   'data-shopnex-action': action,
   'data-method': method,
   'data-reload': reload ? '' : undefined,
   'data-success': success,
+  'data-confirm': confirm,
 })
 
 /**
@@ -223,9 +375,22 @@ export function Button({
   children,
   ...props
 }: PropsWithChildren<
-  ActionProps & { variant?: 'primary' | 'secondary' | 'plain' | 'critical'; href?: string; external?: boolean }
+  ActionProps & {
+    variant?: 'primary' | 'secondary' | 'plain' | 'critical'
+    href?: string
+    external?: boolean
+    /** Shows or hides the <Panel id> instead of calling the backend */
+    toggles?: string
+  }
 >) {
   const cls = `sx-btn sx-btn-${variant}`
+  if (props.toggles) {
+    return (
+      <button type="button" class={cls} data-sx-toggle={props.toggles}>
+        {children}
+      </button>
+    )
+  }
   if (href) {
     return (
       <a class={cls} href={href} {...(external && { target: '_blank', rel: 'noreferrer' })}>

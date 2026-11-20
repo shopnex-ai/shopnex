@@ -46,6 +46,34 @@ app.get('/', async (c) => {
 
 `@shopnex/app/ui` provides `Page`, `Card`, `Stack`, `Inline`, `Text`, `Badge`, `Banner`, `Stat`, `Button`, `Form`, `TextField`, `Select`, `Checkbox`, `Code`, built on `hono/jsx` with admin styles and light/dark support. `<Form action>` and `<Button action>` call the app's backend with fresh session tokens; there is no client build.
 
+For longer pages there are a few more:
+
+- `Disclosures` and `Disclosure` (`title`, `summary`, `open`): settings that stay as one quiet row each and open on click.
+- `Filterable` and `FilterItem`: a list with tabs (and counts), dropdown filters and a search box that narrow the items without a request. The chosen tab and filters stay in the URL hash, so they survive the reload after `<Button action reload>`. Put it in a `Card`, one per page.
+- `Panel` and `<Button toggles="id">`: a form or detail that opens when the button is pressed.
+- `<Button confirm="Click again to delete">`: asks for a second click before it calls the backend.
+
+```tsx
+<Card>
+  <Filterable
+    tabs={[
+      { value: 'open', label: 'Open', count: 3, alert: true },
+      { value: 'all', label: 'All', count: 9 },
+    ]}
+    defaultTab="open"
+    filters={[{ name: 'rating', label: 'Any rating', options: [{ value: '5', label: '5 stars' }] }]}
+    search="Search"
+    noun="review"
+  >
+    {rows.map((row) => (
+      <FilterItem tab={row.status} values={{ rating: row.rating }} text={row.body}>
+        …
+      </FilterItem>
+    ))}
+  </Filterable>
+</Card>
+```
+
 ## App bridge
 
 Frontends that need more use `@shopnex/app-bridge`: `getSessionToken()`, `authenticatedFetch()` (fresh token per request, no third-party cookies), `toast()` and `redirect()` (top-level, only to the admin or the app's own origin).
