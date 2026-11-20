@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/api-tokens')({ component: 
 function ApiTokensSettingsPage() {
   return (
     <>
-      <PageHeader title="API tokens" description="Tokens for scripts and integrations that call the Admin API." />
+      <PageHeader title="API tokens" />
       <ApiTokensCard />
     </>
   )

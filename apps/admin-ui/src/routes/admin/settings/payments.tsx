@@ -8,7 +8,7 @@ function PaymentsSettingsPage() {
   const tenant = Route.useRouteContext().access.tenant
   return (
     <>
-      <PageHeader title="Payments" description="How customers pay at checkout." />
+      <PageHeader title="Payments" />
       <PaymentMethodsCard />
       <UnpaidOrdersCard />
       {tenant && <PaymentAppsCard shopId={tenant.shop.id} />}

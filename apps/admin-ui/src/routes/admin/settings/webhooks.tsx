@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/webhooks')({ component: We
 function WebhooksSettingsPage() {
   return (
     <>
-      <PageHeader title="Webhooks" description="Notify other services when things happen in your shop." />
+      <PageHeader title="Webhooks" />
       <WebhooksCard />
     </>
   )

@@ -6,10 +6,7 @@ export const Route = createFileRoute('/admin/settings/storefront-keys')({ compon
 function StorefrontKeysSettingsPage() {
   return (
     <>
-      <PageHeader
-        title="Storefront keys"
-        description="Public keys your storefront uses to read the catalog and run checkout."
-      />
+      <PageHeader title="Storefront keys" />
       <StorefrontKeysCard />
     </>
   )

@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/storage')({ component: Sto
 function StorageSettingsPage() {
   return (
     <>
-      <PageHeader title="Storage" description="Where uploaded images and files are stored." />
+      <PageHeader title="Storage" />
       <StorageCard />
     </>
   )

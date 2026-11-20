@@ -16,7 +16,7 @@ function MarketplaceSettingsPage() {
   if (!tenant?.superAdmin) return <NoAccess message="Only super admins can manage the marketplace." />
   return (
     <>
-      <PageHeader title="Marketplace" description="Connect this install to the ShopNex app marketplace." />
+      <PageHeader title="Marketplace" />
       <MarketplaceCard defaultMarketplaceUrl={DEFAULT_MARKETPLACE_URL} defaultPublicUrl={instanceUrl} />
     </>
   )

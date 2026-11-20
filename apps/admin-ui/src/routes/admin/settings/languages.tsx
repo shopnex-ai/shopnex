@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/languages')({ component: L
 function LanguagesSettingsPage() {
   return (
     <>
-      <PageHeader title="Languages" description="The languages your storefront can be read in." />
+      <PageHeader title="Languages" />
       <LanguagesCard />
     </>
   )
