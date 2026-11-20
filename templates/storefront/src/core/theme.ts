@@ -48,7 +48,8 @@ import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { appHeaderTags } from './app-scripts'
-import { browserBaseUrl, browserConfig, shopnex } from './shopnex'
+import { localizationObject } from './localization'
+import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
 
@@ -376,6 +377,16 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   }
   const globals = {
     shop: shopObject(shop),
+    localization: localizationObject(
+      {
+        shipTo: shop?.shipToCountries ?? [],
+        country: requestContext.getStore()?.country,
+        shopLanguage: shop?.languageCode ?? 'en',
+        languages: shop?.languages ?? [],
+        language: requestContext.getStore()?.language,
+      },
+      shop?.currencyCode ?? null,
+    ),
     settings: settingsObject(theme.definition.settings, loaded.settings, loader),
     collections: collectionsObject(loader),
     linklists: new LinklistsDrop(loader),

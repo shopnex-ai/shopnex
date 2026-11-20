@@ -56,7 +56,13 @@
       </nav>
     </details>
 
-    <a href="/" class="font-display min-w-0 truncate text-[25px] md:text-[32px]">{{ shop.name }}</a>
+    <a href="/" class="font-display min-w-0 truncate text-[25px] md:text-[32px]">
+      {%- if settings.logo != blank -%}
+        <img src="{{ settings.logo }}" alt="{{ shop.name }}" style="width: {{ settings.logo_width }}px" class="block h-auto max-w-full" />
+      {%- else -%}
+        {{ shop.name }}
+      {%- endif -%}
+    </a>
 
     <nav aria-label="Main" class="hidden items-center gap-6 text-[16px] md:flex">
       {%- if menu -%}
@@ -102,6 +108,7 @@
     </nav>
 
     <span class="flex-1"></span>
+    {% render 'language-selector' %}
     <a href="{{ routes.account_url }}" class="mr-5 text-sm transition hover:opacity-70">Account</a>
     <a href="/search" aria-label="Search" class="flex items-center transition hover:opacity-70">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>

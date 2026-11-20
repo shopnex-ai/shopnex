@@ -257,6 +257,70 @@ export interface paths {
         patch: operations["admin.customFields.update"];
         trace?: never;
     };
+    "/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.list"];
+        put?: never;
+        post: operations["admin.languages.publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/languages/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin.languages.unpublish"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.translations.list"];
+        put: operations["admin.languages.translations.set"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/translations/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.translations.status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/bulk": {
         parameters: {
             query?: never;
@@ -527,6 +591,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["admin.discounts.update"];
+        trace?: never;
+    };
+    "/gift-cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.giftCards.list"];
+        put?: never;
+        post: operations["admin.giftCards.issue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gift-cards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.giftCards.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gift-cards/{id}/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.giftCards.adjust"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gift-cards/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.giftCards.disable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gift-cards/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admin.giftCards.enable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/themes": {
@@ -1987,6 +2131,7 @@ export interface operations {
                         logo: string | null;
                         metadata: string | null;
                         currency: string;
+                        language: string;
                         storefrontUrl: string | null;
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -1998,6 +2143,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -2018,6 +2164,7 @@ export interface operations {
                 "application/json": {
                     name?: string;
                     currency?: string;
+                    language?: string;
                     storefrontUrl?: string | null;
                     seoTitle?: string | null;
                     seoDescription?: string | null;
@@ -2028,6 +2175,7 @@ export interface operations {
                     businessAddress?: string | null;
                     taxId?: string | null;
                     cookieBanner?: boolean;
+                    shipToCountries?: string[];
                 };
             };
         };
@@ -2045,6 +2193,7 @@ export interface operations {
                         logo: string | null;
                         metadata: string | null;
                         currency: string;
+                        language: string;
                         storefrontUrl: string | null;
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -2056,6 +2205,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -2144,6 +2294,7 @@ export interface operations {
                             vendor: string;
                             fulfilledBy: string | null;
                             productType: string;
+                            isGiftCard: boolean;
                             tags: string[];
                             seoTitle: string | null;
                             seoDescription: string | null;
@@ -2223,6 +2374,7 @@ export interface operations {
                     vendor?: string;
                     fulfilledBy?: (string | null) | null;
                     productType?: string;
+                    isGiftCard?: boolean;
                     tags?: string[];
                     slug?: string;
                     seo?: {
@@ -2276,6 +2428,7 @@ export interface operations {
                         vendor: string;
                         fulfilledBy: string | null;
                         productType: string;
+                        isGiftCard: boolean;
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -2359,6 +2512,7 @@ export interface operations {
                         vendor: string;
                         fulfilledBy: string | null;
                         productType: string;
+                        isGiftCard: boolean;
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -2432,6 +2586,7 @@ export interface operations {
                     vendor?: string;
                     fulfilledBy?: (string | null) | null;
                     productType?: string;
+                    isGiftCard?: boolean;
                     tags?: string[];
                     slug?: string;
                     seo?: {
@@ -2471,6 +2626,7 @@ export interface operations {
                         vendor: string;
                         fulfilledBy: string | null;
                         productType: string;
+                        isGiftCard: boolean;
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -2637,6 +2793,7 @@ export interface operations {
                         vendor: string;
                         fulfilledBy: string | null;
                         productType: string;
+                        isGiftCard: boolean;
                         tags: string[];
                         seoTitle: string | null;
                         seoDescription: string | null;
@@ -3304,6 +3461,184 @@ export interface operations {
             };
         };
     };
+    "admin.languages.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description A BCP 47 language tag, e.g. fr or pt-BR */
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.translations.list": {
+        parameters: {
+            query: {
+                resource: "product" | "collection" | "page";
+                resourceId: string;
+                language?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        field: string;
+                        language: string;
+                        value: string;
+                        sourceDigest: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    "admin.languages.translations.set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    resource: "product" | "collection" | "page";
+                    /** Format: uuid */
+                    resourceId: string;
+                    /** @description A BCP 47 language tag, e.g. fr or pt-BR */
+                    language: string;
+                    field: string;
+                    value: string;
+                    source: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        field: string;
+                        language: string;
+                        value: string;
+                        sourceDigest: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    } | null;
+                };
+            };
+        };
+    };
+    "admin.languages.translations.status": {
+        parameters: {
+            query: {
+                resource: "product" | "collection" | "page";
+                language: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        resourceId: string;
+                        field: string;
+                        sourceDigest: string;
+                    }[];
+                };
+            };
+        };
+    };
     "admin.customers.deleteMany": {
         parameters: {
             query?: never;
@@ -3710,6 +4045,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3811,6 +4147,7 @@ export interface operations {
                                 [key: string]: unknown;
                             } | (unknown | null)[]) | null;
                             paymentGateway: string | null;
+                            languageCode: string | null;
                             paymentMethodName: string | null;
                             paymentInstructions: string | null;
                             note: string | null;
@@ -3898,6 +4235,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -3990,6 +4328,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4134,6 +4473,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4269,6 +4609,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4343,6 +4684,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4417,6 +4759,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4489,6 +4832,7 @@ export interface operations {
                             [key: string]: unknown;
                         } | (unknown | null)[]) | null;
                         paymentGateway: string | null;
+                        languageCode: string | null;
                         paymentMethodName: string | null;
                         paymentInstructions: string | null;
                         note: string | null;
@@ -4807,6 +5151,266 @@ export interface operations {
                         active: boolean;
                         startsAt: string | null;
                         endsAt: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.giftCards.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    "admin.giftCards.issue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amountCents: number;
+                    recipientEmail?: string | null;
+                    expiresAt?: string | null;
+                    note?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.giftCards.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        transactions: {
+                            /** Format: uuid */
+                            id: string;
+                            /** Format: uuid */
+                            giftCardId: string;
+                            /** @enum {string} */
+                            kind: "issue" | "redeem" | "refund" | "adjust" | "revoke";
+                            amountCents: number;
+                            balanceAfterCents: number;
+                            orderId: string | null;
+                            note: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.giftCards.adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    amountCents: number;
+                    note?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.giftCards.disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.giftCards.enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        shopId: string;
+                        code: string;
+                        currency: string;
+                        initialCents: number;
+                        balanceCents: number;
+                        active: boolean;
+                        expiresAt: string | null;
+                        recipientEmail: string | null;
+                        purchaseOrderId: string | null;
+                        note: string | null;
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
@@ -8771,7 +9375,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -8795,7 +9399,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -8811,7 +9415,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -8847,7 +9451,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -8882,7 +9486,7 @@ export interface operations {
                         appId: string;
                         shopId: string;
                         apiTokenId: string | null;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         installedById: string | null;
                         /** Format: date-time */
                         installedAt: string;
@@ -8902,7 +9506,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -8942,7 +9546,7 @@ export interface operations {
                         appId: string;
                         shopId: string;
                         apiTokenId: string | null;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         installedById: string | null;
                         /** Format: date-time */
                         installedAt: string;
@@ -9009,7 +9613,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -9086,7 +9690,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9116,7 +9720,7 @@ export interface operations {
                     /** Format: uri */
                     appUrl: string;
                     redirectUrls: string[];
-                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -9143,7 +9747,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -9191,7 +9795,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9223,7 +9827,7 @@ export interface operations {
                     /** Format: uri */
                     appUrl?: string;
                     redirectUrls?: string[];
-                    scopes?: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes?: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -9249,7 +9853,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9296,7 +9900,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;

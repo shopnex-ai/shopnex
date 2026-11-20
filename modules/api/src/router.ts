@@ -9,6 +9,8 @@ import { customersModule } from '@shopnex/customers/module'
 import { ordersModule } from '@shopnex/orders/module'
 import { paymentsModule } from '@shopnex/payments/module'
 import { privacyModule } from '@shopnex/privacy/module'
+import { giftCardsModule } from '@shopnex/gift-cards/module'
+import { languagesModule } from '@shopnex/languages/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { filesModule } from '@shopnex/files/module'
 import { channelsModule } from '@shopnex/channels/module'
@@ -36,6 +38,7 @@ export const router = {
     products: tagged('Admin · Products').router(catalogModule.router.products),
     collections: tagged('Admin · Collections').router(catalogModule.router.collections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
+    languages: tagged('Admin · Languages').router(languagesModule.router),
     customers: tagged('Admin · Customers').router({
       ...customersModule.router.customers,
       ...privacyModule.router.customers,
@@ -43,6 +46,7 @@ export const router = {
     orders: tagged('Admin · Orders').router({ ...ordersModule.router.orders, ...paymentsModule.router.orders }),
     analytics: tagged('Admin · Analytics').router(ordersModule.router.analytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
+    giftCards: tagged('Admin · Gift cards').router(giftCardsModule.router.giftCards),
     themes: tagged('Admin · Themes').router(themeModule.router),
     menus: tagged('Admin · Navigation').router(contentModule.router.menus),
     pages: tagged('Admin · Pages').router(contentModule.router.pages),

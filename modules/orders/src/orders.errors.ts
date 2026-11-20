@@ -16,6 +16,8 @@ const OrderErrorBase = defineError('OrderError', {
   INVALID_STATUS_TRANSITION: 'CONFLICT',
   // A refund of nothing, of a fraction of a cent, or of more than is left to give back
   INVALID_REFUND: 'BAD_REQUEST',
+  // A payment recorded on an order is not a whole number of cents, or is more than is left to pay
+  INVALID_PAYMENT: 'BAD_REQUEST',
   // Unknown, inactive, used up, already used by this customer, or the subtotal is below its minimum
   DISCOUNT_NOT_APPLICABLE: 'BAD_REQUEST',
 })

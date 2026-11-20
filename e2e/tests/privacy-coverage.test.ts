@@ -34,6 +34,7 @@ const HANDLED: Record<string, string> = {
   'orders.shipping_address': 'anonymized; the country and region stay for tax',
   'orders.billing_address': 'anonymized; the country and region stay for tax',
   'carts.email': 'cleared',
+  'gift_cards.recipient_email': 'cleared: the card keeps its balance and loses who it was for',
   'user.email': "the storefront login: deleted with the customer unless it is staff's or another shop's",
   'session.ip_address': "deleted with the login's sessions",
   'session.user_agent': "deleted with the login's sessions",

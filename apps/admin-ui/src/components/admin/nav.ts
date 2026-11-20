@@ -6,6 +6,7 @@ import {
   CodeIcon,
   CreditCardIcon,
   GlobeIcon,
+  LanguagesIcon,
   HardDriveIcon,
   HouseIcon,
   KeyRoundIcon,
@@ -20,6 +21,7 @@ import {
   ShoppingCartIcon,
   SparklesIcon,
   StoreIcon,
+  GiftIcon,
   TicketPercentIcon,
   TruckIcon,
   UserCogIcon,
@@ -35,6 +37,7 @@ export type NavItem = {
   icon: LucideIcon
   /** Only this exact path is active */ exact?: boolean
   /** Hidden from everyone else */ superAdminOnly?: boolean
+  /** Hidden until the shop has published another language */ needsLanguage?: boolean
   /** Pages that belong to this one: shown under it while you are in it or in any of them */
   children?: NavChild[]
   external?: undefined
@@ -66,6 +69,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
       { href: '/admin/collections', label: 'Collections', icon: LayersIcon },
       { href: '/admin/customers', label: 'Customers', icon: UsersIcon },
       { href: '/admin/discounts', label: 'Discounts', icon: TicketPercentIcon },
+      { href: '/admin/gift-cards', label: 'Gift cards', icon: GiftIcon },
       {
         href: '/admin/online-store',
         label: 'Online store',
@@ -76,6 +80,7 @@ export const nav: { label: string; items: NavItem[] }[] = [
           { href: '/admin/online-store/navigation', label: 'Navigation', icon: MenuIcon },
         ],
       },
+      { href: '/admin/translations', label: 'Translations', icon: LanguagesIcon, needsLanguage: true },
       { href: '/admin/apps', label: 'Apps', icon: BlocksIcon, exact: true },
     ],
   },
@@ -94,6 +99,7 @@ export const settingsNav: { label: string; items: (NavItem | ExternalNavItem)[] 
       { href: '/admin/settings/staff', label: 'Staff', icon: UserCogIcon },
       { href: '/admin/settings/ai', label: 'AI', icon: SparklesIcon },
       { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
+      { href: '/admin/settings/languages', label: 'Languages', icon: LanguagesIcon },
     ],
   },
   {

@@ -4,13 +4,13 @@
 // Unsaved edits are kept per file while switching between them.
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeftIcon, EyeIcon, EyeOffIcon, FilePlusIcon, PaletteIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
+import { EyeIcon, EyeOffIcon, FilePlusIcon, PaletteIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Workspace, WorkspaceBody } from '@/components/admin/workspace'
 import {
   Dialog,
   DialogClose,
@@ -25,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from '../preview-frame'
+import { ThemeHeader } from '../theme-header'
 import { LiquidEditor } from '@/components/admin/liquid-editor'
 import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
 import { PreviewPageSelect } from '../../preview-page-select'
@@ -257,70 +258,66 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   const isEdited = edited ? selected in edited : false
   const isAdded = original ? !(selected in original) : false
 
+  // Title and actions go in the admin's top bar, like every other page
   const header = (
-    <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        nativeButton={false}
-        render={<Link to={theme.live ? '/admin/online-store' : '/admin/online-store/select'} />}
-        aria-label="Back to themes"
-        title="Back to themes"
-      >
-        <ArrowLeftIcon />
-      </Button>
-      <div className="mr-auto min-w-0">
-        <h1 className="flex items-center gap-2 text-sm font-semibold">
-          <span className="truncate">{theme.name} · Edit code</span>
-          <Badge variant={theme.live ? 'secondary' : 'outline'}>{theme.live ? 'Live' : 'Unpublished'}</Badge>
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          {theme.live
-            ? 'Changes autosave to a draft you can preview. Publish to update your store.'
-            : 'Changes autosave to a draft you can preview. Your store uses them once this theme is live.'}
-        </p>
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        nativeButton={false}
-        render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
-      >
-        <PaletteIcon />
-        Customize
-      </Button>
-      {storefrontUrl && (
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setShowPreview((s) => !s)}
-          aria-label={showPreview ? 'Hide preview' : 'Show preview'}
-          title={showPreview ? 'Hide preview' : 'Show preview'}
-        >
-          {showPreview ? <EyeOffIcon /> : <EyeIcon />}
-        </Button>
-      )}
-      {changed.size > 0 && (
-        <Button variant="ghost" size="sm" disabled={publish.isPending} onClick={() => setConfirm('discard')}>
-          Discard
-        </Button>
-      )}
-      <Button variant="outline" size="sm" disabled={!dirtyPaths.length || save.isPending} onClick={onSave}>
-        {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Save now' : 'Saved to draft'}
-      </Button>
-      <Button
-        size="sm"
-        disabled={publish.isPending || (!dirtyPaths.length && changed.size === 0)}
-        onClick={() => (theme.live ? setConfirm('publish') : publish.mutate())}
-      >
-        {publish.isPending ? 'Publishing…' : 'Publish'}
-      </Button>
-    </div>
+    <ThemeHeader
+      name={`${theme.name} · Edit code`}
+      live={theme.live}
+      actions={
+        <>
+          <span
+            className="hidden text-xs text-muted-foreground xl:inline"
+            title={
+              theme.live
+                ? 'Changes autosave to a draft you can preview. Publish to update your store.'
+                : 'Changes autosave to a draft you can preview. Your store uses them once this theme is live.'
+            }
+          >
+            Autosaves to a draft
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
+          >
+            <PaletteIcon />
+            Customize
+          </Button>
+          {storefrontUrl && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setShowPreview((s) => !s)}
+              aria-label={showPreview ? 'Hide preview' : 'Show preview'}
+              title={showPreview ? 'Hide preview' : 'Show preview'}
+            >
+              {showPreview ? <EyeOffIcon /> : <EyeIcon />}
+            </Button>
+          )}
+          {changed.size > 0 && (
+            <Button variant="ghost" size="sm" disabled={publish.isPending} onClick={() => setConfirm('discard')}>
+              Discard
+            </Button>
+          )}
+          <Button variant="outline" size="sm" disabled={!dirtyPaths.length || save.isPending} onClick={onSave}>
+            {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Save now' : 'Saved to draft'}
+          </Button>
+          <Button
+            size="sm"
+            disabled={publish.isPending || (!dirtyPaths.length && changed.size === 0)}
+            onClick={() => (theme.live ? setConfirm('publish') : publish.mutate())}
+          >
+            {publish.isPending ? 'Publishing…' : 'Publish'}
+          </Button>
+        </>
+      }
+    />
   )
 
   if (files.error || !original || !edited) {
     return (
-      <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+      <Workspace>
         {header}
         <div className="p-6">
           {files.error ? (
@@ -329,16 +326,16 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
             <Skeleton className="h-64 w-full" />
           )}
         </div>
-      </div>
+      </Workspace>
     )
   }
 
   return (
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
-    <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+    <Workspace>
       {header}
 
-      <div className="flex min-h-0 flex-1">
+      <WorkspaceBody>
         <aside className="w-60 shrink-0 space-y-4 overflow-y-auto border-r p-3">
           {THEME_CODE_FOLDERS.map((folder) => (
             <div key={folder}>
@@ -433,7 +430,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         </main>
 
         {storefrontUrl && showPreview && (
-          <aside className="hidden w-[40%] shrink-0 border-l lg:block">
+          <aside className="hidden w-[40%] shrink-0 flex-col border-l lg:flex">
             <div className="border-b p-2">
               <PreviewPageSelect
                 definition={definition}
@@ -443,17 +440,19 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
                 className="w-full"
               />
             </div>
-            <PreviewFrame
-              storefrontUrl={storefrontUrl}
-              copyId={id}
-              reloadKey={reloadKey}
-              selectedSectionId={previewSectionId}
-              path={selectedPreviewPath}
-              device="desktop"
-            />
+            <div className="min-h-0 flex-1">
+              <PreviewFrame
+                storefrontUrl={storefrontUrl}
+                copyId={id}
+                reloadKey={reloadKey}
+                selectedSectionId={previewSectionId}
+                path={selectedPreviewPath}
+                device="desktop"
+              />
+            </div>
           </aside>
         )}
-      </div>
+      </WorkspaceBody>
 
       <Dialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
         <DialogContent>
@@ -504,7 +503,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         onClose={() => setAdding(false)}
         onAdd={(path) => create.mutate(path)}
       />
-    </div>
+    </Workspace>
   )
 }
 

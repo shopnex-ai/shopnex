@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { productFields } from '@shopnex/catalog/contract'
 import {
+  CheckboxField,
   FormError,
   SelectField,
   TagsField,
@@ -24,6 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CustomFieldsFormCard, draftOf, toValue } from '@/components/admin/custom-fields-card'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
+import { TranslationsCard, translatableProductFields } from '@/components/admin/translations-card'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
@@ -37,6 +39,7 @@ const productForm = productFields
     descriptionHtml: true,
     vendor: true,
     productType: true,
+    isGiftCard: true,
     tags: true,
     slug: true,
     seo: true,
@@ -75,6 +78,7 @@ const toValues = (p: Product, definitions: CustomFieldDefinition[]) => ({
   descriptionHtml: p.descriptionHtml ?? plainTextToHtml(p.description),
   vendor: p.vendor,
   productType: p.productType,
+  isGiftCard: p.isGiftCard,
   tags: p.tags,
   slug: p.slug,
   seo: { title: p.seoTitle, description: p.seoDescription },
@@ -263,6 +267,8 @@ function ProductEditor({
 
             <ProductChannelsCard productId={product.id} />
 
+            <TranslationsCard resource="product" resourceId={product.id} fields={translatableProductFields(product)} />
+
             <Card>
               <CardHeader>
                 <CardTitle>Organization</CardTitle>
@@ -277,6 +283,7 @@ function ProductEditor({
                 <FieldGroup>
                   <TextField control={form.control} name="vendor" label="Vendor" />
                   <TextField control={form.control} name="productType" label="Product type" />
+                  <CheckboxField control={form.control} name="isGiftCard" label="This product is a gift card" />
                   <TagsField control={form.control} name="tags" label="Tags" description="Separate with commas" />
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Collections</p>

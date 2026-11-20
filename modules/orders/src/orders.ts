@@ -13,12 +13,13 @@ import { checkDiscount, redeemDiscount } from './discount-redemptions'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
-import { orderEvent } from './orders.hooks'
+import { orderCreditRefunded, orderEvent, orderFullyRefunded } from './orders.hooks'
 import { shops } from '@shopnex/core/schema'
 import {
   type CancelReason,
   type FinancialStatus,
   fulfillments as fulfillmentsTable,
+  GIFT_CARD_GATEWAY,
   type FulfillmentStatus,
   type MailingAddress,
   orderItems,
@@ -386,6 +387,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
       .returning({
         orderNumber: sql<number>`${shops.nextOrderNumber} - 1`,
         currency: shops.currency,
+        language: shops.language,
         taxesIncluded: shops.taxesIncluded,
         taxShipping: shops.taxShipping,
       })
@@ -417,6 +419,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
         email: customer.email,
         phone: input.phone ?? input.shippingAddress?.phone ?? null,
         currency: shop!.currency,
+        languageCode: shop!.language,
         subtotalCents,
         shippingCents,
         discountCents: totals.discountCents,
@@ -560,7 +563,8 @@ export async function cancel(shopId: string, id: string, input: CancelInput, con
     if (order.fulfillmentStatus !== 'unfulfilled') {
       throw new OrderError('INVALID_STATUS_TRANSITION', "Fulfilled orders can't be cancelled")
     }
-    if (input.onlyIfUnpaid && order.financialStatus !== 'pending') {
+    // Unpaid, or paid in part with a gift card only: the buyer never came back to pay the rest
+    if (input.onlyIfUnpaid && order.financialStatus !== 'pending' && order.financialStatus !== 'partially_paid') {
       throw new OrderError('INVALID_STATUS_TRANSITION', 'The order is no longer unpaid')
     }
     if (input.restock) {
@@ -577,18 +581,11 @@ export async function cancel(shopId: string, id: string, input: CancelInput, con
     ) {
       // Gives back what is still with the shop: earlier partial refunds, sent or on their way, are not repeated
       const money = await moneyOf(tx, id)
-      const manual = (order.paymentGateway ?? 'manual') === 'manual'
-      if (money.left > 0) {
-        await tx.insert(orderTransactions).values({
-          orderId: id,
-          kind: 'refund',
-          status: manual ? 'success' : 'pending',
-          gateway: order.paymentGateway ?? 'manual',
-          amountCents: money.left,
-          currency: order.currency,
-        })
-      }
-      if (manual) financialStatus = 'refunded'
+      const settled =
+        money.left > 0
+          ? await recordRefund(tx, shopId, order, money.left)
+          : (order.paymentGateway ?? 'manual') === 'manual'
+      if (settled) financialStatus = 'refunded'
     } else if (order.financialStatus === 'pending' || order.financialStatus === 'authorized') {
       financialStatus = 'voided'
     }
@@ -597,6 +594,107 @@ export async function cancel(shopId: string, id: string, input: CancelInput, con
     await orderEvent.run(tx, { shopId, event: 'order.cancelled', load: () => getById(shopId, id, tx) })
     return updated
   })
+}
+
+/**
+ * A payment that is not a payments app's: gift card money, taken at checkout. Records the sale and moves the order on: paid when
+ * `amountCents` covers what is due (the order then reads as paid with a gift card, and no payment is started for it), partially
+ * paid otherwise. Runs in the order's transaction.
+ */
+export async function recordCreditPayment(tx: Conn, shopId: string, id: string, amountCents: number) {
+  if (!Number.isInteger(amountCents) || amountCents < 1) {
+    throw new OrderError('INVALID_PAYMENT', 'A payment is an amount above zero, in whole cents')
+  }
+  const order = await lockOrder(tx, shopId, id)
+  const money = await moneyOf(tx, id)
+  const due = order.totalCents - money.taken
+  if (amountCents > due) throw new OrderError('INVALID_PAYMENT', 'That is more than the order has left to pay')
+  await tx.insert(orderTransactions).values({
+    orderId: id,
+    kind: 'sale',
+    status: 'success',
+    gateway: GIFT_CARD_GATEWAY,
+    amountCents,
+    currency: order.currency,
+  })
+  if (amountCents < due) return touch(tx, id, { financialStatus: 'partially_paid' })
+  const updated = await touch(tx, id, {
+    financialStatus: 'paid',
+    // Nothing is left for the method chosen at checkout to take
+    ...(money.taken === 0
+      ? { paymentGateway: GIFT_CARD_GATEWAY, paymentMethodName: 'Gift card', paymentInstructions: null }
+      : {}),
+  })
+  await emit(tx, shopId, 'order.paid', () => getById(shopId, id, tx))
+  await orderEvent.run(tx, { shopId, event: 'order.paid', load: () => getById(shopId, id, tx) })
+  return updated
+}
+
+/** What is still due on an order: its total minus what has been taken (gift card money included) */
+export async function amountDue(tx: Conn, orderId: string, totalCents: number) {
+  return Math.max(0, totalCents - (await moneyOf(tx, orderId)).taken)
+}
+
+// Refunds go to the gift card first, up to what it paid and has not got back, and the rest to the way the order was paid
+async function splitRefund(tx: Conn, orderId: string, amountCents: number) {
+  const rows = await tx
+    .select({
+      kind: orderTransactions.kind,
+      cents: sql<number>`coalesce(sum(${orderTransactions.amountCents}), 0)::int`,
+    })
+    .from(orderTransactions)
+    .where(
+      and(
+        eq(orderTransactions.orderId, orderId),
+        eq(orderTransactions.gateway, GIFT_CARD_GATEWAY),
+        eq(orderTransactions.status, 'success'),
+      ),
+    )
+    .groupBy(orderTransactions.kind)
+  const cents = (kind: string) => rows.find((r) => r.kind === kind)?.cents ?? 0
+  const toCard = Math.min(amountCents, Math.max(0, cents('sale') - cents('refund')))
+  return { toCard, toGateway: amountCents - toCard }
+}
+
+// Records the refund of `amountCents`: the card's part is settled at once (and credited back to the card), the rest follows the
+// order's payment method. Returns whether everything is settled, or a part waits for a payments app.
+async function recordRefund(
+  tx: Conn,
+  shopId: string,
+  order: typeof orders.$inferSelect,
+  amountCents: number,
+): Promise<boolean> {
+  const { toCard, toGateway } = await splitRefund(tx, order.id, amountCents)
+  if (toCard > 0) {
+    await tx.insert(orderTransactions).values({
+      orderId: order.id,
+      kind: 'refund',
+      status: 'success',
+      gateway: GIFT_CARD_GATEWAY,
+      amountCents: toCard,
+      currency: order.currency,
+    })
+    await orderCreditRefunded.run(tx, { shopId, orderId: order.id, amountCents: toCard })
+  }
+  let settled = true
+  if (toGateway > 0) {
+    const manual = (order.paymentGateway ?? 'manual') === 'manual'
+    await tx.insert(orderTransactions).values({
+      orderId: order.id,
+      kind: 'refund',
+      status: manual ? 'success' : 'pending',
+      gateway: order.paymentGateway ?? 'manual',
+      amountCents: toGateway,
+      currency: order.currency,
+    })
+    settled = manual
+  }
+  // A refund on its way counts: it is already spoken for
+  const money = await moneyOf(tx, order.id)
+  if (money.taken > 0 && money.refunded + money.refunding >= money.taken) {
+    await orderFullyRefunded.run(tx, { shopId, orderId: order.id })
+  }
+  return settled
 }
 
 /**
@@ -640,16 +738,7 @@ export async function refund(shopId: string, id: string, input: { amountCents: n
         `At most ${formatMoney({ amountMinor: money.left, currencyCode: order.currency })} can be refunded`,
       )
     }
-    const manual = (order.paymentGateway ?? 'manual') === 'manual'
-    await tx.insert(orderTransactions).values({
-      orderId: id,
-      kind: 'refund',
-      status: manual ? 'success' : 'pending',
-      gateway: order.paymentGateway ?? 'manual',
-      amountCents: input.amountCents,
-      currency: order.currency,
-    })
-    if (!manual) return order
+    if (!(await recordRefund(tx, shopId, order, input.amountCents))) return order
     return touch(tx, id, {
       financialStatus: money.refunded + input.amountCents >= money.taken ? 'refunded' : 'partially_refunded',
     })

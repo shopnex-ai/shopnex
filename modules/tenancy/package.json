@@ -20,6 +20,7 @@
     "@shopnex/content": "workspace:*",
     "@shopnex/core": "workspace:*",
     "@shopnex/db": "workspace:*",
+    "@shopnex/languages": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/log": "workspace:*",
     "@shopnex/rpc": "workspace:*",

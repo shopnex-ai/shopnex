@@ -29,6 +29,7 @@
 - /storefront # the public Storefront API (`storefront-sdk`'s contract, implemented): products, collections, pages, menus, the theme, the cart, customer accounts and checkout, for any storefront. No tables or contract of its own; it sits above the modules it reads, and answers their domain errors with the contract's typed ones
 - /catalog # products (slugs, images), collections, options → values → variants (price/SKU/stock live on variants), and the admin product and collection routes
 - /custom-fields # shop-defined fields on products, orders and customers: definitions, value validation (customFieldService). The first module that owns its whole slice: `custom-fields.schema.ts` (tables), `custom-fields.contract.ts` (Zod shapes, safe for the browser), `custom-fields.router.ts` (its Admin API routes, `@shopnex/custom-fields/router`)
+- /languages # the languages a shop publishes besides its own (`shops.language`) and the translations of its store content: products, collections and pages, one row per field and language (`languageService`). Sits below the modules that own those records, so a translation points at one by type and id with no foreign key; they call `removeFor` when they delete one. The pure `canonicalLanguage` and `sourceDigest` are in its contract, shared with the admin UI and tenancy
 - /kit # `defineModule`: the manifest a module declares in `src/<name>.module.ts` (name, `dependsOn`, tables, router). A plain object, no decorators; the routes are mounted by name in `modules/api/src/router.ts`. It also has `defineError`: a module's errors, with the status of each code, answered by `rpc` with nothing to wire. `pnpm modules:check` (also in CI) fails on an import that package.json doesn't list (or a dependency it lists and never uses), a module without a manifest (apart from api, db, kit, log and rpc), a manifest that disagrees with package.json, a cycle, a table outside a `*.schema.ts`, a foreign key that points against the graph, or a dependency graph in this document that differs from the manifests
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService), storefront sign-in codes (accountService) and the admin customer routes
@@ -52,13 +53,13 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are answered with the
 ```text
 <!-- modules:graph:start -->
 ai → apps, catalog, content, core, db, rpc, tenancy
-api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
+api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
-catalog → channels, core, custom-fields, db, rpc, webhooks
+catalog → channels, core, custom-fields, db, languages, rpc, webhooks
 channels → core, db, rpc
-content → catalog, core, db, rpc
+content → catalog, core, db, languages, rpc
 core → (nothing)
 custom-fields → core, db, rpc
 customers → auth, core, custom-fields, db, rpc, webhooks
@@ -66,15 +67,17 @@ db → (nothing)
 drafts → core, db
 email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
 files → core, db, rpc, tenancy, webhooks
+gift-cards → auth, cart, catalog, core, db, orders, rpc
 kit → (nothing)
+languages → core, db, rpc
 log → (nothing)
 orders → catalog, channels, core, custom-fields, customers, db, pricing, rpc, webhooks
 payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
-privacy → auth, cart, core, custom-fields, customers, db, email, orders, rpc, tenancy, webhooks
+privacy → auth, cart, core, custom-fields, customers, db, email, gift-cards, orders, rpc, tenancy, webhooks
 rpc → core
-storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, orders, rpc, tenancy, theme
-tenancy → channels, content, core, db, rpc, webhooks
+storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, languages, orders, rpc, tenancy, theme
+tenancy → channels, content, core, db, languages, rpc, webhooks
 theme → core, db, drafts, rpc
 webhooks → core, db, rpc
 <!-- modules:graph:end -->

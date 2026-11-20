@@ -4,6 +4,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { STAFF_ROLES, shopDomains, shopInvitations, shopMembers } from './tenancy.schema'
 import { API_SCOPES, apiTokens, shops } from '@shopnex/core/schema'
+import { canonicalLanguage } from '@shopnex/languages/contract'
 
 const scopes = z.array(z.enum(API_SCOPES))
 
@@ -14,6 +15,9 @@ export const shopInput = createInsertSchema(shops, {
   name: (s) => s.trim().min(1).max(100),
   // Prices are stored in the shop's currency; existing orders keep the currency they were placed in
   currency: () => z.string().refine((c) => CURRENCY_CODES.includes(c), 'Choose a currency'),
+  // A BCP 47 tag (en, fr, pt-BR); stored in its canonical form
+  language: () =>
+    z.string().refine((l) => canonicalLanguage(l) !== null, 'Use a language code such as en, fr or pt-BR'),
   // Checkout's "Continue shopping" link
   storefrontUrl: () => z.url({ protocol: /^https?$/ }).max(500),
   // The homepage's <title> and meta description; empty = the shop name, none
@@ -25,9 +29,12 @@ export const shopInput = createInsertSchema(shops, {
   legalName: (s) => s.trim().max(150),
   businessAddress: (s) => s.trim().max(500),
   taxId: (s) => s.trim().max(50),
+  // ISO 3166-1 alpha-2, upper case
+  shipToCountries: () => z.array(z.string().regex(/^[A-Z]{2}$/)).max(250),
 }).pick({
   name: true,
   currency: true,
+  language: true,
   storefrontUrl: true,
   seoTitle: true,
   seoDescription: true,
@@ -38,6 +45,7 @@ export const shopInput = createInsertSchema(shops, {
   businessAddress: true,
   taxId: true,
   cookieBanner: true,
+  shipToCountries: true,
 })
 
 export const shopOutput = createSelectSchema(shops).extend({

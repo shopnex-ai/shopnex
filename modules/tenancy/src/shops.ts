@@ -3,6 +3,7 @@ import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
+import { canonicalLanguage } from '@shopnex/languages/contract'
 import { shopDomains, shopMembers } from './tenancy.schema'
 import { type Shop, shops } from '@shopnex/core/schema'
 
@@ -58,6 +59,7 @@ export async function updateShop(
       Shop,
       | 'name'
       | 'currency'
+      | 'language'
       | 'storefrontUrl'
       | 'seoTitle'
       | 'seoDescription'
@@ -68,12 +70,18 @@ export async function updateShop(
       | 'businessAddress'
       | 'taxId'
       | 'cookieBanner'
+      | 'shipToCountries'
     >
   >,
 ) {
   // Multi mode derives the Storefront URL from the shop's domains; a shop can't set its own
   const { storefrontUrl: _ignored, ...rest } = patch
   const values = isMultiTenant ? rest : patch
+  if (values.language !== undefined) {
+    const language = canonicalLanguage(values.language)
+    if (!language) throw new Error(`"${values.language}" is not a language tag`)
+    values.language = language
+  }
   if (Object.keys(values).length === 0) return getShopById(id)
   const [shop] = await db.update(shops).set(values).where(eq(shops.id, id)).returning()
   return withStorefrontUrl(shop ?? null)

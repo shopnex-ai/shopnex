@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { NoAccess } from '@/components/admin/no-access'
 import { managerAccess } from '@/lib/admin-access'
-import { Skeleton } from '@/components/ui/skeleton'
+import { PreviewLoader } from '@/screens/online-store/themes/preview-loader'
 import { EmbeddedApp } from '@/screens/apps/[id]/embedded-app'
 import { getEmbeddedApp } from '@/screens/apps/functions'
 
@@ -14,7 +14,11 @@ export const Route = createFileRoute('/admin/apps/$id')({
     return getEmbeddedApp({ data: { id: params.id } })
   },
   pendingMs: 0,
-  pendingComponent: () => <Skeleton className="h-[calc(100svh-8rem)] w-full" />,
+  pendingComponent: () => (
+    <div className="relative h-[calc(100svh-8rem)] w-full">
+      <PreviewLoader />
+    </div>
+  ),
   component: EmbeddedAppPage,
 })
 function EmbeddedAppPage() {

@@ -13,7 +13,7 @@ import {
 
 export const catalogModule = defineModule({
   name: 'catalog',
-  dependsOn: ['channels', 'core', 'custom-fields', 'db', 'rpc', 'webhooks'],
+  dependsOn: ['channels', 'core', 'custom-fields', 'db', 'languages', 'rpc', 'webhooks'],
   tables: {
     collections,
     productCollections,

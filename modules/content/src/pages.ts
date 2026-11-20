@@ -3,6 +3,7 @@
 import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
 import { type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
+import { languageService } from '@shopnex/languages'
 import { ContentError } from './content.errors'
 import { pages } from './content.schema'
 
@@ -129,5 +130,6 @@ export async function remove(shopId: string, id: string, conn: Conn) {
     .delete(pages)
     .where(and(eq(pages.shopId, shopId), eq(pages.id, id)))
     .returning()
+  if (row) await languageService.removeFor(shopId, 'page', id, conn)
   return row ?? null
 }

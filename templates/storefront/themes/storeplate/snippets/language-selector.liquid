@@ -1,0 +1,34 @@
+{%- comment -%}
+  The language picker (Settings → Languages, switched on by the theme's "Show language selector"). Only drawn when the shop
+  publishes a language besides its own. A plain form, so it works without scripts. Each language is named in itself; the
+  choice is remembered and products, collections and pages are shown translated where the merchant translated them.
+{%- endcomment -%}
+{%- if settings.show_language_selector and localization.available_languages.size > 0 -%}
+  <details class="group relative text-sm">
+    <summary class="flex cursor-pointer list-none items-center gap-1 text-text-dark transition hover:opacity-70">
+      {{ localization.language.name }}
+      <svg class="h-3 w-3 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </summary>
+    <form
+      method="post"
+      action="/localization"
+      class="absolute right-0 top-full z-40 mt-2 max-h-72 w-48 overflow-y-auto rounded-md border border-border bg-body p-2 shadow"
+    >
+      <input type="hidden" name="return_to" value="{{ request.path }}">
+      {%- for language in localization.available_languages %}
+        <button
+          type="submit"
+          name="language_code"
+          value="{{ language.iso_code }}"
+          lang="{{ language.iso_code }}"
+          class="flex w-full items-center justify-between rounded px-2 py-1 text-left hover:bg-border {% if language.iso_code == localization.language.iso_code %}font-medium text-text-dark{% else %}text-text-light{% endif %}"
+        >
+          {{ language.name }}
+          {%- if language.iso_code == localization.language.iso_code %}<span aria-hidden="true">✓</span>{% endif -%}
+        </button>
+      {%- endfor %}
+    </form>
+  </details>
+{%- endif -%}

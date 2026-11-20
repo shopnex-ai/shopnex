@@ -5,8 +5,12 @@ import { CartError } from '@shopnex/cart'
 import { CustomFieldError } from '@shopnex/custom-fields'
 import { AccountError } from '@shopnex/customers'
 import { EmailError } from '@shopnex/email'
+import { canonicalLanguage } from '@shopnex/languages/contract'
+import { languageService } from '@shopnex/languages'
 import { OrderError } from '@shopnex/orders'
+import { db } from '@shopnex/db'
 import type { Context } from '@shopnex/rpc'
+import { LANGUAGE_HEADER } from '@shopnex/storefront-sdk/constants'
 import { storefrontContract, storefrontErrorMap, type StorefrontErrorMap } from '@shopnex/storefront-sdk/contract'
 import { resolveStorefrontShop } from '@shopnex/tenancy'
 import type { z } from 'zod'
@@ -52,6 +56,7 @@ function fromCart(error: CartError) {
         : undefined
     case 'INVALID_SHIPPING_RATE':
     case 'INVALID_PAYMENT_METHOD':
+    case 'GIFT_CARD_NOT_APPLICABLE':
       return badRequest(error)
   }
 }
@@ -118,4 +123,12 @@ export const storefront = implement(storefrontContract)
         : new ORPCError('NOT_FOUND', { message: 'Shop not found' })
     }
     return next({ context: { shop: result.shop, channelId: result.channelId } })
+  })
+  // The language the request asks for (x-shopnex-language): a published one, else null, which reads the store in the shop's
+  // own language. An unknown or unpublished language is not an error: a storefront with a stale choice still gets its pages.
+  .use(async ({ context, next }) => {
+    const asked = context.headers.get(LANGUAGE_HEADER)
+    const code = asked ? canonicalLanguage(asked) : null
+    const { languages } = code ? await languageService.list(context.shop.id, db) : { languages: [] as string[] }
+    return next({ context: { language: code && languages.includes(code) ? code : null } })
   })

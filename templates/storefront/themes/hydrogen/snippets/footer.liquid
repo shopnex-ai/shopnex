@@ -40,6 +40,7 @@
     {%- if settings.instagram_url != blank %}<a href="{{ settings.instagram_url }}" aria-label="Instagram" rel="noopener" target="_blank">{% render 'icon', name: 'instagram', class: 'icon' %}</a>{% endif -%}
     {%- if settings.tiktok_url != blank %}<a href="{{ settings.tiktok_url }}" aria-label="TikTok" rel="noopener" target="_blank">{% render 'icon', name: 'tiktok', class: 'icon' %}</a>{% endif -%}
     {%- if settings.youtube_url != blank %}<a href="{{ settings.youtube_url }}" aria-label="YouTube" rel="noopener" target="_blank">{% render 'icon', name: 'youtube', class: 'icon' %}</a>{% endif -%}
+    {%- if settings.pinterest_url != blank %}<a href="{{ settings.pinterest_url }}" aria-label="Pinterest" rel="noopener" target="_blank">{% render 'icon', name: 'pinterest', class: 'icon' %}</a>{% endif -%}
   {%- endcapture -%}
   {%- if socials != blank %}
     <div class="flex gap-4 pt-10 md:pt-0">{{ socials }}</div>

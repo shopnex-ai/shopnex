@@ -5,6 +5,7 @@
 //
 // Shops are Better Auth "organizations" (organization plugin, renamed via modelName): TS keys must match Better Auth field
 // names, DB columns use shop_* naming.
+import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
@@ -31,6 +32,9 @@ export const shops = pgTable('shops', {
   // ISO 4217; all prices in this shop are in this currency. Not a Better Auth field —
   // organizations created through Better Auth get the DB default.
   currency: text('currency').notNull().default('USD'),
+  // The language of this shop's storefront, a BCP 47 tag (en, fr, pt-BR). It decides how prices and dates are formatted,
+  // the page's lang attribute, and (as themes gain locale files) which text a theme shows. Default English.
+  language: text('language').notNull().default('en'),
   // Where the storefront lives (e.g. https://shop.acme.com): checkout links back to it
   storefrontUrl: text('storefront_url'),
   // Homepage <title> and meta description (Shopify: Online store → Preferences); null = shop name, none
@@ -54,6 +58,12 @@ export const shops = pgTable('shops', {
   // consent (analytics, marketing). Off: nothing is asked and those scripts run. The default storefront sets no such
   // cookies itself, so this only matters once scripts are added.
   cookieBanner: boolean('cookie_banner').notNull().default(false),
+  // Settings -> General -> Ship-to countries: ISO 3166-1 alpha-2 codes the shop sells to. Empty (the default) = one
+  // market, no choice for the visitor. Two or more: the storefront can offer a country picker (a theme setting turns it on).
+  shipToCountries: text('ship_to_countries')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
@@ -70,6 +80,8 @@ export const API_SCOPES = [
   'write_customers',
   'read_discounts',
   'write_discounts',
+  'read_gift_cards',
+  'write_gift_cards',
   // Sales channels and what's published on them
   'read_publications',
   'write_publications',
@@ -86,6 +98,9 @@ export const API_SCOPES = [
   'write_email',
   // Apps that add a script to the shop's online store (a reviews widget, a chat button…)
   'write_storefront',
+  // The languages a shop publishes and the translations of its store content (translation apps)
+  'read_translations',
+  'write_translations',
 ] as const
 export type ApiScope = (typeof API_SCOPES)[number]
 
@@ -100,6 +115,8 @@ export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   write_customers: 'Customers',
   read_discounts: 'Discounts',
   write_discounts: 'Discounts',
+  read_gift_cards: 'Gift cards',
+  write_gift_cards: 'Gift cards',
   read_publications: 'What is published on each sales channel',
   write_publications: 'What is published on each sales channel',
   read_payment_sessions: 'Payment and refund sessions sent to a payments app (apps only)',
@@ -110,6 +127,8 @@ export const API_SCOPE_DESCRIPTIONS: Record<ApiScope, string> = {
   write_shipping: 'Register a carrier service (apps only)',
   write_email: "Send email to the shop's customers from the shop's address (apps only)",
   write_storefront: "Load the app's script on the shop's online store (apps only)",
+  read_translations: 'The published languages and the translations of products, collections and pages',
+  write_translations: 'The published languages and the translations of products, collections and pages',
 }
 
 // custom: registered here by a super admin (private apps). marketplace: synced from the connected marketplace,

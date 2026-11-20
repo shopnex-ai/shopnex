@@ -7,6 +7,7 @@ import { collectionService, productService } from '@shopnex/catalog'
 import { menuService, pageService } from '@shopnex/content'
 import { accountService } from '@shopnex/customers'
 import { db } from '@shopnex/db'
+import { languageService } from '@shopnex/languages'
 import { sendLoginCode } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
@@ -29,6 +30,14 @@ import {
   withLiveCollections,
 } from './storefront.mappers'
 import { defined, storefront } from './storefront.procedures'
+import {
+  translateCollection,
+  translateCollections,
+  translatePage,
+  translatePages,
+  translateProducts,
+  translateProduct,
+} from './storefront.translations'
 
 export const storefrontRouter = storefront.router({
   shop: {
@@ -41,7 +50,10 @@ export const storefrontRouter = storefront.router({
         title: context.shop.seoTitle === '' ? null : context.shop.seoTitle,
         description: context.shop.seoDescription === '' ? null : context.shop.seoDescription,
       },
+      languageCode: context.shop.language,
+      languages: (await languageService.list(context.shop.id, db)).languages,
       cookieBanner: context.shop.cookieBanner,
+      shipToCountries: context.shop.shipToCountries,
       scripts: await appService.storefrontScripts(context.shop.id, db),
     })),
   },
@@ -75,7 +87,13 @@ export const storefrontRouter = storefront.router({
       )
       const nodes = await withLiveCollections(page.nodes, context.shop.id, context.channelId)
       const fields = await fieldsView(context.shop.id, 'product')
-      return { ...page, nodes: nodes.map((p) => toProduct(p, context.shop.currency, fields)) }
+      return {
+        ...page,
+        nodes: await translateProducts(
+          context,
+          nodes.map((p) => toProduct(p, context.shop.currency, fields)),
+        ),
+      }
     }),
     facets: storefront.products.facets.handler(async ({ input, context }) => {
       const none = { vendors: [], productTypes: [], tags: [], price: null }
@@ -104,27 +122,29 @@ export const storefrontRouter = storefront.router({
         },
       }
     }),
-    get: storefront.products.get.handler(async ({ input, context }) =>
-      activeProduct(
+    get: storefront.products.get.handler(async ({ input, context }) => {
+      const product = await activeProduct(
         await productService.getById(context.shop.id, input.id, db),
         context.shop.currency,
         context.channelId,
-      ),
-    ),
-    getByHandle: storefront.products.getByHandle.handler(async ({ input, context }) =>
-      activeProduct(
+      )
+      return translateProduct(context, product)
+    }),
+    getByHandle: storefront.products.getByHandle.handler(async ({ input, context }) => {
+      const product = await activeProduct(
         await productService.getBySlug(context.shop.id, input.handle, db),
         context.shop.currency,
         context.channelId,
-      ),
-    ),
+      )
+      return translateProduct(context, product)
+    }),
   },
   collections: {
     list: storefront.collections.list.handler(async ({ input, context }) => {
       const page = await paginate(input, (limit, offset) =>
         collectionService.list(context.shop.id, { limit, offset, channelId: context.channelId }, db),
       )
-      return { ...page, nodes: page.nodes.map(toCollection) }
+      return { ...page, nodes: await translateCollections(context, page.nodes.map(toCollection)) }
     }),
     getByHandle: storefront.collections.getByHandle.handler(async ({ input, context }) => {
       const collection = await collectionService.getBySlug(context.shop.id, input.handle, db)
@@ -134,7 +154,7 @@ export const storefrontRouter = storefront.router({
       ) {
         throw new ORPCError('NOT_FOUND')
       }
-      return toCollection(collection)
+      return translateCollection(context, toCollection(collection))
     }),
   },
   pages: {
@@ -142,12 +162,12 @@ export const storefrontRouter = storefront.router({
       const page = await paginate(input, (limit, offset) =>
         pageService.listPublished(context.shop.id, { limit, offset }, db),
       )
-      return { ...page, nodes: page.nodes.map(toPage) }
+      return { ...page, nodes: await translatePages(context, page.nodes.map(toPage)) }
     }),
     getByHandle: storefront.pages.getByHandle.handler(async ({ input, context }) => {
       const page = await pageService.getPublishedByHandle(context.shop.id, input.handle, db)
       if (!page) throw new ORPCError('NOT_FOUND')
-      return toPage(page)
+      return translatePage(context, toPage(page))
     }),
   },
   menu: {
@@ -307,7 +327,12 @@ export const storefrontRouter = storefront.router({
         : undefined
       const [options, cost] = await Promise.all([
         checkoutService.options(context.shop.id, cart.subtotalCents, db, { cart, address }),
-        checkoutService.estimate(context.shop.id, cart, db, { shippingRateId: input.shippingRateId, address }),
+        checkoutService.estimate(context.shop.id, cart, db, {
+          shippingRateId: input.shippingRateId,
+          address,
+          giftCardCode: input.giftCardCode,
+          visitorIp: clientIp(context.headers),
+        }),
       ])
       const m = (cents: number) => money(cents, cart.currency)
       return {
@@ -318,6 +343,9 @@ export const storefrontRouter = storefront.router({
           totalTaxAmount: cost.taxCents == null ? null : m(cost.taxCents),
           taxesIncluded: cost.taxesIncluded,
           totalAmount: m(cost.totalCents),
+          giftCardAmount: cost.credits.length ? m(cost.credits.reduce((sum, c) => sum + c.amountCents, 0)) : null,
+          giftCardError: cost.creditError,
+          dueAmount: m(cost.dueCents),
         },
         shippingRates: options.shippingRates.map((r) => ({
           id: r.id,
@@ -334,7 +362,7 @@ export const storefrontRouter = storefront.router({
         cartId,
         { ...buyer, shippingAddress: shippingAddress && checkoutService.toMailingAddress(shippingAddress) },
         // The hosted confirmation page shows the payment's outcome
-        { returnUrl: `${appUrl()}/checkout/${cartId}` },
+        { returnUrl: `${appUrl()}/checkout/${cartId}`, visitorIp: clientIp(context.headers) },
         db,
       ),
     ),

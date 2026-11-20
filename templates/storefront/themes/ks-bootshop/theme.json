@@ -4,6 +4,22 @@
   "version": "1.0.0",
   "settings": [
     {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 140
+    },
+    {
       "id": "color_primary",
       "label": "Primary color",
       "type": "color",
@@ -113,6 +129,13 @@
       "unit": "rem"
     },
     {
+      "id": "show_language_selector",
+      "label": "Show language selector",
+      "info": "A picker in the header for the languages you publish (Settings → Languages). Shown only when you publish one besides your own.",
+      "type": "checkbox",
+      "default": false
+    },
+    {
       "id": "show_announcement",
       "label": "Announcement bar",
       "type": "checkbox",
@@ -121,8 +144,7 @@
     {
       "id": "announcement_text",
       "label": "Announcement text",
-      "type": "text",
-      "default": "Free shipping on orders over $50"
+      "type": "text"
     },
     {
       "id": "announcement_link",
@@ -134,6 +156,36 @@
       "label": "Footer text",
       "type": "text",
       "info": "Defaults to © year and the shop name"
+    },
+    {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "type": "url"
     },
     {
       "id": "favicon",
@@ -231,20 +283,17 @@
         {
           "id": "heading_2",
           "label": "Slide 2: heading",
-          "type": "text",
-          "default": "New season, new favourites"
+          "type": "text"
         },
         {
           "id": "text_2",
           "label": "Slide 2: text",
-          "type": "textarea",
-          "default": "Fresh arrivals picked for you."
+          "type": "textarea"
         },
         {
           "id": "button_label_2",
           "label": "Slide 2: button label",
-          "type": "text",
-          "default": "Browse the collection"
+          "type": "text"
         },
         {
           "id": "button_link_2",
@@ -261,20 +310,17 @@
         {
           "id": "heading_3",
           "label": "Slide 3: heading",
-          "type": "text",
-          "default": "Free shipping on orders over $50"
+          "type": "text"
         },
         {
           "id": "text_3",
           "label": "Slide 3: text",
-          "type": "textarea",
-          "default": "Fast delivery and easy returns."
+          "type": "textarea"
         },
         {
           "id": "button_label_3",
           "label": "Slide 3: button label",
-          "type": "text",
-          "default": "Start shopping"
+          "type": "text"
         },
         {
           "id": "button_link_3",
@@ -643,26 +689,22 @@
         {
           "id": "quote_1",
           "label": "Quote 1",
-          "type": "textarea",
-          "default": "Great quality and fast delivery."
+          "type": "textarea"
         },
         {
           "id": "author_1",
           "label": "Author 1",
-          "type": "text",
-          "default": "Alex"
+          "type": "text"
         },
         {
           "id": "quote_2",
           "label": "Quote 2",
-          "type": "textarea",
-          "default": "Everything I ordered fit perfectly."
+          "type": "textarea"
         },
         {
           "id": "author_2",
           "label": "Author 2",
-          "type": "text",
-          "default": "Sam"
+          "type": "text"
         },
         {
           "id": "quote_3",
@@ -734,26 +776,22 @@
         {
           "id": "question_1",
           "label": "Question 1",
-          "type": "text",
-          "default": "How long does shipping take?"
+          "type": "text"
         },
         {
           "id": "answer_1",
           "label": "Answer 1",
-          "type": "textarea",
-          "default": "Orders usually arrive within 3–5 business days."
+          "type": "textarea"
         },
         {
           "id": "question_2",
           "label": "Question 2",
-          "type": "text",
-          "default": "Can I return an item?"
+          "type": "text"
         },
         {
           "id": "answer_2",
           "label": "Answer 2",
-          "type": "textarea",
-          "default": "Yes, within 30 days of delivery."
+          "type": "textarea"
         },
         {
           "id": "question_3",

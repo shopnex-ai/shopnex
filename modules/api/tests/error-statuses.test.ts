@@ -68,6 +68,7 @@ const cases: Case[] = [
       'ORDER_CANCELLED',
       'INVALID_STATUS_TRANSITION',
       'INVALID_REFUND',
+      'INVALID_PAYMENT',
       'DISCOUNT_NOT_APPLICABLE',
     ],
     status: (code) =>
@@ -102,6 +103,7 @@ const cases: Case[] = [
       'OUT_OF_STOCK',
       'INVALID_SHIPPING_RATE',
       'INVALID_PAYMENT_METHOD',
+      'GIFT_CARD_NOT_APPLICABLE',
       'NOT_A_CARRIER_APP',
       'INVALID_RATES_URL',
     ],

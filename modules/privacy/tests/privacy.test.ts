@@ -8,6 +8,7 @@ import { carts } from '@shopnex/cart/schema'
 import { orderItems, orders, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
 import { channels } from '@shopnex/channels/schema'
+import { giftCards } from '@shopnex/gift-cards/schema'
 
 // Set before the modules load: @shopnex/db picks its database when it is first imported
 process.env.DATABASE_URL = 'pglite:memory'
@@ -45,6 +46,7 @@ after(async () => {
 async function cleanup() {
   await db.delete(emailDeliveries).where(inArray(emailDeliveries.shopId, [SHOP, OTHER]))
   await db.delete(emailSuppressions).where(inArray(emailSuppressions.shopId, [SHOP, OTHER]))
+  await db.delete(giftCards).where(inArray(giftCards.shopId, [SHOP, OTHER]))
   await db.delete(webhookEndpoints).where(inArray(webhookEndpoints.shopId, [SHOP, OTHER]))
   if (made.carts.length) await db.delete(carts).where(inArray(carts.id, made.carts))
   if (made.orders.length) await db.delete(orders).where(inArray(orders.id, made.orders))
@@ -241,6 +243,47 @@ describe('exportData', () => {
       ['10.0.0.1'],
     )
     await db.delete(session).where(eq(session.userId, login.id))
+  })
+})
+
+describe('gift cards', () => {
+  const card = (recipientEmail: string, shopId = SHOP) =>
+    db
+      .insert(giftCards)
+      .values({
+        shopId,
+        code: `P${unique()}`.toUpperCase().padEnd(16, 'X'),
+        currency: 'USD',
+        initialCents: 5000,
+        balanceCents: 3000,
+        recipientEmail,
+      })
+      .returning()
+      .then((rows) => rows[0]!)
+
+  test('the export lists the cards sent to the customer, without the code', async () => {
+    const c = await customer()
+    const mine = await card(c.email.toUpperCase())
+    await card('someone.else@example.com')
+    await card(c.email, OTHER)
+    const data = await privacyService.exportData(SHOP, c.id, db)
+    assert.deepEqual(
+      data!.giftCards.map((g) => [g.id, g.balanceCents]),
+      [[mine.id, 3000]],
+    )
+    assert.ok(!JSON.stringify(data!.giftCards).includes(mine.code), 'the code is a secret that spends the card')
+  })
+
+  test('erasing clears who a card was for and keeps its balance', async () => {
+    const c = await customer()
+    const mine = await card(c.email)
+    const other = await card('someone.else@example.com')
+    await privacyService.erase(SHOP, c.id, db)
+    const [after] = await db.select().from(giftCards).where(eq(giftCards.id, mine.id))
+    assert.equal(after!.recipientEmail, null)
+    assert.equal(after!.balanceCents, 3000)
+    const [untouched] = await db.select().from(giftCards).where(eq(giftCards.id, other.id))
+    assert.equal(untouched!.recipientEmail, 'someone.else@example.com')
   })
 })
 
