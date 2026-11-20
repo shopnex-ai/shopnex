@@ -4,21 +4,9 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
 import { STAFF_ROLES, shopDomains, shopInvitations, shopMembers } from './tenancy.schema'
 import { API_SCOPES, apiTokens, shops } from '@shopnex/core/schema'
+import { canonicalLanguage } from '@shopnex/languages/contract'
 
 const scopes = z.array(z.enum(API_SCOPES))
-
-/** A language tag's shape once canonical: 2 or 3 letters, then subtags such as a script or a region (fr, pt-BR, zh-Hant) */
-export const LANGUAGE_TAG_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/
-
-/** The canonical form of a language tag (EN → en, pt-br → pt-BR), or null when it isn't one. Pure: safe in the browser. */
-export function canonicalLanguage(tag: string): string | null {
-  try {
-    const [canonical] = Intl.getCanonicalLocales(tag.trim())
-    return canonical && canonical !== 'und' && LANGUAGE_TAG_PATTERN.test(canonical) ? canonical : null
-  } catch {
-    return null
-  }
-}
 
 // ISO 4217 codes the runtime knows how to format (Node and browsers agree on this list)
 export const CURRENCY_CODES: readonly string[] = Intl.supportedValuesOf('currency')

@@ -396,6 +396,10 @@ describe('shop B cannot reach shop A by id', () => {
 // Every route that takes an id is either attacked above or named in PENDING with a reason. A new route that is in
 // neither fails here, so adding one forces a decision. Delete a line from PENDING when its case is written.
 const PENDING: Record<string, string[]> = {
+  // Addressed by a language code, not an id: a shop only ever sees its own languages (tested in modules/languages)
+  'admin, staff session: languages (shop settings; the other languages routes list and write by shop, with no id)': [
+    'DELETE /admin/languages/{code}',
+  ],
   'admin, staff session: custom fields (definitions are shop settings; tested in custom-fields.test.ts)': [
     'DELETE /admin/custom-fields/{id}',
     'PATCH /admin/custom-fields/{id}',

@@ -38,6 +38,7 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/gift-cards": "workspace:*",
+    "@shopnex/languages": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/privacy": "workspace:*",
     "@shopnex/rpc": "workspace:*",

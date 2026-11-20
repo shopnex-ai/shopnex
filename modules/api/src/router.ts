@@ -10,6 +10,7 @@ import { ordersModule } from '@shopnex/orders/module'
 import { paymentsModule } from '@shopnex/payments/module'
 import { privacyModule } from '@shopnex/privacy/module'
 import { giftCardsModule } from '@shopnex/gift-cards/module'
+import { languagesModule } from '@shopnex/languages/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { filesModule } from '@shopnex/files/module'
 import { channelsModule } from '@shopnex/channels/module'
@@ -37,6 +38,7 @@ export const router = {
     products: tagged('Admin · Products').router(catalogModule.router.products),
     collections: tagged('Admin · Collections').router(catalogModule.router.collections),
     customFields: tagged('Admin · Custom fields').router(customFieldsModule.router),
+    languages: tagged('Admin · Languages').router(languagesModule.router),
     customers: tagged('Admin · Customers').router({
       ...customersModule.router.customers,
       ...privacyModule.router.customers,
