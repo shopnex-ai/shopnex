@@ -30,7 +30,7 @@ describe('languages manifest', () => {
   test('the name is the folder, and the routes are the languages and their translations', () => {
     assert.equal(languagesModule.name, 'languages')
     assert.deepEqual(Object.keys(languagesModule.router).sort(), ['list', 'publish', 'translations', 'unpublish'])
-    assert.deepEqual(Object.keys(languagesModule.router.translations).sort(), ['list', 'set'])
+    assert.deepEqual(Object.keys(languagesModule.router.translations).sort(), ['list', 'set', 'status'])
   })
 
   test('each error code answers with its status', () => {

@@ -8,6 +8,7 @@ import { LanguageError } from './languages.errors'
 import {
   MAX_LANGUAGES,
   TRANSLATABLE_FIELDS,
+  isTranslatableField,
   shopLanguages,
   translations,
   type TranslatableResource,
@@ -61,6 +62,24 @@ export function translationsOf(
     .orderBy(asc(translations.language), asc(translations.field))
 }
 
+/**
+ * For the admin's translation workspace: the fingerprint of every translated field of one kind of record in one language.
+ * The admin compares each with the record's current text to tell translated, outdated and missing apart.
+ */
+export function statusOf(shopId: string, resource: TranslatableResource, language: string, conn: Conn) {
+  return conn
+    .select({
+      resourceId: translations.resourceId,
+      field: translations.field,
+      sourceDigest: translations.sourceDigest,
+    })
+    .from(translations)
+    .where(
+      and(eq(translations.shopId, shopId), eq(translations.resource, resource), eq(translations.language, language)),
+    )
+    .limit(50_000)
+}
+
 export interface TranslateInput {
   resource: TranslatableResource
   resourceId: string
@@ -74,11 +93,11 @@ export interface TranslateInput {
 
 /** Sets one translated field, or removes it when the text is empty. Returns the stored translation, or null when removed. */
 export async function translate(shopId: string, input: TranslateInput, conn: Conn) {
-  const fields: readonly string[] = TRANSLATABLE_FIELDS[input.resource]
-  if (!fields.includes(input.field)) {
+  if (!isTranslatableField(input.resource, input.field)) {
+    const fields: readonly string[] = TRANSLATABLE_FIELDS[input.resource]
     throw new LanguageError(
       'INVALID_FIELD',
-      `A ${input.resource}'s ${fields.join(' and ')} can be translated, not "${input.field}"`,
+      `A ${input.resource}'s ${fields.join(' and ')}${input.resource === 'product' ? ', option names and option values' : ''} can be translated, not "${input.field}"`,
     )
   }
   const { languages } = await list(shopId, conn)

@@ -7,7 +7,7 @@ import * as fx from './fixtures'
 
 const { db, eq, sf, run, SHOP } = fx
 const { languageService: languages } = await import('@shopnex/languages')
-const { shopLanguages, translations } = await import('@shopnex/languages/schema')
+const { optionNameField, optionValueField, shopLanguages, translations } = await import('@shopnex/languages/schema')
 
 const FR = { [LANGUAGE_HEADER]: 'fr' }
 type Product = { id: string; handle: string; title: string; description: string; descriptionHtml: string }
@@ -96,6 +96,87 @@ describe('products', () => {
     assert.equal(await languages.countFor(SHOP, db), 1)
     await fx.productService.removeMany(SHOP, [p.id], db)
     assert.equal(await languages.countFor(SHOP, db), 0)
+  })
+})
+
+describe('product options', () => {
+  type Opt = { id: string; name: string; optionValues: { id: string; name: string }[] }
+  type Variant = { id: string; title: string; selectedOptions: { name: string; value: string }[] }
+  type WithOptions = { options: Opt[]; variants: Variant[] }
+
+  async function shirt() {
+    const p = await fx.product({
+      title: 'Shirt',
+      options: [
+        { name: 'Color', values: ['Red', 'Blue'] },
+        { name: 'Size', values: ['S', 'M'] },
+      ],
+      variants: [
+        { options: { Color: 'Red', Size: 'S' }, priceCents: 1000 },
+        { options: { Color: 'Blue', Size: 'M' }, priceCents: 1100 },
+      ],
+    })
+    const base = await run<WithOptions>(sf.products!.get, { id: p.id })
+    const color = base.options.find((o) => o.name === 'Color')!
+    const size = base.options.find((o) => o.name === 'Size')!
+    const red = color.optionValues.find((v) => v.name === 'Red')!
+    return { p, base, color, size, red }
+  }
+  const translateField = (productId: string, field: string, value: string) =>
+    languages.translate(
+      SHOP,
+      { resource: 'product', resourceId: productId, language: 'fr', field, value, source: 'src' },
+      db,
+    )
+
+  test('translated names and values show in the options, and the variants are made of them', async () => {
+    const { p, color, size, red } = await shirt()
+    await translateField(p.id, optionNameField(color.id), 'Couleur')
+    await translateField(p.id, optionValueField(red.id), 'Rouge')
+    await translateField(p.id, optionNameField(size.id), 'Taille')
+    const read = await run<WithOptions>(sf.products!.get, { id: p.id }, FR)
+
+    const colorOption = read.options.find((o) => o.id === color.id)
+    assert.deepEqual([colorOption?.name, colorOption?.optionValues.map((v) => v.name)], ['Couleur', ['Rouge', 'Blue']])
+    assert.equal(read.options.find((o) => o.id === size.id)?.name, 'Taille')
+    // Variants carry the same translated names and values, so a theme still finds the one a shopper picked
+    assert.deepEqual(
+      read.variants.map((v) => [v.title, v.selectedOptions]),
+      [
+        [
+          'Rouge / S',
+          [
+            { name: 'Couleur', value: 'Rouge' },
+            { name: 'Taille', value: 'S' },
+          ],
+        ],
+        [
+          'Blue / M',
+          [
+            { name: 'Couleur', value: 'Blue' },
+            { name: 'Taille', value: 'M' },
+          ],
+        ],
+      ],
+    )
+    for (const variant of read.variants) {
+      for (const s of variant.selectedOptions) {
+        const option = read.options.find((o) => o.name === s.name)
+        assert.ok(
+          option?.optionValues.some((v) => v.name === s.value),
+          `${s.name}: ${s.value} is one of the page's options`,
+        )
+      }
+    }
+  })
+
+  test('are unchanged without the header, and in a language they were not translated into', async () => {
+    const { p, base, color, red } = await shirt()
+    await translateField(p.id, optionNameField(color.id), 'Couleur')
+    await translateField(p.id, optionValueField(red.id), 'Rouge')
+    assert.deepEqual(await run<WithOptions>(sf.products!.get, { id: p.id }), base)
+    await languages.publish(SHOP, 'de', db)
+    assert.deepEqual(await run<WithOptions>(sf.products!.get, { id: p.id }, { [LANGUAGE_HEADER]: 'de' }), base)
   })
 })
 

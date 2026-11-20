@@ -129,6 +129,13 @@
       "unit": "rem"
     },
     {
+      "id": "show_language_selector",
+      "label": "Show language selector",
+      "info": "A picker in the header for the languages you publish (Settings → Languages). Shown only when you publish one besides your own.",
+      "type": "checkbox",
+      "default": false
+    },
+    {
       "id": "show_announcement",
       "label": "Announcement bar",
       "type": "checkbox",

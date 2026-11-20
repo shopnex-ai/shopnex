@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { ChannelPicker } from '@/components/admin/channel-picker'
 import { FormError, setServerError } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
+import { TranslationsCard } from '@/components/admin/translations-card'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -117,7 +118,22 @@ function CollectionEditor({ collection }: { collection: Collection }) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <CollectionProducts collectionId={collection.id} />
-        <CollectionChannels collection={collection} />
+        <div className="space-y-6">
+          <CollectionChannels collection={collection} />
+          <TranslationsCard
+            resource="collection"
+            resourceId={collection.id}
+            fields={[
+              { key: 'title', label: 'Title', kind: 'text', source: collection.title },
+              {
+                key: 'description',
+                label: 'Description',
+                kind: 'html',
+                source: collection.descriptionHtml ?? collection.description ?? '',
+              },
+            ]}
+          />
+        </div>
       </div>
     </div>
   )

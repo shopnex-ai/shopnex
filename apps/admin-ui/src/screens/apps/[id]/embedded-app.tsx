@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import type { AdminMessage, AppMessage } from '@shopnex/app-bridge'
 import { PageHeader } from '@/components/admin/page-header'
+import { Workspace } from '@/components/admin/workspace'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -123,8 +124,7 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
   }
 
   return (
-    // Full-bleed: cancel the layout's padding, fill the height below the top bar (h-12), where the page header is shown
-    <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+    <Workspace>
       <PageHeader
         back={{ to: '/admin/apps', label: 'Apps' }}
         title={
@@ -174,6 +174,6 @@ export function EmbeddedApp({ installationId, src, name, iconUrl }: Props) {
         )}
         {!loaded && <PreviewLoader />}
       </div>
-    </div>
+    </Workspace>
   )
 }

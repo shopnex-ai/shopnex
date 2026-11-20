@@ -12,7 +12,7 @@ const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/
 requireEmbeddedDatabase()
 const { LanguageError, languageService: languages, MAX_LANGUAGES } = await import('../src')
 const { canonicalLanguage, sourceDigest } = await import('../src/languages.contract')
-const { shopLanguages, translations } = await import('../src/languages.schema')
+const { optionNameField, optionValueField, shopLanguages, translations } = await import('../src/languages.schema')
 const { eq } = await import('drizzle-orm')
 
 const SHOP = 'default'
@@ -114,6 +114,23 @@ describe('translations', () => {
     )
   })
 
+  test('a product’s option names and option values, by id, can be translated; nothing else can, and nothing on other records', async () => {
+    const color = randomUUID()
+    const red = randomUUID()
+    const field = (f: string, resource: 'product' | 'collection' = 'product') =>
+      languages.translate(
+        SHOP,
+        { resource, resourceId: product, language: 'fr', field: f, value: 'x', source: 'y' },
+        db,
+      )
+    assert.equal((await field(optionNameField(color)))?.field, optionNameField(color))
+    assert.equal((await field(optionValueField(red)))?.field, optionValueField(red))
+    await rejectsWith('INVALID_FIELD', field(optionNameField(color), 'collection'))
+    for (const bad of ['option_name:', 'option_name:not-a-uuid', `option_value:${red}:extra`, `variant:${red}`]) {
+      await rejectsWith('INVALID_FIELD', field(bad))
+    }
+  })
+
   test('unpublishing keeps the translations: publishing again brings them back', async () => {
     await title('fr', 'Chemise rouge')
     await languages.unpublish(SHOP, 'fr', db)
@@ -145,6 +162,39 @@ describe('translations', () => {
     assert.equal(found.has(other), false)
     assert.equal((await languages.forResources(SHOP, 'product', [], 'fr', db)).size, 0)
     assert.equal((await languages.forResources(SHOP, 'collection', [product], 'fr', db)).size, 0)
+  })
+
+  test('statusOf lists the fingerprint of every translated field of one kind of record in one language', async () => {
+    const other = randomUUID()
+    await languages.publish(SHOP, 'de', db)
+    await title('fr', 'Chemise rouge', 'Red shirt')
+    await title('fr', 'Chemise bleue', 'Blue shirt', other)
+    await languages.translate(
+      SHOP,
+      {
+        resource: 'product',
+        resourceId: product,
+        language: 'de',
+        field: 'title',
+        value: 'Rotes Hemd',
+        source: 'Red shirt',
+      },
+      db,
+    )
+    await languages.translate(
+      SHOP,
+      { resource: 'page', resourceId: product, language: 'fr', field: 'title', value: 'À propos', source: 'About' },
+      db,
+    )
+    const rows = await languages.statusOf(SHOP, 'product', 'fr', db)
+    assert.deepEqual(
+      rows.map((r) => [r.resourceId, r.field, r.sourceDigest]).sort(),
+      [
+        [product, 'title', sourceDigest('Red shirt')],
+        [other, 'title', sourceDigest('Blue shirt')],
+      ].sort(),
+    )
+    assert.equal((await languages.statusOf(OTHER, 'product', 'fr', db)).length, 0)
   })
 
   test('another shop never sees them, and removeFor deletes a record’s translations', async () => {

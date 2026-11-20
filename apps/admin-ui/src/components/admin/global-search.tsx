@@ -20,6 +20,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { nav, settingsNav, type NavItem } from '@/components/admin/nav'
+import { useNavFilter } from '@/components/admin/use-nav-filter'
 import { SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { useSignOut } from '@/components/auth/sign-out-button'
 import { orderName } from '@/lib/format'
@@ -86,7 +87,8 @@ export function GlobalSearch({ superAdmin, canManageApps }: { superAdmin: boolea
     i,
     ...(i.children ?? []).filter((c) => c.href !== i.href).map((c) => ({ ...c, children: undefined })),
   ]
-  const visible = (items: NavItem[]) => items.filter((i) => !i.superAdminOnly || superAdmin)
+  const show = useNavFilter(superAdmin)
+  const visible = (items: NavItem[]) => items.filter(show)
   // Pages, settings and actions appear once you type; the box starts empty
   const pages = search
     ? visible(nav.flatMap((g) => g.items.flatMap(withChildren))).filter((i) => matches(i.label, search))

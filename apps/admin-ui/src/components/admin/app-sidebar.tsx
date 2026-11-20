@@ -20,6 +20,7 @@ import { GlobalSearch } from '@/components/admin/global-search'
 import { nav, settingsNav, type ExternalNavItem, type NavItem } from '@/components/admin/nav'
 import { ShopnexBadge } from '@/components/admin/shopnex-logo'
 import { UpdateMenuItem, VersionLabel } from '@/components/admin/update-notice'
+import { useNavFilter } from '@/components/admin/use-nav-filter'
 import { useSignOut } from '@/components/auth/sign-out-button'
 import { AppIcon } from '@/screens/apps/installed-apps-card'
 import { orpc } from '@/lib/orpc'
@@ -247,7 +248,7 @@ function NavGroup({
 }) {
   const pathname = useLocation({ select: (location) => location.pathname })
   const { isMobile, setOpenMobile } = useSidebar()
-  const visible = items.filter((item) => !item.superAdminOnly || superAdmin)
+  const visible = items.filter(useNavFilter(superAdmin))
   // A group that is all super admin pages has nothing to show everyone else
   if (visible.length === 0) return null
   return (

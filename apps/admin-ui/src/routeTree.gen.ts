@@ -26,6 +26,7 @@ import { Route as AdminSettingsRouteRouteImport } from './routes/admin/settings/
 import { Route as AdminSetupRouteImport } from './routes/admin/setup'
 import { Route as AdminSignupRouteImport } from './routes/admin/signup'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
+import { Route as AdminTranslationsRouteImport } from './routes/admin/translations'
 import { Route as AdminWelcomeRouteImport } from './routes/admin/welcome'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as CheckoutTokenRouteImport } from './routes/checkout/$token'
@@ -49,6 +50,7 @@ import { Route as AdminSettingsCustomFieldsRouteImport } from './routes/admin/se
 import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
+import { Route as AdminSettingsLanguagesRouteImport } from './routes/admin/settings/languages'
 import { Route as AdminSettingsMarketplaceRouteImport } from './routes/admin/settings/marketplace'
 import { Route as AdminSettingsNotificationsRouteRouteImport } from './routes/admin/settings/notifications/route'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/admin/settings/payments'
@@ -148,6 +150,11 @@ const AdminSignupRoute = AdminSignupRouteImport.update({
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminTranslationsRoute = AdminTranslationsRouteImport.update({
+  id: '/translations',
+  path: '/translations',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminWelcomeRoute = AdminWelcomeRouteImport.update({
@@ -268,6 +275,11 @@ const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsLanguagesRoute = AdminSettingsLanguagesRouteImport.update({
+  id: '/languages',
+  path: '/languages',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsMarketplaceRoute =
   AdminSettingsMarketplaceRouteImport.update({
     id: '/marketplace',
@@ -368,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -392,6 +405,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
@@ -423,6 +437,7 @@ export interface FileRoutesByTo {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -447,6 +462,7 @@ export interface FileRoutesByTo {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
@@ -481,6 +497,7 @@ export interface FileRoutesById {
   '/admin/setup': typeof AdminSetupRoute
   '/admin/signup': typeof AdminSignupRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/translations': typeof AdminTranslationsRoute
   '/admin/welcome': typeof AdminWelcomeRoute
   '/api/$': typeof ApiSplatRoute
   '/checkout/$token': typeof CheckoutTokenRoute
@@ -505,6 +522,7 @@ export interface FileRoutesById {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/admin/settings/shipping': typeof AdminSettingsShippingRoute
@@ -540,6 +558,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -564,6 +583,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
@@ -595,6 +615,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -619,6 +640,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
@@ -652,6 +674,7 @@ export interface FileRouteTypes {
     | '/admin/setup'
     | '/admin/signup'
     | '/admin/staff'
+    | '/admin/translations'
     | '/admin/welcome'
     | '/api/$'
     | '/checkout/$token'
@@ -676,6 +699,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
     | '/admin/settings/shipping'
@@ -820,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/admin/staff'
       preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/translations': {
+      id: '/admin/translations'
+      path: '/translations'
+      fullPath: '/admin/translations'
+      preLoaderRoute: typeof AdminTranslationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/welcome': {
@@ -981,6 +1012,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/admin/settings/general'
       preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/languages': {
+      id: '/admin/settings/languages'
+      path: '/languages'
+      fullPath: '/admin/settings/languages'
+      preLoaderRoute: typeof AdminSettingsLanguagesRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/marketplace': {
@@ -1229,6 +1267,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
+  AdminSettingsLanguagesRoute: typeof AdminSettingsLanguagesRoute
   AdminSettingsMarketplaceRoute: typeof AdminSettingsMarketplaceRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
   AdminSettingsShippingRoute: typeof AdminSettingsShippingRoute
@@ -1249,6 +1288,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
+  AdminSettingsLanguagesRoute: AdminSettingsLanguagesRoute,
   AdminSettingsMarketplaceRoute: AdminSettingsMarketplaceRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
   AdminSettingsShippingRoute: AdminSettingsShippingRoute,
@@ -1277,6 +1317,7 @@ interface AdminRouteRouteChildren {
   AdminSetupRoute: typeof AdminSetupRoute
   AdminSignupRoute: typeof AdminSignupRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminTranslationsRoute: typeof AdminTranslationsRoute
   AdminWelcomeRoute: typeof AdminWelcomeRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminInviteIdRoute: typeof AdminInviteIdRoute
@@ -1298,6 +1339,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminSetupRoute: AdminSetupRoute,
   AdminSignupRoute: AdminSignupRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminTranslationsRoute: AdminTranslationsRoute,
   AdminWelcomeRoute: AdminWelcomeRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminInviteIdRoute: AdminInviteIdRoute,

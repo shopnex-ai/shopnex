@@ -15,6 +15,7 @@ import {
   type ThemeSettingValue,
 } from '@shopnex/storefront-sdk/theme'
 import { Button } from '@/components/ui/button'
+import { Workspace, WorkspaceBody } from '@/components/admin/workspace'
 import {
   Dialog,
   DialogClose,
@@ -225,7 +226,7 @@ export function ThemeEditor({
 
   return (
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
-    <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+    <Workspace>
       {/* Title and actions go in the admin's top bar, like every other page */}
       <ThemeHeader
         name={`${theme.name} · ${definition.pages[page]?.name ?? page}`}
@@ -273,7 +274,7 @@ export function ThemeEditor({
         }
       />
 
-      <div className="flex min-h-0 flex-1">
+      <WorkspaceBody>
         <aside className="w-64 shrink-0 space-y-4 overflow-y-auto border-r p-3">
           <div>
             {definition.pages && (
@@ -363,7 +364,7 @@ export function ThemeEditor({
             </div>
           )}
         </aside>
-      </div>
+      </WorkspaceBody>
 
       <Dialog open={confirmPublish} onOpenChange={setConfirmPublish}>
         <DialogContent>
@@ -396,6 +397,6 @@ export function ThemeEditor({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Workspace>
   )
 }
