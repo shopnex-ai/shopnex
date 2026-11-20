@@ -5,6 +5,8 @@
 //
 //   GET  /                      Embedded moderation + setup page (session token)
 //   POST /api/settings          Days to wait before asking for a review
+//   POST /api/publishing        Publish new reviews automatically: off, 4-5 stars, or all
+//   POST /api/reviews/:id/reply, DELETE /api/reviews/:id   Reply to or delete a review
 //   POST /shopnex/webhook       ShopNex: order.fulfilled → review requests
 //   GET  /public/reviews        Published reviews of a product (the widget; rate limited)
 //   GET  /widget.js             The storefront widget
