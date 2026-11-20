@@ -16,7 +16,7 @@ const publishableKey = env('SHOPNEX_PUBLISHABLE_KEY') || undefined
 // API call passes it on as x-forwarded-host; the browser then calls the storefront's own origin.
 const multiTenant = process.env.TENANCY_MODE === 'multi'
 
-export const requestContext = new AsyncLocalStorage<{ host: string; origin: string }>()
+export const requestContext = new AsyncLocalStorage<{ host: string; origin: string; country?: string }>()
 
 const hostAwareFetch: typeof fetch = (input, init) => {
   const host = multiTenant ? requestContext.getStore()?.host : undefined

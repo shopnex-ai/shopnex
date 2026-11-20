@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "ship_to_countries" text[] DEFAULT '{}'::text[] NOT NULL;

@@ -2078,6 +2078,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
@@ -2108,6 +2109,7 @@ export interface operations {
                     businessAddress?: string | null;
                     taxId?: string | null;
                     cookieBanner?: boolean;
+                    shipToCountries?: string[];
                 };
             };
         };
@@ -2136,6 +2138,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;
                         storefrontUrlManaged: boolean;
