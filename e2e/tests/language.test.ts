@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { after, describe, test } from 'node:test'
-import { canonicalLanguage } from '@shopnex/tenancy/contract'
+import { canonicalLanguage } from '@shopnex/languages/contract'
 import { closeDb } from '../lib'
 
 after(closeDb)

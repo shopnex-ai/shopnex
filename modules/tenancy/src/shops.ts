@@ -3,7 +3,7 @@ import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
 import { db, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
-import { canonicalLanguage } from './tenancy.contract'
+import { canonicalLanguage } from '@shopnex/languages/contract'
 import { shopDomains, shopMembers } from './tenancy.schema'
 import { type Shop, shops } from '@shopnex/core/schema'
 

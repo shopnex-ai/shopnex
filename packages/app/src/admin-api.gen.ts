@@ -257,6 +257,54 @@ export interface paths {
         patch: operations["admin.customFields.update"];
         trace?: never;
     };
+    "/languages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.list"];
+        put?: never;
+        post: operations["admin.languages.publish"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/languages/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin.languages.unpublish"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/translations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.languages.translations.list"];
+        put: operations["admin.languages.translations.set"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/bulk": {
         parameters: {
             query?: never;
@@ -3393,6 +3441,156 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                     };
+                };
+            };
+        };
+    };
+    "admin.languages.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description A BCP 47 language tag, e.g. fr or pt-BR */
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        default: string;
+                        languages: string[];
+                    };
+                };
+            };
+        };
+    };
+    "admin.languages.translations.list": {
+        parameters: {
+            query: {
+                resource: "product" | "collection" | "page";
+                resourceId: string;
+                language?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        field: string;
+                        language: string;
+                        value: string;
+                        sourceDigest: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    }[];
+                };
+            };
+        };
+    };
+    "admin.languages.translations.set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    resource: "product" | "collection" | "page";
+                    /** Format: uuid */
+                    resourceId: string;
+                    /** @description A BCP 47 language tag, e.g. fr or pt-BR */
+                    language: string;
+                    field: string;
+                    value: string;
+                    source: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        field: string;
+                        language: string;
+                        value: string;
+                        sourceDigest: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    } | null;
                 };
             };
         };
@@ -9133,7 +9331,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -9157,7 +9355,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -9173,7 +9371,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -9209,7 +9407,7 @@ export interface operations {
                         id: string;
                         shopId: string;
                         name: string;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         tokenPrefix: string;
                         createdById: string | null;
                         appId: string | null;
@@ -9244,7 +9442,7 @@ export interface operations {
                         appId: string;
                         shopId: string;
                         apiTokenId: string | null;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         installedById: string | null;
                         /** Format: date-time */
                         installedAt: string;
@@ -9264,7 +9462,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -9304,7 +9502,7 @@ export interface operations {
                         appId: string;
                         shopId: string;
                         apiTokenId: string | null;
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         installedById: string | null;
                         /** Format: date-time */
                         installedAt: string;
@@ -9371,7 +9569,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -9448,7 +9646,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9478,7 +9676,7 @@ export interface operations {
                     /** Format: uri */
                     appUrl: string;
                     redirectUrls: string[];
-                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -9505,7 +9703,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
@@ -9553,7 +9751,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9585,7 +9783,7 @@ export interface operations {
                     /** Format: uri */
                     appUrl?: string;
                     redirectUrls?: string[];
-                    scopes?: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                    scopes?: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                 };
             };
         };
@@ -9611,7 +9809,7 @@ export interface operations {
                         iconUrl: string | null;
                         appUrl: string;
                         redirectUrls: string[];
-                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                        scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                         clientId: string;
                         publicKey: string | null;
                         createdById: string | null;
@@ -9658,7 +9856,7 @@ export interface operations {
                             iconUrl: string | null;
                             appUrl: string;
                             redirectUrls: string[];
-                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront")[];
+                            scopes: ("read_products" | "write_products" | "read_orders" | "write_orders" | "read_customers" | "write_customers" | "read_discounts" | "write_discounts" | "read_gift_cards" | "write_gift_cards" | "read_publications" | "write_publications" | "read_payment_sessions" | "write_payment_sessions" | "read_ai_capabilities" | "write_ai_capabilities" | "read_shipping" | "write_shipping" | "write_email" | "write_storefront" | "read_translations" | "write_translations")[];
                             clientId: string;
                             publicKey: string | null;
                             createdById: string | null;
