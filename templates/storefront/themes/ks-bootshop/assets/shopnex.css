@@ -482,6 +482,11 @@ main {
   color: var(--bs-body-color);
   text-decoration: none;
 }
+.ks-logo-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
 .ks-menu {
   flex-basis: 100%;
   order: 5;
@@ -583,6 +588,18 @@ main {
 }
 .ks-footer-links a {
   color: inherit;
+}
+.ks-footer-social {
+  display: flex;
+  gap: 1rem;
+}
+.ks-footer-social-link {
+  display: inline-flex;
+  color: inherit;
+  opacity: 0.75;
+}
+.ks-footer-social-link:hover {
+  opacity: 1;
 }
 
 /* ── Hero carousel ────────────────────────────────────────────── */

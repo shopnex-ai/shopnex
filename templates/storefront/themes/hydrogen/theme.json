@@ -4,6 +4,22 @@
   "version": "1.0.0",
   "settings": [
     {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 120
+    },
+    {
       "id": "primary_color",
       "label": "Text color",
       "info": "Text, buttons and lines",
@@ -85,6 +101,11 @@
     {
       "id": "youtube_url",
       "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
       "type": "url"
     },
     {

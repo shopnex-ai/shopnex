@@ -4,6 +4,22 @@
   "version": "1.0.0",
   "settings": [
     {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 160
+    },
+    {
       "id": "accent_color",
       "label": "Accent color",
       "info": "Buttons, the announcement bar, the brand strip and the newsletter box",
@@ -152,6 +168,16 @@
     {
       "id": "tiktok_url",
       "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
       "type": "url"
     },
     {

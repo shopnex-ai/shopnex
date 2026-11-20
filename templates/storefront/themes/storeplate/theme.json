@@ -119,6 +119,36 @@
       "type": "text"
     },
     {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "type": "url"
+    },
+    {
       "id": "favicon",
       "label": "Favicon",
       "type": "image",
