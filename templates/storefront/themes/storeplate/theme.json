@@ -134,31 +134,37 @@
     },
     {
       "id": "instagram_url",
+      "group": "Social links",
       "label": "Instagram",
       "type": "url"
     },
     {
       "id": "facebook_url",
+      "group": "Social links",
       "label": "Facebook",
       "type": "url"
     },
     {
       "id": "x_url",
+      "group": "Social links",
       "label": "X (Twitter)",
       "type": "url"
     },
     {
       "id": "tiktok_url",
+      "group": "Social links",
       "label": "TikTok",
       "type": "url"
     },
     {
       "id": "youtube_url",
+      "group": "Social links",
       "label": "YouTube",
       "type": "url"
     },
     {
       "id": "pinterest_url",
+      "group": "Social links",
       "label": "Pinterest",
       "type": "url"
     },

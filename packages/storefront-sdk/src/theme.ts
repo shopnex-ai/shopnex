@@ -22,7 +22,13 @@ const HexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'A hex color like #8a3b32
 
 // ── definition (written by theme authors) ─────────────────────────────────────
 
-const field = { id: Id, label: z.string().min(1).max(100), info: z.string().max(500).optional() }
+const field = {
+  id: Id,
+  label: z.string().min(1).max(100),
+  info: z.string().max(500).optional(),
+  /** The editor shows neighbouring fields with the same group under one heading, e.g. "Social links" */
+  group: z.string().min(1).max(60).optional(),
+}
 
 export const ThemeSettingField = z.discriminatedUnion('type', [
   z.object({ ...field, type: z.literal('text'), default: z.string().optional(), placeholder: z.string().optional() }),

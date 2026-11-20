@@ -1,6 +1,7 @@
 // One input per theme setting field type (ThemeSettingField in @shopnex/storefront-sdk/theme).
 // Controlled: values live in the theme document, every change autosaves.
 import { useQuery } from '@tanstack/react-query'
+import { ChevronDownIcon } from 'lucide-react'
 import { useId } from 'react'
 import type { ThemeSettingField, ThemeSettingValue, ThemeSettings } from '@shopnex/storefront-sdk/theme'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -25,11 +26,31 @@ export function SettingFields({
   onChange: (id: string, value: ThemeSettingValue) => void
 }) {
   if (!fields.length) return <p className="text-sm text-muted-foreground">This section has no settings.</p>
+  const runs: { group?: string; fields: ThemeSettingField[] }[] = []
+  for (const f of fields) {
+    const last = runs.at(-1)
+    if (last && last.group === f.group) last.fields.push(f)
+    else runs.push({ group: f.group, fields: [f] })
+  }
   return (
     <FieldGroup>
-      {fields.map((f) => (
-        <SettingField key={f.id} field={f} value={values[f.id] ?? null} onChange={(v) => onChange(f.id, v)} />
-      ))}
+      {runs.map((run) => {
+        const items = run.fields.map((f) => (
+          <SettingField key={f.id} field={f} value={values[f.id] ?? null} onChange={(v) => onChange(f.id, v)} />
+        ))
+        // Fields with a group, next to each other, fold into a drop-down named after the group
+        return run.group ? (
+          <details key={run.fields[0]!.id} className="group rounded-lg border">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-medium [&::-webkit-details-marker]:hidden">
+              {run.group}
+              <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="space-y-4 border-t p-3">{items}</div>
+          </details>
+        ) : (
+          items
+        )
+      })}
     </FieldGroup>
   )
 }
