@@ -78,9 +78,20 @@ describe('Disclosure, Panel and Button toggles', () => {
     assert.doesNotMatch(button, /data-shopnex-action/)
   })
 
-  test('a button can ask for a second click', async () => {
-    const out = await html(Button({ action: '/x', confirm: 'Click again', children: 'Delete' }))
-    assert.match(out, /data-confirm="Click again"/)
+  test('a button can ask first, with a title, a message and a label', async () => {
+    const plain = await html(Button({ action: '/x', confirm: 'Delete it?', children: 'Delete' }))
+    assert.match(plain, /data-confirm-title="Delete it\?"/)
+    assert.doesNotMatch(plain, /data-confirm-message/)
+    const full = await html(
+      Button({
+        action: '/x',
+        confirm: { title: 'Sure?', message: 'No undo.', label: 'Yes, delete' },
+        children: 'Delete',
+      }),
+    )
+    assert.match(full, /data-confirm-title="Sure\?"/)
+    assert.match(full, /data-confirm-message="No undo\."/)
+    assert.match(full, /data-confirm-label="Yes, delete"/)
   })
 })
 

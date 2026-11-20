@@ -104,7 +104,11 @@ function ReviewCard({ review }: { review: Review }) {
           variant="plain"
           action={`/api/reviews/${review.id}`}
           method="DELETE"
-          confirm="Click again to delete"
+          confirm={{
+            title: 'Delete this review?',
+            message: `The ${review.rating}-star review by ${review.author} will be removed for good. This can't be undone.`,
+            label: 'Delete',
+          }}
           reload
         >
           Delete

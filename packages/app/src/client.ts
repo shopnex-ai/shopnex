@@ -7,7 +7,7 @@
 //   data-success="…"   toast on success (default: the response's `message`)
 //   data-sx-filter     <Filterable>: tabs, dropdown filters and search narrow the <FilterItem>s in the page (state in the URL hash)
 //   data-sx-toggle=id  <Button toggles>: shows or hides the <Panel id>
-//   data-confirm="…"   needs a second click within 4 seconds; the first one shows this text on the button
+//   data-confirm-title (+ -message, -label)   the admin asks first, in a dialog (bridge.confirm); Cancel does nothing
 // The response may carry { message, redirect }. Errors show in the form's [data-shopnex-error] and as a toast.
 export const clientScript = /* js */ `
 import { createAppBridge } from './app-bridge.js'
@@ -25,6 +25,18 @@ bridge.reload = async () => {
   const url = new URL(location.href)
   url.searchParams.set('session_token', await bridge.getSessionToken())
   location.replace(url)
+}
+
+// <Button confirm>: the admin asks in its own dialog (bridge.confirm). An admin too old to know it falls back to the browser's
+async function confirmed(el) {
+  const title = el.dataset.confirmTitle
+  if (!title) return true
+  const options = { title, message: el.dataset.confirmMessage, label: el.dataset.confirmLabel }
+  try {
+    return await bridge.confirm(options)
+  } catch {
+    return window.confirm(options.message ? title + '\\n\\n' + options.message : title)
+  }
 }
 
 async function run(el, init) {
@@ -50,31 +62,11 @@ async function run(el, init) {
   }
 }
 
-// Capture phase, so the first click of a button that asks for confirmation never reaches the handlers below
-document.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-confirm]')
-  if (!button) return
-  if (button.classList.contains('sx-armed')) {
-    clearTimeout(button.confirmTimer)
-    button.classList.remove('sx-armed')
-    button.textContent = button.dataset.label
-    return
-  }
-  event.preventDefault()
-  event.stopImmediatePropagation()
-  button.dataset.label = button.textContent
-  button.textContent = button.dataset.confirm
-  button.classList.add('sx-armed')
-  button.confirmTimer = setTimeout(() => {
-    button.classList.remove('sx-armed')
-    button.textContent = button.dataset.label
-  }, 4000)
-}, true)
-
-document.addEventListener('submit', (event) => {
+document.addEventListener('submit', async (event) => {
   const form = event.target.closest('form[data-shopnex-action]')
   if (!form) return
   event.preventDefault()
+  if (!(await confirmed(form))) return
   const body = {}
   for (const [key, value] of new FormData(form)) body[key] = value
   for (const box of form.querySelectorAll('input[type=checkbox][name]')) body[box.name] = box.checked
@@ -85,11 +77,12 @@ document.addEventListener('submit', (event) => {
   })
 })
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
   // Rendered type="button", so never a form's submit
   const button = event.target.closest('button[data-shopnex-action]')
   if (!button) return
   event.preventDefault()
+  if (!(await confirmed(button))) return
   run(button, { method: button.dataset.method ?? 'POST' })
 })
 

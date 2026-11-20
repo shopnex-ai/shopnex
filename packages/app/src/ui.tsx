@@ -53,7 +53,7 @@ white-space:nowrap;transition:opacity .15s,background .15s}
 .sx-btn-primary{background:var(--primary);color:var(--primary-fg)}.sx-btn-primary:hover{opacity:.9}
 .sx-btn-secondary{background:var(--card);color:var(--fg);border-color:var(--border)}.sx-btn-secondary:hover{background:var(--muted)}
 .sx-btn-plain{background:transparent;color:var(--fg)}.sx-btn-plain:hover{background:var(--muted)}
-.sx-btn-critical,.sx-btn.sx-armed{background:var(--critical);color:#fff}.sx-btn-critical:hover,.sx-btn.sx-armed:hover{opacity:.9}
+.sx-btn-critical{background:var(--critical);color:#fff}.sx-btn-critical:hover{opacity:.9}
 .sx-cmd{display:flex;gap:.75rem;align-items:center;justify-content:space-between;width:100%;margin-top:.5rem;
 padding:.5rem .75rem;text-align:left;font:inherit;color:inherit;background:var(--muted);border:1px solid var(--border);
 border-radius:var(--radius);cursor:pointer;transition:border-color .15s}
@@ -356,8 +356,11 @@ type ActionProps = {
   reload?: boolean
   /** Toast shown when it succeeds (default: the response's `message`) */
   success?: string
-  /** Two clicks: the first turns the button red and shows this text (e.g. "Click again to delete") for a few seconds */
-  confirm?: string
+  /**
+   * Asks first, in a dialog the admin draws (bridge.confirm): the title (or `{ title, message, label }`, label being the confirm button's text). The
+   * call is made only when the person confirms; Cancel and Esc leave everything as it was.
+   */
+  confirm?: string | { title: string; message?: string; label?: string }
 }
 
 const actionAttrs = ({ action, method, reload, success, confirm }: ActionProps) => ({
@@ -365,7 +368,9 @@ const actionAttrs = ({ action, method, reload, success, confirm }: ActionProps) 
   'data-method': method,
   'data-reload': reload ? '' : undefined,
   'data-success': success,
-  'data-confirm': confirm,
+  'data-confirm-title': typeof confirm === 'string' ? confirm : confirm?.title,
+  'data-confirm-message': typeof confirm === 'object' ? confirm.message : undefined,
+  'data-confirm-label': typeof confirm === 'object' ? confirm.label : undefined,
 })
 
 /**

@@ -51,7 +51,7 @@ For longer pages there are a few more:
 - `Disclosures` and `Disclosure` (`title`, `summary`, `open`): settings that stay as one quiet row each and open on click.
 - `Filterable` and `FilterItem`: a list with tabs (and counts), dropdown filters and a search box that narrow the items without a request. The chosen tab and filters stay in the URL hash, so they survive the reload after `<Button action reload>`. Put it in a `Card`, one per page.
 - `Panel` and `<Button toggles="id">`: a form or detail that opens when the button is pressed.
-- `<Button confirm="Click again to delete">`: asks for a second click before it calls the backend.
+- `<Button confirm={{ title: 'Delete this review?', message: "This can't be undone.", label: 'Delete' }}>`: the admin asks first in its own dialog (`bridge.confirm`), and the backend is called only when the person confirms (`confirm="Delete?"` is the short form with just a title). Cancel and Esc do nothing.
 
 ```tsx
 <Card>
@@ -76,4 +76,4 @@ For longer pages there are a few more:
 
 ## App bridge
 
-Frontends that need more use `@shopnex/app-bridge`: `getSessionToken()`, `authenticatedFetch()` (fresh token per request, no third-party cookies), `toast()` and `redirect()` (top-level, only to the admin or the app's own origin).
+Frontends that need more use `@shopnex/app-bridge`: `getSessionToken()`, `authenticatedFetch()` (fresh token per request, no third-party cookies), `toast()`, `confirm()` (a dialog drawn by the admin; resolves to whether the person confirmed) and `redirect()` (top-level, only to the admin or the app's own origin).
