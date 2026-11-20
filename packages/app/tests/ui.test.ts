@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
 import { clientScript } from '../src/client'
-import { Button, Disclosure, FilterItem, Filterable, Panel } from '../src/ui'
+import { Button, Disclosure, FilterItem, Filterable, Page, Panel } from '../src/ui'
 
 const html = async (node: unknown) => String(await node)
 
@@ -81,5 +81,23 @@ describe('Disclosure, Panel and Button toggles', () => {
   test('a button can ask for a second click', async () => {
     const out = await html(Button({ action: '/x', confirm: 'Click again', children: 'Delete' }))
     assert.match(out, /data-confirm="Click again"/)
+  })
+})
+
+describe('Page', () => {
+  test('shows its title and subtitle, unless header={false}; the tab title stays', async () => {
+    const shown = await html(Page({ title: 'Reviews', subtitle: 'Shop', children: 'x' }))
+    assert.match(shown, /<h1>Reviews<\/h1>/)
+    assert.match(shown, /Shop/)
+    const bare = await html(Page({ title: 'Reviews', subtitle: 'Shop', header: false, children: 'x' }))
+    assert.doesNotMatch(bare, /<h1>/)
+    assert.doesNotMatch(bare, /<header/)
+    assert.match(bare, /<title>Reviews<\/title>/)
+  })
+
+  test('actions still get a header row without the title', async () => {
+    const out = await html(Page({ title: 'Reviews', header: false, actions: 'Go', children: 'x' }))
+    assert.match(out, /<header/)
+    assert.doesNotMatch(out, /<h1>/)
   })
 })

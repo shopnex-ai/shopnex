@@ -83,7 +83,6 @@ export function buildApp(deps: {
     const key = { instance: shop.instance, shopId: shop.shopId }
     return c.html(
       <SettingsPage
-        shopName={shop.shop.name}
         instance={shop.instance}
         shopId={shop.shopId}
         appUrl={appUrl}

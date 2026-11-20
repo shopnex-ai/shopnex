@@ -107,14 +107,16 @@ a{color:inherit;text-underline-offset:3px}
 
 /**
  * A whole embedded page: admin styles, and /shopnex/app.js (app bridge + Form/Button behaviour).
- * `actions` sit next to the title.
+ * `actions` sit next to the title. `header={false}` leaves the title and subtitle out (the admin's top bar already
+ * names the app); `title` is still the tab title.
  */
 export function Page({
   title,
   subtitle,
   actions,
+  header = true,
   children,
-}: PropsWithChildren<{ title: string; subtitle?: string; actions?: Child }>) {
+}: PropsWithChildren<{ title: string; subtitle?: string; actions?: Child; header?: boolean }>) {
   return (
     <>
       {raw('<!doctype html>')}
@@ -128,17 +130,19 @@ export function Page({
         </head>
         <body>
           <main class="sx-page">
-            <header class="sx-page-head">
-              <div>
-                <h1>{title}</h1>
-                {subtitle && <p class="sx-text sx-subdued">{subtitle}</p>}
-              </div>
-              {actions && (
-                <div class="sx-inline" style="gap:.5rem">
-                  {actions}
+            {(header || actions) && (
+              <header class="sx-page-head">
+                <div>
+                  {header && <h1>{title}</h1>}
+                  {header && subtitle && <p class="sx-text sx-subdued">{subtitle}</p>}
                 </div>
-              )}
-            </header>
+                {actions && (
+                  <div class="sx-inline" style="gap:.5rem">
+                    {actions}
+                  </div>
+                )}
+              </header>
+            )}
             <Stack gap={4}>{children}</Stack>
           </main>
         </body>

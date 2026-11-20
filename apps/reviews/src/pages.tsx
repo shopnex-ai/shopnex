@@ -131,7 +131,6 @@ function ReviewCard({ review }: { review: Review }) {
 }
 
 export function SettingsPage(props: {
-  shopName: string
   instance: string
   shopId: string
   appUrl: string
@@ -155,7 +154,7 @@ export function SettingsPage(props: {
   const defaultTab = pending > 0 ? 'pending' : 'all'
   const publishLabel = PUBLISH_OPTIONS.find((o) => o.value === props.publishMode)?.label
   return (
-    <Page title="Reviews" subtitle={props.shopName}>
+    <Page title="Reviews" header={false}>
       <style>{raw(css)}</style>
       {props.webhookError && (
         <Banner tone="critical" title="Review requests are not set up">
