@@ -14,8 +14,6 @@ import {
   type ThemeSection,
   type ThemeSettingValue,
 } from '@shopnex/storefront-sdk/theme'
-import { PageHeader } from '@/components/admin/page-header'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -29,6 +27,7 @@ import {
 import { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from './preview-frame'
+import { ThemeHeader } from './theme-header'
 import { SectionList } from './section-list'
 import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
@@ -228,16 +227,9 @@ export function ThemeEditor({
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
     <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
       {/* Title and actions go in the admin's top bar, like every other page */}
-      <PageHeader
-        back={{ to: theme.live ? '/admin/online-store' : '/admin/online-store/select', label: 'Themes' }}
-        title={
-          <span className="flex items-center gap-2">
-            <span className="truncate">
-              {theme.name} · {definition.pages[page]?.name ?? page}
-            </span>
-            <Badge variant={live ? 'secondary' : 'outline'}>{live ? 'Live' : 'Unpublished'}</Badge>
-          </span>
-        }
+      <ThemeHeader
+        name={`${theme.name} · ${definition.pages[page]?.name ?? page}`}
+        live={live}
         actions={
           <>
             <span className={cn('text-xs text-muted-foreground', saveState === 'error' && 'text-destructive')}>
