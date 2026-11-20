@@ -252,4 +252,9 @@
     --font-sans: 'Geist', 'Geist Fallback', sans-serif;
     @apply font-sans;
   }
+  /* The admin is compact by design; on large displays it would look tiny. Everything is sized in rem, so scaling the
+     root size scales the whole UI together: 16px up to 1600px wide (unchanged), ~17.6px at 1870px, ~22px at 2560px. */
+  html {
+    font-size: clamp(16px, 6.4px + 0.6vw, 22px);
+  }
 }
