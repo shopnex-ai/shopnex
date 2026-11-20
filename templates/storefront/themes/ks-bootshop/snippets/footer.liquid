@@ -7,6 +7,7 @@
 <footer class="ks-footer mt-auto">
   <div class="container ks-footer-inner">
     <span>{{ footer_text }}</span>
+    {%- render 'social-links', class: 'ks-footer-social', link_class: 'ks-footer-social-link' %}
     {%- if menu and menu.links.size > 0 %}
       <ul class="ks-footer-links">
         {%- for link in menu.links %}

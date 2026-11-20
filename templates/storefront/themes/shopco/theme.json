@@ -4,6 +4,22 @@
   "version": "1.0.0",
   "settings": [
     {
+      "id": "logo",
+      "label": "Logo",
+      "info": "Image URL. Without one, the shop name is shown.",
+      "type": "image"
+    },
+    {
+      "id": "logo_width",
+      "label": "Logo width",
+      "type": "range",
+      "min": 60,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "default": 160
+    },
+    {
       "id": "accent_color",
       "label": "Accent color",
       "info": "Buttons, the announcement bar, the brand strip and the newsletter box",
@@ -88,14 +104,12 @@
       "id": "announcement_text",
       "label": "Announcement",
       "info": "The bar above the header; empty hides it",
-      "type": "text",
-      "default": "Sign up and get 20% off your first order."
+      "type": "text"
     },
     {
       "id": "announcement_link_label",
       "label": "Announcement link label",
-      "type": "text",
-      "default": "Sign up now"
+      "type": "text"
     },
     {
       "id": "announcement_link",
@@ -106,7 +120,7 @@
       "id": "newsletter_heading",
       "label": "Newsletter heading",
       "type": "text",
-      "default": "Stay up to date about our latest offers"
+      "default": "Stay up to date"
     },
     {
       "id": "newsletter_action",
@@ -125,8 +139,7 @@
       "id": "footer_text",
       "label": "Footer text",
       "info": "Under the shop name in the footer",
-      "type": "textarea",
-      "default": "We have clothes that suit your style and which you’re proud to wear. From women to men."
+      "type": "textarea"
     },
     {
       "id": "copyright",
@@ -152,6 +165,16 @@
     {
       "id": "tiktok_url",
       "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
       "type": "url"
     },
     {
@@ -196,13 +219,12 @@
           "id": "heading",
           "label": "Heading",
           "type": "text",
-          "default": "Find clothes that match your style"
+          "default": "Welcome to our store"
         },
         {
           "id": "text",
           "label": "Text",
-          "type": "textarea",
-          "default": "Browse through our diverse range of meticulously crafted garments, designed to bring out your individuality and cater to your sense of style."
+          "type": "textarea"
         },
         {
           "id": "button_label",
@@ -226,38 +248,32 @@
         {
           "id": "stat_1_value",
           "label": "Figure 1",
-          "type": "text",
-          "default": "200+"
+          "type": "text"
         },
         {
           "id": "stat_1_label",
           "label": "Figure 1 label",
-          "type": "text",
-          "default": "International brands"
+          "type": "text"
         },
         {
           "id": "stat_2_value",
           "label": "Figure 2",
-          "type": "text",
-          "default": "2,000+"
+          "type": "text"
         },
         {
           "id": "stat_2_label",
           "label": "Figure 2 label",
-          "type": "text",
-          "default": "High-quality products"
+          "type": "text"
         },
         {
           "id": "stat_3_value",
           "label": "Figure 3",
-          "type": "text",
-          "default": "30,000+"
+          "type": "text"
         },
         {
           "id": "stat_3_label",
           "label": "Figure 3 label",
-          "type": "text",
-          "default": "Happy customers"
+          "type": "text"
         }
       ],
       "limit": 1
@@ -352,43 +368,37 @@
           "id": "heading",
           "label": "Heading",
           "type": "text",
-          "default": "Our happy customers"
+          "default": "What customers say"
         },
         {
           "id": "name_1",
           "label": "Customer 1",
-          "type": "text",
-          "default": "Sarah M."
+          "type": "text"
         },
         {
           "id": "quote_1",
           "label": "Quote 1",
-          "type": "textarea",
-          "default": "I’m blown away by the quality and style of the clothes I received. From casual wear to elegant dresses, every piece I’ve bought has exceeded my expectations."
+          "type": "textarea"
         },
         {
           "id": "name_2",
           "label": "Customer 2",
-          "type": "text",
-          "default": "Alex K."
+          "type": "text"
         },
         {
           "id": "quote_2",
           "label": "Quote 2",
-          "type": "textarea",
-          "default": "Finding clothes that align with my personal style used to be a challenge. The range of options here is truly remarkable, catering to a variety of tastes and occasions."
+          "type": "textarea"
         },
         {
           "id": "name_3",
           "label": "Customer 3",
-          "type": "text",
-          "default": "James L."
+          "type": "text"
         },
         {
           "id": "quote_3",
           "label": "Quote 3",
-          "type": "textarea",
-          "default": "As someone who’s always on the lookout for unique fashion pieces, I’m thrilled I found this shop. The selection is not only diverse but also on point with the latest trends."
+          "type": "textarea"
         },
         {
           "id": "name_4",
@@ -425,7 +435,7 @@
           "id": "heading",
           "label": "Heading",
           "type": "text",
-          "default": "Made to be worn"
+          "default": "Talk about your brand"
         },
         {
           "id": "text",

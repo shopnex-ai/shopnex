@@ -126,6 +126,36 @@
       "type": "text"
     },
     {
+      "id": "instagram_url",
+      "label": "Instagram",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "type": "url"
+    },
+    {
       "id": "favicon",
       "label": "Favicon",
       "type": "image",
@@ -239,19 +269,19 @@
           "id": "subheading",
           "label": "Subheading",
           "type": "text",
-          "default": "Deal of the Week"
+          "default": "New arrivals"
         },
         {
           "id": "heading",
           "label": "Heading",
           "type": "text",
-          "default": "Get 25% off our new collection"
+          "default": "Discover our new collection"
         },
         {
           "id": "text",
           "label": "Text",
           "type": "textarea",
-          "default": "Fresh arrivals, picked for you. For a limited time only."
+          "default": "Fresh arrivals, picked for you."
         },
         {
           "id": "image",
