@@ -12,6 +12,7 @@ import {
   type Cart,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -36,19 +37,19 @@ function renderCart(cart: Cart | null) {
             <div class="ks-line-info">
               <a href="${href}" class="ks-line-title">${esc(m.product.title)}</a>
               ${m.selectedOptions.length ? `<span class="small text-body-secondary">${esc(m.title)}</span>` : ''}
-              ${line.availableForSale ? '' : '<span class="small text-danger">Not enough in stock</span>'}
+              ${line.availableForSale ? '' : `<span class="small text-danger">${esc(tr('js.cart.not_enough_stock'))}</span>`}
               <div class="ks-line-qty">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}">−</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${esc(line.quantity === 1 ? tr('js.cart.remove') : tr('js.cart.one_fewer'))}">−</button>
                 <span>${line.quantity}</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="One more">+</button>
-                <button type="button" class="btn btn-link btn-sm ms-auto" data-line-qty="${line.id}" data-qty="0">Remove</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="${esc(tr('js.cart.one_more'))}">+</button>
+                <button type="button" class="btn btn-link btn-sm ms-auto" data-line-qty="${line.id}" data-qty="0">${esc(tr('js.cart.remove'))}</button>
               </div>
             </div>
             <span class="ks-line-total">${formatMoney(line.cost.totalAmount)}</span>
           </div>`
         })
         .join('')
-    : '<p class="text-body-secondary py-3 m-0">Your cart is empty.</p>'
+    : `<p class="text-body-secondary py-3 m-0">${esc(tr('js.cart.empty'))}</p>`
 
   $('[data-cart-summary]').hidden = lines.length === 0
   if (!cart || !lines.length) return
@@ -56,7 +57,7 @@ function renderCart(cart: Cart | null) {
     .map(
       (d) => `
         <div class="d-flex justify-content-between small mb-2">
-          <span>Discount (${esc(d.code)})</span><span>−${formatMoney(d.discountedAmount)}</span>
+          <span>${esc(tr('js.cart.discount', { code: d.code }))}</span><span>−${formatMoney(d.discountedAmount)}</span>
         </div>`,
     )
     .join('')
@@ -95,7 +96,7 @@ document.addEventListener('click', async (e) => {
   if (add && !add.disabled) {
     const label = add.innerHTML
     add.disabled = true
-    add.textContent = 'Adding…'
+    add.textContent = tr('js.cart.adding')
     try {
       await addToCart(add.dataset.addToCart!)
     } catch (error) {

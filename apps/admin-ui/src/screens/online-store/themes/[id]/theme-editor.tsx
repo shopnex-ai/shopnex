@@ -16,6 +16,7 @@ import {
 } from '@shopnex/storefront-sdk/theme'
 import { Button } from '@/components/ui/button'
 import { Workspace, WorkspaceBody } from '@/components/admin/workspace'
+import { WorkspaceTabs } from '@/components/admin/workspace-tabs'
 import {
   Dialog,
   DialogClose,
@@ -75,6 +76,8 @@ export function ThemeEditor({
   const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
   const [selected, setSelected] = useState<string | null>(null) // section id; null = theme settings
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
+  // On a phone one pane is shown at a time; from md up all three are
+  const [pane, setPane] = useState<'sections' | 'preview' | 'settings'>('sections')
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const [reloadKey, setReloadKey] = useState(0)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
@@ -152,11 +155,13 @@ export function ThemeEditor({
     const at = index === -1 ? sections.length : index + 1
     setSections([...sections.slice(0, at), section, ...sections.slice(at)])
     setSelected(section.id)
+    setPane('settings')
   }
 
   function removeSection(id: string) {
     setSections(sections.filter((s) => s.id !== id))
     setSelected(null)
+    setPane('sections')
   }
 
   const selectedSection = sections.find((s) => s.id === selected) ?? null
@@ -233,10 +238,12 @@ export function ThemeEditor({
         live={live}
         actions={
           <>
-            <span className={cn('text-xs text-muted-foreground', saveState === 'error' && 'text-destructive')}>
+            <span
+              className={cn('text-xs text-muted-foreground max-md:hidden', saveState === 'error' && 'text-destructive')}
+            >
               {status}
             </span>
-            <div className="flex rounded-md border p-0.5">
+            <div className="flex rounded-md border p-0.5 max-md:hidden">
               {(['desktop', 'mobile'] as const).map((d) => (
                 <Button
                   key={d}
@@ -256,7 +263,7 @@ export function ThemeEditor({
               render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
             >
               <CodeIcon />
-              Edit code
+              <span className="max-md:hidden">Edit code</span>
             </Button>
             {live && published && unpublished && (
               <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(true)}>
@@ -274,8 +281,23 @@ export function ThemeEditor({
         }
       />
 
+      <WorkspaceTabs
+        tabs={[
+          { id: 'sections', label: 'Sections' },
+          { id: 'preview', label: 'Preview' },
+          { id: 'settings', label: 'Settings' },
+        ]}
+        value={pane}
+        onChange={setPane}
+      />
+
       <WorkspaceBody>
-        <aside className="w-64 shrink-0 space-y-4 overflow-y-auto border-r p-3">
+        <aside
+          className={cn(
+            'w-full shrink-0 space-y-4 overflow-y-auto border-r p-3 md:w-64',
+            pane !== 'sections' && 'max-md:hidden',
+          )}
+        >
           <div>
             {definition.pages && (
               <PreviewPageSelect
@@ -294,14 +316,20 @@ export function ThemeEditor({
               definition={definition}
               sections={sections}
               selectedId={selected}
-              onSelect={setSelected}
+              onSelect={(id) => {
+                setSelected(id)
+                setPane('settings')
+              }}
               onChange={setSections}
               onAdd={addSection}
             />
           </div>
           <button
             type="button"
-            onClick={() => setSelected(null)}
+            onClick={() => {
+              setSelected(null)
+              setPane('settings')
+            }}
             className={cn(
               'flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm font-medium',
               selected === null && 'border-primary ring-1 ring-primary',
@@ -312,7 +340,7 @@ export function ThemeEditor({
           </button>
         </aside>
 
-        <main className="min-w-0 flex-1">
+        <main className={cn('min-w-0 flex-1', pane !== 'preview' && 'max-md:hidden')}>
           <PreviewFrame
             storefrontUrl={storefrontUrl}
             copyId={id}
@@ -323,7 +351,9 @@ export function ThemeEditor({
           />
         </main>
 
-        <aside className="w-80 shrink-0 overflow-y-auto border-l p-4">
+        <aside
+          className={cn('w-full shrink-0 overflow-y-auto border-l p-4 md:w-80', pane !== 'settings' && 'max-md:hidden')}
+        >
           {selectedSection ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2">

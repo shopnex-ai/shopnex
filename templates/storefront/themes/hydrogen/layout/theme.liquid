@@ -89,7 +89,7 @@
     {{ settings.head_html }}
   </head>
   <body class="font-body grid min-h-screen grid-cols-[100%] grid-rows-[auto_1fr_auto] bg-contrast text-primary/90 antialiased">
-    <a href="#MainContent" class="btn sr-only focus:not-sr-only focus:absolute focus:z-50">Skip to content</a>
+    <a href="#MainContent" class="btn sr-only focus:not-sr-only focus:absolute focus:z-50">{{ 'general.skip_to_content' | t }}</a>
     {% render 'header' %}
     <div id="MainContent" tabindex="-1">
       {{ content_for_layout }}

@@ -3,6 +3,7 @@
 // gallery's thumbnails.
 import type { Product, ProductVariant } from '@shopnex/storefront-sdk'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const MAX_QUANTITY = 99
 
@@ -43,10 +44,10 @@ if (form) {
       el.textContent = selection[el.dataset.selectedValue!] ?? ''
     })
     q('[data-add-label]')!.textContent = !variant
-      ? 'Unavailable'
+      ? tr('js.product.unavailable')
       : variant.availableForSale
-        ? 'Add to cart'
-        : 'Sold out'
+        ? tr('js.product.add_to_cart')
+        : tr('js.product.sold_out')
     addButton.disabled = !variant?.availableForSale
     if (!variant) return
     addButton.dataset.addToCart = variant.id

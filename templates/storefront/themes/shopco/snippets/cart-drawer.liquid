@@ -7,47 +7,47 @@
   <div
     role="dialog"
     aria-modal="true"
-    aria-label="Your cart"
+    aria-label="{{ 'cart.title' | t }}"
     class="anim-slide flex w-[min(520px,100%)] flex-col gap-5 overflow-y-auto bg-page p-5 sm:p-8"
   >
     <div class="flex items-center gap-4">
-      <h2 class="font-display m-0 text-[32px]">Your cart</h2>
+      <h2 class="font-display m-0 text-[32px]">{{ 'cart.title' | t }}</h2>
       <span class="flex-1"></span>
-      <button type="button" data-cart-close aria-label="Close" class="cursor-pointer">
+      <button type="button" data-cart-close aria-label="{{ 'general.close' | t }}" class="cursor-pointer">
         {% render 'icon', name: 'close', class: 'ico' %}
       </button>
     </div>
     <div data-cart-lines class="flex flex-col"></div>
 
     <div data-cart-summary class="hidden flex-col gap-5 rounded-[20px] border border-line p-5 sm:px-6 [&.show]:flex">
-      <h3 class="m-0 text-[20px] font-bold">Order summary</h3>
+      <h3 class="m-0 text-[20px] font-bold">{{ 'cart.order_summary' | t }}</h3>
       <div class="flex flex-col gap-4 text-[16px]">
         <div class="flex items-center justify-between">
-          <span class="text-soft">Subtotal</span>
+          <span class="text-soft">{{ 'cart.subtotal' | t }}</span>
           <span data-cart-subtotal class="font-bold"></span>
         </div>
         <div data-cart-discounts class="flex flex-col gap-4"></div>
         <div class="flex items-center justify-between border-t border-line pt-4">
-          <span>Total</span>
+          <span>{{ 'cart.total' | t }}</span>
           <span data-cart-total class="text-[20px] font-bold"></span>
         </div>
-        <p class="m-0 text-[13px] text-faint">Shipping and taxes are calculated at checkout.</p>
+        <p class="m-0 text-[13px] text-faint">{{ 'cart.shipping_and_taxes_are_calculated_at' | t }}</p>
       </div>
       <form data-discount-form class="flex gap-3">
         <label class="flex min-w-0 flex-1 items-center gap-3 rounded-full bg-surface px-4 py-3">
           {% render 'icon', name: 'tag', class: 'ico text-faint' %}
           <input
             name="code"
-            placeholder="Add promo code"
+            placeholder="{{ 'cart.add_promo_code' | t }}"
             autocomplete="off"
             class="min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-faint"
           />
         </label>
-        <button type="submit" class="btn px-6 py-3">Apply</button>
+        <button type="submit" class="btn px-6 py-3">{{ 'collection.apply' | t }}</button>
       </form>
       <p data-discount-note class="m-0 hidden text-[13px] text-sale [&.show]:block"></p>
       <a data-cart-checkout class="btn w-full py-4">
-        Go to checkout
+        {{ 'cart.go_to_checkout' | t }}
         {% render 'icon', name: 'arrow-right', class: 'ico' %}
       </a>
     </div>

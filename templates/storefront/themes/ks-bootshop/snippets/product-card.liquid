@@ -12,20 +12,20 @@
       >
     {%- endif %}
     {%- if product.available == false %}
-      <span class="badge ks-badge ks-badge-soldout">Sold out</span>
+      <span class="badge ks-badge ks-badge-soldout">{{ 'product.sold_out' | t }}</span>
     {%- elsif product.compare_at_price_max > product.price_min %}
-      <span class="badge ks-badge">Sale</span>
+      <span class="badge ks-badge">{{ 'product.sale' | t }}</span>
     {%- endif %}
   </a>
   <div class="ks-card-body">
     <h3 class="ks-card-title"><a href="{{ product.url }}">{{ product.title }}</a></h3>
     {% render 'price', product: product %}
     {%- if product.available == false %}
-      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" disabled>Sold out</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" disabled>{{ 'product.sold_out' | t }}</button>
     {%- elsif product.variants.size == 1 %}
-      <button type="button" class="btn btn-primary btn-sm mt-2" data-add-to-cart="{{ product.variants.first.id }}">Add to cart</button>
+      <button type="button" class="btn btn-primary btn-sm mt-2" data-add-to-cart="{{ product.variants.first.id }}">{{ 'product.add_to_cart' | t }}</button>
     {%- else %}
-      <a href="{{ product.url }}" class="btn btn-outline-primary btn-sm mt-2">Choose options</a>
+      <a href="{{ product.url }}" class="btn btn-outline-primary btn-sm mt-2">{{ 'product.choose_options' | t }}</a>
     {%- endif %}
   </div>
 </article>

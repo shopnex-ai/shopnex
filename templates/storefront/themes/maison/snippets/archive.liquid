@@ -11,7 +11,7 @@
 {%- endcomment -%}
 <div id="archive" data-archive class="flex flex-wrap items-start gap-x-[52px] gap-y-6 pt-8">
   <aside class="min-w-0 basis-full lg:sticky lg:top-[86px] lg:max-w-[260px] lg:flex-[1_1_220px] lg:basis-auto">
-    <div class="eti mb-[11px] text-muted">Collections</div>
+    <div class="eti mb-[11px] text-muted">{{ 'collection.collections' | t }}</div>
     <ul class="flex flex-wrap gap-x-5 gap-y-[9px] lg:flex-col">
       <li>
         <a
@@ -23,7 +23,7 @@
           {%- else %}
             <span class="font-mono text-[11px] text-faint">·</span>
           {%- endif %}
-          All products
+          {{ 'collection.all_products' | t }}
         </a>
       </li>
       {%- for c in collections %}
@@ -49,13 +49,13 @@
     <div class="flex flex-wrap items-center gap-x-[18px] gap-y-3 border-b border-line pb-3.5">
       <span class="eti text-muted" style="font-size:11px">
         {{- products.size }} {{ products.size | pluralize: 'piece', 'pieces' }}
-        {%- if paginate.next %} on this page{% endif -%}
+        {%- if paginate.next %} {{ 'collection.on_this_page' | t }}{% endif -%}
       </span>
       <span class="flex-1"></span>
       {%- if collection.sort_options.size > 0 %}
         <select
           data-sort
-          aria-label="Sort"
+          aria-label="{{ 'collection.sort' | t }}"
           class="rounded-[2px] border border-rule bg-transparent px-2.5 py-1.5 text-[13px] text-ink outline-none"
         >
           {%- for option in collection.sort_options %}
@@ -69,25 +69,25 @@
           data-view-btn="grid"
           class="cursor-pointer text-soft transition hover:text-acc [&.on]:border-b [&.on]:border-acc [&.on]:pb-[3px] [&.on]:text-acc {% if view != 'list' %}on{% endif %}"
         >
-          Grid
+          {{ 'collection.grid' | t }}
         </button>
         <button
           type="button"
           data-view-btn="list"
           class="cursor-pointer text-soft transition hover:text-acc [&.on]:border-b [&.on]:border-acc [&.on]:pb-[3px] [&.on]:text-acc {% if view == 'list' %}on{% endif %}"
         >
-          List
+          {{ 'collection.list' | t }}
         </button>
       </div>
     </div>
 
     {%- if products.size == 0 %}
       <div class="py-[72px] text-center text-muted">
-        <div class="font-sf mb-3 text-[22px]">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}Nothing in the archive yet{% endif %}</div>
+        <div class="font-sf mb-3 text-[22px]">{% if collection.active_filters.size > 0 %}{{ 'collection.no_products_match_these_filters' | t }}{% elsif search.performed and search.terms == blank %}{{ 'collection.search_for_something' | t }}{% elsif search.performed %}{{ 'collection.no_products_found' | t }}{% else %}{{ 'collection.nothing_in_the_archive_yet' | t }}{% endif %}</div>
         {%- if collection.clear_filters_url %}
-          <a href="{{ collection.clear_filters_url }}" class="link-rule text-acc">Clear filters</a>
+          <a href="{{ collection.clear_filters_url }}" class="link-rule text-acc">{{ 'collection.clear_filters' | t }}</a>
         {%- elsif active != 'all' %}
-          <a href="/products" class="link-rule text-acc">See all products</a>
+          <a href="/products" class="link-rule text-acc">{{ 'collection.see_all_products' | t }}</a>
         {%- endif %}
       </div>
     {%- else %}
@@ -97,15 +97,15 @@
     {%- if paginate.next or paginate.first %}
       <div class="flex justify-center gap-4 pt-6">
         {%- if paginate.first %}
-          <a class="btn-keeper px-5 py-3" href="{{ paginate.first.url }}">First page</a>
+          <a class="btn-keeper px-5 py-3" href="{{ paginate.first.url }}">{{ 'collection.first_page' | t }}</a>
         {%- endif %}
         {%- if paginate.next %}
-          <a class="btn-keeper px-5 py-3" href="{{ paginate.next.url }}">Next page</a>
+          <a class="btn-keeper px-5 py-3" href="{{ paginate.next.url }}">{{ 'collection.next_page' | t }}</a>
         {%- endif %}
       </div>
     {%- endif %}
     {%- if more_url and products.size > 0 %}
-      <a href="{{ more_url }}" class="link-rule self-start text-acc">The whole archive →</a>
+      <a href="{{ more_url }}" class="link-rule self-start text-acc">{{ 'collection.the_whole_archive' | t }}</a>
     {%- endif %}
   </section>
 </div>

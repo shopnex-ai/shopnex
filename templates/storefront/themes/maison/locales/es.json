@@ -1,0 +1,82 @@
+{
+  "cart": {
+    "acquisition_bag": "Bolsa de adquisición",
+    "proceed_to_checkout": "Ir a la caja",
+    "shipping_and_taxes_are_calculated_at": "Los gastos de envío y los impuestos se calculan al finalizar la compra.",
+    "title_bag": "Tu bolsa",
+    "total": "Total"
+  },
+  "collection": {
+    "all_products": "Todos los productos",
+    "apply": "Aplicar",
+    "clear_all": "Borrar todo",
+    "clear_filters": "Borrar filtros",
+    "collection": "Colección",
+    "collections": "Colecciones",
+    "filters": "Filtros",
+    "first_page": "Primera página",
+    "grid": "Cuadrícula",
+    "highest_price": "Precio más alto",
+    "list": "Lista",
+    "lowest_price": "Precio más bajo",
+    "next_page": "Página siguiente",
+    "no_products_found": "No se han encontrado productos",
+    "no_products_match_these_filters": "Ningún producto coincide con estos filtros",
+    "nothing_in_the_archive_yet": "Todavía no hay nada en el archivo",
+    "on_this_page": "en esta página",
+    "remove": "Quitar",
+    "search_for_something": "Busca algo",
+    "search_the_archive": "Buscar en el archivo",
+    "see_all_products": "Ver todos los productos",
+    "sort": "Ordenar",
+    "the_archive": "El archivo",
+    "the_whole_archive": "Todo el archivo →"
+  },
+  "error": {
+    "back_to_the_house": "Volver a la casa",
+    "error_404": "Error 404",
+    "not_in_the_archive": "No está en el archivo",
+    "the_page_youre_looking_for_doesnt": "La página que buscas no existe o se ha movido."
+  },
+  "general": {
+    "account": "Cuenta",
+    "archive": "Archivo",
+    "bag": "Bolsa",
+    "breadcrumb": "Ruta de navegación",
+    "home": "Inicio",
+    "main_navigation": "Principal",
+    "no": "No",
+    "search": "Buscar",
+    "yes": "Sí"
+  },
+  "js": {
+    "cart": {
+      "adding": "Añadiendo…",
+      "empty": "La bolsa está vacía. Añade una pieza del archivo y te esperará aquí.",
+      "not_enough_stock": "No hay suficiente stock",
+      "one_fewer": "Uno menos",
+      "one_more": "Uno más",
+      "remove": "Quitar"
+    },
+    "product": {
+      "add_to_bag": "Añadir a la bolsa",
+      "available": "Disponible",
+      "sold_out": "Agotado",
+      "unavailable": "No disponible"
+    }
+  },
+  "product": {
+    "add_to_bag": "Añadir a la bolsa",
+    "also_in_the_archive": "También en el archivo",
+    "availability": "Disponibilidad",
+    "available": "Disponible",
+    "choose_options": "Elegir opciones",
+    "from": "Desde",
+    "reference": "Referencia",
+    "sold_out": "Agotado",
+    "specifications": "Especificaciones",
+    "the_record": "La ficha",
+    "type": "Tipo",
+    "view_file": "Ver archivo"
+  }
+}

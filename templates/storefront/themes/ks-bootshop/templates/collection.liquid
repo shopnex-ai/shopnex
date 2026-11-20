@@ -10,11 +10,11 @@
 {%- assign description = collection.description | strip_html | strip -%}
 <section class="ks-section ks-py-md border-bottom ks-bg-light">
   <div class="container">
-    <nav aria-label="Breadcrumb" class="small mb-2">
-      <a href="/">Home</a> <span class="text-body-secondary">/</span>
-      {% if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}All products{% else %}{{ collection.title }}{% endif %}
+    <nav aria-label="{{ 'general.breadcrumb' | t }}" class="small mb-2">
+      <a href="/">{{ 'general.home' | t }}</a> <span class="text-body-secondary">/</span>
+      {% if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}{{ 'collection.all_products' | t }}{% else %}{{ collection.title }}{% endif %}
     </nav>
-    <h1 class="mb-0">{% if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}All products{% else %}{{ collection.title }}{% endif %}</h1>
+    <h1 class="mb-0">{% if search.performed %}{{ heading }}{% elsif collection.handle == 'all' %}{{ 'collection.all_products' | t }}{% else %}{{ collection.title }}{% endif %}</h1>
     {%- if description != blank %}
       <p class="lead mt-2 mb-0 ks-narrow-left">{{ description }}</p>
     {%- endif %}
@@ -28,7 +28,7 @@
       {%- if collection.sort_options.size > 0 %}
         <div class="dropdown">
           <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Sort by:
+            {{ 'collection.sort_by_colon' | t }}
             {%- for option in collection.sort_options %}{% if option.selected %} {{ option.name }}{% endif %}{% endfor %}
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
@@ -42,8 +42,8 @@
 
     {%- if collection.products.size == 0 %}
       <div class="text-center py-5">
-        <p class="lead">{% if collection.active_filters.size > 0 %}No products match these filters{% elsif search.performed and search.terms == blank %}Search for something{% elsif search.performed %}No products found{% else %}No products found.{% endif %}</p>
-        {%- if collection.clear_filters_url %}<a href="{{ collection.clear_filters_url }}" class="btn btn-primary">Clear filters</a>{% elsif collection.handle != 'all' %}<a href="/products" class="btn btn-primary">See all products</a>{% endif %}
+        <p class="lead">{% if collection.active_filters.size > 0 %}{{ 'collection.no_products_match_these_filters' | t }}{% elsif search.performed and search.terms == blank %}{{ 'collection.search_for_something' | t }}{% elsif search.performed %}{{ 'collection.no_products_found' | t }}{% else %}{{ 'collection.no_products_found_period' | t }}{% endif %}</p>
+        {%- if collection.clear_filters_url %}<a href="{{ collection.clear_filters_url }}" class="btn btn-primary">{{ 'collection.clear_filters' | t }}</a>{% elsif collection.handle != 'all' %}<a href="/products" class="btn btn-primary">{{ 'collection.see_all_products' | t }}</a>{% endif %}
       </div>
     {%- else %}
       <div class="ks-grid" style="--ks-columns: 4">
@@ -54,9 +54,9 @@
     {%- endif %}
 
     {%- if paginate.next or paginate.first %}
-      <nav class="d-flex justify-content-center gap-3 mt-5" aria-label="Pagination">
-        {%- if paginate.first %}<a class="btn btn-outline-primary" href="{{ paginate.first.url }}">First page</a>{% endif %}
-        {%- if paginate.next %}<a class="btn btn-primary" href="{{ paginate.next.url }}">Next page</a>{% endif %}
+      <nav class="d-flex justify-content-center gap-3 mt-5" aria-label="{{ 'general.pagination' | t }}">
+        {%- if paginate.first %}<a class="btn btn-outline-primary" href="{{ paginate.first.url }}">{{ 'collection.first_page' | t }}</a>{% endif %}
+        {%- if paginate.next %}<a class="btn btn-primary" href="{{ paginate.next.url }}">{{ 'collection.next_page' | t }}</a>{% endif %}
       </nav>
     {%- endif %}
   </div>

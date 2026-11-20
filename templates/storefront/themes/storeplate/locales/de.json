@@ -1,0 +1,81 @@
+{
+  "collection": {
+    "all_products": "Alle Produkte",
+    "apply": "Anwenden",
+    "clear_all": "Alle löschen",
+    "clear_filters": "Filter zurücksetzen",
+    "collections": "Kollektionen",
+    "filters": "Filter",
+    "first_page": "Erste Seite",
+    "highest_price": "Höchster Preis",
+    "lowest_price": "Niedrigster Preis",
+    "next_page": "Nächste Seite",
+    "no_products_found": "Keine Produkte gefunden",
+    "no_products_here_yet": "Noch keine Produkte",
+    "no_products_match_these_filters": "Keine Produkte entsprechen diesen Filtern",
+    "remove": "Entfernen",
+    "search_for_something": "Suchen Sie nach etwas",
+    "search_products": "Produkte suchen",
+    "see_all_products": "Alle Produkte ansehen",
+    "sort_colon": "Sortieren:"
+  },
+  "error": {
+    "back_to_home": "Zurück zur Startseite",
+    "page_not_found": "Seite nicht gefunden",
+    "the_page_youre_looking_for_doesnt": "Die gesuchte Seite existiert nicht oder wurde verschoben."
+  },
+  "general": {
+    "account": "Konto",
+    "all_of": "Alle: {{ title }}",
+    "close_menu": "Menü schließen",
+    "home": "Startseite",
+    "no": "Nein",
+    "open_menu": "Menü öffnen",
+    "products": "Produkte",
+    "search": "Suchen",
+    "yes": "Ja"
+  },
+  "js": {
+    "cart": {
+      "browse": "Produkte ansehen",
+      "calculated_at_checkout": "Wird an der Kasse berechnet",
+      "checkout": "Zur Kasse",
+      "close": "Warenkorb schließen",
+      "discount": "Rabatt ({{ code }})",
+      "empty": "Ihr Warenkorb ist leer.",
+      "increase_quantity": "Menge erhöhen",
+      "label": "Ihr Warenkorb",
+      "not_enough_stock": "Nicht genug auf Lager",
+      "open": "Warenkorb öffnen",
+      "open_count": {
+        "one": "Warenkorb öffnen, {{ count }} Artikel",
+        "other": "Warenkorb öffnen, {{ count }} Artikel"
+      },
+      "reduce_quantity": "Menge verringern",
+      "remove_item": "Artikel entfernen",
+      "shipping_taxes": "Versand & Steuern",
+      "title": "Ihr Warenkorb",
+      "total": "Gesamt"
+    },
+    "product": {
+      "add_to_cart": "In den Warenkorb",
+      "option_out_of_stock": "{{ name }} {{ value }} (nicht vorrätig)",
+      "out_of_stock": "Nicht vorrätig",
+      "unavailable": "Nicht verfügbar"
+    }
+  },
+  "product": {
+    "add_to_cart": "In den Warenkorb",
+    "add_to_cart_button": "In den Warenkorb",
+    "description": "Beschreibung",
+    "details": "Details",
+    "from": "Ab",
+    "next_image": "Nächstes Bild",
+    "out_of_stock": "Nicht vorrätig",
+    "previous_image": "Vorheriges Bild",
+    "related_products": "Ähnliche Produkte",
+    "select_options": "Optionen wählen",
+    "tags": "Schlagwörter:",
+    "view_file": "Datei ansehen"
+  }
+}

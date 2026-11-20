@@ -13,6 +13,7 @@ import {
   type Cart,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
+import { t as tr } from '@shopnex/storefront-sdk/i18n'
 
 const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -53,24 +54,24 @@ function renderCart(cart: Cart | null) {
               <div class="grid content-start gap-2">
                 <h3 class="m-0 max-w-prose text-copy font-bold"><a href="${href}">${esc(m.product.title)}</a></h3>
                 <dl class="m-0 grid">${options}</dl>
-                ${line.availableForSale ? '' : '<span class="text-fine text-accent">Not enough in stock</span>'}
+                ${line.availableForSale ? '' : `<span class="text-fine text-accent">${esc(tr('js.cart.not_enough_stock'))}</span>`}
                 <div class="flex items-center gap-3 pt-1">
-                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}" class="cursor-pointer">${icons.minus}</button>
+                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${esc(line.quantity === 1 ? tr('js.cart.remove') : tr('js.cart.one_fewer'))}" class="cursor-pointer">${icons.minus}</button>
                   <span class="min-w-[2ch] text-center">${line.quantity}</span>
-                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="One more" class="cursor-pointer">${icons.plus}</button>
+                  <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity + 1}" aria-label="${esc(tr('js.cart.one_more'))}" class="cursor-pointer">${icons.plus}</button>
                 </div>
               </div>
               <div class="flex flex-col items-end justify-between">
                 <span>${formatMoney(line.cost.totalAmount)}</span>
-                <button type="button" data-line-qty="${line.id}" data-qty="0" class="cursor-pointer text-fine underline underline-offset-4 opacity-60 hover:opacity-100">Remove</button>
+                <button type="button" data-line-qty="${line.id}" data-qty="0" class="cursor-pointer text-fine underline underline-offset-4 opacity-60 hover:opacity-100">${esc(tr('js.cart.remove'))}</button>
               </div>
             </div>
           </div>`
         })
         .join('')}</div>`
     : `<div class="grid justify-items-start gap-4">
-         <p class="m-0 text-copy">Looks like you haven’t added anything yet, let’s get you started!</p>
-         <a href="/products" class="btn">Continue shopping</a>
+         <p class="m-0 text-copy">${esc(tr('js.cart.empty'))}</p>
+         <a href="/products" class="btn">${esc(tr('js.cart.continue_shopping'))}</a>
        </div>`
 
   $('[data-cart-summary]').classList.toggle('show', lines.length > 0)
@@ -80,8 +81,8 @@ function renderCart(cart: Cart | null) {
     .map(
       (d) => `
         <div class="flex items-center justify-between text-copy">
-          <span class="flex items-center gap-2">Discount (${esc(d.code)})
-            <button type="button" data-discount-remove class="cursor-pointer text-fine underline underline-offset-4">Remove</button>
+          <span class="flex items-center gap-2">${esc(tr('js.cart.discount', { code: d.code }))}
+            <button type="button" data-discount-remove class="cursor-pointer text-fine underline underline-offset-4">${esc(tr('js.cart.remove'))}</button>
           </span>
           <span>−${formatMoney(d.discountedAmount)}</span>
         </div>`,
@@ -91,7 +92,7 @@ function renderCart(cart: Cart | null) {
 
   const notApplicable = cart.discountCodes.find((c) => !c.applicable)
   const note = $('[data-discount-note]')
-  note.textContent = notApplicable ? `“${notApplicable.code}” can’t be applied to this cart.` : ''
+  note.textContent = notApplicable ? tr('js.cart.code_not_applicable', { code: notApplicable.code }) : ''
   note.classList.toggle('show', !!notApplicable)
 }
 
@@ -126,7 +127,7 @@ document.addEventListener('click', async (e) => {
   if (add && !add.disabled) {
     const label = add.innerHTML
     add.disabled = true
-    add.textContent = 'Adding…'
+    add.textContent = tr('js.cart.adding')
     try {
       await addToCart(add.dataset.addToCart!, 1)
       $cartOpen.set(true)

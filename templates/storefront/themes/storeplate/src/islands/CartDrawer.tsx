@@ -13,6 +13,7 @@ import {
   setLineQuantity,
   type CartLine,
 } from '@shopnex/storefront-sdk/cart'
+import { t } from '@shopnex/storefront-sdk/i18n'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 
 export default function CartDrawer({ placeholder }: { placeholder: string }) {
@@ -54,7 +55,7 @@ export default function CartDrawer({ placeholder }: { placeholder: string }) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Your cart"
+        aria-label={t('js.cart.label')}
         aria-hidden={!open}
         className={`fixed inset-y-0 right-0 z-50 w-full transform transition-transform duration-300 ease-in-out md:w-[390px] ${
           open ? 'translate-x-0' : 'translate-x-full'
@@ -62,8 +63,8 @@ export default function CartDrawer({ placeholder }: { placeholder: string }) {
       >
         <div className="flex h-full flex-col border-l border-neutral-200 bg-body p-6 text-black drop-shadow-lg">
           <div className="flex items-center justify-between border-b border-dark pb-4">
-            <p className="text-lg font-semibold">Your Cart</p>
-            <button type="button" aria-label="Close cart" onClick={close} className="text-2xl">
+            <p className="text-lg font-semibold">{t('js.cart.title')}</p>
+            <button type="button" aria-label={t('js.cart.close')} onClick={close} className="text-2xl">
               <IoClose />
             </button>
           </div>
@@ -71,9 +72,9 @@ export default function CartDrawer({ placeholder }: { placeholder: string }) {
           {lines.length === 0 ? (
             <div className="my-auto flex flex-col items-center justify-center space-y-6">
               <FaShoppingCart size={76} />
-              <p>Your cart is empty.</p>
+              <p>{t('js.cart.empty')}</p>
               <a href="/products" className="btn btn-primary w-full" onClick={close}>
-                Browse products
+                {t('js.cart.browse')}
               </a>
             </div>
           ) : (
@@ -86,16 +87,16 @@ export default function CartDrawer({ placeholder }: { placeholder: string }) {
               <div className="py-4 text-sm text-neutral-500">
                 {cart!.discountAllocations.map((d) => (
                   <div key={d.code} className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1">
-                    <p>Discount ({d.code})</p>
+                    <p>{t('js.cart.discount', { code: d.code })}</p>
                     <p className="text-right text-base text-black">−{formatMoney(d.discountedAmount)}</p>
                   </div>
                 ))}
                 <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pt-1 pb-1">
-                  <p>Shipping & taxes</p>
-                  <p className="text-right">Calculated at checkout</p>
+                  <p>{t('js.cart.shipping_taxes')}</p>
+                  <p className="text-right">{t('js.cart.calculated_at_checkout')}</p>
                 </div>
                 <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pt-1 pb-1">
-                  <p>Total</p>
+                  <p>{t('js.cart.total')}</p>
                   <p className="text-right text-base text-black">{formatMoney(cart!.cost.totalAmount)}</p>
                 </div>
               </div>
@@ -103,7 +104,7 @@ export default function CartDrawer({ placeholder }: { placeholder: string }) {
                 href={cart!.checkoutUrl}
                 className="block w-full rounded-md bg-dark p-3 text-center text-sm font-medium text-white hover:opacity-90"
               >
-                Proceed to Checkout
+                {t('js.cart.checkout')}
               </a>
             </div>
           )}
@@ -148,14 +149,14 @@ function Line({ line, placeholder, onNavigate }: { line: CartLine; placeholder: 
           <div className="flex flex-1 flex-col text-base">
             <span>{merchandise.product.title}</span>
             {merchandise.selectedOptions.length > 0 && <p className="text-sm text-neutral-500">{merchandise.title}</p>}
-            {!line.availableForSale && <p className="text-sm text-red-600">Not enough in stock</p>}
+            {!line.availableForSale && <p className="text-sm text-red-600">{t('js.cart.not_enough_stock')}</p>}
           </div>
         </a>
         <div className="flex h-16 shrink-0 flex-col items-end justify-between">
           <p>{formatMoney(line.cost.totalAmount)}</p>
           <div className="flex items-center gap-x-1">
             <QuantityButton
-              label={line.quantity === 1 ? 'Remove item' : 'Reduce item quantity'}
+              label={line.quantity === 1 ? t('js.cart.remove_item') : t('js.cart.reduce_quantity')}
               disabled={pending}
               onClick={() => setQuantity(line.quantity - 1)}
             >
@@ -163,7 +164,7 @@ function Line({ line, placeholder, onNavigate }: { line: CartLine; placeholder: 
             </QuantityButton>
             <p className="w-6 text-center">{line.quantity}</p>
             <QuantityButton
-              label="Increase item quantity"
+              label={t('js.cart.increase_quantity')}
               disabled={pending}
               onClick={() => setQuantity(line.quantity + 1)}
             >

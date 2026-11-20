@@ -103,7 +103,7 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
         <div
           className={cn(
             'relative h-full overflow-hidden rounded-md border bg-white shadow-sm transition-[width]',
-            device === 'mobile' ? 'w-[390px]' : 'w-full',
+            device === 'mobile' ? 'w-[390px] max-w-full' : 'w-full',
           )}
         >
           {src && (

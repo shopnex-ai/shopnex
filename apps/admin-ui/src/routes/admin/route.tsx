@@ -128,6 +128,7 @@ function AdminLayout() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="max-md:hidden"
                 render={<a href={tenant.shop.storefrontUrl} target="_blank" rel="noopener" />}
               >
                 View store

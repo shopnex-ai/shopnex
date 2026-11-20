@@ -1,0 +1,71 @@
+{
+  "cart": {
+    "checkout": "Checkout",
+    "discount_code": "Discount code",
+    "subtotal": "Subtotal",
+    "taxes_and_shipping_are_calculated_at": "Taxes and shipping are calculated at checkout."
+  },
+  "collection": {
+    "all_products": "All products",
+    "apply": "Apply",
+    "clear_all": "Clear all",
+    "filters": "Filters",
+    "first_page": "First page",
+    "highest_price": "Highest price",
+    "lowest_price": "Lowest price",
+    "next_page": "Next page",
+    "no_products_found": "No products found",
+    "no_products_found_period": "No products found.",
+    "no_products_match_these_filters": "No products match these filters",
+    "search_for_something": "Search for something",
+    "search_products": "Search products",
+    "sort": "Sort",
+    "sort_by": "Sort by"
+  },
+  "error": {
+    "continue_shopping": "Continue shopping",
+    "the_page_you_requested_does_not": "The page you requested does not exist."
+  },
+  "general": {
+    "account": "Account",
+    "cart": "Cart",
+    "close": "Close",
+    "main_navigation": "Main",
+    "menu": "Menu",
+    "no": "No",
+    "pagination": "Pagination",
+    "search": "Search",
+    "shop": "Shop",
+    "skip_to_content": "Skip to content",
+    "yes": "Yes"
+  },
+  "js": {
+    "cart": {
+      "adding": "Adding…",
+      "code_not_applicable": "“{{ code }}” can’t be applied to this cart.",
+      "continue_shopping": "Continue shopping",
+      "discount": "Discount ({{ code }})",
+      "empty": "Looks like you haven’t added anything yet, let’s get you started!",
+      "not_enough_stock": "Not enough in stock",
+      "one_fewer": "One fewer",
+      "one_more": "One more",
+      "remove": "Remove"
+    },
+    "product": {
+      "add_to_cart": "Add to cart",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable"
+    }
+  },
+  "product": {
+    "add_to_cart": "Add to cart",
+    "description": "Description",
+    "details": "Details",
+    "from": "From",
+    "regular_price": "Regular price",
+    "sale_price": "Sale price",
+    "sold_out": "Sold out",
+    "view_file": "View file",
+    "you_may_also_like": "You may also like"
+  }
+}

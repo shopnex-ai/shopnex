@@ -18,7 +18,7 @@
       <button
         type="button"
         data-announcement-close
-        aria-label="Close"
+        aria-label="{{ 'general.close' | t }}"
         class="absolute right-4 hidden cursor-pointer opacity-90 hover:opacity-100 sm:block"
       >
         {% render 'icon', name: 'close', class: 'ico-sm' %}
@@ -31,12 +31,12 @@
 <header class="sticky top-0 z-30 border-b border-line bg-page">
   <div class="mx-auto flex max-w-[1240px] items-center gap-4 px-4 py-5 md:gap-10 md:py-6 xl:px-0">
     <details class="group/menu md:hidden">
-      <summary aria-label="Menu" class="flex cursor-pointer items-center">
+      <summary aria-label="{{ 'general.menu' | t }}" class="flex cursor-pointer items-center">
         <span class="group-open/menu:hidden">{% render 'icon', name: 'menu', class: 'ico' %}</span>
         <span class="hidden group-open/menu:block">{% render 'icon', name: 'close', class: 'ico' %}</span>
       </summary>
       <nav
-        aria-label="Main"
+        aria-label="{{ 'general.main_navigation' | t }}"
         class="absolute inset-x-0 top-full flex max-h-[80vh] flex-col gap-1 overflow-y-auto border-b border-line bg-page px-4 pt-2 pb-6"
       >
         {%- if menu -%}
@@ -47,8 +47,8 @@
             {%- endfor %}
           {%- endfor %}
         {%- else -%}
-          <a href="/" class="py-2 text-[18px]">Home</a>
-          <a href="/products" class="py-2 text-[18px]">Shop</a>
+          <a href="/" class="py-2 text-[18px]">{{ 'general.home' | t }}</a>
+          <a href="/products" class="py-2 text-[18px]">{{ 'general.shop' | t }}</a>
           {%- for c in collections limit: 6 %}
             <a href="{{ c.url }}" class="py-1.5 pl-4 text-[16px] text-soft">{{ c.title }}</a>
           {%- endfor %}
@@ -64,7 +64,7 @@
       {%- endif -%}
     </a>
 
-    <nav aria-label="Main" class="hidden items-center gap-6 text-[16px] md:flex">
+    <nav aria-label="{{ 'general.main_navigation' | t }}" class="hidden items-center gap-6 text-[16px] md:flex">
       {%- if menu -%}
         {%- for link in menu.links %}
           <div class="group relative">
@@ -90,7 +90,7 @@
         {%- comment %} No main menu yet: the catalog, with the collections as its dropdown {% endcomment %}
         <div class="group relative">
           <a href="/products" class="flex items-center gap-1 transition hover:opacity-70">
-            Shop
+            {{ 'general.shop' | t }}
             {%- if collections.size > 0 %}{% render 'icon', name: 'chevron-down', class: 'ico-sm' %}{% endif -%}
           </a>
           {%- if collections.size > 0 %}
@@ -103,17 +103,17 @@
             </div>
           {%- endif %}
         </div>
-        <a href="/products?sort=latest-desc" class="transition hover:opacity-70">New arrivals</a>
+        <a href="/products?sort=latest-desc" class="transition hover:opacity-70">{{ 'general.new_arrivals' | t }}</a>
       {%- endif %}
     </nav>
 
     <span class="flex-1"></span>
     {% render 'language-selector' %}
-    <a href="{{ routes.account_url }}" class="mr-5 text-sm transition hover:opacity-70">Account</a>
-    <a href="/search" aria-label="Search" class="flex items-center transition hover:opacity-70">
+    <a href="{{ routes.account_url }}" class="mr-5 text-sm transition hover:opacity-70">{{ 'general.account' | t }}</a>
+    <a href="/search" aria-label="{{ 'general.search' | t }}" class="flex items-center transition hover:opacity-70">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
     </a>
-    <button type="button" data-cart-open aria-label="Cart" class="relative flex cursor-pointer items-center">
+    <button type="button" data-cart-open aria-label="{{ 'general.cart' | t }}" class="relative flex cursor-pointer items-center">
       {% render 'icon', name: 'cart', class: 'ico' %}
       <span
         data-cart-count

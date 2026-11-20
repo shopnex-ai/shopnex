@@ -49,6 +49,8 @@ import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { appHeaderTags } from './app-scripts'
 import { localizationObject } from './localization'
+import { scriptMessages } from './locales'
+import type { Messages } from '@shopnex/storefront-sdk/i18n'
 import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
@@ -302,7 +304,13 @@ const adminOrigin = new URL(browserConfig.baseUrl).origin
  * What the storefront adds to every page's head: Storefront API settings for theme scripts, the preview, the consent
  * runtime and the page's SEO tags (core/seo)
  */
-function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = false, apps: string[] = []) {
+function contentForHeader(
+  preview: boolean,
+  seo: string[] = [],
+  cookieBanner = false,
+  apps: string[] = [],
+  messages: Messages = {},
+) {
   const attr = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
   return [
     `<meta name="shopnex-url" content="${attr(browserBaseUrl())}">`,
@@ -314,6 +322,9 @@ function contentForHeader(preview: boolean, seo: string[] = [], cookieBanner = f
     // editor's preview, where a banner would be in the way of the page being edited
     !preview && `<meta name="shopnex-consent" content="${cookieBanner ? 'banner' : 'off'}">`,
     !preview && `<script type="module" src="${consentScriptUrl()}"></script>`,
+    // The theme's text its scripts show (the cart drawer…), in the visitor's language; read there with `t` from @shopnex/storefront-sdk/i18n
+    Object.keys(messages).length > 0 &&
+      `<script type="application/json" id="shopnex-i18n">${JSON.stringify(messages).replace(/[<>&]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`)}</script>`,
     ...seo,
     // The scripts of installed apps (a reviews widget…) and the page they are on (core/app-scripts)
     ...apps,
@@ -375,18 +386,19 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
         settings: settingsObject(theme.definition.sections[s.type]!.settings, s.settings, loader),
       })),
   }
+  const localization = localizationObject(
+    {
+      shipTo: shop?.shipToCountries ?? [],
+      country: requestContext.getStore()?.country,
+      shopLanguage: shop?.languageCode ?? 'en',
+      languages: shop?.languages ?? [],
+      language: requestContext.getStore()?.language,
+    },
+    shop?.currencyCode ?? null,
+  )
   const globals = {
     shop: shopObject(shop),
-    localization: localizationObject(
-      {
-        shipTo: shop?.shipToCountries ?? [],
-        country: requestContext.getStore()?.country,
-        shopLanguage: shop?.languageCode ?? 'en',
-        languages: shop?.languages ?? [],
-        language: requestContext.getStore()?.language,
-      },
-      shop?.currencyCode ?? null,
-    ),
+    localization,
     settings: settingsObject(theme.definition.settings, loaded.settings, loader),
     collections: collectionsObject(loader),
     linklists: new LinklistsDrop(loader),
@@ -406,6 +418,7 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
         seoTags(page, url, shop, loaded.preview),
         Boolean(shop?.cookieBanner),
         appHeaderTags(page, shop?.scripts ?? [], loaded.preview),
+        scriptMessages(theme.dir, localization.language.iso_code),
       ),
     ),
     [RENDER]: renderData,

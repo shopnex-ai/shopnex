@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 import { BsCart3 } from 'react-icons/bs'
 import { $cart, $cartOpen, loadCart } from '@shopnex/storefront-sdk/cart'
+import { t } from '@shopnex/storefront-sdk/i18n'
 
 export default function CartButton() {
   const cart = useStore($cart)
@@ -12,7 +13,7 @@ export default function CartButton() {
     <button
       type="button"
       onClick={() => $cartOpen.set(true)}
-      aria-label={`Open cart${quantity ? `, ${quantity} items` : ''}`}
+      aria-label={quantity ? t('js.cart.open_count', { count: quantity }) : t('js.cart.open')}
       className="relative text-xl text-text-dark hover:text-primary"
     >
       <BsCart3 />

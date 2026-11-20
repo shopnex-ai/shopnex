@@ -1,0 +1,81 @@
+{
+  "collection": {
+    "all_products": "Tous les produits",
+    "apply": "Appliquer",
+    "clear_all": "Tout effacer",
+    "clear_filters": "Effacer les filtres",
+    "collections": "Collections",
+    "filters": "Filtres",
+    "first_page": "Première page",
+    "highest_price": "Prix le plus élevé",
+    "lowest_price": "Prix le plus bas",
+    "next_page": "Page suivante",
+    "no_products_found": "Aucun produit trouvé",
+    "no_products_here_yet": "Aucun produit pour le moment",
+    "no_products_match_these_filters": "Aucun produit ne correspond à ces filtres",
+    "remove": "Retirer",
+    "search_for_something": "Recherchez quelque chose",
+    "search_products": "Rechercher des produits",
+    "see_all_products": "Voir tous les produits",
+    "sort_colon": "Trier :"
+  },
+  "error": {
+    "back_to_home": "Retour à l’accueil",
+    "page_not_found": "Page introuvable",
+    "the_page_youre_looking_for_doesnt": "La page que vous cherchez n’existe pas ou a été déplacée."
+  },
+  "general": {
+    "account": "Compte",
+    "all_of": "Voir tout : {{ title }}",
+    "close_menu": "Fermer le menu",
+    "home": "Accueil",
+    "no": "Non",
+    "open_menu": "Ouvrir le menu",
+    "products": "Produits",
+    "search": "Rechercher",
+    "yes": "Oui"
+  },
+  "js": {
+    "cart": {
+      "browse": "Parcourir les produits",
+      "calculated_at_checkout": "Calculé à la caisse",
+      "checkout": "Passer à la caisse",
+      "close": "Fermer le panier",
+      "discount": "Réduction ({{ code }})",
+      "empty": "Votre panier est vide.",
+      "increase_quantity": "Augmenter la quantité",
+      "label": "Votre panier",
+      "not_enough_stock": "Stock insuffisant",
+      "open": "Ouvrir le panier",
+      "open_count": {
+        "one": "Ouvrir le panier, {{ count }} article",
+        "other": "Ouvrir le panier, {{ count }} articles"
+      },
+      "reduce_quantity": "Réduire la quantité",
+      "remove_item": "Retirer l’article",
+      "shipping_taxes": "Livraison et taxes",
+      "title": "Votre panier",
+      "total": "Total"
+    },
+    "product": {
+      "add_to_cart": "Ajouter au panier",
+      "option_out_of_stock": "{{ name }} {{ value }} (épuisé)",
+      "out_of_stock": "Rupture de stock",
+      "unavailable": "Indisponible"
+    }
+  },
+  "product": {
+    "add_to_cart": "Ajouter au panier",
+    "add_to_cart_button": "Ajouter au panier",
+    "description": "Description",
+    "details": "Détails",
+    "from": "À partir de",
+    "next_image": "Image suivante",
+    "out_of_stock": "Rupture de stock",
+    "previous_image": "Image précédente",
+    "related_products": "Produits similaires",
+    "select_options": "Choisir les options",
+    "tags": "Étiquettes :",
+    "view_file": "Voir le fichier"
+  }
+}

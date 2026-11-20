@@ -13,26 +13,26 @@
       type="search"
       name="q"
       value="{{ search.terms }}"
-      placeholder="Search the archive"
-      aria-label="Search the archive"
+      placeholder="{{ 'collection.search_the_archive' | t }}"
+      aria-label="{{ 'collection.search_the_archive' | t }}"
       class="min-w-0 flex-1 rounded-[2px] border border-rule bg-transparent px-3 py-2 text-[14px] text-ink outline-none"
       autofocus
     />
-    <button type="submit" class="btn-keeper px-5 py-2">Search</button>
+    <button type="submit" class="btn-keeper px-5 py-2">{{ 'general.search' | t }}</button>
   </form>
 {%- endif %}
 {%- if offering %}
   {%- if collection.active_filters.size > 0 %}
     <div class="eti flex flex-wrap items-center gap-x-4 gap-y-2" style="font-size:11px">
       {%- for filter in collection.active_filters %}
-        <a href="{{ filter.url }}" class="border-b border-acc text-acc" title="Remove">{{ filter.label }} ✕</a>
+        <a href="{{ filter.url }}" class="border-b border-acc text-acc" title="{{ 'collection.remove' | t }}">{{ filter.label }} ✕</a>
       {%- endfor %}
-      <a href="{{ collection.clear_filters_url }}" class="text-muted transition hover:text-acc">Clear all</a>
+      <a href="{{ collection.clear_filters_url }}" class="text-muted transition hover:text-acc">{{ 'collection.clear_all' | t }}</a>
     </div>
   {%- endif %}
   {%- if collection.filters.size > 0 %}
     <details class="border-b border-line pb-3.5" {% if collection.active_filters.size > 0 %}open{% endif %}>
-      <summary class="eti cursor-pointer list-none text-muted transition hover:text-acc" style="font-size:11px">Filters</summary>
+      <summary class="eti cursor-pointer list-none text-muted transition hover:text-acc" style="font-size:11px">{{ 'collection.filters' | t }}</summary>
       <div class="grid gap-x-8 gap-y-6 pt-4 sm:grid-cols-2 xl:grid-cols-4">
         {%- for group in collection.filters %}
           <div>
@@ -42,10 +42,10 @@
                 {%- for field in group.hidden %}
                   <input type="hidden" name="{{ field.name }}" value="{{ field.value }}" />
                 {%- endfor %}
-                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="Lowest price" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
+                <input type="number" name="{{ group.param_min }}" value="{{ group.selected_min }}" min="0" step="any" placeholder="{{ group.min }}" aria-label="{{ 'collection.lowest_price' | t }}" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
                 <span aria-hidden="true">–</span>
-                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="Highest price" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
-                <button type="submit" class="btn-keeper px-3 py-1">Apply</button>
+                <input type="number" name="{{ group.param_max }}" value="{{ group.selected_max }}" min="0" step="any" placeholder="{{ group.max }}" aria-label="{{ 'collection.highest_price' | t }}" class="w-20 rounded-[2px] border border-rule bg-transparent px-2 py-1 text-[13px] outline-none" />
+                <button type="submit" class="btn-keeper px-3 py-1">{{ 'collection.apply' | t }}</button>
               </form>
             {%- else %}
               <ul class="flex max-h-48 flex-col gap-[9px] overflow-y-auto">
