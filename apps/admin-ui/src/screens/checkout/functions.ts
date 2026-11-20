@@ -6,6 +6,7 @@ import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { db, type Conn } from '@shopnex/db'
+import { giftCardService } from '@shopnex/gift-cards'
 import { discountService } from '@shopnex/pricing'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
@@ -121,7 +122,7 @@ export type PlaceOrderState = {
 }
 
 export const placeOrder = publicFn({ method: 'POST' })
-  .validator((input: { token: string; values: CheckoutFields }) => input)
+  .validator((input: { token: string; values: CheckoutFields; giftCardCode?: string }) => input)
   .handler(async ({ data }): Promise<PlaceOrderState> => {
     const values = Object.fromEntries(checkoutFieldNames.map((field) => [field, String(data.values[field] ?? '')]))
     const parsed = buyer.safeParse({ ...values, shippingRateId: values.shippingRateId || undefined })
@@ -146,6 +147,7 @@ export const placeOrder = publicFn({ method: 'POST' })
           shippingRateId,
           paymentMethodId,
           note,
+          giftCardCode: data.giftCardCode,
         },
         { returnUrl: confirmationUrl(data.token) },
         db,
@@ -181,6 +183,27 @@ export const payNow = publicFn({ method: 'POST' })
     } catch (error) {
       if (error instanceof PaymentError) return { error: error.message }
       return { error: unexpected('start the payment', error) }
+    }
+  })
+
+export type GiftCardState = { error?: string; code?: string; balanceCents?: number }
+
+/** A gift card code the buyer entered: whether it can be used, and what it holds. Spends nothing; placing the order does. */
+export const checkGiftCard = publicFn({ method: 'POST' })
+  .validator((input: { token: string; code: string }) => input)
+  .handler(async ({ data }): Promise<GiftCardState> => {
+    const code = data.code.trim()
+    if (!code) return { error: 'Enter a gift card code' }
+    const cart = await cartService.findByToken(null, data.token, db)
+    if (!cart) return { error: 'This cart has expired.' }
+    try {
+      const card = await giftCardService.findByCode(cart.shopId, code, db)
+      if (!card) return { error: "This gift card code isn't valid" }
+      const reason = giftCardService.unavailableReason(card)
+      if (reason) return { error: reason }
+      return { code, balanceCents: card.balanceCents }
+    } catch (error) {
+      return { error: unexpected('check this gift card', error) }
     }
   })
 

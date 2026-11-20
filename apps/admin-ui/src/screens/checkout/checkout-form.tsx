@@ -82,7 +82,7 @@ export function CheckoutForm({
     name: ['shippingRateId', 'paymentMethodId', 'countryCode', 'province'],
   })
   // Tax follows the address as it's typed, and the order summary beside the form follows the totals
-  const { setCountry, setProvince, setShippingCents } = useCheckoutTotals()
+  const { setCountry, setProvince, setShippingCents, giftCard } = useCheckoutTotals()
   useEffect(() => setCountry(country), [country, setCountry])
   useEffect(() => setProvince(province), [province, setProvince])
   const money = (cents: number) => formatMoney(cents, currency)
@@ -153,7 +153,9 @@ export function CheckoutForm({
     }
     try {
       // The raw strings: the server parses them with the same schema
-      const result = await placeOrder({ data: { token, values: form.getValues() as CheckoutFields } })
+      const result = await placeOrder({
+        data: { token, values: form.getValues() as CheckoutFields, giftCardCode: giftCard?.code },
+      })
       if (result.redirectTo) {
         window.location.assign(result.redirectTo)
         return

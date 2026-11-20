@@ -307,7 +307,11 @@ export const storefrontRouter = storefront.router({
         : undefined
       const [options, cost] = await Promise.all([
         checkoutService.options(context.shop.id, cart.subtotalCents, db, { cart, address }),
-        checkoutService.estimate(context.shop.id, cart, db, { shippingRateId: input.shippingRateId, address }),
+        checkoutService.estimate(context.shop.id, cart, db, {
+          shippingRateId: input.shippingRateId,
+          address,
+          giftCardCode: input.giftCardCode,
+        }),
       ])
       const m = (cents: number) => money(cents, cart.currency)
       return {
@@ -318,6 +322,9 @@ export const storefrontRouter = storefront.router({
           totalTaxAmount: cost.taxCents == null ? null : m(cost.taxCents),
           taxesIncluded: cost.taxesIncluded,
           totalAmount: m(cost.totalCents),
+          giftCardAmount: cost.credits.length ? m(cost.credits.reduce((sum, c) => sum + c.amountCents, 0)) : null,
+          giftCardError: cost.creditError,
+          dueAmount: m(cost.dueCents),
         },
         shippingRates: options.shippingRates.map((r) => ({
           id: r.id,

@@ -78,6 +78,7 @@ export const productFields = productColumns
     vendor: true,
     fulfilledBy: true,
     productType: true,
+    isGiftCard: true,
     tags: true,
     slug: true,
   })

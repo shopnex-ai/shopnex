@@ -14,3 +14,11 @@ export const orderEvent = defineHook<
   { shopId: string; event: OrderEvent; load: () => Promise<Awaited<ReturnType<typeof orders.getById>>> },
   Conn
 >('order.event')
+
+/**
+ * Money that was paid with a gift card goes back to it (an order was cancelled or partly refunded). Runs in the transaction that
+ * records the refund; the gift card module puts the amount back on the card the order spent.
+ */
+export const orderCreditRefunded = defineHook<{ shopId: string; orderId: string; amountCents: number }, Conn>(
+  'order.credit-refunded',
+)

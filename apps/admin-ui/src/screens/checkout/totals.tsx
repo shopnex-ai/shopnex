@@ -14,6 +14,12 @@ type TotalsContextValue = {
   totals: Totals
   currency: string
   discountCode: string | null
+  /** A gift card the buyer applied: what it holds. What it pays follows the total (`creditCents`). */
+  giftCard: { code: string; balanceCents: number } | null
+  setGiftCard: (value: { code: string; balanceCents: number } | null) => void
+  /** What the gift card pays of the total, and what is left for the payment method */
+  creditCents: number
+  dueCents: number
   /** No shipping price yet: carrier rates wait for the address */
   shippingUnknown: boolean
   country: string
@@ -35,6 +41,7 @@ export function TotalsProvider({
   currency,
   lineTotals,
   discount,
+  giftLinesCents = 0,
   tax,
   defaultCountry,
   initialShippingCents,
@@ -45,6 +52,8 @@ export function TotalsProvider({
   lineTotals: number[]
   /** The cart's discount code, when it applies */
   discount: PricingDiscount | null
+  /** What the cart's gift card products cost: a gift card can't pay for those */
+  giftLinesCents?: number
   tax: TaxContextView
   defaultCountry: string
   /** The preselected shipping method's price; null when the shop asks carriers once the address is known */
@@ -54,32 +63,38 @@ export function TotalsProvider({
   const [country, setCountry] = useState(defaultCountry)
   const [province, setProvince] = useState('')
   const [shippingCents, setShippingCents] = useState<number | null>(initialShippingCents)
-  const value = useMemo<TotalsContextValue>(
-    () => ({
-      totals: calculate({
-        lines: lineTotals,
-        shippingCents: shippingCents ?? 0,
-        discount,
-        taxRate: taxRateFor(tax.taxRates, { countryCode: country, province }),
-        taxesIncluded: tax.taxesIncluded,
-        taxShipping: tax.taxShipping,
-      }),
+  const [giftCard, setGiftCard] = useState<{ code: string; balanceCents: number } | null>(null)
+  const value = useMemo<TotalsContextValue>(() => {
+    const totals = calculate({
+      lines: lineTotals,
+      shippingCents: shippingCents ?? 0,
+      discount,
+      taxRate: taxRateFor(tax.taxRates, { countryCode: country, province }),
+      taxesIncluded: tax.taxesIncluded,
+      taxShipping: tax.taxShipping,
+    })
+    const creditCents = giftCard ? Math.max(0, Math.min(giftCard.balanceCents, totals.totalCents - giftLinesCents)) : 0
+    return {
+      totals,
       currency,
       discountCode: discount?.code ?? null,
+      giftCard,
+      setGiftCard,
+      creditCents,
+      dueCents: totals.totalCents - creditCents,
       shippingUnknown: shippingCents === null,
       country,
       setCountry,
       setProvince,
       setShippingCents,
-    }),
-    [lineTotals, shippingCents, discount, tax, country, province, currency],
-  )
+    }
+  }, [lineTotals, shippingCents, discount, giftLinesCents, giftCard, tax, country, province, currency])
   return <TotalsContext.Provider value={value}>{children}</TotalsContext.Provider>
 }
 
 /** Subtotal → total, with whatever shipping and tax are known so far */
 export function TotalsBreakdown() {
-  const { totals, currency, discountCode, shippingUnknown } = useCheckoutTotals()
+  const { totals, currency, discountCode, shippingUnknown, giftCard, creditCents, dueCents } = useCheckoutTotals()
   const money = (cents: number) => formatMoney(cents, currency)
   return (
     <dl className="grid grid-cols-[1fr_auto] gap-y-1 text-sm tabular-nums">
@@ -106,6 +121,14 @@ export function TotalsBreakdown() {
         ))}
       <dt className="border-t pt-2 text-base font-semibold">Total</dt>
       <dd className="border-t pt-2 text-right text-base font-semibold">{money(totals.totalCents)}</dd>
+      {giftCard && creditCents > 0 && (
+        <>
+          <dt className="text-muted-foreground">Gift card</dt>
+          <dd className="text-right">−{money(creditCents)}</dd>
+          <dt className="font-semibold">Due today</dt>
+          <dd className="text-right font-semibold">{money(dueCents)}</dd>
+        </>
+      )}
       {totals.taxesIncluded &&
         totals.taxLines.map((t) => (
           <dd key={t.title} className="col-span-2 text-right text-muted-foreground">
