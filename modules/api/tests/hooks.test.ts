@@ -16,7 +16,7 @@ requireEmbeddedDatabase()
 // What the API itself loads: its router mounts every module
 await import('../src/router')
 const { appUninstalled } = await import('@shopnex/apps')
-const { orderCreditRefunded, orderEvent, orderService } = await import('@shopnex/orders')
+const { orderCreditRefunded, orderEvent, orderFullyRefunded, orderService } = await import('@shopnex/orders')
 const { checkoutCredit } = await import('@shopnex/cart')
 const { eq } = await import('drizzle-orm')
 
@@ -58,6 +58,7 @@ describe('who listens', () => {
   test('checkoutCredit and orderCreditRefunded: gift cards spends a code at checkout and gets refunds back onto the card', () => {
     assert.deepEqual([...checkoutCredit.listeners], ['gift-cards.pay'])
     assert.deepEqual([...orderCreditRefunded.listeners], ['gift-cards.refund'])
+    assert.deepEqual([...orderFullyRefunded.listeners], ['gift-cards.revoke'])
   })
 })
 

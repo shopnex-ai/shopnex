@@ -1257,6 +1257,9 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
+      '@shopnex/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../cart

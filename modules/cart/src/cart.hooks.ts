@@ -17,13 +17,18 @@ export type CheckoutCredit = { kind: string; label: string; amountCents: number 
 /**
  * A buyer entered a code that pays part of the order (a gift card). Cart doesn't know what such codes are: the module that does
  * (gift cards, which sits above cart) listens, works out what the code pays and adds it to `credits`, or says in `error` why it
- * can't be used. Run twice: to show the totals (`orderId` null: nothing is spent), and when the order is placed, inside the
- * transaction that creates it (`orderId` set: the listener spends the code on that order, and an `error` there refuses the order).
+ * can't be used. Run to show the totals and to check the code before an order is placed (`orderId` null: nothing is spent, and
+ * the listener may count wrong guesses against `ip`), and again when the order is placed, inside the transaction that creates it
+ * (`orderId` set: the listener spends the code on that order, and an `error` there refuses the order).
  */
 export const checkoutCredit = defineHook<
   {
     shopId: string
     code: string
+    /** The order's currency: money in another one can't pay for it */
+    currency: string
+    /** The visitor's address, for limits on guessing codes; null when there is none worth trusting */
+    ip: string | null
     /** The most the code may pay: what is due, without the part that can't be paid this way (gift card products) */
     eligibleCents: number
     orderId: string | null

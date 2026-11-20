@@ -311,6 +311,7 @@ export const storefrontRouter = storefront.router({
           shippingRateId: input.shippingRateId,
           address,
           giftCardCode: input.giftCardCode,
+          visitorIp: clientIp(context.headers),
         }),
       ])
       const m = (cents: number) => money(cents, cart.currency)
@@ -341,7 +342,7 @@ export const storefrontRouter = storefront.router({
         cartId,
         { ...buyer, shippingAddress: shippingAddress && checkoutService.toMailingAddress(shippingAddress) },
         // The hosted confirmation page shows the payment's outcome
-        { returnUrl: `${appUrl()}/checkout/${cartId}` },
+        { returnUrl: `${appUrl()}/checkout/${cartId}`, visitorIp: clientIp(context.headers) },
         db,
       ),
     ),

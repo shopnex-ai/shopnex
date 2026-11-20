@@ -19,6 +19,12 @@ export const orderEvent = defineHook<
  * Money that was paid with a gift card goes back to it (an order was cancelled or partly refunded). Runs in the transaction that
  * records the refund; the gift card module puts the amount back on the card the order spent.
  */
+/**
+ * Everything an order took has been given back, or is on its way (a cancelled paid order, a full refund). Runs in the transaction
+ * that records the refund. Gift cards listen: the cards a refunded order bought stop being spendable.
+ */
+export const orderFullyRefunded = defineHook<{ shopId: string; orderId: string }, Conn>('order.fully-refunded')
+
 export const orderCreditRefunded = defineHook<{ shopId: string; orderId: string; amountCents: number }, Conn>(
   'order.credit-refunded',
 )

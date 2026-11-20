@@ -175,7 +175,7 @@ export async function estimate(
   shopId: string,
   cart: CartView,
   conn: Conn,
-  input: { shippingRateId?: string; address?: QuoteAddress; giftCardCode?: string } = {},
+  input: { shippingRateId?: string; address?: QuoteAddress; giftCardCode?: string; visitorIp?: string | null } = {},
 ) {
   const [{ shippingRates }, tax] = await all(conn, [
     () => options(shopId, cart.subtotalCents, conn, { cart, address: input.address }),
@@ -200,6 +200,8 @@ export async function estimate(
     ? await runCredit(conn, {
         shopId,
         code: input.giftCardCode,
+        currency: cart.currency,
+        ip: input.visitorIp ?? null,
         eligibleCents: Math.max(0, totals.totalCents - giftCardLinesCents),
         orderId: null,
       })
@@ -240,7 +242,14 @@ async function giftCardLines(
 
 async function runCredit(
   conn: Conn,
-  payload: { shopId: string; code: string; eligibleCents: number; orderId: string | null },
+  payload: {
+    shopId: string
+    code: string
+    currency: string
+    ip: string | null
+    eligibleCents: number
+    orderId: string | null
+  },
 ): Promise<{ credits: CheckoutCredit[]; error: string | null }> {
   const state = { ...payload, credits: [] as CheckoutCredit[], error: null as string | null }
   await checkoutCredit.run(conn, state)
@@ -250,6 +259,8 @@ async function runCredit(
 export type CompleteOptions = {
   /** Where a payments app sends the buyer back after paying: the order's confirmation page */
   returnUrl: string
+  /** The visitor's address, for limits on guessing gift card codes */
+  visitorIp?: string | null
 }
 
 /**
@@ -258,6 +269,22 @@ export type CompleteOptions = {
  * unpaid, and completing again retries. Completing an unpaid, already completed cart picks the payment up again.
  */
 export async function complete(shopId: string, token: string, input: CheckoutInput, opts: CompleteOptions, conn: Conn) {
+  // A gift card code is checked before the order is placed, outside its transaction: wrong guesses are counted against the
+  // visitor there (the counters use the shared connection), and a code that can't be used says so before anything is created
+  if (input.giftCardCode?.trim()) {
+    const found = await cartService.findByToken(shopId, token, conn)
+    if (found && found.status !== 'completed') {
+      const check = await runCredit(conn, {
+        shopId,
+        code: input.giftCardCode,
+        currency: (await cartService.view(found, conn)).currency,
+        ip: opts.visitorIp ?? null,
+        eligibleCents: Number.MAX_SAFE_INTEGER,
+        orderId: null,
+      })
+      if (check.error) throw new CartError('GIFT_CARD_NOT_APPLICABLE', check.error)
+    }
+  }
   const placed = await placeOrder(shopId, token, input, conn)
   const [order] = await conn
     .select({
@@ -411,6 +438,8 @@ async function placeOrder(shopId: string, token: string, input: CheckoutInput, c
       const spend = await runCredit(tx, {
         shopId,
         code: input.giftCardCode,
+        currency: order.currency,
+        ip: null,
         eligibleCents: Math.max(0, order.totalCents - giftCardLinesCents),
         orderId: order.id,
       })

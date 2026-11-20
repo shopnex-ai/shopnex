@@ -11,6 +11,7 @@ const { paymentMethods, paymentSessions } = await import('../src/payments.schema
 const { bindConn } = await import('@shopnex/kit')
 const sessions = bindConn(await import('../src/sessions'), db)
 const { PaymentError } = await import('../src/payments.errors')
+const { orderService } = await import('@shopnex/orders')
 const { eq } = await import('drizzle-orm')
 
 const returnUrl = 'https://shop.test/thanks'
@@ -255,6 +256,82 @@ describe('the app rejecting a payment or reporting a failed attempt', () => {
     await sessions.reject(SHOP, app.id, session.id, { reason: 'Gave up' })
     const closed = await sessions.attemptFailed(SHOP, app.id, session.id, { reason: 'Ignored' })
     assert.equal(closed.errorMessage, 'Gave up')
+  })
+})
+
+// A gift card pays first and the payments app takes the rest: what the app is asked to charge and to give back is only its part.
+describe('an order partly paid with a gift card', () => {
+  // 2500 total, 1000 of it already paid with a gift card
+  async function partlyPaid() {
+    const { app, method } = await fx.paymentsApp()
+    const o = await fx.order({ paymentGateway: 'fakepay', financialStatus: 'partially_paid' })
+    await db.insert(orderTransactions).values({
+      orderId: o.id,
+      kind: 'sale',
+      status: 'success',
+      gateway: 'gift_card',
+      amountCents: 1000,
+      currency: 'USD',
+    })
+    return { app, method, o }
+  }
+
+  test('the app is asked for what is left, and the order is paid when it resolves', async () => {
+    const { app, method, o } = await partlyPaid()
+    const session = await sessions.startPayment(SHOP, o.id, { returnUrl, paymentMethodId: method.id })
+    assert.equal(session.amountCents, 1500)
+    assert.deepEqual(received[0]!.body.amount, { cents: 1500, currency: 'USD' })
+    await sessions.resolve(SHOP, app.id, session.id, { externalId: 'pi_rest' })
+    assert.equal((await orderRow(o.id)).financialStatus, 'paid')
+    assert.deepEqual((await transactionsOf(o.id)).map((t) => [t.kind, t.gateway, t.amountCents]).sort(), [
+      ['sale', 'fakepay', 1500],
+      ['sale', 'gift_card', 1000],
+    ])
+  })
+
+  test('a refund goes to the gift card first, and the app is asked to give back only the rest', async () => {
+    const { app, method, o } = await partlyPaid()
+    const session = await sessions.startPayment(SHOP, o.id, { returnUrl, paymentMethodId: method.id })
+    await sessions.resolve(SHOP, app.id, session.id, { externalId: 'pi_rest' })
+    received.length = 0
+    await sessions.refundOrder(SHOP, o.id, { amountCents: 2000 })
+    const refunds = (await transactionsOf(o.id)).filter((t) => t.kind === 'refund')
+    assert.deepEqual(refunds.map((t) => [t.gateway, t.status, t.amountCents]).sort(), [
+      ['fakepay', 'pending', 1000],
+      ['gift_card', 'success', 1000],
+    ])
+    assert.equal(received.length, 1)
+    assert.equal(received[0]!.path, '/refund')
+    assert.deepEqual(received[0]!.body.amount, { cents: 1000, currency: 'USD' })
+  })
+
+  test('cancelling it before the rest is paid gives everything back to the gift card and asks the app for nothing', async () => {
+    const { o } = await partlyPaid()
+    received.length = 0
+    await orderService.cancel(SHOP, o.id, { reason: 'customer', restock: true }, db)
+    assert.equal((await orderRow(o.id)).financialStatus, 'refunded')
+    assert.deepEqual(
+      (await transactionsOf(o.id)).filter((t) => t.kind === 'refund').map((t) => [t.gateway, t.status, t.amountCents]),
+      [['gift_card', 'success', 1000]],
+    )
+    assert.equal(received.length, 0)
+  })
+
+  test('a fully paid order, or one with nothing left to pay, is not started again', async () => {
+    const { method, o } = await partlyPaid()
+    await db.insert(orderTransactions).values({
+      orderId: o.id,
+      kind: 'sale',
+      status: 'success',
+      gateway: 'gift_card',
+      amountCents: 1500,
+      currency: 'USD',
+    })
+    await assert.rejects(
+      sessions.startPayment(SHOP, o.id, { returnUrl, paymentMethodId: method.id }),
+      refused('NOT_PAYABLE'),
+    )
+    assert.equal(received.length, 0)
   })
 })
 

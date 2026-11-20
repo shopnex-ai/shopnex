@@ -53,14 +53,14 @@ describe('issue and redeem', () => {
 
   test('redeeming takes from the balance and leaves the rest', async () => {
     const card = await svc.issue(SHOP, { amountCents: 5000 }, db)
-    const after = await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 1800, crypto.randomUUID()))
+    const after = await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 1800, crypto.randomUUID(), 'USD'))
     assert.equal(after.balanceCents, 3200)
   })
 
   test('a card cannot be overspent', async () => {
     const card = await svc.issue(SHOP, { amountCents: 1000 }, db)
     await assert.rejects(
-      db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 1001, crypto.randomUUID())),
+      db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 1001, crypto.randomUUID(), 'USD')),
       rejects('INSUFFICIENT_BALANCE'),
     )
     assert.equal((await svc.getById(SHOP, card.id, db))!.balanceCents, 1000)
@@ -68,7 +68,7 @@ describe('issue and redeem', () => {
 
   test('two orders racing for one card cannot spend more than it holds', async () => {
     const card = await svc.issue(SHOP, { amountCents: 1000 }, db)
-    const spend = () => db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 700, crypto.randomUUID()))
+    const spend = () => db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 700, crypto.randomUUID(), 'USD'))
     const results = await Promise.allSettled([spend(), spend()])
     assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1)
     assert.equal((await svc.getById(SHOP, card.id, db))!.balanceCents, 300)
@@ -78,7 +78,7 @@ describe('issue and redeem', () => {
     const card = await svc.issue(SHOP, { amountCents: 1000 }, db)
     await assert.rejects(
       db.transaction(async (tx) => {
-        await svc.redeem(tx, SHOP, card.id, 400, crypto.randomUUID())
+        await svc.redeem(tx, SHOP, card.id, 400, crypto.randomUUID(), 'USD')
         throw new Error('order failed')
       }),
       /order failed/,
@@ -89,7 +89,7 @@ describe('issue and redeem', () => {
   test('refund puts a spend back', async () => {
     const card = await svc.issue(SHOP, { amountCents: 1000 }, db)
     const order = crypto.randomUUID()
-    await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 600, order))
+    await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 600, order, 'USD'))
     const after = await db.transaction((tx) => svc.refund(tx, SHOP, card.id, 600, order))
     assert.equal(after.balanceCents, 1000)
   })
@@ -108,11 +108,11 @@ describe('availability', () => {
     const card = await svc.issue(SHOP, { amountCents: 1000 }, db)
     await svc.setActive(SHOP, card.id, false, db)
     await assert.rejects(
-      db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 100, crypto.randomUUID())),
+      db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 100, crypto.randomUUID(), 'USD')),
       rejects('GIFT_CARD_UNAVAILABLE'),
     )
     await svc.setActive(SHOP, card.id, true, db)
-    await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 100, crypto.randomUUID()))
+    await db.transaction((tx) => svc.redeem(tx, SHOP, card.id, 100, crypto.randomUUID(), 'USD'))
   })
 
   test('coverage is the balance, or the amount due when that is less', () => {

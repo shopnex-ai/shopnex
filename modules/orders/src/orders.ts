@@ -13,7 +13,7 @@ import { checkDiscount, redeemDiscount } from './discount-redemptions'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
-import { orderCreditRefunded, orderEvent } from './orders.hooks'
+import { orderCreditRefunded, orderEvent, orderFullyRefunded } from './orders.hooks'
 import { shops } from '@shopnex/core/schema'
 import {
   type CancelReason,
@@ -674,17 +674,25 @@ async function recordRefund(
     })
     await orderCreditRefunded.run(tx, { shopId, orderId: order.id, amountCents: toCard })
   }
-  if (toGateway === 0) return true
-  const manual = (order.paymentGateway ?? 'manual') === 'manual'
-  await tx.insert(orderTransactions).values({
-    orderId: order.id,
-    kind: 'refund',
-    status: manual ? 'success' : 'pending',
-    gateway: order.paymentGateway ?? 'manual',
-    amountCents: toGateway,
-    currency: order.currency,
-  })
-  return manual
+  let settled = true
+  if (toGateway > 0) {
+    const manual = (order.paymentGateway ?? 'manual') === 'manual'
+    await tx.insert(orderTransactions).values({
+      orderId: order.id,
+      kind: 'refund',
+      status: manual ? 'success' : 'pending',
+      gateway: order.paymentGateway ?? 'manual',
+      amountCents: toGateway,
+      currency: order.currency,
+    })
+    settled = manual
+  }
+  // A refund on its way counts: it is already spoken for
+  const money = await moneyOf(tx, order.id)
+  if (money.taken > 0 && money.refunded + money.refunding >= money.taken) {
+    await orderFullyRefunded.run(tx, { shopId, orderId: order.id })
+  }
+  return settled
 }
 
 /**

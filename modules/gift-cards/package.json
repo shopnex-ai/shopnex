@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@orpc/server": "catalog:",
+    "@shopnex/auth": "workspace:*",
     "@shopnex/cart": "workspace:*",
     "@shopnex/catalog": "workspace:*",
     "@shopnex/core": "workspace:*",

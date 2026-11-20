@@ -4,29 +4,32 @@
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { checkoutCredit } from '@shopnex/cart'
 import { products } from '@shopnex/catalog/schema'
-import { orderCreditRefunded, orderEvent, orderService } from '@shopnex/orders'
+import { orderCreditRefunded, orderEvent, orderFullyRefunded, orderService } from '@shopnex/orders'
 import * as giftCards from './gift-cards'
 import { giftCards as giftCardsTable, giftCardTransactions } from './gift-cards.schema'
 
-// A code entered at checkout. Shown in the totals (no order yet), then spent on the order when it is placed, in that transaction.
+// A code entered at checkout. Shown in the totals and checked before the order is placed (no order yet: wrong guesses are counted
+// against the visitor), then spent on the order when it is placed, in that transaction.
 checkoutCredit.on('gift-cards.pay', async (tx, payload) => {
-  const card = await giftCards.findByCode(payload.shopId, payload.code, tx)
-  if (!card) {
-    payload.error = "This gift card code isn't valid"
+  const placing = payload.orderId !== null
+  const found = await giftCards.lookup(
+    payload.shopId,
+    payload.code,
+    { currency: payload.currency, ip: payload.ip, throttle: !placing },
+    tx,
+  )
+  if (!found.card) {
+    payload.error = found.error
     return
   }
-  const reason = giftCards.unavailableReason(card)
-  if (reason) {
-    payload.error = reason
-    return
-  }
+  const { card } = found
   const amountCents = giftCards.coverage(card, payload.eligibleCents)
   if (amountCents <= 0) {
     payload.error = "A gift card can't pay for a gift card"
     return
   }
   if (payload.orderId) {
-    await giftCards.redeem(tx, payload.shopId, card.id, amountCents, payload.orderId)
+    await giftCards.redeem(tx, payload.shopId, card.id, amountCents, payload.orderId, payload.currency)
     await orderService.recordCreditPayment(tx, payload.shopId, payload.orderId, amountCents)
   }
   payload.credits.push({ kind: 'gift_card', label: `Gift card ending ${card.code.slice(-4)}`, amountCents })
@@ -91,4 +94,9 @@ orderCreditRefunded.on('gift-cards.refund', async (tx, { shopId, orderId, amount
     await giftCards.refund(tx, shopId, card, back, orderId)
     left -= back
   }
+})
+
+// Everything the order took was given back: the cards it bought can't be spent any more
+orderFullyRefunded.on('gift-cards.revoke', async (tx, { shopId, orderId }) => {
+  await giftCards.revokePurchased(tx, shopId, orderId)
 })

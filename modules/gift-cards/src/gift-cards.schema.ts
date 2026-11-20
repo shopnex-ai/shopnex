@@ -4,7 +4,7 @@
 import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { shops } from '@shopnex/core/schema'
 
-export const GIFT_CARD_TRANSACTION_KINDS = ['issue', 'redeem', 'refund', 'adjust'] as const
+export const GIFT_CARD_TRANSACTION_KINDS = ['issue', 'redeem', 'refund', 'adjust', 'revoke'] as const
 export type GiftCardTransactionKind = (typeof GIFT_CARD_TRANSACTION_KINDS)[number]
 
 export const giftCards = pgTable(

@@ -2,6 +2,7 @@ import { publicFn } from '@/lib/server-fn'
 import { getRequest } from '@tanstack/react-start/server'
 import { z } from 'zod'
 import { CartError, cartService, checkoutService } from '@shopnex/cart'
+import { clientIp } from '@shopnex/auth'
 import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
@@ -149,7 +150,7 @@ export const placeOrder = publicFn({ method: 'POST' })
           note,
           giftCardCode: data.giftCardCode,
         },
-        { returnUrl: confirmationUrl(data.token) },
+        { returnUrl: confirmationUrl(data.token), visitorIp: clientIp(getRequest().headers) },
         db,
       ))
     } catch (error) {
@@ -197,11 +198,15 @@ export const checkGiftCard = publicFn({ method: 'POST' })
     const cart = await cartService.findByToken(null, data.token, db)
     if (!cart) return { error: 'This cart has expired.' }
     try {
-      const card = await giftCardService.findByCode(cart.shopId, code, db)
-      if (!card) return { error: "This gift card code isn't valid" }
-      const reason = giftCardService.unavailableReason(card)
-      if (reason) return { error: reason }
-      return { code, balanceCents: card.balanceCents }
+      const { currency } = await cartService.view(cart, db)
+      const found = await giftCardService.lookup(
+        cart.shopId,
+        code,
+        { currency, ip: clientIp(getRequest().headers), throttle: true },
+        db,
+      )
+      if (!found.card) return { error: found.error }
+      return { code, balanceCents: found.card.balanceCents }
     } catch (error) {
       return { error: unexpected('check this gift card', error) }
     }

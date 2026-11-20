@@ -2,6 +2,7 @@
 // The balance changes only through `record`, which locks the card's row and writes the transaction that explains the change.
 import { randomInt } from 'node:crypto'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { rateLeft, takeRate } from '@shopnex/auth'
 import type { Conn } from '@shopnex/db'
 import { shops } from '@shopnex/core/schema'
 import { GiftCardError } from './gift-cards.errors'
@@ -56,6 +57,44 @@ export async function findByCode(shopId: string, code: string, conn: Conn) {
     .from(giftCards)
     .where(and(eq(giftCards.shopId, shopId), eq(giftCards.code, normalizeCode(code))))
   return card ?? null
+}
+
+// Guessing codes: failed lookups are counted per visitor address (shared by every process, in the database) and a visitor that has
+// used them up is refused before any lookup, so a lucky guess is refused too. Without a trusted address the limit is the shop's.
+const MISSES_WINDOW_MS = 15 * 60_000
+const MISSES_PER_IP = 10
+const MISSES_PER_SHOP = 100
+
+/**
+ * The card a buyer's code names, when it can be spent on an order in `currency`; otherwise what to tell the buyer.
+ * `throttle` counts a code that names no card against the visitor (`ip`): turn it off where the code was already checked
+ * (placing the order), and never call it with a transaction open: the counters use the shared connection.
+ */
+export async function lookup(
+  shopId: string,
+  code: string,
+  opts: { currency: string; ip: string | null; throttle: boolean },
+  conn: Conn,
+): Promise<{ card: GiftCard; error: null } | { card: null; error: string }> {
+  const key = opts.ip ? `gift-card-miss:${shopId}:${opts.ip}` : `gift-card-miss:${shopId}`
+  const max = opts.ip ? MISSES_PER_IP : MISSES_PER_SHOP
+  if (opts.throttle && (await rateLeft(key, max)) !== null) {
+    return { card: null, error: 'Too many attempts. Wait a few minutes and try again.' }
+  }
+  const card = normalizeCode(code) ? await findByCode(shopId, code, conn) : null
+  if (!card) {
+    if (opts.throttle) await takeRate(key, max, MISSES_WINDOW_MS)
+    return { card: null, error: "This gift card code isn't valid" }
+  }
+  const reason = unavailableReason(card)
+  if (reason) return { card: null, error: reason }
+  if (card.currency !== opts.currency) {
+    return {
+      card: null,
+      error: `This gift card is in ${card.currency} and can't be used for an order in ${opts.currency}`,
+    }
+  }
+  return { card, error: null }
 }
 
 /** Why a card can't be spent right now (null = it can) */
@@ -153,7 +192,14 @@ export async function adjust(shopId: string, id: string, deltaCents: number, not
 }
 
 // Spends `amountCents` of the card on an order. Runs in the order's transaction: if the order isn't kept, neither is the spend.
-export async function redeem(tx: Conn, shopId: string, id: string, amountCents: number, orderId: string) {
+export async function redeem(
+  tx: Conn,
+  shopId: string,
+  id: string,
+  amountCents: number,
+  orderId: string,
+  currency: string,
+) {
   if (!Number.isInteger(amountCents) || amountCents < 1) {
     throw new GiftCardError('INVALID_GIFT_CARD', 'Redeem an amount above zero, in whole cents')
   }
@@ -166,6 +212,10 @@ export async function redeem(tx: Conn, shopId: string, id: string, amountCents: 
   if (!card) throw new GiftCardError('GIFT_CARD_NOT_FOUND', 'Gift card not found')
   const reason = unavailableReason(card)
   if (reason) throw new GiftCardError('GIFT_CARD_UNAVAILABLE', reason)
+  // The card holds money in one currency: spending it on an order in another would turn it into a different amount
+  if (card.currency !== currency) {
+    throw new GiftCardError('GIFT_CARD_UNAVAILABLE', `This gift card is in ${card.currency}, not ${currency}`)
+  }
   return record(tx, shopId, id, 'redeem', -amountCents, { orderId })
 }
 
@@ -175,6 +225,28 @@ export async function refund(tx: Conn, shopId: string, id: string, amountCents: 
     throw new GiftCardError('INVALID_GIFT_CARD', 'Refund an amount above zero, in whole cents')
   }
   return record(tx, shopId, id, 'refund', amountCents, { orderId })
+}
+
+// The order that bought cards was refunded in full: they stop being spendable and what is left on them is taken back. What was
+// already spent can't be: it stays in the card's history for staff, who see the order was refunded.
+export async function revokePurchased(tx: Conn, shopId: string, orderId: string) {
+  const cards = await tx
+    .select({ id: giftCards.id, balanceCents: giftCards.balanceCents })
+    .from(giftCards)
+    .where(and(eq(giftCards.shopId, shopId), eq(giftCards.purchaseOrderId, orderId)))
+  for (const card of cards) {
+    if (card.balanceCents > 0) {
+      await record(tx, shopId, card.id, 'revoke', -card.balanceCents, {
+        orderId,
+        note: 'The order that bought this gift card was refunded',
+      })
+    }
+    await tx
+      .update(giftCards)
+      .set({ active: false, updatedAt: new Date() })
+      .where(and(eq(giftCards.shopId, shopId), eq(giftCards.id, card.id)))
+  }
+  return cards.length
 }
 
 export async function removeMany(shopId: string, ids: string[], conn: Conn) {
