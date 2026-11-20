@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/email')({ component: Email
 function EmailSettingsPage() {
   return (
     <>
-      <PageHeader title="Email" description="How your shop sends email to customers and staff." />
+      <PageHeader title="Email" />
       <EmailCard />
     </>
   )

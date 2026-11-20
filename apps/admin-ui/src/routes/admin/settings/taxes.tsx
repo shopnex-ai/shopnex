@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/taxes')({ component: Taxes
 function TaxesSettingsPage() {
   return (
     <>
-      <PageHeader title="Taxes" description="Tax rates charged at checkout." />
+      <PageHeader title="Taxes" />
       <TaxesCard />
     </>
   )

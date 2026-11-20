@@ -10,7 +10,7 @@ function ShippingSettingsPage() {
   const shopId = access.tenant.shop.id
   return (
     <>
-      <PageHeader title="Shipping" description="Rates customers choose from at checkout." />
+      <PageHeader title="Shipping" />
       <ShippingRatesCard currency={access.tenant.shop.currency} />
       <CarrierServicesCard />
       <CarrierAppsCard shopId={shopId} />
