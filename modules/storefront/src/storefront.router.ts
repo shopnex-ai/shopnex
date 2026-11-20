@@ -30,7 +30,14 @@ import {
   withLiveCollections,
 } from './storefront.mappers'
 import { defined, storefront } from './storefront.procedures'
-import { translateCollections, translatePages, translateProducts } from './storefront.translations'
+import {
+  translateCollection,
+  translateCollections,
+  translatePage,
+  translatePages,
+  translateProducts,
+  translateProduct,
+} from './storefront.translations'
 
 export const storefrontRouter = storefront.router({
   shop: {
@@ -121,7 +128,7 @@ export const storefrontRouter = storefront.router({
         context.shop.currency,
         context.channelId,
       )
-      return (await translateProducts(context, [product]))[0]!
+      return translateProduct(context, product)
     }),
     getByHandle: storefront.products.getByHandle.handler(async ({ input, context }) => {
       const product = await activeProduct(
@@ -129,7 +136,7 @@ export const storefrontRouter = storefront.router({
         context.shop.currency,
         context.channelId,
       )
-      return (await translateProducts(context, [product]))[0]!
+      return translateProduct(context, product)
     }),
   },
   collections: {
@@ -147,7 +154,7 @@ export const storefrontRouter = storefront.router({
       ) {
         throw new ORPCError('NOT_FOUND')
       }
-      return (await translateCollections(context, [toCollection(collection)]))[0]!
+      return translateCollection(context, toCollection(collection))
     }),
   },
   pages: {
@@ -160,7 +167,7 @@ export const storefrontRouter = storefront.router({
     getByHandle: storefront.pages.getByHandle.handler(async ({ input, context }) => {
       const page = await pageService.getPublishedByHandle(context.shop.id, input.handle, db)
       if (!page) throw new ORPCError('NOT_FOUND')
-      return (await translatePages(context, [toPage(page)]))[0]!
+      return translatePage(context, toPage(page))
     }),
   },
   menu: {

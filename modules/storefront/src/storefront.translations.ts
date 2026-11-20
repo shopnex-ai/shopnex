@@ -6,7 +6,10 @@ import { languageService, type TranslatableResource } from '@shopnex/languages'
 import type { Collection, Page, Product } from '@shopnex/storefront-sdk'
 import { summarize } from './storefront.mappers'
 
-type Scope = { shop: { id: string }; language: string | null }
+interface Scope {
+  shop: { id: string }
+  language: string | null
+}
 
 async function translationsOf(scope: Scope, resource: TranslatableResource, ids: string[]) {
   if (!scope.language || ids.length === 0) return new Map<string, Record<string, string>>()
@@ -61,3 +64,10 @@ export async function translatePages(scope: Scope, pages: Page[]): Promise<Page[
     }
   })
 }
+
+// One record, for the routes that answer a single product, collection or page
+export const translateProduct = async (scope: Scope, product: Product) =>
+  (await translateProducts(scope, [product]))[0] ?? product
+export const translateCollection = async (scope: Scope, collection: Collection) =>
+  (await translateCollections(scope, [collection]))[0] ?? collection
+export const translatePage = async (scope: Scope, page: Page) => (await translatePages(scope, [page]))[0] ?? page

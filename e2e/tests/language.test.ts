@@ -56,9 +56,10 @@ describe('theme layouts', () => {
   })
 
   for (const { theme, path } of layouts) {
-    test(`${theme} sets the page's language from the shop, not a fixed "en"`, () => {
+    test(`${theme} sets the page's language from the visitor's language, not a fixed "en"`, () => {
       const html = readFileSync(path, 'utf8')
-      assert.match(html, /<html lang="\{\{ shop\.language \}\}"/)
+      // The visitor's language: the shop's own unless they chose another one the shop publishes
+      assert.match(html, /<html lang="\{\{ localization\.language\.iso_code \}\}"/)
       assert.doesNotMatch(html, /<html[^>]*lang="[a-z]{2}"/, 'a hard-coded language')
     })
   }
