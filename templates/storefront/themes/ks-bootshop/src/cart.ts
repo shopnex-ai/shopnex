@@ -10,6 +10,7 @@ import {
   reportCartError,
   setLineQuantity,
   type Cart,
+  visibleAttributes,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 
@@ -30,12 +31,16 @@ function renderCart(cart: Cart | null) {
           const image = m.image
             ? `<img src="${esc(m.image.url)}" alt="${esc(m.image.altText ?? m.product.title)}" loading="lazy">`
             : ''
+          const typed = visibleAttributes(line)
+            .map((a) => `<span class="small text-body-secondary d-block">${esc(a.key)}: ${esc(a.value)}</span>`)
+            .join('')
           return `
           <div class="ks-line${pending.has(line.id) ? ' ks-line-pending' : ''}">
             <a href="${href}" class="ks-line-image">${image}</a>
             <div class="ks-line-info">
               <a href="${href}" class="ks-line-title">${esc(m.product.title)}</a>
               ${m.selectedOptions.length ? `<span class="small text-body-secondary">${esc(m.title)}</span>` : ''}
+              ${typed}
               ${line.availableForSale ? '' : '<span class="small text-danger">Not enough in stock</span>'}
               <div class="ks-line-qty">
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}">−</button>

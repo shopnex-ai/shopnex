@@ -186,7 +186,16 @@ before(async () => {
     // order.created, order.updated, order.paid, order.fulfilled; and order.cancelled on a second order placed at
     // checkout, so one order also carries a shipping line
     const created = ok(
-      await call('POST', '/admin/orders', { customerId: customer.id, items: [{ variantId, quantity: 1 }] }, token),
+      await call(
+        'POST',
+        '/admin/orders',
+        // A line with what the buyer typed, so the payload's properties are filled
+        {
+          customerId: customer.id,
+          items: [{ variantId, quantity: 1, properties: [{ name: 'Engraving', value: 'For Anna' }] }],
+        },
+        token,
+      ),
     )
     fx.order(created.id)
     const orderId = created.id as string

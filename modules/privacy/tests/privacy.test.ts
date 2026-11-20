@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, test } from 'node:test'
 import { shops, user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
-import { carts } from '@shopnex/cart/schema'
+import { cartLines, carts } from '@shopnex/cart/schema'
 import { orderItems, orders, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
 import { channels } from '@shopnex/channels/schema'
@@ -243,6 +243,72 @@ describe('exportData', () => {
       ['10.0.0.1'],
     )
     await db.delete(session).where(eq(session.userId, login.id))
+  })
+})
+
+// What a customer typed for a line (an engraving, a gift message) can name a person: it is in their export, and erasing removes it
+// while the line, its price and its quantity stay for the books
+describe('line item properties', () => {
+  const typed = [
+    { name: 'Engraving', value: 'For Anna Example' },
+    { name: '_source', value: 'popup' },
+  ]
+  async function lineOf(orderId: string) {
+    const [row] = await db
+      .insert(orderItems)
+      .values({ orderId, title: 'Rubber stamp', unitPriceCents: 1500, quantity: 2, properties: typed })
+      .returning()
+    return row!
+  }
+  async function cartLinesOf(cartId: string) {
+    const { productService } = await import('@shopnex/catalog')
+    const p = await productService.create(SHOP, { title: `Stamp ${unique()}`, priceCents: 1500 }, db)
+    const variantId = p.variants[0]!.id
+    await db.insert(cartLines).values([
+      { cartId, variantId, quantity: 1, properties: [{ name: 'Engraving', value: 'Anna' }], propertiesKey: 'a' },
+      { cartId, variantId, quantity: 1, properties: [{ name: 'Engraving', value: 'Ben' }], propertiesKey: 'b' },
+    ])
+    return variantId
+  }
+
+  test('the export includes what they typed, on orders and in carts', async () => {
+    const c = await customer()
+    const o = await order({ customerId: c.id })
+    await lineOf(o.id)
+    const k = await cart({ customerId: c.id })
+    await cartLinesOf(k.id)
+    const data = await privacyService.exportData(SHOP, c.id, db)
+    assert.deepEqual(data!.orders[0]!.items[0]!.properties, typed)
+    assert.deepEqual(data!.carts[0]!.lines.map((l) => l.properties.map((p) => p.value).join()).sort(), ['Anna', 'Ben'])
+  })
+
+  test('erasing removes the text from their orders and carts, and keeps the line, its price and its quantity', async () => {
+    const c = await customer()
+    const o = await order({ customerId: c.id })
+    const line = await lineOf(o.id)
+    const k = await cart({ customerId: c.id })
+    await cartLinesOf(k.id)
+    await privacyService.erase(SHOP, c.id, db)
+    const [kept] = await db.select().from(orderItems).where(eq(orderItems.id, line.id))
+    assert.deepEqual([kept!.properties, kept!.quantity, kept!.unitPriceCents], [[], 2, 1500])
+    const cleared = await db.select().from(cartLines).where(eq(cartLines.cartId, k.id))
+    assert.equal(cleared.length, 2, 'two lines of one variant stay two lines')
+    assert.deepEqual(
+      cleared.map((l) => l.properties),
+      [[], []],
+    )
+  })
+
+  test('another customer’s lines are not touched', async () => {
+    const c = await customer()
+    const other = await customer()
+    const mine = await order({ customerId: c.id })
+    const theirs = await order({ customerId: other.id })
+    await lineOf(mine.id)
+    const theirLine = await lineOf(theirs.id)
+    await privacyService.erase(SHOP, c.id, db)
+    const [untouched] = await db.select().from(orderItems).where(eq(orderItems.id, theirLine.id))
+    assert.deepEqual(untouched!.properties, typed)
   })
 })
 

@@ -13,6 +13,7 @@ const ITEMS = `<table role="presentation" width="100%" cellpadding="0" cellspaci
     <td style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;">
       {% if line.image_url %}<img src="{{ line.image_url }}" alt="" width="48" height="48" style="border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:12px;">{% endif %}
       {{ line.title }}{% if line.variant_title %} <span style="${MUTED}">· {{ line.variant_title }}</span>{% endif %} × {{ line.quantity }}
+      {% for property in line.properties %}<br><span style="${MUTED}">{{ property.name }}: {{ property.value }}</span>{% endfor %}
     </td>
     <td align="right" style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;white-space:nowrap;">{{ line.line_price | money }}</td>
   </tr>
@@ -142,6 +143,7 @@ const ABANDONED_CART = `<h1 style="font-size:22px;margin:0 0 8px;">You left some
     <td style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;">
       {% if line.image_url %}<img src="{{ line.image_url }}" alt="" width="48" height="48" style="border-radius:4px;object-fit:cover;vertical-align:middle;margin-right:12px;">{% endif %}
       {{ line.title }}{% if line.variant_title %} <span style="${MUTED}">· {{ line.variant_title }}</span>{% endif %} × {{ line.quantity }}
+      {% for property in line.properties %}<br><span style="${MUTED}">{{ property.name }}: {{ property.value }}</span>{% endfor %}
     </td>
     <td align="right" style="padding:10px 0;border-bottom:1px solid #e4e4e7;vertical-align:middle;white-space:nowrap;">{{ line.line_price | money }}</td>
   </tr>

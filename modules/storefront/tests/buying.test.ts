@@ -72,6 +72,59 @@ describe('the cart', () => {
     assert.deepEqual(await run(sf.cart!.get, { id: cart.id }), cart)
   })
 
+  test('attributes (line item properties): sent with a line, answered on it, and the same merchandise with other attributes is another line', async () => {
+    const p = await fx.product({ title: 'Stamp', priceCents: 1500 })
+    const merchandiseId = p.variants[0]!.id
+    const cart = await run<Cart>(sf.cart!.create, {
+      lines: [
+        {
+          merchandiseId,
+          quantity: 1,
+          attributes: [
+            { key: 'Engraving', value: ' For Anna ' },
+            { key: 'Empty', value: '' },
+          ],
+        },
+      ],
+    })
+    assert.deepEqual(cart.lines[0]!.attributes, [{ key: 'Engraving', value: 'For Anna' }])
+    const more = await run<Cart>(sf.cart!.linesAdd, {
+      cartId: cart.id,
+      lines: [
+        { merchandiseId, quantity: 1, attributes: [{ key: 'Engraving', value: 'For Ben' }] },
+        { merchandiseId, quantity: 1, attributes: [{ key: 'Engraving', value: 'For Anna' }] },
+        { merchandiseId, quantity: 1 },
+      ],
+    })
+    const seen = more.lines
+      .map(
+        (l: Cart['lines'][number]) =>
+          [l.attributes.map((a: { key: string; value: string }) => a.value).join(), l.quantity] as const,
+      )
+      .sort((a: readonly [string, number], b: readonly [string, number]) => a[0].localeCompare(b[0]))
+    assert.deepEqual(seen, [
+      ['', 1],
+      ['For Anna', 2],
+      ['For Ben', 1],
+    ])
+  })
+
+  test('more than 20 attributes, or one with a long key or no key, is refused by the input check', async () => {
+    const p = await fx.product()
+    const merchandiseId = p.variants[0]!.id
+    const attributes = (n: number) => Array.from({ length: n }, (_, i) => ({ key: `K${String(i)}`, value: 'v' }))
+    await assert.rejects(run(sf.cart!.create, { lines: [{ merchandiseId, quantity: 1, attributes: attributes(21) }] }))
+    await assert.rejects(
+      run(sf.cart!.create, { lines: [{ merchandiseId, quantity: 1, attributes: [{ key: '', value: 'v' }] }] }),
+    )
+    await assert.rejects(
+      run(sf.cart!.create, {
+        lines: [{ merchandiseId, quantity: 1, attributes: [{ key: 'k'.repeat(101), value: 'v' }] }],
+      }),
+    )
+    assert.ok(await run(sf.cart!.create, { lines: [{ merchandiseId, quantity: 1, attributes: attributes(20) }] }))
+  })
+
   test('lines are added to what is there, set by line id (0 removes) and removed; each answer is the whole cart', async () => {
     const [a, b] = [await fx.product({ title: 'A' }), await fx.product({ title: 'B' })]
     const created = await run<Cart>(sf.cart!.create, { lines: [{ merchandiseId: variantOf(a), quantity: 1 }] })

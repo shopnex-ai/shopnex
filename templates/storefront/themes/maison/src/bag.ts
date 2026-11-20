@@ -10,6 +10,7 @@ import {
   reportCartError,
   setLineQuantity,
   type Cart,
+  visibleAttributes,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 
@@ -30,12 +31,18 @@ function renderBag(cart: Cart | null) {
           const image = m.image
             ? `<img src="${esc(m.image.url)}" alt="${esc(m.image.altText ?? m.product.title)}" class="h-full w-full object-cover" loading="lazy" />`
             : ''
+          const typed = visibleAttributes(line)
+            .map(
+              (a) => `<span class="whitespace-pre-line text-[12.5px] text-muted">${esc(a.key)}: ${esc(a.value)}</span>`,
+            )
+            .join('')
           return `
           <div class="flex items-start gap-x-[18px] border-t border-line py-4 ${pending.has(line.id) ? 'opacity-60' : ''}">
             <a href="${href}" class="hatch block aspect-[4/5] w-[58px] flex-none overflow-hidden border border-line">${image}</a>
             <div class="flex min-w-0 flex-1 flex-col gap-1.5">
               <a href="${href}" class="font-sf text-[17px] leading-[1.3]">${esc(m.product.title)}</a>
               ${m.selectedOptions.length ? `<span class="text-[12.5px] text-muted">${esc(m.title)}</span>` : ''}
+              ${typed}
               ${line.availableForSale ? '' : '<span class="text-[12.5px] text-acc">Not enough in stock</span>'}
               <div class="eti flex items-center gap-3" style="font-size:10.5px">
                 <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}" class="cursor-pointer text-soft hover:text-acc">−</button>

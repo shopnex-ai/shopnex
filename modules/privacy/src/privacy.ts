@@ -169,6 +169,8 @@ export async function exportData(shopId: string, customerId: string, conn: Conn)
           unitPriceCents: i.unitPriceCents,
           quantity: i.quantity,
           discountCents: i.discountCents,
+          // What they typed for the line (an engraving, a gift message)
+          properties: i.properties,
         })),
       shippingLines: shippingLines
         .filter((s) => s.orderId === o.id)
@@ -181,7 +183,9 @@ export async function exportData(shopId: string, customerId: string, conn: Conn)
       createdAt: c.createdAt,
       status: c.status,
       email: c.email,
-      lines: cartLines.filter((l) => l.cartId === c.id).map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
+      lines: cartLines
+        .filter((l) => l.cartId === c.id)
+        .map((l) => ({ variantId: l.variantId, quantity: l.quantity, properties: l.properties })),
     })),
     emails: emails.map((e) => ({
       notification: e.notification,
@@ -249,6 +253,9 @@ export async function erase(shopId: string, customerId: string, conn: Conn) {
           updatedAt: new Date(),
         })
         .where(inArray(ordersTable.id, orderIds))
+      // What they typed for a line (a gift message, the recipient's name) is free text about a person: the line, its price and its
+      // quantity stay for the books, the text goes
+      await tx.update(orderItems).set({ properties: [] }).where(inArray(orderItems.orderId, orderIds))
     }
 
     // Carts: the address a checkout was started with
@@ -258,6 +265,14 @@ export async function erase(shopId: string, customerId: string, conn: Conn) {
       .where(theirCarts(shopId, customerId, email))
       .returning({ id: cartsTable.id })
     const cartIds = carts.map((c) => c.id)
+    // The same free text in their carts. The key makes two lines of one variant different lines, so each cleared line gets a key of
+    // its own: clearing them must not turn two lines into one
+    if (cartIds.length > 0) {
+      await tx
+        .update(cartLinesTable)
+        .set({ properties: [], propertiesKey: sql`'erased:' || ${cartLinesTable.id}::text` })
+        .where(inArray(cartLinesTable.cartId, cartIds))
+    }
 
     // Stored emails: the ones sent to this person lose recipient, subject and body. Copies sent to the shop about this
     // person's orders (the "new order" mail) lose the body, which carries the buyer's details. The row stays so a

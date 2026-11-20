@@ -11,6 +11,7 @@ import {
   setDiscountCode,
   setLineQuantity,
   type Cart,
+  visibleAttributes,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 
@@ -46,6 +47,9 @@ function renderCart(cart: Cart | null) {
               (o) => `<div class="flex text-primary/50"><dt>${esc(o.name)}:&nbsp;</dt><dd>${esc(o.value)}</dd></div>`,
             )
             .join('')
+          const typed = visibleAttributes(line)
+            .map((a) => `<div class="whitespace-pre-line text-primary/50">${esc(a.key)}: ${esc(a.value)}</div>`)
+            .join('')
           return `
           <div class="grid grid-cols-[auto_1fr] gap-4 ${pending.has(line.id) ? 'opacity-50' : ''}">
             <a href="${href}" class="block shrink">${image}</a>
@@ -53,6 +57,7 @@ function renderCart(cart: Cart | null) {
               <div class="grid content-start gap-2">
                 <h3 class="m-0 max-w-prose text-copy font-bold"><a href="${href}">${esc(m.product.title)}</a></h3>
                 <dl class="m-0 grid">${options}</dl>
+                ${typed ? `<div class="grid text-fine">${typed}</div>` : ''}
                 ${line.availableForSale ? '' : '<span class="text-fine text-accent">Not enough in stock</span>'}
                 <div class="flex items-center gap-3 pt-1">
                   <button type="button" data-line-qty="${line.id}" data-qty="${line.quantity - 1}" aria-label="${line.quantity === 1 ? 'Remove' : 'One fewer'}" class="cursor-pointer">${icons.minus}</button>

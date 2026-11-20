@@ -14,6 +14,7 @@ import { formatMoney } from '@shopnex/storefront-sdk/money'
 import { emit } from '@shopnex/webhooks'
 import { OrderError } from './orders.errors'
 import { orderCreditRefunded, orderEvent, orderFullyRefunded } from './orders.hooks'
+import { type LineProperty, normalizeProperties } from './properties'
 import { shops } from '@shopnex/core/schema'
 import {
   type CancelReason,
@@ -30,9 +31,9 @@ import {
 import { customers } from '@shopnex/customers/schema'
 
 export type OrderLineInput =
-  | { variantId: string; quantity: number }
+  | { variantId: string; quantity: number; properties?: readonly LineProperty[] }
   // Shorthand for products with a single variant
-  | { productId: string; quantity: number }
+  | { productId: string; quantity: number; properties?: readonly LineProperty[] }
 
 export type CreateOrderInput = {
   items: OrderLineInput[]
@@ -355,6 +356,7 @@ export async function create(shopId: string, input: CreateOrderInput, conn: Conn
         imageUrl,
         unitPriceCents: variant.priceCents,
         quantity: i.quantity,
+        properties: normalizeProperties(i.properties),
       }
     })
     const subtotalCents = lines.reduce((sum, l) => sum + l.unitPriceCents * l.quantity, 0)

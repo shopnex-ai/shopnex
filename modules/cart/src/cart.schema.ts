@@ -1,7 +1,8 @@
 // What a buyer is putting in, and what a shop offers at checkout. Carts point at orders, customers, channels and variants; shipping rates
 // and carrier services point at nothing but the shop and the app.
 // email_deliveries (in @shopnex/email) points at carts, so email sits above this module.
-import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import type { LineProperty } from '@shopnex/orders'
 import { apps, shops } from '@shopnex/core/schema'
 import { orders } from '@shopnex/orders/schema'
 import { customers } from '@shopnex/customers/schema'
@@ -51,9 +52,13 @@ export const cartLines = pgTable(
       .notNull()
       .references(() => productVariants.id, { onDelete: 'cascade' }),
     quantity: integer('quantity').notNull(),
+    // What the buyer typed for this line (engraving, a gift message…); see @shopnex/orders properties
+    properties: jsonb('properties').$type<LineProperty[]>().notNull().default([]),
+    // propertiesKey(properties): '' for none. Two lines of one variant are the same line only with the same key
+    propertiesKey: text('properties_key').notNull().default(''),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('cart_lines_cart_variant_idx').on(t.cartId, t.variantId)],
+  (t) => [uniqueIndex('cart_lines_cart_variant_props_idx').on(t.cartId, t.variantId, t.propertiesKey)],
 )
 
 export type Cart = typeof carts.$inferSelect

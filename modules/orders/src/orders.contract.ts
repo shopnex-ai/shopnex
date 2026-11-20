@@ -2,6 +2,7 @@
 // imports the inputs for form validation). Cancelling and refunding are routes of @shopnex/payments (they send the refund to the app).
 import { createSelectSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { MAX_PROPERTIES, MAX_PROPERTY_NAME, MAX_PROPERTY_VALUE } from './properties'
 import { customerOutput } from '@shopnex/customers/contract'
 import { customFieldValues } from '@shopnex/custom-fields/contract'
 import {
@@ -22,8 +23,17 @@ export const orderOutput = createSelectSchema(orders, {
   customFields: customFieldValues,
 })
 
+// What the buyer typed for a line (engraving, a gift message…): see properties.ts
+export const linePropertyInput = z.object({
+  name: z.string().trim().min(1).max(MAX_PROPERTY_NAME),
+  value: z.string().max(MAX_PROPERTY_VALUE),
+})
+export const linePropertiesInput = z.array(linePropertyInput).max(MAX_PROPERTIES)
+
+export const orderItemOutput = createSelectSchema(orderItems, { properties: () => z.array(linePropertyInput) })
+
 export const orderDetailOutput = orderOutput.extend({
-  items: z.array(createSelectSchema(orderItems)),
+  items: z.array(orderItemOutput),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
   transactions: z.array(createSelectSchema(orderTransactions)),
   fulfillments: z.array(createSelectSchema(fulfillments)),
@@ -33,7 +43,7 @@ export const orderDetailOutput = orderOutput.extend({
 // Orders
 export const orderListItemOutput = orderOutput.extend({ customerName: z.string().nullable() })
 export const orderCreatedOutput = orderOutput.extend({
-  items: z.array(createSelectSchema(orderItems)),
+  items: z.array(orderItemOutput),
   shippingLines: z.array(createSelectSchema(orderShippingLines)),
 })
 

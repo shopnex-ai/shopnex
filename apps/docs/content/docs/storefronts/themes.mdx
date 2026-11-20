@@ -26,3 +26,20 @@ themes/<id>/
 3. Run `pnpm dev`. It rebuilds `assets/theme.css` and `assets/theme.js` on change; templates and `theme.json` are read on every request in dev.
 
 Built assets are build output and are not committed.
+
+## Personalized products
+
+A shop that sells engraved or custom goods lets the buyer type something for each line, such as an engraving or a gift message. These are Shopify's **line item properties**, and they work the same way: a field named `properties[<Name>]` inside the product form.
+
+```liquid
+<input type="text" name="properties[Engraving]" maxlength="40" required>
+<textarea name="properties[Gift message]"></textarea>
+```
+
+- The add-to-cart button reads every `properties[...]` field in the `[data-product-form]` that holds it (every bundled theme has one) and sends them with the line. No theme code is needed.
+- A field left empty adds nothing. A `required` one left empty stops the add and points at the field.
+- The same product with other text is another line in the cart: two different engravings are two lines.
+- The text is shown back to the buyer in the cart (the bundled themes do), at checkout, in the order emails and on the invoice, and is on the order line in the admin.
+- A name that starts with an underscore (`properties[_source]`) is the shop's own: kept on the order and sent to apps, but not shown to the buyer.
+- At most 20 properties per line, a name up to 100 characters and a value up to 1,000. What a buyer types is text: it is escaped everywhere it is shown.
+- A theme that draws the cart's lines in script should show them with `visibleAttributes(line)` from `@shopnex/storefront-sdk/cart`.
