@@ -91,6 +91,83 @@ const sent = async () =>
     .map((d) => [d.notification, d.to] as const)
     .sort()
 
+// What the buyer typed for a line (an engraving, a gift message) is printed under the line in the default emails
+describe('line item properties in the emails', () => {
+  const item = (properties: { name: string; value: string }[]) => ({
+    id: 'item-1',
+    orderId: 'x',
+    productId: null,
+    variantId: null,
+    title: 'Rubber stamp',
+    variantTitle: null,
+    sku: null,
+    vendor: null,
+    imageUrl: null,
+    unitPriceCents: 1000,
+    quantity: 1,
+    discountCents: 0,
+    properties,
+  })
+  const withItems = (o: Awaited<ReturnType<typeof order>>, properties: { name: string; value: string }[]) =>
+    ({ ...view(o), items: [item(properties)] }) as unknown as View
+  const queuedHtml = async (notification: string) =>
+    (await db.select().from(emailDeliveries).where(eq(emailDeliveries.shopId, SHOP))).find(
+      (d) => d.notification === notification,
+    )?.html ?? ''
+
+  test('the confirmation prints each property under its line, in the order the buyer filled them in', async () => {
+    await turnOn()
+    const o = await order()
+    await notify(db, SHOP, 'order.created', () =>
+      Promise.resolve(
+        withItems(o, [
+          { name: 'Engraving', value: 'For Anna' },
+          { name: 'Gift message', value: 'Happy birthday' },
+        ]),
+      ),
+    )
+    const html = await queuedHtml('order_confirmation')
+    assert.match(html, /Engraving: For Anna/)
+    assert.match(html, /Gift message: Happy birthday/)
+    assert.ok(html.indexOf('Engraving: For Anna') < html.indexOf('Gift message: Happy birthday'))
+  })
+
+  test('a property that starts with an underscore is the shop’s own: the buyer’s email does not print it', async () => {
+    await turnOn()
+    const o = await order()
+    await notify(db, SHOP, 'order.created', () =>
+      Promise.resolve(
+        withItems(o, [
+          { name: 'Engraving', value: 'For Anna' },
+          { name: '_source', value: 'popup-7' },
+        ]),
+      ),
+    )
+    const html = await queuedHtml('order_confirmation')
+    assert.match(html, /Engraving: For Anna/)
+    assert.doesNotMatch(html, /_source|popup-7/)
+  })
+
+  test('what a buyer typed is text: markup in it is escaped, never run', async () => {
+    await turnOn()
+    const o = await order()
+    await notify(db, SHOP, 'order.created', () =>
+      Promise.resolve(withItems(o, [{ name: 'Engraving', value: '<script>alert(1)</script><b>bold</b>' }])),
+    )
+    const html = await queuedHtml('order_confirmation')
+    assert.doesNotMatch(html, /<script>alert\(1\)/)
+    assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
+    assert.doesNotMatch(html, /<b>bold<\/b>/)
+  })
+
+  test('a line without properties prints nothing extra', async () => {
+    await turnOn()
+    const o = await order()
+    await notify(db, SHOP, 'order.created', () => Promise.resolve(withItems(o, [])))
+    assert.doesNotMatch(await queuedHtml('order_confirmation'), /Engraving|Gift message/)
+  })
+})
+
 describe('which emails an event queues', () => {
   test('a new order with a manual payment: the buyer’s confirmation and the shop owners’ new-order mail', async () => {
     await turnOn()

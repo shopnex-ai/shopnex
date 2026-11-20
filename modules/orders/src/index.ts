@@ -16,3 +16,13 @@ export {
   type TaxLine,
 } from './orders.schema'
 export * as orderAnalytics from './analytics'
+export {
+  isHiddenProperty,
+  MAX_PROPERTIES,
+  MAX_PROPERTY_NAME,
+  MAX_PROPERTY_VALUE,
+  normalizeProperties,
+  propertiesKey,
+  visibleProperties,
+  type LineProperty,
+} from './properties'

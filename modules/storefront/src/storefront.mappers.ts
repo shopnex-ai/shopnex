@@ -28,7 +28,7 @@ import { type Page as PageRow, type ResolvedMenuItem } from '@shopnex/content'
 import { customFieldService, type CustomFieldResource, type CustomFieldValues } from '@shopnex/custom-fields'
 import { accountService } from '@shopnex/customers'
 import { db } from '@shopnex/db'
-import { orderService } from '@shopnex/orders'
+import { orderService, visibleProperties } from '@shopnex/orders'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
 import { defined } from './storefront.procedures'
 import { type Customer as CustomerRow } from '@shopnex/customers/schema'
@@ -171,6 +171,7 @@ export function toCart(c: CartView): Cart {
         totalAmount: m(l.lineTotalCents - l.discountCents),
       },
       discountAllocations: allocations(l.discountCents),
+      attributes: l.properties.map((p) => ({ key: p.name, value: p.value })),
     })),
     cost: { subtotalAmount: m(c.subtotalCents), totalAmount: m(c.totalCents) },
     discountCodes: c.discountCode ? [c.discountCode] : [],
@@ -233,6 +234,7 @@ export function toCustomerOrder(o: OrderRow, fields: FieldsView): CustomerOrder 
       image: i.imageUrl ? image({ url: i.imageUrl }) : null,
       price: m(i.unitPriceCents),
       totalPrice: m(i.unitPriceCents * i.quantity - i.discountCents),
+      customAttributes: visibleProperties(i.properties).map((p) => ({ key: p.name, value: p.value })),
     })),
     fulfillments: o.fulfillments.map((f) => ({
       trackingCompany: f.trackingCompany,

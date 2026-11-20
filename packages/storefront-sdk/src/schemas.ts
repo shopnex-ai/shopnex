@@ -230,11 +230,20 @@ export const CartDiscountCode = z.object({
   applicable: z.boolean(),
 })
 
+// Shopify's Attribute: what the buyer typed for one line (an engraving, a gift message…). A key that starts with "_" is the shop's
+// own: it is kept and sent to apps, but not shown to the buyer in emails or on the invoice.
+export const LineAttribute = z.object({
+  key: z.string().trim().min(1).max(100),
+  value: z.string().max(1000),
+})
+
 export const CartLine = z.object({
   /** Line id — used by cart.linesUpdate / linesRemove (Shopify style) */
   id: z.uuid(),
   quantity: z.number().int(),
   merchandise: Merchandise,
+  /** What the buyer typed for this line. The same merchandise with other attributes is another line. */
+  attributes: z.array(LineAttribute),
   /** false when stock is below the requested quantity */
   availableForSale: z.boolean(),
   cost: z.object({
@@ -275,6 +284,8 @@ export const Cart = z.object({
 export const CartLineInput = z.object({
   merchandiseId: z.uuid(),
   quantity: z.number().int().min(1).max(999),
+  /** At most 20. An attribute with an empty value is left out; one key given twice keeps its last value. */
+  attributes: z.array(LineAttribute).max(20).optional(),
 })
 
 export const CartLineUpdateInput = z.object({
@@ -330,6 +341,8 @@ export const OrderLine = z.object({
   price: Money,
   /** After this line's share of discounts */
   totalPrice: Money,
+  /** What the buyer typed for this line, without the shop's own (keys that start with "_") */
+  customAttributes: z.array(LineAttribute),
 })
 
 export const OrderFulfillment = z.object({

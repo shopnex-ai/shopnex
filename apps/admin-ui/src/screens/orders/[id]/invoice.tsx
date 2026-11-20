@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { visibleProperties } from '@shopnex/orders/properties'
 
 type Order = Outputs['admin']['orders']['get']
 type Shop = Outputs['admin']['shop']['get']
@@ -172,6 +173,11 @@ function Invoice({ order: o, shop }: { order: Order; shop: Shop }) {
                       {[item.variantTitle, item.sku && `SKU ${item.sku}`].filter(Boolean).join(' · ')}
                     </div>
                   )}
+                  {visibleProperties(item.properties).map((p) => (
+                    <div key={p.name} className="whitespace-pre-line text-xs text-neutral-500">
+                      {p.name}: {p.value}
+                    </div>
+                  ))}
                 </td>
                 <td className="px-2 py-2 text-right tabular-nums">{item.quantity}</td>
                 <td className="px-2 py-2 text-right tabular-nums">{money(item.unitPriceCents)}</td>

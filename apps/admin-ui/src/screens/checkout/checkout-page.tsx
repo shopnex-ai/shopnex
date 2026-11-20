@@ -13,6 +13,7 @@ import { DiscountCodeForm } from './discount-code-form'
 import { GiftCardForm } from './gift-card-form'
 import { OffsitePayment } from './offsite-payment'
 import { SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
+import { visibleProperties } from '@shopnex/orders/properties'
 
 export type CheckoutView = Exclude<Awaited<ReturnType<typeof getCheckout>>, null>
 
@@ -77,6 +78,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
                   key: l.lineId,
                   title: l.title,
                   detail: l.isDefaultVariant ? null : l.variantTitle,
+                  properties: visibleProperties(l.properties),
                   imageUrl: l.imageUrl,
                   quantity: l.quantity,
                   total: money(l.lineTotalCents),
@@ -171,6 +173,7 @@ function Confirmation({
               key: i.id,
               title: i.title,
               detail: i.variantTitle,
+              properties: visibleProperties(i.properties),
               imageUrl: i.imageUrl,
               quantity: i.quantity,
               total: money(i.unitPriceCents * i.quantity),
@@ -278,6 +281,8 @@ function LineList({
     key: string
     title: string
     detail: string | null
+    /** What the buyer typed for the line (engraving…) */
+    properties: { name: string; value: string }[]
     imageUrl: string | null
     quantity: number
     total: string
@@ -300,6 +305,11 @@ function LineList({
           <div className="min-w-0 flex-1 text-sm">
             <div className="font-medium">{l.title}</div>
             {l.detail && <div className="text-muted-foreground">{l.detail}</div>}
+            {l.properties.map((p) => (
+              <div key={p.name} className="whitespace-pre-line text-muted-foreground">
+                {p.name}: {p.value}
+              </div>
+            ))}
             {l.warning && <div className="text-destructive">{l.warning}</div>}
           </div>
           <div className="text-sm tabular-nums">{l.total}</div>

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./properties": "./src/properties.ts",
     "./schema": "./src/orders.schema.ts",
     "./contract": "./src/orders.contract.ts",
     "./router": "./src/orders.router.ts",

@@ -85,9 +85,57 @@ export function loadCart() {
   return loading
 }
 
-export async function addToCart(merchandiseId: string, quantity = 1) {
+/** What the buyer typed for a line: a key and a value (Storefront API attributes) */
+export type LineAttribute = { key: string; value: string }
+
+/** The attributes a buyer is shown for a line: without the shop's own (a key that starts with "_") */
+export const visibleAttributes = (line: Pick<CartLine, 'attributes'>) =>
+  line.attributes.filter((a) => !a.key.startsWith('_'))
+
+const PROPERTY_NAME = /^properties\[(.+)\]$/
+
+/**
+ * What the buyer typed on the product page for the variant being added: every field named `properties[Engraving]` (Shopify's
+ * convention for line item properties) in the product form, `[data-product-form]`, that holds this variant's add button. A field
+ * left empty adds nothing; a `required` one left empty stops the add (the browser points at it, and this throws). Another product's
+ * quick-add button, elsewhere on the page, reads nothing.
+ */
+export function readLineAttributes(merchandiseId: string): LineAttribute[] {
+  const form = [...document.querySelectorAll<HTMLElement>('[data-product-form]')].find((f) =>
+    [...f.querySelectorAll<HTMLElement>('[data-add-to-cart]')].some(
+      (b) => b.getAttribute('data-add-to-cart') === merchandiseId,
+    ),
+  )
+  if (!form) return []
+  type Field = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  const attributes: LineAttribute[] = []
+  for (const field of form.querySelectorAll<Field>('[name^="properties["]')) {
+    const key = PROPERTY_NAME.exec(field.name)?.[1]
+    if (!key) continue
+    const missing = () => {
+      field.reportValidity()
+      return new Error(`Please fill in “${key}”`)
+    }
+    // An unchecked box or radio sends nothing, as in a form
+    const choice = 'checked' in field && (field.type === 'checkbox' || field.type === 'radio')
+    if (choice && !(field as HTMLInputElement).checked) {
+      if (field.required && field.type === 'checkbox') throw missing()
+      continue
+    }
+    if (field.required && !field.value.trim()) throw missing()
+    if (field.value.trim()) attributes.push({ key, value: field.value })
+  }
+  return attributes
+}
+
+/**
+ * Adds a variant. `attributes` is what the buyer typed for the line (an engraving…); left out, it is read from the product page's
+ * `properties[Name]` fields (see readLineAttributes). The same variant with other attributes is another line in the cart.
+ */
+export async function addToCart(merchandiseId: string, quantity = 1, attributes?: LineAttribute[]) {
   await loadCart()
-  const lines = [{ merchandiseId, quantity }]
+  const typed = attributes ?? readLineAttributes(merchandiseId)
+  const lines = [{ merchandiseId, quantity, ...(typed.length ? { attributes: typed } : {}) }]
   const current = $cart.get()
   try {
     save(

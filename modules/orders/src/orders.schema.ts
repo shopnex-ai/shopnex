@@ -9,6 +9,7 @@ import { discounts } from '@shopnex/pricing/schema'
 import { products, productVariants } from '@shopnex/catalog/schema'
 import { channels } from '@shopnex/channels/schema'
 import { type CustomFieldValues } from '@shopnex/custom-fields/schema'
+import type { LineProperty } from './properties'
 
 // Shopify displayFinancialStatus (lowercase). Manual payments stay `pending` until marked as paid.
 export const FINANCIAL_STATUSES = [
@@ -126,6 +127,8 @@ export const orderItems = pgTable(
     quantity: integer('quantity').notNull(),
     // Shopify LineItem.totalDiscount: this line's share of order discounts (for the whole quantity)
     discountCents: integer('discount_cents').notNull().default(0),
+    // What the buyer typed for this line (engraving, a gift message…): see properties.ts. Snapshot, like the price.
+    properties: jsonb('properties').$type<LineProperty[]>().notNull().default([]),
   },
   (t) => [index('order_items_order_idx').on(t.orderId)],
 )

@@ -26,6 +26,62 @@ before(async () => {
 beforeEach(fx.cleanup)
 after(fx.cleanup)
 
+describe('line item properties', () => {
+  const engraving = (value: string) => [{ name: 'Engraving', value }]
+  const itemsOf = async (id: string) => (await orderService.getById(SHOP, id, db))!.items
+
+  test('what the buyer typed for a line is kept on that line, cleaned, and does not touch the price', async () => {
+    const p = await fx.product({ priceCents: 2000 })
+    const o = await orderService.create(
+      SHOP,
+      {
+        email: 'a@example.test',
+        items: [
+          {
+            variantId: variantOf(p),
+            quantity: 1,
+            properties: [...engraving('  For Anna '), { name: 'Empty', value: ' ' }],
+          },
+          { variantId: variantOf(p), quantity: 2 },
+        ],
+      },
+      db,
+    )
+    const items = await itemsOf(o.id)
+    const byQuantity = new Map(items.map((i) => [i.quantity, i]))
+    assert.deepEqual(byQuantity.get(1)!.properties, [{ name: 'Engraving', value: 'For Anna' }])
+    assert.deepEqual(byQuantity.get(2)!.properties, [])
+    assert.equal(o.subtotalCents, 6000)
+  })
+
+  test('it is a snapshot: the order keeps the text however the catalog changes', async () => {
+    const p = await fx.product({ priceCents: 2000 })
+    const o = await orderService.create(
+      SHOP,
+      { email: 'a@example.test', items: [{ variantId: variantOf(p), quantity: 1, properties: engraving('For Anna') }] },
+      db,
+    )
+    await db
+      .update(productVariants)
+      .set({ priceCents: 9999 })
+      .where(eq(productVariants.id, variantOf(p)))
+    assert.deepEqual((await itemsOf(o.id))[0]!.properties, engraving('For Anna'))
+  })
+
+  test('at most 20 properties, and a name and a value that fit, are kept; more is cut, never an error', async () => {
+    const p = await fx.product()
+    const many = Array.from({ length: 25 }, (_, i) => ({ name: `P${String(i)}`, value: 'x'.repeat(2000) }))
+    const o = await orderService.create(
+      SHOP,
+      { email: 'a@example.test', items: [{ variantId: variantOf(p), quantity: 1, properties: many }] },
+      db,
+    )
+    const [item] = await itemsOf(o.id)
+    assert.equal(item!.properties.length, 20)
+    assert.equal(item!.properties[0]!.value.length, 1000)
+  })
+})
+
 describe('what an order is made of', () => {
   test('lines at the catalog’s prices, snapshotted with the product title, variant, SKU, vendor and image; totals add up', async () => {
     const p = await fx.product({

@@ -27,6 +27,7 @@ function mockCart(overrides: Record<string, unknown> = {}) {
 
 // Global browser mocks setup
 let metaStore: Record<string, string> = {}
+let productForms: unknown[] = []
 let storageStore: Record<string, string> = {}
 let storageThrows = false
 let fetchCalls: FetchCall[] = []
@@ -47,6 +48,7 @@ function restoreGlobalMocks() {
 }
 
 function setupGlobalMocks() {
+  productForms = []
   metaStore = {
     'shopnex-url': 'https://store.example.com/',
     'shopnex-key': 'pk_test_sample_key',
@@ -58,6 +60,8 @@ function setupGlobalMocks() {
 
   // Mock document.querySelector for meta tags
   globalThis.document = {
+    // The product forms of the page (see readLineAttributes): none unless a test sets some
+    querySelectorAll: (selector: string) => (selector === '[data-product-form]' ? productForms : []),
     querySelector: (selector: string) => {
       const match = selector.match(/meta\[name="([^"]+)"\]/)
       if (match && match[1] in metaStore) {
@@ -585,6 +589,116 @@ describe('Storefront SDK Cart Helpers', () => {
       assert.deepEqual($cart.get(), createdCart)
       assert.equal($cartOpen.get(), true)
       assert.equal(Object.keys(storageStore).length, 0)
+    })
+  })
+  describe('visibleAttributes', () => {
+    test('what the buyer typed is shown, the shop’s own keys (starting with an underscore) are not', async () => {
+      const { visibleAttributes } = await getFreshCartModule()
+      assert.deepEqual(
+        visibleAttributes({
+          attributes: [
+            { key: 'Engraving', value: 'For Anna' },
+            { key: '_source', value: 'popup' },
+          ],
+        }),
+        [{ key: 'Engraving', value: 'For Anna' }],
+      )
+    })
+  })
+
+  describe('Line item properties', () => {
+    // A product form with its add button, and fields the buyer fills in (what the browser would give)
+    type FakeField = {
+      name: string
+      value: string
+      type?: string
+      checked?: boolean
+      required?: boolean
+      reportValidity: () => void
+    }
+    const field = (name: string, value: string, extra: Partial<FakeField> = {}): FakeField => ({
+      name,
+      value,
+      reportValidity: () => undefined,
+      ...extra,
+    })
+    const formFor = (variantId: string, fields: FakeField[]) => ({
+      querySelectorAll: (selector: string) =>
+        selector === '[data-add-to-cart]'
+          ? [{ getAttribute: () => variantId }]
+          : selector === '[name^="properties["]'
+            ? fields
+            : [],
+    })
+    const lastLines = () => (fetchCalls.at(-1)!.body as { lines: unknown[] }).lines
+
+    test('the fields named properties[Name] in the product form go with the line as attributes', async () => {
+      productForms = [
+        formFor('v1', [
+          field('properties[Engraving]', 'For Anna'),
+          field('properties[Gift message]', ' Happy birthday '),
+        ]),
+      ]
+      const { addToCart } = await getFreshCartModule()
+      await addToCart('v1', 1)
+      assert.deepEqual(lastLines(), [
+        {
+          merchandiseId: 'v1',
+          quantity: 1,
+          attributes: [
+            { key: 'Engraving', value: 'For Anna' },
+            { key: 'Gift message', value: ' Happy birthday ' },
+          ],
+        },
+      ])
+    })
+
+    test('an empty field, a field of another name and an unchecked box add nothing', async () => {
+      productForms = [
+        formFor('v1', [
+          field('properties[Engraving]', '   '),
+          field('quantity', '2'),
+          field('properties[Gift wrap]', 'yes', { type: 'checkbox', checked: false }),
+          field('properties[Express]', 'yes', { type: 'checkbox', checked: true }),
+        ]),
+      ]
+      const { addToCart } = await getFreshCartModule()
+      await addToCart('v1', 1)
+      assert.deepEqual(lastLines(), [
+        { merchandiseId: 'v1', quantity: 1, attributes: [{ key: 'Express', value: 'yes' }] },
+      ])
+    })
+
+    test('a required field left empty stops the add, points at the field, and sends nothing', async () => {
+      let pointed = false
+      productForms = [
+        formFor('v1', [
+          field('properties[Engraving]', '', {
+            required: true,
+            reportValidity: () => (pointed = true) as unknown as void,
+          }),
+        ]),
+      ]
+      const { addToCart } = await getFreshCartModule()
+      await assert.rejects(() => addToCart('v1', 1), /Please fill in “Engraving”/)
+      assert.equal(pointed, true)
+      assert.equal(fetchCalls.filter((c) => c.method === 'POST').length, 0)
+    })
+
+    test('the product form of another variant, or no form at all, adds no attributes', async () => {
+      productForms = [formFor('v1', [field('properties[Engraving]', 'For Anna')])]
+      const { addToCart } = await getFreshCartModule()
+      await addToCart('another-variant', 1)
+      assert.deepEqual(lastLines(), [{ merchandiseId: 'another-variant', quantity: 1 }])
+    })
+
+    test('attributes passed in are sent as they are, whatever the page holds', async () => {
+      productForms = [formFor('v1', [field('properties[Engraving]', 'from the page')])]
+      const { addToCart } = await getFreshCartModule()
+      await addToCart('v1', 2, [{ key: 'Engraving', value: 'from the caller' }])
+      assert.deepEqual(lastLines(), [
+        { merchandiseId: 'v1', quantity: 2, attributes: [{ key: 'Engraving', value: 'from the caller' }] },
+      ])
     })
   })
 })

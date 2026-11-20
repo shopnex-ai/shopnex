@@ -30,6 +30,17 @@ import {
 } from './storefront.mappers'
 import { defined, storefront } from './storefront.procedures'
 
+// A cart line as the cart service takes it: the Storefront API's attributes (key, value) are the line's properties (name, value)
+const toLineInput = (l: {
+  merchandiseId: string
+  quantity: number
+  attributes?: { key: string; value: string }[]
+}) => ({
+  variantId: l.merchandiseId,
+  quantity: l.quantity,
+  properties: l.attributes?.map((a) => ({ name: a.key, value: a.value })),
+})
+
 export const storefrontRouter = storefront.router({
   shop: {
     get: storefront.shop.get.handler(async ({ context }) => ({
@@ -206,27 +217,13 @@ export const storefrontRouter = storefront.router({
   },
   cart: {
     create: storefront.cart.create.handler(async ({ input, context }) =>
-      toCart(
-        await cartService.create(
-          context.shop.id,
-          context.channelId,
-          db,
-          input.lines?.map((l) => ({ variantId: l.merchandiseId, quantity: l.quantity })),
-        ),
-      ),
+      toCart(await cartService.create(context.shop.id, context.channelId, db, input.lines?.map(toLineInput))),
     ),
     get: storefront.cart.get.handler(async ({ input, context }) =>
       toCart(await cartService.get(context.shop.id, input.id, db)),
     ),
     linesAdd: storefront.cart.linesAdd.handler(async ({ input, context }) =>
-      toCart(
-        await cartService.addLines(
-          context.shop.id,
-          input.cartId,
-          input.lines.map((l) => ({ variantId: l.merchandiseId, quantity: l.quantity })),
-          db,
-        ),
-      ),
+      toCart(await cartService.addLines(context.shop.id, input.cartId, input.lines.map(toLineInput), db)),
     ),
     linesUpdate: storefront.cart.linesUpdate.handler(async ({ input, context }) =>
       toCart(

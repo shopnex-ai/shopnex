@@ -10,7 +10,7 @@ import { send } from './email'
 import { EmailError } from './email.errors'
 import { SafeHtml, checkLiquid, render, type LiquidProblem } from './liquid'
 import { log } from './log'
-import type { OrderEvent } from '@shopnex/orders'
+import { visibleProperties, type LineProperty, type OrderEvent } from '@shopnex/orders'
 import { shopMembers } from '@shopnex/tenancy/schema'
 import { type Shop, shops, user } from '@shopnex/core/schema'
 import { emailDeliveries, emailSettings, type EmailTemplate, emailTemplates, type Notification } from './email.schema'
@@ -126,6 +126,8 @@ export type CheckoutLine = {
   quantity: number
   unitPriceCents: number
   imageUrl: string | null
+  /** What the buyer typed for the line (engraving…), without the shop's own hidden ones */
+  properties: LineProperty[]
 }
 
 /** The `checkout` and `unsubscribe_url` variables of the abandoned cart email */
@@ -147,6 +149,7 @@ export function checkoutScope(
         price: l.unitPriceCents,
         line_price: l.unitPriceCents * l.quantity,
         image_url: l.imageUrl,
+        properties: l.properties,
       })),
     },
   }
@@ -193,6 +196,8 @@ function orderScope(order: OrderView) {
       line_price: i.unitPriceCents * i.quantity,
       final_line_price: i.unitPriceCents * i.quantity - i.discountCents,
       image_url: i.imageUrl,
+      // What the buyer typed for the line, as a list of { name, value } (a name that starts with "_" is the shop's own)
+      properties: visibleProperties(i.properties),
     })),
     item_count: order.items.reduce((sum, i) => sum + i.quantity, 0),
     shipping_method: shipping ? { title: shipping.title, price: shipping.priceCents - shipping.discountCents } : null,
@@ -504,7 +509,13 @@ function sampleOrder(shop: Shop): OrderView {
     zip: '94103',
     phone: null,
   }
-  const item = (title: string, variantTitle: string | null, unitPriceCents: number, quantity: number): OrderItem => ({
+  const item = (
+    title: string,
+    variantTitle: string | null,
+    unitPriceCents: number,
+    quantity: number,
+    properties: LineProperty[] = [],
+  ): OrderItem => ({
     id: crypto.randomUUID(),
     orderId: 'sample',
     productId: null,
@@ -517,6 +528,7 @@ function sampleOrder(shop: Shop): OrderView {
     unitPriceCents,
     quantity,
     discountCents: 0,
+    properties,
   })
   return {
     id: 'sample',
@@ -549,7 +561,10 @@ function sampleOrder(shop: Shop): OrderView {
     customFields: {},
     createdAt: now,
     updatedAt: now,
-    items: [item('Classic T-shirt', 'M / Black', 2400, 2), item('Canvas tote bag', null, 2000, 1)],
+    items: [
+      item('Classic T-shirt', 'M / Black', 2400, 2),
+      item('Canvas tote bag', null, 2000, 1, [{ name: 'Engraving', value: 'For Jamie' }]),
+    ],
     shippingLines: [
       { id: 'sample', orderId: 'sample', title: 'Standard', code: null, priceCents: 500, discountCents: 0 },
     ],
@@ -601,6 +616,7 @@ export async function preview(shopId: string, notification: Notification, input:
         quantity: i.quantity,
         unitPriceCents: i.unitPriceCents,
         imageUrl: i.imageUrl,
+        properties: visibleProperties(i.properties),
       })),
     },
     `${appUrl()}/unsubscribe/preview`,

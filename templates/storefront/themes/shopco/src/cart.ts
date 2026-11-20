@@ -12,6 +12,7 @@ import {
   setDiscountCode,
   setLineQuantity,
   type Cart,
+  visibleAttributes,
 } from '@shopnex/storefront-sdk/cart'
 import { formatMoney } from '@shopnex/storefront-sdk/money'
 
@@ -45,6 +46,12 @@ function renderCart(cart: Cart | null) {
           const options = m.selectedOptions
             .map((o) => `<span>${esc(o.name)}: <span class="text-soft">${esc(o.value)}</span></span>`)
             .join('')
+          const typed = visibleAttributes(line)
+            .map(
+              (a) =>
+                `<span class="whitespace-pre-line">${esc(a.key)}: <span class="text-soft">${esc(a.value)}</span></span>`,
+            )
+            .join('')
           return `
           <div class="flex gap-3.5 py-4 ${i ? 'border-t border-line' : ''} ${pending.has(line.id) ? 'opacity-50' : ''}">
             <a href="${href}" class="block h-[99px] w-[99px] flex-none overflow-hidden rounded-[9px] bg-photo">${image}</a>
@@ -53,7 +60,7 @@ function renderCart(cart: Cart | null) {
                 <a href="${href}" class="min-w-0 flex-1 text-[16px] leading-snug font-bold">${esc(m.product.title)}</a>
                 <button type="button" data-line-qty="${line.id}" data-qty="0" aria-label="Remove" class="cursor-pointer text-sale">${icons.trash}</button>
               </div>
-              <div class="flex flex-col text-[12px]">${options}</div>
+              <div class="flex flex-col text-[12px]">${options}${typed}</div>
               ${line.availableForSale ? '' : '<span class="text-[12px] text-sale">Not enough in stock</span>'}
               <div class="mt-auto flex items-center gap-2 pt-2">
                 <span class="flex-1 text-[20px] font-bold">${formatMoney(line.cost.totalAmount)}</span>

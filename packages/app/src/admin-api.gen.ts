@@ -3943,10 +3943,18 @@ export interface operations {
                         /** Format: uuid */
                         variantId: string;
                         quantity: number;
+                        properties?: {
+                            name: string;
+                            value: string;
+                        }[];
                     } | {
                         /** Format: uuid */
                         productId: string;
                         quantity: number;
+                        properties?: {
+                            name: string;
+                            value: string;
+                        }[];
                     })[];
                     discountCode?: string;
                 };
@@ -4019,6 +4027,10 @@ export interface operations {
                             unitPriceCents: number;
                             quantity: number;
                             discountCents: number;
+                            properties: {
+                                name: string;
+                                value: string;
+                            }[];
                         }[];
                         shippingLines: {
                             /** Format: uuid */
@@ -4112,6 +4124,10 @@ export interface operations {
                             unitPriceCents: number;
                             quantity: number;
                             discountCents: number;
+                            properties: {
+                                name: string;
+                                value: string;
+                            }[];
                         }[];
                         shippingLines: {
                             /** Format: uuid */
@@ -4257,6 +4273,10 @@ export interface operations {
                             unitPriceCents: number;
                             quantity: number;
                             discountCents: number;
+                            properties: {
+                                name: string;
+                                value: string;
+                            }[];
                         }[];
                         shippingLines: {
                             /** Format: uuid */

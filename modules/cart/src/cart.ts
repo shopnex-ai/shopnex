@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { variantService } from '@shopnex/catalog'
 import { all, type Conn } from '@shopnex/db'
+import { normalizeProperties, propertiesKey, type LineProperty } from '@shopnex/orders'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
 import { shops } from '@shopnex/core/schema'
@@ -14,12 +15,14 @@ import { products, productVariants } from '@shopnex/catalog/schema'
 const CART_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_LINE_QUANTITY = 999
 
-export type LineInput = { variantId: string; quantity: number }
+export type LineInput = { variantId: string; quantity: number; properties?: readonly LineProperty[] }
 export type LineUpdate = { lineId: string; quantity: number }
 
 export type CartLineView = {
   lineId: string
   variantId: string
+  /** What the buyer typed for this line (engraving…); the same variant with other properties is another line */
+  properties: LineProperty[]
   variantTitle: string
   /** true for a product's hidden default variant */
   isDefaultVariant: boolean
@@ -113,6 +116,7 @@ export async function view(cart: Cart, conn: Conn): Promise<CartView> {
     return {
       lineId: line.id,
       variantId: variant.id,
+      properties: line.properties,
       variantTitle: variant.title,
       isDefaultVariant: variant.optionsKey === '',
       sku: variant.sku,
@@ -184,8 +188,14 @@ async function setLines(conn: Conn, cart: Cart, lines: LineInput[]) {
 
   for (const l of lines) {
     const variant = found.get(l.variantId)!
+    const properties = normalizeProperties(l.properties)
+    const key = propertiesKey(properties)
     if (l.quantity <= 0) {
-      await conn.delete(cartLines).where(and(eq(cartLines.cartId, cart.id), eq(cartLines.variantId, l.variantId)))
+      await conn
+        .delete(cartLines)
+        .where(
+          and(eq(cartLines.cartId, cart.id), eq(cartLines.variantId, l.variantId), eq(cartLines.propertiesKey, key)),
+        )
       continue
     }
     const quantity = Math.min(l.quantity, MAX_LINE_QUANTITY)
@@ -198,8 +208,11 @@ async function setLines(conn: Conn, cart: Cart, lines: LineInput[]) {
     }
     await conn
       .insert(cartLines)
-      .values({ cartId: cart.id, variantId: l.variantId, quantity })
-      .onConflictDoUpdate({ target: [cartLines.cartId, cartLines.variantId], set: { quantity } })
+      .values({ cartId: cart.id, variantId: l.variantId, quantity, properties, propertiesKey: key })
+      .onConflictDoUpdate({
+        target: [cartLines.cartId, cartLines.variantId, cartLines.propertiesKey],
+        set: { quantity },
+      })
   }
   await touch(conn, cart.id)
 }
@@ -209,20 +222,32 @@ const touch = (conn: Conn, cartId: string) =>
 
 async function currentLines(conn: Conn, cartId: string) {
   return conn
-    .select({ id: cartLines.id, variantId: cartLines.variantId, quantity: cartLines.quantity })
+    .select({
+      id: cartLines.id,
+      variantId: cartLines.variantId,
+      quantity: cartLines.quantity,
+      properties: cartLines.properties,
+    })
     .from(cartLines)
     .where(eq(cartLines.cartId, cartId))
 }
 
-// Turn "add 2" into "set to existing + 2" (same variant merges into one line)
-function mergeAdds(existing: { variantId: string; quantity: number }[], lines: LineInput[]): LineInput[] {
-  const totals = new Map(existing.map((l) => [l.variantId, l.quantity]))
-  const touched = new Set<string>()
+// Turn "add 2" into "set to existing + 2": the same variant with the same properties merges into one line
+function mergeAdds(
+  existing: { variantId: string; quantity: number; properties: readonly LineProperty[] }[],
+  lines: LineInput[],
+): LineInput[] {
+  const lineKey = (variantId: string, properties: readonly LineProperty[]) =>
+    `${variantId}|${propertiesKey(normalizeProperties(properties))}`
+  const totals = new Map(existing.map((l) => [lineKey(l.variantId, l.properties), l.quantity]))
+  const touched = new Map<string, { variantId: string; properties: LineProperty[] }>()
   for (const l of lines) {
-    totals.set(l.variantId, (totals.get(l.variantId) ?? 0) + l.quantity)
-    touched.add(l.variantId)
+    const properties = normalizeProperties(l.properties)
+    const key = lineKey(l.variantId, properties)
+    totals.set(key, (totals.get(key) ?? 0) + l.quantity)
+    touched.set(key, { variantId: l.variantId, properties })
   }
-  return [...touched].map((variantId) => ({ variantId, quantity: totals.get(variantId)! }))
+  return [...touched].map(([key, { variantId, properties }]) => ({ variantId, properties, quantity: totals.get(key)! }))
 }
 
 // Line ids → variant ids, all-or-nothing
@@ -273,7 +298,10 @@ export async function updateLines(shopId: string, token: string, updates: LineUp
     await setLines(
       tx,
       cart,
-      updates.map((u) => ({ variantId: lines.get(u.lineId)!.variantId, quantity: u.quantity })),
+      updates.map((u) => {
+        const line = lines.get(u.lineId)!
+        return { variantId: line.variantId, properties: line.properties, quantity: u.quantity }
+      }),
     )
     return view(cart, tx)
   })
@@ -314,7 +342,7 @@ export async function lockForCheckout(conn: Conn, shopId: string, token: string)
 
 export async function lineInputs(conn: Conn, cartId: string): Promise<LineInput[]> {
   return conn
-    .select({ variantId: cartLines.variantId, quantity: cartLines.quantity })
+    .select({ variantId: cartLines.variantId, quantity: cartLines.quantity, properties: cartLines.properties })
     .from(cartLines)
     .where(eq(cartLines.cartId, cartId))
     .orderBy(asc(cartLines.createdAt))

@@ -6,6 +6,7 @@
 import { withStorefrontUrl } from '@shopnex/tenancy'
 import { and, asc, eq, gt, gte, inArray, lte, sql } from 'drizzle-orm'
 import { all, type Conn } from '@shopnex/db'
+import { visibleProperties } from '@shopnex/orders'
 import { isSuppressed, unsubscribeToken } from './abandoned-settings'
 import {
   appUrl,
@@ -56,6 +57,7 @@ async function linesOf(conn: Conn, cartId: string): Promise<CheckoutLine[]> {
     quantity: line.quantity,
     unitPriceCents: variant.priceCents,
     imageUrl: variant.imageUrl ?? images.find((i) => i.productId === product.id)?.url ?? null,
+    properties: visibleProperties(line.properties),
   }))
 }
 

@@ -41,6 +41,22 @@ await shopnex.checkout.complete({
 - Orders follow Shopify's model: `financialStatus`, `fulfillmentStatus`, `cancelledAt`, shipping lines, transactions, fulfillments.
 - Or redirect to `cart.checkoutUrl` for the hosted checkout.
 
+### Line item properties
+
+A line can carry what the buyer typed for it (an engraving, a gift message) as `attributes`, Shopify's name for them:
+
+```ts setup=storefront
+const cart = await shopnex.cart.create({
+  lines: [{ merchandiseId, quantity: 1, attributes: [{ key: 'Engraving', value: 'For Anna' }] }],
+})
+cart.lines[0]?.attributes // [{ key: 'Engraving', value: 'For Anna' }]
+```
+
+- The same merchandise with other attributes is another line. Adding it again with the same attributes adds to that line.
+- At most 20 attributes per line, a key up to 100 characters and a value up to 1,000. An attribute with an empty value is left out; a key given twice keeps its last value.
+- They end up on the order's line: `properties` (`name`, `value`) in the Admin API and in order webhooks, `customAttributes` on a customer's order lines.
+- A key that starts with `_` is the shop's own: it is kept and sent to apps, but not shown to the buyer, in emails or on the invoice.
+
 ## Customer accounts
 
 Shoppers sign in with a one-time code emailed through the shop's SMTP settings (Settings → Email), so the shop must send email. There are no passwords. The first sign-in creates the account, and guest orders placed with the same email appear in it.

@@ -29,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMinorInput, formatMoney, toMinor } from '@/lib/money'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { isHiddenProperty } from '@shopnex/orders/properties'
 
 type Order = Outputs['admin']['orders']['get']
 
@@ -139,6 +140,15 @@ export function OrderDetail({ id }: { id: string }) {
                       <div className="text-xs text-muted-foreground">
                         {[item.variantTitle, item.sku && `SKU ${item.sku}`].filter(Boolean).join(' · ')}
                       </div>
+                      {item.properties.map((p) => (
+                        // What the buyer typed for this line. A name that starts with "_" is the shop's own: staff see it, buyers don't.
+                        <div key={p.name} className="whitespace-pre-line text-xs">
+                          <span className="font-medium">{p.name}:</span> {p.value}
+                          {isHiddenProperty(p.name) && (
+                            <span className="text-muted-foreground"> (hidden from the buyer)</span>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <div className="text-sm tabular-nums text-muted-foreground">
                       {money(item.unitPriceCents)} × {item.quantity}

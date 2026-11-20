@@ -10,6 +10,7 @@ import {
   orderDetailOutput,
   orderListItemOutput,
   orderOutput,
+  linePropertiesInput,
 } from './orders.contract'
 import { FINANCIAL_STATUSES, FULFILLMENT_STATUSES } from './orders.schema'
 import * as orderService from './orders'
@@ -142,8 +143,16 @@ export const orders = {
           items: z
             .array(
               z.union([
-                z.object({ variantId: z.uuid(), quantity: z.number().int().min(1).max(999) }),
-                z.object({ productId: z.uuid(), quantity: z.number().int().min(1).max(999) }),
+                z.object({
+                  variantId: z.uuid(),
+                  quantity: z.number().int().min(1).max(999),
+                  properties: linePropertiesInput.optional(),
+                }),
+                z.object({
+                  productId: z.uuid(),
+                  quantity: z.number().int().min(1).max(999),
+                  properties: linePropertiesInput.optional(),
+                }),
               ]),
             )
             .min(1),
