@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/ai')({ component: AiSettin
 function AiSettingsPage() {
   return (
     <>
-      <PageHeader title="AI" description="Product descriptions and search listings written by AI, reviewed by you." />
+      <PageHeader title="AI" />
       <AiCard />
     </>
   )

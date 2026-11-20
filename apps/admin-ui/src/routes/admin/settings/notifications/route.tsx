@@ -8,7 +8,7 @@ function NotificationsRoute() {
   const pathname = useLocation({ select: (location) => location.pathname })
   return pathname === '/admin/settings/notifications' ? (
     <>
-      <PageHeader title="Notifications" description="The emails your shop sends when orders change." />
+      <PageHeader title="Notifications" />
       <NotificationList />
     </>
   ) : (

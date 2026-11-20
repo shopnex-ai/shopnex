@@ -6,7 +6,7 @@ export const Route = createFileRoute('/admin/settings/custom-fields')({ componen
 function CustomFieldsSettingsPage() {
   return (
     <>
-      <PageHeader title="Custom fields" description="Add your own fields to products, orders and customers." />
+      <PageHeader title="Custom fields" />
       <CustomFieldsCard />
     </>
   )

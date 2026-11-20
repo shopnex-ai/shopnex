@@ -6,10 +6,7 @@ export const Route = createFileRoute('/admin/settings/channels')({ component: Ch
 function ChannelsSettingsPage() {
   return (
     <>
-      <PageHeader
-        title="Sales channels"
-        description="Where your shop sells. Each product and collection is published on the channels you choose."
-      />
+      <PageHeader title="Sales channels" />
       <ChannelsCard />
     </>
   )
