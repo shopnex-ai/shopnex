@@ -5,6 +5,7 @@
 //
 // Shops are Better Auth "organizations" (organization plugin, renamed via modelName): TS keys must match Better Auth field
 // names, DB columns use shop_* naming.
+import { sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uuid, type AnyPgColumn } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
@@ -54,6 +55,12 @@ export const shops = pgTable('shops', {
   // consent (analytics, marketing). Off: nothing is asked and those scripts run. The default storefront sets no such
   // cookies itself, so this only matters once scripts are added.
   cookieBanner: boolean('cookie_banner').notNull().default(false),
+  // Settings -> General -> Ship-to countries: ISO 3166-1 alpha-2 codes the shop sells to. Empty (the default) = one
+  // market, no choice for the visitor. Two or more: the storefront can offer a country picker (a theme setting turns it on).
+  shipToCountries: text('ship_to_countries')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

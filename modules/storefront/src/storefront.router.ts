@@ -42,6 +42,7 @@ export const storefrontRouter = storefront.router({
         description: context.shop.seoDescription === '' ? null : context.shop.seoDescription,
       },
       cookieBanner: context.shop.cookieBanner,
+      shipToCountries: context.shop.shipToCountries,
       scripts: await appService.storefrontScripts(context.shop.id, db),
     })),
   },

@@ -102,6 +102,13 @@
       "default": true
     },
     {
+      "id": "show_country_selector",
+      "label": "Show country selector",
+      "info": "A picker in the header for the countries you ship to (Settings → General → Ship-to countries). Shown only when there are two or more.",
+      "type": "checkbox",
+      "default": false
+    },
+    {
       "id": "announcement_text",
       "label": "Announcement bar",
       "info": "Shown above the header when set",
