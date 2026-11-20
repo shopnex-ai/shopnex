@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
 import { Button } from '@/components/ui/button'
+import { Workspace, WorkspaceBody } from '@/components/admin/workspace'
 import {
   Dialog,
   DialogClose,
@@ -316,7 +317,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
 
   if (files.error || !original || !edited) {
     return (
-      <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+      <Workspace>
         {header}
         <div className="p-6">
           {files.error ? (
@@ -325,16 +326,16 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
             <Skeleton className="h-64 w-full" />
           )}
         </div>
-      </div>
+      </Workspace>
     )
   }
 
   return (
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
-    <div className="-m-4 flex h-[calc(100svh-3rem)] flex-col md:-m-6">
+    <Workspace>
       {header}
 
-      <div className="flex min-h-0 flex-1">
+      <WorkspaceBody>
         <aside className="w-60 shrink-0 space-y-4 overflow-y-auto border-r p-3">
           {THEME_CODE_FOLDERS.map((folder) => (
             <div key={folder}>
@@ -429,7 +430,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         </main>
 
         {storefrontUrl && showPreview && (
-          <aside className="hidden w-[40%] shrink-0 border-l lg:block">
+          <aside className="hidden w-[40%] shrink-0 flex-col border-l lg:flex">
             <div className="border-b p-2">
               <PreviewPageSelect
                 definition={definition}
@@ -439,17 +440,19 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
                 className="w-full"
               />
             </div>
-            <PreviewFrame
-              storefrontUrl={storefrontUrl}
-              copyId={id}
-              reloadKey={reloadKey}
-              selectedSectionId={previewSectionId}
-              path={selectedPreviewPath}
-              device="desktop"
-            />
+            <div className="min-h-0 flex-1">
+              <PreviewFrame
+                storefrontUrl={storefrontUrl}
+                copyId={id}
+                reloadKey={reloadKey}
+                selectedSectionId={previewSectionId}
+                path={selectedPreviewPath}
+                device="desktop"
+              />
+            </div>
           </aside>
         )}
-      </div>
+      </WorkspaceBody>
 
       <Dialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
         <DialogContent>
@@ -500,7 +503,7 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
         onClose={() => setAdding(false)}
         onAdd={(path) => create.mutate(path)}
       />
-    </div>
+    </Workspace>
   )
 }
 

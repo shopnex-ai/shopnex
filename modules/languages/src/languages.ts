@@ -8,6 +8,7 @@ import { LanguageError } from './languages.errors'
 import {
   MAX_LANGUAGES,
   TRANSLATABLE_FIELDS,
+  isTranslatableField,
   shopLanguages,
   translations,
   type TranslatableResource,
@@ -92,11 +93,11 @@ export interface TranslateInput {
 
 /** Sets one translated field, or removes it when the text is empty. Returns the stored translation, or null when removed. */
 export async function translate(shopId: string, input: TranslateInput, conn: Conn) {
-  const fields: readonly string[] = TRANSLATABLE_FIELDS[input.resource]
-  if (!fields.includes(input.field)) {
+  if (!isTranslatableField(input.resource, input.field)) {
+    const fields: readonly string[] = TRANSLATABLE_FIELDS[input.resource]
     throw new LanguageError(
       'INVALID_FIELD',
-      `A ${input.resource}'s ${fields.join(' and ')} can be translated, not "${input.field}"`,
+      `A ${input.resource}'s ${fields.join(' and ')}${input.resource === 'product' ? ', option names and option values' : ''} can be translated, not "${input.field}"`,
     )
   }
   const { languages } = await list(shopId, conn)

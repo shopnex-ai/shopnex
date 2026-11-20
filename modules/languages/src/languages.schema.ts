@@ -13,6 +13,21 @@ export const TRANSLATABLE_FIELDS = {
 export const TRANSLATABLE_RESOURCES = ['product', 'collection', 'page'] as const
 export type TranslatableResource = (typeof TRANSLATABLE_RESOURCES)[number]
 
+// A product's options are translated like Shopify's: the option's name, and each of its values, by id. Variants are not
+// translated themselves: a variant's title and selected options are made of the translated option values.
+export const optionNameField = (optionId: string) => `option_name:${optionId}`
+export const optionValueField = (valueId: string) => `option_value:${valueId}`
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Whether `field` is one a record of this kind can have translated: a fixed field, or (products) an option name or value */
+export function isTranslatableField(resource: TranslatableResource, field: string) {
+  if ((TRANSLATABLE_FIELDS[resource] as readonly string[]).includes(field)) return true
+  if (resource !== 'product') return false
+  const [kind, id, ...rest] = field.split(':')
+  return rest.length === 0 && (kind === 'option_name' || kind === 'option_value') && !!id && UUID.test(id)
+}
+
 /** At most this many published languages per shop, besides the default one */
 export const MAX_LANGUAGES = 20
 

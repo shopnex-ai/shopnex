@@ -6,6 +6,7 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { sourceDigest } from '@shopnex/languages/contract'
+import { optionNameField, optionValueField } from '@shopnex/languages/schema'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,9 +24,48 @@ export type Resource = 'product' | 'collection' | 'page'
 export interface TranslatableField {
   key: string
   label: string
+  /** Fields of one group sit under a heading of their own, like a product's options */
+  group?: string
   kind: 'text' | 'html'
   /** The record's saved text in the shop's own language (what the translation is made from) */
   source: string
+}
+
+/**
+ * What to translate on a product: its title and description, and (like Shopify) each option's name and values. Variants are
+ * not translated: they are made of the option values.
+ */
+export function translatableProductFields(product: {
+  title: string
+  description: string | null
+  descriptionHtml: string | null
+  options: { id: string; name: string; optionValues: { id: string; name: string }[] }[]
+}): TranslatableField[] {
+  return [
+    { key: 'title', label: 'Title', kind: 'text', source: product.title },
+    {
+      key: 'description',
+      label: 'Description',
+      kind: 'html',
+      source: product.descriptionHtml ?? product.description ?? '',
+    },
+    ...product.options.flatMap((option): TranslatableField[] => [
+      {
+        key: optionNameField(option.id),
+        label: 'Option name',
+        group: 'Product options',
+        kind: 'text',
+        source: option.name,
+      },
+      ...option.optionValues.map((value): TranslatableField => ({
+        key: optionValueField(value.id),
+        label: `${option.name} value`,
+        group: 'Product options',
+        kind: 'text',
+        source: value.name,
+      })),
+    ]),
+  ]
 }
 
 export const plain = (html: string) =>
@@ -166,9 +206,10 @@ export function useTranslationDrafts({
   saved: Record<string, TranslationRow>
   onSaved: () => Promise<unknown>
 }) {
-  const [drafts, setDrafts] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((f) => [f.key, saved[f.key]?.value ?? ''])),
-  )
+  const initial = () => Object.fromEntries(fields.map((f) => [f.key, saved[f.key]?.value ?? '']))
+  const [drafts, setDrafts] = useState<Record<string, string>>(initial)
+  // The rich text editor reads its value once: bumped on discard so it starts over from what is saved
+  const [version, setVersion] = useState(0)
   const isOutdated = (field: TranslatableField) => {
     const current = saved[field.key]
     return !!current && current.sourceDigest !== sourceDigest(field.source)
@@ -198,6 +239,11 @@ export function useTranslationDrafts({
   return {
     drafts,
     setDraft: (key: string, value: string) => setDrafts((d) => ({ ...d, [key]: value })),
+    discard: () => {
+      setDrafts(initial())
+      setVersion((v) => v + 1)
+    },
+    version,
     dirty: fields.some((f) => (drafts[f.key] ?? '') !== (saved[f.key]?.value ?? '')),
     isOutdated,
     anyOutdated: fields.some(isOutdated),
@@ -225,10 +271,13 @@ function TranslationFields({
 
   return (
     <FieldGroup>
-      {fields.map((field) => {
+      {fields.map((field, index) => {
         const id = `translation-${resource}-${field.key}`
         return (
           <Field key={field.key}>
+            {field.group && field.group !== fields[index - 1]?.group && (
+              <p className="border-t pt-4 text-sm font-semibold">{field.group}</p>
+            )}
             <div className="flex items-center gap-2">
               <FieldLabel htmlFor={id}>{field.label}</FieldLabel>
               {t.isOutdated(field) && <Badge variant="outline">Outdated</Badge>}

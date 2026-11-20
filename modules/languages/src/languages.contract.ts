@@ -79,7 +79,7 @@ export const translationInput = z.object({
   resource: z.enum(TRANSLATABLE_RESOURCES),
   resourceId: z.uuid(),
   language,
-  field: z.string().min(1).max(40),
+  field: z.string().min(1).max(80),
   /** The translated text; an empty text removes the translation */
   value: z.string().max(100_000),
   /** The record's text in the shop's language that this was translated from (its fingerprint is kept to spot later edits) */

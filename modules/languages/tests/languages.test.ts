@@ -12,7 +12,7 @@ const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/
 requireEmbeddedDatabase()
 const { LanguageError, languageService: languages, MAX_LANGUAGES } = await import('../src')
 const { canonicalLanguage, sourceDigest } = await import('../src/languages.contract')
-const { shopLanguages, translations } = await import('../src/languages.schema')
+const { optionNameField, optionValueField, shopLanguages, translations } = await import('../src/languages.schema')
 const { eq } = await import('drizzle-orm')
 
 const SHOP = 'default'
@@ -112,6 +112,23 @@ describe('translations', () => {
         db,
       ),
     )
+  })
+
+  test('a product’s option names and option values, by id, can be translated; nothing else can, and nothing on other records', async () => {
+    const color = randomUUID()
+    const red = randomUUID()
+    const field = (f: string, resource: 'product' | 'collection' = 'product') =>
+      languages.translate(
+        SHOP,
+        { resource, resourceId: product, language: 'fr', field: f, value: 'x', source: 'y' },
+        db,
+      )
+    assert.equal((await field(optionNameField(color)))?.field, optionNameField(color))
+    assert.equal((await field(optionValueField(red)))?.field, optionValueField(red))
+    await rejectsWith('INVALID_FIELD', field(optionNameField(color), 'collection'))
+    for (const bad of ['option_name:', 'option_name:not-a-uuid', `option_value:${red}:extra`, `variant:${red}`]) {
+      await rejectsWith('INVALID_FIELD', field(bad))
+    }
   })
 
   test('unpublishing keeps the translations: publishing again brings them back', async () => {
