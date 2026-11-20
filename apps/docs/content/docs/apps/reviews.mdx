@@ -20,7 +20,8 @@ Install it from **Admin → Apps**. It asks to read products and orders, and to 
 
 1. **Email.** Review requests are sent from your shop's address through **Settings → Email**, the same setup as your order emails, so there is nothing to enter in the app. Until email is on, requests wait and the app tells you how many.
 2. **Days after fulfillment.** How long to wait before asking (default 7, `0` asks right away).
-3. **The widget.** Copy the snippet from the app into a **Custom HTML** section of your product template:
+3. **Publishing.** By default every review waits for you. You can let **4 and 5 star reviews** through automatically, or **every review**; the rest still wait for you.
+4. **The widget.** Copy the snippet from the app into a **Custom HTML** section of your product template:
 
    ```html
    <div
@@ -32,12 +33,15 @@ Install it from **Admin → Apps**. It asks to read products and orders, and to 
    <script src="https://reviews.example.com/widget.js" async></script>
    ```
 
+   Add `data-name="{{ product.title }}"` to name the product in the rating markup that search engines read.
+
 ## How it works
 
 1. An order is fulfilled. ShopNex sends `order.fulfilled` to the app, which makes one review request per product in the order.
 2. After the delay, the app emails the buyer from your address with a link to a plain review page. The link works once.
-3. The review waits in **Waiting for approval**. **Publish** shows it on the storefront; **Hide** keeps it out.
-4. The widget loads published reviews of the product, with their average.
+3. The review waits in **Waiting for approval** (unless auto-publish lets it through). **Publish** shows it on the storefront; **Hide** keeps it out. Published and hidden reviews stay listed, so you can change your mind, and **Delete** removes one for good.
+4. **Reply to this review** adds a public answer that shows under the review in your store. Saving it empty removes it.
+5. The widget shows the product's average, how many reviews gave each rating, and the reviews ten at a time (**Load more reviews**). It also adds the `aggregateRating` markup search engines use for star ratings in results.
 
 ## Limits and rate limiting
 

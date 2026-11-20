@@ -18,8 +18,13 @@ export type Review = {
   author: string
   verified: boolean
   status: ReviewStatus
+  /** The shop's answer, shown under the review */
+  reply: string | null
   createdAt: number
 }
+
+/** Which new reviews go live without waiting for the shop: none, only 4 and 5 stars, or all */
+export type AutoPublish = 'off' | 'positive' | 'all'
 
 export type ReviewRequest = {
   token: string
@@ -60,6 +65,7 @@ export function openStore(db: NodePgDatabase) {
     author: r.author,
     verified: r.verified,
     status: r.status as ReviewStatus,
+    reply: r.reply,
     createdAt: r.createdAt,
   })
 
@@ -120,14 +126,21 @@ export function openStore(db: NodePgDatabase) {
     /** What the review page shows for a link; null when it is unknown or already used */
     async openRequest(token: string) {
       const [row] = await db
-        .select({ productTitle: reviewRequests.productTitle, usedAt: reviewRequests.usedAt })
+        .select({
+          productTitle: reviewRequests.productTitle,
+          instance: reviewRequests.instance,
+          shopId: reviewRequests.shopId,
+          usedAt: reviewRequests.usedAt,
+        })
         .from(reviewRequests)
         .where(eq(reviewRequests.token, token))
-      return row && row.usedAt === null ? { productTitle: row.productTitle } : null
+      return row && row.usedAt === null
+        ? { productTitle: row.productTitle, instance: row.instance, shopId: row.shopId }
+        : null
     },
 
-    /** A review from a link: single use, held for moderation, and verified because the link went to a buyer */
-    async submit(token: string, input: ReviewInput): Promise<Review> {
+    /** A review from a link: single use, held for moderation (unless auto-publish lets it through), and verified because the link went to a buyer */
+    async submit(token: string, input: ReviewInput, autoPublish: AutoPublish = 'off'): Promise<Review> {
       const rating = Number(input.rating)
       const body = clean(input.body, 5000)
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -153,7 +166,7 @@ export function openStore(db: NodePgDatabase) {
             body,
             author: clean(input.author, 80) || 'Anonymous',
             verified: true,
-            status: 'pending',
+            status: autoPublish === 'all' || (autoPublish === 'positive' && rating >= 4) ? 'published' : 'pending',
             createdAt: Date.now(),
           })
           .returning()
@@ -183,16 +196,54 @@ export function openStore(db: NodePgDatabase) {
       return changed.length > 0
     },
 
-    /** What the storefront widget shows: published reviews of a product and their average */
-    async forProduct(shop: ShopKey, productId: string, limit = 20) {
+    /** Only within the shop. An empty reply removes the shop's answer. */
+    async setReply(shop: ShopKey, id: string, reply: string) {
+      const text = clean(reply, 2000)
+      const changed = await db
+        .update(reviews)
+        .set({ reply: text || null, repliedAt: text ? Date.now() : null })
+        .where(and(eq(reviews.id, id), ofShop(shop)))
+        .returning({ id: reviews.id })
+      return changed.length > 0
+    },
+
+    /** Only within the shop */
+    async remove(shop: ShopKey, id: string) {
+      const gone = await db
+        .delete(reviews)
+        .where(and(eq(reviews.id, id), ofShop(shop)))
+        .returning({ id: reviews.id })
+      return gone.length > 0
+    },
+
+    /**
+     * What the storefront widget shows: published reviews of a product, newest first (`offset` pages through them),
+     * their average and how many reviews gave each rating
+     */
+    async forProduct(shop: ShopKey, productId: string, { limit = 10, offset = 0 } = {}) {
       const where = and(ofShop(shop), eq(reviews.productId, productKey(productId)), eq(reviews.status, 'published'))
-      const [summary] = await db
-        .select({ count: sql<number>`count(*)::int`, average: sql<string | null>`avg(${reviews.rating})` })
+      const perRating = await db
+        .select({ rating: reviews.rating, n: sql<number>`count(*)::int` })
         .from(reviews)
         .where(where)
-      const rows = await db.select().from(reviews).where(where).orderBy(desc(reviews.createdAt)).limit(limit)
-      const average = summary!.average === null ? null : Math.round(Number(summary!.average) * 10) / 10
-      return { count: summary!.count, average, reviews: rows.map(toReview) }
+        .groupBy(reviews.rating)
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>
+      let count = 0
+      let sum = 0
+      for (const { rating, n } of perRating) {
+        distribution[rating as 1 | 2 | 3 | 4 | 5] = n
+        count += n
+        sum += rating * n
+      }
+      const average = count === 0 ? null : Math.round((sum / count) * 10) / 10
+      const rows = await db
+        .select()
+        .from(reviews)
+        .where(where)
+        .orderBy(desc(reviews.createdAt))
+        .limit(limit)
+        .offset(offset)
+      return { count, average, distribution, reviews: rows.map(toReview) }
     },
 
     /** Requests of a shop whose time has come but that did not go out (usually: email is off) */

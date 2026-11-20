@@ -38,10 +38,14 @@ export function createAppBridge(options = {}) {
   function send(body) {
     const id = crypto.randomUUID()
     return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        waiting.delete(id)
-        reject(new Error(`ShopNex admin didn't answer "${body.type}"`))
-      }, timeoutMs)
+      // A dialog waits for a person, so it has no timeout
+      const timer =
+        body.type === 'confirm'
+          ? undefined
+          : setTimeout(() => {
+              waiting.delete(id)
+              reject(new Error(`ShopNex admin didn't answer "${body.type}"`))
+            }, timeoutMs)
       waiting.set(id, (message) => {
         clearTimeout(timer)
         waiting.delete(id)
@@ -76,6 +80,11 @@ export function createAppBridge(options = {}) {
     },
     async toast(message, { isError = false } = {}) {
       await send({ type: 'toast', message, isError })
+    },
+    async confirm({ title, message, label }) {
+      const reply = await send({ type: 'confirm', title, message, label })
+      if (reply.type !== 'confirm') throw new Error('Unexpected reply')
+      return reply.confirmed
     },
     async redirect(url) {
       await send({ type: 'redirect', url: new URL(url, window.location.href).toString() })
