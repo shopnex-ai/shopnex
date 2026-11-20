@@ -5,9 +5,9 @@ const widths = {
   /** Forms and settings */
   narrow: 'max-w-3xl',
   /** Lists and detail pages */
-  default: 'max-w-5xl',
+  default: 'max-w-5xl min-[1600px]:max-w-6xl min-[2000px]:max-w-7xl',
   /** Pages with a side column, like the product editor */
-  wide: 'max-w-6xl',
+  wide: 'max-w-6xl min-[1600px]:max-w-7xl min-[2000px]:max-w-[90rem]',
 } as const
 
 /** The root of every admin page: one width per kind of page and one gap between its blocks */
