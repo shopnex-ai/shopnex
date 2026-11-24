@@ -66,6 +66,12 @@ npx fetches it into its cache the first time. The same works from the folder abo
 | `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                            |
 | `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                                   |
 | `--dry-run`             | Show what would run, and exit                                                                             |
+| `--no-update-check`     | Do not look for a newer create-shopnex first (see below)                                                  |
+
+**Updates:** each run asks the npm registry (1.5 seconds at most) for the newest create-shopnex. If yours is older,
+the newer one runs instead with the same arguments, so a copy cached by npx never decides which ShopNex you get.
+Offline or on a slow connection it just carries on. The check is skipped in CI, for edge builds, and with
+`--no-update-check`; the folder's `npm start` script uses that flag because it runs the exact version that made the shop.
 
 ## Apps: Stripe, CJ Dropshipping and Shippo
 

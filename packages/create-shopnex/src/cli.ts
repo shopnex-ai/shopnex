@@ -14,6 +14,7 @@ import { resolveShopDir } from '@shopnex/cli-core/paths'
 import { brandBadge } from '@shopnex/cli-core/theme'
 import { assertPortsFree } from '@shopnex/cli-core/ports'
 import { runPlan } from './run'
+import { newerVersion, rerun, shouldCheck } from './self-update'
 
 type Pkg = { version: string; engines: { node: string } }
 // The build bundles package.json's version and engines into __PKG__; from the sources (tsx) it is read from the file
@@ -40,6 +41,7 @@ Options
   --with <apps>            also start optional apps: stripe, cj, shippo (comma separated, or repeat the flag)
   --app <name>             what to start (default shop; a picker appears once there is more than one)
   --verbose                show the output of the servers while they start
+  --no-update-check        do not look for a newer create-shopnex (it is checked on every run, and the newer one runs instead)
   --dry-run                show what would run and exit
   -h, --help               this text
   -v, --version            the version
@@ -78,6 +80,17 @@ async function run(argv: string[]) {
   if (options.help) return void console.log(HELP)
   if (options.version) return void console.log(pkg.version)
   assertNode(process.versions.node, pkg.engines.node)
+  // npx reuses the copy it cached on an earlier run, and this version decides which ShopNex is downloaded: run the newest
+  const fromSource = typeof __PKG__ === 'undefined'
+  const disabled = options.noUpdateCheck
+  if (shouldCheck({ version: pkg.version, fromSource, disabled, env: process.env })) {
+    const newer = await newerVersion(pkg.version)
+    if (newer) {
+      console.log(`create-shopnex ${newer} is out (this is ${pkg.version}), starting it...`)
+      const code = await rerun(newer, argv)
+      if (code >= 0) return void (process.exitCode = code)
+    }
+  }
   p.intro(brandBadge(` create-shopnex ${pkg.version} `))
 
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY)

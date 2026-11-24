@@ -18,6 +18,11 @@ test('flags are read', () => {
   )
 })
 
+test('--no-update-check turns the update check off', () => {
+  assert.equal(parse([]).noUpdateCheck, false)
+  assert.equal(parse(['--no-update-check', 'my-shop']).noUpdateCheck, true)
+})
+
 test('a bad port, the same port twice and an unknown flag are usage errors', () => {
   const bad = [
     ['--port', 'abc'],

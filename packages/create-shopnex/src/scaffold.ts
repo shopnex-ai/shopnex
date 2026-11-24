@@ -12,7 +12,7 @@ apps/*/app-key
 
 /** package.json: `npm start` runs this shop again, with the same create-shopnex version that made the folder, fetched by npx (nothing to install) */
 const packageJson = (name: string, version: string) => {
-  const run = `npx --yes create-shopnex@${version} .`
+  const run = `npx --yes create-shopnex@${version} --no-update-check .`
   return (
     JSON.stringify(
       {

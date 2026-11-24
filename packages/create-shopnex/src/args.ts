@@ -13,6 +13,8 @@ export type Options = {
   /** --with: optional apps to start next to the shop (names, checked later against extras.ts) */
   with: string[]
   verbose: boolean
+  /** --no-update-check: do not look for a newer create-shopnex (see self-update.ts) */
+  noUpdateCheck: boolean
   open: boolean
   dryRun: boolean
   help: boolean
@@ -25,6 +27,7 @@ const options = {
   app: { type: 'string' },
   with: { type: 'string', multiple: true },
   verbose: { type: 'boolean' },
+  'no-update-check': { type: 'boolean' },
   'no-open': { type: 'boolean' },
   'dry-run': { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
@@ -60,6 +63,7 @@ export function parse(argv: string[]): Options {
     app: values.app,
     with: values.with ?? [],
     verbose: Boolean(values.verbose),
+    noUpdateCheck: Boolean(values['no-update-check']),
     open: !values['no-open'],
     dryRun: Boolean(values['dry-run']),
     help: Boolean(values.help),

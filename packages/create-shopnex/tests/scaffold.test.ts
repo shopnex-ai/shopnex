@@ -18,7 +18,10 @@ test('a new shop gets a .gitignore and the fetched docker-compose.yml, and exist
   assert.match(readFileSync(join(dir, '.gitignore'), 'utf8'), /^\.env$/m)
   assert.equal(readFileSync(join(dir, 'docker-compose.yml'), 'utf8'), 'services: {}\n')
   const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
-  assert.deepEqual([pkg.scripts.start, pkg.scripts.dev], Array(2).fill('npx --yes create-shopnex@1.2.3 .'))
+  assert.deepEqual(
+    [pkg.scripts.start, pkg.scripts.dev],
+    Array(2).fill('npx --yes create-shopnex@1.2.3 --no-update-check .'),
+  )
   assert.equal(pkg.dependencies, undefined)
   assert.match(readFileSync(join(dir, 'README.md'), 'utf8'), /npm start/)
   assert.doesNotMatch(readFileSync(join(dir, 'README.md'), 'utf8'), /my-shop/)
