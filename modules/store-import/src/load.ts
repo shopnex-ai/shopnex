@@ -7,6 +7,7 @@ import { productVariants } from '@shopnex/catalog/schema'
 import { menuService, pageService, seedDefaultMenu } from '@shopnex/content'
 import type { Conn } from '@shopnex/db'
 import { eq } from 'drizzle-orm'
+import { boundProduct, COLLECTION_TITLE_MAX, httpUrl, PAGE_HANDLE_MAX, PAGE_HTML_MAX } from './bounds'
 import { usualPages } from './pages'
 import type { StoreImportCounts } from './store-import.schema'
 import type { Found } from './types'
@@ -56,8 +57,10 @@ export async function loadIntoShop(
   // something to sell: leave it out.
   const free = (p: Found['products'][number]) =>
     p.input.variants?.length ? p.input.variants.every((v) => !v.priceCents) : !p.input.priceCents
-  const sellable = input.products.filter((p) => !free(p))
-  let skipped = input.products.length - sellable.length
+  // Held to the product API's limits first (see bounds.ts): the store is untrusted, so "free" is judged on what will be stored
+  const bounded = input.products.map((p) => ({ ...p, input: boundProduct(p.input) }))
+  const sellable = bounded.filter((p) => !free(p))
+  let skipped = bounded.length - sellable.length
 
   // SKUs are unique across the whole shop: the ones it already has count too
   const usedSkus = new Set(
@@ -91,7 +94,7 @@ export async function loadIntoShop(
   const byGroup = new Map<string, { ids: string[]; image: string | null }>()
   for (const p of created) {
     for (const name of p.groups) {
-      const group = byGroup.get(name) ?? { ids: [], image: p.groupImage }
+      const group = byGroup.get(name) ?? { ids: [], image: httpUrl(p.groupImage) }
       group.ids.push(p.id)
       byGroup.set(name, group)
     }
@@ -100,7 +103,11 @@ export async function loadIntoShop(
   for (const [name, group] of [...byGroup.entries()].sort((a, b) => b[1].ids.length - a[1].ids.length).slice(0, 6)) {
     if (group.ids.length < 2) continue
     try {
-      const collection = await collectionService.create(shopId, { title: name, imageUrl: group.image }, conn)
+      const collection = await collectionService.create(
+        shopId,
+        { title: name.slice(0, COLLECTION_TITLE_MAX), imageUrl: group.image },
+        conn,
+      )
       for (const id of group.ids) await collectionService.addProduct(shopId, collection.id, id, conn)
       collections.push({ id: collection.id, title: name })
     } catch (e) {
@@ -139,7 +146,12 @@ export async function loadIntoShop(
     try {
       const page = await pageService.create(
         shopId,
-        { title: p.title.slice(0, 200), handle: p.handle, bodyHtml: p.html, published: true },
+        {
+          title: p.title.slice(0, 200),
+          handle: p.handle.slice(0, PAGE_HANDLE_MAX),
+          bodyHtml: p.html.slice(0, PAGE_HTML_MAX),
+          published: true,
+        },
         conn,
       )
       pages.push({ id: page.id, title: page.title })

@@ -5,6 +5,7 @@ import type { Conn } from '@shopnex/db'
 import { themeService } from '@shopnex/theme'
 import { eq } from 'drizzle-orm'
 import type { Fetcher } from './fetcher'
+import { httpUrl } from './bounds'
 import { decode } from './woo'
 
 export type Brand = {
@@ -169,12 +170,14 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
 
   return {
     name,
-    logo,
-    logoFrom: logo ? (logoFrom.startsWith('favicon') ? 'favicon' : 'logo') : null,
-    favicon,
+    logo: httpUrl(logo) ?? undefined,
+    logoFrom: httpUrl(logo) ? (logoFrom.startsWith('favicon') ? 'favicon' : 'logo') : null,
+    favicon: httpUrl(favicon) ?? undefined,
     color,
     background,
-    socials: socials as Brand['socials'],
+    socials: Object.fromEntries(
+      Object.entries(socials).flatMap(([network, url]) => (httpUrl(url) ? [[network, httpUrl(url)]] : [])),
+    ) as Brand['socials'],
   }
 }
 

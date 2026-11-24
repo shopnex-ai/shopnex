@@ -193,6 +193,51 @@ describe('importing into a shop that already sells', () => {
   })
 })
 
+describe('a store that sends hostile data', () => {
+  test('is held to the product limits, and no script or javascript: address is stored', async () => {
+    const shopId = await newShop()
+    const big = 'x'.repeat(1_000_000)
+    const evil = async (input: string | URL | Request) => {
+      const url = new URL(String(input))
+      if (url.pathname === '/products.json') {
+        return json({
+          products: [
+            {
+              id: 1,
+              title: 'Hostile',
+              handle: 'hostile',
+              body_html: '<script>alert(1)</script><img src=x onerror=alert(2)><p>ok</p>',
+              vendor: big,
+              product_type: big,
+              tags: '',
+              options: [{ name: 'Title', values: ['Default Title'] }],
+              variants: [{ sku: 'a', price: '3.00', available: true }],
+              images: [{ src: 'javascript:alert(1)' }, { src: 'https://cdn.example.com/1.jpg' }],
+            },
+          ],
+        })
+      }
+      if (url.pathname === '/meta.json') return json({ name: big, currency: 'USD' })
+      if (url.pathname === '/') {
+        return new Response('<html lang="en"><header><img class="logo" src="javascript:alert(1)"></header></html>')
+      }
+      return missing()
+    }
+    const job = await svc.start(shopId, { url: 'evil.example.com' }, db, hooks(evil))
+    assert.equal(job.status, 'done', job.error ?? '')
+    const [row] = await db.select().from(products).where(eq(products.shopId, shopId))
+    assert.equal(row?.vendor.length, 200)
+    assert.equal(row?.productType.length, 200)
+    assert.doesNotMatch(row?.descriptionHtml ?? '', /script|onerror/i)
+    const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
+    assert.equal(shop?.name.length, 100)
+    assert.equal(shop?.logo, null)
+    const live = await themeService.getLive(shopId, db)
+    const settings = (live?.published as { settings: Record<string, string> }).settings
+    assert.equal(settings.logo, undefined)
+  })
+})
+
 describe('what is refused or fails', () => {
   test('an address that is not a public store address never starts', async () => {
     const shopId = await newShop()
