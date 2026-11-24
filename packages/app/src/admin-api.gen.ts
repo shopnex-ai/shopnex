@@ -673,6 +673,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/store-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.storeImport.overview"];
+        put?: never;
+        post: operations["admin.storeImport.start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/store-import/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["admin.storeImport.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/themes": {
         parameters: {
             query?: never;
@@ -5411,6 +5443,159 @@ export interface operations {
                         recipientEmail: string | null;
                         purchaseOrderId: string | null;
                         note: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.storeImport.overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        fresh: boolean;
+                        latest: {
+                            /** Format: uuid */
+                            id: string;
+                            origin: string;
+                            platform: ("shopify" | "woocommerce") | null;
+                            /** @enum {string} */
+                            status: "running" | "done" | "failed";
+                            step: string;
+                            done: number;
+                            total: number;
+                            counts: {
+                                products: number;
+                                variants: number;
+                                collections: number;
+                                pages: number;
+                                skipped: number;
+                                total: number | null;
+                                currency: string;
+                                language: string | null;
+                                branded: boolean;
+                            } | null;
+                            problems: string[];
+                            error: string | null;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                        } | null;
+                    };
+                };
+            };
+        };
+    };
+    "admin.storeImport.start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    url: string;
+                    branding?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        origin: string;
+                        platform: ("shopify" | "woocommerce") | null;
+                        /** @enum {string} */
+                        status: "running" | "done" | "failed";
+                        step: string;
+                        done: number;
+                        total: number;
+                        counts: {
+                            products: number;
+                            variants: number;
+                            collections: number;
+                            pages: number;
+                            skipped: number;
+                            total: number | null;
+                            currency: string;
+                            language: string | null;
+                            branded: boolean;
+                        } | null;
+                        problems: string[];
+                        error: string | null;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
+                };
+            };
+        };
+    };
+    "admin.storeImport.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        origin: string;
+                        platform: ("shopify" | "woocommerce") | null;
+                        /** @enum {string} */
+                        status: "running" | "done" | "failed";
+                        step: string;
+                        done: number;
+                        total: number;
+                        counts: {
+                            products: number;
+                            variants: number;
+                            collections: number;
+                            pages: number;
+                            skipped: number;
+                            total: number | null;
+                            currency: string;
+                            language: string | null;
+                            branded: boolean;
+                        } | null;
+                        problems: string[];
+                        error: string | null;
                         /** Format: date-time */
                         createdAt: string;
                         /** Format: date-time */
