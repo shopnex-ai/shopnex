@@ -45,7 +45,7 @@ describe('createFetcher', () => {
       checkHost: async () => {},
       fetchImpl: async (url) => {
         seen.push(String(url))
-        return String(url).startsWith('https://a.example.com')
+        return new URL(String(url)).hostname === 'a.example.com'
           ? new Response(null, { status: 301, headers: { location: 'https://www.a.example.com/x' } })
           : ok('hello')
       },
@@ -58,7 +58,7 @@ describe('createFetcher', () => {
     const fetcher = createFetcher({
       pauseMs: 0,
       fetchImpl: async (url) =>
-        String(url).includes('example.com')
+        new URL(String(url)).hostname.endsWith('.example.com')
           ? new Response(null, { status: 302, headers: { location: 'http://169.254.169.254/latest/meta-data/' } })
           : ok('secret'),
       // The real guard, on literal addresses (no DNS involved); the first host is passed as public

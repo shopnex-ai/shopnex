@@ -139,7 +139,9 @@ const JUNK =
 
 /** Lower case, accents and umlauts folded (ü → ue, é → e), only letters, digits and hyphens; a trailing "-1" counter dropped */
 export function slug(text: string) {
+  // A store's page handle is not ours to trust: bound the work before any pattern runs over it
   return text
+    .slice(0, 200)
     .toLowerCase()
     .replace(/ä/g, 'ae')
     .replace(/ö/g, 'oe')
@@ -148,7 +150,7 @@ export function slug(text: string) {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-|-$/g, '') // the line above leaves at most one dash at each end
     .replace(/-\d+$/, '')
 }
 

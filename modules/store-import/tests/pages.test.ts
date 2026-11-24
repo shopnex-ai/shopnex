@@ -98,6 +98,13 @@ describe('usualPages', () => {
 })
 
 describe('slug', () => {
+  it('stays fast on a hostile handle (a long run of dashes, or a very long one)', () => {
+    const started = Date.now()
+    assert.equal(slug(`${'-'.repeat(200_000)}x`), '')
+    assert.equal(slug('a-'.repeat(100_000)).length <= 200, true)
+    assert.ok(Date.now() - started < 500, 'slug took too long')
+  })
+
   it('folds umlauts and accents and drops a trailing counter', () => {
     assert.equal(slug('Größentabellen'), 'groessentabellen')
     assert.equal(slug('Politique de confidentialité'), 'politique-de-confidentialite')

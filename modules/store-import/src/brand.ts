@@ -27,9 +27,16 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
       return ''
     }
   }
-  const abs = (base: string, href: string) => new URL(href.replace(/&amp;/g, '&').replace(/\\u0026/g, '&'), base).href
+  const abs = (base: string, href: string) => new URL(href.replace(/&amp;|\\u0026/g, '&'), base).href
   const html = await get(origin + '/')
-  const attr = (re: RegExp) => html.match(re)?.[1]?.replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim()
+  const attr = (re: RegExp) =>
+    html
+      .match(re)?.[1]
+      ?.replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      // Last: decoding it first would turn "&amp;#39;" (the text "&#39;") into an apostrophe
+      .replace(/&amp;/g, '&')
+      .trim()
 
   // ── name
   // Shopify: /meta.json. WordPress / WooCommerce: the site name at /wp-json. Else the page's og:site_name, else the host.
