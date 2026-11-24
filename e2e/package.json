@@ -27,6 +27,7 @@
     "@shopnex/orders": "workspace:*",
     "@shopnex/payments": "workspace:*",
     "@shopnex/gift-cards": "workspace:*",
+    "@shopnex/store-import": "workspace:*",
     "@shopnex/languages": "workspace:*",
     "@shopnex/pricing": "workspace:*",
     "@shopnex/privacy": "workspace:*",

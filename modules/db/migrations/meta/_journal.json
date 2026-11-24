@@ -351,6 +351,13 @@
       "when": 1795163739760,
       "tag": "0049_languages",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1795527794905,
+      "tag": "0050_store_import",
+      "breakpoints": true
     }
   ]
 }

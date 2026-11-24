@@ -10,6 +10,7 @@ import { ordersModule } from '@shopnex/orders/module'
 import { paymentsModule } from '@shopnex/payments/module'
 import { privacyModule } from '@shopnex/privacy/module'
 import { giftCardsModule } from '@shopnex/gift-cards/module'
+import { storeImportModule } from '@shopnex/store-import/module'
 import { languagesModule } from '@shopnex/languages/module'
 import { pricingModule } from '@shopnex/pricing/module'
 import { filesModule } from '@shopnex/files/module'
@@ -47,6 +48,7 @@ export const router = {
     analytics: tagged('Admin · Analytics').router(ordersModule.router.analytics),
     discounts: tagged('Admin · Discounts').router(pricingModule.router.discounts),
     giftCards: tagged('Admin · Gift cards').router(giftCardsModule.router.giftCards),
+    storeImport: tagged('Admin · Store import').router(storeImportModule.router.storeImport),
     themes: tagged('Admin · Themes').router(themeModule.router),
     menus: tagged('Admin · Navigation').router(contentModule.router.menus),
     pages: tagged('Admin · Pages').router(contentModule.router.pages),

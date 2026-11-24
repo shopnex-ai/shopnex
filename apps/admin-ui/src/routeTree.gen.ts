@@ -17,6 +17,7 @@ import { Route as AdminCollectionsRouteRouteImport } from './routes/admin/collec
 import { Route as AdminCustomersRouteRouteImport } from './routes/admin/customers/route'
 import { Route as AdminDiscountsRouteImport } from './routes/admin/discounts'
 import { Route as AdminGiftCardsRouteImport } from './routes/admin/gift-cards'
+import { Route as AdminImportRouteImport } from './routes/admin/import'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminOnlineStoreRouteRouteImport } from './routes/admin/online-store/route'
 import { Route as AdminOrdersRouteRouteImport } from './routes/admin/orders/route'
@@ -50,6 +51,7 @@ import { Route as AdminSettingsCustomFieldsRouteImport } from './routes/admin/se
 import { Route as AdminSettingsDomainsRouteImport } from './routes/admin/settings/domains'
 import { Route as AdminSettingsEmailRouteImport } from './routes/admin/settings/email'
 import { Route as AdminSettingsGeneralRouteImport } from './routes/admin/settings/general'
+import { Route as AdminSettingsImportRouteImport } from './routes/admin/settings/import'
 import { Route as AdminSettingsLanguagesRouteImport } from './routes/admin/settings/languages'
 import { Route as AdminSettingsMarketplaceRouteImport } from './routes/admin/settings/marketplace'
 import { Route as AdminSettingsNotificationsRouteRouteImport } from './routes/admin/settings/notifications/route'
@@ -105,6 +107,11 @@ const AdminDiscountsRoute = AdminDiscountsRouteImport.update({
 const AdminGiftCardsRoute = AdminGiftCardsRouteImport.update({
   id: '/gift-cards',
   path: '/gift-cards',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminImportRoute = AdminImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -275,6 +282,11 @@ const AdminSettingsGeneralRoute = AdminSettingsGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => AdminSettingsRouteRoute,
 } as any)
+const AdminSettingsImportRoute = AdminSettingsImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => AdminSettingsRouteRoute,
+} as any)
 const AdminSettingsLanguagesRoute = AdminSettingsLanguagesRouteImport.update({
   id: '/languages',
   path: '/languages',
@@ -375,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/gift-cards': typeof AdminGiftCardsRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -405,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/import': typeof AdminSettingsImportRoute
   '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -432,6 +446,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/gift-cards': typeof AdminGiftCardsRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -462,6 +477,7 @@ export interface FileRoutesByTo {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/import': typeof AdminSettingsImportRoute
   '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -492,6 +508,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRouteRouteWithChildren
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/gift-cards': typeof AdminGiftCardsRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/platform': typeof AdminPlatformRoute
   '/admin/setup': typeof AdminSetupRoute
@@ -522,6 +539,7 @@ export interface FileRoutesById {
   '/admin/settings/domains': typeof AdminSettingsDomainsRoute
   '/admin/settings/email': typeof AdminSettingsEmailRoute
   '/admin/settings/general': typeof AdminSettingsGeneralRoute
+  '/admin/settings/import': typeof AdminSettingsImportRoute
   '/admin/settings/languages': typeof AdminSettingsLanguagesRoute
   '/admin/settings/marketplace': typeof AdminSettingsMarketplaceRoute
   '/admin/settings/payments': typeof AdminSettingsPaymentsRoute
@@ -553,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/gift-cards'
+    | '/admin/import'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -583,6 +602,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/import'
     | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
@@ -610,6 +630,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/gift-cards'
+    | '/admin/import'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -640,6 +661,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/import'
     | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
@@ -669,6 +691,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/discounts'
     | '/admin/gift-cards'
+    | '/admin/import'
     | '/admin/login'
     | '/admin/platform'
     | '/admin/setup'
@@ -699,6 +722,7 @@ export interface FileRouteTypes {
     | '/admin/settings/domains'
     | '/admin/settings/email'
     | '/admin/settings/general'
+    | '/admin/settings/import'
     | '/admin/settings/languages'
     | '/admin/settings/marketplace'
     | '/admin/settings/payments'
@@ -781,6 +805,13 @@ declare module '@tanstack/react-router' {
       path: '/gift-cards'
       fullPath: '/admin/gift-cards'
       preLoaderRoute: typeof AdminGiftCardsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/import': {
+      id: '/admin/import'
+      path: '/import'
+      fullPath: '/admin/import'
+      preLoaderRoute: typeof AdminImportRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/login': {
@@ -1012,6 +1043,13 @@ declare module '@tanstack/react-router' {
       path: '/general'
       fullPath: '/admin/settings/general'
       preLoaderRoute: typeof AdminSettingsGeneralRouteImport
+      parentRoute: typeof AdminSettingsRouteRoute
+    }
+    '/admin/settings/import': {
+      id: '/admin/settings/import'
+      path: '/import'
+      fullPath: '/admin/settings/import'
+      preLoaderRoute: typeof AdminSettingsImportRouteImport
       parentRoute: typeof AdminSettingsRouteRoute
     }
     '/admin/settings/languages': {
@@ -1267,6 +1305,7 @@ interface AdminSettingsRouteRouteChildren {
   AdminSettingsDomainsRoute: typeof AdminSettingsDomainsRoute
   AdminSettingsEmailRoute: typeof AdminSettingsEmailRoute
   AdminSettingsGeneralRoute: typeof AdminSettingsGeneralRoute
+  AdminSettingsImportRoute: typeof AdminSettingsImportRoute
   AdminSettingsLanguagesRoute: typeof AdminSettingsLanguagesRoute
   AdminSettingsMarketplaceRoute: typeof AdminSettingsMarketplaceRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
@@ -1288,6 +1327,7 @@ const AdminSettingsRouteRouteChildren: AdminSettingsRouteRouteChildren = {
   AdminSettingsDomainsRoute: AdminSettingsDomainsRoute,
   AdminSettingsEmailRoute: AdminSettingsEmailRoute,
   AdminSettingsGeneralRoute: AdminSettingsGeneralRoute,
+  AdminSettingsImportRoute: AdminSettingsImportRoute,
   AdminSettingsLanguagesRoute: AdminSettingsLanguagesRoute,
   AdminSettingsMarketplaceRoute: AdminSettingsMarketplaceRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
@@ -1312,6 +1352,7 @@ interface AdminRouteRouteChildren {
   AdminSettingsRouteRoute: typeof AdminSettingsRouteRouteWithChildren
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminGiftCardsRoute: typeof AdminGiftCardsRoute
+  AdminImportRoute: typeof AdminImportRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminPlatformRoute: typeof AdminPlatformRoute
   AdminSetupRoute: typeof AdminSetupRoute
@@ -1334,6 +1375,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminSettingsRouteRoute: AdminSettingsRouteRouteWithChildren,
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminGiftCardsRoute: AdminGiftCardsRoute,
+  AdminImportRoute: AdminImportRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminPlatformRoute: AdminPlatformRoute,
   AdminSetupRoute: AdminSetupRoute,

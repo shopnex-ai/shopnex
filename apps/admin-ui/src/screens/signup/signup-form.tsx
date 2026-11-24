@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Field, FieldGroup } from '@/components/ui/field'
 import { clearAdminContext } from '@/lib/admin-context'
 
-export function SignupForm({ providers }: { providers: SocialProvider[] }) {
+export function SignupForm({ providers, importUrl }: { providers: SocialProvider[]; importUrl?: string }) {
   const navigate = useNavigate()
   const router = useRouter()
+  // After signing up with Google or GitHub the provider sends them back here
+  const importCallback = importUrl ? `/admin/import?url=${encodeURIComponent(importUrl)}` : undefined
   const form = useZodForm(setupInput, { defaultValues: { email: '', password: '' } })
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -23,7 +25,9 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
     }
     // Signing up made the shop too (createShopForNewAccount in @shopnex/auth)
     clearAdminContext(router)
-    await navigate({ to: '/admin/welcome', replace: true })
+    // Came to import a store: bring it across first; the shop gets named afterwards, already filled in from the store
+    if (importUrl) await navigate({ to: '/admin/import', search: { url: importUrl }, replace: true })
+    else await navigate({ to: '/admin/welcome', replace: true })
     await router.invalidate()
   })
 
@@ -53,7 +57,7 @@ export function SignupForm({ providers }: { providers: SocialProvider[] }) {
                 {form.formState.isSubmitting ? 'Creating your store…' : 'Create store'}
               </Button>
             </Field>
-            <SocialButtons providers={providers} mode="sign-up" />
+            <SocialButtons providers={providers} mode="sign-up" callbackURL={importCallback} />
           </FieldGroup>
         </form>
       </CardContent>

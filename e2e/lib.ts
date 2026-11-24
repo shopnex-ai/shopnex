@@ -12,6 +12,7 @@ import { paymentMethodService } from '@shopnex/payments'
 import { paymentMethods } from '@shopnex/payments/schema'
 import { orderService } from '@shopnex/orders'
 import { giftCards } from '@shopnex/gift-cards/schema'
+import { storeImports } from '@shopnex/store-import/schema'
 import { discounts, taxRates } from '@shopnex/pricing/schema'
 import { CLIENT_ASSERTION_TYPE, createClientAssertion } from '@shopnex/marketplace-sdk/keys'
 import { storefrontKeyService } from '@shopnex/channels'
@@ -125,6 +126,7 @@ export class Fixtures {
   private orders: string[] = []
   private discounts: string[] = []
   private giftCards: string[] = []
+  private storeImports: string[] = []
   private taxRates: string[] = []
   private shippingRates: string[] = []
   private paymentMethods: string[] = []
@@ -263,6 +265,16 @@ export class Fixtures {
     this.giftCards.push(id)
   }
 
+  /** A finished import of a store into the shop (a real one needs a store on the network, which a test must not depend on) */
+  async storeImport(shopId: string) {
+    const [row] = await db
+      .insert(storeImports)
+      .values({ shopId, origin: 'https://store.example.com', status: 'done', step: 'Done' })
+      .returning({ id: storeImports.id })
+    this.storeImports.push(row!.id)
+    return row!.id
+  }
+
   taxRate(id: string) {
     this.taxRates.push(id)
   }
@@ -345,6 +357,9 @@ export class Fixtures {
     if (this.shoppers.length) await db.delete(user).where(inArray(user.email, this.shoppers))
     if (this.discounts.length) await db.delete(discounts).where(inArray(discounts.id, this.discounts))
     if (this.giftCards.length) await db.delete(giftCards).where(inArray(giftCards.id, this.giftCards))
+    if (this.storeImports.length) {
+      await db.delete(storeImports).where(inArray(storeImports.id, this.storeImports))
+    }
     if (this.taxRates.length) await db.delete(taxRates).where(inArray(taxRates.id, this.taxRates))
     if (this.shippingRates.length) {
       await db.delete(shippingRates).where(inArray(shippingRates.id, this.shippingRates))
