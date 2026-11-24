@@ -1,86 +1,291 @@
 <!doctype html>
 <!-- The README hero (docs/images/dashboard.png), rendered by build.mjs: logo.svg and admin.png sit next to this file. -->
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <style>
-  * { box-sizing: border-box; margin: 0 }
-  html, body { width: 1800px; height: 1320px; overflow: hidden }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+  html,
   body {
-    position: relative; color: #fafafa; text-align: center;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    width: 1800px;
+    height: 1320px;
+    overflow: hidden;
+  }
+  body {
+    position: relative;
+    color: #fafafa;
+    text-align: center;
+    font-family:
+      Inter,
+      -apple-system,
+      BlinkMacSystemFont,
+      'SF Pro Display',
+      sans-serif;
     background: #060a09;
   }
   /* soft green light beams, like stage lights from the top */
   .beams {
-    position: absolute; inset: -200px -200px 0 -200px; filter: blur(22px); opacity: .9;
-    background:
-      repeating-linear-gradient(104deg,
-        transparent 0 90px,
-        rgba(34, 197, 130, .20) 130px,
-        rgba(20, 120, 100, .06) 190px,
-        transparent 250px 330px);
-    -webkit-mask-image: linear-gradient(180deg, #000 0, rgba(0,0,0,.55) 45%, transparent 85%);
+    position: absolute;
+    inset: -200px -200px 0 -200px;
+    filter: blur(22px);
+    opacity: 0.9;
+    background: repeating-linear-gradient(
+      104deg,
+      transparent 0 90px,
+      rgba(34, 197, 130, 0.2) 130px,
+      rgba(20, 120, 100, 0.06) 190px,
+      transparent 250px 330px
+    );
+    -webkit-mask-image: linear-gradient(180deg, #000 0, rgba(0, 0, 0, 0.55) 45%, transparent 85%);
   }
   .glow {
-    position: absolute; left: 50%; top: -260px; width: 1500px; height: 700px; transform: translateX(-50%);
-    background: radial-gradient(closest-side, rgba(52, 211, 153, .30), transparent);
+    position: absolute;
+    left: 50%;
+    top: -260px;
+    width: 1500px;
+    height: 700px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(52, 211, 153, 0.3), transparent);
   }
   .dots {
-    position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.10) 1.1px, transparent 1.3px);
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1.1px, transparent 1.3px);
     background-size: 28px 28px;
     -webkit-mask-image: radial-gradient(ellipse at 50% 20%, #000 10%, transparent 70%);
   }
-  .content { position: relative; z-index: 2 }
-  .brand { margin-top: 62px; display: flex; align-items: center; justify-content: center; gap: 18px }
-  .brand img { width: 62px; height: 62px }
-  .brand span { font-size: 54px; font-weight: 700; letter-spacing: -.02em }
-  h1 { margin-top: 44px; font-size: 104px; line-height: 1.04; font-weight: 700; letter-spacing: -.035em }
-  h1 em { font-style: normal; color: #34d399 }
-  .sub { margin-top: 26px; font-size: 34px; font-weight: 500; color: #9aa3a0; letter-spacing: -.01em }
+  .content {
+    position: relative;
+    z-index: 2;
+  }
+  .brand {
+    margin-top: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  .brand img {
+    width: 62px;
+    height: 62px;
+  }
+  .brand span {
+    font-size: 54px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  h1 {
+    margin-top: 44px;
+    font-size: 104px;
+    line-height: 1.04;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+  }
+  h1 em {
+    font-style: normal;
+    color: #34d399;
+  }
+  .sub {
+    margin-top: 26px;
+    font-size: 34px;
+    font-weight: 500;
+    color: #9aa3a0;
+    letter-spacing: -0.01em;
+  }
   .cmd {
-    display: inline-flex; align-items: center; gap: 16px; margin-top: 38px; padding: 15px 26px; border-radius: 14px;
-    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.14);
-    font: 500 26px 'SF Mono', ui-monospace, Menlo, monospace; color: #e8ecea;
-    box-shadow: 0 0 40px rgba(52, 211, 153, .12);
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 38px;
+    padding: 15px 26px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    font:
+      500 26px 'SF Mono',
+      ui-monospace,
+      Menlo,
+      monospace;
+    color: #e8ecea;
+    box-shadow: 0 0 40px rgba(52, 211, 153, 0.12);
   }
-  .cmd b { color: #34d399; font-weight: 600 }
+  .cmd b {
+    color: #34d399;
+    font-weight: 600;
+  }
   .tiles {
-    margin: 44px auto 0; width: 1240px; display: grid; grid-template-columns: repeat(3, 1fr);
-    border: 1px solid rgba(255,255,255,.14); border-radius: 18px; background: rgba(10, 16, 14, .72);
-    backdrop-filter: blur(8px); text-align: left; overflow: hidden;
+    margin: 44px auto 0;
+    width: 1240px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 18px;
+    background: rgba(10, 16, 14, 0.72);
+    backdrop-filter: blur(8px);
+    text-align: left;
+    overflow: hidden;
   }
-  .tile { display: flex; align-items: center; gap: 22px; padding: 26px 30px }
-  .tile + .tile { border-left: 1px solid rgba(255,255,255,.14) }
-  .ico { width: 58px; height: 58px; border-radius: 14px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.04); display: grid; place-items: center; flex: none }
-  .ico svg { width: 30px; height: 30px; stroke: #34d399; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
-  .tile h3 { font-size: 30px; font-weight: 650; letter-spacing: -.01em }
-  .tile p { margin-top: 4px; font-size: 22px; color: #8d9794 }
+  .tile {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 26px 30px;
+  }
+  .tile + .tile {
+    border-left: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .ico {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .ico svg {
+    width: 30px;
+    height: 30px;
+    stroke: #34d399;
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .tile h3 {
+    font-size: 30px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+  .tile p {
+    margin-top: 4px;
+    font-size: 22px;
+    color: #8d9794;
+  }
   /* the admin, bleeding off the bottom edge */
   .win {
-    position: absolute; z-index: 2; left: 150px; top: 640px; width: 1500px;
-    border-radius: 18px 18px 0 0; overflow: hidden; background: #101010;
-    border: 1px solid rgba(255,255,255,.2); border-bottom: 0;
-    box-shadow: 0 -10px 120px rgba(52, 211, 153, .20), 0 40px 100px rgba(0,0,0,.6);
+    position: absolute;
+    z-index: 2;
+    left: 150px;
+    top: 640px;
+    width: 1500px;
+    border-radius: 18px 18px 0 0;
+    overflow: hidden;
+    background: #101010;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 0;
+    box-shadow:
+      0 -10px 120px rgba(52, 211, 153, 0.2),
+      0 40px 100px rgba(0, 0, 0, 0.6);
   }
-  .bar { position: relative; height: 46px; background: linear-gradient(#1d1d1f, #151516); border-bottom: 1px solid rgba(255,255,255,.07) }
-  .lights { position: absolute; left: 20px; top: 16px; display: flex; gap: 9px }
-  .lights i { width: 14px; height: 14px; border-radius: 50%; display: block }
-  .lights i:nth-child(1) { background: #ff5f57 } .lights i:nth-child(2) { background: #febc2e } .lights i:nth-child(3) { background: #28c840 }
-  .url { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); width: 480px; height: 30px; border-radius: 9px; background: #0c0c0d; border: 1px solid rgba(255,255,255,.06); color: #a1a1a6; font-size: 15px; display: flex; align-items: center; justify-content: center }
-  .win img.shot { display: block; width: 1500px; height: auto }
+  .bar {
+    position: relative;
+    height: 46px;
+    background: linear-gradient(#1d1d1f, #151516);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .lights {
+    position: absolute;
+    left: 20px;
+    top: 16px;
+    display: flex;
+    gap: 9px;
+  }
+  .lights i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: block;
+  }
+  .lights i:nth-child(1) {
+    background: #ff5f57;
+  }
+  .lights i:nth-child(2) {
+    background: #febc2e;
+  }
+  .lights i:nth-child(3) {
+    background: #28c840;
+  }
+  .url {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    transform: translateX(-50%);
+    width: 480px;
+    height: 30px;
+    border-radius: 9px;
+    background: #0c0c0d;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: #a1a1a6;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .win img.shot {
+    display: block;
+    width: 1500px;
+    height: auto;
+  }
 </style>
-<div class="beams"></div><div class="glow"></div><div class="dots"></div>
+<div class="beams"></div>
+<div class="glow"></div>
+<div class="dots"></div>
 <div class="content">
-  <div class="brand"><img src="logo.svg"><span>ShopNex</span></div>
+  <div class="brand"><img src="logo.svg" /><span>ShopNex</span></div>
   <h1>Self-hosted <em>Shopify</em> alternative.</h1>
   <p class="sub">Products, orders, checkout and apps. One command, then start selling.</p>
   <div class="cmd"><b>$</b> npx create-shopnex my-shop</div>
   <div class="tiles">
-    <div class="tile"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></div><div><h3>Admin</h3><p>Orders, products &amp; settings</p></div></div>
-    <div class="tile"><div class="ico"><svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg></div><div><h3>Storefront</h3><p>Liquid themes on Astro</p></div></div>
-    <div class="tile"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M17 3v8M13 7h8"/></svg></div><div><h3>Apps</h3><p>Stripe, CJ, Shippo &amp; more</p></div></div>
+    <div class="tile">
+      <div class="ico">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="9" rx="1.5" />
+          <rect x="14" y="3" width="7" height="5" rx="1.5" />
+          <rect x="14" y="12" width="7" height="9" rx="1.5" />
+          <rect x="3" y="16" width="7" height="5" rx="1.5" />
+        </svg>
+      </div>
+      <div>
+        <h3>Admin</h3>
+        <p>Orders, products &amp; settings</p>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="ico">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9l1.5-5h15L21 9" />
+          <path d="M4 9v11h16V9" />
+          <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+        </svg>
+      </div>
+      <div>
+        <h3>Storefront</h3>
+        <p>Liquid themes on Astro</p>
+      </div>
+    </div>
+    <div class="tile">
+      <div class="ico">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="8" height="8" rx="1.5" />
+          <rect x="13" y="13" width="8" height="8" rx="1.5" />
+          <rect x="3" y="13" width="8" height="8" rx="1.5" />
+          <path d="M17 3v8M13 7h8" />
+        </svg>
+      </div>
+      <div>
+        <h3>Apps</h3>
+        <p>Stripe, CJ, Shippo &amp; more</p>
+      </div>
+    </div>
   </div>
 </div>
 <div class="win">
-  <div class="bar"><div class="lights"><i></i><i></i><i></i></div><div class="url">localhost:3000/admin</div></div>
-  <img class="shot" src="admin.png">
+  <div class="bar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="url">localhost:3000/admin</div>
+  </div>
+  <img class="shot" src="admin.png" />
 </div>

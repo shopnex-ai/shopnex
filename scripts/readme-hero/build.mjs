@@ -22,7 +22,9 @@ if (!screenshot || !existsSync(screenshot)) {
 }
 
 // Playwright is a dependency of e2e/ (a CommonJS entry: its exports sit on `default` when imported)
-const playwright = await import(pathToFileURL(createRequire(join(root, 'e2e/package.json')).resolve('@playwright/test')).href)
+const playwright = await import(
+  pathToFileURL(createRequire(join(root, 'e2e/package.json')).resolve('@playwright/test')).href
+)
 const { chromium } = playwright.chromium ? playwright : playwright.default
 
 const work = mkdtempSync(join(tmpdir(), 'readme-hero-'))
