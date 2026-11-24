@@ -5,6 +5,7 @@ import {
   BookOpenIcon,
   CodeIcon,
   CreditCardIcon,
+  DownloadIcon,
   GlobeIcon,
   LanguagesIcon,
   HardDriveIcon,
@@ -100,6 +101,7 @@ export const settingsNav: { label: string; items: (NavItem | ExternalNavItem)[] 
       { href: '/admin/settings/ai', label: 'AI', icon: SparklesIcon },
       { href: '/admin/settings/domains', label: 'Domains', icon: GlobeIcon },
       { href: '/admin/settings/languages', label: 'Languages', icon: LanguagesIcon },
+      { href: '/admin/settings/import', label: 'Import a store', icon: DownloadIcon },
     ],
   },
   {

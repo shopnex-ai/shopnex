@@ -53,7 +53,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are answered with the
 ```text
 <!-- modules:graph:start -->
 ai → apps, catalog, content, core, db, rpc, tenancy
-api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, storefront, tenancy, theme, webhooks
+api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, store-import, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
@@ -76,6 +76,7 @@ payments → apps, core, customers, db, orders, rpc, webhooks
 pricing → core, db, rpc
 privacy → auth, cart, core, custom-fields, customers, db, email, gift-cards, orders, rpc, tenancy, webhooks
 rpc → core
+store-import → catalog, content, core, db, rpc, theme, webhooks
 storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, languages, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, languages, rpc, webhooks
 theme → core, db, drafts, rpc
