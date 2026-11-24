@@ -314,10 +314,25 @@ jobs:
 
   # Publishes the latest main run to GitHub Pages (https://shopnex-ai.github.io/shopnex/results.json).
   # Needs Settings > Pages > Source: GitHub Actions (it is on). A failure here is a real failure, so CI shows it.
+  # Two jobs, as in GitHub's Pages template: deploy-pages looks the artifact up the moment it starts, and in the same job as
+  # the upload that is a race the lookup sometimes loses ("No artifacts named github-pages were found").
+  report-site:
+    name: Prepare the test report site
+    needs: report
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.report.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-report-site
+          path: report-site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: report-site
+
   publish-report:
     name: Publish test report
-    needs: report
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.report.result == 'success'
+    needs: report-site
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -329,12 +344,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/download-artifact@v8
-        with:
-          name: test-report-site
-          path: report-site
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: report-site
       - id: deploy
         uses: actions/deploy-pages@v5
