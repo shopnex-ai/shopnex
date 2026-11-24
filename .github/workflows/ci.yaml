@@ -313,13 +313,12 @@ jobs:
           if-no-files-found: ignore
 
   # Publishes the latest main run to GitHub Pages (https://shopnex-ai.github.io/shopnex/results.json).
-  # Needs Settings > Pages > Source: GitHub Actions. Until that is on, this job fails without failing CI.
+  # Needs Settings > Pages > Source: GitHub Actions (it is on). A failure here is a real failure, so CI shows it.
   publish-report:
     name: Publish test report
     needs: report
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.report.result == 'success'
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
       pages: write
       id-token: write
