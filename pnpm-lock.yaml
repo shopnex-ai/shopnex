@@ -542,6 +542,9 @@ importers:
       '@shopnex/privacy':
         specifier: workspace:*
         version: link:../modules/privacy
+      '@shopnex/store-import':
+        specifier: workspace:*
+        version: link:../modules/store-import
       '@shopnex/tenancy':
         specifier: workspace:*
         version: link:../modules/tenancy

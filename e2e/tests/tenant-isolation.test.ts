@@ -15,6 +15,7 @@ import { db } from '@shopnex/db'
 import { API, Fixtures, call, closeDb, ok, requireApp } from '../lib'
 import { API_SCOPES } from '@shopnex/core/schema'
 import { customers } from '@shopnex/customers/schema'
+import { DEFAULT_SHOP_ID } from '@shopnex/tenancy'
 
 const fx = new Fixtures()
 const run = Date.now().toString(36)
@@ -281,6 +282,21 @@ describe('shop B cannot reach shop A by id', () => {
     const still = ok(await call('GET', `/admin/gift-cards/${g.id}`, undefined, a))
     assert.equal(still.balanceCents, 5000, 'A’s card keeps its balance')
     assert.equal(still.active, true, 'A’s card is still active')
+  })
+
+  isolated('store imports', async () => {
+    const id = await fx.storeImport(DEFAULT_SHOP_ID)
+    assertRefused(
+      await attack('/admin/store-import/{id}', { method: 'GET', path: `/admin/store-import/${id}` }, ownerB),
+      'GET',
+    )
+    assert.equal(ok(await call('GET', `/admin/store-import/${id}`, undefined, ownerA)).status, 'done')
+    // Importing writes products, pages and the theme: owners and admins from a session only, never an API token
+    const token = await call('POST', '/admin/store-import', { url: 'store.example.com' }, a)
+    assert.ok(
+      token.status === 401 || token.status === 403,
+      `an API token must not start an import: ${token.status} ${JSON.stringify(token.body)}`,
+    )
   })
 
   isolated('orders', async () => {
