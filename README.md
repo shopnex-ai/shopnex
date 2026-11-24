@@ -12,10 +12,6 @@
   <a href="https://discord.gg/xQ8xKV6MdF"><img src="https://img.shields.io/badge/Discord-join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the ShopNex Discord"></a>
 </p>
 
-<p align="center">
-  <img src="docs/images/storefront.webp" alt="ShopNex storefront home page with a hero banner and a Shop now button" width="900">
-</p>
-
 ## Quick start
 
 Requires [Node](https://nodejs.org) 22.22+. No Docker, no clone, no database to install.
@@ -29,6 +25,10 @@ Open http://localhost:3000, follow the setup wizard, and your storefront is on h
 - Add optional apps: `--with stripe,cj,shippo`.
 - Everything lives in the `my-shop` folder (`.env`, embedded database in `.pglite/`). Delete it to start over.
 - It's a trial setup. For production, set `DATABASE_URL` to PostgreSQL or see the [self-hosting guide](apps/docs/content/docs/self-hosting/install.mdx).
+
+<p align="center">
+  <img src="docs/images/storefront.webp" alt="ShopNex storefront home page with a hero banner and a Shop now button" width="900">
+</p>
 
 ## What you get
 
