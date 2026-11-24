@@ -1,14 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-light.svg">
-    <img src="docs/images/logo.svg" alt="ShopNex logo" width="72">
-  </picture>
+  <img src="docs/images/dashboard.png" alt="ShopNex: a self-hosted Shopify alternative. Run npx create-shopnex, open the setup wizard, start selling. The admin dashboard with sales analytics and installed apps." width="900">
 </p>
-
-<h1 align="center">ShopNex</h1>
-
-<p align="center"><b>Self-hosted Shopify alternative. Run <code>npx create-shopnex@latest</code>, open the setup wizard, start selling.</b></p>
 
 <p align="center"><a href="https://demo.shopnex.ai/admin/signup?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
@@ -18,10 +10,6 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/shopnex-ai/shopnex" alt="License: MIT"></a>
   <a href=".node-version"><img src="https://img.shields.io/badge/node-%E2%89%A522.22-339933?logo=nodedotjs&logoColor=white" alt="Node"></a>
   <a href="https://discord.gg/xQ8xKV6MdF"><img src="https://img.shields.io/badge/Discord-join%20chat-5865F2?logo=discord&logoColor=white" alt="Join the ShopNex Discord"></a>
-</p>
-
-<p align="center">
-  <img src="docs/images/dashboard.png" alt="ShopNex admin dashboard with sales analytics" width="900">
 </p>
 
 <p align="center">

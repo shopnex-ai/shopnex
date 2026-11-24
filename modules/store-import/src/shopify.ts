@@ -5,6 +5,12 @@ import type { Found } from './types'
 
 const ZERO_DECIMAL = new Set(['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'UGX'])
 
+/**
+ * A tag that holds data rather than a label, like Allbirds' `allbirds::gender => unisex` (namespace::key => value:
+ * stores and apps keep data in tags). It is no use to the new shop's shoppers and would show up in its tag filter.
+ */
+export const isDataTag = (tag: string) => tag.includes('::') || tag.includes(' => ')
+
 export async function fetchShopify(origin: string, max: number, fetcher: Fetcher): Promise<Found> {
   const getJson = fetcher.json
   const meta = await getJson(origin + '/meta.json').catch(() => null)
@@ -50,13 +56,14 @@ export async function fetchShopify(origin: string, max: number, fetcher: Fetcher
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean)
+    const labels = tags.filter((t) => !isDataTag(String(t)))
     return {
       title: String(p.title).slice(0, 250),
       status: 'active',
       descriptionHtml: p.body_html || null,
       vendor: p.vendor ?? '',
       productType: p.product_type ?? '',
-      tags: tags.slice(0, 250),
+      tags: labels.slice(0, 250),
       images: (p.images ?? []).map((i: any) => ({ url: i.src, alt: i.alt ? String(i.alt).slice(0, 300) : null })),
       ...(options.length ? { options: options.map((o: any) => ({ name: o.name, values: o.values })) } : {}),
       variants,
