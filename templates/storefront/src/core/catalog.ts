@@ -28,6 +28,12 @@ const LIST_FILTERS = [
   { param: 'tag', label: 'Tag', key: 'tags' },
 ] as const
 
+/**
+ * A tag that holds data rather than a label, like Allbirds' `allbirds::gender => unisex` (namespace::key => value, a
+ * convention some Shopify apps and stores keep in tags): not something a shopper filters by.
+ */
+export const isDataTag = (tag: string) => tag.includes('::') || tag.includes(' => ')
+
 export type FilterValue = {
   label: string
   value: string
@@ -154,7 +160,10 @@ function filtersFor(
   }
 
   for (const { param, label, key } of LIST_FILTERS) {
-    const offered = facets?.[key] ?? []
+    // Data tags are not offered, unless one is selected (a link to it still works and can be removed)
+    const offered = (facets?.[key] ?? []).filter(
+      (v) => key !== 'tags' || !isDataTag(v.value) || selected[key].includes(v.value),
+    )
     // Selected values the listing no longer offers (a stale link) stay visible, so they can be removed
     const values: FilterValue[] = [
       ...offered.map((v) => ({ ...v, count: v.count as number | null })),

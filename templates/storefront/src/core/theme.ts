@@ -30,7 +30,7 @@ import {
   type ThemeSection,
   type ThemeSettings,
 } from '@shopnex/storefront-sdk'
-import { catalogHref, sortOptions, type CatalogFilters } from './catalog'
+import { catalogHref, sortOptions, type CatalogFilters, type FilterGroup } from './catalog'
 import {
   CollectionDrop,
   Lazy,
@@ -49,7 +49,7 @@ import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { appHeaderTags } from './app-scripts'
 import { localizationObject } from './localization'
-import { scriptMessages } from './locales'
+import { messagesFor, scriptMessages } from './locales'
 import type { Messages } from '@shopnex/storefront-sdk/i18n'
 import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
@@ -210,14 +210,44 @@ export type ThemePage =
 
 type PageMeta = { title: string | null; description: string | null; image: string | null }
 
-function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<string, unknown>, PageMeta] {
+// The theme's text for the labels core/catalog writes in English (the filters of a listing). A theme without the text keeps the English.
+const FILTER_LABEL_KEYS: Record<string, string> = {
+  vendor: 'collection.filter_vendor',
+  type: 'collection.filter_product_type',
+  tag: 'collection.filter_tag',
+  available: 'collection.filter_availability',
+  price: 'collection.filter_price',
+}
+
+/** The filter groups of a listing with their labels in the theme's text, for the visitor's language */
+function translateFilters(groups: FilterGroup[], text: (key: string) => string | undefined): FilterGroup[] {
+  return groups.map((group) => {
+    const label = text(FILTER_LABEL_KEYS[group.param] ?? '') ?? group.label
+    if (group.type !== 'list') return { ...group, label }
+    return {
+      ...group,
+      label,
+      values:
+        group.param === 'available'
+          ? group.values.map((value) => ({ ...value, label: text('collection.in_stock') ?? value.label }))
+          : group.values,
+    }
+  })
+}
+
+function templateObjects(
+  page: ThemePage,
+  url: URL,
+  loader: Loader,
+  text: (key: string) => string | undefined,
+): [Record<string, unknown>, PageMeta] {
   switch (page.template) {
     case 'collection': {
       const { collection } = page
       const paged = url.searchParams.has('after')
       const drop = new CollectionDrop(collection, loader, {
         products: page.products,
-        filters: page.filters.groups,
+        filters: translateFilters(page.filters.groups, text),
         active_filters: page.filters.active,
         clear_filters_url: page.filters.clearUrl,
         sort_by: page.sort ?? '',
@@ -374,7 +404,22 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   const { theme, liquid } = loaded
   const loader = new Loader(url)
   const shop = await loader.shop()
-  const [objects, meta] = templateObjects(page, url, loader)
+  const localization = localizationObject(
+    {
+      shipTo: shop?.shipToCountries ?? [],
+      country: requestContext.getStore()?.country,
+      shopLanguage: shop?.languageCode ?? 'en',
+      languages: shop?.languages ?? [],
+      language: requestContext.getStore()?.language,
+    },
+    shop?.currencyCode ?? null,
+  )
+  const messages = messagesFor(theme.dir, localization.language.iso_code)
+  const text = (key: string) => {
+    const message = messages[key]
+    return typeof message === 'string' ? message : undefined
+  }
+  const [objects, meta] = templateObjects(page, url, loader, text)
   // The homepage's title and description are the shop's (Settings → General)
   if (page.template === 'index' && shop) Object.assign(meta, shop.seo)
 
@@ -386,16 +431,6 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
         settings: settingsObject(theme.definition.sections[s.type]!.settings, s.settings, loader),
       })),
   }
-  const localization = localizationObject(
-    {
-      shipTo: shop?.shipToCountries ?? [],
-      country: requestContext.getStore()?.country,
-      shopLanguage: shop?.languageCode ?? 'en',
-      languages: shop?.languages ?? [],
-      language: requestContext.getStore()?.language,
-    },
-    shop?.currencyCode ?? null,
-  )
   const globals = {
     shop: shopObject(shop),
     localization,
