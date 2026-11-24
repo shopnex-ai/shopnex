@@ -19,7 +19,7 @@ import type {
   ThemeSettingField,
   ThemeSettings,
 } from '@shopnex/storefront-sdk'
-import type { CatalogFilters } from './catalog'
+import type { SaidActiveFilter, SaidFilterGroup } from './catalog'
 import { menuItemHref, safeUrl } from './links'
 import { orNull, shopnex } from './shopnex'
 
@@ -372,9 +372,9 @@ export interface CatalogFields {
   /** This page's products */
   products: Product[]
   /** Filters to offer: lists of `values` (label, count, active, url that toggles it) and the price range */
-  filters: CatalogFilters['groups']
+  filters: SaidFilterGroup[]
   /** The selected filters, each with the url that removes it */
-  active_filters: CatalogFilters['active']
+  active_filters: SaidActiveFilter[]
   /** The listing without its filters, null when none is selected */
   clear_filters_url: string | null
   /** Slug of the sort option in use, '' for the default */

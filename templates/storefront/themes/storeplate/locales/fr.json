@@ -19,11 +19,18 @@
     "no_products_found": "Aucun produit trouvé",
     "no_products_here_yet": "Aucun produit pour le moment",
     "no_products_match_these_filters": "Aucun produit ne correspond à ces filtres",
+    "price_from": "à partir de {{ amount }}",
+    "price_up_to": "jusqu’à {{ amount }}",
     "remove": "Retirer",
     "search_for_something": "Recherchez quelque chose",
     "search_products": "Rechercher des produits",
     "see_all_products": "Voir tous les produits",
-    "sort_colon": "Trier :"
+    "sort_alphabetical": "Alphabétique, A–Z",
+    "sort_colon": "Trier :",
+    "sort_featured": "En vedette",
+    "sort_latest_arrivals": "Nouveautés",
+    "sort_price_high_low": "Prix : décroissant",
+    "sort_price_low_high": "Prix : croissant"
   },
   "error": {
     "back_to_home": "Retour à l’accueil",

@@ -23,10 +23,17 @@
     "no_products_found": "Keine Produkte gefunden",
     "no_products_found_period": "Keine Produkte gefunden.",
     "no_products_match_these_filters": "Keine Produkte entsprechen diesen Filtern",
+    "price_from": "ab {{ amount }}",
+    "price_up_to": "bis {{ amount }}",
     "search_for_something": "Suchen Sie nach etwas",
     "search_products": "Produkte suchen",
     "sort": "Sortieren",
-    "sort_by": "Sortieren nach"
+    "sort_alphabetical": "Alphabetisch, A–Z",
+    "sort_by": "Sortieren nach",
+    "sort_featured": "Empfohlen",
+    "sort_latest_arrivals": "Neueste Artikel",
+    "sort_price_high_low": "Preis: absteigend",
+    "sort_price_low_high": "Preis: aufsteigend"
   },
   "error": {
     "continue_shopping": "Weiter einkaufen",

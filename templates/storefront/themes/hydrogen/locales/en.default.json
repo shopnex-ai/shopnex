@@ -23,10 +23,17 @@
     "no_products_found": "No products found",
     "no_products_found_period": "No products found.",
     "no_products_match_these_filters": "No products match these filters",
+    "price_from": "from {{ amount }}",
+    "price_up_to": "up to {{ amount }}",
     "search_for_something": "Search for something",
     "search_products": "Search products",
     "sort": "Sort",
-    "sort_by": "Sort by"
+    "sort_alphabetical": "Alphabetically, A–Z",
+    "sort_by": "Sort by",
+    "sort_featured": "Featured",
+    "sort_latest_arrivals": "Latest arrivals",
+    "sort_price_high_low": "Price: High to low",
+    "sort_price_low_high": "Price: Low to high"
   },
   "error": {
     "continue_shopping": "Continue shopping",

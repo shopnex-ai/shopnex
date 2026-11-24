@@ -10,32 +10,70 @@ type ProductFacets = Awaited<ReturnType<StorefrontClient['products']['facets']>>
 
 export const PAGE_SIZE = 24
 
-export type SortOption = { slug: string | null; title: string; sortKey?: ProductSortKey; reverse?: boolean }
+/**
+ * Text core writes for a listing (the sort options, the filters and what is selected). A theme says it in the visitor's
+ * language with the text `key` in its locales/; a theme without that key (an uploaded one) gets `text`, in English.
+ * `vars` fill the {{ placeholders }} of either.
+ */
+export type Label = { key: string; text: string; vars?: Record<string, string> }
+const label = (key: string, text: string, vars?: Record<string, string>): Label => ({
+  key,
+  text,
+  ...(vars ? { vars } : {}),
+})
+
+/** The words of a label: the theme's text when `say` has some for its key, else the English, with the placeholders filled */
+export function labelText(
+  value: Label | string,
+  say: (key: string, vars?: Record<string, string>) => string | undefined,
+): string {
+  if (typeof value === 'string') return value
+  return (
+    say(value.key, value.vars) ??
+    value.text.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, name: string) => value.vars?.[name] ?? match)
+  )
+}
+
+export type SortOption = { slug: string | null; title: Label; sortKey?: ProductSortKey; reverse?: boolean }
 
 // The default (slug null) is the collection's own order, or newest first for all products
 export const sortOptions: SortOption[] = [
-  { slug: null, title: 'Featured' },
-  { slug: 'latest-desc', title: 'Latest arrivals', sortKey: 'CREATED_AT', reverse: true },
-  { slug: 'title-asc', title: 'Alphabetically, A–Z', sortKey: 'TITLE', reverse: false },
-  { slug: 'price-asc', title: 'Price: Low to high', sortKey: 'PRICE', reverse: false },
-  { slug: 'price-desc', title: 'Price: High to low', sortKey: 'PRICE', reverse: true },
+  { slug: null, title: label('collection.sort_featured', 'Featured') },
+  {
+    slug: 'latest-desc',
+    title: label('collection.sort_latest_arrivals', 'Latest arrivals'),
+    sortKey: 'CREATED_AT',
+    reverse: true,
+  },
+  {
+    slug: 'title-asc',
+    title: label('collection.sort_alphabetical', 'Alphabetically, A–Z'),
+    sortKey: 'TITLE',
+    reverse: false,
+  },
+  {
+    slug: 'price-asc',
+    title: label('collection.sort_price_low_high', 'Price: Low to high'),
+    sortKey: 'PRICE',
+    reverse: false,
+  },
+  {
+    slug: 'price-desc',
+    title: label('collection.sort_price_high_low', 'Price: High to low'),
+    sortKey: 'PRICE',
+    reverse: true,
+  },
 ]
 
 // The query parameters of a listing's filters
 const LIST_FILTERS = [
-  { param: 'vendor', label: 'Vendor', key: 'vendors' },
-  { param: 'type', label: 'Product type', key: 'productTypes' },
-  { param: 'tag', label: 'Tag', key: 'tags' },
+  { param: 'vendor', label: label('collection.filter_vendor', 'Vendor'), key: 'vendors' },
+  { param: 'type', label: label('collection.filter_product_type', 'Product type'), key: 'productTypes' },
+  { param: 'tag', label: label('collection.filter_tag', 'Tag'), key: 'tags' },
 ] as const
 
-/**
- * A tag that holds data rather than a label, like Allbirds' `allbirds::gender => unisex` (namespace::key => value, a
- * convention some Shopify apps and stores keep in tags): not something a shopper filters by.
- */
-export const isDataTag = (tag: string) => tag.includes('::') || tag.includes(' => ')
-
 export type FilterValue = {
-  label: string
+  label: string | Label
   value: string
   /** Products with this value (before the other filters), null when unknown */
   count: number | null
@@ -45,9 +83,9 @@ export type FilterValue = {
 }
 
 export type FilterGroup =
-  | { label: string; param: string; type: 'list'; values: FilterValue[] }
+  | { label: Label; param: string; type: 'list'; values: FilterValue[] }
   | {
-      label: string
+      label: Label
       param: 'price'
       type: 'price_range'
       currency: string
@@ -64,7 +102,37 @@ export type FilterGroup =
     }
 
 /** A selected filter, with the listing without it */
-export type ActiveFilter = { label: string; url: string }
+/** What is selected: `label`, and what it is set to ("Tag: sale") when it has a value */
+export type ActiveFilter = { label: Label | string; value?: Label | string; url: string }
+
+/** What a theme's Liquid gets: the same, with the words already said (see labelText) */
+type Said<T> = Omit<T, 'label'> & { label: string }
+export type SaidFilterGroup =
+  | (Omit<Said<Extract<FilterGroup, { type: 'list' }>>, 'values'> & { values: Said<FilterValue>[] })
+  | Said<Extract<FilterGroup, { type: 'price_range' }>>
+export type SaidActiveFilter = { label: string; url: string }
+
+/** The filters of a listing with their words said in the visitor's language: `say` is the theme's text for a key, when it has some */
+export function sayFilters(
+  filters: Pick<CatalogFilters, 'groups' | 'active'>,
+  say: Parameters<typeof labelText>[1],
+): { groups: SaidFilterGroup[]; active: SaidActiveFilter[] } {
+  return {
+    groups: filters.groups.map((group) =>
+      group.type === 'list'
+        ? {
+            ...group,
+            label: labelText(group.label, say),
+            values: group.values.map((value) => ({ ...value, label: labelText(value.label, say) })),
+          }
+        : { ...group, label: labelText(group.label, say) },
+    ),
+    active: filters.active.map(({ label, value, url }) => ({
+      label: value === undefined ? labelText(label, say) : `${labelText(label, say)}: ${labelText(value, say)}`,
+      url,
+    })),
+  }
+}
 
 export type CatalogFilters = {
   groups: FilterGroup[]
@@ -159,11 +227,8 @@ function filtersFor(
     return next.pathname + next.search
   }
 
-  for (const { param, label, key } of LIST_FILTERS) {
-    // Data tags are not offered, unless one is selected (a link to it still works and can be removed)
-    const offered = (facets?.[key] ?? []).filter(
-      (v) => key !== 'tags' || !isDataTag(v.value) || selected[key].includes(v.value),
-    )
+  for (const { param, label: groupLabel, key } of LIST_FILTERS) {
+    const offered = facets?.[key] ?? []
     // Selected values the listing no longer offers (a stale link) stay visible, so they can be removed
     const values: FilterValue[] = [
       ...offered.map((v) => ({ ...v, count: v.count as number | null })),
@@ -175,23 +240,26 @@ function filtersFor(
       active: selected[key].includes(v.value),
       url: toggle(param, v.value),
     }))
-    for (const v of values) if (v.active) active.push({ label: `${label}: ${v.label}`, url: v.url })
+    for (const v of values) if (v.active) active.push({ label: groupLabel, value: v.label, url: v.url })
     // One value to choose from isn't a choice
-    if (values.length > 1 || values.some((v) => v.active)) groups.push({ label, param, type: 'list', values })
+    if (values.length > 1 || values.some((v) => v.active))
+      groups.push({ label: groupLabel, param, type: 'list', values })
   }
 
+  const PRICE = label('collection.filter_price', 'Price')
+  const IN_STOCK = label('collection.in_stock', 'In stock')
   const inStock = url.searchParams.get('available') === '1'
   const stockUrl = catalogHref(url, { available: inStock ? null : '1', after: null })
   // Nothing to filter in an empty listing
   if (facets?.price || inStock) {
     groups.push({
-      label: 'Availability',
+      label: label('collection.filter_availability', 'Availability'),
       param: 'available',
       type: 'list',
-      values: [{ label: 'In stock', value: '1', count: null, active: inStock, url: stockUrl }],
+      values: [{ label: IN_STOCK, value: '1', count: null, active: inStock, url: stockUrl }],
     })
   }
-  if (inStock) active.push({ label: 'In stock', url: stockUrl })
+  if (inStock) active.push({ label: IN_STOCK, url: stockUrl })
 
   if (facets?.price && facets.price.min.amountMinor < facets.price.max.amountMinor) {
     const hidden = [...url.searchParams]
@@ -201,7 +269,7 @@ function filtersFor(
     const selectedMin = price.min?.trim() ?? ''
     const selectedMax = price.max?.trim() ?? ''
     groups.push({
-      label: 'Price',
+      label: PRICE,
       param: 'price',
       type: 'price_range',
       currency: min.currencyCode,
@@ -218,10 +286,11 @@ function filtersFor(
         selectedMin && selectedMax
           ? `${selectedMin} – ${selectedMax}`
           : selectedMin
-            ? `from ${selectedMin}`
-            : `up to ${selectedMax}`
+            ? label('collection.price_from', 'from {{ amount }}', { amount: selectedMin })
+            : label('collection.price_up_to', 'up to {{ amount }}', { amount: selectedMax })
       active.push({
-        label: `Price: ${range}`,
+        label: PRICE,
+        value: range,
         url: catalogHref(url, { price_min: null, price_max: null, after: null }),
       })
     }
