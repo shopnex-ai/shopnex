@@ -19,3 +19,25 @@ test('does not list the global sections as a page to preview', () => {
   assert.ok(values.includes('home'))
   assert.equal(values.includes('static'), false)
 })
+
+test('names the usual pages, uses the theme’s own name for others, and offers the missing usual ones', () => {
+  const themed = ThemeDefinition.parse({
+    id: 't',
+    name: 'T',
+    sections: {},
+    pages: {
+      home: { name: 'Landing', sections: [] },
+      about: { name: 'About us', sections: [] },
+      product: { name: 'Item', sections: [] },
+    },
+  })
+  const options = previewPageOptions(themed, { products: [], collections: [], pages: [] })
+  assert.deepEqual(options, [
+    { value: 'home', label: 'Home page' },
+    { value: 'about', label: 'About us' },
+    { value: 'product', label: 'Product' },
+    { value: 'collection', label: 'Collection' },
+    { value: 'page', label: 'Content page' },
+    { value: '404', label: '404 page' },
+  ])
+})
