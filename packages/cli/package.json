@@ -1,6 +1,6 @@
 {
   "name": "shopnex",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "description": "Look after a ShopNex shop made with create-shopnex: npx shopnex migrate-db moves the embedded database to PostgreSQL",
   "license": "MIT",
   "homepage": "https://shopnex.ai",
