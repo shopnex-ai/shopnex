@@ -37,3 +37,13 @@ test('reads the nested header menu and keeps only links that still point somewhe
     ],
   )
 })
+
+test('unbalanced lists in the header do not break the import', () => {
+  const nav = readHeaderMenu(
+    `<header><nav><ul><li><a href="/a">A</a></li></ul></ul><li><a href="/b">B</a></li><ul><li><a href="/c">C</a></li></nav></header>`,
+  )
+  assert.deepEqual(
+    nav.map((i) => i.title),
+    ['A', 'B', 'C'],
+  )
+})

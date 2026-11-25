@@ -27,8 +27,10 @@ export function readHeaderMenu(html: string): NavItem[] {
     const closing = m[1] === '/'
     const name = m[2]!.toLowerCase()
     if (name === 'ul') {
-      if (closing) lists.pop()
-      else if (open.length) lists.push(open[open.length - 1]!)
+      // Every <ul> pushes (a top-level one adds to the current list), so each </ul> pops its own; the root never pops
+      if (closing) {
+        if (lists.length > 1) lists.pop()
+      } else lists.push(open.length ? open[open.length - 1]! : lists[lists.length - 1]!)
     } else if (name === 'li') {
       if (closing) open.pop()
       else {
