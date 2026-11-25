@@ -21,7 +21,12 @@ export function readContactLines(html: string): string[] {
 
 /** The page body: each line as a list item, an email address made a link */
 export function contactHtml(lines: string[]): string {
+  // Word by word, each matched whole: a pattern scanning the line for an address could run slowly on a long line of "+"
+  const email = /^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/
   const item = (line: string) =>
-    escape(line).replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, (email) => `<a href="mailto:${email}">${email}</a>`)
+    line
+      .split(/(\s+)/)
+      .map((word) => (email.test(word) ? `<a href="mailto:${escape(word)}">${escape(word)}</a>` : escape(word)))
+      .join('')
   return `<ul>${lines.map((line) => `<li>${item(line)}</li>`).join('')}</ul>`
 }

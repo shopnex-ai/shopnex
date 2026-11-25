@@ -22,3 +22,9 @@ test('makes the page body: escaped, with the email address as a link', () => {
     '<ul><li>Email: <a href="mailto:shop@example.com">shop@example.com</a></li><li>&lt;b&gt;x&lt;/b&gt;</li></ul>',
   )
 })
+
+test('a long line of repeated characters is handled quickly', () => {
+  const started = Date.now()
+  contactHtml(['+'.repeat(200) + '@' + 'a.'.repeat(50)])
+  assert.ok(Date.now() - started < 200)
+})
