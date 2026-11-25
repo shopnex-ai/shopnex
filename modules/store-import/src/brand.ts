@@ -159,7 +159,7 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
   const footerHtml = html.match(/<footer[\s\S]*?<\/footer>/i)?.[0] ?? html
   const socials: Partial<Record<(typeof NETWORKS)[number], string>> = {}
   for (const m of footerHtml.matchAll(
-    /href=["'](https?:\/\/(?:www\.)?(instagram|facebook|tiktok|youtube|x|twitter|pinterest)\.com\/[^"'#?\s]+)/gi,
+    /href=["'](https?:\/\/(?:www\.)?(instagram|facebook|tiktok|youtube|x|twitter|pinterest)\.com\/[^"'#?\s]+(?:\?[^"'#\s]*)?)/gi,
   )) {
     const network = m[2]!.toLowerCase() as (typeof NETWORKS)[number]
     if (/sharer|share|intent|\/tr\b|plugins|dialog/i.test(m[1]!)) continue
