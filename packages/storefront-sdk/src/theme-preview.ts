@@ -4,7 +4,8 @@
 //   1. The editor loads the storefront with ?shopnex_preview=<token>; the theme passes the token to
 //      `storefront.theme.get`, which returns the draft (`preview: true`).
 //   2. In preview, the page calls `connectThemePreview`, which tells the editor it is ready.
-//   3. The editor then posts `reload` after each saved draft and `select` when a section (or one of its blocks)
+//   3. A click on a section (or a block) in the preview posts `select` back to the editor, which opens its settings.
+//   4. The editor then posts `reload` after each saved draft and `select` when a section (or one of its blocks)
 //      is picked. Sections are found by their `data-section-id` attribute (the section's id in the document), blocks
 //      by `data-block-id` inside the section (what `{{ block.shopify_attributes }}` prints).
 //
@@ -25,8 +26,10 @@ export type ThemeEditorMessage =
   | { source: typeof THEME_EDITOR_SOURCE; type: 'reload' }
   | { source: typeof THEME_EDITOR_SOURCE; type: 'select'; sectionId: string; blockId?: string }
 
-/** Storefront → editor */
-export type ThemePreviewMessage = { source: typeof THEME_PREVIEW_SOURCE; type: 'ready' }
+/** Storefront → editor: the page is ready, or the merchant clicked a section (and the block under the click, if any) */
+export type ThemePreviewMessage =
+  | { source: typeof THEME_PREVIEW_SOURCE; type: 'ready' }
+  | { source: typeof THEME_PREVIEW_SOURCE; type: 'select'; sectionId: string; blockId?: string }
 
 const isRecord = (data: unknown): data is Record<string, unknown> => typeof data === 'object' && data !== null
 
@@ -41,7 +44,13 @@ export function isThemeEditorMessage(data: unknown): data is ThemeEditorMessage 
 }
 
 export function isThemePreviewMessage(data: unknown): data is ThemePreviewMessage {
-  return isRecord(data) && data.source === THEME_PREVIEW_SOURCE && data.type === 'ready'
+  if (!isRecord(data) || data.source !== THEME_PREVIEW_SOURCE) return false
+  return (
+    data.type === 'ready' ||
+    (data.type === 'select' &&
+      typeof data.sectionId === 'string' &&
+      (data.blockId === undefined || typeof data.blockId === 'string'))
+  )
 }
 
 export interface ConnectThemePreviewOptions {
@@ -101,8 +110,29 @@ export function connectThemePreview({ adminOrigin, onReload, onSelect }: Connect
     }
   }
 
+  // A click in a section picks it in the editor. Links inside sections do not navigate: the preview shows the page being edited.
+  function onClick(event: MouseEvent) {
+    const target = event.target instanceof Element ? event.target : null
+    const section = target?.closest<HTMLElement>(`[${THEME_SECTION_ATTRIBUTE}]`)
+    const sectionId = section?.getAttribute(THEME_SECTION_ATTRIBUTE)
+    if (!section || !sectionId) return
+    if (target?.closest('a')) event.preventDefault()
+    const blockId = target?.closest<HTMLElement>(`[${THEME_BLOCK_ATTRIBUTE}]`)?.getAttribute(THEME_BLOCK_ATTRIBUTE)
+    const message: ThemePreviewMessage = {
+      source: THEME_PREVIEW_SOURCE,
+      type: 'select',
+      sectionId,
+      ...(blockId && { blockId }),
+    }
+    window.parent.postMessage(message, origin)
+  }
+
   window.addEventListener('message', onMessage)
+  document.addEventListener('click', onClick, true)
   const ready: ThemePreviewMessage = { source: THEME_PREVIEW_SOURCE, type: 'ready' }
   window.parent.postMessage(ready, origin)
-  return () => window.removeEventListener('message', onMessage)
+  return () => {
+    window.removeEventListener('message', onMessage)
+    document.removeEventListener('click', onClick, true)
+  }
 }

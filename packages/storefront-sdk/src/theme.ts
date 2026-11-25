@@ -70,6 +70,12 @@ export const ThemeBlockDefinition = z.object({
   limit: z.number().int().min(1).optional(),
 })
 
+/**
+ * The page whose sections are the theme's global ones (`{% section 'announcement-bar' %}`): the same on every page. The
+ * theme editor lists them as a group at the top of each page's sections, not as a page of their own.
+ */
+export const THEME_STATIC_PAGE = 'static'
+
 /** The most blocks one section holds, whatever its definition says */
 export const MAX_SECTION_BLOCKS = 50
 

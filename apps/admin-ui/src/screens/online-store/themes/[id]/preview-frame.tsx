@@ -33,6 +33,8 @@ type Props = {
   selectedSectionId: string | null
   /** The block picked inside that section, if any: the preview outlines it instead of the section */
   selectedBlockId?: string | null
+  /** The merchant clicked a section (or a block of it) in the preview */
+  onPick?: (sectionId: string, blockId?: string) => void
   /** Which page of the storefront to show, e.g. "/collections/all" */
   path?: string
   device: 'desktop' | 'mobile'
@@ -44,6 +46,7 @@ export function PreviewFrame({
   reloadKey,
   selectedSectionId,
   selectedBlockId = null,
+  onPick,
   path = '/',
   device,
 }: Props) {
@@ -57,6 +60,8 @@ export function PreviewFrame({
   selected.current = selectedSectionId
   const selectedBlock = useRef(selectedBlockId)
   selectedBlock.current = selectedBlockId
+  const picked = useRef(onPick)
+  picked.current = onPick
 
   const post = (message: DistributiveOmit<ThemeEditorMessage, 'source'>) =>
     frame.current?.contentWindow?.postMessage({ source: THEME_EDITOR_SOURCE, ...message }, origin)
@@ -76,6 +81,10 @@ export function PreviewFrame({
     function onMessage(event: MessageEvent) {
       if (event.source !== frame.current?.contentWindow || event.origin !== origin) return
       if (!isThemePreviewMessage(event.data)) return
+      if (event.data.type === 'select') {
+        picked.current?.(event.data.sectionId, event.data.blockId)
+        return
+      }
       setReady(true)
       setNoBridge(false)
       if (selected.current) post(selectMessage(selected.current, selectedBlock.current))

@@ -19,6 +19,7 @@ import { Context, type Liquid } from 'liquidjs'
 import {
   ORPCError,
   THEME_BLOCK_ATTRIBUTE,
+  THEME_STATIC_PAGE,
   THEME_PREVIEW_PARAM,
   ThemeDefinition,
   defaultDocument,
@@ -56,9 +57,6 @@ import type { Messages } from '@shopnex/storefront-sdk/i18n'
 import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
-
-/** The page whose sections are the global ones `{% section 'name' %}` renders */
-const STATIC_PAGE = 'static'
 
 const escapeAttribute = (value: string) => value.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)
 
@@ -430,7 +428,7 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
       // Global sections live on the page "static" (the editor lists it as such): the one with this id, else the first of
       // this type (a section the merchant added in the editor has an id of its own). One the merchant has not touched, or
       // that the theme's static page does not list, shows with its defaults
-      const global = loaded.sections(STATIC_PAGE)
+      const global = loaded.sections(THEME_STATIC_PAGE)
       const found = global.find((s) => s.id === name) ?? global.find((s) => s.type === name)
       if (found) return objectOf(found)
       const definition = theme.definition.sections[name]

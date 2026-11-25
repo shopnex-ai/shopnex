@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
   MAX_SECTION_BLOCKS,
+  THEME_STATIC_PAGE,
   applyPreset,
   resolveSettings,
   type ThemeBlock,
@@ -143,9 +144,15 @@ export function ThemeEditor({
 
   // ── document edits ──
   // A page the merchant hasn't edited yet shows the theme's default sections (as the storefront does)
-  const sections = draft.pages[page]?.sections ?? definition.pages[page]?.sections ?? []
-  const setSections = (next: ThemeSection[]) =>
-    update({ ...draft, pages: { ...draft.pages, [page]: { sections: next } } })
+  const pageSections = (id: string) => draft.pages[id]?.sections ?? definition.pages[id]?.sections ?? []
+  const setPageSections = (id: string, next: ThemeSection[]) =>
+    update({ ...draft, pages: { ...draft.pages, [id]: { sections: next } } })
+  const sections = pageSections(page)
+  const setSections = (next: ThemeSection[]) => setPageSections(page, next)
+  // The theme's global sections ({% section %}), pinned above every page's own: a group the merchant can edit and
+  // hide here, whichever page is open. Which sections it holds is the theme's to say.
+  const groupDefinition = definition.pages[THEME_STATIC_PAGE]
+  const group = groupDefinition ? pageSections(THEME_STATIC_PAGE) : []
   const pagePath = previewPagePath(page, definition, previewCatalog)
 
   function addSection(type: string) {
@@ -169,20 +176,25 @@ export function ThemeEditor({
     setPane('sections')
   }
 
-  const selectedSection = sections.find((s) => s.id === selected) ?? null
+  const inPage = sections.some((s) => s.id === selected)
+  const selectedSection = (inPage ? sections : group).find((s) => s.id === selected) ?? null
+  // A section of the group is saved on the global page, whichever page is open
+  const isGlobal = !!selectedSection && !inPage
+  const ownerSections = isGlobal ? group : sections
+  const setOwnerSections = (next: ThemeSection[]) => setPageSections(isGlobal ? THEME_STATIC_PAGE : page, next)
   const selectedDefinition = selectedSection ? definition.sections[selectedSection.type] : undefined
 
   function setSectionSetting(id: string, value: ThemeSettingValue) {
     if (!selectedSection || !selectedDefinition) return
     const settings = { ...resolveSettings(selectedDefinition.settings, selectedSection.settings), [id]: value }
-    setSections(sections.map((s) => (s.id === selectedSection.id ? { ...s, settings } : s)))
+    setOwnerSections(ownerSections.map((s) => (s.id === selectedSection.id ? { ...s, settings } : s)))
   }
 
   // ── blocks of the selected section ──
   const blocks = selectedSection?.blocks ?? []
   const setBlocks = (next: ThemeBlock[]) => {
     if (!selectedSection) return
-    setSections(sections.map((s) => (s.id === selectedSection.id ? { ...s, blocks: next } : s)))
+    setOwnerSections(ownerSections.map((s) => (s.id === selectedSection.id ? { ...s, blocks: next } : s)))
   }
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) ?? null
   const blockDefinition = selectedBlock ? selectedDefinition?.blocks[selectedBlock.type] : undefined
@@ -195,6 +207,14 @@ export function ThemeEditor({
     const block: ThemeBlock = { id: newBlockId(), type, settings: resolveSettings(definitionOfType.settings) }
     setBlocks([...blocks, block])
     setSelectedBlockId(block.id)
+  }
+
+  // A click on a section (or one of its blocks) in the preview opens it here
+  function pick(sectionId: string, blockId?: string) {
+    if (!sections.some((s) => s.id === sectionId) && !group.some((s) => s.id === sectionId)) return
+    setSelected(sectionId)
+    setSelectedBlockId(blockId ?? null)
+    setPane('settings')
   }
 
   function removeBlock(id: string) {
@@ -348,6 +368,28 @@ export function ThemeEditor({
                 className="mb-3 w-full"
               />
             )}
+            {group.length > 0 && (
+              <div className="mb-4">
+                <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {groupDefinition?.name}
+                </h2>
+                <ItemList
+                  items={group}
+                  names={Object.fromEntries(Object.entries(definition.sections).map(([type, def]) => [type, def.name]))}
+                  noun="section"
+                  addable={[]}
+                  canAdd={false}
+                  selectedId={selected}
+                  onSelect={(id) => {
+                    setSelected(id)
+                    setSelectedBlockId(null)
+                    setPane('settings')
+                  }}
+                  onChange={(next) => setPageSections(THEME_STATIC_PAGE, next)}
+                  onAdd={() => {}}
+                />
+              </div>
+            )}
             <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Sections</h2>
             <SectionList
               definition={definition}
@@ -386,6 +428,7 @@ export function ThemeEditor({
             reloadKey={reloadKey}
             selectedSectionId={selected}
             selectedBlockId={selectedBlockId}
+            onPick={pick}
             path={pagePath}
             device={device}
           />
@@ -430,15 +473,17 @@ export function ThemeEditor({
                 <h2 className="font-semibold">
                   {selectedDefinition?.name ?? `Unknown section (${selectedSection.type})`}
                 </h2>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => removeSection(selectedSection.id)}
-                  aria-label="Remove section"
-                  title="Remove section"
-                >
-                  <Trash2Icon />
-                </Button>
+                {!isGlobal && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeSection(selectedSection.id)}
+                    aria-label="Remove section"
+                    title="Remove section"
+                  >
+                    <Trash2Icon />
+                  </Button>
+                )}
               </div>
               {selectedDefinition ? (
                 <>
@@ -462,6 +507,7 @@ export function ThemeEditor({
                           full: def.limit != null && blocks.filter((b) => b.type === type).length >= def.limit,
                         }))}
                         disableAdd={blocksFull}
+                        onRemove={removeBlock}
                         selectedId={selectedBlockId}
                         onSelect={setSelectedBlockId}
                         onChange={setBlocks}

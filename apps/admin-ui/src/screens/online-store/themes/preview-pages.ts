@@ -1,4 +1,4 @@
-import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
+import { THEME_STATIC_PAGE, type ThemeDefinition } from '@shopnex/storefront-sdk/theme'
 
 export type PreviewCatalog = {
   products: { handle: string; title: string }[]
@@ -11,21 +11,24 @@ export type PreviewPageOption = { value: string; label: string }
 export function previewPageOptions(definition: ThemeDefinition | null, catalog: PreviewCatalog): PreviewPageOption[] {
   const pages = definition?.pages ?? {}
   return [
-    ...Object.entries(pages).map(([value, page]) => ({
-      value,
-      label:
-        value === 'home'
-          ? 'Home page'
-          : value === 'collection'
-            ? 'Collection'
-            : value === 'product'
-              ? 'Product'
-              : value === 'page'
-                ? 'Content page'
-                : value === '404'
-                  ? '404 page'
-                  : page.name,
-    })),
+    // The global sections are a group on every page, not a page to preview
+    ...Object.entries(pages)
+      .filter(([value]) => value !== THEME_STATIC_PAGE)
+      .map(([value, page]) => ({
+        value,
+        label:
+          value === 'home'
+            ? 'Home page'
+            : value === 'collection'
+              ? 'Collection'
+              : value === 'product'
+                ? 'Product'
+                : value === 'page'
+                  ? 'Content page'
+                  : value === '404'
+                    ? '404 page'
+                    : page.name,
+      })),
     ...(!pages.collection ? [{ value: 'collection', label: 'Collection' }] : []),
     ...(!pages.product ? [{ value: 'product', label: 'Product' }] : []),
     ...(!pages.page ? [{ value: 'page', label: 'Content page' }] : []),
