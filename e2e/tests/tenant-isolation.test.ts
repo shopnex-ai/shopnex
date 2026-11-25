@@ -5,16 +5,23 @@
 // A 400 is NOT accepted as a refusal: the API validates the body before it looks anything up, so a request with a
 // bad body would be turned away for the wrong reason and hide a real hole. Every attack therefore sends a valid body.
 //
-// This file covers the routes an API token can reach. Routes that need a staff session (tax rates, shipping rates,
-// payment methods, channels, domains, staff, storefront keys, API tokens) are listed in PENDING below, together with
-// the storefront routes, until they get their own cases.
+// This file covers the routes an API token can reach, and the storefront (shop B's publishable key). Routes that need
+// a staff session (tax rates, shipping rates, payment methods, channels, domains, staff, storefront keys, API tokens)
+// are listed in PENDING below until they get their own cases.
+//
+// A staff session cannot be used to attack from shop B here: this suite runs against a server in single mode, where a
+// staff session always acts in the default shop, so shop B's owner is refused everywhere for not being a member of
+// it, whatever the route does with the id. Only attacks made with an API token or a storefront key prove anything.
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
-import { like } from 'drizzle-orm'
+import { eq, like } from 'drizzle-orm'
 import { db } from '@shopnex/db'
-import { API, Fixtures, call, closeDb, ok, requireApp } from '../lib'
+import { API, Fixtures, SHOP, call, closeDb, ok, requireApp, sellableVariants } from '../lib'
 import { API_SCOPES } from '@shopnex/core/schema'
+import { accountService } from '@shopnex/customers'
 import { customers } from '@shopnex/customers/schema'
+import { orderService } from '@shopnex/orders'
+import { orders } from '@shopnex/orders/schema'
 import { DEFAULT_SHOP_ID } from '@shopnex/tenancy'
 
 const fx = new Fixtures()
@@ -24,7 +31,10 @@ let a: Record<string, string> // shop A: the default shop
 let b: Record<string, string> // shop B: someone else, with every scope
 let otherId: string
 let ownerA: Record<string, string> // staff session, owner of shop A
-let ownerB: Record<string, string> // staff session, owner of shop B
+let ownerB: Record<string, string> // staff session, owner of shop B (see the note at the top: not usable to attack)
+let keyB: Record<string, string> // shop B's publishable key: storefront requests made as shop B
+
+const CUSTOMER_TOKEN = 'x-shopnex-customer-token'
 
 type Attack = { method: string; path: string; body?: unknown }
 const covered = new Set<string>() // "METHOD /openapi/path/{param}" of every route attacked below
@@ -65,6 +75,10 @@ before(async () => {
   b = await fx.token([...API_SCOPES], otherId)
   ownerA = (await fx.account('owner')).headers
   ownerB = (await fx.account('owner', otherId)).headers
+  keyB = { 'x-shopnex-key': (await fx.storefrontKey(otherId)).token }
+  // Control: the key really puts a storefront request in shop B. Without this, every refusal below could be a key
+  // that resolves to nothing.
+  assert.equal(ok(await call('GET', '/storefront/shop', undefined, keyB)).id, otherId, 'shop B’s key reaches shop B')
 })
 
 after(async () => {
@@ -364,6 +378,10 @@ describe('shop B cannot reach shop A by id', () => {
     assert.ok(!still.cancelledAt && !still.cancelled, 'A’s order is not cancelled')
   })
 
+  // KNOWN WEAK: shop B's owner attacks with a staff session, and in single mode that session acts in the default shop,
+  // where B's owner is no member: every call below is a 403 whatever the routes do with the id (shop B's owner cannot
+  // even create a page in shop B, which a control would show). It catches a route that stops checking membership, not
+  // one that forgets to scope by shop. It needs a multi-mode server to prove more.
   isolated('pages and menus', async () => {
     const page = ok(await call('POST', '/admin/pages', { title: `E2E iso page ${run}` }, ownerA))
     cleanup.push(() => call('DELETE', `/admin/pages/${page.id}`, undefined, ownerA))
@@ -409,6 +427,344 @@ describe('shop B cannot reach shop A by id', () => {
   })
 })
 
+/** Shop B is turned away, with "not signed in" counted too: the customer token is shop A's, so B has no such customer */
+function assertDenied(r: { status: number; body: unknown }, what: string) {
+  assert.ok(
+    r.status === 401 || r.status === 403 || r.status === 404,
+    `${what}: expected 401/403/404, got ${r.status} ${JSON.stringify(r.body)}`,
+  )
+}
+
+/** A customer token for `email` in `shopId`, through the same service the storefront sign-in route calls */
+async function customerToken(shopId: string, email: string) {
+  let code = ''
+  await accountService.requestLoginCode(
+    shopId,
+    email,
+    async (_to, c) => {
+      code = c
+    },
+    db,
+  )
+  return (await accountService.verifyLoginCode(shopId, email, code, db)).token
+}
+
+const ADDRESS = {
+  firstName: 'Iso',
+  lastName: 'Tester',
+  company: null,
+  address1: '1 Main St',
+  address2: null,
+  city: 'Somewhere',
+  province: null,
+  countryCode: 'US',
+  zip: '10001',
+  phone: null,
+}
+
+// The storefront's own shape: optional fields are left out, not null (null is a validation error there)
+const STOREFRONT_ADDRESS = {
+  firstName: 'Iso',
+  lastName: 'Tester',
+  address1: '1 Main St',
+  city: 'Somewhere',
+  countryCode: 'US',
+  zip: '10001',
+}
+
+// The storefront is public: shop B's publishable key is all an attacker needs. A cart id is a secret that stands
+// for the cart, so another shop's key must not open it either.
+describe('shop B’s storefront cannot reach shop A by id or handle', () => {
+  isolated('carts', async () => {
+    const [variant] = await sellableVariants(1)
+    assert.ok(variant, 'the demo catalog has a sellable variant')
+    const cart = await fx.cart([{ merchandiseId: variant.id, quantity: 1 }])
+    const lineId = cart.lines[0].id as string
+    assert.equal(ok(await call('GET', `/storefront/carts/${cart.id}`)).totalQuantity, 1, 'A sees its cart')
+
+    const email = `e2e-iso-cart-${run}@example.com`
+    const base = `/storefront/carts/${cart.id}`
+    assertRefused(await attack('/storefront/carts/{id}', { method: 'GET', path: base }, keyB), 'GET cart')
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/checkout-options',
+        { method: 'GET', path: `${base}/checkout-options` },
+        keyB,
+      ),
+      'GET checkout-options',
+    )
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/lines',
+        { method: 'POST', path: `${base}/lines`, body: { lines: [{ merchandiseId: variant.id, quantity: 1 }] } },
+        keyB,
+      ),
+      'POST lines',
+    )
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/lines',
+        { method: 'PATCH', path: `${base}/lines`, body: { lines: [{ id: lineId, quantity: 5 }] } },
+        keyB,
+      ),
+      'PATCH lines',
+    )
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/lines/remove',
+        { method: 'POST', path: `${base}/lines/remove`, body: { lineIds: [lineId] } },
+        keyB,
+      ),
+      'remove lines',
+    )
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/discount-codes',
+        { method: 'PUT', path: `${base}/discount-codes`, body: { discountCodes: ['E2EISO'] } },
+        keyB,
+      ),
+      'PUT discount-codes',
+    )
+    assertRefused(
+      await attack(
+        '/storefront/carts/{cartId}/complete',
+        { method: 'POST', path: `${base}/complete`, body: { email, shippingAddress: STOREFRONT_ADDRESS } },
+        keyB,
+      ),
+      'complete',
+    )
+
+    const still = ok(await call('GET', base))
+    assert.equal(still.lines.length, 1, 'A’s cart has the line it had')
+    assert.equal(still.lines[0].quantity, 1, 'A’s line quantity is unchanged')
+    assert.equal(still.status, 'active', 'A’s cart was not completed')
+    assert.equal((await db.select().from(orders).where(eq(orders.email, email))).length, 0, 'no order was placed')
+  })
+
+  isolated('customer orders', async () => {
+    const [variant] = await sellableVariants(1)
+    assert.ok(variant)
+    // The same address is a customer in both shops: the situation the sign-in code bug (GHSA-w9q2-8c32-gmhm) abused
+    const email = `e2e-iso-buyer-${run}@example.com`
+    const order = await orderService.create(
+      SHOP,
+      {
+        email,
+        name: 'Iso Buyer',
+        items: [{ variantId: variant.id, quantity: 1 }],
+        shippingAddress: ADDRESS,
+        payment: { gateway: 'manual', name: 'Bank transfer', instructions: 'IBAN 123' },
+      },
+      db,
+    )
+    fx.order(order.id)
+    const tokenA = await customerToken(SHOP, email)
+    const tokenB = await customerToken(otherId, email)
+    const path = `/storefront/customer/orders/${order.id}`
+
+    const mine = await call('GET', path, undefined, { [CUSTOMER_TOKEN]: tokenA })
+    assert.equal(mine.status, 200, `control: A's customer reads A's order, got ${mine.status}`)
+
+    // A's token, B's key: the token belongs to another shop, so nobody is signed in at B
+    assertDenied(
+      await attack('/storefront/customer/orders/{id}', { method: 'GET', path }, { ...keyB, [CUSTOMER_TOKEN]: tokenA }),
+      'A’s token at B',
+    )
+    // B's own customer with the same email asks for A's order id
+    assertRefused(
+      await attack('/storefront/customer/orders/{id}', { method: 'GET', path }, { ...keyB, [CUSTOMER_TOKEN]: tokenB }),
+      'B’s customer asks for A’s order',
+    )
+    assert.equal((await call('GET', path, undefined, { [CUSTOMER_TOKEN]: tokenA })).status, 200, 'A still reads it')
+  })
+
+  isolated('catalog by id and handle', async () => {
+    const products = ok(await call('GET', '/storefront/products?first=1')).nodes
+    const collections = ok(await call('GET', '/storefront/collections?first=1')).nodes
+    assert.ok(products[0] && collections[0], 'the demo catalog has a product and a collection')
+    const product = products[0]
+    const collection = collections[0]
+
+    const page = ok(await call('POST', '/admin/pages', { title: `E2E iso page ${run}-sf`, published: true }, ownerA))
+    cleanup.push(() => call('DELETE', `/admin/pages/${page.id}`, undefined, ownerA))
+    const menu = ok(
+      await call(
+        'POST',
+        '/admin/menus',
+        { handle: `e2e-iso-sf-${run}`, title: `E2E iso menu ${run}-sf`, items: [] },
+        ownerA,
+      ),
+    )
+    cleanup.push(() => call('DELETE', `/admin/menus/${menu.id}`, undefined, ownerA))
+
+    // Controls: shop A's storefront shows each of them, so a refusal for B means "not B's", not "not there"
+    const reads = [
+      ['/storefront/products/{id}', `/storefront/products/${product.id}`],
+      ['/storefront/products/by-handle/{handle}', `/storefront/products/by-handle/${product.handle}`],
+      ['/storefront/collections/{handle}', `/storefront/collections/${collection.handle}`],
+      ['/storefront/pages/{handle}', `/storefront/pages/${page.handle}`],
+      ['/storefront/menus/{handle}', `/storefront/menus/${menu.handle}`],
+    ] as const
+    for (const [, path] of reads) {
+      assert.equal((await call('GET', path)).status, 200, `control: shop A's storefront shows ${path}`)
+    }
+    for (const [openapi, path] of reads) {
+      assertRefused(await attack(openapi, { method: 'GET', path }, keyB), `GET ${path}`)
+    }
+  })
+})
+
+// Invariant 23: a request cannot link another shop's objects by naming their ids in the body. Each case names A's id
+// from shop B and then checks, in B's data, that nothing was linked. An error status alone is not enough.
+describe('shop B cannot link shop A’s objects through ids in a request body', () => {
+  // A client error that came from looking the id up, not from the body failing validation (that would hide a hole)
+  const is4xx = (r: { status: number; body: unknown }) =>
+    r.status >= 400 && r.status < 500 && !(r.body as { data?: { issues?: unknown } } | null)?.data?.issues
+
+  isolated('an order cannot name A’s variant or A’s customer', async () => {
+    const pA = ok(await call('POST', '/admin/products', { title: `E2E iso link A ${run}`, priceCents: 1200 }, a))
+    cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [pA.id] }, a))
+    const pB = ok(await call('POST', '/admin/products', { title: `E2E iso link B ${run}`, priceCents: 1200 }, b))
+    cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [pB.id] }, b))
+    const custA = ok(
+      await call('POST', '/admin/customers', { email: `e2e-iso-link-${run}@example.com`, name: 'Link A' }, a),
+    )
+    cleanup.push(() => call('DELETE', '/admin/customers/bulk', { ids: [custA.id] }, a))
+
+    // Control: the same bodies work with B's own variant, so a refusal is about A's id
+    const own = await call(
+      'POST',
+      '/admin/orders',
+      { email: `e2e-iso-own-${run}@example.com`, name: 'Own', items: [{ variantId: pB.variants[0].id, quantity: 1 }] },
+      b,
+    )
+    assert.equal(own.status, 200, `control: B orders its own variant, got ${own.status} ${JSON.stringify(own.body)}`)
+    fx.order((own.body.id ?? own.body.order?.id) as string)
+    const before = ok(await call('GET', '/admin/orders', undefined, b)).total as number
+
+    const withVariant = await call(
+      'POST',
+      '/admin/orders',
+      { email: `e2e-iso-x-${run}@example.com`, name: 'X', items: [{ variantId: pA.variants[0].id, quantity: 1 }] },
+      b,
+    )
+    assert.ok(is4xx(withVariant), `A's variant in B's order: ${withVariant.status} ${JSON.stringify(withVariant.body)}`)
+    const withCustomer = await call(
+      'POST',
+      '/admin/orders',
+      {
+        email: `e2e-iso-y-${run}@example.com`,
+        name: 'Y',
+        customerId: custA.id,
+        items: [{ variantId: pB.variants[0].id, quantity: 1 }],
+      },
+      b,
+    )
+    assert.ok(
+      is4xx(withCustomer),
+      `A's customer on B's order: ${withCustomer.status} ${JSON.stringify(withCustomer.body)}`,
+    )
+
+    assert.equal(ok(await call('GET', '/admin/orders', undefined, b)).total, before, 'no order was added in B')
+  })
+
+  isolated('a collection and a publication cannot name A’s product or channel', async () => {
+    const pA = ok(await call('POST', '/admin/products', { title: `E2E iso pub A ${run}`, priceCents: 900 }, a))
+    cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [pA.id] }, a))
+    const colA = ok(await call('POST', '/admin/collections', { title: `E2E iso pub col A ${run}` }, a))
+    cleanup.push(() => call('DELETE', `/admin/collections/${colA.id}`, undefined, a))
+    const pB = ok(await call('POST', '/admin/products', { title: `E2E iso pub B ${run}`, priceCents: 900 }, b))
+    cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [pB.id] }, b))
+    const colB = ok(await call('POST', '/admin/collections', { title: `E2E iso pub col B ${run}` }, b))
+    cleanup.push(() => call('DELETE', `/admin/collections/${colB.id}`, undefined, b))
+    const channelA = ok(await call('GET', '/admin/channels', undefined, ownerA))[0].id as string
+
+    // B's collection takes A's product
+    assertRefused(
+      await call('POST', `/admin/collections/${colB.id}/products`, { productId: pA.id }, b),
+      'A’s product in B’s collection',
+    )
+    assert.equal(ok(await call('GET', `/admin/collections/${colB.id}/products`, undefined, b)).length, 0, 'still empty')
+
+    // B's product and collection published to A's channel
+    const toA = { publications: [{ channelId: channelA, published: true }] }
+    assertRefused(await call('PUT', `/admin/products/${pB.id}/publications`, toA, b), 'B’s product to A’s channel')
+    assertRefused(
+      await call('PUT', `/admin/collections/${colB.id}/publications`, toA, b),
+      'B’s collection to A’s channel',
+    )
+
+    // And the route’s own id: B publishes A's product, A's collection
+    assertRefused(
+      await attack('/admin/products/{id}/publications', {
+        method: 'PUT',
+        path: `/admin/products/${pA.id}/publications`,
+        body: { publications: [] },
+      }),
+      'PUT A’s product publications',
+    )
+    assertRefused(
+      await attack('/admin/collections/{id}/publications', {
+        method: 'PUT',
+        path: `/admin/collections/${colA.id}/publications`,
+        body: { publications: [] },
+      }),
+      'PUT A’s collection publications',
+    )
+    // A's product is where it was
+    assert.equal(ok(await call('GET', `/admin/products/${pA.id}`, undefined, a)).title, `E2E iso pub A ${run}`)
+  })
+
+  isolated('a storefront cart cannot name A’s variant, shipping rate or payment method', async () => {
+    const [variantA] = await sellableVariants(1)
+    assert.ok(variantA)
+    const rateA = await fx.shippingRate(500)
+    const methodA = await fx.paymentMethod()
+
+    // Control: B's key can build a cart with B's own product, so a refusal below is about A's ids
+    const pB = ok(await call('POST', '/admin/products', { title: `E2E iso cart B ${run}`, priceCents: 700 }, b))
+    cleanup.push(() => call('DELETE', '/admin/products/bulk', { ids: [pB.id] }, b))
+    const variantB = pB.variants[0].id as string
+    const cartB = ok(
+      await call('POST', '/storefront/carts', { lines: [{ merchandiseId: variantB, quantity: 1 }] }, keyB),
+    )
+
+    const create = await call(
+      'POST',
+      '/storefront/carts',
+      { lines: [{ merchandiseId: variantA.id, quantity: 1 }] },
+      keyB,
+    )
+    assertRefused(create, 'B’s new cart with A’s variant')
+    assertRefused(
+      await call(
+        'POST',
+        `/storefront/carts/${cartB.id}/lines`,
+        { lines: [{ merchandiseId: variantA.id, quantity: 1 }] },
+        keyB,
+      ),
+      'A’s variant added to B’s cart',
+    )
+
+    const email = `e2e-iso-link-cart-${run}@example.com`
+    const complete = (body: object) =>
+      call(
+        'POST',
+        `/storefront/carts/${cartB.id}/complete`,
+        { email, shippingAddress: STOREFRONT_ADDRESS, ...body },
+        keyB,
+      )
+    const withRate = await complete({ shippingRateId: rateA.id })
+    assert.ok(is4xx(withRate), `A's shipping rate on B's cart: ${withRate.status} ${JSON.stringify(withRate.body)}`)
+    const withMethod = await complete({ paymentMethodId: methodA.id })
+    assert.ok(
+      is4xx(withMethod),
+      `A's payment method on B's cart: ${withMethod.status} ${JSON.stringify(withMethod.body)}`,
+    )
+    assert.equal((await db.select().from(orders).where(eq(orders.email, email))).length, 0, 'no order was placed')
+  })
+})
+
 // Every route that takes an id is either attacked above or named in PENDING with a reason. A new route that is in
 // neither fails here, so adding one forces a decision. Delete a line from PENDING when its case is written.
 const PENDING: Record<string, string[]> = {
@@ -435,8 +791,6 @@ const PENDING: Record<string, string[]> = {
     'GET /admin/app-data/{key}',
     'POST /admin/ai/generations/{id}/feedback',
     'PUT /admin/app-data/{key}',
-    'PUT /admin/collections/{id}/publications',
-    'PUT /admin/products/{id}/publications',
     'PUT /admin/products/{id}/variants',
   ],
   'admin, payments app token only': [
@@ -491,22 +845,8 @@ const PENDING: Record<string, string[]> = {
     'PUT /admin/themes/{id}/draft',
     'PUT /admin/themes/{id}/files',
   ],
-  'storefront: public routes (publishable key, carts, orders, customer accounts)': [
-    'GET /storefront/carts/{cartId}/checkout-options',
-    'GET /storefront/carts/{id}',
-    'GET /storefront/collections/{handle}',
-    'GET /storefront/customer/orders/{id}',
-    'GET /storefront/menus/{handle}',
-    'GET /storefront/pages/{handle}',
-    'GET /storefront/products/by-handle/{handle}',
-    'GET /storefront/products/{id}',
-    'GET /storefront/themes/{themeId}',
-    'PATCH /storefront/carts/{cartId}/lines',
-    'POST /storefront/carts/{cartId}/complete',
-    'POST /storefront/carts/{cartId}/lines',
-    'POST /storefront/carts/{cartId}/lines/remove',
-    'PUT /storefront/carts/{cartId}/discount-codes',
-  ],
+  // The only storefront route with an id that has no case: a shop with no theme copy has nothing to attack it with
+  'storefront: themes (needs a theme copy in shop A; the demo shop has none)': ['GET /storefront/themes/{themeId}'],
 }
 
 describe('coverage', () => {
