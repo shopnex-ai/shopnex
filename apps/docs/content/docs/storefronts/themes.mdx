@@ -28,6 +28,50 @@ themes/<id>/
 
 Built assets are build output and are not committed.
 
+## Sections and blocks
+
+A page is a list of **sections** the merchant adds, hides and reorders in the theme editor. A theme renders them with `{% sections 'home' %}` (the sections of the page `home` in `theme.json`), each from `sections/<type>.liquid`. Inside it, `section` has `id`, `type`, `settings`, `blocks` and `block_order`, as in Shopify.
+
+A section type can declare **blocks**: repeatable items inside it (a slide, an announcement, a link). The merchant adds, hides, removes and reorders them under the section in the editor, and edits each one's own settings.
+
+```json
+"announcement-bar": {
+  "name": "Announcement bar",
+  "max_blocks": 12,
+  "settings": [{ "id": "speed", "label": "Seconds per message", "type": "range", "min": 3, "max": 10, "default": 5 }],
+  "blocks": {
+    "announcement": {
+      "name": "Announcement",
+      "settings": [
+        { "id": "text", "label": "Text", "type": "text", "default": "Welcome" },
+        { "id": "link", "label": "Link", "type": "url" }
+      ]
+    }
+  }
+}
+```
+
+```liquid
+{%- for block in section.blocks -%}
+  <p {{ block.shopify_attributes }}>
+    {%- if block.settings.link != blank -%}<a href="{{ block.settings.link }}">{{ block.settings.text }}</a>{%- else -%}{{ block.settings.text }}{%- endif -%}
+  </p>
+{%- endfor -%}
+```
+
+- A block has `id`, `type`, `settings` and `shopify_attributes`; print `{{ block.shopify_attributes }}` on its element so the editor's preview can outline it when it is picked.
+- `max_blocks` limits a section's blocks (up to 50). A block type's own `limit` limits how many of that type fit.
+- Hidden blocks are left out of `section.blocks`. A block whose type the theme no longer has, or past a limit, is skipped, so an older saved page still renders.
+- A page's default sections in `theme.json` can list their `blocks`, each `{ "id", "type", "settings" }`.
+
+### Global sections
+
+`{% section 'announcement-bar' %}` renders one section wherever you put it, usually in the layout, and the merchant edits it once for every page. Its settings and blocks are stored on the page `static` (declare it in `pages` of `theme.json` with the sections it starts with, and give the section type `"limit": 1`): the tag renders the section there with that id, else the first of that type. A global section the page does not list shows with its defaults.
+
+### Liquid from Shopify themes
+
+Sections written for Shopify's Liquid mostly render as they are: `section.settings`, `section.blocks`, `block.settings`, `block.type`, `block.id`, `block.shopify_attributes` and `{% sections %}` and `{% section %}` work the same. The `{% schema %}` at the end of a Shopify section file is ignored: a ShopNex theme declares its settings, blocks and styles in `theme.json`, not in the Liquid file.
+
 ## Text in several languages
 
 A theme keeps the text it writes itself ("Add to cart", "Your cart is empty") in `locales/`, not in the templates. `en.default.json` is the theme's own wording and the fallback; `fr.json`, `pt-BR.json`… translate it. The files are nested JSON, read as dotted keys:

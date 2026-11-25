@@ -7,7 +7,10 @@
 //     anything else unescaped (e.g. `{{ data | json | raw }}` inside <script>; `json` escapes `<`).
 //   - `{% capture %}` keeps its (already escaped) output as is: `{{ captured }}` doesn't escape it again.
 //   - Prices are objects (`| money` formats them with their own currency) that compare as minor units.
-//   - `{% sections 'home' %}` renders a page's sections from the theme editor (see `sections` below).
+//   - `{% sections 'home' %}` renders a page's sections from the theme editor (see `sections` below), and
+//     `{% section 'announcement-bar' %}` one global section (static, like Shopify's). Sections see `section.settings`
+//     and `section.blocks` (each with `block.type`, `block.settings`, `{{ block.shopify_attributes }}`), as in Shopify.
+//   - `{% schema %}…{% endschema %}` in a section file is ignored: a ShopNex theme declares its settings in theme.json.
 import { dirname, extname, join, resolve, sep } from 'node:path'
 import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -16,6 +19,7 @@ import {
   Liquid,
   Tag,
   type Context,
+  type Tokenizer,
   type Emitter,
   type FS,
   type TagToken,
@@ -27,14 +31,25 @@ import { THEME_SECTION_ATTRIBUTE } from '@shopnex/storefront-sdk/theme-preview'
 import { ImageDrop, MoneyDrop, SafeHtml } from './drops'
 import { translateKey } from './locales'
 
-/** A section as templates see it (`section.id`, `section.type`, `section.settings`) */
-export type SectionObject = { id: string; type: string; settings: Record<string, unknown> }
+/** A block as templates see it, like Shopify's (`block.id`, `block.type`, `block.settings`, `block.shopify_attributes`) */
+export type BlockObject = { id: string; type: string; settings: Record<string, unknown>; shopify_attributes: unknown }
+
+/** A section as templates see it (`section.id`, `section.type`, `section.settings`, `section.blocks`, `section.block_order`) */
+export type SectionObject = {
+  id: string
+  type: string
+  settings: Record<string, unknown>
+  blocks: BlockObject[]
+  block_order: string[]
+}
 
 /** Per-render data for tags and filters, under a symbol key of the globals (templates can't read it) */
 export const RENDER = Symbol('render')
 export interface RenderData {
   /** The page's sections by page id; `{% sections 'home' %}` renders them */
   sections(page: string): SectionObject[]
+  /** One global section by name; `{% section 'announcement-bar' %}` renders it. Null: the theme has no such section. */
+  section(name: string): SectionObject | null
 }
 
 const dev = import.meta.env?.DEV ?? false
@@ -215,6 +230,8 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
   )
 
   liquid.registerTag('sections', SectionsTag)
+  liquid.registerTag('section', SectionTag)
+  liquid.registerTag('schema', SchemaTag)
   liquid.registerTag('capture', CaptureTag)
   return liquid
 }
@@ -238,18 +255,70 @@ class SectionsTag extends Tag {
 
   constructor(token: TagToken, remainTokens: TopLevelToken[], liquid: Liquid) {
     super(token, remainTokens, liquid)
-    const page = this.tokenizer.readValue()
-    const name = page && 'content' in page ? page.content : undefined
-    if (typeof name !== 'string') throw new Error(`{% sections %} needs a page id, like {% sections 'home' %}`)
-    this.page = name
+    this.page = readName(this.tokenizer, "{% sections %} needs a page id, like {% sections 'home' %}")
   }
 
   *render(ctx: Context, emitter: Emitter): Generator<unknown, void, unknown> {
-    for (const section of renderData(ctx).sections(this.page)) {
-      const templates = (yield this.liquid.parseFile(`sections/${section.type}`)) as Template[]
-      emitter.write(`<div ${THEME_SECTION_ATTRIBUTE}="${escapeHtml(section.id)}">`)
-      yield this.liquid.renderer.renderTemplates(templates, ctx.spawn({ section }), emitter)
-      emitter.write('</div>')
-    }
+    for (const section of renderData(ctx).sections(this.page)) yield* writeSection(this.liquid, ctx, emitter, section)
   }
+}
+
+/** `{% section 'announcement-bar' %}`: one global section, whose settings and blocks the merchant edits once for every page */
+class SectionTag extends Tag {
+  private sectionName: string
+
+  constructor(token: TagToken, remainTokens: TopLevelToken[], liquid: Liquid) {
+    super(token, remainTokens, liquid)
+    this.sectionName = readName(
+      this.tokenizer,
+      "{% section %} needs a section name, like {% section 'announcement-bar' %}",
+    )
+  }
+
+  *render(ctx: Context, emitter: Emitter): Generator<unknown, void, unknown> {
+    const section = renderData(ctx).section(this.sectionName)
+    if (section) yield* writeSection(this.liquid, ctx, emitter, section)
+  }
+}
+
+/**
+ * `{% schema %}{ … }{% endschema %}`, which a Shopify section file ends with: its JSON is skipped, not parsed. A ShopNex
+ * theme keeps its settings, blocks and presets in theme.json, so a section ported from Shopify renders as is.
+ */
+class SchemaTag extends Tag {
+  constructor(token: TagToken, remainTokens: TopLevelToken[], liquid: Liquid) {
+    super(token, remainTokens, liquid)
+    const stream = liquid.parser.parseStream(remainTokens)
+    stream
+      .on('token', (t: unknown) => {
+        if ((t as TagToken).name === 'endschema') stream.stop()
+      })
+      .on('end', () => {
+        throw new Error(`tag ${token.getText()} not closed`)
+      })
+    stream.start()
+  }
+
+  render() {}
+}
+
+/** The quoted name after a tag, `{% section 'name' %}` */
+function readName(tokenizer: Tokenizer, message: string): string {
+  const value = tokenizer.readValue()
+  const name = value && 'content' in value ? value.content : undefined
+  if (typeof name !== 'string') throw new Error(message)
+  return name
+}
+
+/** A section rendered from sections/{type}.liquid with `section`, in an element the theme editor's preview can find */
+function* writeSection(
+  liquid: Liquid,
+  ctx: Context,
+  emitter: Emitter,
+  section: SectionObject,
+): Generator<unknown, void, unknown> {
+  const templates = (yield liquid.parseFile(`sections/${section.type}`)) as Template[]
+  emitter.write(`<div ${THEME_SECTION_ATTRIBUTE}="${escapeHtml(section.id)}">`)
+  yield liquid.renderer.renderTemplates(templates, ctx.spawn({ section }), emitter)
+  emitter.write('</div>')
 }

@@ -2,13 +2,15 @@
 // section's (or the theme's) settings on the right. Every change autosaves the draft and reloads the
 // preview; Publish makes the draft what buyers see (for an unpublished copy: it becomes the live theme).
 import { useMutation } from '@tanstack/react-query'
-import { CodeIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
+import { ChevronLeftIcon, CodeIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
+  MAX_SECTION_BLOCKS,
   applyPreset,
   resolveSettings,
+  type ThemeBlock,
   type ThemeDefinition,
   type ThemeDocument,
   type ThemeSection,
@@ -30,7 +32,7 @@ import { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from './preview-frame'
 import { ThemeHeader } from './theme-header'
-import { SectionList } from './section-list'
+import { ItemList, SectionList } from './section-list'
 import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
 import { PreviewPageSelect } from '../preview-page-select'
@@ -60,6 +62,7 @@ const stable = (value: unknown): string =>
   )
 
 const newSectionId = () => `s${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`
+const newBlockId = () => `b${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`
 
 export function ThemeEditor({
   definition,
@@ -75,6 +78,7 @@ export function ThemeEditor({
   const [published, setPublished] = useState(initialPublished)
   const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
   const [selected, setSelected] = useState<string | null>(null) // section id; null = theme settings
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null) // a block of the selected section
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   // On a phone one pane is shown at a time; from md up all three are
   const [pane, setPane] = useState<'sections' | 'preview' | 'settings'>('sections')
@@ -161,6 +165,7 @@ export function ThemeEditor({
   function removeSection(id: string) {
     setSections(sections.filter((s) => s.id !== id))
     setSelected(null)
+    setSelectedBlockId(null)
     setPane('sections')
   }
 
@@ -171,6 +176,36 @@ export function ThemeEditor({
     if (!selectedSection || !selectedDefinition) return
     const settings = { ...resolveSettings(selectedDefinition.settings, selectedSection.settings), [id]: value }
     setSections(sections.map((s) => (s.id === selectedSection.id ? { ...s, settings } : s)))
+  }
+
+  // ── blocks of the selected section ──
+  const blocks = selectedSection?.blocks ?? []
+  const setBlocks = (next: ThemeBlock[]) => {
+    if (!selectedSection) return
+    setSections(sections.map((s) => (s.id === selectedSection.id ? { ...s, blocks: next } : s)))
+  }
+  const selectedBlock = blocks.find((b) => b.id === selectedBlockId) ?? null
+  const blockDefinition = selectedBlock ? selectedDefinition?.blocks[selectedBlock.type] : undefined
+  const blockTypes = Object.entries(selectedDefinition?.blocks ?? {})
+  const blocksFull = blocks.length >= (selectedDefinition?.max_blocks ?? MAX_SECTION_BLOCKS)
+
+  function addBlock(type: string) {
+    const definitionOfType = selectedDefinition?.blocks[type]
+    if (!definitionOfType) return
+    const block: ThemeBlock = { id: newBlockId(), type, settings: resolveSettings(definitionOfType.settings) }
+    setBlocks([...blocks, block])
+    setSelectedBlockId(block.id)
+  }
+
+  function removeBlock(id: string) {
+    setBlocks(blocks.filter((b) => b.id !== id))
+    setSelectedBlockId(null)
+  }
+
+  function setBlockSetting(id: string, value: ThemeSettingValue) {
+    if (!selectedBlock || !blockDefinition) return
+    const settings = { ...resolveSettings(blockDefinition.settings, selectedBlock.settings), [id]: value }
+    setBlocks(blocks.map((b) => (b.id === selectedBlock.id ? { ...b, settings } : b)))
   }
 
   function setThemeSetting(id: string, value: ThemeSettingValue) {
@@ -215,6 +250,7 @@ export function ThemeEditor({
       setDraft(restored)
       setSaveState('saved')
       setSelected(null)
+      setSelectedBlockId(null)
       setConfirmDiscard(false)
       setReloadKey((k) => k + 1)
       toast.success('Changes discarded')
@@ -307,6 +343,7 @@ export function ThemeEditor({
                 onChange={(value) => {
                   setPage(value)
                   setSelected(null)
+                  setSelectedBlockId(null)
                 }}
                 className="mb-3 w-full"
               />
@@ -318,6 +355,7 @@ export function ThemeEditor({
               selectedId={selected}
               onSelect={(id) => {
                 setSelected(id)
+                setSelectedBlockId(null)
                 setPane('settings')
               }}
               onChange={setSections}
@@ -328,6 +366,7 @@ export function ThemeEditor({
             type="button"
             onClick={() => {
               setSelected(null)
+              setSelectedBlockId(null)
               setPane('settings')
             }}
             className={cn(
@@ -346,6 +385,7 @@ export function ThemeEditor({
             copyId={id}
             reloadKey={reloadKey}
             selectedSectionId={selected}
+            selectedBlockId={selectedBlockId}
             path={pagePath}
             device={device}
           />
@@ -354,7 +394,37 @@ export function ThemeEditor({
         <aside
           className={cn('w-full shrink-0 overflow-y-auto border-l p-4 md:w-80', pane !== 'settings' && 'max-md:hidden')}
         >
-          {selectedSection ? (
+          {selectedSection && selectedBlock ? (
+            <div className="space-y-4">
+              <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setSelectedBlockId(null)}>
+                <ChevronLeftIcon />
+                {selectedDefinition?.name ?? 'Section'}
+              </Button>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-semibold">{blockDefinition?.name ?? `Unknown block (${selectedBlock.type})`}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => removeBlock(selectedBlock.id)}
+                  aria-label="Remove block"
+                  title="Remove block"
+                >
+                  <Trash2Icon />
+                </Button>
+              </div>
+              {blockDefinition ? (
+                <SettingFields
+                  fields={blockDefinition.settings}
+                  values={resolveSettings(blockDefinition.settings, selectedBlock.settings)}
+                  onChange={setBlockSetting}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  The theme no longer has this block, so the storefront skips it. You can remove it.
+                </p>
+              )}
+            </div>
+          ) : selectedSection ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="font-semibold">
@@ -371,11 +441,35 @@ export function ThemeEditor({
                 </Button>
               </div>
               {selectedDefinition ? (
-                <SettingFields
-                  fields={selectedDefinition.settings}
-                  values={resolveSettings(selectedDefinition.settings, selectedSection.settings)}
-                  onChange={setSectionSetting}
-                />
+                <>
+                  {selectedDefinition.settings.length > 0 || blockTypes.length === 0 ? (
+                    <SettingFields
+                      fields={selectedDefinition.settings}
+                      values={resolveSettings(selectedDefinition.settings, selectedSection.settings)}
+                      onChange={setSectionSetting}
+                    />
+                  ) : null}
+                  {blockTypes.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Blocks</h3>
+                      <ItemList
+                        items={blocks}
+                        names={Object.fromEntries(blockTypes.map(([type, def]) => [type, def.name]))}
+                        noun="block"
+                        addable={blockTypes.map(([type, def]) => ({
+                          type,
+                          name: def.name,
+                          full: def.limit != null && blocks.filter((b) => b.type === type).length >= def.limit,
+                        }))}
+                        disableAdd={blocksFull}
+                        selectedId={selectedBlockId}
+                        onSelect={setSelectedBlockId}
+                        onChange={setBlocks}
+                        onAdd={addBlock}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   The theme no longer has this section, so the storefront skips it. You can remove it.

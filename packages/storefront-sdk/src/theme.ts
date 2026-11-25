@@ -62,17 +62,42 @@ export const ThemeSettingField = z.discriminatedUnion('type', [
   z.object({ ...field, type: z.literal('code'), language: z.enum(['html', 'css']), default: z.string().optional() }),
 ])
 
+/** A kind of block: a repeatable item inside a section (a slide, an announcement, a link), as in Shopify */
+export const ThemeBlockDefinition = z.object({
+  name: z.string().min(1).max(100),
+  settings: z.array(ThemeSettingField).default([]),
+  /** How many blocks of this type one section can hold */
+  limit: z.number().int().min(1).optional(),
+})
+
+/** The most blocks one section holds, whatever its definition says */
+export const MAX_SECTION_BLOCKS = 50
+
 export const ThemeSectionDefinition = z.object({
   name: z.string().min(1).max(100),
   settings: z.array(ThemeSettingField).default([]),
   /** How many times the section can appear on one page */
   limit: z.number().int().min(1).optional(),
+  /** The block types the merchant can add to this section; none: the section has no blocks */
+  blocks: z.record(Id, ThemeBlockDefinition).default({}),
+  /** How many blocks (of any type) the section can hold; Shopify's `max_blocks` */
+  max_blocks: z.number().int().min(1).max(MAX_SECTION_BLOCKS).optional(),
 })
 
 // ── document (the merchant's choices, stored by ShopNex) ──────────────────────
 
 export const ThemeSettingValue = z.union([z.string().max(10_000), z.number(), z.boolean(), z.null()])
 export const ThemeSettings = z.record(Id, ThemeSettingValue)
+
+export const ThemeBlock = z.object({
+  /** Stable within the section (the editor generates it) */
+  id: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
+  /** A key of the section definition's `blocks` */
+  type: Id,
+  /** Hidden on the storefront but kept with its settings */
+  disabled: z.boolean().optional(),
+  settings: ThemeSettings,
+})
 
 export const ThemeSection = z.object({
   /** Stable within the page (the editor generates it); lets the preview scroll to the section */
@@ -82,6 +107,8 @@ export const ThemeSection = z.object({
   /** Hidden on the storefront but kept with its settings */
   disabled: z.boolean().optional(),
   settings: ThemeSettings,
+  /** In the merchant's order. Absent: none (a section whose definition has no block types). */
+  blocks: z.array(ThemeBlock).max(MAX_SECTION_BLOCKS).optional(),
 })
 
 export const ThemePage = z.object({ sections: z.array(ThemeSection).max(50) })
@@ -187,6 +214,7 @@ export const ThemeSource = z.object({ files: z.record(ThemeFilePath, z.string())
 
 export type ThemeSettingField = z.infer<typeof ThemeSettingField>
 export type ThemeSettingFieldInput = z.input<typeof ThemeSettingField>
+export type ThemeBlockDefinition = z.infer<typeof ThemeBlockDefinition>
 export type ThemeSectionDefinition = z.infer<typeof ThemeSectionDefinition>
 export type ThemePreset = z.infer<typeof ThemePreset>
 export type ThemeCheckoutBranding = z.infer<typeof ThemeCheckoutBranding>
@@ -198,6 +226,7 @@ export type ThemeSource = z.infer<typeof ThemeSource>
 export type ThemeSettingValue = z.infer<typeof ThemeSettingValue>
 export type ThemeSettings = z.infer<typeof ThemeSettings>
 export type ThemeSection = z.infer<typeof ThemeSection>
+export type ThemeBlock = z.infer<typeof ThemeBlock>
 export type ThemePage = z.infer<typeof ThemePage>
 export type ThemeDocument = z.infer<typeof ThemeDocument>
 
@@ -225,6 +254,26 @@ const fallback = (f: ThemeSettingField): ThemeSettingValue =>
 /** Every field's value: the stored one when valid for the field, else its default. Unknown keys are dropped. */
 export function resolveSettings(fields: readonly ThemeSettingField[], values: ThemeSettings = {}): ThemeSettings {
   return Object.fromEntries(fields.map((f) => [f.id, valid(f, values[f.id]) ? values[f.id]! : fallback(f)]))
+}
+
+/**
+ * A section's blocks as a theme should render them: in order, each with every setting resolved. Blocks of a type
+ * the section no longer has are skipped, as are those past the section's `max_blocks` or a type's `limit`, so a
+ * document written for an older or different theme version still renders. Hidden blocks are kept (`disabled`):
+ * the editor lists them, the storefront leaves them out.
+ */
+export function resolveBlocks(section: ThemeSectionDefinition, blocks: readonly ThemeBlock[] = []): ThemeBlock[] {
+  const perType = new Map<string, number>()
+  const resolved: ThemeBlock[] = []
+  for (const block of blocks) {
+    const type = section.blocks[block.type]
+    if (!type || resolved.length >= (section.max_blocks ?? MAX_SECTION_BLOCKS)) continue
+    const count = (perType.get(block.type) ?? 0) + 1
+    if (type.limit !== undefined && count > type.limit) continue
+    perType.set(block.type, count)
+    resolved.push({ ...block, settings: resolveSettings(type.settings, block.settings) })
+  }
+  return resolved
 }
 
 /** The document a shop starts from: default settings and each page's default sections */
@@ -283,7 +332,13 @@ export function withoutCodeSettings(definition: ThemeDefinition, document: Theme
           sections: page.sections.flatMap((s) => {
             const section = definition.sections[s.type]
             const codeOnly = section?.settings.length && section.settings.every((f) => f.type === 'code')
-            return section && !codeOnly ? [{ ...s, settings: keep(section.settings, s.settings) }] : []
+            if (!section || codeOnly) return []
+            const { blocks, ...rest } = s
+            const kept = blocks?.flatMap((b) => {
+              const type = section.blocks[b.type]
+              return type ? [{ ...b, settings: keep(type.settings, b.settings) }] : []
+            })
+            return [{ ...rest, settings: keep(section.settings, s.settings), ...(kept && { blocks: kept }) }]
           }),
         },
       ]),
