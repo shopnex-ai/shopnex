@@ -28,8 +28,9 @@ for (const bar of document.querySelectorAll<HTMLElement>('[data-announcements]')
     if (playing && !held) timer = setInterval(() => show(index + 1), seconds * 1000)
     if (!toggle) return
     toggle.setAttribute('aria-label', (playing ? toggle.dataset.labelPause : toggle.dataset.labelPlay) ?? '')
-    toggle.querySelector<HTMLElement>('[data-icon-pause]')!.hidden = !playing
-    toggle.querySelector<HTMLElement>('[data-icon-play]')!.hidden = playing
+    // An SVG has no `hidden` property (only HTML elements do): set the attribute itself
+    toggle.querySelector('[data-icon-pause]')?.toggleAttribute('hidden', !playing)
+    toggle.querySelector('[data-icon-play]')?.toggleAttribute('hidden', playing)
   }
 
   toggle?.addEventListener('click', () => {
