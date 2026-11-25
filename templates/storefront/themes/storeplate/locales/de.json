@@ -40,10 +40,15 @@
   "general": {
     "account": "Konto",
     "all_of": "Alle: {{ title }}",
+    "announcements": "Ankündigungen",
     "close_menu": "Menü schließen",
     "home": "Startseite",
+    "next_announcement": "Nächste Ankündigung",
     "no": "Nein",
     "open_menu": "Menü öffnen",
+    "pause_announcements": "Ankündigungen anhalten",
+    "play_announcements": "Ankündigungen abspielen",
+    "previous_announcement": "Vorherige Ankündigung",
     "products": "Produkte",
     "search": "Suchen",
     "yes": "Ja"

@@ -61,7 +61,7 @@
     {{ content_for_header }}
   </head>
   <body class="flex min-h-screen flex-col">
-    {% render 'announcement' %}
+    {% section 'announcement-bar' %}
     {% render 'header' %}
     <main class="grow" id="main-content">
       {{ content_for_layout }}
