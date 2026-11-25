@@ -1,10 +1,11 @@
 ---
 import { isDefinedError, safe } from '@shopnex/storefront-sdk'
-import { session } from '../../../core/account'
+import { accountsEnabled, session } from '../../../core/account'
 import { orderPage } from '../../../core/account-pages'
 import { loadTheme, render } from '../../../core/theme'
 
 const { cookies, url } = Astro
+if (!(await accountsEnabled())) return render(await loadTheme(url), url, { template: '404' })
 const { client, customer } = await session(cookies)
 if (!customer) return Astro.redirect(`/account/login?next=${encodeURIComponent(url.pathname)}`)
 

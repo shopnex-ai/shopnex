@@ -1,11 +1,12 @@
 ---
 import { isDefinedError, safe } from '@shopnex/storefront-sdk'
-import { messageFor, safeNext, session, startSession } from '../../core/account'
+import { accountsEnabled, messageFor, safeNext, session, startSession } from '../../core/account'
 import { loginCodeForm, loginEmailForm } from '../../core/account-pages'
 import { loadTheme, render } from '../../core/theme'
 import { shopnex, shopnexFor } from '../../core/shopnex'
 
 const { cookies, url } = Astro
+if (!(await accountsEnabled())) return render(await loadTheme(url), url, { template: '404' })
 const next = safeNext(url.searchParams.get('next'))
 const page = async (title: string, html: string, status = 200) =>
   render(await loadTheme(url), url, { template: 'account', title, html, status })

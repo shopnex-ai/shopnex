@@ -26,6 +26,8 @@ export type Brand = {
   menu: NavItem[]
   /** The contact details in the footer (phone, email, address), one per line */
   contact: string[]
+  /** Whether the store's header links to customer accounts (a store with them switched off has no such link) */
+  hasAccount: boolean
   socials: Partial<Record<'instagram' | 'facebook' | 'tiktok' | 'youtube' | 'x' | 'pinterest', string>>
 }
 
@@ -182,6 +184,8 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
     name,
     menu: readHeaderMenu(html),
     contact: readContactLines(html),
+    // Without a header to read, assume it does
+    hasAccount: !header || /href=["'][^"']*\/account\b/i.test(header),
     logo: httpUrl(logo) ?? undefined,
     logoFrom: httpUrl(logo) ? (logoFrom.startsWith('favicon') ? 'favicon' : 'logo') : null,
     favicon: httpUrl(favicon) ?? undefined,
@@ -232,7 +236,7 @@ export async function applyBrand(shopId: string, brand: Brand, origin: string, c
 
   await conn
     .update(shops)
-    .set({ name: brand.name, logo: brand.logo ?? null })
+    .set({ name: brand.name, logo: brand.logo ?? null, customerAccounts: brand.hasAccount })
     .where(eq(shops.id, shopId))
   const copy = await themeService.create(
     shopId,

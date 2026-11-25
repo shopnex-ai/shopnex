@@ -2175,6 +2175,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        customerAccounts: boolean;
                         shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;
@@ -2207,6 +2208,7 @@ export interface operations {
                     businessAddress?: string | null;
                     taxId?: string | null;
                     cookieBanner?: boolean;
+                    customerAccounts?: boolean;
                     shipToCountries?: string[];
                 };
             };
@@ -2237,6 +2239,7 @@ export interface operations {
                         businessAddress: string | null;
                         taxId: string | null;
                         cookieBanner: boolean;
+                        customerAccounts: boolean;
                         shipToCountries: string[];
                         /** Format: date-time */
                         createdAt: string;

@@ -58,6 +58,9 @@ export const shops = pgTable('shops', {
   // consent (analytics, marketing). Off: nothing is asked and those scripts run. The default storefront sets no such
   // cookies itself, so this only matters once scripts are added.
   cookieBanner: boolean('cookie_banner').notNull().default(false),
+  // Settings -> General -> Customer accounts. Off: the storefront has no sign-in or account pages and its themes show no
+  // Account link (checkout stays as a guest). A store that never had accounts is imported with this off.
+  customerAccounts: boolean('customer_accounts').notNull().default(true),
   // Settings -> General -> Ship-to countries: ISO 3166-1 alpha-2 codes the shop sells to. Empty (the default) = one
   // market, no choice for the visitor. Two or more: the storefront can offer a country picker (a theme setting turns it on).
   shipToCountries: text('ship_to_countries')

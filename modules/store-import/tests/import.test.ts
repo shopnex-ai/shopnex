@@ -93,6 +93,7 @@ describe('importing into a new shop', () => {
     assert.equal(shop?.language, 'de')
     assert.equal(shop?.name, 'Müsli Shop')
     assert.equal(shop?.logo, 'https://www.musli.example.com/logo.png')
+    assert.equal(shop?.customerAccounts, false) // its header has no account link
 
     const main = await menuService.getByHandle(shopId, 'main-menu', db)
     assert.deepEqual(
@@ -139,6 +140,18 @@ describe('importing into a new shop', () => {
     const job = await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(blocked))
     assert.equal(job.status, 'failed')
     assert.match(job.error ?? '', /limiting automated reads/)
+  })
+
+  test('a store whose header links to accounts keeps customer accounts on', async () => {
+    const shopId = await newShop()
+    const base = shopifyStore()
+    const withHome = async (input: string | URL | Request) =>
+      new URL(String(input)).pathname === '/'
+        ? new Response('<html><body><header><a href="/account/login">Log in</a></header></body></html>')
+        : base(input)
+    await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(withHome))
+    const [shop] = await db.select().from(shops).where(eq(shops.id, shopId))
+    assert.equal(shop?.customerAccounts, true)
   })
 
   test('a SKU the whole shop already uses is blanked, so no product is lost to it', async () => {

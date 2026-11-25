@@ -1,10 +1,11 @@
 ---
 import { safe } from '@shopnex/storefront-sdk'
-import { messageFor, session } from '../../core/account'
+import { accountsEnabled, messageFor, session } from '../../core/account'
 import { accountPage } from '../../core/account-pages'
 import { loadTheme, render } from '../../core/theme'
 
 const { cookies, url } = Astro
+if (!(await accountsEnabled())) return render(await loadTheme(url), url, { template: '404' })
 const { client, customer: current } = await session(cookies)
 if (!current) return Astro.redirect('/account/login?next=/account')
 let customer = current

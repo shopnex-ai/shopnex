@@ -65,6 +65,11 @@ export const Shop = z.object({
    * storefront decides for itself how to ask; the bundled one does it for every theme.
    */
   cookieBanner: z.boolean(),
+  /**
+   * Whether the shop has customer accounts (Settings → General → Customer accounts). Off: a storefront shows no sign-in or
+   * account link. Defaults to on, for a ShopNex that does not send it yet.
+   */
+  customerAccounts: z.boolean().default(true),
   /** ISO 3166-1 alpha-2 codes of the countries the shop sells to. Two or more: a storefront can offer a country picker. */
   shipToCountries: z.array(z.string()),
   /**

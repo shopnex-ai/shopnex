@@ -34,7 +34,11 @@
         {%- endif %}
       </ul>
     </div>
-    <a href="{{ routes.account_url }}" class="ks-menu-link ms-auto me-2">{{ 'general.account' | t }}</a>
+    {%- if routes.account_url != blank %}
+      <a href="{{ routes.account_url }}" class="ks-icon-button ms-auto" aria-label="{{ 'general.account' | t }}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" /></svg>
+      </a>
+    {%- endif %}
     {% render 'language-selector' %}
     <a href="/search" class="ks-icon-button" aria-label="{{ 'general.search' | t }}">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>

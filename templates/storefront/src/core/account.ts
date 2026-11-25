@@ -2,7 +2,7 @@
 // cookie; pages send it back with every Storefront API call made for the customer (shopnexFor).
 import type { AstroCookies } from 'astro'
 import { ORPCError, isDefinedError, safe, type Customer } from '@shopnex/storefront-sdk'
-import { shopnexFor } from './shopnex'
+import { shopnex, shopnexFor } from './shopnex'
 
 const COOKIE = 'shopnex_customer'
 // Matches how long ShopNex keeps a customer session (Better Auth's default)
@@ -22,6 +22,11 @@ export function startSession(cookies: AstroCookies, url: URL, token: string) {
 }
 
 export const endSession = (cookies: AstroCookies) => cookies.delete(COOKIE, { path: '/' })
+
+/** False when the shop turned customer accounts off (Settings → General): the account pages are then not found */
+export async function accountsEnabled() {
+  return (await shopnex.shop.get().catch(() => null))?.customerAccounts !== false
+}
 
 /** The signed-in customer, and a client acting for them; null customer when not signed in or expired */
 export async function session(cookies: AstroCookies) {
