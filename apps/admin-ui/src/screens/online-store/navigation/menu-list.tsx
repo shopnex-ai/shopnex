@@ -8,7 +8,6 @@ import { toast } from 'sonner'
 import { menuInput } from '@shopnex/content/contract'
 import { type StoredMenuItem } from '@shopnex/content/schema'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
-import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { FormError, TextField, setServerError, useZodForm } from '@/components/admin/form'
 import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
@@ -120,17 +119,11 @@ export function MenuList() {
             Menus are the header and footer links your storefront shows.
           </EmptyState>
         }
-        selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'menu' : 'menus'}
-            remove={(selected) => client.admin.menus.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.menus.key() })
-            }}
-          />
-        )}
+        bulkDelete={{
+          entity: 'menu',
+          remove: (ids) => client.admin.menus.deleteMany({ ids }),
+          invalidate: orpc.admin.menus.key(),
+        }}
       />
     </div>
   )

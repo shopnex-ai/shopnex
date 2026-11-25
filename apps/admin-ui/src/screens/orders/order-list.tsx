@@ -1,5 +1,5 @@
 import { ShoppingCartIcon } from 'lucide-react'
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { useListParams } from '@/components/admin/list-params'
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
 import { client, orpc, type Inputs, type Outputs } from '@/lib/orpc'
-import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { ExportOrdersDialog } from './export-orders'
 import { ImportOrdersDialog } from './import-orders'
 
@@ -80,7 +79,6 @@ const VIEWS: { key: string; label: string; filters: ListFilters; empty: string }
 ]
 
 export function OrderList() {
-  const queryClient = useQueryClient()
   const { page, pageSize, search, range, setPage, setSearch, filter, setFilter } = useListParams()
   const channels = useQuery(orpc.admin.channels.list.queryOptions())
   const columns = useMemo(() => columnsFor(channels.data), [channels.data])
@@ -133,17 +131,11 @@ export function OrderList() {
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
-        selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'order' : 'orders'}
-            remove={(selected) => client.admin.orders.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.orders.key() })
-            }}
-          />
-        )}
+        bulkDelete={{
+          entity: 'order',
+          remove: (ids) => client.admin.orders.deleteMany({ ids }),
+          invalidate: orpc.admin.orders.key(),
+        }}
       />
     </div>
   )

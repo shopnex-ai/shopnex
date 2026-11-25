@@ -1,7 +1,7 @@
 // Shared list table: server-paginated data from an oRPC query, rendered with TanStack Table.
 // Sorting/filtering happen on the server, so the table only uses core features.
 import { Link, useNavigate, useRouter, type ToOptions } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react'
 import { listCountsQuery, PAGE_SIZE, useListCount, type ListCounts, type ListKey } from '@/lib/list-counts'
 import {
@@ -12,6 +12,7 @@ import {
   type ColumnDef,
   type RowData,
 } from '@tanstack/react-table'
+import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -44,7 +45,10 @@ type DataTableProps<TData extends RowData> = {
   empty?: ReactNode
   /** When there are no rows at all: shown in place of the table, as a panel. Leave out while a search or filter is on. */
   blank?: ReactNode
+  /** Extra actions for the selected rows, next to "N selected" */
   selectionActions?: (ids: string[], clearSelection: () => void) => ReactNode
+  /** "Delete selected" for the selected rows: `entity` is the singular name, `invalidate` the list's query key */
+  bulkDelete?: { entity: string; remove: (ids: string[]) => Promise<unknown>; invalidate: QueryKey }
   /** Omit for tables that show a fixed slice (e.g. "recent orders") */
   pagination?: PaginationProps
   /**
@@ -72,6 +76,7 @@ export function DataTable<TData extends RowData>({
   empty = 'Nothing here yet.',
   blank,
   selectionActions,
+  bulkDelete,
   pagination,
   countKey,
 }: DataTableProps<TData>) {
@@ -153,6 +158,17 @@ export function DataTable<TData extends RowData>({
                     <div className="flex flex-wrap items-center gap-3">
                       <span>{selectedIds.length} selected</span>
                       {selectionActions?.(selectedIds, () => table.resetRowSelection(true))}
+                      {bulkDelete && (
+                        <DeleteSelectedButton
+                          ids={selectedIds}
+                          entity={selectedIds.length === 1 ? bulkDelete.entity : `${bulkDelete.entity}s`}
+                          remove={bulkDelete.remove}
+                          onDeleted={async () => {
+                            table.resetRowSelection(true)
+                            await queryClient.invalidateQueries({ queryKey: bulkDelete.invalidate })
+                          }}
+                        />
+                      )}
                     </div>
                   </TableHead>
                 ) : (

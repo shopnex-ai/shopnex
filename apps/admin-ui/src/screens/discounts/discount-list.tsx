@@ -37,7 +37,6 @@ import { orpc, type Outputs } from '@/lib/orpc'
 import { client } from '@/lib/orpc'
 import { ImportDiscountsDialog } from './import-discounts'
 import { ExportDiscountsDialog } from './export-discounts'
-import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 
 type Discount = Outputs['admin']['discounts']['list'][number]
 
@@ -58,7 +57,6 @@ function status(d: Discount): { label: string; variant: 'default' | 'secondary' 
 }
 
 export function DiscountList({ currency }: { currency: string }) {
-  const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.discounts.list.queryOptions())
   const money = (cents: number) => formatMoney(cents, currency)
 
@@ -129,17 +127,11 @@ export function DiscountList({ currency }: { currency: string }) {
             Codes that buyers enter at checkout, one code per order.
           </EmptyState>
         }
-        selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'discount' : 'discounts'}
-            remove={(selected) => client.admin.discounts.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.discounts.key() })
-            }}
-          />
-        )}
+        bulkDelete={{
+          entity: 'discount',
+          remove: (ids) => client.admin.discounts.deleteMany({ ids }),
+          invalidate: orpc.admin.discounts.key(),
+        }}
       />
     </div>
   )
