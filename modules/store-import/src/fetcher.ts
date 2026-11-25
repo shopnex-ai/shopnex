@@ -17,7 +17,10 @@ export type FetchResult = { ok: boolean; status: number; url: string; headers: H
 export type FetcherOptions = {
   /** Stops every request when it fires (the import's overall time limit) */
   signal?: AbortSignal
-  /** Pause before each request, varied by up to 30% either way: stores rate-limit (HTTP 429) quickly. Default 1 s */
+  /**
+   * The least time between two requests to the same host, varied by up to 30% either way (stores rate-limit, HTTP 429,
+   * quickly). Time the import already spent between requests counts. Default 0.6 s; doubles (up to 4×) after a 429.
+   */
   pauseMs?: number
   /** First wait after a 429, doubled each time unless the store says how long (Retry-After): default 2 s */
   retryWaitMs?: number
@@ -50,8 +53,19 @@ export function normalizeOrigin(raw: string): string | null {
 export function createFetcher(options: FetcherOptions = {}) {
   const fetchImpl = options.fetchImpl ?? fetch
   const checkHost = options.checkHost ?? assertPublicHost
-  const pauseMs = options.pauseMs ?? 1000
+  const pauseMs = options.pauseMs ?? 600
   const retryWaitMs = options.retryWaitMs ?? 2000
+  // A store that says 429 gets slower requests for the rest of the import
+  let slowdown = 1
+  const lastRequestAt = new Map<string, number>()
+
+  /** Waits out what is left of the gap since the last request to this host; the first request to a host does not wait */
+  async function pace(host: string) {
+    const gap = pauseMs * slowdown * (0.7 + Math.random() * 0.6)
+    const wait = gap - (Date.now() - (lastRequestAt.get(host) ?? -Infinity))
+    if (wait > 0) await sleep(wait)
+    lastRequestAt.set(host, Date.now())
+  }
 
   async function readBody(res: Response) {
     const reader = res.body?.getReader()
@@ -86,7 +100,7 @@ export function createFetcher(options: FetcherOptions = {}) {
         throw new StoreImportError('INVALID_STORE_ADDRESS', 'That address does not point to a public store.')
       }
       // Not an even beat: an import is a few dozen requests, and a store sees them as one visitor
-      await sleep(pauseMs * (0.7 + Math.random() * 0.6))
+      await pace(url.host)
       let res: Response
       try {
         res = await fetchImpl(url, {
@@ -110,6 +124,7 @@ export function createFetcher(options: FetcherOptions = {}) {
       }
       if (res.status === 429 && attempt < RATE_LIMIT_RETRIES) {
         await res.body?.cancel()
+        slowdown = Math.min(slowdown * 2, 4)
         const told = Number(res.headers.get('retry-after'))
         const wait = Number.isFinite(told) && told > 0 ? told * 1000 : retryWaitMs * 2 ** attempt
         await sleep(Math.min(wait, MAX_RETRY_WAIT_MS))
@@ -119,7 +134,7 @@ export function createFetcher(options: FetcherOptions = {}) {
     }
   }
 
-  async function text(url: string, accept = '*/*') {
+  async function read(url: string, accept: string) {
     const res = await request(url, accept)
     // 429 after the retries, or 403 (Shopify's "Verifying your connection" check): the store is refusing automated reads
     if (res.status === 429 || res.status === 403) {
@@ -130,6 +145,19 @@ export function createFetcher(options: FetcherOptions = {}) {
     }
     if (!res.ok) throw new StoreImportError('STORE_NOT_READABLE', `${new URL(url).pathname} answered ${res.status}.`)
     return res.text
+  }
+
+  // The same page asked for twice in one import (the home page is read for its language and for its look) is fetched once
+  const seen = new Map<string, Promise<string>>()
+  function text(url: string, accept = '*/*') {
+    const key = `${accept} ${url}`
+    let pending = seen.get(key)
+    if (!pending) {
+      pending = read(url, accept)
+      seen.set(key, pending)
+      pending.catch(() => seen.delete(key))
+    }
+    return pending
   }
 
   async function json(url: string) {
