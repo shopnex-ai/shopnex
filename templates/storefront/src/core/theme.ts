@@ -414,11 +414,12 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     collections: collectionsObject(loader),
     linklists: new LinklistsDrop(loader),
     // Where the storefront's own pages live, for links in themes ({{ routes.account_url }})
+    // With customer accounts off these are empty, and themes show no Account link
     routes: {
       root_url: '/',
-      account_url: '/account',
-      account_login_url: '/account/login',
-      account_logout_url: '/account/logout',
+      account_url: shop?.customerAccounts === false ? '' : '/account',
+      account_login_url: shop?.customerAccounts === false ? '' : '/account/login',
+      account_logout_url: shop?.customerAccounts === false ? '' : '/account/logout',
     },
     request: { path: url.pathname, origin: url.origin, page_type: page.template, design_mode: loaded.preview },
     template: { name: page.template },

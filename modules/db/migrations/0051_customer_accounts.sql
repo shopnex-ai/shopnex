@@ -1,0 +1,1 @@
+ALTER TABLE "shops" ADD COLUMN "customer_accounts" boolean DEFAULT true NOT NULL;

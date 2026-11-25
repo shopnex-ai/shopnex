@@ -45,6 +45,7 @@ export const shopInput = createInsertSchema(shops, {
   businessAddress: true,
   taxId: true,
   cookieBanner: true,
+  customerAccounts: true,
   shipToCountries: true,
 })
 

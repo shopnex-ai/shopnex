@@ -53,6 +53,7 @@ export const storefrontRouter = storefront.router({
       languageCode: context.shop.language,
       languages: (await languageService.list(context.shop.id, db)).languages,
       cookieBanner: context.shop.cookieBanner,
+      customerAccounts: context.shop.customerAccounts,
       shipToCountries: context.shop.shipToCountries,
       scripts: await appService.storefrontScripts(context.shop.id, db),
     })),

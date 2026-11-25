@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { PageHeader } from '@/components/admin/page-header'
 import { BusinessDetailsCard } from '@/screens/settings/business-details-card'
+import { CustomerAccountsCard } from '@/screens/settings/customer-accounts-card'
 import { CookieBannerCard } from '@/screens/settings/cookie-banner-card'
 import { ShipToCountriesCard } from '@/screens/settings/ship-to-countries-card'
 import { ShopSettingsCard } from '@/screens/settings/shop-settings-card'
@@ -13,6 +14,7 @@ function GeneralSettingsPage() {
       <ShopSettingsCard />
       <ShipToCountriesCard />
       <BusinessDetailsCard />
+      <CustomerAccountsCard />
       <CookieBannerCard />
     </>
   )

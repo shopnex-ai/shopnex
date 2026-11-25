@@ -70,6 +70,7 @@ export async function updateShop(
       | 'businessAddress'
       | 'taxId'
       | 'cookieBanner'
+      | 'customerAccounts'
       | 'shipToCountries'
     >
   >,
