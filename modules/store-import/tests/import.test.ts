@@ -11,7 +11,7 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { productService } = await import('@shopnex/catalog')
-const { menuService, seedDefaultMenu } = await import('@shopnex/content')
+const { menuService, pageService, seedDefaultMenu } = await import('@shopnex/content')
 const { themeService } = await import('@shopnex/theme')
 const svc = await import('../src/store-import')
 const { StoreImportError } = await import('../src/store-import.errors')
@@ -110,6 +110,27 @@ describe('importing into a new shop', () => {
     const settings = (live?.published as { settings: Record<string, string> }).settings
     assert.equal(settings.favicon, 'https://www.musli.example.com/fav.png')
     assert.equal(settings.logo, 'https://www.musli.example.com/logo.png')
+  })
+
+  test('a contact form page becomes a Contact page of the footer’s details, and the menu links to it', async () => {
+    const shopId = await newShop()
+    const base = shopifyStore()
+    const home = `<html lang="en"><head><title>Müsli Shop</title></head><body>
+      <header><nav class="header__inline-menu"><ul><li><a href="/pages/contact">Contact us</a></li></ul></nav></header>
+      <footer><h2>CONTACT US :</h2><ul><li>Hotline: +49 30 1234</li><li>Email: hi@musli.example.com</li></ul></footer></body></html>`
+    const withHome = async (input: string | URL | Request) =>
+      new URL(String(input)).pathname === '/' ? new Response(home) : base(input)
+    const job = await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(withHome))
+    assert.equal(job.status, 'done', job.error ?? '')
+
+    const page = (await pageService.list(shopId, db)).find((p) => p.handle === 'contact')
+    assert.equal(page?.title, 'Contact us')
+    assert.match(page?.bodyHtml ?? '', /Hotline: \+49 30 1234/)
+    const main = await menuService.getByHandle(shopId, 'main-menu', db)
+    assert.deepEqual(
+      main?.items.map((i) => [i.title, i.type, i.resourceId]),
+      [['Contact us', 'page', page?.id]],
+    )
   })
 
   test('a SKU the whole shop already uses is blanked, so no product is lost to it', async () => {

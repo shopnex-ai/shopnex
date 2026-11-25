@@ -69,7 +69,7 @@ export async function loadIntoShop(
       .filter((sku): sku is string => !!sku),
   )
 
-  const created: { id: string; groups: string[]; groupImage: string | null }[] = []
+  const created: { id: string; key?: string; groups: string[]; groupImage: string | null }[] = []
   let variants = 0
   await progress({ step: 'Adding products', done: 0, total: sellable.length })
   for (const [index, p] of sellable.entries()) {
@@ -77,7 +77,7 @@ export async function loadIntoShop(
       // No marker tag of our own: themes print tags on the product page
       const fitted = fitCatalogRules(p.input, usedSkus)
       const product = await productService.create(shopId, fitted, conn)
-      created.push({ id: product.id, groups: p.groups, groupImage: p.groupImage })
+      created.push({ id: product.id, key: p.key, groups: p.groups, groupImage: p.groupImage })
       variants += fitted.variants?.length ?? 1
     } catch (e) {
       skipped++
@@ -88,30 +88,40 @@ export async function loadIntoShop(
     }
   }
 
-  // Collections: the biggest few groups, with at least 2 products each. (Reading a store's own collection feeds
-  // rate-limits fast, so groups come from data we already have.)
+  // Collections: the store's own when it has them (as small as one product), else the biggest few product-type groups with
+  // at least 2 products each
   await progress({ step: 'Making collections' })
-  const byGroup = new Map<string, { ids: string[]; image: string | null }>()
-  for (const p of created) {
-    for (const name of p.groups) {
-      const group = byGroup.get(name) ?? { ids: [], image: httpUrl(p.groupImage) }
-      group.ids.push(p.id)
-      byGroup.set(name, group)
+  const byKey = new Map(created.flatMap((p) => (p.key ? [[p.key, p.id] as const] : [])))
+  const wanted: { title: string; image: string | null; ids: string[] }[] = []
+  for (const c of input.collections ?? []) {
+    const ids = [...new Set(c.keys.flatMap((key) => byKey.get(key) ?? []))]
+    if (ids.length) wanted.push({ title: c.title, image: httpUrl(c.image), ids })
+  }
+  if (!wanted.length) {
+    const byGroup = new Map<string, { ids: string[]; image: string | null }>()
+    for (const p of created) {
+      for (const name of p.groups) {
+        const group = byGroup.get(name) ?? { ids: [], image: httpUrl(p.groupImage) }
+        group.ids.push(p.id)
+        byGroup.set(name, group)
+      }
+    }
+    for (const [title, group] of [...byGroup.entries()].sort((a, b) => b[1].ids.length - a[1].ids.length).slice(0, 6)) {
+      if (group.ids.length >= 2) wanted.push({ title, image: group.image, ids: group.ids })
     }
   }
   const collections: { id: string; title: string }[] = []
-  for (const [name, group] of [...byGroup.entries()].sort((a, b) => b[1].ids.length - a[1].ids.length).slice(0, 6)) {
-    if (group.ids.length < 2) continue
+  for (const group of wanted) {
     try {
       const collection = await collectionService.create(
         shopId,
-        { title: name.slice(0, COLLECTION_TITLE_MAX), imageUrl: group.image },
+        { title: group.title.slice(0, COLLECTION_TITLE_MAX), imageUrl: group.image },
         conn,
       )
       for (const id of group.ids) await collectionService.addProduct(shopId, collection.id, id, conn)
-      collections.push({ id: collection.id, title: name })
+      collections.push({ id: collection.id, title: group.title })
     } catch (e) {
-      problems.push(`collection ${name}: ${why(e)}`)
+      problems.push(`collection ${group.title}: ${why(e)}`)
     }
   }
   // A shop made by a migration (the demo's, a scratch one) may have no menus yet; this never replaces one that exists

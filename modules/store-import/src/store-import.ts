@@ -173,7 +173,7 @@ async function execute(row: StoreImport, mode: { branding: boolean; fresh: boole
     )
     if (brand) {
       await patch({ step: 'Setting up your look' })
-      await applyBrand(row.shopId, brand, conn)
+      await applyBrand(row.shopId, brand, row.origin, conn)
     }
     const counts: StoreImportCounts = {
       ...loaded.counts,

@@ -1,11 +1,17 @@
 // Reads a store's home page for how it looks (name, logo, favicon, color, social links) and sets that on a shop. Only reads
 // what the store itself publishes; every request goes through the guarded fetcher.
+import { collectionService } from '@shopnex/catalog'
+import { menuService, pageService } from '@shopnex/content'
+import { randomUUID } from 'node:crypto'
 import { shops } from '@shopnex/core/schema'
 import type { Conn } from '@shopnex/db'
 import { themeService } from '@shopnex/theme'
 import { eq } from 'drizzle-orm'
 import type { Fetcher } from './fetcher'
-import { httpUrl } from './bounds'
+import { httpUrl, PAGE_HANDLE_MAX } from './bounds'
+import { slug } from './pages'
+import { contactHtml, readContactLines } from './contact'
+import { readHeaderMenu, toMenuItems, type NavItem } from './menu'
 import { decode } from './woo'
 
 export type Brand = {
@@ -16,6 +22,10 @@ export type Brand = {
   favicon?: string
   color?: string
   background?: string
+  /** The links of the header's main menu */
+  menu: NavItem[]
+  /** The contact details in the footer (phone, email, address), one per line */
+  contact: string[]
   socials: Partial<Record<'instagram' | 'facebook' | 'tiktok' | 'youtube' | 'x' | 'pinterest', string>>
 }
 
@@ -170,6 +180,8 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
 
   return {
     name,
+    menu: readHeaderMenu(html),
+    contact: readContactLines(html),
     logo: httpUrl(logo) ?? undefined,
     logoFrom: httpUrl(logo) ? (logoFrom.startsWith('favicon') ? 'favicon' : 'logo') : null,
     favicon: httpUrl(favicon) ?? undefined,
@@ -191,8 +203,21 @@ export const STOREPLATE_SETTINGS = {
   background: 'color_body',
 } as const
 
+// The theme's call-to-action section ships a stock lamp photo and "Discover our new collection". An imported store never
+// wrote that, so it starts hidden (the merchant can turn it on in the theme editor).
+const HOME_WITHOUT_STOCK_CTA = {
+  home: {
+    sections: [
+      { id: 'hero', type: 'hero_slider', settings: {} },
+      { id: 'collections', type: 'collections', settings: {} },
+      { id: 'featured', type: 'featured_products', settings: {} },
+      { id: 'cta', type: 'call_to_action', disabled: true, settings: {} },
+    ],
+  },
+}
+
 /** Puts the store's look on a shop: its name and logo, and a published Storeplate copy with the colors, favicon and links */
-export async function applyBrand(shopId: string, brand: Brand, conn: Conn) {
+export async function applyBrand(shopId: string, brand: Brand, origin: string, conn: Conn) {
   const ids = STOREPLATE_SETTINGS
   const settings: Record<string, string | number> = {
     [ids.announcement]: `Welcome to ${brand.name}`,
@@ -211,8 +236,72 @@ export async function applyBrand(shopId: string, brand: Brand, conn: Conn) {
     .where(eq(shops.id, shopId))
   const copy = await themeService.create(
     shopId,
-    { themeId: 'storeplate', name: `${brand.name} (imported)`, draft: { settings, pages: {} } },
+    { themeId: 'storeplate', name: `${brand.name} (imported)`, draft: { settings, pages: HOME_WITHOUT_STOCK_CTA } },
     conn,
   )
   await themeService.publish(shopId, copy.id, conn)
+  await addContactPage(shopId, brand, conn)
+  await applyMenu(shopId, brand, origin, conn)
+}
+
+// The page the store's Contact link points at, from the details in its footer. Not made when the shop already has one.
+async function addContactPage(shopId: string, brand: Brand, conn: Conn) {
+  if (!brand.contact.length) return
+  const pages = await pageService.list(shopId, conn)
+  if (pages.some((p) => /contact|kontakt/.test(p.handle))) return
+  const links = brand.menu.flatMap(function walk(item: NavItem): string[] {
+    return [item.href ?? '', ...item.items.flatMap(walk)]
+  })
+  const handle = links.map((href) => href.match(/\/pages\/([^/?#]*contact[^/?#]*)/i)?.[1]).find(Boolean)
+  const page = await pageService.create(
+    shopId,
+    {
+      title: 'Contact us',
+      handle: slug(handle ?? 'contact').slice(0, PAGE_HANDLE_MAX) || 'contact',
+      bodyHtml: contactHtml(brand.contact),
+      published: true,
+    },
+    conn,
+  )
+  const footer = await menuService.getByHandle(shopId, 'footer', conn)
+  if (footer?.items.every((i) => i.type === 'page' || i.type === 'search')) {
+    const [search] = footer.items.filter((i) => i.type === 'search')
+    const rest = footer.items.filter((i) => i.type !== 'search')
+    await menuService.update(
+      shopId,
+      footer.id,
+      {
+        items: [
+          ...rest,
+          { id: randomUUID(), title: page.title, type: 'page', resourceId: page.id, items: [] },
+          ...(search ? [search] : []),
+        ],
+      },
+      conn,
+    )
+  }
+}
+
+/**
+ * The store's own main menu, so the header reads the way it did there. Only replaces the menu the import itself made (home,
+ * shop all and collections, no sub-items): one the merchant has changed is theirs.
+ */
+async function applyMenu(shopId: string, brand: Brand, origin: string, conn: Conn) {
+  const menu = await menuService.getByHandle(shopId, 'main-menu', conn)
+  if (!menu || !brand.menu.length) return
+  if (!menu.items.every((i) => ['frontpage', 'catalog', 'collection'].includes(i.type) && !i.items.length)) return
+  const items = toMenuItems(
+    brand.menu,
+    origin,
+    {
+      collections: (await collectionService.list(shopId, { limit: 100, offset: 0 }, conn)).map((c) => ({
+        id: c.id,
+        title: c.title,
+        slug: c.slug,
+      })),
+      pages: (await pageService.list(shopId, conn)).map((p) => ({ id: p.id, handle: p.handle })),
+    },
+    1,
+  )
+  if (items.length) await menuService.update(shopId, menu.id, { items }, conn)
 }
