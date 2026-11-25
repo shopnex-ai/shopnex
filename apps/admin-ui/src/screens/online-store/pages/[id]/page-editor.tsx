@@ -10,6 +10,7 @@ import { pageInput } from '@shopnex/content/contract'
 import { CheckboxField, FormError, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
+import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -62,7 +63,6 @@ function PageForm({ page }: { page: Page | null }) {
   const form = useZodForm(pageForm, { defaultValues: toValues(page) })
   const [confirmDelete, setConfirmDelete] = useState(false)
   const bodyId = useId()
-  const formId = useId()
   const body = useController({ control: form.control, name: 'bodyHtml' })
 
   // After saving, the saved page is the new baseline (no unsaved changes)
@@ -101,7 +101,7 @@ function PageForm({ page }: { page: Page | null }) {
   const title = form.watch('title')
 
   return (
-    <form id={formId} onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <PageHeader
         back={back}
         title={page ? page.title : 'Add page'}
@@ -112,17 +112,13 @@ function PageForm({ page }: { page: Page | null }) {
                 Delete
               </Button>
             )}
-            {/* The header's actions are drawn in the top bar, outside the <form>, so the button names its form */}
-            <Button
-              type="submit"
-              form={formId}
-              size="sm"
-              disabled={form.formState.isSubmitting || (page !== null && !form.formState.isDirty)}
-            >
-              {form.formState.isSubmitting ? 'Saving…' : 'Save'}
-            </Button>
           </>
         }
+      />
+      <UnsavedBar
+        dirty={form.formState.isDirty || page === null}
+        saving={form.formState.isSubmitting}
+        onDiscard={() => form.reset()}
       />
       <FormError form={form} />
 

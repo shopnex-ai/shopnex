@@ -8,6 +8,7 @@ import { ChannelPicker } from '@/components/admin/channel-picker'
 import { FormError, setServerError } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
 import { TranslationsCard } from '@/components/admin/translations-card'
+import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,19 +96,7 @@ function CollectionEditor({ collection }: { collection: Collection }) {
       />
 
       <form onSubmit={onSubmit} noValidate className="space-y-6">
-        {isDirty && (
-          <div className="sticky top-2 z-10 flex items-center justify-between gap-3 rounded-xl bg-card/95 px-4 py-2 shadow-flyout backdrop-blur">
-            <span className="text-sm font-medium">Unsaved changes</span>
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => form.reset()}>
-                Discard
-              </Button>
-              <Button type="submit" size="sm" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        )}
+        <UnsavedBar dirty={isDirty} saving={isSubmitting} onDiscard={() => form.reset()} />
         <FormError form={form} />
         <Card>
           <CardContent>
