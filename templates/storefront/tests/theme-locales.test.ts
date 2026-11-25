@@ -47,9 +47,11 @@ for (const theme of themes) {
     })
 
     test('no text in the default language goes unused', () => {
+      // Core translates a few labels itself (the filters of a listing, src/core/theme.ts) with the theme's text
       const code = read([
         ...files(join(themesDir, theme), ['.liquid']),
         ...files(join(themesDir, theme, 'src'), ['.ts', '.tsx']),
+        ...files(join(import.meta.dirname, '../src/core'), ['.ts']),
       ])
       assert.deepEqual(
         Object.keys(english)
