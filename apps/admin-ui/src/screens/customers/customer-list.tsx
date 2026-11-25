@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon, UsersIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -22,7 +22,6 @@ import { client, orpc, type Outputs } from '@/lib/orpc'
 import { CustomerForm } from './customer-form'
 import { ImportCustomersDialog } from './import-customers'
 import { ExportCustomersDialog } from './export-customers'
-import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 
 type Customer = Outputs['admin']['customers']['list']['items'][number]
 
@@ -39,7 +38,6 @@ const columns = [
 ]
 
 export function CustomerList() {
-  const queryClient = useQueryClient()
   const { page, pageSize, search, range, setPage, setSearch } = useListParams()
   const { data, error, isPending } = useQuery({
     ...orpc.admin.customers.list.queryOptions({ input: { ...range, search: search || undefined } }),
@@ -81,17 +79,11 @@ export function CustomerList() {
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
-        selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'customer' : 'customers'}
-            remove={(selected) => client.admin.customers.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.customers.key() })
-            }}
-          />
-        )}
+        bulkDelete={{
+          entity: 'customer',
+          remove: (ids) => client.admin.customers.deleteMany({ ids }),
+          invalidate: orpc.admin.customers.key(),
+        }}
       />
     </div>
   )

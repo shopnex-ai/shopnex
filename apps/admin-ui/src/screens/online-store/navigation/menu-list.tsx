@@ -119,6 +119,11 @@ export function MenuList() {
             Menus are the header and footer links your storefront shows.
           </EmptyState>
         }
+        bulkDelete={{
+          entity: 'menu',
+          remove: (ids) => client.admin.menus.deleteMany({ ids }),
+          invalidate: orpc.admin.menus.key(),
+        }}
       />
     </div>
   )

@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/format'
-import { orpc, type Outputs } from '@/lib/orpc'
+import { client, orpc, type Outputs } from '@/lib/orpc'
 
 type Page = Outputs['admin']['pages']['list'][number]
 
@@ -62,6 +62,11 @@ export function PageList() {
             Pages like About, FAQ or shipping and return policies. Link them from a menu under Navigation.
           </EmptyState>
         }
+        bulkDelete={{
+          entity: 'page',
+          remove: (ids) => client.admin.pages.deleteMany({ ids }),
+          invalidate: orpc.admin.pages.key(),
+        }}
       />
     </div>
   )

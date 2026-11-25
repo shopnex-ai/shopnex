@@ -106,6 +106,15 @@ export async function remove(shopId: string, id: string, conn: Conn) {
   return row ?? null
 }
 
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
+  if (!ids.length) return 0
+  const deleted = await conn
+    .delete(menus)
+    .where(and(eq(menus.shopId, shopId), inArray(menus.id, ids)))
+    .returning({ id: menus.id })
+  return deleted.length
+}
+
 export type ResolvedMenuItem = Omit<StoredMenuItem, 'items' | 'url' | 'resourceId'> & {
   resourceId: string | null
   /** Storefront path (/collections/{handle}…) or the http address */

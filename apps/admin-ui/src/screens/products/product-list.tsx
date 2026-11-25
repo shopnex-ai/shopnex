@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PackageIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { publishedOn } from '@/components/admin/channel-picker'
@@ -18,7 +18,6 @@ import { AddSamplesButton } from './add-samples-button'
 import { NewProductButton } from './new-product-button'
 import { ImportProductsDialog } from './import-products'
 import { ExportProductsDialog } from './export-products'
-import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 
 type Product = Outputs['admin']['products']['list']['items'][number]
 
@@ -96,7 +95,6 @@ const columnsFor = (currency: string, channels: { id: string; name: string }[] |
 }
 
 export function ProductList({ currency }: { currency: string }) {
-  const queryClient = useQueryClient()
   const channels = useQuery(orpc.admin.channels.list.queryOptions())
   const columns = useMemo(() => columnsFor(currency, channels.data), [currency, channels.data])
   const { page, pageSize, search, range, setPage, setSearch } = useListParams()
@@ -148,17 +146,11 @@ export function ProductList({ currency }: { currency: string }) {
           )
         }
         pagination={{ page, pageSize, total: data?.total, onPageChange: setPage }}
-        selectionActions={(ids, clearSelection) => (
-          <DeleteSelectedButton
-            ids={ids}
-            entity={ids.length === 1 ? 'product' : 'products'}
-            remove={(selected) => client.admin.products.deleteMany({ ids: selected })}
-            onDeleted={async () => {
-              clearSelection()
-              await queryClient.invalidateQueries({ queryKey: orpc.admin.products.key() })
-            }}
-          />
-        )}
+        bulkDelete={{
+          entity: 'product',
+          remove: (ids) => client.admin.products.deleteMany({ ids }),
+          invalidate: orpc.admin.products.key(),
+        }}
       />
     </div>
   )

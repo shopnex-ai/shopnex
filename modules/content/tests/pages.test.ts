@@ -158,4 +158,13 @@ describe('removing a page', () => {
     assert.equal(await pageService.remove(SHOP, p.id, db), null)
     assert.equal(await pageService.getById(SHOP, p.id, db), null)
   })
+
+  test('removing many deletes only this shop’s pages and counts them', async () => {
+    const a = await pageService.create(SHOP, { title: 'A bulk' }, db)
+    const b = await pageService.create(SHOP, { title: 'B bulk' }, db)
+    assert.equal(await pageService.removeMany(OTHER_SHOP, [a.id, b.id], db), 0)
+    assert.equal(await pageService.removeMany(SHOP, [a.id, b.id], db), 2)
+    assert.equal(await pageService.getById(SHOP, a.id, db), null)
+    assert.equal(await pageService.removeMany(SHOP, [], db), 0)
+  })
 })
