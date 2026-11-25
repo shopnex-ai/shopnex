@@ -53,3 +53,32 @@ describe('data tags', () => {
     assert.deepEqual(await tagsOf(sent.join(', ')), ['bfcm-mens', 'sale'])
   })
 })
+
+describe('the store’s own collections', () => {
+  test('are read with the products in each, skipping the catch-all and empty ones', async () => {
+    const fetcher = {
+      json: async (url: string) => {
+        if (url.includes('/collections.json'))
+          return {
+            collections: [
+              { handle: 'all-products', title: 'All Products', products_count: 1 },
+              {
+                handle: 'bagpaks',
+                title: 'Backpack',
+                products_count: 1,
+                image: { src: 'https://cdn.example.com/b.jpg' },
+              },
+              { handle: 'kids-bag', title: 'Kids Bag', products_count: 0 },
+            ],
+          }
+        if (url.includes('/collections/bagpaks/products.json')) return { products: [{ handle: 'sock' }] }
+        if (url.includes('/products.json'))
+          return url.includes('page=1') ? { products: [product([])] } : { products: [] }
+        return {}
+      },
+    } as unknown as Fetcher
+    const found = await fetchShopify('https://shop.example.com', 10, fetcher)
+    assert.equal(found.products[0]?.key, 'sock')
+    assert.deepEqual(found.collections, [{ title: 'Backpack', image: 'https://cdn.example.com/b.jpg', keys: ['sock'] }])
+  })
+})

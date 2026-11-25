@@ -11,6 +11,9 @@ const ZERO_DECIMAL = new Set(['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'UGX'])
  */
 export const isDataTag = (tag: string) => tag.includes('::') || tag.includes(' => ')
 
+// Shopify's automatic collections that only repeat the whole catalog
+const SKIPPED_COLLECTIONS = new Set(['all', 'all-products', 'frontpage'])
+
 export async function fetchShopify(origin: string, max: number, fetcher: Fetcher): Promise<Found> {
   const getJson = fetcher.json
   const meta = await getJson(origin + '/meta.json').catch(() => null)
@@ -71,11 +74,27 @@ export async function fetchShopify(origin: string, max: number, fetcher: Fetcher
   }
 
   const pagesFeed: any[] = (await getJson(`${origin}/pages.json?limit=250`).catch(() => ({ pages: [] }))).pages ?? []
+  // The store's own collections. Best effort: a store that limits requests just keeps the groups made from product types
+  const collections: NonNullable<Found['collections']> = []
+  const feed: any[] =
+    (await getJson(`${origin}/collections.json?limit=50`).catch(() => ({ collections: [] }))).collections ?? []
+  for (const c of feed.filter((c) => c.products_count > 0 && !SKIPPED_COLLECTIONS.has(String(c.handle))).slice(0, 12)) {
+    try {
+      const data = await getJson(`${origin}/collections/${encodeURIComponent(c.handle)}/products.json?limit=250`)
+      const keys: string[] = (data.products ?? []).map((p: any) => String(p.handle))
+      if (keys.length) collections.push({ title: String(c.title), image: c.image?.src ?? null, keys })
+    } catch {
+      // Left out
+    }
+  }
+
   return {
     origin,
     platform: 'shopify',
     currency,
+    collections,
     products: raw.map((p) => ({
+      key: String(p.handle),
       input: toInput(p),
       groups: String(p.product_type ?? '').trim() ? [String(p.product_type).trim()] : [],
       groupImage: p.images?.[0]?.src ?? null,
