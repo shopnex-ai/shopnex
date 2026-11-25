@@ -77,11 +77,16 @@ function CookieBannerForm({ shop }: { shop: Shop }) {
           </p>
         </div>
         <FormError form={form} />
-        <Field orientation="horizontal" className="justify-end">
-          <Button type="submit" variant="outline" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? 'Saving…' : 'Save'}
-          </Button>
-        </Field>
+        {isDirty && (
+          <Field orientation="horizontal" className="justify-end">
+            <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => form.reset()}>
+              Discard
+            </Button>
+            <Button type="submit" variant="outline" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save'}
+            </Button>
+          </Field>
+        )}
       </FieldGroup>
     </form>
   )
