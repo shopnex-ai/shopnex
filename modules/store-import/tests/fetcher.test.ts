@@ -105,15 +105,73 @@ describe('createFetcher', () => {
     await assert.rejects(fetcher.text('https://shop.example.com/'), is('STORE_NOT_READABLE'))
   })
 
-  test('a store that says 429 is asked once more, then read', async () => {
+  test('a store that says 429 is asked again, then read', async () => {
     let calls = 0
     const fetcher = createFetcher({
       pauseMs: 0,
+      retryWaitMs: 0,
       checkHost: async () => {},
       fetchImpl: async () => (++calls === 1 ? new Response('slow down', { status: 429 }) : ok('fine')),
     })
     assert.equal(await fetcher.text('https://shop.example.com/'), 'fine')
     assert.equal(calls, 2)
+  })
+
+  test('a store that keeps saying 429, or answers 403, is reported as blocking, after waiting between asks', async () => {
+    let calls = 0
+    const waits: number[] = []
+    const realSetTimeout = globalThis.setTimeout
+    globalThis.setTimeout = ((fn: () => void, ms?: number) => {
+      waits.push(ms ?? 0)
+      return realSetTimeout(fn, 0)
+    }) as typeof setTimeout
+    try {
+      const limited = createFetcher({
+        pauseMs: 0,
+        retryWaitMs: 100,
+        checkHost: async () => {},
+        fetchImpl: async () => {
+          calls++
+          return new Response('slow', { status: 429, headers: calls === 1 ? { 'retry-after': '3' } : {} })
+        },
+      })
+      await assert.rejects(limited.text('https://shop.example.com/'), is('STORE_BLOCKED'))
+      assert.equal(calls, 4) // the first ask and 3 more
+      assert.deepEqual(
+        waits.filter((ms) => ms >= 100),
+        [3000, 200, 400],
+      ) // Retry-After first, then doubling
+    } finally {
+      globalThis.setTimeout = realSetTimeout
+    }
+    const challenged = createFetcher({
+      pauseMs: 0,
+      checkHost: async () => {},
+      fetchImpl: async () => new Response('Verifying your connection...', { status: 403 }),
+    })
+    await assert.rejects(challenged.text('https://shop.example.com/'), is('STORE_BLOCKED'))
+  })
+
+  test('waits about a second before each request, not exactly the same each time', async () => {
+    const waits: number[] = []
+    const realSetTimeout = globalThis.setTimeout
+    globalThis.setTimeout = ((fn: () => void, ms?: number) => {
+      waits.push(ms ?? 0)
+      return realSetTimeout(fn, 0)
+    }) as typeof setTimeout
+    try {
+      const fetcher = createFetcher({ checkHost: async () => {}, fetchImpl: async () => ok('fine') })
+      for (let i = 0; i < 12; i++) await fetcher.text('https://shop.example.com/')
+    } finally {
+      globalThis.setTimeout = realSetTimeout
+    }
+    const pauses = waits.filter((ms) => ms >= 600)
+    assert.equal(pauses.length, 12)
+    assert.ok(
+      pauses.every((ms) => ms >= 700 && ms <= 1300),
+      pauses.join(' '),
+    )
+    assert.ok(new Set(pauses).size > 1)
   })
 
   test('json says what failed in words for the shop owner', async () => {

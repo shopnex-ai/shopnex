@@ -202,10 +202,14 @@ async function read(
   fetcher: Fetcher,
   patch: (values: Partial<typeof storeImports.$inferInsert>) => Promise<unknown>,
 ) {
-  const isShopify = Boolean((await fetcher.json(`${origin}/products.json?limit=1`).catch(() => null))?.products)
-  const isWoo =
-    !isShopify &&
-    Array.isArray(await fetcher.json(`${origin}/wp-json/wc/store/v1/products?per_page=1`).catch(() => null))
+  // Only "not readable" means "not this platform": a store that blocks us says so, rather than being called unreadable
+  const probe = (url: string) =>
+    fetcher.json(url).catch((error) => {
+      if (error instanceof StoreImportError && error.code === 'STORE_BLOCKED') throw error
+      return null
+    })
+  const isShopify = Boolean((await probe(`${origin}/products.json?limit=1`))?.products)
+  const isWoo = !isShopify && Array.isArray(await probe(`${origin}/wp-json/wc/store/v1/products?per_page=1`))
   if (!isShopify && !isWoo) {
     throw new StoreImportError(
       'STORE_NOT_READABLE',

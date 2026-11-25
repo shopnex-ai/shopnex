@@ -38,6 +38,7 @@ describe('store-import manifest', () => {
     const expected = {
       INVALID_STORE_ADDRESS: 'BAD_REQUEST',
       STORE_NOT_READABLE: 'BAD_REQUEST',
+      STORE_BLOCKED: 'TOO_MANY_REQUESTS',
       IMPORT_RUNNING: 'CONFLICT',
       IMPORT_LIMIT: 'TOO_MANY_REQUESTS',
       CURRENCY_MISMATCH: 'CONFLICT',
