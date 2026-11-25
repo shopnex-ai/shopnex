@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { EyeIcon, EyeOffIcon, GripVerticalIcon, PlusIcon } from 'lucide-react'
+import { EyeIcon, EyeOffIcon, GripVerticalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { useId, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ThemeDefinition, ThemeSection, ThemeSettings } from '@shopnex/storefront-sdk/theme'
@@ -42,6 +42,10 @@ type ListProps<T extends Item> = {
   addable: { type: string; name: string; full: boolean }[]
   /** Everything is full, whatever the type (a section's max_blocks) */
   disableAdd?: boolean
+  /** A list the theme fixes (a group of global sections) has no Add button; default: it has one */
+  canAdd?: boolean
+  /** Shows a trash button on each row */
+  onRemove?: (id: string) => void
   selectedId: string | null
   onSelect: (id: string) => void
   onChange: (items: T[]) => void
@@ -82,6 +86,8 @@ export function ItemList<T extends Item>({
   noun,
   addable,
   disableAdd,
+  canAdd = true,
+  onRemove,
   selectedId,
   onSelect,
   onChange,
@@ -129,6 +135,7 @@ export function ItemList<T extends Item>({
                 selected={item.id === selectedId}
                 onSelect={() => onSelect(item.id)}
                 onToggle={() => onChange(items.map((s) => (s.id === item.id ? { ...s, disabled: !s.disabled } : s)))}
+                onRemove={onRemove && (() => onRemove(item.id))}
               />
             ))}
           </ul>
@@ -142,20 +149,34 @@ export function ItemList<T extends Item>({
           )}
       </DndContext>
       {items.length === 0 && <p className="px-2 py-4 text-center text-sm text-muted-foreground">No {noun}s yet.</p>}
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="w-full" disabled={disableAdd} />}>
+      {!canAdd ? null : addable.length === 1 ? (
+        // One type to add: no menu to open
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          disabled={disableAdd || addable[0]!.full}
+          onClick={() => onAdd(addable[0]!.type)}
+        >
           <PlusIcon />
           Add {noun}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56">
-          {addable.map((a) => (
-            <DropdownMenuItem key={a.type} disabled={a.full} onClick={() => onAdd(a.type)}>
-              {a.name}
-              {a.full && <span className="ml-auto text-xs text-muted-foreground">Added</span>}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </Button>
+      ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="w-full" disabled={disableAdd} />}>
+            <PlusIcon />
+            Add {noun}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            {addable.map((a) => (
+              <DropdownMenuItem key={a.type} disabled={a.full} onClick={() => onAdd(a.type)}>
+                {a.name}
+                {a.full && <span className="ml-auto text-xs text-muted-foreground">Added</span>}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   )
 }
@@ -167,6 +188,7 @@ function ItemRow<T extends Item>({
   selected,
   onSelect,
   onToggle,
+  onRemove,
 }: {
   item: T
   /** Undefined: the theme no longer has this type */
@@ -175,6 +197,7 @@ function ItemRow<T extends Item>({
   selected: boolean
   onSelect: () => void
   onToggle: () => void
+  onRemove?: () => void
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -190,6 +213,7 @@ function ItemRow<T extends Item>({
         handle={{ ref: setActivatorNodeRef, ...attributes, ...listeners }}
         onSelect={onSelect}
         onToggle={onToggle}
+        onRemove={onRemove}
       />
     </li>
   )
@@ -212,6 +236,7 @@ function RowContent({
   handle,
   onSelect,
   onToggle,
+  onRemove,
 }: {
   item: Item
   name: string | undefined
@@ -220,6 +245,7 @@ function RowContent({
   handle?: React.ComponentProps<'button'>
   onSelect?: () => void
   onToggle?: () => void
+  onRemove?: () => void
 }) {
   const heading = previewOf(item.settings)
   return (
@@ -253,6 +279,17 @@ function RowContent({
       >
         {item.disabled ? <EyeOffIcon /> : <EyeIcon />}
       </Button>
+      {onRemove && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onRemove}
+          aria-label={`Remove ${noun}`}
+          title={`Remove ${noun}`}
+        >
+          <Trash2Icon />
+        </Button>
+      )}
     </div>
   )
 }

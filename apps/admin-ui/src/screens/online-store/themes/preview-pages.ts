@@ -1,4 +1,4 @@
-import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
+import { THEME_STATIC_PAGE, type ThemeDefinition } from '@shopnex/storefront-sdk/theme'
 
 export type PreviewCatalog = {
   products: { handle: string; title: string }[]
@@ -8,29 +8,26 @@ export type PreviewCatalog = {
 
 export type PreviewPageOption = { value: string; label: string }
 
+// What the editor calls the pages every theme has; any other page uses the name its theme gives it
+const PAGE_LABELS: Record<string, string> = {
+  home: 'Home page',
+  collection: 'Collection',
+  product: 'Product',
+  page: 'Content page',
+  '404': '404 page',
+}
+
 export function previewPageOptions(definition: ThemeDefinition | null, catalog: PreviewCatalog): PreviewPageOption[] {
   const pages = definition?.pages ?? {}
-  return [
-    ...Object.entries(pages).map(([value, page]) => ({
-      value,
-      label:
-        value === 'home'
-          ? 'Home page'
-          : value === 'collection'
-            ? 'Collection'
-            : value === 'product'
-              ? 'Product'
-              : value === 'page'
-                ? 'Content page'
-                : value === '404'
-                  ? '404 page'
-                  : page.name,
-    })),
-    ...(!pages.collection ? [{ value: 'collection', label: 'Collection' }] : []),
-    ...(!pages.product ? [{ value: 'product', label: 'Product' }] : []),
-    ...(!pages.page ? [{ value: 'page', label: 'Content page' }] : []),
-    ...(!pages['404'] ? [{ value: '404', label: '404 page' }] : []),
-  ]
+  const declared = Object.entries(pages)
+    // The global sections are a group on every page, not a page to preview
+    .filter(([value]) => value !== THEME_STATIC_PAGE)
+    .map(([value, page]) => ({ value, label: PAGE_LABELS[value] ?? page.name }))
+  // These are offered even when a theme does not list them
+  const missing = ['collection', 'product', 'page', '404']
+    .filter((value) => !pages[value])
+    .map((value) => ({ value, label: PAGE_LABELS[value]! }))
+  return [...declared, ...missing]
 }
 
 export function previewPagePath(page: string, definition: ThemeDefinition | null, catalog: PreviewCatalog): string {
