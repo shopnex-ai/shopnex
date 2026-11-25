@@ -133,6 +133,14 @@ describe('importing into a new shop', () => {
     )
   })
 
+  test('a store that blocks the importer is told so, not called unreadable', async () => {
+    const shopId = await newShop()
+    const blocked = async () => new Response('Verifying your connection...', { status: 403 })
+    const job = await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(blocked))
+    assert.equal(job.status, 'failed')
+    assert.match(job.error ?? '', /limiting automated reads/)
+  })
+
   test('a SKU the whole shop already uses is blanked, so no product is lost to it', async () => {
     const shopId = await newShop()
     const job = await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(shopifyStore({ n: 5 })))

@@ -6,6 +6,8 @@ export const StoreImportError = defineError('StoreImportError', {
   INVALID_STORE_ADDRESS: 'BAD_REQUEST',
   // The store can't be read: closed catalog, password, not Shopify or WooCommerce, or it did not answer
   STORE_NOT_READABLE: 'BAD_REQUEST',
+  // The store answers 429 (too many requests) or 403 (a bot check): it refuses automated reads for now
+  STORE_BLOCKED: 'TOO_MANY_REQUESTS',
   // Another import of this shop is still running
   IMPORT_RUNNING: 'CONFLICT',
   // Too many imports from this shop today, or the server is busy
