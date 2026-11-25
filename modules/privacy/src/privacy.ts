@@ -13,7 +13,7 @@ import { user as userTable } from '@shopnex/core/schema'
 import { emailDeliveries, emailSuppressions } from '@shopnex/email/schema'
 import { cartLines as cartLinesTable, carts as cartsTable } from '@shopnex/cart/schema'
 import { orderItems, orders as ordersTable, orderShippingLines, orderTransactions } from '@shopnex/orders/schema'
-import { customers } from '@shopnex/customers/schema'
+import { customerLoginCodes, customers } from '@shopnex/customers/schema'
 import { giftCards } from '@shopnex/gift-cards/schema'
 
 export type PrivacyErrorCode = 'CUSTOMER_NOT_FOUND' | 'HAS_OPEN_ORDERS'
@@ -295,6 +295,12 @@ export async function erase(shopId: string, customerId: string, conn: Conn) {
       .delete(webhookDeliveries)
       .where(and(eq(webhookDeliveries.shopId, shopId), sql`strpos(lower(${webhookDeliveries.body}), ${email}) > 0`))
       .returning({ id: webhookDeliveries.id })
+
+    // A sign-in code they asked for and never used (hashed, gone after ten minutes anyway); their sessions go with the
+    // customer row
+    await tx
+      .delete(customerLoginCodes)
+      .where(and(eq(customerLoginCodes.shopId, shopId), eq(customerLoginCodes.email, customer.email)))
 
     await tx.delete(customers).where(eq(customers.id, customerId))
 

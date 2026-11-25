@@ -286,7 +286,7 @@ export const storefrontRouter = storefront.router({
     }),
     signOut: storefront.customer.signOut.handler(async ({ context }) => {
       const token = context.headers.get(CUSTOMER_TOKEN_HEADER)
-      if (token) await accountService.signOut(token)
+      if (token) await accountService.signOut(token, db)
       return { success: true as const }
     }),
     get: storefront.customer.get.handler(async ({ context }) =>

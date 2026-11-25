@@ -1,5 +1,5 @@
-// Customer sign-in codes: the emailOTP endpoints only work for our own server code, the platform role check, and the rate limit
-// that is shared through the database.
+// Customer sign-in is not Better Auth's (no emailOTP endpoints), the platform role check, and the rate limit that is shared
+// through the database.
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { after, before, describe, test } from 'node:test'
@@ -13,7 +13,6 @@ process.env.APP_URL = 'http://localhost:3000'
 const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { auth } = await import('../src')
-const { currentOtpSender, isOtpPath, withOtpSender, withOtpSignIn } = await import('../src/shopper-login')
 const { SUPER_ADMIN_ROLE, isSuperAdmin } = await import('../src/roles')
 const { takeRate } = await import('../src/rate-limit')
 const { rateLimits } = await import('../src/auth.schema')
@@ -34,52 +33,14 @@ const post = (path: string, body: unknown) =>
     }),
   )
 
-describe('which paths are the sign-in code endpoints', () => {
-  test('/email-otp/* and /sign-in/email-otp, and nothing else', () => {
-    assert.equal(isOtpPath('/email-otp/send-verification-otp'), true)
-    assert.equal(isOtpPath('/email-otp/check-verification-otp'), true)
-    assert.equal(isOtpPath('/sign-in/email-otp'), true)
-    for (const path of ['/sign-in/email', '/sign-up/email', '/email-otpx', '/sign-in/email-otp/more', '/get-session'])
-      assert.equal(isOtpPath(path), false, path)
-  })
-})
-
-describe('the sender of codes', () => {
-  test('is there only inside withOtpSender, and is the one given', async () => {
-    assert.equal(currentOtpSender(), undefined)
-    const sent: string[] = []
-    const send = (email: string, code: string) => {
-      sent.push(`${email}:${code}`)
-      return Promise.resolve()
-    }
-    await withOtpSender(send, async () => {
-      assert.equal(currentOtpSender(), send)
-      await Promise.resolve()
-      assert.equal(currentOtpSender(), send, 'still there after an await')
-    })
-    assert.equal(currentOtpSender(), undefined)
-  })
-
-  test('inside withOtpSignIn a code is checked but never sent', async () => {
-    await withOtpSignIn(async () => {
-      const send = currentOtpSender()
-      assert.ok(send)
-      await assert.rejects(send('a@b.c', '123456'), /A code is not sent while signing in/)
-    })
-  })
-})
-
-describe('the endpoints over HTTP', () => {
-  test('answer 403 "Not available" when no server code supplied a sender, so nobody can send mail or sign up through them', async () => {
+describe("customers' sign-in is not part of Better Auth", () => {
+  test('the emailOTP endpoints and bearer sessions do not exist, so no code or token can become a staff session', async () => {
     for (const [path, body] of [
       ['/email-otp/send-verification-otp', { email: 'someone@example.com', type: 'sign-in' }],
       ['/sign-in/email-otp', { email: 'someone@example.com', otp: '123456' }],
       ['/email-otp/check-verification-otp', { email: 'someone@example.com', type: 'sign-in', otp: '123456' }],
-    ] as const) {
-      const res = await post(path, body)
-      assert.equal(res.status, 403, path)
-      assert.match(await res.text(), /Not available/)
-    }
+    ] as const)
+      assert.equal((await post(path, body)).status, 404, path)
     const users = await db.select().from(user).where(eq(user.email, 'someone@example.com'))
     assert.equal(users.length, 0, 'no account was made')
   })

@@ -20,7 +20,7 @@ describe('customers manifest', () => {
       const schema = (await import(`${srcDir}${file}`)) as Record<string, unknown>
       for (const value of Object.values(schema)) if (is(value, PgTable)) exported.add(value)
     }
-    assert.equal(exported.size, 1)
+    assert.equal(exported.size, 3)
     assert.deepEqual(new Set(Object.values(customersModule.tables)), exported)
   })
 

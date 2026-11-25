@@ -5,17 +5,19 @@ import { ORPCError, isDefinedError, safe, type Customer } from '@shopnex/storefr
 import { shopnex, shopnexFor } from './shopnex'
 
 const COOKIE = 'shopnex_customer'
-// Matches how long ShopNex keeps a customer session (Better Auth's default)
+// Matches how long ShopNex keeps a customer session (SESSION_TTL_MS in @shopnex/customers)
 const MAX_AGE_S = 7 * 24 * 60 * 60
 
 export const tokenOf = (cookies: AstroCookies) => cookies.get(COOKIE)?.value
 
-export function startSession(cookies: AstroCookies, url: URL, token: string) {
+export function startSession(cookies: AstroCookies, request: Request, url: URL, token: string) {
+  // Behind a TLS-terminating proxy the URL says http; the proxy says what the browser used (as the middleware reads it)
+  const forwarded = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
+  const protocol = forwarded === 'http' || forwarded === 'https' ? forwarded : url.protocol.slice(0, -1)
   cookies.set(COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
-    // Behind a TLS-terminating proxy the URL says http; the proxy says what the browser used
-    secure: url.protocol === 'https:',
+    secure: protocol === 'https',
     path: '/',
     maxAge: MAX_AGE_S,
   })

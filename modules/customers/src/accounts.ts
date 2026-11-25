@@ -1,15 +1,24 @@
-// Customer accounts: sign in to a shop's storefront with a code emailed to the customer (Better Auth emailOTP,
-// see @shopnex/auth). Proving the mailbox is what links the login to the shop's customer record, so guests
-// who ordered before get their orders back. The session token is opaque to the storefront, which keeps it in a
-// cookie and sends it back with each request.
-import { and, eq } from 'drizzle-orm'
-import { auth, takeRate, withOtpSender, withOtpSignIn, withSignUpAllowed } from '@shopnex/auth'
+// Customer accounts: sign in to a shop's storefront with a code emailed to the customer. Proving the mailbox is what
+// links the login to the shop's customer record, so guests who ordered before get their orders back. The session token is
+// opaque to the storefront, which keeps it in a cookie and sends it back with each request.
+//
+// Customers are not Better Auth users (GHSA-w9q2-8c32-gmhm): staff and customers used to share its user table, so a code
+// issued by one shop (whose SMTP the owner controls) signed in as the same address anywhere, staff included. Here a code
+// and a session belong to one shop, and neither is a staff session.
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto'
+import { and, eq, gt, sql } from 'drizzle-orm'
+import { takeRate } from '@shopnex/auth'
 import { type Conn } from '@shopnex/db'
-import { emit } from '@shopnex/webhooks'
+import { shopnexSecret } from '@shopnex/db/secrets'
 import * as customers from './customers'
-import { log } from './log'
-import { user as userTable } from '@shopnex/core/schema'
-import { type Customer, customers as customersTable } from './customers.schema'
+import { type Customer, customerLoginCodes, customerSessions, customers as customersTable } from './customers.schema'
+
+export const LOGIN_CODE_LENGTH = 6
+/** Seconds a code works; the email says so (LOGIN_CODE_MINUTES in @shopnex/email) */
+export const LOGIN_CODE_TTL_S = 10 * 60
+/** Wrong guesses a code takes before it is spent */
+export const LOGIN_CODE_ATTEMPTS = 5
+const SESSION_TTL_MS = 7 * 24 * 60 * 60_000
 
 export type AccountErrorCode = 'INVALID_EMAIL' | 'TOO_MANY_REQUESTS' | 'INVALID_CODE'
 
@@ -25,8 +34,6 @@ export class AccountError extends Error {
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const normalize = (email: string) => email.trim().toLowerCase()
-
-const bearer = (token: string) => new Headers({ authorization: `Bearer ${token}` })
 
 // Limits on emailed sign-in codes, counted in the database (takeRate): every server process shares them and a restart
 // doesn't clear them. Each is a fixed window of 15 minutes. They stop a page from mailing one person over and over, one
@@ -53,16 +60,13 @@ async function overLimit(limits: [key: string, max: number][]) {
   return null
 }
 
-// Better Auth's emailOTP "promotes" an existing user whose email was never verified by deleting their
-// password, OAuth links and sessions. Staff accounts made by the setup wizard or an invitation are like that, so
-// signing one in with a code would lock the owner out of the admin. They use the admin's login instead.
-async function isUnverifiedAccount(email: string, conn: Conn) {
-  const [existing] = await conn
-    .select({ emailVerified: userTable.emailVerified })
-    .from(userTable)
-    .where(eq(userTable.email, email))
-  return existing !== undefined && !existing.emailVerified
-}
+// Hashes are keyed with the instance secret and name what they protect, so a code hash can't be replayed as a token hash
+const digest = (purpose: string, value: string) =>
+  createHmac('sha256', shopnexSecret()).update(`${purpose}:${value}`).digest('hex')
+const sameHash = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
+const codeHash = (shopId: string, email: string, code: string) =>
+  digest('customer-code', `${shopId}\n${email}\n${code}`)
+const tokenHash = (token: string) => digest('customer-token', token)
 
 /** Delivers a sign-in code to an address (the storefront route passes email's sendLoginCode: customers sits below email) */
 export type SendLoginCode = (to: string, code: string) => Promise<void>
@@ -88,45 +92,38 @@ export async function requestLoginCode(
   if (wait !== null) {
     throw new AccountError('TOO_MANY_REQUESTS', 'Too many codes requested. Wait a few minutes and try again.')
   }
-  if (await isUnverifiedAccount(email, conn)) {
-    log.warn('not sending a sign-in code to %s: it belongs to a staff account', email)
-    return
+  const code = randomInt(0, 10 ** LOGIN_CODE_LENGTH)
+    .toString()
+    .padStart(LOGIN_CODE_LENGTH, '0')
+  const values = {
+    codeHash: codeHash(shopId, email, code),
+    attempts: 0,
+    expiresAt: new Date(Date.now() + LOGIN_CODE_TTL_S * 1000),
+    createdAt: new Date(),
   }
-  // Better Auth runs the sender inside the request; keep its failure (a shop with email off) to rethrow as is
-  let failure: Error | undefined
-  await withOtpSender(
-    async (to, code) => {
-      try {
-        await send(to, code)
-      } catch (error) {
-        failure = error instanceof Error ? error : new Error(String(error))
-      }
-    },
-    () => auth.api.sendVerificationOTP({ body: { email, type: 'sign-in' } }),
-  )
-  if (failure) throw failure
+  // One code per shop and address: asking again replaces it (and gives five new guesses)
+  await conn
+    .insert(customerLoginCodes)
+    .values({ shopId, email, ...values })
+    .onConflictDoUpdate({ target: [customerLoginCodes.shopId, customerLoginCodes.email], set: values })
+  try {
+    await send(email, code)
+  } catch (error) {
+    // Nothing was delivered, so nothing should be left to guess
+    await conn
+      .delete(customerLoginCodes)
+      .where(and(eq(customerLoginCodes.shopId, shopId), eq(customerLoginCodes.email, email)))
+    throw error
+  }
 }
 
-/** The customer's record in this shop, created or linked to this login (matched by the verified email) */
-async function linkCustomer(
-  shopId: string,
-  user: { id: string; email: string; name: string },
-  conn: Conn,
-): Promise<Customer> {
-  const existing = await customers.getByEmail(shopId, user.email, conn)
-  if (existing) {
-    if (existing.userId === user.id) return existing
-    const [linked] = await conn
-      .update(customersTable)
-      .set({ userId: user.id, updatedAt: new Date() })
-      .where(and(eq(customersTable.shopId, shopId), eq(customersTable.id, existing.id)))
-      .returning()
-    if (linked) await emit(conn, shopId, 'customer.updated', () => linked)
-    return linked ?? existing
-  }
-  const created = await customers.create(shopId, { email: user.email, name: user.name || null, userId: user.id }, conn)
-  // Lost a race with checkout creating the same customer: link that one instead
-  return created ?? linkCustomer(shopId, user, conn)
+/** The customer's record in this shop, created when this is the first time the address is seen */
+async function findOrCreateCustomer(shopId: string, email: string, conn: Conn): Promise<Customer> {
+  const existing = await customers.getByEmail(shopId, email, conn)
+  if (existing) return existing
+  const created = await customers.create(shopId, { email }, conn)
+  // Lost a race with checkout creating the same customer: take that one
+  return created ?? findOrCreateCustomer(shopId, email, conn)
 }
 
 /** Checks the code and starts a session. `token` is what the storefront sends back as the customer token. */
@@ -147,36 +144,55 @@ export async function verifyLoginCode(
     if (wait !== null)
       throw new AccountError('TOO_MANY_REQUESTS', 'Too many attempts. Wait a few minutes and try again.')
   }
-  if (!EMAIL.test(email) || (await isUnverifiedAccount(email, conn))) {
-    throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
+  const invalid = () => new AccountError('INVALID_CODE', 'That code is wrong or has expired')
+  if (!EMAIL.test(email)) throw invalid()
+
+  const where = and(eq(customerLoginCodes.shopId, shopId), eq(customerLoginCodes.email, email))
+  // Takes a guess before looking at the code, in one statement, so parallel guesses can't exceed the allowance
+  const [row] = await conn
+    .update(customerLoginCodes)
+    .set({ attempts: sql`${customerLoginCodes.attempts} + 1` })
+    .where(and(where, gt(customerLoginCodes.expiresAt, new Date())))
+    .returning()
+  if (!row || row.attempts > LOGIN_CODE_ATTEMPTS) {
+    if (row) await conn.delete(customerLoginCodes).where(eq(customerLoginCodes.id, row.id))
+    throw invalid()
   }
-  let result: Awaited<ReturnType<typeof auth.api.signInEmailOTP>>
-  try {
-    // Sign-up is invitation-only for staff (sign-up-policy); a customer's first sign-in is the exception
-    result = await withOtpSignIn(() =>
-      withSignUpAllowed(() => auth.api.signInEmailOTP({ body: { email, otp: code.trim() } })),
-    )
-  } catch {
-    throw new AccountError('INVALID_CODE', 'That code is wrong or has expired')
-  }
-  const customer = await linkCustomer(shopId, result.user, conn)
-  return { token: result.token, customer }
+  if (!sameHash(row.codeHash, codeHash(shopId, email, code.trim()))) throw invalid()
+  // A code works once: whoever deletes the row first gets the session
+  const [spent] = await conn.delete(customerLoginCodes).where(eq(customerLoginCodes.id, row.id)).returning()
+  if (!spent) throw invalid()
+
+  const customer = await findOrCreateCustomer(shopId, email, conn)
+  const token = randomBytes(32).toString('base64url')
+  await conn.insert(customerSessions).values({
+    shopId,
+    customerId: customer.id,
+    tokenHash: tokenHash(token),
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+  })
+  return { token, customer }
 }
 
-/** The signed-in customer of this shop, or null (no token, expired, or the login isn't a customer here) */
+/** The signed-in customer of this shop, or null (no token, expired, or the session belongs to another shop) */
 export async function fromToken(shopId: string, token: string | null | undefined, conn: Conn) {
   if (!token) return null
-  const session = await auth.api.getSession({ headers: bearer(token) }).catch(() => null)
-  if (!session) return null
-  const [customer] = await conn
-    .select()
-    .from(customersTable)
-    .where(and(eq(customersTable.shopId, shopId), eq(customersTable.userId, session.user.id)))
-  return customer ?? null
+  const [row] = await conn
+    .select({ customer: customersTable })
+    .from(customerSessions)
+    .innerJoin(customersTable, eq(customersTable.id, customerSessions.customerId))
+    .where(
+      and(
+        eq(customerSessions.tokenHash, tokenHash(token)),
+        eq(customerSessions.shopId, shopId),
+        gt(customerSessions.expiresAt, new Date()),
+      ),
+    )
+  return row?.customer ?? null
 }
 
-export async function signOut(token: string) {
-  await auth.api.signOut({ headers: bearer(token) }).catch(() => undefined)
+export async function signOut(token: string, conn: Conn) {
+  await conn.delete(customerSessions).where(eq(customerSessions.tokenHash, tokenHash(token)))
 }
 
 export async function updateProfile(

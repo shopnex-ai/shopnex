@@ -365,6 +365,13 @@
       "when": 1795586053871,
       "tag": "0051_customer_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1795600286841,
+      "tag": "0052_customer_identity",
+      "breakpoints": true
     }
   ]
 }

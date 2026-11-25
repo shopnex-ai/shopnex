@@ -4,7 +4,8 @@ export { API_SCOPES, API_SCOPE_DESCRIPTIONS } from '@shopnex/core/schema'
 export { SHOP_ROLES, SHOP_ROLE_DESCRIPTIONS } from '@shopnex/tenancy/schema'
 export { ENV_VARS } from './env-vars'
 export { appService } from '@shopnex/apps'
-export { INVITATION_EXPIRES_IN_DAYS, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from '@shopnex/auth'
+export { INVITATION_EXPIRES_IN_DAYS } from '@shopnex/auth'
+export { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from '@shopnex/customers'
 export { customFieldService } from '@shopnex/custom-fields'
 export {
   RETENTION_MS,

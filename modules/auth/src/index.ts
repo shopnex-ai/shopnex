@@ -1,6 +1,6 @@
 import { betterAuth, type BetterAuthOptions } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { admin, bearer, emailOTP, organization } from 'better-auth/plugins'
+import { admin, organization } from 'better-auth/plugins'
 import { createAccessControl } from 'better-auth/plugins/access'
 import { adminAc, defaultStatements, userAc } from 'better-auth/plugins/admin/access'
 import { db } from '@shopnex/db'
@@ -11,7 +11,6 @@ import { account, session, verification } from './auth.schema'
 import { APIError, createAuthMiddleware } from 'better-auth/api'
 import { assertSignUpAllowed, createShopForNewAccount } from './sign-up-policy'
 import { SIGNUP_LIMIT_MESSAGE, checkSignupRate, clientIpHeaders } from './signup-limit'
-import { LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S, currentOtpSender, isOtpPath } from './shopper-login'
 import { INVITATION_EXPIRES_IN_DAYS, SUPER_ADMIN_ROLE } from './roles'
 import { shopInvitations, shopMembers } from '@shopnex/tenancy/schema'
 import { shops as shopsTable, user as userTable } from '@shopnex/core/schema'
@@ -65,11 +64,9 @@ export const auth = betterAuth({
   // carries the address (cf-connecting-ip behind Cloudflare); open sign-up's hourly caps are in the hook below.
   ...(process.env.CLIENT_IP_HEADER && { advanced: { ipAddress: { ipAddressHeaders: clientIpHeaders() } } }),
   hooks: {
-    // The emailOTP plugin is only for customer sign-in through our own server code (see shopper-login)
     // Better Auth's hook type returns a promise, and a throw here has to reject it, so this stays async without an await
     // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
-      if (isOtpPath(ctx.path) && !currentOtpSender()) throw new APIError('FORBIDDEN', { message: 'Not available' })
       // Open sign-up: the per address cap (signup-limit.ts). Server calls have no request and are not counted.
       if (isOpenSignup && ctx.path === '/sign-up/email' && ctx.request && !checkSignupRate(ctx.request.headers).ok)
         throw new APIError('TOO_MANY_REQUESTS', { message: SIGNUP_LIMIT_MESSAGE })
@@ -88,22 +85,8 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    // Customer sessions travel as `Authorization: Bearer <token>` (the storefront keeps the token in its own
-    // cookie); staff keep using cookies
-    bearer(),
-    // Customer sign-in: a code by email. Codes are stored hashed. Only server code that supplies a sender
-    // (shopper-login.ts) can trigger one, so the plugin's public endpoints can't send mail or sign anyone up.
-    emailOTP({
-      otpLength: LOGIN_CODE_LENGTH,
-      expiresIn: LOGIN_CODE_TTL_S,
-      allowedAttempts: LOGIN_CODE_ATTEMPTS,
-      storeOTP: 'hashed',
-      async sendVerificationOTP({ email, otp, type }) {
-        const send = currentOtpSender()
-        if (type !== 'sign-in' || !send) throw new APIError('FORBIDDEN', { message: 'Not available' })
-        await send(email, otp)
-      },
-    }),
+    // Staff only: customers are not users here (@shopnex/customers has their own codes and sessions), and there is no
+    // bearer or emailOTP plugin, so no token or code a customer holds can become a staff session
     // Platform role on the user: 'superadmin' can access every shop (plus ban/impersonate users)
     admin({
       ac,
@@ -136,4 +119,3 @@ export { withSignUpAllowed } from './sign-up-policy'
 export { setActiveShop } from './active-shop'
 export { rateLeft, takeRate } from './rate-limit'
 export { clientIp } from './signup-limit'
-export { withOtpSender, withOtpSignIn, LOGIN_CODE_ATTEMPTS, LOGIN_CODE_LENGTH, LOGIN_CODE_TTL_S } from './shopper-login'

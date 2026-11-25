@@ -34,7 +34,7 @@ if (field('step') === 'code') {
       code === 'INVALID_CODE' ? 400 : code === 'TOO_MANY_REQUESTS' ? 429 : 503,
     )
   }
-  startSession(cookies, url, signedIn.token)
+  startSession(cookies, Astro.request, url, signedIn.token)
   return Astro.redirect(target)
 }
 
