@@ -25,7 +25,6 @@ import { CustomFieldsFormCard, draftOf, toValue } from '@/components/admin/custo
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
 import { UnsavedBar } from '@/components/admin/unsaved-bar'
-import { TranslationsCard, translatableProductFields } from '@/components/admin/translations-card'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
 import { VariantsCard } from './variants-card'
@@ -254,8 +253,6 @@ function ProductEditor({
             </Card>
 
             <ProductChannelsCard productId={product.id} />
-
-            <TranslationsCard resource="product" resourceId={product.id} fields={translatableProductFields(product)} />
 
             <Card>
               <CardHeader>
