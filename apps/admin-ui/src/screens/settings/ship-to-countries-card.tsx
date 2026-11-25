@@ -100,11 +100,16 @@ function ShipToCountriesForm({ shop }: { shop: Shop }) {
           {shown.length === 0 && <li className="px-1 text-muted-foreground">No country matches.</li>}
         </ul>
         <FormError form={form} />
-        <Field orientation="horizontal" className="justify-end">
-          <Button type="submit" variant="outline" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? 'Saving…' : 'Save'}
-          </Button>
-        </Field>
+        {isDirty && (
+          <Field orientation="horizontal" className="justify-end">
+            <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => form.reset()}>
+              Discard
+            </Button>
+            <Button type="submit" variant="outline" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save'}
+            </Button>
+          </Field>
+        )}
       </FieldGroup>
     </form>
   )

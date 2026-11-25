@@ -118,16 +118,16 @@ function ShopForm({ shop }: { shop: Shop }) {
           description="A sentence or two about your store, shown under its title in search results."
         />
         <FormError form={form} />
-        <Field orientation="horizontal" className="justify-end">
-          {isDirty && (
-            <Button type="button" variant="ghost" onClick={() => form.reset()}>
+        {isDirty && (
+          <Field orientation="horizontal" className="justify-end">
+            <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => form.reset()}>
               Discard
             </Button>
-          )}
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? 'Saving…' : 'Save'}
-          </Button>
-        </Field>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save'}
+            </Button>
+          </Field>
+        )}
       </FieldGroup>
     </form>
   )

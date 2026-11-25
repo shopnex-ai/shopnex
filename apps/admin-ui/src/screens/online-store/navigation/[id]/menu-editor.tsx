@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { ORPCError } from '@orpc/client'
 import type { StoredMenuItem } from '@shopnex/content/schema'
 import { PageHeader } from '@/components/admin/page-header'
+import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -106,11 +107,18 @@ export function MenuEditor({ id }: { id: string }) {
             <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(true)}>
               Delete
             </Button>
-            <Button size="sm" disabled={!dirty || save.isPending} onClick={() => save.mutate(draft)}>
-              {save.isPending ? 'Saving…' : 'Save'}
-            </Button>
           </>
         }
+      />
+
+      <UnsavedBar
+        dirty={dirty}
+        saving={save.isPending}
+        onDiscard={() => {
+          setHandleError(null)
+          setDraft({ title: menu.title, handle: menu.handle, items: menu.items })
+        }}
+        onSave={() => save.mutate(draft)}
       />
 
       <Card>
