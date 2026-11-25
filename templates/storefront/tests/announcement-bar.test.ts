@@ -69,8 +69,11 @@ describe('with announcements', () => {
 
 describe('without announcements', () => {
   test('nothing shows', async () => {
-    assert.equal((await render(bar([]))).replace(/<[^>]*>|\s/g, ''), '')
-    assert.equal((await render(bar([block('a', '  ')]))).replace(/<[^>]*>|\s/g, ''), '')
+    // The section's own wrapper is all there is: no bar, no message
+    for (const html of [await render(bar([])), await render(bar([block('a', '  ')]))]) {
+      assert.doesNotMatch(html, /data-announcement|bg-dark/)
+      assert.match(html, /^<div data-section-id="announcement-bar">\s*<\/div>$/)
+    }
   })
 
   test('the old single message (theme settings) shows while there are no blocks', async () => {
