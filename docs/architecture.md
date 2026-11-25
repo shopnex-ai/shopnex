@@ -54,7 +54,7 @@ one way, with no cycles; domain errors (e.g. `OrderError`) are answered with the
 <!-- modules:graph:start -->
 ai → apps, catalog, content, core, db, rpc, tenancy
 api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, store-import, storefront, tenancy, theme, webhooks
-apps → core, db, rpc, tenancy, theme
+apps → core, db, rpc, tenancy, theme, webhooks
 auth → content, core, db, tenancy
 cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
 catalog → channels, core, custom-fields, db, languages, rpc, webhooks
