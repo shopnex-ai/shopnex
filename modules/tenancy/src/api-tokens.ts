@@ -4,7 +4,7 @@ import { db, type Conn } from '@shopnex/db'
 import { normalizeScopes } from '@shopnex/core/scopes'
 import { webhookService } from '@shopnex/webhooks'
 import { log } from './log'
-import { type ApiScope, type ApiToken, apiTokens, type Shop, shops } from '@shopnex/core/schema'
+import { type ApiScope, type ApiToken, apiTokens, apps, type Shop, shops } from '@shopnex/core/schema'
 
 export const API_TOKEN_PREFIX = 'sk_'
 
@@ -95,7 +95,9 @@ export async function resolveApiToken(token: string): Promise<{ token: ApiToken;
     .select({ token: apiTokens, shop: shops })
     .from(apiTokens)
     .innerJoin(shops, eq(shops.id, apiTokens.shopId))
-    .where(and(eq(apiTokens.tokenHash, hash(token)), isNull(apiTokens.revokedAt)))
+    // An app's token (no app: a merchant's own) stops working while the app is delisted, and comes back if it is listed again
+    .leftJoin(apps, eq(apps.id, apiTokens.appId))
+    .where(and(eq(apiTokens.tokenHash, hash(token)), isNull(apiTokens.revokedAt), isNull(apps.delistedAt)))
   if (!row) return null
   touchToken(row.token.id)
   return row

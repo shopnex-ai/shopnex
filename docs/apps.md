@@ -93,7 +93,8 @@ Vendor ──▶ Marketplace (:3200)  ◀── catalog sync / install reports �
   key (the marketplace and instances only keep the public key), publish it
 - **Instance** (Admin → Apps → Marketplace, super admins): connect once. The marketplace verifies the instance's public URL
   by fetching `GET {url}/api/v1/marketplace/challenge`, then issues an instance key. The catalog syncs every 10 minutes
-  (and on "Sync now") into the local `apps` table (`source = 'marketplace'`); apps gone from it are delisted (no new installs)
+  (and on "Sync now") into the local `apps` table (`source = 'marketplace'`); apps gone from it are delisted: no new installs, and the app stops working everywhere, installed or not (it can't
+  authenticate and its tokens are refused). Nothing is revoked, so listing it again brings it back
 - **Install**: App Store → Install opens the consent screen for managed apps; apps with redirect URLs get
   `{appUrl}?shop_id=…&instance=…` and start OAuth (see Apps above)
 - **Trust**: anyone can run a ShopNex instance, so apps confirm installs with the marketplace:
