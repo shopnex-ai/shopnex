@@ -10,7 +10,7 @@ import { pageInput } from '@shopnex/content/contract'
 import { CheckboxField, FormError, TextField, TextareaField, setServerError, useZodForm } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
-import { TranslationsCard } from '@/components/admin/translations-card'
+import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -112,15 +112,13 @@ function PageForm({ page }: { page: Page | null }) {
                 Delete
               </Button>
             )}
-            <Button
-              type="submit"
-              size="sm"
-              disabled={form.formState.isSubmitting || (page !== null && !form.formState.isDirty)}
-            >
-              {form.formState.isSubmitting ? 'Saving…' : 'Save'}
-            </Button>
           </>
         }
+      />
+      <UnsavedBar
+        dirty={form.formState.isDirty || page === null}
+        saving={form.formState.isSubmitting}
+        onDiscard={() => form.reset()}
       />
       <FormError form={form} />
 
@@ -166,16 +164,6 @@ function PageForm({ page }: { page: Page | null }) {
               />
             </CardContent>
           </Card>
-          {page && (
-            <TranslationsCard
-              resource="page"
-              resourceId={page.id}
-              fields={[
-                { key: 'title', label: 'Title', kind: 'text', source: page.title },
-                { key: 'body', label: 'Content', kind: 'html', source: page.bodyHtml },
-              ]}
-            />
-          )}
           <Card>
             <CardHeader>
               <CardTitle>Search engine listing</CardTitle>

@@ -30,7 +30,7 @@ import {
   type ThemeSection,
   type ThemeSettings,
 } from '@shopnex/storefront-sdk'
-import { catalogHref, sortOptions, type CatalogFilters } from './catalog'
+import { catalogHref, labelText, sayFilters, sortOptions, type CatalogFilters } from './catalog'
 import {
   CollectionDrop,
   Lazy,
@@ -49,7 +49,7 @@ import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
 import { appHeaderTags } from './app-scripts'
 import { localizationObject } from './localization'
-import { scriptMessages } from './locales'
+import { messagesFor, scriptMessages, translateKey } from './locales'
 import type { Messages } from '@shopnex/storefront-sdk/i18n'
 import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
@@ -210,19 +210,25 @@ export type ThemePage =
 
 type PageMeta = { title: string | null; description: string | null; image: string | null }
 
-function templateObjects(page: ThemePage, url: URL, loader: Loader): [Record<string, unknown>, PageMeta] {
+function templateObjects(
+  page: ThemePage,
+  url: URL,
+  loader: Loader,
+  say: Parameters<typeof labelText>[1],
+): [Record<string, unknown>, PageMeta] {
   switch (page.template) {
     case 'collection': {
       const { collection } = page
       const paged = url.searchParams.has('after')
+      const filters = sayFilters(page.filters, say)
       const drop = new CollectionDrop(collection, loader, {
         products: page.products,
-        filters: page.filters.groups,
-        active_filters: page.filters.active,
+        filters: filters.groups,
+        active_filters: filters.active,
         clear_filters_url: page.filters.clearUrl,
         sort_by: page.sort ?? '',
         sort_options: sortOptions.map((o) => ({
-          name: o.title,
+          name: labelText(o.title, say),
           value: o.slug ?? '',
           url: catalogHref(url, { sort: o.slug, after: null }),
           selected: o.slug === page.sort,
@@ -374,7 +380,22 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   const { theme, liquid } = loaded
   const loader = new Loader(url)
   const shop = await loader.shop()
-  const [objects, meta] = templateObjects(page, url, loader)
+  const localization = localizationObject(
+    {
+      shipTo: shop?.shipToCountries ?? [],
+      country: requestContext.getStore()?.country,
+      shopLanguage: shop?.languageCode ?? 'en',
+      languages: shop?.languages ?? [],
+      language: requestContext.getStore()?.language,
+    },
+    shop?.currencyCode ?? null,
+  )
+  // The words core writes for a listing (sort, filters) in the theme's text, English where a theme has none
+  const language = localization.language.iso_code
+  const messages = messagesFor(theme.dir, language)
+  const say = (key: string, vars?: Record<string, string>) =>
+    key in messages ? translateKey(theme.dir, language, key, vars) : undefined
+  const [objects, meta] = templateObjects(page, url, loader, say)
   // The homepage's title and description are the shop's (Settings → General)
   if (page.template === 'index' && shop) Object.assign(meta, shop.seo)
 
@@ -386,16 +407,6 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
         settings: settingsObject(theme.definition.sections[s.type]!.settings, s.settings, loader),
       })),
   }
-  const localization = localizationObject(
-    {
-      shipTo: shop?.shipToCountries ?? [],
-      country: requestContext.getStore()?.country,
-      shopLanguage: shop?.languageCode ?? 'en',
-      languages: shop?.languages ?? [],
-      language: requestContext.getStore()?.language,
-    },
-    shop?.currencyCode ?? null,
-  )
   const globals = {
     shop: shopObject(shop),
     localization,

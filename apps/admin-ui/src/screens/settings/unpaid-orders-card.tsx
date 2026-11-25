@@ -68,11 +68,16 @@ function UnpaidOrdersForm({ shop }: { shop: Shop }) {
           description="Leave empty to cancel them yourself. Only orders with no payment in progress and nothing shipped are cancelled."
         />
         <FormError form={form} />
-        <Field orientation="horizontal" className="justify-end">
-          <Button type="submit" variant="outline" disabled={isSubmitting || !isDirty}>
-            {isSubmitting ? 'Saving…' : 'Save'}
-          </Button>
-        </Field>
+        {isDirty && (
+          <Field orientation="horizontal" className="justify-end">
+            <Button type="button" variant="ghost" disabled={isSubmitting} onClick={() => form.reset()}>
+              Discard
+            </Button>
+            <Button type="submit" variant="outline" disabled={isSubmitting}>
+              {isSubmitting ? 'Saving…' : 'Save'}
+            </Button>
+          </Field>
+        )}
       </FieldGroup>
     </form>
   )
