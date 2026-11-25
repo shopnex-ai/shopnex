@@ -5927,6 +5927,14 @@ export interface operations {
                                     settings: {
                                         [key: string]: string | number | boolean | null;
                                     };
+                                    blocks?: {
+                                        id: string;
+                                        type: string;
+                                        disabled?: boolean;
+                                        settings: {
+                                            [key: string]: string | number | boolean | null;
+                                        };
+                                    }[];
                                 }[];
                             };
                         };
@@ -6096,6 +6104,14 @@ export interface operations {
                                     settings: {
                                         [key: string]: string | number | boolean | null;
                                     };
+                                    blocks?: {
+                                        id: string;
+                                        type: string;
+                                        disabled?: boolean;
+                                        settings: {
+                                            [key: string]: string | number | boolean | null;
+                                        };
+                                    }[];
                                 }[];
                             };
                         };

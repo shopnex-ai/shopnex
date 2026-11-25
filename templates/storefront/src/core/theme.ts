@@ -18,6 +18,7 @@ import { join, resolve } from 'node:path'
 import { Context, type Liquid } from 'liquidjs'
 import {
   ORPCError,
+  THEME_BLOCK_ATTRIBUTE,
   THEME_PREVIEW_PARAM,
   ThemeDefinition,
   defaultDocument,
@@ -29,6 +30,7 @@ import {
   type ThemeDocument,
   type ThemeSection,
   type ThemeSettings,
+  resolveBlocks,
 } from '@shopnex/storefront-sdk'
 import { catalogHref, labelText, sayFilters, sortOptions, type CatalogFilters } from './catalog'
 import {
@@ -43,7 +45,7 @@ import {
   settingsObject,
   shopObject,
 } from './drops'
-import { RENDER, createLiquid, type RenderData } from './liquid'
+import { RENDER, createLiquid, type RenderData, type SectionObject } from './liquid'
 import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
@@ -54,6 +56,11 @@ import type { Messages } from '@shopnex/storefront-sdk/i18n'
 import { browserBaseUrl, browserConfig, requestContext, shopnex } from './shopnex'
 
 const dev = import.meta.env.DEV
+
+/** The page whose sections are the global ones `{% section 'name' %}` renders */
+const STATIC_PAGE = 'static'
+
+const escapeAttribute = (value: string) => value.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)
 
 export const THEMES_DIR = resolve(process.env.SHOPNEX_THEMES_DIR ?? 'themes')
 
@@ -128,7 +135,7 @@ export interface LoadedTheme {
   settings: ThemeSettings
   /** True inside the editor's preview: the draft is shown and the page listens to the editor */
   preview: boolean
-  /** A page's visible sections, known types only, settings resolved */
+  /** A page's visible sections, known types only, settings resolved; each with its visible blocks, resolved too */
   sections(page: string): ThemeSection[]
 }
 
@@ -178,7 +185,8 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
       return sections.flatMap((s) => {
         const section = definition.sections[s.type]
         if (!section || s.disabled) return []
-        return [{ ...s, settings: resolveSettings(section.settings, s.settings) }]
+        const blocks = resolveBlocks(section, s.blocks).filter((b) => !b.disabled)
+        return [{ ...s, settings: resolveSettings(section.settings, s.settings), blocks }]
       })
     },
   }
@@ -399,13 +407,36 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
   // The homepage's title and description are the shop's (Settings → General)
   if (page.template === 'index' && shop) Object.assign(meta, shop.seo)
 
+  const objectOf = (s: ThemeSection): SectionObject => {
+    const definition = theme.definition.sections[s.type]!
+    const blocks = (s.blocks ?? []).map((b) => ({
+      id: b.id,
+      type: b.type,
+      settings: settingsObject(definition.blocks[b.type]!.settings, b.settings, loader),
+      // What Shopify themes print on a block's element so the editor finds it: {{ block.shopify_attributes }}
+      shopify_attributes: new SafeHtml(`${THEME_BLOCK_ATTRIBUTE}="${escapeAttribute(b.id)}"`),
+    }))
+    return {
+      id: s.id,
+      type: s.type,
+      settings: settingsObject(definition.settings, s.settings, loader),
+      blocks,
+      block_order: blocks.map((b) => b.id),
+    }
+  }
   const renderData: RenderData = {
-    sections: (pageId) =>
-      loaded.sections(pageId).map((s) => ({
-        id: s.id,
-        type: s.type,
-        settings: settingsObject(theme.definition.sections[s.type]!.settings, s.settings, loader),
-      })),
+    sections: (pageId) => loaded.sections(pageId).map(objectOf),
+    section(name) {
+      // Global sections live on the page "static" (the editor lists it as such): the one with this id, else the first of
+      // this type (a section the merchant added in the editor has an id of its own). One the merchant has not touched, or
+      // that the theme's static page does not list, shows with its defaults
+      const global = loaded.sections(STATIC_PAGE)
+      const found = global.find((s) => s.id === name) ?? global.find((s) => s.type === name)
+      if (found) return objectOf(found)
+      const definition = theme.definition.sections[name]
+      if (!definition) return null
+      return objectOf({ id: name, type: name, settings: resolveSettings(definition.settings), blocks: [] })
+    },
   }
   const globals = {
     shop: shopObject(shop),

@@ -19,18 +19,34 @@ const READY_TIMEOUT_MS = 8000
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never
 
+const selectMessage = (sectionId: string, blockId: string | null) => ({
+  type: 'select' as const,
+  sectionId,
+  ...(blockId && { blockId }),
+})
+
 type Props = {
   storefrontUrl: string
   /** The library copy to preview (its draft) */
   copyId: string
   reloadKey: number
   selectedSectionId: string | null
+  /** The block picked inside that section, if any: the preview outlines it instead of the section */
+  selectedBlockId?: string | null
   /** Which page of the storefront to show, e.g. "/collections/all" */
   path?: string
   device: 'desktop' | 'mobile'
 }
 
-export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSectionId, path = '/', device }: Props) {
+export function PreviewFrame({
+  storefrontUrl,
+  copyId,
+  reloadKey,
+  selectedSectionId,
+  selectedBlockId = null,
+  path = '/',
+  device,
+}: Props) {
   const frame = useRef<HTMLIFrameElement>(null)
   const origin = new URL(storefrontUrl).origin
   const [token, setToken] = useState<string | null>(null)
@@ -39,6 +55,8 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
   const [noBridge, setNoBridge] = useState(false)
   const selected = useRef(selectedSectionId)
   selected.current = selectedSectionId
+  const selectedBlock = useRef(selectedBlockId)
+  selectedBlock.current = selectedBlockId
 
   const post = (message: DistributiveOmit<ThemeEditorMessage, 'source'>) =>
     frame.current?.contentWindow?.postMessage({ source: THEME_EDITOR_SOURCE, ...message }, origin)
@@ -60,7 +78,7 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
       if (!isThemePreviewMessage(event.data)) return
       setReady(true)
       setNoBridge(false)
-      if (selected.current) post({ type: 'select', sectionId: selected.current })
+      if (selected.current) post(selectMessage(selected.current, selectedBlock.current))
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -83,9 +101,9 @@ export function PreviewFrame({ storefrontUrl, copyId, reloadKey, selectedSection
   }, [reloadKey])
 
   useEffect(() => {
-    if (ready && selectedSectionId) post({ type: 'select', sectionId: selectedSectionId })
+    if (ready && selectedSectionId) post(selectMessage(selectedSectionId, selectedBlockId))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSectionId, ready])
+  }, [selectedSectionId, selectedBlockId, ready])
 
   const src = token
     ? `${storefrontUrl.replace(/\/$/, '')}${path}?${THEME_PREVIEW_PARAM}=${encodeURIComponent(token)}`

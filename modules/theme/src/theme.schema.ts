@@ -17,7 +17,18 @@ type ThemeSettings = Record<string, string | number | boolean | null>
 export interface StoredThemeDocument {
   preset?: string
   settings: ThemeSettings
-  pages: Record<string, { sections: { id: string; type: string; disabled?: boolean; settings: ThemeSettings }[] }>
+  pages: Record<
+    string,
+    {
+      sections: {
+        id: string
+        type: string
+        disabled?: boolean
+        settings: ThemeSettings
+        blocks?: { id: string; type: string; disabled?: boolean; settings: ThemeSettings }[]
+      }[]
+    }
+  >
 }
 
 export const shopThemes = pgTable(
