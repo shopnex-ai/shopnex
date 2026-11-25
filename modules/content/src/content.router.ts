@@ -9,6 +9,7 @@ import * as pageService from './pages'
 const { admin } = createProcedures()
 
 const id = z.object({ id: z.uuid() })
+const ids = z.object({ ids: z.array(z.uuid()).min(1).max(100) })
 const found = <T>(row: T | null) => {
   if (!row) throw new ORPCError('NOT_FOUND')
   return row
@@ -37,6 +38,11 @@ export const menus = {
     .handler(async ({ input: { id, ...patch }, context }) =>
       found(await menuService.update(context.shop.id, id, patch, db)),
     ),
+  deleteMany: admin
+    .route({ method: 'DELETE', path: '/admin/menus/bulk' })
+    .output(z.number().int())
+    .input(ids)
+    .handler(({ input, context }) => menuService.removeMany(context.shop.id, input.ids, db)),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/menus/{id}' })
     .output(menuOutput)
@@ -67,6 +73,11 @@ export const pages = {
     .handler(async ({ input: { id, ...patch }, context }) =>
       found(await pageService.update(context.shop.id, id, patch, db)),
     ),
+  deleteMany: admin
+    .route({ method: 'DELETE', path: '/admin/pages/bulk' })
+    .output(z.number().int())
+    .input(ids)
+    .handler(({ input, context }) => pageService.removeMany(context.shop.id, input.ids, db)),
   delete: admin
     .route({ method: 'DELETE', path: '/admin/pages/{id}' })
     .output(pageOutput)

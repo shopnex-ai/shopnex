@@ -945,6 +945,22 @@ export interface paths {
         patch: operations["admin.menus.update"];
         trace?: never;
     };
+    "/menus/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin.menus.deleteMany"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/pages": {
         parameters: {
             query?: never;
@@ -975,6 +991,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["admin.pages.update"];
+        trace?: never;
+    };
+    "/pages/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["admin.pages.deleteMany"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/files": {
@@ -6444,6 +6476,32 @@ export interface operations {
             };
         };
     };
+    "admin.menus.deleteMany": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+        };
+    };
     "admin.pages.list": {
         parameters: {
             query?: never;
@@ -6642,6 +6700,32 @@ export interface operations {
                         /** Format: date-time */
                         updatedAt: string;
                     };
+                };
+            };
+        };
+    };
+    "admin.pages.deleteMany": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
                 };
             };
         };

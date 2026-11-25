@@ -143,6 +143,14 @@ describe('updating and removing', () => {
     assert.equal((await menuService.remove(SHOP, m.id, db))?.id, m.id)
     assert.equal(await menuService.remove(SHOP, m.id, db), null)
   })
+
+  test('removing many deletes only this shop’s menus and counts them', async () => {
+    const a = await menuService.create(SHOP, { handle: 'bulk-a', title: 'A', items: [] }, db)
+    const b = await menuService.create(SHOP, { handle: 'bulk-b', title: 'B', items: [] }, db)
+    assert.equal(await menuService.removeMany(OTHER_SHOP, [a.id, b.id], db), 0)
+    assert.equal(await menuService.removeMany(SHOP, [a.id, b.id], db), 2)
+    assert.equal(await menuService.getById(SHOP, a.id, db), null)
+  })
 })
 
 describe('resolve: the stored tree as addresses', () => {

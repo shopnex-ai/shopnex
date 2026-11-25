@@ -1,6 +1,6 @@
 // Pages (admin: Online store → Pages): About, FAQ, Shipping policy… Business logic only; every query is
 // scoped by shopId. Bodies are sanitized on write, since storefronts render them as is.
-import { and, asc, eq, isNotNull, lte } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, lte } from 'drizzle-orm'
 import { type Conn } from '@shopnex/db'
 import { sanitizeHtml, slugify } from '@shopnex/catalog'
 import { languageService } from '@shopnex/languages'
@@ -132,4 +132,19 @@ export async function remove(shopId: string, id: string, conn: Conn) {
     .returning()
   if (row) await languageService.removeFor(shopId, 'page', id, conn)
   return row ?? null
+}
+
+export async function removeMany(shopId: string, ids: string[], conn: Conn) {
+  if (!ids.length) return 0
+  const deleted = await conn
+    .delete(pages)
+    .where(and(eq(pages.shopId, shopId), inArray(pages.id, ids)))
+    .returning({ id: pages.id })
+  await languageService.removeFor(
+    shopId,
+    'page',
+    deleted.map((p) => p.id),
+    conn,
+  )
+  return deleted.length
 }

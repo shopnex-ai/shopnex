@@ -1,19 +1,21 @@
 // Online store → Pages: About, FAQ, Shipping policy… Storefronts show visible pages at /pages/{handle};
 // add them to a menu under Navigation.
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PlusIcon, NotebookTextIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
+import { DeleteSelectedButton } from '@/components/admin/delete-selected-button'
 import { EmptyState } from '@/components/admin/empty-state'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/format'
-import { orpc, type Outputs } from '@/lib/orpc'
+import { client, orpc, type Outputs } from '@/lib/orpc'
 
 type Page = Outputs['admin']['pages']['list'][number]
 
 export function PageList() {
+  const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.pages.list.queryOptions())
 
   const col = columnHelper<Page>()
@@ -62,6 +64,17 @@ export function PageList() {
             Pages like About, FAQ or shipping and return policies. Link them from a menu under Navigation.
           </EmptyState>
         }
+        selectionActions={(ids, clearSelection) => (
+          <DeleteSelectedButton
+            ids={ids}
+            entity={ids.length === 1 ? 'page' : 'pages'}
+            remove={(selected) => client.admin.pages.deleteMany({ ids: selected })}
+            onDeleted={async () => {
+              clearSelection()
+              await queryClient.invalidateQueries({ queryKey: orpc.admin.pages.key() })
+            }}
+          />
+        )}
       />
     </div>
   )
