@@ -18,13 +18,13 @@ import {
 import { PageHeader } from '@/components/admin/page-header'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CustomFieldsFormCard, draftOf, toValue } from '@/components/admin/custom-fields-card'
 import { orpc, type Outputs } from '@/lib/orpc'
 import { GenerateClassification, GenerateDescription, GenerateSeo } from './ai-generate'
+import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { TranslationsCard, translatableProductFields } from '@/components/admin/translations-card'
 import { ProductChannelsCard } from './channels-card'
 import { MediaCard } from './media-card'
@@ -204,19 +204,7 @@ function ProductEditor({
       />
 
       <form onSubmit={onSubmit} noValidate className="space-y-6">
-        {isDirty && (
-          <div className="sticky top-2 z-10 flex items-center justify-between gap-3 rounded-xl bg-card/95 px-4 py-2 shadow-flyout backdrop-blur">
-            <span className="text-sm font-medium">Unsaved changes</span>
-            <div className="flex gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => form.reset()}>
-                Discard
-              </Button>
-              <Button data-ph-capture="save-product" type="submit" size="sm" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </div>
-        )}
+        <UnsavedBar dirty={isDirty} saving={isSubmitting} onDiscard={() => form.reset()} capture="save-product" />
         <FormError form={form} />
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
