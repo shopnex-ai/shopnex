@@ -65,7 +65,11 @@
       </a>
       {%- comment %} A React island (src/islands/CartButton.tsx); the cart is only known in the browser {% endcomment %}
       {%- if routes.account_url != blank %}
-        <a href="{{ routes.account_url }}" class="text-sm text-text-dark transition hover:opacity-70">{{ 'general.account' | t }}</a>
+        <a href="{{ routes.account_url }}" class="text-text-dark transition hover:opacity-70" aria-label="{{ 'general.account' | t }}">
+          <svg class="block h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </a>
       {%- endif %}
       <div data-island="CartButton" class="flex min-w-5 items-center"></div>
       <button
