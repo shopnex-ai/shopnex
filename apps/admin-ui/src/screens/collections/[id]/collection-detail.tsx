@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 import { ChannelPicker } from '@/components/admin/channel-picker'
 import { FormError, setServerError } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
-import { TranslationsCard } from '@/components/admin/translations-card'
 import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -109,19 +108,6 @@ function CollectionEditor({ collection }: { collection: Collection }) {
         <CollectionProducts collectionId={collection.id} />
         <div className="space-y-6">
           <CollectionChannels collection={collection} />
-          <TranslationsCard
-            resource="collection"
-            resourceId={collection.id}
-            fields={[
-              { key: 'title', label: 'Title', kind: 'text', source: collection.title },
-              {
-                key: 'description',
-                label: 'Description',
-                kind: 'html',
-                source: collection.descriptionHtml ?? collection.description ?? '',
-              },
-            ]}
-          />
         </div>
       </div>
     </div>
