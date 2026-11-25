@@ -40,10 +40,15 @@
   "general": {
     "account": "Cuenta",
     "all_of": "Ver todo: {{ title }}",
+    "announcements": "Anuncios",
     "close_menu": "Cerrar el menú",
     "home": "Inicio",
+    "next_announcement": "Anuncio siguiente",
     "no": "No",
     "open_menu": "Abrir el menú",
+    "pause_announcements": "Pausar anuncios",
+    "play_announcements": "Reanudar anuncios",
+    "previous_announcement": "Anuncio anterior",
     "products": "Productos",
     "search": "Buscar",
     "yes": "Sí"

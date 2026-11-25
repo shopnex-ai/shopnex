@@ -117,8 +117,8 @@
     },
     {
       "id": "announcement_text",
-      "label": "Announcement bar",
-      "info": "Shown above the header when set",
+      "label": "Announcement bar (one message)",
+      "info": "Shown only while Header → Announcement bar has no announcements of its own",
       "type": "text"
     },
     {
@@ -343,6 +343,47 @@
           "language": "html"
         }
       ]
+    },
+    "announcement-bar": {
+      "name": "Announcement bar",
+      "limit": 1,
+      "max_blocks": 12,
+      "settings": [
+        {
+          "id": "auto_rotate",
+          "label": "Rotate announcements automatically",
+          "info": "Only with two or more announcements. Visitors get a pause button.",
+          "type": "checkbox",
+          "default": false
+        },
+        {
+          "id": "speed",
+          "label": "Seconds per announcement",
+          "type": "range",
+          "min": 3,
+          "max": 10,
+          "step": 1,
+          "default": 5
+        }
+      ],
+      "blocks": {
+        "announcement": {
+          "name": "Announcement",
+          "settings": [
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "text",
+              "default": "Welcome to our store"
+            },
+            {
+              "id": "link",
+              "label": "Link",
+              "type": "url"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -375,6 +416,17 @@
       "name": "Product listing",
       "path": "/products",
       "sections": []
+    },
+    "static": {
+      "name": "Header",
+      "sections": [
+        {
+          "id": "announcement-bar",
+          "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
+        }
+      ]
     }
   },
   "presets": {

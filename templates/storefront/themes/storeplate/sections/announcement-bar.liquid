@@ -1,0 +1,72 @@
+{%- comment -%}
+  The announcement bar (the Header group in the theme editor): one message per block. With several it shows one at a time,
+  with arrows, and can move on by itself with a pause button (src/announcements.ts). While there are no blocks, the single
+  "Announcement bar" text of the theme settings is shown, for shops that set it before blocks existed.
+{%- endcomment -%}
+{%- assign count = 0 -%}
+{%- for block in section.blocks -%}
+  {%- if block.settings.text != blank -%}{%- assign count = count | plus: 1 -%}{%- endif -%}
+{%- endfor -%}
+{%- assign legacy = settings.announcement_text | strip -%}
+{%- if count == 0 and legacy != blank -%}
+  <div class="relative z-50 bg-dark px-4 py-2 text-center text-sm text-white">
+    {%- if settings.announcement_link != blank -%}
+      <a href="{{ settings.announcement_link }}" class="underline-offset-2 hover:underline">{{ legacy }}</a>
+    {%- else -%}
+      {{ legacy }}
+    {%- endif -%}
+  </div>
+{%- elsif count > 0 -%}
+  {%- assign several = false -%}
+  {%- if count > 1 %}{% assign several = true %}{% endif -%}
+  <div
+    class="relative z-50 bg-dark px-4 py-2 text-center text-sm text-white"
+    data-announcements
+    data-auto="{{ section.settings.auto_rotate }}"
+    data-speed="{{ section.settings.speed }}"
+    {%- if several %} role="region" aria-roledescription="carousel" aria-label="{{ 'general.announcements' | t }}"{% endif %}
+  >
+    <div class="mx-auto flex max-w-[1240px] items-center justify-between gap-2">
+      {%- if several %}
+        <button type="button" data-announcement-prev aria-label="{{ 'general.previous_announcement' | t }}" class="shrink-0 cursor-pointer p-1 opacity-80 hover:opacity-100">
+          <svg class="block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+      {%- endif %}
+      <div class="min-w-0 flex-1" {% if several %}aria-live="polite" aria-atomic="true"{% endif %}>
+        {%- assign shown = false -%}
+        {%- for block in section.blocks -%}
+          {%- if block.settings.text != blank -%}
+            <div {{ block.shopify_attributes }} data-announcement-slide{% if shown %} hidden{% endif %} class="px-2">
+              {%- if block.settings.link != blank -%}
+                <a href="{{ block.settings.link }}" class="underline-offset-2 hover:underline">{{ block.settings.text }}</a>
+              {%- else -%}
+                {{ block.settings.text }}
+              {%- endif -%}
+            </div>
+            {%- assign shown = true -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+      {%- if several %}
+        <div class="flex shrink-0 items-center">
+          <button type="button" data-announcement-next aria-label="{{ 'general.next_announcement' | t }}" class="cursor-pointer p-1 opacity-80 hover:opacity-100">
+            <svg class="block h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          </button>
+          {%- if section.settings.auto_rotate %}
+            <button
+              type="button"
+              data-announcement-toggle
+              data-label-pause="{{ 'general.pause_announcements' | t }}"
+              data-label-play="{{ 'general.play_announcements' | t }}"
+              aria-label="{{ 'general.pause_announcements' | t }}"
+              class="cursor-pointer p-1 opacity-80 hover:opacity-100"
+            >
+              <svg data-icon-pause class="block h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z" /></svg>
+              <svg data-icon-play hidden class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>
+            </button>
+          {%- endif %}
+        </div>
+      {%- endif %}
+    </div>
+  </div>
+{%- endif -%}

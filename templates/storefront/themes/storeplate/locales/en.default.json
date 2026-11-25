@@ -40,10 +40,15 @@
   "general": {
     "account": "Account",
     "all_of": "All {{ title }}",
+    "announcements": "Announcements",
     "close_menu": "Close menu",
     "home": "Home",
+    "next_announcement": "Next announcement",
     "no": "No",
     "open_menu": "Open menu",
+    "pause_announcements": "Pause announcements",
+    "play_announcements": "Play announcements",
+    "previous_announcement": "Previous announcement",
     "products": "Products",
     "search": "Search",
     "yes": "Yes"

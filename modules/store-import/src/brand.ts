@@ -10,6 +10,7 @@ import { eq } from 'drizzle-orm'
 import type { Fetcher } from './fetcher'
 import { httpUrl, PAGE_HANDLE_MAX } from './bounds'
 import { slug } from './pages'
+import { readAnnouncements, type Announcements } from './announcements'
 import { contactHtml, readContactLines } from './contact'
 import { readHeaderMenu, toMenuItems, type NavItem } from './menu'
 import { decode } from './woo'
@@ -24,6 +25,8 @@ export type Brand = {
   background?: string
   /** The links of the header's main menu */
   menu: NavItem[]
+  /** The store's announcement bar */
+  announcements: Announcements
   /** The contact details in the footer (phone, email, address), one per line */
   contact: string[]
   /** Whether the store's header links to customer accounts (a store with them switched off has no such link) */
@@ -183,6 +186,7 @@ export async function readBrand(origin: string, fetcher: Fetcher): Promise<Brand
   return {
     name,
     menu: readHeaderMenu(html),
+    announcements: readAnnouncements(html, origin),
     contact: readContactLines(html),
     // Without a header to read, assume it does
     hasAccount: !header || /href=["'][^"']*\/account\b/i.test(header),
@@ -202,7 +206,6 @@ export const STOREPLATE_SETTINGS = {
   logo: 'logo',
   logoWidth: 'logo_width',
   favicon: 'favicon',
-  announcement: 'announcement_text',
   accent: 'color_primary',
   background: 'color_body',
 } as const
@@ -220,12 +223,35 @@ const HOME_WITHOUT_STOCK_CTA = {
   },
 }
 
+/**
+ * The Header of the new shop: its announcement bar with the store's own messages and links (and its auto-rotation), else one
+ * welcome to the shop by name, as a new shop has always had
+ */
+function announcementBar(brand: Brand) {
+  const { messages, autoRotate, seconds } = brand.announcements
+  const shown = messages.length ? messages : [{ text: `Welcome to ${brand.name}`, link: null }]
+  return {
+    static: {
+      sections: [
+        {
+          id: 'announcement-bar',
+          type: 'announcement-bar',
+          settings: { auto_rotate: autoRotate, ...(seconds && { speed: seconds }) },
+          blocks: shown.map((m, i) => ({
+            id: `a${i + 1}`,
+            type: 'announcement',
+            settings: { text: m.text, link: m.link ?? '' },
+          })),
+        },
+      ],
+    },
+  }
+}
+
 /** Puts the store's look on a shop: its name and logo, and a published Storeplate copy with the colors, favicon and links */
 export async function applyBrand(shopId: string, brand: Brand, origin: string, conn: Conn) {
   const ids = STOREPLATE_SETTINGS
-  const settings: Record<string, string | number> = {
-    [ids.announcement]: `Welcome to ${brand.name}`,
-  }
+  const settings: Record<string, string | number> = {}
   if (brand.logo) settings[ids.logo] = brand.logo
   // A small square mark, not a wide logo
   if (brand.logo && brand.logoFrom === 'favicon') settings[ids.logoWidth] = 60
@@ -240,7 +266,11 @@ export async function applyBrand(shopId: string, brand: Brand, origin: string, c
     .where(eq(shops.id, shopId))
   const copy = await themeService.create(
     shopId,
-    { themeId: 'storeplate', name: `${brand.name} (imported)`, draft: { settings, pages: HOME_WITHOUT_STOCK_CTA } },
+    {
+      themeId: 'storeplate',
+      name: `${brand.name} (imported)`,
+      draft: { settings, pages: { ...HOME_WITHOUT_STOCK_CTA, ...announcementBar(brand) } },
+    },
     conn,
   )
   await themeService.publish(shopId, copy.id, conn)

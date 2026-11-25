@@ -72,6 +72,22 @@ const hooks = (fetchImpl: (input: string | URL | Request) => Promise<Response>) 
   wait: true,
   fetcher: { pauseMs: 0, checkHost: async () => {}, fetchImpl: fetchImpl as typeof fetch },
 })
+/** The announcement bar the importer saved on the published theme's global ("static") page */
+const staticSection = (published: unknown) =>
+  (
+    published as {
+      pages: Record<
+        string,
+        {
+          sections: {
+            settings: Record<string, unknown>
+            blocks: { type: string; settings: Record<string, unknown> }[]
+          }[]
+        }
+      >
+    }
+  ).pages.static?.sections[0]
+
 const rejects = (code: string) => (e: unknown) => e instanceof StoreImportError && e.code === code
 
 describe('importing into a new shop', () => {
@@ -111,6 +127,34 @@ describe('importing into a new shop', () => {
     const settings = (live?.published as { settings: Record<string, string> }).settings
     assert.equal(settings.favicon, 'https://www.musli.example.com/fav.png')
     assert.equal(settings.logo, 'https://www.musli.example.com/logo.png')
+
+    // A store with no announcement bar gets one welcome in the new shop's own Header
+    const header = staticSection(live?.published)
+    assert.equal(header?.settings.auto_rotate, false)
+    assert.deepEqual(
+      header?.blocks.map((b) => b.settings.text),
+      ['Welcome to Müsli Shop'],
+    )
+  })
+
+  test('a store’s announcement bar comes across as blocks, with its links and rotation', async () => {
+    const shopId = await newShop()
+    const base = shopifyStore()
+    const bar = `<slideshow-component class="announcement-bar"><div class="slider" id="Slider-s__announcement-bar" data-autoplay="true" data-speed="6">
+      <a href="/collections/all" class="announcement-bar__link"><p class="announcement-bar__message"><span>Shop the range</span></p></a>
+      <p class="announcement-bar__message"><span>Ships from Berlin</span></p></div></slideshow-component>`
+    const withHome = async (input: string | URL | Request) =>
+      new URL(String(input)).pathname === '/' ? new Response(`<html><body>${bar}</body></html>`) : base(input)
+    await svc.start(shopId, { url: 'musli.example.com' }, db, hooks(withHome))
+    const header = staticSection((await themeService.getLive(shopId, db))?.published)
+    assert.deepEqual(
+      header?.blocks.map((b) => [b.type, b.settings.text, b.settings.link]),
+      [
+        ['announcement', 'Shop the range', '/collections/all'],
+        ['announcement', 'Ships from Berlin', ''],
+      ],
+    )
+    assert.deepEqual(header?.settings, { auto_rotate: true, speed: 6 })
   })
 
   test('a contact form page becomes a Contact page of the footer’s details, and the menu links to it', async () => {
