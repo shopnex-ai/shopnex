@@ -76,3 +76,12 @@ test('a taken port is refused before anything is downloaded (exit 2)', async () 
     server.close()
   }
 })
+
+test('--from opens the signup page with the store address, else the admin', async () => {
+  const { adminEntry } = await import('../src/run')
+  assert.equal(adminEntry('http://localhost:3000'), 'http://localhost:3000/admin')
+  assert.equal(
+    adminEntry('http://localhost:3000', 'https://shop.example.com/a?b=1'),
+    'http://localhost:3000/admin/signup?import=https%3A%2F%2Fshop.example.com%2Fa%3Fb%3D1',
+  )
+})
