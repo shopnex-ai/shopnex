@@ -73,7 +73,7 @@
   </head>
   <body class="ks-page-{{ request.page_type }}">
     <a class="visually-hidden-focusable" href="#main">{{ 'general.skip_to_content' | t }}</a>
-    {% render 'announcement-bar' %}
+    {% section 'announcement-bar' %}
     {% render 'header' %}
     <main id="main">
       {{ content_for_layout }}

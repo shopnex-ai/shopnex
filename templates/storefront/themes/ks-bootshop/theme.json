@@ -160,9 +160,10 @@
     },
     {
       "id": "announcement_text",
-      "label": "Announcement text",
+      "label": "Announcement bar (one message)",
       "group": "Announcement bar",
-      "type": "text"
+      "type": "text",
+      "info": "Shown only while Header → Announcement bar has no announcements of its own"
     },
     {
       "id": "announcement_link",
@@ -909,6 +910,41 @@
           "default": "<p class=\"text-center\">Your HTML here</p>"
         }
       ]
+    },
+    "announcement-bar": {
+      "name": "Announcement bar",
+      "limit": 1,
+      "max_blocks": 12,
+      "settings": [
+        {
+          "id": "speed",
+          "label": "Seconds per announcement",
+          "info": "Only with two or more announcements",
+          "type": "range",
+          "min": 3,
+          "max": 10,
+          "step": 1,
+          "default": 5
+        }
+      ],
+      "blocks": {
+        "announcement": {
+          "name": "Announcement",
+          "settings": [
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "text",
+              "default": "Welcome to our store"
+            },
+            {
+              "id": "link",
+              "label": "Link",
+              "type": "url"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -934,6 +970,17 @@
           "id": "about",
           "type": "media-with-text",
           "settings": {}
+        }
+      ]
+    },
+    "static": {
+      "name": "Header",
+      "sections": [
+        {
+          "id": "announcement-bar",
+          "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
         }
       ]
     }
