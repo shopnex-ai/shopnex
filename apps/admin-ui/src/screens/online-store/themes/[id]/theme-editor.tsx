@@ -10,6 +10,7 @@ import {
   THEME_STATIC_PAGE,
   applyPreset,
   resolveSettings,
+  withDefaultBlocks,
   type ThemeBlock,
   type ThemeDefinition,
   type ThemeDocument,
@@ -141,7 +142,8 @@ export function ThemeEditor({
 
   // ── document edits ──
   // A page the merchant hasn't edited yet shows the theme's default sections (as the storefront does)
-  const pageSections = (id: string) => draft.pages[id]?.sections ?? definition.pages[id]?.sections ?? []
+  const pageSections = (id: string) =>
+    withDefaultBlocks(definition, draft.pages[id]?.sections ?? definition.pages[id]?.sections ?? [])
   const setPageSections = (id: string, next: ThemeSection[]) =>
     update({ ...draft, pages: { ...draft.pages, [id]: { sections: next } } })
   const sections = pageSections(page)

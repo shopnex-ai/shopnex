@@ -305,7 +305,42 @@
             }
           ]
         }
-      }
+      },
+      "default_blocks": [
+        {
+          "id": "slide-1",
+          "type": "slide",
+          "settings": {
+            "image": "/shopnex/assets/ks-bootshop/hero-1.jpg",
+            "heading": "Welcome to our store",
+            "button_label": "Shop now",
+            "button_link": "/products",
+            "text": ""
+          }
+        },
+        {
+          "id": "slide-2",
+          "type": "slide",
+          "settings": {
+            "image": "/shopnex/assets/ks-bootshop/hero-2.jpg",
+            "button_link": "",
+            "heading": "",
+            "text": "",
+            "button_label": ""
+          }
+        },
+        {
+          "id": "slide-3",
+          "type": "slide",
+          "settings": {
+            "image": "/shopnex/assets/ks-bootshop/hero-3.jpg",
+            "button_link": "",
+            "heading": "",
+            "text": "",
+            "button_label": ""
+          }
+        }
+      ]
     },
     "featured-products": {
       "name": "Featured products",
@@ -906,42 +941,7 @@
         {
           "id": "hero",
           "type": "hero-carousel",
-          "settings": {},
-          "blocks": [
-            {
-              "id": "slide-1",
-              "type": "slide",
-              "settings": {
-                "image": "/shopnex/assets/ks-bootshop/hero-1.jpg",
-                "heading": "Welcome to our store",
-                "button_label": "Shop now",
-                "button_link": "/products",
-                "text": ""
-              }
-            },
-            {
-              "id": "slide-2",
-              "type": "slide",
-              "settings": {
-                "image": "/shopnex/assets/ks-bootshop/hero-2.jpg",
-                "button_link": "",
-                "heading": "",
-                "text": "",
-                "button_label": ""
-              }
-            },
-            {
-              "id": "slide-3",
-              "type": "slide",
-              "settings": {
-                "image": "/shopnex/assets/ks-bootshop/hero-3.jpg",
-                "button_link": "",
-                "heading": "",
-                "text": "",
-                "button_label": ""
-              }
-            }
-          ]
+          "settings": {}
         },
         {
           "id": "featured",

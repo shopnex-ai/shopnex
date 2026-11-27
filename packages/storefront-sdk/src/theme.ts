@@ -84,6 +84,11 @@ export const ThemeSectionDefinition = z.object({
   settings: z.array(ThemeSettingField).default([]),
   /** How many times the section can appear on one page */
   limit: z.number().int().min(1).optional(),
+  /**
+   * The blocks a section has until the merchant changes them: one stored without blocks (a section just added in the
+   * editor, or saved before it had blocks) shows these, so a hero starts with its slides. Each has an id, stable for the preview.
+   */
+  default_blocks: z.lazy(() => z.array(ThemeBlock)).optional(),
   /** For a global section (on the page `static`): which group of the editor's list it is in; default `header` */
   group: z.enum(['header', 'footer']).optional(),
   /** The block types the merchant can add to this section; none: the section has no blocks */
@@ -287,6 +292,18 @@ export function resolveBlocks(section: ThemeSectionDefinition, blocks: readonly 
     resolved.push({ ...block, settings: resolveSettings(type.settings, block.settings) })
   }
   return resolved
+}
+
+/**
+ * A page's sections with each one's default blocks filled in: a section stored without blocks (just added in the editor,
+ * or saved before it had blocks) takes its definition's `default_blocks`, as a missing setting takes its default.
+ * `blocks: []` (the merchant removed them all) stays empty.
+ */
+export function withDefaultBlocks(definition: ThemeDefinition, sections: readonly ThemeSection[]): ThemeSection[] {
+  return sections.map((s) => {
+    const blocks = s.blocks === undefined ? definition.sections[s.type]?.default_blocks : undefined
+    return blocks ? { ...s, blocks } : s
+  })
 }
 
 /** The document a shop starts from: default settings and each page's default sections */

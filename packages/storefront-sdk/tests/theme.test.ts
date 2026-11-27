@@ -6,6 +6,7 @@ import {
   ThemeDocument,
   defaultDocument,
   resolveBlocks,
+  withDefaultBlocks,
   withoutCodeSettings,
   type ThemeDefinitionInput,
 } from '../src/theme'
@@ -182,5 +183,44 @@ describe('a style or document from someone else', () => {
   test('a section without blocks stays without a blocks key', () => {
     const doc = { settings: {}, pages: { static: { sections: [{ id: 'p', type: 'plain', settings: {} }] } } }
     assert.equal('blocks' in withoutCodeSettings(definition, doc).pages.static!.sections[0]!, false)
+  })
+})
+
+describe('withDefaultBlocks: a section without stored blocks has its definition’s default ones', () => {
+  const block = { id: 'slide-1', type: 'slide', settings: { heading: 'Hi' } }
+  const definition = ThemeDefinition.parse({
+    id: 'test',
+    name: 'Test',
+    sections: {
+      hero: {
+        name: 'Hero',
+        blocks: { slide: { name: 'Slide', settings: [{ id: 'heading', label: 'Heading', type: 'text' }] } },
+        default_blocks: [block],
+      },
+      plain: { name: 'Plain' },
+    },
+    pages: {},
+  })
+
+  test('no stored blocks (just added, or saved before blocks): the default ones', () => {
+    const stored = [{ id: 'h', type: 'hero', settings: { height: '80vh' } }]
+    assert.deepEqual(withDefaultBlocks(definition, stored), [
+      { id: 'h', type: 'hero', settings: { height: '80vh' }, blocks: [block] },
+    ])
+  })
+
+  test('blocks: [] (the merchant removed them all) and stored blocks are kept', () => {
+    const emptied = [{ id: 'h', type: 'hero', settings: {}, blocks: [] }]
+    assert.deepEqual(withDefaultBlocks(definition, emptied), emptied)
+    const own = [{ id: 'h', type: 'hero', settings: {}, blocks: [{ id: 'mine', type: 'slide', settings: {} }] }]
+    assert.deepEqual(withDefaultBlocks(definition, own), own)
+  })
+
+  test('a section without default blocks, or of an unknown type, is left as it is', () => {
+    const stored = [
+      { id: 'p', type: 'plain', settings: {} },
+      { id: 'x', type: 'gone', settings: {} },
+    ]
+    assert.deepEqual(withDefaultBlocks(definition, stored), stored)
   })
 })

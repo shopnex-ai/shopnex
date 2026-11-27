@@ -2,6 +2,9 @@
 
 ## Unreleased (additive)
 
+- A section definition can have `default_blocks`, and `withDefaultBlocks(definition, sections)` gives a section stored without blocks
+  (just added in the editor, or saved before it had blocks) those: a hero starts with its slides. `blocks: []` stays empty. The
+  storefront and the theme editor both use it.
 - A global section's definition can say `group: 'footer'`: the theme editor lists it in a Footer group below the page's sections
   (the others stay in the Header group above them).
 - Theme preview (`connectThemePreview`): the editor's preview is for editing, not shopping. Links, `data-add-to-cart` and

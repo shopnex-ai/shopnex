@@ -32,6 +32,7 @@ import {
   type ThemeSection,
   type ThemeSettings,
   resolveBlocks,
+  withDefaultBlocks,
 } from '@shopnex/storefront-sdk'
 import { catalogHref, labelText, sayFilters, sortOptions, type CatalogFilters } from './catalog'
 import {
@@ -183,7 +184,10 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
     settings: resolveSettings(definition.settings, document.settings),
     preview: !!found && current.preview,
     sections(page) {
-      const sections = document.pages[page]?.sections ?? defaults.pages[page]?.sections ?? []
+      const sections = withDefaultBlocks(
+        definition,
+        document.pages[page]?.sections ?? defaults.pages[page]?.sections ?? [],
+      )
       return sections.flatMap((s) => {
         const section = definition.sections[s.type]
         if (!section || s.disabled) return []
