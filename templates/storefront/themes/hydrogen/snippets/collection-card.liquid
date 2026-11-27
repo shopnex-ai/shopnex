@@ -1,0 +1,12 @@
+{%- comment -%} One card of the collection list. Params: c (the collection), attrs (the block's editor attributes; empty when the shop's first collections are shown) {%- endcomment -%}
+<div {{ attrs }} class="relative">
+  <a href="{{ c.url }}" class="absolute inset-0 z-[1]"><span class="sr-only">{{ c.title }}</span></a>
+  <div class="grid gap-4">
+    <div class="aspect-[3/2] overflow-hidden rounded bg-primary/5">
+      {%- if c.image %}
+        <img src="{{ c.image | image_url }}" alt="{{ c.image.alt | default: c.title }}" loading="lazy" class="h-full w-full object-cover object-center" />
+      {%- endif %}
+    </div>
+    <h3 class="font-heading text-lead">{{ c.title }}</h3>
+  </div>
+</div>
