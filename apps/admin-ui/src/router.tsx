@@ -22,6 +22,8 @@ declare module '@tanstack/react-router' {
   // Routes under /admin that render on their own, without the sidebar and header (login, setup, welcome...)
   interface StaticDataRouteOption {
     standalone?: boolean
+    // The editors (theme, code): the sidebar is collapsed while one is open, and comes back after
+    collapseSidebar?: boolean
   }
 
   interface Register {

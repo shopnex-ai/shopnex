@@ -11,7 +11,14 @@ import type { PreviewCatalog } from './preview-pages'
 
 export type Storefront = {
   url: string
-  themes: { id: string; name: string; defaults: ThemeDocument; definition: ThemeDefinition }[]
+  themes: {
+    id: string
+    name: string
+    defaults: ThemeDocument
+    definition: ThemeDefinition
+    /** The theme's picture, a full URL on the storefront */
+    screenshot: string | null
+  }[]
 }
 export type StorefrontResult = { storefront: Storefront | null; storefrontError: string | null }
 async function loadPreviewCatalog(storefrontUrl: string | null): Promise<PreviewCatalog> {
@@ -55,6 +62,7 @@ async function fetchStorefront(storefrontUrl: string | null): Promise<Storefront
     name: definition.name,
     defaults: defaultDocument(definition),
     definition,
+    screenshot: definition.screenshot ? new URL(definition.screenshot, storefrontUrl).toString() : null,
   }))
   return { storefront: { url: storefrontUrl, themes: documents }, storefrontError: null }
 }

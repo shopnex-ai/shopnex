@@ -48,7 +48,6 @@ export function HomeDashboard({ currency, shopId }: { currency: string; shopId: 
     <div className="space-y-6">
       <PageHeader
         title="Home"
-        description={`Last ${days} days compared with the ${days} days before`}
         actions={
           <div className="flex gap-1" role="group" aria-label="Date range">
             {RANGES.map((r) => (

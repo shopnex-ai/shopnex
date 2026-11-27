@@ -41,7 +41,6 @@ import { Route as AdminOauthAuthorizeRouteImport } from './routes/admin/oauth/au
 import { Route as AdminOnlineStoreIndexRouteImport } from './routes/admin/online-store/index'
 import { Route as AdminOnlineStoreNavigationRouteRouteImport } from './routes/admin/online-store/navigation/route'
 import { Route as AdminOnlineStorePagesRouteRouteImport } from './routes/admin/online-store/pages/route'
-import { Route as AdminOnlineStoreSelectRouteImport } from './routes/admin/online-store/select'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminProductsIdRouteImport } from './routes/admin/products/$id'
 import { Route as AdminSettingsAiRouteImport } from './routes/admin/settings/ai'
@@ -231,11 +230,6 @@ const AdminOnlineStorePagesRouteRoute =
     path: '/pages',
     getParentRoute: () => AdminOnlineStoreRouteRoute,
   } as any)
-const AdminOnlineStoreSelectRoute = AdminOnlineStoreSelectRouteImport.update({
-  id: '/select',
-  path: '/select',
-  getParentRoute: () => AdminOnlineStoreRouteRoute,
-} as any)
 const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -408,7 +402,6 @@ export interface FileRoutesByFullPath {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
-  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -467,7 +460,6 @@ export interface FileRoutesByTo {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
-  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -529,7 +521,6 @@ export interface FileRoutesById {
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/invite/$id': typeof AdminInviteIdRoute
   '/admin/oauth/authorize': typeof AdminOauthAuthorizeRoute
-  '/admin/online-store/select': typeof AdminOnlineStoreSelectRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/settings/ai': typeof AdminSettingsAiRoute
@@ -592,7 +583,6 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
-    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -651,7 +641,6 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
-    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -712,7 +701,6 @@ export interface FileRouteTypes {
     | '/admin/customers/$id'
     | '/admin/invite/$id'
     | '/admin/oauth/authorize'
-    | '/admin/online-store/select'
     | '/admin/orders/$id'
     | '/admin/products/$id'
     | '/admin/settings/ai'
@@ -975,13 +963,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOnlineStorePagesRouteRouteImport
       parentRoute: typeof AdminOnlineStoreRouteRoute
     }
-    '/admin/online-store/select': {
-      id: '/admin/online-store/select'
-      path: '/select'
-      fullPath: '/admin/online-store/select'
-      preLoaderRoute: typeof AdminOnlineStoreSelectRouteImport
-      parentRoute: typeof AdminOnlineStoreRouteRoute
-    }
     '/admin/orders/$id': {
       id: '/admin/orders/$id'
       path: '/$id'
@@ -1236,7 +1217,6 @@ const AdminOnlineStorePagesRouteRouteWithChildren =
 interface AdminOnlineStoreRouteRouteChildren {
   AdminOnlineStoreNavigationRouteRoute: typeof AdminOnlineStoreNavigationRouteRouteWithChildren
   AdminOnlineStorePagesRouteRoute: typeof AdminOnlineStorePagesRouteRouteWithChildren
-  AdminOnlineStoreSelectRoute: typeof AdminOnlineStoreSelectRoute
   AdminOnlineStoreIndexRoute: typeof AdminOnlineStoreIndexRoute
   AdminOnlineStoreEditorIdRoute: typeof AdminOnlineStoreEditorIdRoute
   AdminOnlineStoreEditorIdCodeRoute: typeof AdminOnlineStoreEditorIdCodeRoute
@@ -1246,7 +1226,6 @@ const AdminOnlineStoreRouteRouteChildren: AdminOnlineStoreRouteRouteChildren = {
   AdminOnlineStoreNavigationRouteRoute:
     AdminOnlineStoreNavigationRouteRouteWithChildren,
   AdminOnlineStorePagesRouteRoute: AdminOnlineStorePagesRouteRouteWithChildren,
-  AdminOnlineStoreSelectRoute: AdminOnlineStoreSelectRoute,
   AdminOnlineStoreIndexRoute: AdminOnlineStoreIndexRoute,
   AdminOnlineStoreEditorIdRoute: AdminOnlineStoreEditorIdRoute,
   AdminOnlineStoreEditorIdCodeRoute: AdminOnlineStoreEditorIdCodeRoute,

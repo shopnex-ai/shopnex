@@ -4,8 +4,7 @@
 // Unsaved edits are kept per file while switching between them.
 import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { EyeIcon, EyeOffIcon, FilePlusIcon, PaletteIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { EyeIcon, EyeOffIcon, FilePlusIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { THEME_CODE_FOLDERS, ThemeFilePath } from '@shopnex/storefront-sdk/theme'
@@ -26,10 +25,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from '../preview-frame'
-import { ThemeHeader } from '../theme-header'
+import { ThemeHeader, ThemeSaveStatus, ViewControls } from '../theme-header'
 import { LiquidEditor } from '@/components/admin/liquid-editor'
 import type { ThemeDefinition } from '@shopnex/storefront-sdk/theme'
-import { PreviewPageSelect } from '../../preview-page-select'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { previewPageForPath, previewPagePath, templatePreviewPage, type PreviewCatalog } from '../../preview-pages'
 
@@ -264,55 +262,35 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
   // Title and actions go in the admin's top bar, like every other page
   const header = (
     <ThemeHeader
+      id={id}
+      mode="code"
       name={`${theme.name} · Edit code`}
       live={theme.live}
       actions={
         <>
-          <span
-            className="hidden text-xs text-muted-foreground xl:inline"
-            title={
-              theme.live
-                ? 'Changes autosave to a draft you can preview. Publish to update your store.'
-                : 'Changes autosave to a draft you can preview. Your store uses them once this theme is live.'
-            }
-          >
-            Autosaves to a draft
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link to="/admin/online-store/editor/$id" params={{ id }} />}
-          >
-            <PaletteIcon />
-            <span className="max-md:hidden">Customize</span>
-          </Button>
+          <ThemeSaveStatus
+            state={save.isError ? 'error' : save.isPending ? 'saving' : dirtyPaths.length ? 'pending' : 'saved'}
+            live={theme.live}
+            unpublished={changed.size > 0}
+          />
           {storefrontUrl && (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="max-lg:hidden"
-              onClick={() => setShowPreview((s) => !s)}
-              aria-label={showPreview ? 'Hide preview' : 'Show preview'}
-              title={showPreview ? 'Hide preview' : 'Show preview'}
-            >
-              {showPreview ? <EyeOffIcon /> : <EyeIcon />}
-            </Button>
+            <ViewControls className="max-lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setShowPreview((s) => !s)}
+                aria-label={showPreview ? 'Hide preview' : 'Show preview'}
+                title={showPreview ? 'Hide preview' : 'Show preview'}
+              >
+                {showPreview ? <EyeOffIcon /> : <EyeIcon />}
+              </Button>
+            </ViewControls>
           )}
           {changed.size > 0 && (
             <Button variant="ghost" size="sm" disabled={publish.isPending} onClick={() => setConfirm('discard')}>
               Discard
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="max-md:hidden"
-            disabled={!dirtyPaths.length || save.isPending}
-            onClick={onSave}
-          >
-            {save.isPending ? 'Saving…' : dirtyPaths.length ? 'Save now' : 'Saved to draft'}
-          </Button>
           <Button
             size="sm"
             disabled={publish.isPending || (!dirtyPaths.length && changed.size === 0)}
@@ -464,15 +442,6 @@ export function ThemeCode({ storefrontUrl, theme, pages: themePages, previewCata
               pane !== 'preview' && 'max-md:hidden',
             )}
           >
-            <div className="border-b p-2">
-              <PreviewPageSelect
-                definition={definition}
-                catalog={previewCatalog}
-                value={previewPage}
-                onChange={setPreviewPage}
-                className="w-full"
-              />
-            </div>
             <div className="min-h-0 flex-1">
               <PreviewFrame
                 storefrontUrl={storefrontUrl}

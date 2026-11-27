@@ -34,13 +34,13 @@ export function SettingFields({
   }
   return (
     <FieldGroup>
-      {runs.map((run) => {
+      {runs.map((run, index) => {
         const items = run.fields.map((f) => (
           <SettingField key={f.id} field={f} value={values[f.id] ?? null} onChange={(v) => onChange(f.id, v)} />
         ))
-        // Fields with a group, next to each other, fold into a drop-down named after the group
+        // Fields with a group, next to each other, fold into a drop-down named after the group; the first starts open
         return run.group ? (
-          <details key={run.fields[0]!.id} className="group rounded-lg border">
+          <details key={run.fields[0]!.id} open={index === 0} className="group rounded-lg border">
             <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-medium [&::-webkit-details-marker]:hidden">
               {run.group}
               <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
