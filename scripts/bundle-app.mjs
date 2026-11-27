@@ -5,11 +5,11 @@
 //
 // Everything is inlined (no node_modules at runtime), except the embedded database (PGlite ships its WebAssembly as
 // files, and is only used when no Postgres URL is set; its Drizzle driver would import it at startup) and an app's drizzle/ migrations folder, which is copied next to the
-// bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that one read is replaced by
-// the file's contents. The same goes for an app's own icon:
+// bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that read is replaced by the
+// file's contents; its own browser script (client.ts) is compiled here and the compiled text put in the same way. The same goes for an app's own icon:
 // `readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` becomes the SVG's text (a `.js` file the app serves,
 // like the reviews widget, the same way).
-import { build } from 'esbuild'
+import { build, transformSync } from 'esbuild'
 import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,15 +22,33 @@ if (!entry) {
   process.exit(1)
 }
 
-const bridgeRead = "readFileSync(fileURLToPath(import.meta.resolve('@shopnex/app-bridge')), 'utf8')"
-const inlineAppBridge = {
-  name: 'inline-app-bridge',
+// The two things @shopnex/app serves to the browser, the exact expression that makes each in packages/app/src/index.ts,
+// and the text to put there
+const browserFiles = [
+  {
+    read: "readFileSync(fileURLToPath(import.meta.resolve('@shopnex/app-bridge')), 'utf8')",
+    text: () => readFileSync(join(root, 'packages/app-bridge/src/index.js'), 'utf8'),
+  },
+  {
+    read: "toBrowserJs(readFileSync(new URL('./client.ts', import.meta.url), 'utf8'))",
+    text: () =>
+      transformSync(readFileSync(join(root, 'packages/app/src/client.ts'), 'utf8'), {
+        loader: 'ts',
+        target: 'es2022',
+        minify: true,
+      }).code,
+  },
+]
+const inlineBrowserFiles = {
+  name: 'inline-browser-files',
   setup(b) {
     b.onLoad({ filter: /packages[\\/]app[\\/]src[\\/]index\.ts$/ }, (args) => {
-      const source = readFileSync(args.path, 'utf8')
-      if (!source.includes(bridgeRead)) throw new Error(`inline-app-bridge: ${bridgeRead} not found in ${args.path}`)
-      const bridge = readFileSync(join(root, 'packages/app-bridge/src/index.js'), 'utf8')
-      return { contents: source.replace(bridgeRead, JSON.stringify(bridge)), loader: 'ts' }
+      let source = readFileSync(args.path, 'utf8')
+      for (const { read, text } of browserFiles) {
+        if (!source.includes(read)) throw new Error(`inline-browser-files: ${read} not found in ${args.path}`)
+        source = source.replace(read, JSON.stringify(text()))
+      }
+      return { contents: source, loader: 'ts' }
     })
   },
 }
@@ -65,7 +83,7 @@ await build({
   legalComments: 'none',
   // Bundled CommonJS dependencies call require()
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
-  plugins: [inlineAppBridge, inlineSvgFiles],
+  plugins: [inlineBrowserFiles, inlineSvgFiles],
   logLevel: 'info',
 })
 
