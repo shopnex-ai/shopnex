@@ -15,7 +15,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
+    "@anthropic-ai/sdk": "^1.13.0",
     "@orpc/server": "catalog:",
     "@shopnex/apps": "workspace:*",
     "@shopnex/catalog": "workspace:*",
@@ -28,7 +28,7 @@
     "@shopnex/tenancy": "workspace:*",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
-    "openai": "^7.54.0",
+    "openai": "^7.63.0",
     "zod": "catalog:"
   },
   "devDependencies": {
