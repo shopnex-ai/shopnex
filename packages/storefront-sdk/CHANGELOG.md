@@ -2,6 +2,9 @@
 
 ## Unreleased (additive)
 
+- Theme preview (`connectThemePreview`): the editor's preview is for editing, not shopping. Links, `data-add-to-cart` and
+  `data-line-qty` buttons, submit buttons and form submits do nothing in it (`PREVIEW_BLOCKED_SELECTOR`); a click on a
+  section still picks it, and carousels, tabs and menu toggles still work.
 - `@shopnex/storefront-sdk/i18n` (browser-safe, dependency-free): a theme's text in the visitor's language. `t(key, vars?)` for
   theme scripts (reads the strings the page embeds in `<script id="shopnex-i18n">`, same `{{ placeholders }}` and plural forms as
   the `t` Liquid filter), and `flattenMessages`, `formatMessage` and `languageChain` for storefronts that load locale files themselves.
