@@ -1,0 +1,21 @@
+{%- comment -%}
+  One tile of the collection grid (sections/style-grid.liquid). Params: c (the collection), span ('md:col-span-2' for the wide
+  ones), attrs (the block's editor attributes; empty when the shop's first collections are shown)
+{%- endcomment -%}
+<a
+  {{ attrs }}
+  href="{{ c.url }}"
+  class="group relative flex h-[190px] overflow-hidden rounded-[20px] bg-page md:h-[289px] {{ span }}"
+>
+  {%- if c.image %}
+    <img
+      src="{{ c.image | image_url }}"
+      alt="{{ c.image.alt }}"
+      loading="lazy"
+      class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+    />
+  {%- endif %}
+  <span class="relative m-6 self-start rounded-full text-[24px] font-bold md:mx-9 md:text-[36px] {% if c.image %}bg-page/85 px-4 py-1 backdrop-blur-sm{% endif %}">
+    {{- c.title -}}
+  </span>
+</a>

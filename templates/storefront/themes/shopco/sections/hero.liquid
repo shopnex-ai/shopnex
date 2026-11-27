@@ -1,5 +1,5 @@
 {%- comment -%}
-  Hero: the big uppercase heading, text, button and up to three figures on the soft panel, beside an
+  Hero: the big uppercase heading, text, button and figures (one per block) on the soft panel, beside an
   optional cut-out photo with two sparkles
 {%- endcomment -%}
 {%- assign s = section.settings -%}
@@ -16,9 +16,11 @@
         <a href="{{ s.button_link }}" class="btn w-full md:w-auto">{{ s.button_label }}</a>
       {%- endif %}
       {%- capture stats -%}
-        {%- if s.stat_1_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_1_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_1_label }}</span></div>{% endif -%}
-        {%- if s.stat_2_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_2_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_2_label }}</span></div>{% endif -%}
-        {%- if s.stat_3_value != blank %}<div class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ s.stat_3_value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ s.stat_3_label }}</span></div>{% endif -%}
+        {%- for block in section.blocks -%}
+          {%- if block.settings.value != blank -%}
+            <div {{ block.shopify_attributes }} class="flex flex-col"><span class="text-[24px] font-bold md:text-[40px]">{{ block.settings.value }}</span><span class="text-[12px] text-soft md:text-[16px]">{{ block.settings.label }}</span></div>
+          {%- endif -%}
+        {%- endfor -%}
       {%- endcapture -%}
       {%- if stats != blank %}
         <div class="flex w-full flex-wrap justify-center gap-x-8 gap-y-3 pt-1 md:justify-start md:gap-x-0 lg:flex-nowrap md:[&>*+*]:ml-6 md:[&>*+*]:border-l md:[&>*+*]:border-line md:[&>*+*]:pl-6">

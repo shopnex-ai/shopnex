@@ -1,39 +1,23 @@
 {%- comment -%}
-  Collection grid ("Browse by style"): four collection tiles on a rounded panel, narrow–wide then wide–narrow.
-  The picked collections, or the shop's first four when none are picked; a collection's image fills its tile.
+  Collection grid ("Browse by style"): up to four collection tiles (one per block) on a rounded panel, narrow–wide then
+  wide–narrow. Until a block has a collection, the shop's first four are shown; a collection's image fills its tile.
 {%- endcomment -%}
-{%- assign picked = false -%}
-{%- for i in (1..4) -%}
-  {%- assign key = 'collection_' | append: i -%}
-  {%- if section.settings[key] -%}{%- assign picked = true -%}{%- endif -%}
+{%- assign picked = '' | split: ',' -%}
+{%- for block in section.blocks -%}
+  {%- if block.settings.collection and picked.size < 4 -%}{%- assign picked = picked | push: block -%}{%- endif -%}
 {%- endfor -%}
+{%- assign from_blocks = true -%}
+{%- if picked.size == 0 -%}
+  {%- assign from_blocks = false -%}
+  {%- assign picked = collections | slice: 0, 4 -%}
+{%- endif -%}
 {%- capture tiles -%}
-  {%- for i in (1..4) -%}
-    {%- if picked -%}
-      {%- assign key = 'collection_' | append: i -%}
-      {%- assign c = section.settings[key] -%}
+  {%- for item in picked -%}
+    {%- if forloop.index == 2 or forloop.index == 3 -%}{%- assign span = 'md:col-span-2' -%}{%- else -%}{%- assign span = '' -%}{%- endif -%}
+    {%- if from_blocks -%}
+      {% render 'style-tile', c: item.settings.collection, span: span, attrs: item.shopify_attributes %}
     {%- else -%}
-      {%- assign index = i | minus: 1 -%}
-      {%- assign c = collections[index] -%}
-    {%- endif -%}
-    {%- if c -%}
-      {%- if i == 2 or i == 3 -%}{%- assign span = 'md:col-span-2' -%}{%- else -%}{%- assign span = '' -%}{%- endif -%}
-      <a
-        href="{{ c.url }}"
-        class="group relative flex h-[190px] overflow-hidden rounded-[20px] bg-page md:h-[289px] {{ span }}"
-      >
-        {%- if c.image %}
-          <img
-            src="{{ c.image | image_url }}"
-            alt="{{ c.image.alt }}"
-            loading="lazy"
-            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-          />
-        {%- endif %}
-        <span class="relative m-6 self-start rounded-full text-[24px] font-bold md:mx-9 md:text-[36px] {% if c.image %}bg-page/85 px-4 py-1 backdrop-blur-sm{% endif %}">
-          {{- c.title -}}
-        </span>
-      </a>
+      {% render 'style-tile', c: item, span: span, attrs: '' %}
     {%- endif -%}
   {%- endfor -%}
 {%- endcapture -%}

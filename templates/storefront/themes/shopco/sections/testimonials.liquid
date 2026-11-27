@@ -1,19 +1,17 @@
 {%- comment -%}
-  Testimonials: up to five quotes as cards in a swipeable row, with arrow buttons (src/theme.ts)
+  Testimonials: one quote per block, as cards in a swipeable row, with arrow buttons (src/theme.ts)
 {%- endcomment -%}
 {%- capture cards -%}
-  {%- for i in (1..5) -%}
-    {%- assign name_key = 'name_' | append: i -%}
-    {%- assign quote_key = 'quote_' | append: i -%}
-    {%- assign quote = section.settings[quote_key] | strip -%}
+  {%- for block in section.blocks -%}
+    {%- assign quote = block.settings.quote | strip -%}
     {%- if quote != blank -%}
-      <figure class="m-0 flex w-[min(400px,calc(100vw-2rem))] flex-none snap-start flex-col gap-3 rounded-[20px] border border-line px-6 py-6 md:px-8 md:py-7">
+      <figure {{ block.shopify_attributes }} class="m-0 flex w-[min(400px,calc(100vw-2rem))] flex-none snap-start flex-col gap-3 rounded-[20px] border border-line px-6 py-6 md:px-8 md:py-7">
         {%- if section.settings.show_stars -%}
           <span class="flex gap-1.5 text-star">
             {%- for star in (1..5) %}{% render 'icon', name: 'star', class: 'h-[19px] w-[19px] md:h-[23px] md:w-[23px]' %}{% endfor -%}
           </span>
         {%- endif -%}
-        {%- assign name = section.settings[name_key] | strip -%}
+        {%- assign name = block.settings.name | strip -%}
         {%- if name != blank -%}
           <figcaption class="flex items-center gap-1 text-[16px] font-bold md:text-[20px]">
             {{- name }} {% render 'icon', name: 'verified', class: 'h-5 w-5 md:h-6 md:w-6' -%}
