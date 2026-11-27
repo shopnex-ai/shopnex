@@ -5,6 +5,9 @@
 //   POST /api/settings                  Days to wait before asking for a review
 //   POST /api/publishing                Publish new reviews automatically: off, 4-5 stars, or all
 //   POST /api/reviews/:id/publish|hide  Moderate a review
+//   POST /api/email                     The wording of the request email (empty: the standard text)
+//   POST /api/publish-pending           Publish every review that is waiting
+//   POST /api/requests/:token/send-now  Ask for the review now instead of on its day
 //   POST /api/reviews/:id/reply         The shop's public answer (empty removes it)
 //   DELETE /api/reviews/:id             Delete a review
 //   POST /shopnex/webhook               ShopNex: order.fulfilled → review requests
@@ -14,8 +17,8 @@
 import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import { type ShopnexApp } from '@shopnex/app'
-import { readEmailOff } from './mailer'
-import { MessagePage, ReviewFormPage, SettingsPage } from './pages'
+import { MAX_MESSAGE, MAX_SUBJECT, readEmailOff, readEmailTexts, saveEmailTexts } from './mailer'
+import { AdminPage, MessagePage, ReviewFormPage } from './pages'
 import { rateLimit, type RateLimitOptions } from './ratelimit'
 import { ensureWebhook } from './webhook'
 import { ReviewError, type AutoPublish, type ReviewStatus, type ShopKey, type Store } from './store'
@@ -81,15 +84,20 @@ export function buildApp(deps: {
       (error) => message(error),
     )
     const key = { instance: shop.instance, shopId: shop.shopId }
+    const texts = await readEmailTexts(shop)
     return c.html(
-      <SettingsPage
+      <AdminPage
         instance={shop.instance}
         shopId={shop.shopId}
         appUrl={appUrl}
         delayDays={(await shop.data.get<number>('delay_days')) ?? DEFAULT_DELAY_DAYS}
         counts={await store.counts(key)}
+        overview={await store.overview(key)}
+        products={await store.products(key)}
         publishMode={(await shop.data.get<AutoPublish>('publish_mode')) ?? 'off'}
         reviews={await store.list(key, undefined, 300)}
+        requests={await store.requests(key)}
+        emailTexts={{ subject: texts.subject ?? '', message: texts.message ?? '' }}
         emailOff={await readEmailOff(shop)}
         waiting={await store.unsent(key, Date.now())}
         webhookError={webhookError}
@@ -114,6 +122,31 @@ export function buildApp(deps: {
     if (!PUBLISH_MODES.includes(mode)) return c.json({ error: 'Choose how new reviews are published' }, 400)
     await shop.data.set('publish_mode', mode)
     return c.json({ ok: true })
+  })
+
+  app.post('/api/email', async (c) => {
+    const shop = await shopnex.authenticate(c.req.raw)
+    const input = await body(c)
+    const subject = String(input.subject ?? '').trim()
+    const message = String(input.message ?? '').trim()
+    if (subject.length > MAX_SUBJECT)
+      return c.json({ error: `The subject can be up to ${MAX_SUBJECT} characters` }, 400)
+    if (message.length > MAX_MESSAGE)
+      return c.json({ error: `The message can be up to ${MAX_MESSAGE} characters` }, 400)
+    await saveEmailTexts(shop, { subject, message })
+    return c.json({ ok: true })
+  })
+
+  app.post('/api/publish-pending', async (c) => {
+    const shop = await shopnex.authenticate(c.req.raw)
+    const n = await store.publishPending({ instance: shop.instance, shopId: shop.shopId })
+    return c.json({ message: n === 1 ? 'Published 1 review' : `Published ${n} reviews` })
+  })
+
+  app.post('/api/requests/:token/send-now', async (c) => {
+    const shop = await shopnex.authenticate(c.req.raw)
+    const done = await store.sendNow({ instance: shop.instance, shopId: shop.shopId }, c.req.param('token'), Date.now())
+    return done ? c.json({ message: 'It goes out within a minute' }) : c.json({ error: 'Not found' }, 404)
   })
 
   app.post('/api/reviews/:id/reply', async (c) => {
