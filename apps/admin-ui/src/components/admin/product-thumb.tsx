@@ -28,6 +28,8 @@ export function ProductThumb({ src, className }: { src?: string | null; classNam
           src={src}
           alt=""
           loading="lazy"
+          // Imported images live on the old store, which may refuse requests that carry our address as Referer
+          referrerPolicy="no-referrer"
           className={cn(
             'absolute inset-0 size-full object-cover transition-opacity duration-150',
             state === 'loaded' ? 'opacity-100' : 'opacity-0',
