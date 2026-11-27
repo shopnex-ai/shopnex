@@ -5,7 +5,7 @@ import { CopyCommand } from './copy-command'
 import adminDashboard from '../../../docs/images/dashboard.png'
 import storefront from '../../../docs/images/storefront.webp'
 
-const DEMO_URL = 'https://demo.shopnex.ai/admin/signup?demo=true'
+const DEMO_URL = 'https://demo.shopnex.ai/admin/login?demo=true'
 
 const eyebrow = 'font-mono text-xs uppercase tracking-widest text-fd-muted-foreground'
 

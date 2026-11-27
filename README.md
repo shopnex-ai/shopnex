@@ -2,7 +2,7 @@
   <img src="docs/images/dashboard.png" alt="ShopNex: a self-hosted Shopify alternative. Run npx create-shopnex, open the setup wizard, start selling. The admin dashboard with sales analytics and installed apps." width="900">
 </p>
 
-<p align="center"><a href="https://demo.shopnex.ai/admin/signup?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
+<p align="center"><a href="https://demo.shopnex.ai/admin/login?demo=true"><b>Live demo</b></a> · <a href="apps/docs/content/docs/self-hosting/install.mdx"><b>Self-hosting guide</b></a> · <a href="docs/roadmap.md"><b>Roadmap</b></a></p>
 
 <p align="center">
   <a href="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml"><img src="https://github.com/shopnex-ai/shopnex/actions/workflows/ci.yaml/badge.svg" alt="CI"></a>
