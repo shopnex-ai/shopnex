@@ -26,6 +26,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
 import { client, orpc, type Outputs } from '@/lib/orpc'
 import { GeneratePage } from './ai-generate'
+import { LoadError } from '@/components/not-found'
 
 type Page = Outputs['admin']['pages']['get']
 
@@ -52,7 +53,8 @@ export function PageEditor({ id }: { id: string | null }) {
     ...orpc.admin.pages.get.queryOptions({ input: { id: id ?? '' } }),
     enabled: id !== null,
   })
-  if (error) return <p className="text-sm text-destructive">{error.message}</p>
+  if (error)
+    return <LoadError error={error} noun="Store page" back={{ to: '/admin/online-store/pages', label: 'Pages' }} />
   if (id && !data) return <Skeleton className="h-96 w-full" />
   return <PageForm page={data ?? null} />
 }

@@ -1,4 +1,3 @@
-import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useController } from 'react-hook-form'
 import { useId } from 'react'
@@ -16,6 +15,7 @@ import {
   useZodForm,
 } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
+import { LoadError } from '@/components/not-found'
 import { RichTextEditor } from '@/components/admin/rich-text-editor'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -99,19 +99,7 @@ export function ProductDetail({ id, currency }: { id: string; currency: string }
       </div>
     )
   }
-  if (product.error) {
-    // BAD_REQUEST: the id in the URL isn't a valid uuid
-    const notFound =
-      product.error instanceof ORPCError && (product.error.code === 'NOT_FOUND' || product.error.code === 'BAD_REQUEST')
-    return (
-      <div className="space-y-4">
-        <PageHeader back={back} title={notFound ? 'Product not found' : 'Could not load product'} />
-        <p className="text-muted-foreground">
-          {notFound ? 'It may have been removed, or it belongs to another shop.' : product.error.message}
-        </p>
-      </div>
-    )
-  }
+  if (product.error) return <LoadError error={product.error} noun="Product" back={back} />
   // key: fresh form defaults if another product loads into this view
   return (
     <ProductEditor
