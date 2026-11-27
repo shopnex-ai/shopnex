@@ -1,4 +1,4 @@
-// KS BootShop's hero, testimonials, FAQ and featured collections, rendered from their real section files: one block per
+// KS BootShop's hero, testimonials, FAQ, featured collections and footer, rendered from their real section files: one block per
 // slide, quote, question or collection, and the old numbered settings while a section has no blocks.
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
@@ -153,5 +153,63 @@ describe('featured collections', () => {
     assert.doesNotMatch(picked, /Alpha/)
     const first = await render(section('featured-collections', settings))
     assert.equal([...first.matchAll(/class="ks-tile"/g)].length, 4)
+  })
+})
+
+describe('footer', () => {
+  const linklists = {
+    footer: { links: [{ url: '/pages/about', title: 'About' }] },
+    help: { links: [{ url: '/pages/faq', title: 'FAQ' }] },
+  }
+  const renderFooter = (s: SectionObject, themeSettings: Record<string, unknown> = {}) => {
+    const liquid = createLiquid('ks-bootshop', dir)
+    const data: RenderData = { sections: () => [], section: () => s }
+    return liquid.parseAndRender(
+      "{% section 'footer' %}",
+      {},
+      { globals: { [RENDER]: data, settings: themeSettings, shop: { name: 'Demo' }, linklists } },
+    )
+  }
+
+  test('without blocks it is the single bar: text, social links and the footer menu', async () => {
+    const html = await renderFooter(section('footer', {}), {
+      footer_text: 'All rights',
+      facebook_url: 'https://fb.test/x',
+    })
+    assert.match(html, /<span>All rights<\/span>/)
+    assert.match(html, /ks-footer-social-link/)
+    assert.match(html, /<a href="\/pages\/about">About<\/a>/)
+    assert.doesNotMatch(html, /ks-footer-columns/)
+  })
+
+  test('with blocks: a column per block (text, menu, social), then the copyright', async () => {
+    const html = await renderFooter(
+      section('footer', {}, [
+        block('t', 'text', { heading: 'About us', text: 'We <b>sell</b> things' }),
+        block('m', 'menu', { heading: 'Help', menu: 'help' }),
+        block('s', 'social', { heading: 'Follow us' }),
+      ]),
+      { footer_text: 'All rights', instagram_url: 'https://ig.test/x' },
+    )
+    assert.match(html, /--ks-footer-columns: 3/)
+    assert.match(html, /<div data-block-id="t" class="ks-footer-column">/)
+    assert.match(html, /<h2 class="ks-footer-heading">About us<\/h2>/)
+    assert.match(html, /We &lt;b&gt;sell&lt;\/b&gt; things/)
+    assert.match(html, /<a href="\/pages\/faq">FAQ<\/a>/)
+    assert.doesNotMatch(html, /About<\/a>/) // the "footer" menu is not picked by a block
+    assert.match(html, /ks-footer-social-link/)
+    assert.match(html, /ks-footer-bottom[\s\S]*All rights/)
+  })
+
+  test('a menu block with no such menu shows only its heading; the copyright defaults to the shop name', async () => {
+    const html = await renderFooter(section('footer', {}, [block('m', 'menu', { heading: 'Gone', menu: 'nope' })]))
+    assert.match(html, /Gone/)
+    assert.doesNotMatch(html, /ks-footer-menu/)
+    assert.match(html, /© \d{4} Demo/)
+  })
+
+  test('more than four blocks stay in four columns', async () => {
+    const blocks = [1, 2, 3, 4, 5].map((i) => block(`t${i}`, 'text', { heading: `H${i}` }))
+    assert.match(await renderFooter(section('footer', {}, blocks)), /--ks-footer-columns: 4/)
   })
 })

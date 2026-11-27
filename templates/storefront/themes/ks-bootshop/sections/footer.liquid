@@ -1,0 +1,44 @@
+{%- comment -%}
+  The footer (the Footer group in the theme editor): one column per block, a text, a menu (Online store → Navigation) or
+  the social links, with the copyright line under them. While there are no blocks, the footer is the single bar of
+  snippets/footer.liquid (text, social links and the "footer" menu), as it was before blocks.
+{%- endcomment -%}
+{%- if section.blocks.size == 0 -%}
+  {% render 'footer' %}
+{%- else -%}
+  {%- assign footer_text = settings.footer_text | strip -%}
+  {%- if footer_text == blank -%}
+    {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+  {%- endif -%}
+  <footer class="ks-footer mt-auto">
+    <div class="container ks-footer-columns" style="--ks-footer-columns: {{ section.blocks.size | at_most: 4 }}">
+      {%- for block in section.blocks %}
+        <div {{ block.shopify_attributes }} class="ks-footer-column">
+          {%- if block.settings.heading != blank %}
+            <h2 class="ks-footer-heading">{{ block.settings.heading }}</h2>
+          {%- endif %}
+          {%- case block.type %}
+            {%- when 'text' %}
+              {%- if block.settings.text != blank %}
+                <p class="m-0">{{ block.settings.text }}</p>
+              {%- endif %}
+            {%- when 'menu' %}
+              {%- assign menu = linklists[block.settings.menu] %}
+              {%- if menu and menu.links.size > 0 %}
+                <ul class="ks-footer-menu">
+                  {%- for link in menu.links %}
+                    <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+                  {%- endfor %}
+                </ul>
+              {%- endif %}
+            {%- when 'social' %}
+              {%- render 'social-links', class: 'ks-footer-social', link_class: 'ks-footer-social-link' %}
+          {%- endcase %}
+        </div>
+      {%- endfor %}
+    </div>
+    <div class="ks-footer-bottom">
+      <div class="container">{{ footer_text }}</div>
+    </div>
+  </footer>
+{%- endif -%}

@@ -1072,6 +1072,61 @@
           ]
         }
       }
+    },
+    "footer": {
+      "name": "Footer",
+      "group": "footer",
+      "limit": 1,
+      "max_blocks": 8,
+      "settings": [],
+      "blocks": {
+        "text": {
+          "name": "Text",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "About us"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            }
+          ]
+        },
+        "menu": {
+          "name": "Menu",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Links"
+            },
+            {
+              "id": "menu",
+              "label": "Menu",
+              "type": "text",
+              "default": "footer",
+              "info": "The handle of a menu from Online store → Navigation"
+            }
+          ]
+        },
+        "social": {
+          "name": "Social links",
+          "limit": 1,
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Follow us"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -1141,6 +1196,12 @@
         {
           "id": "announcement-bar",
           "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
+        },
+        {
+          "id": "footer",
+          "type": "footer",
           "settings": {},
           "blocks": []
         }
