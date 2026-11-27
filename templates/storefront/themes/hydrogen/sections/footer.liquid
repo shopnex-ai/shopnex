@@ -1,0 +1,6 @@
+{%- comment -%}
+  The footer (the Footer group in the theme editor): one column per block (a text, a menu or the social links), then the
+  copyright line. Without blocks the columns come from the "footer" menu, with the social links beside them.
+  The markup is snippets/footer.liquid.
+{%- endcomment -%}
+{% render 'footer', blocks: section.blocks %}
