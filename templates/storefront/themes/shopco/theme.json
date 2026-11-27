@@ -279,50 +279,45 @@
           "info": "A cut-out photo works best: it sits at the bottom right of the hero",
           "type": "image",
           "default": "/shopnex/assets/shopco/hero.jpg"
-        },
-        {
-          "id": "stat_1_value",
-          "label": "Figure 1",
-          "type": "text"
-        },
-        {
-          "id": "stat_1_label",
-          "label": "Figure 1 label",
-          "type": "text"
-        },
-        {
-          "id": "stat_2_value",
-          "label": "Figure 2",
-          "type": "text"
-        },
-        {
-          "id": "stat_2_label",
-          "label": "Figure 2 label",
-          "type": "text"
-        },
-        {
-          "id": "stat_3_value",
-          "label": "Figure 3",
-          "type": "text"
-        },
-        {
-          "id": "stat_3_label",
-          "label": "Figure 3 label",
-          "type": "text"
         }
       ],
-      "limit": 1
+      "limit": 1,
+      "max_blocks": 4,
+      "blocks": {
+        "stat": {
+          "name": "Figure",
+          "settings": [
+            {
+              "id": "value",
+              "label": "Value",
+              "type": "text"
+            },
+            {
+              "id": "label",
+              "label": "Label",
+              "type": "text"
+            }
+          ]
+        }
+      }
     },
     "brands": {
       "name": "Brand strip",
-      "settings": [
-        {
-          "id": "names",
-          "label": "Brands",
-          "info": "One per line. Empty: the vendors of your products.",
-          "type": "textarea"
+      "settings": [],
+      "max_blocks": 8,
+      "blocks": {
+        "brand": {
+          "name": "Brand",
+          "settings": [
+            {
+              "id": "name",
+              "label": "Name",
+              "type": "text",
+              "default": "Brand"
+            }
+          ]
         }
-      ]
+      }
     },
     "product-row": {
       "name": "Product row",
@@ -371,30 +366,22 @@
           "label": "Heading",
           "type": "text",
           "default": "Browse by style"
-        },
-        {
-          "id": "collection_1",
-          "label": "Collection 1",
-          "info": "Empty tiles: your first collections. A collection's image fills its tile.",
-          "type": "collection"
-        },
-        {
-          "id": "collection_2",
-          "label": "Collection 2",
-          "type": "collection"
-        },
-        {
-          "id": "collection_3",
-          "label": "Collection 3",
-          "type": "collection"
-        },
-        {
-          "id": "collection_4",
-          "label": "Collection 4",
-          "type": "collection"
         }
       ],
-      "limit": 1
+      "limit": 1,
+      "max_blocks": 4,
+      "blocks": {
+        "collection": {
+          "name": "Collection",
+          "settings": [
+            {
+              "id": "collection",
+              "label": "Collection",
+              "type": "collection"
+            }
+          ]
+        }
+      }
     },
     "testimonials": {
       "name": "Testimonials",
@@ -406,62 +393,30 @@
           "default": "What customers say"
         },
         {
-          "id": "name_1",
-          "label": "Customer 1",
-          "type": "text"
-        },
-        {
-          "id": "quote_1",
-          "label": "Quote 1",
-          "type": "textarea"
-        },
-        {
-          "id": "name_2",
-          "label": "Customer 2",
-          "type": "text"
-        },
-        {
-          "id": "quote_2",
-          "label": "Quote 2",
-          "type": "textarea"
-        },
-        {
-          "id": "name_3",
-          "label": "Customer 3",
-          "type": "text"
-        },
-        {
-          "id": "quote_3",
-          "label": "Quote 3",
-          "type": "textarea"
-        },
-        {
-          "id": "name_4",
-          "label": "Customer 4",
-          "type": "text"
-        },
-        {
-          "id": "quote_4",
-          "label": "Quote 4",
-          "type": "textarea"
-        },
-        {
-          "id": "name_5",
-          "label": "Customer 5",
-          "type": "text"
-        },
-        {
-          "id": "quote_5",
-          "label": "Quote 5",
-          "type": "textarea"
-        },
-        {
           "id": "show_stars",
           "label": "Show five stars",
           "type": "checkbox",
           "default": true
         }
-      ]
+      ],
+      "max_blocks": 10,
+      "blocks": {
+        "quote": {
+          "name": "Quote",
+          "settings": [
+            {
+              "id": "name",
+              "label": "Name",
+              "type": "text"
+            },
+            {
+              "id": "quote",
+              "label": "Quote",
+              "type": "textarea"
+            }
+          ]
+        }
+      }
     },
     "rich-text": {
       "name": "Text",
@@ -543,6 +498,49 @@
           ]
         }
       }
+    },
+    "footer": {
+      "name": "Footer",
+      "group": "footer",
+      "limit": 1,
+      "max_blocks": 6,
+      "settings": [],
+      "blocks": {
+        "text": {
+          "name": "Text",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "About us"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            }
+          ]
+        },
+        "menu": {
+          "name": "Menu",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Links"
+            },
+            {
+              "id": "menu",
+              "label": "Menu",
+              "type": "text",
+              "default": "footer",
+              "info": "The handle of a menu from Online store → Navigation"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -590,6 +588,12 @@
         {
           "id": "announcement-bar",
           "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
+        },
+        {
+          "id": "footer",
+          "type": "footer",
           "settings": {},
           "blocks": []
         }
