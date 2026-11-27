@@ -56,16 +56,17 @@ npx fetches it into its cache the first time. The same works from the folder abo
 
 ## Options
 
-| Option                  | What it does                                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `[name]`                | The shop's folder, created if needed. `shopnex` when left out; the same folder is the same shop           |
-| `--port <n>`            | Admin, API and checkout. Default `3000`                                                                   |
-| `--storefront-port <n>` | Storefront. Default `4321`                                                                                |
-| `--no-open`             | Do not open the browser                                                                                   |
-| `--with <apps>`         | Also start optional apps next to the shop: `stripe`, `cj`, `shippo` (comma separated, or repeat the flag) |
-| `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                            |
-| `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                                   |
-| `--dry-run`             | Show what would run, and exit                                                                             |
+| Option                  | What it does                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[name]`                | The shop's folder, created if needed. `shopnex` when left out; the same folder is the same shop                                             |
+| `--port <n>`            | Admin, API and checkout. Default `3000`                                                                                                     |
+| `--storefront-port <n>` | Storefront. Default `4321`                                                                                                                  |
+| `--no-open`             | Do not open the browser                                                                                                                     |
+| `--with <apps>`         | Also start optional apps next to the shop: `stripe`, `cj`, `shippo` (comma separated, or repeat the flag)                                   |
+| `--from <store>`        | Bring a Shopify or WooCommerce store across: products, collections, pages and the look. It starts after you create the owner in the browser |
+| `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                                                              |
+| `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                                                                     |
+| `--dry-run`             | Show what would run, and exit                                                                                                               |
 
 ## Apps: Stripe, CJ Dropshipping and Shippo
 

@@ -33,9 +33,9 @@ export const Route = createFileRoute('/admin')({
       return { access }
     }
     if (location.pathname === '/admin/signup') {
-      if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
-      // Already signed in with a store address in the link: import it into their shop instead of dropping it
       const importUrl = new URLSearchParams(location.searchStr).get('import')
+      if (!access.setupComplete) throw redirect({ to: '/admin/setup', search: { import: importUrl?.slice(0, 300) } })
+      // Already signed in with a store address in the link: import it into their shop instead of dropping it
       if (access.session && importUrl) {
         throw redirect({ to: '/admin/settings/import', search: { url: importUrl.slice(0, 300) } })
       }
