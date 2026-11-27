@@ -16,12 +16,22 @@ The app runs as its own process next to ShopNex. In local development it listens
 
 Install it from **Admin → Apps**. It asks to read products and orders, and to send email to your customers from your shop's address (only to people who are customers of your shop).
 
+## The page
+
+The app's page has the numbers at the top (the average rating, how many reviews gave each rating, reviews waiting for you, requests sent, how many were answered and the share of requests that got a review) and four sections under them:
+
+- **Reviews.** What each buyer wrote, with **Publish**, **Hide**, **Reply** and **Delete**. Narrow the list by status (Waiting, Published, Hidden), rating, product or a search. When reviews are waiting, **Publish all waiting** approves them at once. **By product** shows which products buyers write about and how they rate them.
+- **Requests.** Every review request: scheduled, sent or answered, with the buyer's email. **Send now** asks for a scheduled one today instead of on its day.
+- **Widget.** The snippet for your product page.
+- **Settings.** Publishing, days after fulfillment, and the request email.
+
 ## Set it up
 
 1. **Email.** Review requests are sent from your shop's address through **Settings → Email**, the same setup as your order emails, so there is nothing to enter in the app. Until email is on, requests wait and the app tells you how many.
 2. **Days after fulfillment.** How long to wait before asking (default 7, `0` asks right away).
-3. **Publishing.** By default every review waits for you. You can let **4 and 5 star reviews** through automatically, or **every review**; the rest still wait for you.
-4. **The widget.** Copy the snippet from the app into a **Custom HTML** section of your product template:
+3. **The request email.** Under **Settings → The request email** write your own subject and message. `{product}` and `{shop}` are filled in, a blank line starts a new paragraph, and the link to the review page is added under your text. A preview shows what buyers get; leave the fields empty for the standard text.
+4. **Publishing.** By default every review waits for you. You can let **4 and 5 star reviews** through automatically, or **every review**; the rest still wait for you.
+5. **The widget.** Copy the snippet from the app into a **Custom HTML** section of your product template:
 
    ```html
    <div
@@ -39,7 +49,7 @@ Install it from **Admin → Apps**. It asks to read products and orders, and to 
 
 1. An order is fulfilled. ShopNex sends `order.fulfilled` to the app, which makes one review request per product in the order.
 2. After the delay, the app emails the buyer from your address with a link to a plain review page. The link works once.
-3. The review waits in **Waiting for approval** (unless auto-publish lets it through). **Publish** shows it on the storefront; **Hide** keeps it out. Published and hidden reviews stay listed, so you can change your mind, and **Delete** removes one for good.
+3. The review waits under **Reviews → Waiting** (unless auto-publish lets it through). **Publish** shows it on the storefront; **Hide** keeps it out. Published and hidden reviews stay listed, so you can change your mind, and **Delete** removes one for good.
 4. **Reply to this review** adds a public answer that shows under the review in your store. Saving it empty removes it.
 5. The widget shows the product's average, how many reviews gave each rating, and the reviews ten at a time (**Load more reviews**). It also adds the `aggregateRating` markup search engines use for star ratings in results.
 

@@ -48,7 +48,6 @@ export function HomeDashboard({ currency, shopId }: { currency: string; shopId: 
     <div className="space-y-6">
       <PageHeader
         title="Home"
-        description={`Last ${days} days compared with the ${days} days before`}
         actions={
           <div className="flex gap-1" role="group" aria-label="Date range">
             {RANGES.map((r) => (
@@ -412,6 +411,7 @@ function TopProducts({ products, money }: { products: Overview['topProducts']; m
                 <img
                   src={p.imageUrl}
                   alt=""
+                  referrerPolicy="no-referrer"
                   className="absolute inset-0 size-full object-cover"
                   // A dead image link falls back to the icon behind it
                   onError={(e) => (e.currentTarget.style.display = 'none')}

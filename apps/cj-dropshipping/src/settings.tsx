@@ -1,4 +1,5 @@
 // The settings page, embedded in the ShopNex admin
+import { readFileSync } from 'node:fs'
 import { raw } from 'hono/html'
 import {
   Badge,
@@ -43,24 +44,7 @@ export type SettingsView = {
 }
 
 // Product cards, on the admin look the kit's Page provides (its CSS variables)
-const styles = `
-.cj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:1rem}
-.cj-card{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--bg,transparent)}
-.cj-card form{display:contents}
-.cj-card .sx-stack{gap:0;flex:1}
-.cj-card .sx-error{padding:0 .75rem .75rem;margin:0}
-.cj-img{aspect-ratio:1;background:var(--muted);display:block;width:100%;object-fit:cover}
-.cj-img.cj-off{opacity:.35;filter:grayscale(1)}
-.cj-body{display:flex;flex-direction:column;gap:.35rem;padding:.75rem;flex:1}
-.cj-name{font-size:.875rem;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
-.cj-meta{display:flex;flex-direction:column;gap:.25rem;margin-top:auto;align-items:flex-start}
-.cj-meta .sx-code{font-size:.7rem;word-break:normal;white-space:nowrap}
-.cj-price{font-weight:600}
-.cj-action{padding:0 .75rem .75rem}
-.cj-action .sx-btn,.cj-action .sx-badge{width:100%;justify-content:center;text-align:center}
-.cj-skel{aspect-ratio:3/4;border-radius:var(--radius);background:var(--muted);animation:cj-pulse 1.5s ease-in-out infinite}
-@keyframes cj-pulse{50%{opacity:.5}}
-`
+const styles = readFileSync(new URL('./settings.css', import.meta.url), 'utf8')
 
 // CJ sends "11.63" or a range of its variants, "4.70-14.73"
 const money = (price: string) =>

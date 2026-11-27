@@ -7,11 +7,13 @@
       "id": "logo",
       "label": "Logo",
       "info": "Image URL. Without one, the shop name is shown.",
+      "group": "Brand",
       "type": "image"
     },
     {
       "id": "logo_width",
       "label": "Logo width",
+      "group": "Brand",
       "type": "range",
       "min": 60,
       "max": 300,
@@ -20,21 +22,31 @@
       "default": 160
     },
     {
+      "id": "favicon",
+      "label": "Favicon",
+      "group": "Brand",
+      "type": "image",
+      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
+    },
+    {
       "id": "accent_color",
       "label": "Accent color",
       "info": "Buttons, the announcement bar, the brand strip and the newsletter box",
+      "group": "Colors",
       "type": "color",
       "default": "#000000"
     },
     {
       "id": "background_color",
       "label": "Background color",
+      "group": "Colors",
       "type": "color",
       "default": "#ffffff"
     },
     {
       "id": "text_color",
       "label": "Text color",
+      "group": "Colors",
       "type": "color",
       "default": "#000000"
     },
@@ -42,6 +54,7 @@
       "id": "surface_color",
       "label": "Panel color",
       "info": "Behind product photos, the footer and the style grid",
+      "group": "Colors",
       "type": "color",
       "default": "#f0f0f0"
     },
@@ -49,12 +62,14 @@
       "id": "sale_color",
       "label": "Sale color",
       "info": "Discount badges and savings",
+      "group": "Colors",
       "type": "color",
       "default": "#ff3333"
     },
     {
       "id": "heading_font",
       "label": "Heading font",
+      "group": "Typography",
       "type": "select",
       "options": [
         {
@@ -79,6 +94,7 @@
     {
       "id": "body_font",
       "label": "Body font",
+      "group": "Typography",
       "type": "select",
       "options": [
         {
@@ -104,6 +120,7 @@
       "id": "show_language_selector",
       "label": "Show language selector",
       "info": "A picker in the header for the languages you publish (Settings → Languages). Shown only when you publish one besides your own.",
+      "group": "Header",
       "type": "checkbox",
       "default": false
     },
@@ -111,21 +128,25 @@
       "id": "announcement_text",
       "label": "Announcement",
       "info": "The bar above the header; empty hides it",
+      "group": "Announcement bar",
       "type": "text"
     },
     {
       "id": "announcement_link_label",
       "label": "Announcement link label",
+      "group": "Announcement bar",
       "type": "text"
     },
     {
       "id": "announcement_link",
       "label": "Announcement link",
+      "group": "Announcement bar",
       "type": "url"
     },
     {
       "id": "newsletter_heading",
       "label": "Newsletter heading",
+      "group": "Footer",
       "type": "text",
       "default": "Stay up to date"
     },
@@ -133,12 +154,14 @@
       "id": "newsletter_action",
       "label": "Newsletter form URL",
       "info": "Where the email is posted: your email tool's form action (Mailchimp, Kit, Buttondown…). Empty hides the newsletter box.",
+      "group": "Footer",
       "type": "url"
     },
     {
       "id": "newsletter_field",
       "label": "Newsletter email field name",
       "info": "The form field your email tool expects, e.g. EMAIL for Mailchimp",
+      "group": "Footer",
       "type": "text",
       "default": "email"
     },
@@ -146,66 +169,64 @@
       "id": "footer_text",
       "label": "Footer text",
       "info": "Under the shop name in the footer",
+      "group": "Footer",
       "type": "textarea"
     },
     {
       "id": "copyright",
       "label": "Copyright line",
       "info": "Defaults to © year and the shop name",
+      "group": "Footer",
       "type": "text"
-    },
-    {
-      "id": "instagram_url",
-      "group": "Social links",
-      "label": "Instagram",
-      "type": "url"
-    },
-    {
-      "id": "facebook_url",
-      "group": "Social links",
-      "label": "Facebook",
-      "type": "url"
-    },
-    {
-      "id": "x_url",
-      "group": "Social links",
-      "label": "X (Twitter)",
-      "type": "url"
-    },
-    {
-      "id": "tiktok_url",
-      "group": "Social links",
-      "label": "TikTok",
-      "type": "url"
-    },
-    {
-      "id": "youtube_url",
-      "group": "Social links",
-      "label": "YouTube",
-      "type": "url"
-    },
-    {
-      "id": "pinterest_url",
-      "group": "Social links",
-      "label": "Pinterest",
-      "type": "url"
     },
     {
       "id": "shipping_text",
       "label": "Shipping & returns",
       "info": "A tab on every product page; empty hides it. A blank line starts a new paragraph.",
+      "group": "Footer",
       "type": "textarea"
     },
     {
-      "id": "favicon",
-      "label": "Favicon",
-      "type": "image",
-      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
+      "id": "instagram_url",
+      "label": "Instagram",
+      "group": "Social links",
+      "type": "url"
+    },
+    {
+      "id": "facebook_url",
+      "label": "Facebook",
+      "group": "Social links",
+      "type": "url"
+    },
+    {
+      "id": "x_url",
+      "label": "X (Twitter)",
+      "group": "Social links",
+      "type": "url"
+    },
+    {
+      "id": "tiktok_url",
+      "label": "TikTok",
+      "group": "Social links",
+      "type": "url"
+    },
+    {
+      "id": "youtube_url",
+      "label": "YouTube",
+      "group": "Social links",
+      "type": "url"
+    },
+    {
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "group": "Social links",
+      "type": "url"
     },
     {
       "id": "custom_css",
       "label": "Custom CSS",
       "info": "Added after the theme styles on every page",
+      "group": "Advanced",
       "type": "code",
       "language": "css"
     },
@@ -213,6 +234,7 @@
       "id": "head_html",
       "label": "Head code",
       "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "group": "Advanced",
       "type": "code",
       "language": "html"
     }

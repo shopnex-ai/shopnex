@@ -46,7 +46,7 @@ import {
   settingsObject,
   shopObject,
 } from './drops'
-import { RENDER, createLiquid, type RenderData, type SectionObject } from './liquid'
+import { RENDER, assetPath, createLiquid, type RenderData, type SectionObject } from './liquid'
 import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
@@ -79,6 +79,10 @@ function readTheme(id: string): Theme {
   const parsed = ThemeDefinition.safeParse(JSON.parse(readFileSync(file, 'utf8')))
   if (!parsed.success) throw new Error(`[theme] ${file} is not a valid theme definition: ${parsed.error.message}`)
   const definition = parsed.data
+  // assets/screenshot.jpg is the theme's picture in the admin, unless theme.json points elsewhere
+  if (!definition.screenshot && existsSync(join(dir, 'assets/screenshot.jpg'))) {
+    definition.screenshot = assetPath(id, 'screenshot.jpg')
+  }
   if (definition.id !== id) throw new Error(`[theme] ${file}: the id is "${definition.id}", the folder "${id}"`)
   const missing = [
     'layout/theme',
@@ -476,6 +480,9 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     status: page.template === '404' ? 404 : page.template === 'account' ? (page.status ?? 200) : 200,
     headers: {
       'content-type': 'text/html; charset=utf-8',
+      // Imported products point at the old store's images, and many stores refuse a request that comes with another
+      // site's address as Referer (hotlink protection). Our own pages keep it; other sites get none.
+      'referrer-policy': 'same-origin',
       // Someone's own orders: never stored by a shared cache
       ...(page.template === 'account' && { 'cache-control': 'private, no-store' }),
     },

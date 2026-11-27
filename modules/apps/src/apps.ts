@@ -25,6 +25,7 @@ import { normalizeScopes } from '@shopnex/core/scopes'
 import { mintToken, revokeTokenById, touchToken, type ApiToken } from '@shopnex/tenancy'
 import { AppError } from './apps.errors'
 import { instanceSigner, ownKey } from './keys'
+import { callApp } from './call-app'
 import { rememberInternalUrl, serverUrl } from './internal-url'
 import { instanceUrl, reportInstallationsSoon } from './marketplace'
 import { log } from './log'
@@ -182,6 +183,8 @@ export async function authenticateClient(clientId: string, assertion: string) {
     app?.publicKey &&
     (await verifyClientAssertion(assertion, app.publicKey, { clientId, audience: await instanceUrl() }))
   if (!app || !valid) throw new AppError('invalid_client', 'Invalid client_id or client_assertion')
+  // Said only to a caller that proved it holds the app's key. A delisted app is not trusted with anything, installed or not
+  if (app.delistedAt) throw new AppError('invalid_client', 'This app is no longer available in the App Store')
   return app
 }
 
@@ -308,11 +311,13 @@ export async function resolveAccessToken(
     .from(appInstallations)
     .innerJoin(apiTokens, and(eq(apiTokens.id, appInstallations.apiTokenId), isNull(apiTokens.revokedAt)))
     .innerJoin(shops, eq(shops.id, appInstallations.shopId))
+    .innerJoin(apps, eq(apps.id, appInstallations.appId))
     .where(
       and(
         eq(appInstallations.id, claims.sub),
         eq(appInstallations.shopId, claims.shop_id),
         isNull(appInstallations.uninstalledAt),
+        isNull(apps.delistedAt),
       ),
     )
   if (!row) return null
@@ -369,12 +374,10 @@ function notifyInstalled(app: App, installationId: string, shopId: string) {
       installationId,
     }
     const body = JSON.stringify(payload)
-    const res = await fetch(serverUrl(app.appUrl.replace(/\/$/, '')) + APP_INSTALLED_PATH, {
-      method: 'POST',
+    const res = await callApp(app.appUrl.replace(/\/$/, '') + APP_INSTALLED_PATH, {
       headers: await signLifecycleRequest(await instanceSigner(), id, body),
       body,
-      redirect: 'manual',
-      signal: AbortSignal.timeout(10_000),
+      timeoutMs: 10_000,
     })
     // 404: an app that doesn't listen for it
     if (!res.ok && res.status !== 404) throw new Error(`${res.status} ${res.statusText}`)

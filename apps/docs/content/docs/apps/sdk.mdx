@@ -49,7 +49,8 @@ app.get('/', async (c) => {
 For longer pages there are a few more:
 
 - `Disclosures` and `Disclosure` (`title`, `summary`, `open`): settings that stay as one quiet row each and open on click.
-- `Filterable` and `FilterItem`: a list with tabs (and counts), dropdown filters and a search box that narrow the items without a request. The chosen tab and filters stay in the URL hash, so they survive the reload after `<Button action reload>`. Put it in a `Card`, one per page.
+- `Tabs` and `TabPanel` (`tabs`, `defaultTab`; `id`): the sections of a page. A row of tabs (with optional counts, coloured when `alert`) and a `TabPanel` for each, anywhere below it; one shows at a time and nothing is requested. The chosen section stays in the URL hash.
+- `Filterable` and `FilterItem`: a list with tabs (and counts), dropdown filters and a search box that narrow the items without a request. The chosen tab and filters stay in the URL hash, so they survive the reload after `<Button action reload>`. Put it in a `Card`. A page with more than one list gives each a `name`, so each keeps its own state.
 - `Panel` and `<Button toggles="id">`: a form or detail that opens when the button is pressed.
 - `<Button confirm={{ title: 'Delete this review?', message: "This can't be undone.", label: 'Delete' }}>`: the admin asks first in its own dialog (`bridge.confirm`), and the backend is called only when the person confirms (`confirm="Delete?"` is the short form with just a title). Cancel and Esc do nothing.
 

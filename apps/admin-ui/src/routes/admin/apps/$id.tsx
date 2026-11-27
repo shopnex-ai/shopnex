@@ -4,6 +4,7 @@ import { managerAccess } from '@/lib/admin-access'
 import { PreviewLoader } from '@/screens/online-store/themes/preview-loader'
 import { EmbeddedApp } from '@/screens/apps/[id]/embedded-app'
 import { getEmbeddedApp } from '@/screens/apps/functions'
+import { NotFound } from '@/components/not-found'
 
 export const Route = createFileRoute('/admin/apps/$id')({
   loader: ({ params, context }) => {
@@ -23,9 +24,17 @@ export const Route = createFileRoute('/admin/apps/$id')({
 })
 function EmbeddedAppPage() {
   const result = Route.useLoaderData()
-  if (!result) return null
+  // Uninstalled, or an id that is not an installation of this shop
+  if (!result) {
+    return (
+      <NotFound
+        title="App not found"
+        message="It may have been uninstalled."
+        back={{ to: '/admin/apps', label: 'Apps' }}
+      />
+    )
+  }
   if ('forbidden' in result) return <NoAccess message="Only shop owners and admins can use apps." />
-  if (!result) return <p>App installation not found.</p>
   return (
     <EmbeddedApp
       installationId={result.installation.id}

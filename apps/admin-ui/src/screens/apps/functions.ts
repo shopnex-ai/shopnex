@@ -4,9 +4,13 @@ import { adminFn, publicFn } from '@/lib/server-fn'
 // Public: the instance's own URL, which every embedded app is also told
 export const getMarketplaceInstanceUrl = publicFn({ method: 'GET' }).handler(() => marketplaceService.instanceUrl())
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export const getEmbeddedApp = adminFn
   .validator((input: { id: string }) => ({ id: input.id }))
   .handler(async ({ data, context: { shopId, userId } }) => {
+    // Not a uuid (a mistyped URL): there is no such installation, and the database would refuse the id
+    if (!UUID.test(data.id)) return null
     const installation = await appService.getInstallationWithApp(shopId, data.id)
     if (!installation) return null
     const instanceUrl = await marketplaceService.instanceUrl()

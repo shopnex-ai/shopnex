@@ -23,6 +23,20 @@ export type Review = {
   createdAt: number
 }
 
+/** A review request as the shop sees it: waiting for its day, sent, or answered with a review */
+export type RequestStatus = 'scheduled' | 'sent' | 'reviewed'
+
+export type RequestRow = {
+  token: string
+  productId: string
+  productTitle: string
+  email: string
+  /** When it is (or was) due */
+  sendAfter: number
+  sentAt: number | null
+  status: RequestStatus
+}
+
 /** Which new reviews go live without waiting for the shop: none, only 4 and 5 stars, or all */
 export type AutoPublish = 'off' | 'positive' | 'all'
 
@@ -261,6 +275,108 @@ export function openStore(db: NodePgDatabase) {
           ),
         )
       return row!.n
+    },
+
+    /** Published reviews of the whole shop (average, how many gave each rating) and how its review requests did */
+    async overview(shop: ShopKey) {
+      const perRating = await db
+        .select({ rating: reviews.rating, n: sql<number>`count(*)::int` })
+        .from(reviews)
+        .where(and(ofShop(shop), eq(reviews.status, 'published')))
+        .groupBy(reviews.rating)
+      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>
+      let count = 0
+      let sum = 0
+      for (const { rating, n } of perRating) {
+        distribution[rating as 1 | 2 | 3 | 4 | 5] = n
+        count += n
+        sum += rating * n
+      }
+      const [requests] = await db
+        .select({
+          total: sql<number>`count(*)::int`,
+          sent: sql<number>`count(${reviewRequests.sentAt})::int`,
+          reviewed: sql<number>`count(${reviewRequests.usedAt})::int`,
+        })
+        .from(reviewRequests)
+        .where(and(eq(reviewRequests.instance, shop.instance), eq(reviewRequests.shopId, shop.shopId)))
+      return {
+        count,
+        average: count === 0 ? null : Math.round((sum / count) * 10) / 10,
+        distribution,
+        requests: requests!,
+      }
+    },
+
+    /** Products that have reviews, most reviewed first: what is waiting, what is published, and the average of the published */
+    async products(shop: ShopKey, limit = 20) {
+      const rows = await db
+        .select({
+          productId: reviews.productId,
+          title: sql<string>`max(${reviews.productTitle})`,
+          total: sql<number>`count(*)::int`,
+          published: sql<number>`(count(*) filter (where ${reviews.status} = 'published'))::int`,
+          average: sql<string | null>`avg(${reviews.rating}) filter (where ${reviews.status} = 'published')`,
+        })
+        .from(reviews)
+        .where(ofShop(shop))
+        .groupBy(reviews.productId)
+        .orderBy(desc(sql`count(*)`), asc(sql`max(${reviews.productTitle})`))
+        .limit(limit)
+      return rows.map((r) => ({
+        productId: r.productId,
+        title: r.title,
+        total: r.total,
+        published: r.published,
+        average: r.average === null ? null : Math.round(Number(r.average) * 10) / 10,
+      }))
+    },
+
+    /** The shop's review requests, newest first */
+    async requests(shop: ShopKey, limit = 300): Promise<RequestRow[]> {
+      const rows = await db
+        .select()
+        .from(reviewRequests)
+        .where(and(eq(reviewRequests.instance, shop.instance), eq(reviewRequests.shopId, shop.shopId)))
+        .orderBy(desc(reviewRequests.createdAt))
+        .limit(limit)
+      return rows.map((r) => ({
+        token: r.token,
+        productId: r.productId,
+        productTitle: r.productTitle,
+        email: r.email,
+        sendAfter: r.sendAfter,
+        sentAt: r.sentAt,
+        status: r.usedAt !== null ? 'reviewed' : r.sentAt !== null ? 'sent' : 'scheduled',
+      }))
+    },
+
+    /** Asks for the review now instead of on its day: the request is due, and goes out with the next pass. Only a request of this shop that was not sent. */
+    async sendNow(shop: ShopKey, token: string, now: number) {
+      const changed = await db
+        .update(reviewRequests)
+        .set({ sendAfter: now })
+        .where(
+          and(
+            eq(reviewRequests.token, token),
+            eq(reviewRequests.instance, shop.instance),
+            eq(reviewRequests.shopId, shop.shopId),
+            isNull(reviewRequests.sentAt),
+            isNull(reviewRequests.usedAt),
+          ),
+        )
+        .returning({ token: reviewRequests.token })
+      return changed.length > 0
+    },
+
+    /** Publishes every review that is waiting for the shop; returns how many */
+    async publishPending(shop: ShopKey) {
+      const changed = await db
+        .update(reviews)
+        .set({ status: 'published' })
+        .where(and(ofShop(shop), eq(reviews.status, 'pending')))
+        .returning({ id: reviews.id })
+      return changed.length
     },
 
     async counts(shop: ShopKey) {

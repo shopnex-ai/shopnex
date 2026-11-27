@@ -1,4 +1,4 @@
-// Online store → Themes → Change theme: every theme in the shop. Copies of the themes the storefront includes
+// Online store → Your themes (under the current theme): every theme in the shop. Copies of the themes the storefront includes
 // can be customized and used (published); copies of others wait for a storefront with their theme. The
 // storefront's themes without a copy yet can be added. Marketplace themes will be listed here too.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -12,14 +12,12 @@ import {
   PencilIcon,
   PlusIcon,
   Trash2Icon,
-  TriangleAlertIcon,
 } from 'lucide-react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format'
-import { client, orpc, type Outputs } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import type { Storefront } from '../definition'
 import { StorefrontThumbnail } from '../storefront-thumbnail'
 import { useThemeDialogs, type Theme } from '../theme-dialogs'
@@ -37,10 +35,9 @@ import { useThemeDialogs, type Theme } from '../theme-dialogs'
 type Props = {
   /** The storefront's themes; null when it can't be reached */
   storefront: Storefront | null
-  storefrontError: React.ReactNode
 }
 
-export function ThemePicker({ storefront, storefrontError }: Props) {
+export function ThemePicker({ storefront }: Props) {
   const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.themes.list.queryOptions())
   const { open, dialogs } = useThemeDialogs()
@@ -87,30 +84,6 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Change theme"
-        description="Choose the theme buyers see. Work on a copy without touching your store, then use it when it’s ready."
-        back={{ to: '/admin/online-store', label: 'Online store' }}
-        actions={
-          storefront &&
-          current && (
-            <Button size="sm" disabled={duplicate.isPending} onClick={() => duplicate.mutate({ id: current.id })}>
-              <PlusIcon />
-              Copy current theme
-            </Button>
-          )
-        }
-      />
-
-      {!storefront && (
-        <Card>
-          <CardContent className="flex gap-3 text-sm text-muted-foreground">
-            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-amber-600" />
-            <p>{storefrontError}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {error ? (
         <Card>
           <CardContent className="text-sm text-destructive">{error.message}</CardContent>
@@ -123,6 +96,14 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
             <CardHeader>
               <CardTitle>Your themes</CardTitle>
               <CardDescription>Customize one without touching your store, then use it when it’s ready</CardDescription>
+              {storefront && current && (
+                <CardAction>
+                  <Button size="sm" disabled={duplicate.isPending} onClick={() => duplicate.mutate({ id: current.id })}>
+                    <PlusIcon />
+                    Copy current theme
+                  </Button>
+                </CardAction>
+              )}
             </CardHeader>
             <CardContent>
               <ul className="divide-y">
@@ -130,7 +111,7 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
                   <li key={t.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="w-40 shrink-0">
                       {storefront && themeOf(t) ? (
-                        <ThemeThumbnail storefrontUrl={storefront.url} theme={t} />
+                        <ThemeThumbnail storefrontUrl={storefront.url} theme={t} screenshot={themeOf(t)?.screenshot} />
                       ) : (
                         <div className="flex aspect-[16/10] items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
                           No preview
@@ -176,6 +157,7 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
                 <ul className="divide-y">
                   {available.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <Screenshot url={d.screenshot} />
                       <p className="mr-auto truncate font-medium">{d.name}</p>
                       <Button
                         size="sm"
@@ -206,7 +188,7 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
                 <ul className="divide-y">
                   {styles.map((style) => (
                     <li key={style.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
-                      <StyleScreenshot style={style} />
+                      <Screenshot url={style.screenshotUrl} />
                       <div className="mr-auto min-w-0 flex-1">
                         <p className="flex items-center gap-2 font-medium">
                           <span className="truncate">{style.name}</span>
@@ -279,10 +261,19 @@ export function ThemePicker({ storefront, storefrontError }: Props) {
 // Tokens last an hour; renew well before that
 const TOKEN_REFRESH_MS = 45 * 60 * 1000
 
-// The copy's draft on the storefront (the editor's preview, scaled down); opens the editor
-function ThemeThumbnail({ storefrontUrl, theme }: { storefrontUrl: string; theme: Theme }) {
+// The theme's screenshot, or else the copy's draft on the storefront (the editor's preview, scaled down); opens the editor
+function ThemeThumbnail({
+  storefrontUrl,
+  theme,
+  screenshot,
+}: {
+  storefrontUrl: string
+  theme: Theme
+  screenshot?: string | null
+}) {
   const { data } = useQuery({
     ...orpc.admin.themes.previewToken.queryOptions({ input: { id: theme.id } }),
+    enabled: !screenshot,
     staleTime: TOKEN_REFRESH_MS,
     refetchInterval: TOKEN_REFRESH_MS,
   })
@@ -292,7 +283,7 @@ function ThemeThumbnail({ storefrontUrl, theme }: { storefrontUrl: string; theme
     u.searchParams.set(THEME_PREVIEW_PARAM, data.token)
     url = u.toString()
   }
-  return <StorefrontThumbnail url={url} themeId={theme.id} />
+  return <StorefrontThumbnail url={url} themeId={theme.id} screenshot={screenshot} />
 }
 
 function CustomizeButton({ theme, disabled }: { theme: Theme; disabled: boolean }) {
@@ -315,14 +306,12 @@ function CustomizeButton({ theme, disabled }: { theme: Theme; disabled: boolean 
   )
 }
 
-type StoreStyle = Outputs['admin']['themes']['store'][number]
-
-function StyleScreenshot({ style }: { style: StoreStyle }) {
+// A picture of a theme or style, not linked to anything (the theme's own, or a marketplace style's, hosted anywhere)
+function Screenshot({ url }: { url: string | null }) {
   return (
     <div className="aspect-[16/10] w-40 shrink-0 overflow-hidden rounded-md border bg-muted">
-      {style.screenshotUrl ? (
-        // Vendor-hosted, any domain
-        <img src={style.screenshotUrl} alt="" loading="lazy" className="h-full w-full object-cover object-top" />
+      {url ? (
+        <img src={url} alt="" loading="lazy" className="h-full w-full object-cover object-top" />
       ) : (
         <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No preview</div>
       )}

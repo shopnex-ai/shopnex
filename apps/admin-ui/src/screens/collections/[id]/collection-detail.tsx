@@ -1,4 +1,3 @@
-import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { PlusIcon, XIcon } from 'lucide-react'
@@ -7,6 +6,7 @@ import { toast } from 'sonner'
 import { ChannelPicker } from '@/components/admin/channel-picker'
 import { FormError, setServerError } from '@/components/admin/form'
 import { PageHeader } from '@/components/admin/page-header'
+import { LoadError } from '@/components/not-found'
 import { UnsavedBar } from '@/components/admin/unsaved-bar'
 import { SearchInput } from '@/components/admin/search-input'
 import { Badge } from '@/components/ui/badge'
@@ -49,20 +49,7 @@ export function CollectionDetail({ id }: { id: string }) {
       </div>
     )
   }
-  if (collection.error) {
-    // BAD_REQUEST: the id in the URL isn't a valid uuid
-    const notFound =
-      collection.error instanceof ORPCError &&
-      (collection.error.code === 'NOT_FOUND' || collection.error.code === 'BAD_REQUEST')
-    return (
-      <div className="space-y-4">
-        <PageHeader back={back} title={notFound ? 'Collection not found' : 'Could not load collection'} />
-        <p className="text-muted-foreground">
-          {notFound ? 'It may have been removed, or it belongs to another shop.' : collection.error.message}
-        </p>
-      </div>
-    )
-  }
+  if (collection.error) return <LoadError error={collection.error} noun="Collection" back={back} />
   // key: fresh form defaults if another collection loads into this view
   return <CollectionEditor key={collection.data.id} collection={collection.data} />
 }

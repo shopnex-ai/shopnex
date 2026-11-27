@@ -33,15 +33,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Online store"
-
-        actions={
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/admin/online-store/select" />}>
-            Change theme
-          </Button>
-        }
-      />
+      <PageHeader title="Online store" />
 
       {!storefront && (
         <Card>
@@ -68,6 +60,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
         <Card>
           <CardContent className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
             {storefront ? (
+              // The live store itself (what buyers see now), not the theme's picture
               <StorefrontThumbnail url={storefront.url} themeId={current.id} />
             ) : (
               <div className="flex aspect-[16/10] items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground">
@@ -88,7 +81,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
                 {missing && (
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     Your storefront doesn’t include this theme, so buyers see {storefront.themes[0]!.name}’s defaults.
-                    Choose another one under Change theme.
+                    Choose another one under Your themes.
                   </p>
                 )}
               </div>

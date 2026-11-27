@@ -3,9 +3,12 @@
 // each shop's settings (days to wait, whether its email is off) live in that shop's own ShopNex storage. Email goes
 // through the shop's own email settings.
 //
-//   GET  /                      Embedded moderation + setup page (session token)
+//   GET  /                      Embedded page: overview, reviews, requests, widget, settings (session token)
 //   POST /api/settings          Days to wait before asking for a review
 //   POST /api/publishing        Publish new reviews automatically: off, 4-5 stars, or all
+//   POST /api/email             The wording of the request email
+//   POST /api/publish-pending   Publish every review that is waiting
+//   POST /api/requests/:token/send-now   Ask for a review now instead of on its day
 //   POST /api/reviews/:id/reply, DELETE /api/reviews/:id   Reply to or delete a review
 //   POST /shopnex/webhook       ShopNex: order.fulfilled → review requests
 //   GET  /public/reviews        Published reviews of a product (the widget; rate limited)

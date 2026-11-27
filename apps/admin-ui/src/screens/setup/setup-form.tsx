@@ -8,7 +8,7 @@ import { Field, FieldGroup } from '@/components/ui/field'
 import { clearAdminContext } from '@/lib/admin-context'
 import { runSetup } from './actions'
 
-export function SetupForm() {
+export function SetupForm({ importUrl }: { importUrl?: string }) {
   const navigate = useNavigate()
   const router = useRouter()
   const form = useZodForm(setupInput, {
@@ -24,7 +24,10 @@ export function SetupForm() {
     const signIn = await authClient.signIn.email({ email: values.email, password: values.password })
     // The account exists either way; worst case they sign in by hand
     clearAdminContext(router)
-    await navigate({ to: signIn.error ? '/admin/login' : '/admin/welcome', replace: true })
+    if (signIn.error) await navigate({ to: '/admin/login', replace: true })
+    // Came to import a store: bring it across first, like after signing up
+    else if (importUrl) await navigate({ to: '/admin/import', search: { url: importUrl }, replace: true })
+    else await navigate({ to: '/admin/welcome', replace: true })
     await router.invalidate()
   })
 
