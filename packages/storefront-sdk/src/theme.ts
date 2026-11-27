@@ -84,6 +84,8 @@ export const ThemeSectionDefinition = z.object({
   settings: z.array(ThemeSettingField).default([]),
   /** How many times the section can appear on one page */
   limit: z.number().int().min(1).optional(),
+  /** For a global section (on the page `static`): which group of the editor's list it is in; default `header` */
+  group: z.enum(['header', 'footer']).optional(),
   /** The block types the merchant can add to this section; none: the section has no blocks */
   blocks: z.record(Id, ThemeBlockDefinition).default({}),
   /** How many blocks (of any type) the section can hold; Shopify's `max_blocks` */

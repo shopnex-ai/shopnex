@@ -78,7 +78,7 @@
     <main id="main">
       {{ content_for_layout }}
     </main>
-    {% render 'footer' %}
+    {% section 'footer' %}
     {% render 'cart-drawer' %}
     <script src="{{ 'vendor-bootstrap.bundle.min.js' | asset_url }}" defer></script>
     {{ 'theme.js' | asset_url | script_tag }}

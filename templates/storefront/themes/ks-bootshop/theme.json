@@ -267,92 +267,45 @@
           "label": "Autoplay",
           "type": "checkbox",
           "default": true
-        },
-        {
-          "id": "image_1",
-          "label": "Slide 1: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-1.jpg"
-        },
-        {
-          "id": "heading_1",
-          "label": "Slide 1: heading",
-          "type": "text",
-          "default": "Welcome to our store"
-        },
-        {
-          "id": "text_1",
-          "label": "Slide 1: text",
-          "type": "textarea"
-        },
-        {
-          "id": "button_label_1",
-          "label": "Slide 1: button label",
-          "type": "text",
-          "default": "Shop now"
-        },
-        {
-          "id": "button_link_1",
-          "label": "Slide 1: button link",
-          "type": "url",
-          "default": "/products"
-        },
-        {
-          "id": "image_2",
-          "label": "Slide 2: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-2.jpg"
-        },
-        {
-          "id": "heading_2",
-          "label": "Slide 2: heading",
-          "type": "text"
-        },
-        {
-          "id": "text_2",
-          "label": "Slide 2: text",
-          "type": "textarea"
-        },
-        {
-          "id": "button_label_2",
-          "label": "Slide 2: button label",
-          "type": "text"
-        },
-        {
-          "id": "button_link_2",
-          "label": "Slide 2: button link",
-          "type": "url",
-          "default": "/products"
-        },
-        {
-          "id": "image_3",
-          "label": "Slide 3: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-3.jpg"
-        },
-        {
-          "id": "heading_3",
-          "label": "Slide 3: heading",
-          "type": "text"
-        },
-        {
-          "id": "text_3",
-          "label": "Slide 3: text",
-          "type": "textarea"
-        },
-        {
-          "id": "button_label_3",
-          "label": "Slide 3: button label",
-          "type": "text"
-        },
-        {
-          "id": "button_link_3",
-          "label": "Slide 3: button link",
-          "type": "url",
-          "default": "/products"
         }
       ],
-      "limit": 1
+      "limit": 1,
+      "max_blocks": 8,
+      "blocks": {
+        "slide": {
+          "name": "Slide",
+          "settings": [
+            {
+              "id": "image",
+              "label": "Image",
+              "type": "image"
+            },
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "New slide"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            },
+            {
+              "id": "button_label",
+              "label": "Button label",
+              "type": "text",
+              "default": "Shop now"
+            },
+            {
+              "id": "button_link",
+              "label": "Button link",
+              "type": "url",
+              "default": "/products"
+            }
+          ]
+        }
+      }
     },
     "featured-products": {
       "name": "Featured products",
@@ -448,26 +401,6 @@
           "default": "Shop by collection"
         },
         {
-          "id": "collection_1",
-          "label": "Collection 1",
-          "type": "collection"
-        },
-        {
-          "id": "collection_2",
-          "label": "Collection 2",
-          "type": "collection"
-        },
-        {
-          "id": "collection_3",
-          "label": "Collection 3",
-          "type": "collection"
-        },
-        {
-          "id": "collection_4",
-          "label": "Collection 4",
-          "type": "collection"
-        },
-        {
           "id": "background",
           "label": "Background",
           "type": "select",
@@ -511,7 +444,20 @@
           ],
           "default": "ks-py-md"
         }
-      ]
+      ],
+      "max_blocks": 8,
+      "blocks": {
+        "collection": {
+          "name": "Collection",
+          "settings": [
+            {
+              "id": "collection",
+              "label": "Collection",
+              "type": "collection"
+            }
+          ]
+        }
+      }
     },
     "media-with-text": {
       "name": "Media with text",
@@ -710,38 +656,6 @@
           "default": "What customers say"
         },
         {
-          "id": "quote_1",
-          "label": "Quote 1",
-          "type": "textarea"
-        },
-        {
-          "id": "author_1",
-          "label": "Author 1",
-          "type": "text"
-        },
-        {
-          "id": "quote_2",
-          "label": "Quote 2",
-          "type": "textarea"
-        },
-        {
-          "id": "author_2",
-          "label": "Author 2",
-          "type": "text"
-        },
-        {
-          "id": "quote_3",
-          "label": "Quote 3",
-          "type": "textarea",
-          "default": ""
-        },
-        {
-          "id": "author_3",
-          "label": "Author 3",
-          "type": "text",
-          "default": ""
-        },
-        {
           "id": "background",
           "label": "Background",
           "type": "select",
@@ -785,7 +699,27 @@
           ],
           "default": "ks-py-md"
         }
-      ]
+      ],
+      "max_blocks": 12,
+      "blocks": {
+        "quote": {
+          "name": "Quote",
+          "settings": [
+            {
+              "id": "quote",
+              "label": "Quote",
+              "type": "textarea",
+              "default": "Great products and fast delivery."
+            },
+            {
+              "id": "author",
+              "label": "Author",
+              "type": "text",
+              "default": "A happy customer"
+            }
+          ]
+        }
+      }
     },
     "faq": {
       "name": "FAQ",
@@ -797,62 +731,6 @@
           "default": "Frequently asked questions"
         },
         {
-          "id": "question_1",
-          "label": "Question 1",
-          "type": "text"
-        },
-        {
-          "id": "answer_1",
-          "label": "Answer 1",
-          "type": "textarea"
-        },
-        {
-          "id": "question_2",
-          "label": "Question 2",
-          "type": "text"
-        },
-        {
-          "id": "answer_2",
-          "label": "Answer 2",
-          "type": "textarea"
-        },
-        {
-          "id": "question_3",
-          "label": "Question 3",
-          "type": "text",
-          "default": ""
-        },
-        {
-          "id": "answer_3",
-          "label": "Answer 3",
-          "type": "textarea",
-          "default": ""
-        },
-        {
-          "id": "question_4",
-          "label": "Question 4",
-          "type": "text",
-          "default": ""
-        },
-        {
-          "id": "answer_4",
-          "label": "Answer 4",
-          "type": "textarea",
-          "default": ""
-        },
-        {
-          "id": "question_5",
-          "label": "Question 5",
-          "type": "text",
-          "default": ""
-        },
-        {
-          "id": "answer_5",
-          "label": "Answer 5",
-          "type": "textarea",
-          "default": ""
-        },
-        {
           "id": "background",
           "label": "Background",
           "type": "select",
@@ -896,7 +774,26 @@
           ],
           "default": "ks-py-md"
         }
-      ]
+      ],
+      "max_blocks": 20,
+      "blocks": {
+        "question": {
+          "name": "Question",
+          "settings": [
+            {
+              "id": "question",
+              "label": "Question",
+              "type": "text",
+              "default": "A question"
+            },
+            {
+              "id": "answer",
+              "label": "Answer",
+              "type": "textarea"
+            }
+          ]
+        }
+      }
     },
     "custom-html": {
       "name": "Custom HTML",
@@ -945,6 +842,61 @@
           ]
         }
       }
+    },
+    "footer": {
+      "name": "Footer",
+      "group": "footer",
+      "limit": 1,
+      "max_blocks": 8,
+      "settings": [],
+      "blocks": {
+        "text": {
+          "name": "Text",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "About us"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            }
+          ]
+        },
+        "menu": {
+          "name": "Menu",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Links"
+            },
+            {
+              "id": "menu",
+              "label": "Menu",
+              "type": "text",
+              "default": "footer",
+              "info": "The handle of a menu from Online store → Navigation"
+            }
+          ]
+        },
+        "social": {
+          "name": "Social links",
+          "limit": 1,
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Follow us"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -954,7 +906,42 @@
         {
           "id": "hero",
           "type": "hero-carousel",
-          "settings": {}
+          "settings": {},
+          "blocks": [
+            {
+              "id": "slide-1",
+              "type": "slide",
+              "settings": {
+                "image": "/shopnex/assets/ks-bootshop/hero-1.jpg",
+                "heading": "Welcome to our store",
+                "button_label": "Shop now",
+                "button_link": "/products",
+                "text": ""
+              }
+            },
+            {
+              "id": "slide-2",
+              "type": "slide",
+              "settings": {
+                "image": "/shopnex/assets/ks-bootshop/hero-2.jpg",
+                "button_link": "",
+                "heading": "",
+                "text": "",
+                "button_label": ""
+              }
+            },
+            {
+              "id": "slide-3",
+              "type": "slide",
+              "settings": {
+                "image": "/shopnex/assets/ks-bootshop/hero-3.jpg",
+                "button_link": "",
+                "heading": "",
+                "text": "",
+                "button_label": ""
+              }
+            }
+          ]
         },
         {
           "id": "featured",
@@ -979,6 +966,12 @@
         {
           "id": "announcement-bar",
           "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
+        },
+        {
+          "id": "footer",
+          "type": "footer",
           "settings": {},
           "blocks": []
         }

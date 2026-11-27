@@ -1,13 +1,16 @@
-{%- comment -%} Featured collections: up to four collection tiles with the collection's image {%- endcomment -%}
+{%- comment -%}
+  Featured collections: one collection tile per block, with the collection's image. Until a block has a collection, the
+  shop's first four collections are shown.
+{%- endcomment -%}
 {%- assign picked = '' | split: ',' -%}
-{%- for i in (1..4) -%}
-  {%- assign key = 'collection_' | append: i -%}
-  {%- if section.settings[key] != blank -%}
-    {%- assign picked = picked | push: section.settings[key] -%}
+{%- for block in section.blocks -%}
+  {%- if block.settings.collection != blank -%}
+    {%- assign picked = picked | push: block -%}
   {%- endif -%}
 {%- endfor -%}
-{%- comment %} Nothing picked yet: the shop's first collections {% endcomment -%}
+{%- assign from_blocks = true -%}
 {%- if picked.size == 0 -%}
+  {%- assign from_blocks = false -%}
   {%- assign picked = collections | slice: 0, 4 -%}
 {%- endif -%}
 {%- if picked.size > 0 -%}
@@ -15,15 +18,12 @@
     <div class="container">
       {% render 'section-header', heading: section.settings.heading %}
       <div class="ks-grid" style="--ks-columns: {{ picked.size | at_most: 4 }}">
-        {%- for c in picked %}
-          <a href="{{ c.url }}" class="ks-tile">
-            <span class="ks-tile-media">
-              {%- if c.image %}
-                <img src="{{ c.image | image_url }}" alt="" loading="lazy">
-              {%- endif %}
-            </span>
-            <span class="ks-tile-title">{{ c.title }}</span>
-          </a>
+        {%- for item in picked %}
+          {%- if from_blocks %}
+            {% render 'collection-tile', c: item.settings.collection, attrs: item.shopify_attributes %}
+          {%- else %}
+            {% render 'collection-tile', c: item, attrs: '' %}
+          {%- endif %}
         {%- endfor %}
       </div>
     </div>

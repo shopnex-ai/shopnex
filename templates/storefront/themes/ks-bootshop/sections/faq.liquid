@@ -1,34 +1,18 @@
-{%- comment -%} FAQ: up to five questions as a Bootstrap accordion; empty ones are skipped, and with none the section is not shown {%- endcomment -%}
+{%- comment -%} FAQ: one question per block, as a Bootstrap accordion; blocks without a question are skipped, and with none the section is not shown {%- endcomment -%}
+{%- assign parent = 'ks-faq-' | append: section.id -%}
 {%- capture items -%}
-      {%- for i in (1..5) %}
-        {%- assign question_key = 'question_' | append: i -%}
-        {%- assign answer_key = 'answer_' | append: i -%}
-        {%- if section.settings[question_key] != blank %}
-          <div class="accordion-item">
-            <h3 class="accordion-header">
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#ks-faq-{{ section.id }}-{{ i }}"
-                aria-expanded="false"
-                aria-controls="ks-faq-{{ section.id }}-{{ i }}"
-              >
-                {{- section.settings[question_key] -}}
-              </button>
-            </h3>
-            <div id="ks-faq-{{ section.id }}-{{ i }}" class="accordion-collapse collapse" data-bs-parent="#ks-faq-{{ section.id }}">
-              <div class="accordion-body">{{ section.settings[answer_key] }}</div>
-            </div>
-          </div>
-        {%- endif %}
-      {%- endfor %}
+  {%- for block in section.blocks %}
+    {%- if block.settings.question != blank %}
+      {%- assign id = parent | append: '-' | append: block.id -%}
+      {% render 'faq-item', id: id, parent: parent, question: block.settings.question, answer: block.settings.answer, attrs: block.shopify_attributes %}
+    {%- endif %}
+  {%- endfor %}
 {%- endcapture -%}
 {%- if items != blank -%}
 <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
   <div class="container ks-narrow">
     {% render 'section-header', heading: section.settings.heading %}
-    <div class="accordion" id="ks-faq-{{ section.id }}">
+    <div class="accordion" id="{{ parent }}">
       {{ items }}
     </div>
   </div>
