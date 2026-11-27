@@ -40,3 +40,9 @@ test('--app and --verbose are read, and are off by default', () => {
   const options = parse(['--app', 'shop', '--verbose'])
   assert.deepEqual([options.app, options.verbose], ['shop', true])
 })
+
+test('--from is read, trimmed, and must not be empty', () => {
+  assert.equal(parse([]).from, undefined)
+  assert.equal(parse(['--from', ' my-store.myshopify.com ']).from, 'my-store.myshopify.com')
+  assert.throws(() => parse(['--from', '  ']), UsageError)
+})
