@@ -5,6 +5,8 @@
 //      `storefront.theme.get`, which returns the draft (`preview: true`).
 //   2. In preview, the page calls `connectThemePreview`, which tells the editor it is ready.
 //   3. A click on a section (or a block) in the preview posts `select` back to the editor, which opens its settings.
+//      The preview is for editing, not shopping: links, "add to cart" and cart-quantity buttons, submit buttons and
+//      form submits do nothing in it (see `PREVIEW_BLOCKED_SELECTOR`). Carousel arrows, tabs and menu toggles still work.
 //   4. The editor then posts `reload` after each saved draft and `select` when a section (or one of its blocks)
 //      is picked. Sections are found by their `data-section-id` attribute (the section's id in the document), blocks
 //      by `data-block-id` inside the section (what `{{ block.shopify_attributes }}` prints).
@@ -68,6 +70,14 @@ export interface ConnectThemePreviewOptions {
 const SCROLL_KEY = 'shopnex-preview-scroll'
 
 /**
+ * What a click does nothing on in the preview: links (the page being edited stays put), the cart buttons themes mark
+ * with `data-add-to-cart` / `data-line-qty` (the merchant must not fill real carts), and anything that submits a form
+ * (search, newsletter, sign-in). Clicks elsewhere still reach the page, so carousels, tabs and menus can be tried.
+ */
+export const PREVIEW_BLOCKED_SELECTOR =
+  'a, [data-add-to-cart], [data-line-qty], button:not([type="button"]):not([type="reset"]), input[type="submit"], input[type="image"]'
+
+/**
  * Connects a storefront page to the theme editor. Call it in the browser, only when `theme.get`
  * returned `preview: true`. Returns a function that disconnects.
  */
@@ -110,13 +120,17 @@ export function connectThemePreview({ adminOrigin, onReload, onSelect }: Connect
     }
   }
 
-  // A click in a section picks it in the editor. Links inside sections do not navigate: the preview shows the page being edited.
+  // A click in a section picks it in the editor; whatever the click was on, the blocked ones (above) do nothing
   function onClick(event: MouseEvent) {
     const target = event.target instanceof Element ? event.target : null
+    if (target?.closest(PREVIEW_BLOCKED_SELECTOR)) {
+      event.preventDefault()
+      // The theme's own click handlers (add to cart…) are on the page or its elements, after this capture listener
+      event.stopImmediatePropagation()
+    }
     const section = target?.closest<HTMLElement>(`[${THEME_SECTION_ATTRIBUTE}]`)
     const sectionId = section?.getAttribute(THEME_SECTION_ATTRIBUTE)
     if (!section || !sectionId) return
-    if (target?.closest('a')) event.preventDefault()
     const blockId = target?.closest<HTMLElement>(`[${THEME_BLOCK_ATTRIBUTE}]`)?.getAttribute(THEME_BLOCK_ATTRIBUTE)
     const message: ThemePreviewMessage = {
       source: THEME_PREVIEW_SOURCE,
@@ -127,12 +141,20 @@ export function connectThemePreview({ adminOrigin, onReload, onSelect }: Connect
     window.parent.postMessage(message, origin)
   }
 
+  // Enter in a search box, a newsletter form: nothing is sent from the preview
+  function onSubmit(event: SubmitEvent) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+
   window.addEventListener('message', onMessage)
   document.addEventListener('click', onClick, true)
+  document.addEventListener('submit', onSubmit, true)
   const ready: ThemePreviewMessage = { source: THEME_PREVIEW_SOURCE, type: 'ready' }
   window.parent.postMessage(ready, origin)
   return () => {
     window.removeEventListener('message', onMessage)
     document.removeEventListener('click', onClick, true)
+    document.removeEventListener('submit', onSubmit, true)
   }
 }
