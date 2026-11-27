@@ -111,7 +111,7 @@
     <div class="grow">
       {{ content_for_layout }}
     </div>
-    {% render 'footer' %}
+    {% section 'footer' %}
     {% render 'bag' %}
     {{ 'theme.js' | asset_url | script_tag }}
   </body>

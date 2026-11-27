@@ -1,0 +1,43 @@
+{%- comment -%}
+  The footer (the Footer group in the theme editor): one column per block (a text, a menu or the social links), with the
+  copyright line under them. While there are no blocks, the footer is the single bar of snippets/footer.liquid (text,
+  social links and the "footer" menu).
+{%- endcomment -%}
+{%- if section.blocks.size == 0 -%}
+  {% render 'footer' %}
+{%- else -%}
+  {%- assign footer_text = settings.footer_text | strip -%}
+  {%- if footer_text == blank -%}
+    {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+  {%- endif -%}
+  <footer class="mt-20 border-t border-line bg-tint">
+    <div
+      class="mx-auto grid max-w-[1240px] gap-8 px-3 py-8 sm:px-6 sm:py-10 md:grid-cols-[repeat(var(--footer-columns),minmax(0,1fr))]"
+      style="--footer-columns: {{ section.blocks.size | at_most: 4 }}"
+    >
+      {%- for block in section.blocks %}
+        <div {{ block.shopify_attributes }} class="flex flex-col gap-3">
+          {%- if block.settings.heading != blank %}
+            <h2 class="eti m-0 text-ink">{{ block.settings.heading }}</h2>
+          {%- endif %}
+          {%- case block.type %}
+            {%- when 'text' %}
+              {%- if block.settings.text != blank %}
+                <p class="m-0 whitespace-pre-line text-soft">{{ block.settings.text }}</p>
+              {%- endif %}
+            {%- when 'menu' %}
+              {%- assign block_menu = linklists[block.settings.menu] %}
+              {%- for link in block_menu.links %}
+                <a href="{{ link.url }}" class="text-soft transition hover:text-acc">{{ link.title }}</a>
+              {%- endfor %}
+            {%- when 'social' %}
+              {%- render 'social-links', class: 'flex gap-4', link_class: 'text-soft transition hover:text-acc' %}
+          {%- endcase %}
+        </div>
+      {%- endfor %}
+    </div>
+    <div class="border-t border-line">
+      <div class="eti mx-auto max-w-[1240px] px-3 py-4 text-faint sm:px-6">{{ footer_text }}</div>
+    </div>
+  </footer>
+{%- endif -%}
