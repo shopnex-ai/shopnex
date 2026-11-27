@@ -1,0 +1,143 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f6f6f4;
+  color: #1c1c1a;
+  font:
+    16px/1.5 system-ui,
+    -apple-system,
+    sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+main {
+  background: #fff;
+  border: 1px solid #e4e4e0;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 32rem;
+  box-shadow: 0 1px 3px #0000000d;
+}
+h1 {
+  font-size: 1.4rem;
+  line-height: 1.25;
+  margin: 0 0 0.25rem;
+}
+.sub {
+  color: #6b6b66;
+  margin: 0 0 1.5rem;
+}
+label.l {
+  display: block;
+  margin: 1.25rem 0 0.35rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+input[type='text'],
+textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  border: 1px solid #d4d4cf;
+  border-radius: 10px;
+  background: #fff;
+}
+input[type='text']:focus,
+textarea:focus {
+  outline: 2px solid #e8a317;
+  outline-offset: 1px;
+  border-color: #e8a317;
+}
+.rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+.rating input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.rating label {
+  font-size: 2.4rem;
+  line-height: 1;
+  color: #d4d4cf;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  transition:
+    color 0.1s,
+    transform 0.1s;
+}
+.rating label:hover {
+  transform: scale(1.1);
+}
+.rating label:hover,
+.rating label:hover ~ label,
+.rating input:checked ~ label {
+  color: #e8a317;
+}
+.rating input:focus-visible + label {
+  outline: 2px solid #e8a317;
+  border-radius: 6px;
+}
+button {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: #1c1c1a;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+button:hover {
+  opacity: 0.9;
+}
+.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin: 0 0 1rem;
+}
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121211;
+    color: #f1f1ee;
+  }
+  main {
+    background: #1c1c1a;
+    border-color: #2e2e2b;
+  }
+  .sub {
+    color: #a3a39d;
+  }
+  input[type='text'],
+  textarea {
+    background: #121211;
+    border-color: #3a3a36;
+    color: inherit;
+  }
+  .rating label {
+    color: #3a3a36;
+  }
+  button {
+    background: #f1f1ee;
+    color: #1c1c1a;
+  }
+  .error {
+    background: #3b1414;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+}

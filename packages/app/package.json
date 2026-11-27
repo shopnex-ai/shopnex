@@ -19,6 +19,7 @@
     "@shopnex/log": "workspace:*",
     "@shopnex/marketplace-sdk": "workspace:*",
     "drizzle-orm": "catalog:",
+    "esbuild": "0.28.2",
     "hono": "catalog:",
     "openapi-fetch": "^0.17.0",
     "pg": "^8.23.1"

@@ -14,6 +14,7 @@
 // its key and gets 1-hour Admin API tokens on demand (token exchange / client credentials), cached in memory.
 // Per-shop settings live in the shop's ShopNex (`data`).
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import type { Context } from 'hono'
 import { Hono } from 'hono'
@@ -49,7 +50,6 @@ import {
   type AdminClient,
   type AppData,
 } from './admin'
-import { clientScript } from './client'
 
 export { ShopnexError, type AdminClient, type AppData } from './admin'
 export type { PaymentSessionRequest, RefundSessionRequest } from '@shopnex/marketplace-sdk/payments'
@@ -164,6 +164,17 @@ type Token = { accessToken: string; expiresAt: number; installationId: string }
 
 const env = (name: string) => (typeof process !== 'undefined' ? process.env[name] : undefined)
 const BEARER = /^Bearer\s+(\S+)$/i
+
+/**
+ * The script the UI components load (client.ts) is TypeScript, served as plain JS: esbuild compiles it once when the app
+ * starts. A bundle made by scripts/bundle-app.mjs holds the compiled text instead (it replaces the whole call), so a deployed
+ * app has no esbuild. esbuild is required here, not imported, so that bundling does not pull it in.
+ */
+const toBrowserJs = (source: string) =>
+  (createRequire(import.meta.url)('esbuild') as typeof import('esbuild')).transformSync(source, {
+    loader: 'ts',
+    target: 'es2022',
+  }).code
 
 export function createShopnexApp(options: ShopnexAppOptions = {}) {
   const clientId = options.clientId ?? env('SHOPNEX_CLIENT_ID')
@@ -397,6 +408,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
   }
 
   const appBridgeJs = readFileSync(fileURLToPath(import.meta.resolve('@shopnex/app-bridge')), 'utf8')
+  const clientJs = toBrowserJs(readFileSync(new URL('./client.ts', import.meta.url), 'utf8'))
 
   /** Serves the browser side of the UI components (and the app bridge) under /shopnex/ */
   const routes = new Hono()
@@ -404,7 +416,7 @@ export function createShopnexApp(options: ShopnexAppOptions = {}) {
     c.body(appBridgeJs, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
   )
   routes.get('/shopnex/app.js', (c) =>
-    c.body(clientScript, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
+    c.body(clientJs, 200, { 'content-type': 'text/javascript', 'cache-control': 'max-age=300' }),
   )
   if (options.icon) {
     const icon = options.icon
