@@ -70,6 +70,25 @@ describe('the library through the routes', () => {
     assert.equal(listed[0]!.unpublishedChanges, true)
   })
 
+  test('add makes another copy of a theme the shop already has, from the document it is given, and it does not go live', async () => {
+    const before = await run<{ id: string }[]>(router.list)
+    const fresh = { settings: { accent: 'x' }, pages: {} }
+    const added = await run<{ id: string; role: string; name: string; themeId: string }>(router.add, {
+      themeId: 'maison',
+      name: 'Maison 2',
+      document: fresh,
+    })
+    assert.equal(added.role, 'unpublished')
+    assert.equal(added.themeId, 'maison')
+    assert.ok(!('draft' in added))
+    const listed = await run<{ id: string; name: string }[]>(router.list)
+    assert.equal(listed.length, before.length + 1)
+    assert.ok(listed.some((t) => t.id === added.id && t.name === 'Maison 2'))
+    const detail = await run<{ draft: unknown }>(router.get, { id: added.id })
+    assert.deepEqual(detail.draft, fresh)
+    await run(router.delete, { id: added.id })
+  })
+
   test('get answers with the document and without the code files; an unknown id is NOT_FOUND', async () => {
     const id = (await run<{ id: string }[]>(router.list))[0]!.id
     const detail = await run<Record<string, unknown>>(router.get, { id })

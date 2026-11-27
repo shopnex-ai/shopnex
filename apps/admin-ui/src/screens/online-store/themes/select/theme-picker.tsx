@@ -48,9 +48,9 @@ export function ThemePicker({ storefront }: Props) {
   )
 
   const add = useMutation(
-    orpc.admin.themes.ensure.mutationOptions({
+    orpc.admin.themes.add.mutationOptions({
       onSuccess: (copy) => {
-        if (copy) toast.success(`Added ${copy.name}`)
+        toast.success(`Added ${copy.name}. It starts from the theme’s defaults.`)
         return queryClient.invalidateQueries({ queryKey: orpc.admin.themes.key() })
       },
       onError: (e) => toast.error(e.message),
@@ -61,7 +61,16 @@ export function ThemePicker({ storefront }: Props) {
   const themeOf = (t: Theme) => storefront?.themes.find((d) => d.id === t.themeId)
   const ours = data?.filter((t) => !storefront || themeOf(t)) ?? []
   const others = data?.filter((t) => storefront && !themeOf(t)) ?? []
-  const available = storefront?.themes.filter((d) => !data?.some((t) => t.themeId === d.id)) ?? []
+  // Every theme the storefront includes can be added again: each copy starts from the theme's defaults
+  const available = storefront?.themes ?? []
+  const copiesOf = (themeId: string) => data?.filter((t) => t.themeId === themeId).length ?? 0
+  // The name of a new copy: the theme's own, then "Name 2", "Name 3"… so copies can be told apart
+  const nameForNewCopy = (name: string) => {
+    const taken = new Set(data?.map((t) => t.name))
+    let candidate = name
+    for (let n = 2; taken.has(candidate); n++) candidate = `${name} ${n}`
+    return candidate
+  }
   const current = ours.find((t) => t.role === 'live')
   // The current theme has its own card above, with the same menu
   const library = ours.filter((t) => t.role !== 'live')
@@ -140,19 +149,30 @@ export function ThemePicker({ storefront }: Props) {
             <Card>
               <CardHeader>
                 <CardTitle>Add a theme</CardTitle>
-                <CardDescription>Included with your storefront</CardDescription>
+                <CardDescription>
+                  Included with your storefront. A new copy starts from the theme’s defaults, whatever you already have.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="divide-y">
                   {available.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
                       <Screenshot url={d.screenshot} />
-                      <p className="mr-auto truncate font-medium">{d.name}</p>
+                      <div className="mr-auto min-w-0">
+                        <p className="truncate font-medium">{d.name}</p>
+                        {copiesOf(d.id) > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            You have {copiesOf(d.id)} {copiesOf(d.id) === 1 ? 'copy' : 'copies'}
+                          </p>
+                        )}
+                      </div>
                       <Button
                         size="sm"
                         variant="outline"
                         disabled={add.isPending}
-                        onClick={() => add.mutate({ themeId: d.id, name: d.name, document: d.defaults })}
+                        onClick={() =>
+                          add.mutate({ themeId: d.id, name: nameForNewCopy(d.name), document: d.defaults })
+                        }
                       >
                         <PlusIcon />
                         Add

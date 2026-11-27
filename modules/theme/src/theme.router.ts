@@ -212,6 +212,17 @@ export const themes = {
       })
       return row && summary(row)
     }),
+  // Adds another copy of a theme, starting from the document it is given (the theme's defaults): a fresh start next to the
+  // copies the shop already has. It goes live only when the shop has no theme at all.
+  add: admin
+    .route({ method: 'POST', path: '/admin/themes' })
+    .output(themeRowOutput.unwrap())
+    .input(z.object({ themeId, name, document }))
+    .handler(async ({ input, context }) =>
+      summary(
+        await themeService.create(context.shop.id, { themeId: input.themeId, name: input.name, draft: input.document }),
+      ),
+    ),
   // The Theme Store: styles from the connected marketplace, for themes storefronts include
   store: admin
     .route({ method: 'GET', path: '/admin/themes/store' })
