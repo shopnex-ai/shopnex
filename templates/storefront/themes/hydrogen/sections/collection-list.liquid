@@ -1,33 +1,22 @@
 {%- comment -%}
-  Collection list: a heading over a grid of collection cards (3:2 image, name). The picked collections, or the
-  shop's first ones when none are picked.
+  Collection list: a heading over a grid of collection cards (3:2 image, name), one per block. Until a block has a
+  collection, the shop's first six are shown.
 {%- endcomment -%}
-{%- assign picked = false -%}
-{%- for i in (1..6) -%}
-  {%- assign key = 'collection_' | append: i -%}
-  {%- if section.settings[key] -%}{%- assign picked = true -%}{%- endif -%}
+{%- assign picked = '' | split: ',' -%}
+{%- for block in section.blocks -%}
+  {%- if block.settings.collection -%}{%- assign picked = picked | push: block -%}{%- endif -%}
 {%- endfor -%}
+{%- assign from_blocks = true -%}
+{%- if picked.size == 0 -%}
+  {%- assign from_blocks = false -%}
+  {%- assign picked = collections | slice: 0, 6 -%}
+{%- endif -%}
 {%- capture cards -%}
-  {%- for i in (1..6) -%}
-    {%- if picked -%}
-      {%- assign key = 'collection_' | append: i -%}
-      {%- assign c = section.settings[key] -%}
+  {%- for item in picked -%}
+    {%- if from_blocks -%}
+      {% render 'collection-card', c: item.settings.collection, attrs: item.shopify_attributes %}
     {%- else -%}
-      {%- assign index = i | minus: 1 -%}
-      {%- assign c = collections[index] -%}
-    {%- endif -%}
-    {%- if c -%}
-      <div class="relative">
-        <a href="{{ c.url }}" class="absolute inset-0 z-[1]"><span class="sr-only">{{ c.title }}</span></a>
-        <div class="grid gap-4">
-          <div class="aspect-[3/2] overflow-hidden rounded bg-primary/5">
-            {%- if c.image %}
-              <img src="{{ c.image | image_url }}" alt="{{ c.image.alt | default: c.title }}" loading="lazy" class="h-full w-full object-cover object-center" />
-            {%- endif %}
-          </div>
-          <h3 class="font-heading text-lead">{{ c.title }}</h3>
-        </div>
-      </div>
+      {% render 'collection-card', c: item, attrs: '' %}
     {%- endif -%}
   {%- endfor -%}
 {%- endcapture -%}

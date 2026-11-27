@@ -1,6 +1,7 @@
 {%- comment -%}
   Hydrogen's footer: the footer menu (Online store → Navigation, "footer") as titled columns (links with
-  children each make a column, the others share "Quick links"), social links, and the copyright line.
+  children each make a column, the others share "Quick links"), social links, and the copyright line. With the footer
+  section's blocks (text, menu and social columns) those are the columns instead: {% render 'footer', blocks: section.blocks %}
 {%- endcomment -%}
 {%- assign copyright = settings.copyright | strip -%}
 {%- if copyright == blank -%}
@@ -8,7 +9,26 @@
 {%- endif -%}
 {%- assign menu = linklists['footer'] -%}
 <footer class="min-h-[25rem] w-full grid-cols-1 border-b border-none bg-contrast px-6 py-8 text-primary md:grid md:grid-flow-row md:grid-cols-2 md:items-start md:gap-8 md:px-8 lg:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] lg:gap-12 lg:px-12">
-  {%- if menu and menu.links.size > 0 -%}
+  {%- if blocks.size > 0 -%}
+    {%- for block in blocks %}
+      {%- case block.type %}
+        {%- when 'text' %}
+          {%- capture body %}<p class="m-0 whitespace-pre-line">{{ block.settings.text }}</p>{% endcapture -%}
+          {% render 'footer-column', title: block.settings.heading, links: body, attrs: block.shopify_attributes %}
+        {%- when 'menu' %}
+          {%- assign block_menu = linklists[block.settings.menu] -%}
+          {%- capture body -%}
+            {%- for link in block_menu.links -%}<a href="{{ link.url }}">{{ link.title }}</a>{%- endfor -%}
+          {%- endcapture -%}
+          {% render 'footer-column', title: block.settings.heading, links: body, attrs: block.shopify_attributes %}
+        {%- when 'social' %}
+          {%- capture socials -%}{% render 'footer-social-links' %}{%- endcapture -%}
+          {%- if socials != blank %}
+            <div {{ block.shopify_attributes }} class="flex gap-4 pt-10 md:pt-0">{{ socials }}</div>
+          {%- endif %}
+      {%- endcase %}
+    {%- endfor %}
+  {%- elsif menu and menu.links.size > 0 -%}
     {%- for link in menu.links %}
       {%- if link.links.size > 0 %}
         {%- capture links -%}
@@ -35,14 +55,9 @@
   {%- endif -%}
 
   {%- capture socials -%}
-    {%- if settings.x_url != blank %}<a href="{{ settings.x_url }}" aria-label="X" rel="noopener" target="_blank">{% render 'icon', name: 'x', class: 'icon' %}</a>{% endif -%}
-    {%- if settings.facebook_url != blank %}<a href="{{ settings.facebook_url }}" aria-label="Facebook" rel="noopener" target="_blank">{% render 'icon', name: 'facebook', class: 'icon' %}</a>{% endif -%}
-    {%- if settings.instagram_url != blank %}<a href="{{ settings.instagram_url }}" aria-label="Instagram" rel="noopener" target="_blank">{% render 'icon', name: 'instagram', class: 'icon' %}</a>{% endif -%}
-    {%- if settings.tiktok_url != blank %}<a href="{{ settings.tiktok_url }}" aria-label="TikTok" rel="noopener" target="_blank">{% render 'icon', name: 'tiktok', class: 'icon' %}</a>{% endif -%}
-    {%- if settings.youtube_url != blank %}<a href="{{ settings.youtube_url }}" aria-label="YouTube" rel="noopener" target="_blank">{% render 'icon', name: 'youtube', class: 'icon' %}</a>{% endif -%}
-    {%- if settings.pinterest_url != blank %}<a href="{{ settings.pinterest_url }}" aria-label="Pinterest" rel="noopener" target="_blank">{% render 'icon', name: 'pinterest', class: 'icon' %}</a>{% endif -%}
+    {% render 'footer-social-links' %}
   {%- endcapture -%}
-  {%- if socials != blank %}
+  {%- if blocks.size == 0 and socials != blank %}
     <div class="flex gap-4 pt-10 md:pt-0">{{ socials }}</div>
   {%- endif %}
 
