@@ -126,8 +126,8 @@
     },
     {
       "id": "announcement_text",
-      "label": "Announcement",
-      "info": "The bar above the header; empty hides it",
+      "label": "Announcement (one message)",
+      "info": "Shown only while Header → Announcement bar has no announcements of its own",
       "group": "Announcement bar",
       "type": "text"
     },
@@ -503,6 +503,46 @@
           "default": "<p style=\"text-align:center\">Your HTML here</p>"
         }
       ]
+    },
+    "announcement-bar": {
+      "name": "Announcement bar",
+      "limit": 1,
+      "max_blocks": 12,
+      "settings": [
+        {
+          "id": "speed",
+          "label": "Seconds per announcement",
+          "info": "Only with two or more announcements",
+          "type": "range",
+          "min": 3,
+          "max": 10,
+          "step": 1,
+          "default": 5
+        }
+      ],
+      "blocks": {
+        "announcement": {
+          "name": "Announcement",
+          "settings": [
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "text",
+              "default": "Welcome to our store"
+            },
+            {
+              "id": "link_label",
+              "label": "Link label",
+              "type": "text"
+            },
+            {
+              "id": "link",
+              "label": "Link",
+              "type": "url"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -541,6 +581,17 @@
           "id": "testimonials",
           "type": "testimonials",
           "settings": {}
+        }
+      ]
+    },
+    "static": {
+      "name": "Header",
+      "sections": [
+        {
+          "id": "announcement-bar",
+          "type": "announcement-bar",
+          "settings": {},
+          "blocks": []
         }
       ]
     }

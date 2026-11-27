@@ -1,0 +1,41 @@
+{%- comment -%}
+  The announcement bar (the Header group in the theme editor): one message per block. With several it is a Bootstrap
+  carousel that moves on by itself. While there are no blocks, the single "Announcement bar" text of the theme settings
+  is shown, for shops that set it before blocks existed.
+{%- endcomment -%}
+{%- assign count = 0 -%}
+{%- for block in section.blocks -%}
+  {%- if block.settings.text != blank -%}{%- assign count = count | plus: 1 -%}{%- endif -%}
+{%- endfor -%}
+{%- assign legacy = settings.announcement_text | strip -%}
+{%- if count == 0 and settings.show_announcement and legacy != blank -%}
+  <div class="ks-announcement text-center small py-2 px-3">
+    {%- if settings.announcement_link != blank -%}
+      <a href="{{ settings.announcement_link }}">{{ legacy }}</a>
+    {%- else -%}
+      {{ legacy }}
+    {%- endif -%}
+  </div>
+{%- elsif count > 0 -%}
+  <div
+    id="ks-announcements"
+    class="ks-announcement text-center small{% if count > 1 %} carousel slide{% endif %}"
+    {%- if count > 1 %} data-bs-ride="carousel" data-bs-interval="{{ section.settings.speed | times: 1000 }}" aria-roledescription="carousel" aria-label="{{ 'general.announcements' | t }}"{% endif %}
+  >
+    <div class="{% if count > 1 %}carousel-inner{% endif %}">
+      {%- assign shown = false -%}
+      {%- for block in section.blocks -%}
+        {%- if block.settings.text != blank -%}
+          <div {{ block.shopify_attributes }} class="{% if count > 1 %}carousel-item{% if shown == false %} active{% endif %}{% endif %} py-2 px-3">
+            {%- if block.settings.link != blank -%}
+              <a href="{{ block.settings.link }}">{{ block.settings.text }}</a>
+            {%- else -%}
+              {{ block.settings.text }}
+            {%- endif -%}
+          </div>
+          {%- assign shown = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}

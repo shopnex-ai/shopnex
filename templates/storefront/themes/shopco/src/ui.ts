@@ -1,7 +1,8 @@
 // Small pieces of UI: the closable announcement bar, testimonial arrows, the catalog's sort select and the
 // product page's tabs.
 
-// ── announcement bar (snippets/header.liquid): closed stays closed until its text changes ──
+// ── announcement bar (sections/announcement-bar.liquid): closed stays closed until its text changes; several messages
+// take turns, paused while the pointer or focus is on the bar ──
 const ANNOUNCEMENT_KEY = 'shopco-announcement-closed'
 const announcement = document.querySelector<HTMLElement>('[data-announcement]')
 if (announcement) {
@@ -10,6 +11,24 @@ if (announcement) {
     if (localStorage.getItem(ANNOUNCEMENT_KEY) === id) announcement.remove()
   } catch {
     // no storage
+  }
+  const slides = [...announcement.querySelectorAll<HTMLElement>('[data-announcement-slide]')]
+  if (slides.length > 1) {
+    let current = 0
+    let paused = false
+    announcement.addEventListener('mouseenter', () => (paused = true))
+    announcement.addEventListener('mouseleave', () => (paused = false))
+    announcement.addEventListener('focusin', () => (paused = true))
+    announcement.addEventListener('focusout', () => (paused = false))
+    setInterval(
+      () => {
+        if (paused) return
+        slides[current]!.hidden = true
+        current = (current + 1) % slides.length
+        slides[current]!.hidden = false
+      },
+      Number(announcement.dataset.speed || 5) * 1000,
+    )
   }
   announcement.querySelector('[data-announcement-close]')?.addEventListener('click', () => {
     announcement.remove()
