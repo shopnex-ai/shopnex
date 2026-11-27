@@ -129,7 +129,12 @@ export function GenerateImageAlt({
         <ul className="space-y-3">
           {output.images.map(({ position, alt }) => (
             <li key={position} className="flex items-start gap-3">
-              <img src={images[position]?.url} alt="" referrerPolicy="no-referrer" className="size-14 shrink-0 rounded-md border object-cover" />
+              <img
+                src={images[position]?.url}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="size-14 shrink-0 rounded-md border object-cover"
+              />
               <p>{alt}</p>
             </li>
           ))}

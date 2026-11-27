@@ -124,7 +124,12 @@ export function MediaCard({ product }: { product: Product }) {
                 key={img.id}
                 className={`group relative overflow-hidden rounded-lg border bg-muted ${i === 0 ? 'col-span-2 row-span-2' : ''}`}
               >
-                <img src={img.url} alt={img.alt ?? ''} referrerPolicy="no-referrer" className="aspect-square size-full object-cover" />
+                <img
+                  src={img.url}
+                  alt={img.alt ?? ''}
+                  referrerPolicy="no-referrer"
+                  className="aspect-square size-full object-cover"
+                />
                 <Button
                   type="button"
                   variant="secondary"
