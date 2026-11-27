@@ -1,0 +1,9 @@
+{%- comment -%} One tile of Featured collections. Params: c (the collection), attrs (the block's editor attributes; empty otherwise) {%- endcomment -%}
+<a {{ attrs }} href="{{ c.url }}" class="ks-tile">
+  <span class="ks-tile-media">
+    {%- if c.image %}
+      <img src="{{ c.image | image_url }}" alt="" loading="lazy">
+    {%- endif %}
+  </span>
+  <span class="ks-tile-title">{{ c.title }}</span>
+</a>

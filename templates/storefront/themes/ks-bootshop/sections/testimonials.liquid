@@ -1,18 +1,35 @@
-{%- comment -%} Testimonials: up to three quotes; empty ones are skipped, and with none the section is not shown {%- endcomment -%}
+{%- comment -%}
+  Testimonials: one quote per block; blocks without a quote are skipped, and with none the section is not shown. While
+  there are no blocks, the old numbered settings (up to three quotes) are shown.
+{%- endcomment -%}
 {%- capture items -%}
-      {%- for i in (1..3) %}
-        {%- assign quote_key = 'quote_' | append: i -%}
-        {%- assign author_key = 'author_' | append: i -%}
-        {%- if section.settings[quote_key] != blank %}
-          <figure class="ks-quote">
-            <blockquote>{{ section.settings[quote_key] }}</blockquote>
-            {%- if section.settings[author_key] != blank %}
-              <figcaption>{{ section.settings[author_key] }}</figcaption>
-            {%- endif %}
-          </figure>
+  {%- for block in section.blocks %}
+    {%- if block.settings.quote != blank %}
+      <figure {{ block.shopify_attributes }} class="ks-quote">
+        <blockquote>{{ block.settings.quote }}</blockquote>
+        {%- if block.settings.author != blank %}
+          <figcaption>{{ block.settings.author }}</figcaption>
         {%- endif %}
-      {%- endfor %}
+      </figure>
+    {%- endif %}
+  {%- endfor %}
 {%- endcapture -%}
+{%- if items == blank -%}
+  {%- capture items -%}
+    {%- for i in (1..3) %}
+      {%- assign quote_key = 'quote_' | append: i -%}
+      {%- assign author_key = 'author_' | append: i -%}
+      {%- if section.settings[quote_key] != blank %}
+        <figure class="ks-quote">
+          <blockquote>{{ section.settings[quote_key] }}</blockquote>
+          {%- if section.settings[author_key] != blank %}
+            <figcaption>{{ section.settings[author_key] }}</figcaption>
+          {%- endif %}
+        </figure>
+      {%- endif %}
+    {%- endfor %}
+  {%- endcapture -%}
+{%- endif -%}
 {%- if items != blank -%}
 <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
   <div class="container">

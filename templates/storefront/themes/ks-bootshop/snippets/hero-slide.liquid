@@ -1,0 +1,29 @@
+{%- comment -%}
+  One slide of the hero carousel (sections/hero-carousel.liquid). Params: image, heading, text, label, link, first (the
+  first slide is active and its heading the page's h1), attrs (the block's editor attributes; empty for the old settings)
+{%- endcomment -%}
+<div {{ attrs }} class="carousel-item{% if first %} active{% endif %}">
+  <div class="ks-hero-slide">
+    {%- if image != blank %}
+      <img src="{{ image }}" alt="" class="ks-hero-image"{% unless first %} loading="lazy"{% endunless %}>
+    {%- endif %}
+    <div class="ks-hero-overlay"></div>
+    <div class="container">
+      <div class="ks-hero-content">
+        {%- if heading != blank %}
+          {%- if first %}
+            <h1 class="display-4">{{ heading }}</h1>
+          {%- else %}
+            <h2 class="display-4">{{ heading }}</h2>
+          {%- endif %}
+        {%- endif %}
+        {%- if text != blank %}
+          <p class="lead">{{ text }}</p>
+        {%- endif %}
+        {%- if label != blank and link != blank %}
+          <a href="{{ link }}" class="btn btn-primary btn-lg">{{ label }}</a>
+        {%- endif %}
+      </div>
+    </div>
+  </div>
+</div>
