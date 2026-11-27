@@ -389,6 +389,61 @@
         }
       ],
       "limit": 1
+    },
+    "footer": {
+      "name": "Footer",
+      "group": "footer",
+      "limit": 1,
+      "max_blocks": 6,
+      "settings": [],
+      "blocks": {
+        "text": {
+          "name": "Text",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "About us"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            }
+          ]
+        },
+        "menu": {
+          "name": "Menu",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Links"
+            },
+            {
+              "id": "menu",
+              "label": "Menu",
+              "type": "text",
+              "default": "footer",
+              "info": "The handle of a menu from Online store → Navigation"
+            }
+          ]
+        },
+        "social": {
+          "name": "Social links",
+          "limit": 1,
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Follow us"
+            }
+          ]
+        }
+      }
     }
   },
   "pages": {
@@ -409,6 +464,17 @@
           "id": "archive",
           "type": "archive",
           "settings": {}
+        }
+      ]
+    },
+    "static": {
+      "name": "Header",
+      "sections": [
+        {
+          "id": "footer",
+          "type": "footer",
+          "settings": {},
+          "blocks": []
         }
       ]
     }

@@ -66,7 +66,7 @@
     <main class="grow" id="main-content">
       {{ content_for_layout }}
     </main>
-    {% render 'footer' %}
+    {% section 'footer' %}
     {%- comment %} The cart drawer is a React island (src/islands/CartDrawer.tsx), rendered in the browser {% endcomment %}
     <div data-island="CartDrawer" data-props='{"placeholder":"{{ 'product-placeholder.jpg' | asset_url }}"}'></div>
     {{ 'theme.js' | asset_url | script_tag }}

@@ -1,0 +1,49 @@
+{%- comment -%}
+  The footer (the Footer group in the theme editor): one column per block (the logo, a text, a menu or the social links),
+  with the copyright line under them. While there are no blocks, the footer is the single bar of snippets/footer.liquid
+  (logo, the "footer" menu and social links).
+{%- endcomment -%}
+{%- if section.blocks.size == 0 -%}
+  {% render 'footer' %}
+{%- else -%}
+  {%- assign footer_text = settings.footer_text | strip -%}
+  {%- if footer_text == blank -%}
+    {%- capture footer_text %}© {{ 'now' | date: '%Y' }} {{ shop.name }}{% endcapture -%}
+  {%- endif -%}
+  <footer class="bg-light">
+    <div class="container">
+      <div
+        class="grid gap-8 py-10 md:grid-cols-[repeat(var(--footer-columns),minmax(0,1fr))] md:pt-20 md:pb-14"
+        style="--footer-columns: {{ section.blocks.size | at_most: 4 }}"
+      >
+        {%- for block in section.blocks %}
+          <div {{ block.shopify_attributes }} class="flex flex-col gap-4">
+            {%- if block.settings.heading != blank %}
+              <h2 class="m-0 text-base font-semibold text-text-dark">{{ block.settings.heading }}</h2>
+            {%- endif %}
+            {%- case block.type %}
+              {%- when 'logo' %}
+                {% render 'logo' %}
+              {%- when 'text' %}
+                {%- if block.settings.text != blank %}
+                  <p class="m-0 whitespace-pre-line text-sm font-light text-text-light">{{ block.settings.text }}</p>
+                {%- endif %}
+              {%- when 'menu' %}
+                {%- assign block_menu = linklists[block.settings.menu] %}
+                <ul class="m-0 grid list-none gap-2 p-0">
+                  {%- for link in block_menu.links %}
+                    <li class="footer-link"><a href="{{ link.url }}">{{ link.title }}</a></li>
+                  {%- endfor %}
+                </ul>
+              {%- when 'social' %}
+                {%- render 'social-links', class: 'flex gap-4', link_class: 'text-text-light transition hover:text-text-dark' %}
+            {%- endcase %}
+          </div>
+        {%- endfor %}
+      </div>
+      <div class="border-t border-border py-5 text-center text-sm font-light text-text-light md:text-left">
+        {{- footer_text -}}
+      </div>
+    </div>
+  </footer>
+{%- endif -%}
