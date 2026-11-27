@@ -18,6 +18,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'ShopNex Admin' },
       { name: 'darkreader-lock', content: 'true' },
+      // Imported images (products, collections, descriptions) stay on the old store, and many refuse another site's Referer
+      { name: 'referrer', content: 'same-origin' },
     ],
     links: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
   }),

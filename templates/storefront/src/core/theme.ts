@@ -480,6 +480,9 @@ async function renderPage(loaded: LoadedTheme, url: URL, page: ThemePage): Promi
     status: page.template === '404' ? 404 : page.template === 'account' ? (page.status ?? 200) : 200,
     headers: {
       'content-type': 'text/html; charset=utf-8',
+      // Imported products point at the old store's images, and many stores refuse a request that comes with another
+      // site's address as Referer (hotlink protection). Our own pages keep it; other sites get none.
+      'referrer-policy': 'same-origin',
       // Someone's own orders: never stored by a shared cache
       ...(page.template === 'account' && { 'cache-control': 'private, no-store' }),
     },

@@ -4,7 +4,7 @@
 // capability's schema. The result is a suggestion: saving it is an ordinary write by whoever asked.
 import { randomUUID } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
-import { instanceSigner, instanceUrl } from '@shopnex/apps'
+import { callApp, instanceSigner, instanceUrl } from '@shopnex/apps'
 import { sanitizeHtml } from '@shopnex/catalog'
 import type { Conn } from '@shopnex/db'
 import { withStorefrontUrl } from '@shopnex/tenancy'
@@ -61,14 +61,12 @@ const appError = (text: string) => {
 }
 
 async function post(url: string, id: string, body: string) {
-  const res = await fetch(url, {
-    method: 'POST',
+  const res = await callApp(url, {
     headers: await signAiRequest(await instanceSigner(), id, body),
     body,
-    redirect: 'manual',
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    timeoutMs: TIMEOUT_MS,
   })
-  const text = await res.text().catch(() => '')
+  const text = res.text
   if (!res.ok) throw new Error(appError(text) ?? `${String(res.status)} ${text.slice(0, 300) || res.statusText}`)
   try {
     return JSON.parse(text) as unknown

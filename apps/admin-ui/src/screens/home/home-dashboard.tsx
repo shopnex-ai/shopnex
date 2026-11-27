@@ -411,6 +411,7 @@ function TopProducts({ products, money }: { products: Overview['topProducts']; m
                 <img
                   src={p.imageUrl}
                   alt=""
+                  referrerPolicy="no-referrer"
                   className="absolute inset-0 size-full object-cover"
                   // A dead image link falls back to the icon behind it
                   onError={(e) => (e.currentTarget.style.display = 'none')}

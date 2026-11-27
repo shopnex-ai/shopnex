@@ -25,6 +25,7 @@
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
     "@shopnex/theme": "workspace:*",
+    "@shopnex/webhooks": "workspace:*",
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
     "zod": "catalog:"
