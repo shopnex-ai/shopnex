@@ -4,6 +4,7 @@ import { describe, test } from 'node:test'
 import {
   ThemeDefinition,
   ThemeDocument,
+  applyPreset,
   defaultDocument,
   resolveBlocks,
   withoutCodeSettings,
@@ -182,5 +183,61 @@ describe('a style or document from someone else', () => {
   test('a section without blocks stays without a blocks key', () => {
     const doc = { settings: {}, pages: { static: { sections: [{ id: 'p', type: 'plain', settings: {} }] } } }
     assert.equal('blocks' in withoutCodeSettings(definition, doc).pages.static!.sections[0]!, false)
+  })
+})
+
+describe('applyPreset: a style changes the settings styles set, and keeps the merchant’s others', () => {
+  const definition = ThemeDefinition.parse({
+    id: 'test',
+    name: 'Test',
+    settings: [
+      { id: 'logo', label: 'Logo', type: 'image' },
+      { id: 'announcement', label: 'Announcement', type: 'text' },
+      { id: 'custom_css', label: 'CSS', type: 'code', language: 'css' },
+      { id: 'accent', label: 'Accent', type: 'color', default: '#111111' },
+      { id: 'font', label: 'Font', type: 'text', default: 'Inter' },
+    ],
+    sections: {},
+    pages: { home: { name: 'Home', sections: [] } },
+    presets: {
+      warm: { name: 'Warm', settings: { accent: '#aa5500', font: 'Lora' } },
+      cool: { name: 'Cool', settings: { accent: '#0055aa' } },
+    },
+  })
+  const document: ThemeDocument = {
+    preset: 'warm',
+    settings: { logo: '/logo.png', announcement: 'Free delivery', custom_css: 'a{}', accent: '#aa5500', font: 'Lora' },
+    pages: { home: { sections: [{ id: 'hero', type: 'hero', settings: {} }] } },
+  }
+
+  test('the other settings (logo, announcement, custom code) are kept', () => {
+    const next = applyPreset(definition, document, 'cool')
+    assert.equal(next.settings.logo, '/logo.png')
+    assert.equal(next.settings.announcement, 'Free delivery')
+    assert.equal(next.settings.custom_css, 'a{}')
+    assert.equal(next.preset, 'cool')
+  })
+
+  test('the style’s settings come from it, and one it leaves out goes back to the default (nothing of the last style stays)', () => {
+    const next = applyPreset(definition, document, 'cool')
+    assert.equal(next.settings.accent, '#0055aa')
+    assert.equal(next.settings.font, 'Inter') // "warm" set Lora; "cool" says nothing about it
+  })
+
+  test('null is the theme’s own look: the styles’ settings back to the defaults, the others kept, no preset', () => {
+    const next = applyPreset(definition, document, null)
+    assert.deepEqual(next.settings, {
+      logo: '/logo.png',
+      announcement: 'Free delivery',
+      custom_css: 'a{}',
+      accent: '#111111',
+      font: 'Inter',
+    })
+    assert.equal('preset' in next, false)
+  })
+
+  test('the merchant’s sections stay; an unknown style is refused', () => {
+    assert.deepEqual(applyPreset(definition, document, 'cool').pages, document.pages)
+    assert.throws(() => applyPreset(definition, document, 'nope'), /Unknown preset/)
   })
 })

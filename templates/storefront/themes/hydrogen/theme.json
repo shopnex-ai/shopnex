@@ -287,37 +287,6 @@
           "default": "Collections"
         },
         {
-          "id": "collection_1",
-          "label": "Collection 1",
-          "info": "No collections picked: your first ones",
-          "type": "collection"
-        },
-        {
-          "id": "collection_2",
-          "label": "Collection 2",
-          "type": "collection"
-        },
-        {
-          "id": "collection_3",
-          "label": "Collection 3",
-          "type": "collection"
-        },
-        {
-          "id": "collection_4",
-          "label": "Collection 4",
-          "type": "collection"
-        },
-        {
-          "id": "collection_5",
-          "label": "Collection 5",
-          "type": "collection"
-        },
-        {
-          "id": "collection_6",
-          "label": "Collection 6",
-          "type": "collection"
-        },
-        {
           "id": "columns",
           "label": "Columns on desktop",
           "type": "range",
@@ -326,7 +295,20 @@
           "step": 1,
           "default": 3
         }
-      ]
+      ],
+      "max_blocks": 12,
+      "blocks": {
+        "collection": {
+          "name": "Collection",
+          "settings": [
+            {
+              "id": "collection",
+              "label": "Collection",
+              "type": "collection"
+            }
+          ]
+        }
+      }
     },
     "rich-text": {
       "name": "Text",
@@ -369,6 +351,54 @@
           "default": "<p>Your HTML here</p>"
         }
       ]
+    },
+    "footer": {
+      "name": "Footer",
+      "group": "footer",
+      "limit": 1,
+      "max_blocks": 6,
+      "settings": [],
+      "blocks": {
+        "text": {
+          "name": "Text",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "About us"
+            },
+            {
+              "id": "text",
+              "label": "Text",
+              "type": "textarea"
+            }
+          ]
+        },
+        "menu": {
+          "name": "Menu",
+          "settings": [
+            {
+              "id": "heading",
+              "label": "Heading",
+              "type": "text",
+              "default": "Links"
+            },
+            {
+              "id": "menu",
+              "label": "Menu",
+              "type": "text",
+              "default": "footer",
+              "info": "The handle of a menu from Online store → Navigation"
+            }
+          ]
+        },
+        "social": {
+          "name": "Social links",
+          "limit": 1,
+          "settings": []
+        }
+      }
     }
   },
   "pages": {
@@ -389,6 +419,17 @@
           "id": "collections",
           "type": "collection-list",
           "settings": {}
+        }
+      ]
+    },
+    "static": {
+      "name": "Footer",
+      "sections": [
+        {
+          "id": "footer",
+          "type": "footer",
+          "settings": {},
+          "blocks": []
         }
       ]
     }

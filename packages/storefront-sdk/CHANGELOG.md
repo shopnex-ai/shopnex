@@ -2,6 +2,8 @@
 
 ## Unreleased (additive)
 
+- `applyPreset` no longer resets the merchant's other settings: applying a style used to rebuild every setting from the style and the defaults, which emptied
+  the logo, the announcement text and the social links. Now only the settings that styles set (colors, fonts…) change.
 - A global section's definition can say `group: 'footer'`: the theme editor lists it in a Footer group below the page's sections
   (the others stay in the Header group above them).
 - Theme preview (`connectThemePreview`): the editor's preview is for editing, not shopping. Links, `data-add-to-cart` and
@@ -55,7 +57,7 @@
   `ThemeDocument`) and helpers (`resolveSettings`, `defaultDocument`). Setting field types: text, textarea, url,
   image, color, checkbox, range, select, collection, and `code` (raw HTML or CSS, `language: 'html' | 'css'`).
   Styles: `ThemeDefinition.presets` (`ThemePreset`: ready-made settings, optionally pages), the document's
-  optional `preset`, and `applyPreset` (keeps `code` settings and the pages a preset doesn't define).
+  optional `preset`, and `applyPreset` (changes only the settings styles set, keeps the rest and the pages a preset doesn't define).
 - `@shopnex/storefront-sdk/theme-preview` (dependency-free, also re-exported from `/theme`): the editor's
   preview protocol (`ThemeEditorMessage`, `ThemePreviewMessage`, guards) and `connectThemePreview`, the
   storefront side of it for any framework.

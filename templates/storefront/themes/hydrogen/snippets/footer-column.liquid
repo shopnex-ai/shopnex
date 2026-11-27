@@ -1,8 +1,8 @@
 {%- comment -%}
   One footer menu: a heading over links. An accordion below md, a plain column from md up.
-  {% render 'footer-column', title: 'Shop', links: links_html %}
+  {% render 'footer-column', title: 'Shop', links: links_html %}; attrs (optional) is a block's editor attributes
 {%- endcomment -%}
-<section class="pt-10 first-of-type:-mt-10 md:pt-0 first-of-type:md:mt-0">
+<section {{ attrs }} class="pt-10 first-of-type:-mt-10 md:pt-0 first-of-type:md:mt-0">
   <details class="md:hidden">
     <summary>
       <h3 class="font-heading flex max-w-prose justify-between overflow-hidden text-lead whitespace-pre-wrap">
