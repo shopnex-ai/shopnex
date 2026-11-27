@@ -84,6 +84,13 @@ background:transparent;border:1px solid transparent;border-radius:999px;cursor:p
 .sx-tab:hover{background:var(--muted)}.sx-tab[aria-pressed=true]{color:var(--fg);background:var(--muted);border-color:var(--border)}
 .sx-tab b{font-weight:600;font-size:.8rem}.sx-tab-alert b{color:var(--warning)}
 .sx-filter-bar .sx-input{width:auto;height:2rem}.sx-filter-bar input.sx-input{width:11rem}
+.sx-nav{display:flex;gap:.25rem;border-bottom:1px solid var(--border);overflow-x:auto}
+.sx-nav-tab{display:inline-flex;gap:.4rem;align-items:center;height:2.5rem;padding:0 .75rem;margin-bottom:-1px;font:inherit;font-weight:500;
+color:var(--muted-fg);background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.sx-nav-tab:hover{color:var(--fg)}.sx-nav-tab[aria-selected=true]{color:var(--fg);border-bottom-color:var(--fg)}
+.sx-nav-tab:focus-visible{outline:2px solid var(--ring);outline-offset:-2px;border-radius:.25rem}
+.sx-nav-tab b{font-weight:600;font-size:.8rem;padding:0 .4rem;border-radius:999px;background:var(--muted)}.sx-nav-alert b{background:color-mix(in oklch,var(--warning) 20%,transparent);color:var(--warning)}
+.sx-view[hidden]{display:none}
 .sx-item{padding:1rem 0;border-top:1px solid var(--border)}
 .sx-empty{padding:1.5rem 0;text-align:center}
 .sx-item[hidden],.sx-panel[hidden],.sx-empty[hidden]{display:none}
@@ -252,6 +259,7 @@ let filterIds = 0
  * The tab `all` shows every item; any other tab shows the items whose `tab` is its value.
  */
 export function Filterable({
+  name,
   tabs,
   defaultTab,
   filters = [],
@@ -260,6 +268,8 @@ export function Filterable({
   empty = 'Nothing here.',
   children,
 }: PropsWithChildren<{
+  /** Needed when the page has more than one list: each keeps its tab and filters under its own name */
+  name?: string
   tabs: {
     value: string
     label: string
@@ -278,7 +288,7 @@ export function Filterable({
   const id = `sx-filter-${++filterIds}`
   const first = defaultTab.replace(/["\\]/g, '')
   return (
-    <div id={id} data-sx-filter data-default-tab={defaultTab} data-noun={noun}>
+    <div id={id} data-sx-filter data-name={name} data-default-tab={defaultTab} data-noun={noun}>
       {/* Before the script runs, show only the default tab, so the page doesn't flash everything */}
       {defaultTab !== 'all' && (
         <style>{raw(`#${id}:not([data-ready]) [data-sx-item]:not([data-sx-tab="${first}"]){display:none}`)}</style>
@@ -325,6 +335,58 @@ export function FilterItem({
   return (
     <div class="sx-item" data-sx-item data-sx-tab={tab} data-sx-text={text.toLowerCase()} {...attrs}>
       {children}
+    </div>
+  )
+}
+
+/**
+ * The page's sections: a row of tabs and, for each, a <TabPanel> (anywhere in the page) that shows when its tab is chosen.
+ * Nothing is requested; the chosen section stays in the URL hash, so it survives the reload after `<Button action reload>`.
+ */
+export function Tabs({
+  tabs,
+  defaultTab,
+}: {
+  tabs: {
+    id: string
+    label: string
+    count?: number
+    /** Colour the count: something needs attention */ alert?: boolean
+  }[]
+  defaultTab: string
+}) {
+  const first = defaultTab.replace(/["\\]/g, '')
+  return (
+    <>
+      {/* Before the script runs, show only the default section, so the page doesn't flash all of them */}
+      <style>
+        {raw(
+          `[data-sx-tabs]:not([data-ready])~* [data-sx-view]:not([data-sx-view="${first}"]),[data-sx-tabs]:not([data-ready])~[data-sx-view]:not([data-sx-view="${first}"]){display:none}`,
+        )}
+      </style>
+      <nav class="sx-nav" role="tablist" data-sx-tabs data-default-tab={defaultTab}>
+        {tabs.map((tab) => (
+          <button
+            type="button"
+            role="tab"
+            class={`sx-nav-tab${tab.alert && tab.count ? ' sx-nav-alert' : ''}`}
+            data-sx-view-button={tab.id}
+            aria-selected={String(tab.id === defaultTab)}
+          >
+            {tab.label}
+            {tab.count !== undefined && tab.count > 0 && <b>{tab.count}</b>}
+          </button>
+        ))}
+      </nav>
+    </>
+  )
+}
+
+/** The content of one <Tabs> tab */
+export function TabPanel({ id, children }: PropsWithChildren<{ id: string }>) {
+  return (
+    <div class="sx-view" role="tabpanel" data-sx-view={id}>
+      <Stack gap={4}>{children}</Stack>
     </div>
   )
 }

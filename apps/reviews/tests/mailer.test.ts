@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import type { ShopContext } from '@shopnex/app'
-import { emailMailer, EmailOffError, readEmailOff, renderEmail } from '../src/mailer'
+import { emailMailer, EmailOffError, readEmailOff, readEmailTexts, renderEmail, saveEmailTexts } from '../src/mailer'
 
 describe('the request email', () => {
   test('names the shop and product, links to the review page, and escapes both', () => {
@@ -21,6 +21,52 @@ describe('the request email', () => {
 
   test('works without a shop name', () => {
     assert.doesNotMatch(renderEmail({ productTitle: 'Mug', shopName: null, link: 'https://x/r/1' }).text, /from /)
+  })
+})
+
+describe('the shop’s own wording', () => {
+  const base = { productTitle: 'Mug', shopName: 'Mugs & Co', link: 'https://r.example.com/r/t' }
+
+  test('fills in {product} and {shop}, keeps paragraphs and line breaks, and still links to the review page', () => {
+    const { subject, text, html } = renderEmail({
+      ...base,
+      subject: 'Tell {shop} about your {product}',
+      message: 'Hi!\n\nHow is the {product}?\nWe read every review.',
+    })
+    assert.equal(subject, 'Tell Mugs & Co about your Mug')
+    assert.equal(text, 'Hi!\n\nHow is the Mug?\nWe read every review.\n\nhttps://r.example.com/r/t\n')
+    assert.match(html, /<p>Hi!<\/p><p>How is the Mug\?<br>We read every review\.<\/p>/)
+    assert.match(html, /href="https:\/\/r\.example\.com\/r\/t"/)
+  })
+
+  test('escapes the shop’s text and the names it fills in', () => {
+    const { html } = renderEmail({ ...base, productTitle: '<b>Mug</b>', message: '<script>x</script> {product}' })
+    assert.doesNotMatch(html, /<script|<b>/i)
+    assert.match(html, /&lt;script&gt;x&lt;\/script&gt; &lt;b&gt;Mug&lt;\/b&gt;/)
+  })
+
+  test('without a shop name {shop} reads “our shop”; a blank subject or message is the standard text', () => {
+    assert.equal(renderEmail({ ...base, shopName: null, subject: 'From {shop}' }).subject, 'From our shop')
+    const standard = renderEmail(base)
+    assert.deepEqual(renderEmail({ ...base, subject: '  ', message: '' }), standard)
+    assert.deepEqual(renderEmail({ ...base, subject: null, message: null }), standard)
+  })
+
+  test('the mailer sends what the shop saved, reading it once for all its emails', async () => {
+    const { shop, sent, store } = fakeShop(() => ({ sent: true }))
+    await saveEmailTexts(shop, { subject: 'About your {product}', message: 'Please review it.' })
+    assert.deepEqual(await readEmailTexts(shop), { subject: 'About your {product}', message: 'Please review it.' })
+    const reads = { n: 0 }
+    const get = shop.data.get.bind(shop.data)
+    shop.data.get = (async (key: string) => (reads.n++, get(key))) as typeof shop.data.get
+    const mailer = emailMailer(shop)
+    await mailer(request)
+    await mailer(request)
+    assert.equal(sent[0]!.body.subject, 'About your Mug')
+    assert.match(sent[0]!.body.text!, /^Please review it\./)
+    assert.equal(store.get('email_subject'), 'About your {product}')
+    // two keys read once, plus the email-off flag read after each send
+    assert.equal(reads.n, 2 + 2)
   })
 })
 
