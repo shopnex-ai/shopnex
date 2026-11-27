@@ -38,6 +38,7 @@ Options
   --storefront-port <n>    storefront (default 4321)
   --no-open                do not open the browser
   --with <apps>            also start optional apps: stripe, cj, shippo (comma separated, or repeat the flag)
+  --from <store>           bring a Shopify or WooCommerce store across (products, pages, look): its address, e.g. my-store.myshopify.com
   --app <name>             what to start (default shop; a picker appears once there is more than one)
   --verbose                show the output of the servers while they start
   --dry-run                show what would run and exit
@@ -51,12 +52,14 @@ export function describe({
   plan,
   source,
   extras = [],
+  from,
 }: {
   shopDir: string
   database: string
   plan: Plan
   source: string
   extras?: Extra[]
+  from?: string
 }) {
   const rows = [
     ['Source', source],
@@ -64,6 +67,7 @@ export function describe({
     ['Database', redactUrl(database)],
     ['Admin', `${plan.appUrl}/admin`],
     ['Storefront', plan.storefrontUrl],
+    ...(from ? [['Import', `${from} (starts after you create the owner)`]] : []),
     ...extras.map((extra) => [extra.label, `http://localhost:${extra.port} (install it from the admin)`]),
   ]
   const width = Math.max(...rows.map(([label]) => label?.length ?? 0)) + 2
@@ -114,10 +118,10 @@ async function run(argv: string[]) {
     appKeys: loadAppKeys(shopDir, extras, { write: !options.dryRun }),
   })
 
-  p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras }), app.label)
+  p.note(describe({ shopDir, database: shopEnv.databaseUrl, plan, source, extras, from: options.from }), app.label)
   if (options.dryRun) return p.outro('Dry run: nothing was started.')
   p.log.warn('This is a trial database: it is not for production.')
-  process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose })
+  process.exitCode = await runPlan(plan, { open: options.open, verbose: options.verbose, from: options.from })
 }
 
 export async function main(argv: string[]) {
