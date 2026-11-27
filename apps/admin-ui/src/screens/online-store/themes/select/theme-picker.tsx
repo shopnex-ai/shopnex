@@ -1,36 +1,21 @@
-// Online store → Your themes (under the current theme): every theme in the shop. Copies of the themes the storefront includes
+// Online store → Your themes (under the current theme, which isn't repeated here): the shop's other themes. Copies of the themes the storefront includes
 // can be customized and used (published); copies of others wait for a storefront with their theme. The
 // storefront's themes without a copy yet can be added. Marketplace themes will be listed here too.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { THEME_PREVIEW_PARAM } from '@shopnex/storefront-sdk/theme-preview'
-import {
-  ClipboardCopyIcon,
-  CodeIcon,
-  CopyIcon,
-  EllipsisIcon,
-  ExternalLinkIcon,
-  PencilIcon,
-  PlusIcon,
-  Trash2Icon,
-} from 'lucide-react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { ExternalLinkIcon, PlusIcon } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate } from '@/lib/format'
-import { client, orpc } from '@/lib/orpc'
+import { orpc } from '@/lib/orpc'
 import type { Storefront } from '../definition'
 import { StorefrontThumbnail } from '../storefront-thumbnail'
 import { useThemeDialogs, type Theme } from '../theme-dialogs'
+import { ThemeMenu, copySettings } from '../theme-menu'
 
 type Props = {
   /** The storefront's themes; null when it can't be reached */
@@ -78,6 +63,8 @@ export function ThemePicker({ storefront }: Props) {
   const others = data?.filter((t) => storefront && !themeOf(t)) ?? []
   const available = storefront?.themes.filter((d) => !data?.some((t) => t.themeId === d.id)) ?? []
   const current = ours.find((t) => t.role === 'live')
+  // The current theme has its own card above, with the same menu
+  const library = ours.filter((t) => t.role !== 'live')
   // Styles for themes the storefront includes (all of them while it can't be reached, to show what's there)
   const styles = store.data?.filter((s) => !storefront || storefront.themes.some((d) => d.id === s.baseThemeId)) ?? []
   const baseName = (id: string) => storefront?.themes.find((d) => d.id === id)?.name ?? id
@@ -106,8 +93,13 @@ export function ThemePicker({ storefront }: Props) {
               )}
             </CardHeader>
             <CardContent>
+              {library.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No other themes yet. Copy the current theme to try changes without touching your store.
+                </p>
+              )}
               <ul className="divide-y">
-                {ours.map((t) => (
+                {library.map((t) => (
                   <li key={t.id} className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="w-40 shrink-0">
                       {storefront && themeOf(t) ? (
@@ -121,18 +113,15 @@ export function ThemePicker({ storefront }: Props) {
                     <div className="mr-auto min-w-0">
                       <p className="flex items-center gap-2 font-medium">
                         <span className="truncate">{t.name}</span>
-                        {t.role === 'live' && <Badge variant="secondary">Current</Badge>}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {themeOf(t) && themeOf(t)!.name !== t.name && `${themeOf(t)!.name} theme · `}
                         Edited {formatDate(t.updatedAt)}
                       </p>
                     </div>
-                    {t.role !== 'live' && (
-                      <Button variant="outline" size="sm" disabled={!storefront} onClick={() => open('publish', t)}>
-                        Use theme
-                      </Button>
-                    )}
+                    <Button variant="outline" size="sm" disabled={!storefront} onClick={() => open('publish', t)}>
+                      Use theme
+                    </Button>
                     <CustomizeButton theme={t} disabled={!storefront} />
                     <ThemeMenu
                       theme={t}
@@ -316,71 +305,5 @@ function Screenshot({ url }: { url: string | null }) {
         <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No preview</div>
       )}
     </div>
-  )
-}
-
-// The copy's draft as JSON: what a theme style on the marketplace is made of
-async function copySettings(theme: Theme) {
-  try {
-    const { draft } = await client.admin.themes.get({ id: theme.id })
-    await navigator.clipboard.writeText(JSON.stringify(draft, null, 2))
-    toast.success(`Copied ${theme.name}’s settings`, {
-      description: `To sell it as a style for ${theme.themeId} on the marketplace, paste them in a new theme style.`,
-    })
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : 'Couldn’t copy the settings')
-  }
-}
-
-type MenuProps = {
-  theme: Theme
-  onRename: () => void
-  onDuplicate?: () => void
-  onCopySettings?: () => void
-  onDelete: () => void
-}
-
-// A live copy can't be deleted: its storefront shows it
-function ThemeMenu({ theme, onRename, onDuplicate, onCopySettings, onDelete }: MenuProps) {
-  const navigate = useNavigate()
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="More actions" />}>
-        <EllipsisIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem onClick={onRename}>
-          <PencilIcon />
-          Rename
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => navigate({ to: '/admin/online-store/editor/$id/code', params: { id: theme.id } })}
-        >
-          <CodeIcon />
-          Edit code
-        </DropdownMenuItem>
-        {onDuplicate && (
-          <DropdownMenuItem onClick={onDuplicate}>
-            <CopyIcon />
-            Duplicate
-          </DropdownMenuItem>
-        )}
-        {onCopySettings && (
-          <DropdownMenuItem onClick={onCopySettings}>
-            <ClipboardCopyIcon />
-            Copy settings
-          </DropdownMenuItem>
-        )}
-        {theme.role !== 'live' && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={onDelete}>
-              <Trash2Icon />
-              Delete
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
