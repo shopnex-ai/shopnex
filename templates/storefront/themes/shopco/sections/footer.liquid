@@ -1,0 +1,6 @@
+{%- comment -%}
+  The footer (the Footer group in the theme editor): the newsletter box, the shop name, text and social links, and the
+  columns beside them, one per block (a text or a menu). Without blocks the columns come from the "footer" menu.
+  The markup is snippets/footer.liquid.
+{%- endcomment -%}
+{% render 'footer', blocks: section.blocks %}

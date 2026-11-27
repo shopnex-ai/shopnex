@@ -708,14 +708,12 @@
             {
               "id": "quote",
               "label": "Quote",
-              "type": "textarea",
-              "default": "Great products and fast delivery."
+              "type": "textarea"
             },
             {
               "id": "author",
               "label": "Author",
-              "type": "text",
-              "default": "A happy customer"
+              "type": "text"
             }
           ]
         }
