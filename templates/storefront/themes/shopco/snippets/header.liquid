@@ -1,32 +1,7 @@
 {%- comment -%}
-  Shopco's header: the announcement bar (theme settings; the buyer can close it, src/theme.ts), then the
-  wordmark, the main menu (Online store → Navigation, "main-menu"; links with children open a dropdown) and
+  Shopco's header: the wordmark, the main menu (Online store → Navigation, "main-menu"; links with children open a dropdown) and
   the cart. Below md the menu folds into a <details> panel.
 {%- endcomment -%}
-{%- assign announcement = settings.announcement_text | strip -%}
-{%- if announcement != blank -%}
-  <div data-announcement="{{ announcement | handleize }}" class="bg-acc text-on-acc">
-    <div class="relative mx-auto flex max-w-[1240px] items-center justify-center px-10 py-2.5 text-center text-[12px] sm:text-[14px]">
-      <p class="m-0">
-        {{ announcement }}
-        {%- if settings.announcement_link != blank and settings.announcement_link_label != blank %}
-          <a href="{{ settings.announcement_link }}" class="font-medium underline underline-offset-2">
-            {{- settings.announcement_link_label -}}
-          </a>
-        {%- endif %}
-      </p>
-      <button
-        type="button"
-        data-announcement-close
-        aria-label="{{ 'general.close' | t }}"
-        class="absolute right-4 hidden cursor-pointer opacity-90 hover:opacity-100 sm:block"
-      >
-        {% render 'icon', name: 'close', class: 'ico-sm' %}
-      </button>
-    </div>
-  </div>
-{%- endif %}
-
 {%- assign menu = linklists['main-menu'] %}
 <header class="sticky top-0 z-30 border-b border-line bg-page">
   <div class="mx-auto flex max-w-[1240px] items-center gap-4 px-4 py-5 md:gap-10 md:py-6 xl:px-0">

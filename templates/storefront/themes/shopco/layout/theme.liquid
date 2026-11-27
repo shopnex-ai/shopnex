@@ -95,6 +95,7 @@
     {{ settings.head_html }}
   </head>
   <body class="flex min-h-screen flex-col bg-page font-sans text-ink antialiased">
+    {% section 'announcement-bar' %}
     {% render 'header' %}
     <div class="grow">
       {{ content_for_layout }}
