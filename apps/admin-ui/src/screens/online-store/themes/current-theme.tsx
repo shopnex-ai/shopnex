@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { TriangleAlertIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,8 @@ import { formatDate } from '@/lib/format'
 import { orpc } from '@/lib/orpc'
 import type { Storefront } from './definition'
 import { StorefrontThumbnail } from './storefront-thumbnail'
-import type { Theme } from './theme-dialogs'
+import { useThemeDialogs, type Theme } from './theme-dialogs'
+import { ThemeMenu, copySettings } from './theme-menu'
 
 type Props = {
   /** The storefront's themes; null when it can't be reached */
@@ -25,7 +27,18 @@ function status(theme: Theme) {
 }
 
 export function CurrentTheme({ storefront, storefrontError }: Props) {
+  const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.themes.list.queryOptions())
+  const { open, dialogs } = useThemeDialogs()
+  const duplicate = useMutation(
+    orpc.admin.themes.duplicate.mutationOptions({
+      onSuccess: (copy) => {
+        toast.success(`Added ${copy.name}`)
+        return queryClient.invalidateQueries({ queryKey: orpc.admin.themes.key() })
+      },
+      onError: (e) => toast.error(e.message),
+    }),
+  )
   const current = data?.find((t) => t.role === 'live')
   const theme = current && storefront?.themes.find((d) => d.id === current.themeId)
   // A live copy of a theme the storefront doesn't include: it falls back to its default theme
@@ -112,11 +125,20 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
                     View store
                   </Button>
                 )}
+                <ThemeMenu
+                  theme={current}
+                  onRename={() => open('rename', current)}
+                  onDuplicate={() => duplicate.mutate({ id: current.id })}
+                  onCopySettings={() => copySettings(current)}
+                  onDelete={() => open('delete', current)}
+                />
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {dialogs}
     </div>
   )
 }
