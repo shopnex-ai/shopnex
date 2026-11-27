@@ -2,8 +2,7 @@
 // section's (or the theme's) settings on the right. Every change autosaves the draft and reloads the
 // preview; Publish makes the draft what buyers see (for an unpublished copy: it becomes the live theme).
 import { useMutation } from '@tanstack/react-query'
-import { ChevronLeftIcon, CodeIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { ChevronLeftIcon, MonitorIcon, PaletteIcon, SmartphoneIcon, Trash2Icon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -32,7 +31,7 @@ import {
 import { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { PreviewFrame } from './preview-frame'
-import { ThemeHeader } from './theme-header'
+import { ThemeHeader, ThemeSaveStatus, ViewControls, type SaveState } from './theme-header'
 import { ItemList, SectionList } from './section-list'
 import { SettingFields } from './setting-fields'
 import { StylePicker } from './style-picker'
@@ -51,8 +50,6 @@ type Props = {
   initialDraft: ThemeDocument
   initialPublished: ThemeDocument | null
 }
-
-type SaveState = 'saved' | 'pending' | 'saving' | 'error'
 
 // jsonb doesn't keep key order, so compare documents with sorted keys
 const stable = (value: unknown): string =>
@@ -278,28 +275,19 @@ export function ThemeEditor({
     onError: (error) => toast.error(error.message),
   })
 
-  const status = {
-    saved: !live ? 'Saved · not your live theme' : unpublished ? 'Draft saved · not published' : 'Published',
-    pending: 'Unsaved changes',
-    saving: 'Saving…',
-    error: 'Not saved',
-  }[saveState]
-
   return (
     // Fill the dashboard's content area edge to edge (its header is h-12, padding p-4 / md:p-6)
     <Workspace>
       {/* Title and actions go in the admin's top bar, like every other page */}
       <ThemeHeader
+        id={id}
+        mode="visual"
         name={`${theme.name} · ${definition.pages[page]?.name ?? page}`}
         live={live}
         actions={
           <>
-            <span
-              className={cn('text-xs text-muted-foreground max-md:hidden', saveState === 'error' && 'text-destructive')}
-            >
-              {status}
-            </span>
-            <div className="flex rounded-md border p-0.5 max-md:hidden">
+            <ThemeSaveStatus state={saveState} live={live} unpublished={unpublished} />
+            <ViewControls className="max-md:hidden">
               {(['desktop', 'mobile'] as const).map((d) => (
                 <Button
                   key={d}
@@ -311,16 +299,7 @@ export function ThemeEditor({
                   {d === 'desktop' ? <MonitorIcon /> : <SmartphoneIcon />}
                 </Button>
               ))}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link to="/admin/online-store/editor/$id/code" params={{ id }} />}
-            >
-              <CodeIcon />
-              <span className="max-md:hidden">Edit code</span>
-            </Button>
+            </ViewControls>
             {live && published && unpublished && (
               <Button variant="ghost" size="sm" onClick={() => setConfirmDiscard(true)}>
                 Discard

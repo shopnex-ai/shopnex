@@ -7,11 +7,13 @@
       "id": "logo",
       "label": "Logo",
       "info": "Image URL. Without one, the shop name is shown.",
+      "group": "Brand",
       "type": "image"
     },
     {
       "id": "logo_width",
       "label": "Logo width",
+      "group": "Brand",
       "type": "range",
       "min": 60,
       "max": 300,
@@ -20,56 +22,72 @@
       "default": 150
     },
     {
+      "id": "favicon",
+      "label": "Favicon",
+      "group": "Brand",
+      "type": "image",
+      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
+    },
+    {
       "id": "color_primary",
       "label": "Buttons",
+      "group": "Colors",
       "type": "color",
       "default": "#121212"
     },
     {
       "id": "color_body",
       "label": "Background",
+      "group": "Colors",
       "type": "color",
       "default": "#ffffff"
     },
     {
       "id": "color_border",
       "label": "Borders",
+      "group": "Colors",
       "type": "color",
       "default": "#eaeaea"
     },
     {
       "id": "color_light",
       "label": "Light background",
+      "group": "Colors",
       "type": "color",
       "default": "#f2f2f2"
     },
     {
       "id": "color_dark",
       "label": "Dark accents",
+      "group": "Colors",
       "type": "color",
       "default": "#000000"
     },
     {
       "id": "color_text",
       "label": "Text",
+      "group": "Colors",
       "type": "color",
       "default": "#444444"
     },
     {
       "id": "color_text_dark",
       "label": "Headings",
+      "group": "Colors",
       "type": "color",
       "default": "#000000"
     },
     {
       "id": "color_text_light",
       "label": "Muted text",
+      "group": "Colors",
       "type": "color",
       "default": "#666666"
     },
     {
       "id": "font",
       "label": "Font",
+      "group": "Typography",
       "type": "select",
       "options": [
         {
@@ -98,6 +116,7 @@
     {
       "id": "sticky_header",
       "label": "Sticky header",
+      "group": "Header",
       "type": "checkbox",
       "default": true
     },
@@ -105,6 +124,7 @@
       "id": "show_language_selector",
       "label": "Show language selector",
       "info": "A picker in the header for the languages you publish (Settings → Languages). Shown only when you publish one besides your own.",
+      "group": "Header",
       "type": "checkbox",
       "default": false
     },
@@ -112,6 +132,7 @@
       "id": "show_country_selector",
       "label": "Show country selector",
       "info": "A picker in the header for the countries you ship to (Settings → General → Ship-to countries). Shown only when there are two or more.",
+      "group": "Header",
       "type": "checkbox",
       "default": false
     },
@@ -119,64 +140,62 @@
       "id": "announcement_text",
       "label": "Announcement bar (one message)",
       "info": "Shown only while Header → Announcement bar has no announcements of its own",
+      "group": "Announcement bar",
       "type": "text"
     },
     {
       "id": "announcement_link",
       "label": "Announcement link",
+      "group": "Announcement bar",
       "type": "url"
     },
     {
       "id": "footer_text",
       "label": "Footer text",
       "info": "Defaults to © year and the shop name",
+      "group": "Footer",
       "type": "text"
     },
     {
       "id": "instagram_url",
-      "group": "Social links",
       "label": "Instagram",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "facebook_url",
-      "group": "Social links",
       "label": "Facebook",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "x_url",
-      "group": "Social links",
       "label": "X (Twitter)",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "tiktok_url",
-      "group": "Social links",
       "label": "TikTok",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "youtube_url",
-      "group": "Social links",
       "label": "YouTube",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "pinterest_url",
-      "group": "Social links",
       "label": "Pinterest",
+      "group": "Social links",
       "type": "url"
-    },
-    {
-      "id": "favicon",
-      "label": "Favicon",
-      "type": "image",
-      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
     },
     {
       "id": "custom_css",
       "label": "Custom CSS",
+      "group": "Advanced",
       "type": "code",
       "language": "css"
     }

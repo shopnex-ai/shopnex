@@ -46,7 +46,7 @@ import {
   settingsObject,
   shopObject,
 } from './drops'
-import { RENDER, createLiquid, type RenderData, type SectionObject } from './liquid'
+import { RENDER, assetPath, createLiquid, type RenderData, type SectionObject } from './liquid'
 import { consentScriptUrl } from './consent-script'
 import { previewScriptUrl } from './preview-script'
 import { seoTags } from './seo'
@@ -79,6 +79,10 @@ function readTheme(id: string): Theme {
   const parsed = ThemeDefinition.safeParse(JSON.parse(readFileSync(file, 'utf8')))
   if (!parsed.success) throw new Error(`[theme] ${file} is not a valid theme definition: ${parsed.error.message}`)
   const definition = parsed.data
+  // assets/screenshot.jpg is the theme's picture in the admin, unless theme.json points elsewhere
+  if (!definition.screenshot && existsSync(join(dir, 'assets/screenshot.jpg'))) {
+    definition.screenshot = assetPath(id, 'screenshot.jpg')
+  }
   if (definition.id !== id) throw new Error(`[theme] ${file}: the id is "${definition.id}", the folder "${id}"`)
   const missing = [
     'layout/theme',

@@ -7,11 +7,13 @@
       "id": "logo",
       "label": "Logo",
       "info": "Image URL. Without one, the shop name is shown.",
+      "group": "Brand",
       "type": "image"
     },
     {
       "id": "logo_width",
       "label": "Logo width",
+      "group": "Brand",
       "type": "range",
       "min": 60,
       "max": 300,
@@ -20,27 +22,38 @@
       "default": 140
     },
     {
+      "id": "favicon",
+      "label": "Favicon",
+      "group": "Brand",
+      "type": "image",
+      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
+    },
+    {
       "id": "accent_color",
       "label": "Accent color",
       "info": "Buttons, links and highlights",
+      "group": "Colors",
       "type": "color",
       "default": "#803f3b"
     },
     {
       "id": "paper_color",
       "label": "Background color",
+      "group": "Colors",
       "type": "color",
       "default": "#f6f4f5"
     },
     {
       "id": "ink_color",
       "label": "Text color",
+      "group": "Colors",
       "type": "color",
       "default": "#1f1d1d"
     },
     {
       "id": "heading_font",
       "label": "Heading font",
+      "group": "Typography",
       "type": "select",
       "options": [
         {
@@ -69,6 +82,7 @@
     {
       "id": "body_font",
       "label": "Body font",
+      "group": "Typography",
       "type": "select",
       "options": [
         {
@@ -94,6 +108,7 @@
       "id": "show_collections_bar",
       "label": "Collections bar",
       "info": "Links to your collections above the header",
+      "group": "Header",
       "type": "checkbox",
       "default": true
     },
@@ -101,6 +116,7 @@
       "id": "show_language_selector",
       "label": "Show language selector",
       "info": "A picker in the header for the languages you publish (Settings → Languages). Shown only when you publish one besides your own.",
+      "group": "Header",
       "type": "checkbox",
       "default": false
     },
@@ -108,54 +124,50 @@
       "id": "footer_text",
       "label": "Footer text",
       "info": "Defaults to © year and the shop name",
+      "group": "Footer",
       "type": "text"
     },
     {
       "id": "instagram_url",
-      "group": "Social links",
       "label": "Instagram",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "facebook_url",
-      "group": "Social links",
       "label": "Facebook",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "x_url",
-      "group": "Social links",
       "label": "X (Twitter)",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "tiktok_url",
-      "group": "Social links",
       "label": "TikTok",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "youtube_url",
-      "group": "Social links",
       "label": "YouTube",
+      "group": "Social links",
       "type": "url"
     },
     {
       "id": "pinterest_url",
-      "group": "Social links",
       "label": "Pinterest",
+      "group": "Social links",
       "type": "url"
-    },
-    {
-      "id": "favicon",
-      "label": "Favicon",
-      "type": "image",
-      "info": "The small icon in the browser tab. A square image, at least 32×32 pixels. Without one, the theme's own is used"
     },
     {
       "id": "custom_css",
       "label": "Custom CSS",
       "info": "Added after the theme styles on every page",
+      "group": "Advanced",
       "type": "code",
       "language": "css"
     },
@@ -163,6 +175,7 @@
       "id": "head_html",
       "label": "Head code",
       "info": "Added to the <head> of every page: analytics, pixels, site verification tags",
+      "group": "Advanced",
       "type": "code",
       "language": "html"
     }

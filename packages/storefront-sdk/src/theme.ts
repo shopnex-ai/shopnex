@@ -160,6 +160,11 @@ export const ThemeDefinition = z.object({
   id: Id,
   name: z.string().min(1).max(100),
   version: z.string().max(50).optional(),
+  /** A picture of the theme for the admin's theme list: a path on the storefront (a theme's assets/screenshot.jpg is picked up on its own) */
+  screenshot: z
+    .string()
+    .regex(/^\/[^?#]*$/, 'A path like /shopnex/assets/acme/screenshot.jpg')
+    .optional(),
   settings: z.array(ThemeSettingField).default([]),
   sections: z.record(Id, ThemeSectionDefinition),
   pages: z.record(

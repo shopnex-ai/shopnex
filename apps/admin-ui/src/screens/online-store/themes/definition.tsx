@@ -21,7 +21,10 @@ export async function fetchThemes(storefrontUrl: string | null) {
 }
 
 /** The themes the storefront includes, the first being its default; `defaults` starts a new copy */
-export type Storefront = { url: string; themes: { id: string; name: string; defaults: ThemeDocument }[] }
+export type Storefront = {
+  url: string
+  themes: { id: string; name: string; defaults: ThemeDocument; screenshot: string | null }[]
+}
 
 function NoStorefront() {
   return (
