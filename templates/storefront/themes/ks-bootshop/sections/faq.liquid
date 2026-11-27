@@ -1,7 +1,4 @@
-{%- comment -%}
-  FAQ: one question per block, as a Bootstrap accordion; blocks without a question are skipped, and with none the section
-  is not shown. While there are no blocks, the old numbered settings (up to five questions) are shown.
-{%- endcomment -%}
+{%- comment -%} FAQ: one question per block, as a Bootstrap accordion; blocks without a question are skipped, and with none the section is not shown {%- endcomment -%}
 {%- assign parent = 'ks-faq-' | append: section.id -%}
 {%- capture items -%}
   {%- for block in section.blocks %}
@@ -11,18 +8,6 @@
     {%- endif %}
   {%- endfor %}
 {%- endcapture -%}
-{%- if items == blank -%}
-  {%- capture items -%}
-    {%- for i in (1..5) %}
-      {%- assign question_key = 'question_' | append: i -%}
-      {%- assign answer_key = 'answer_' | append: i -%}
-      {%- if section.settings[question_key] != blank %}
-        {%- assign id = parent | append: '-' | append: i -%}
-        {% render 'faq-item', id: id, parent: parent, question: section.settings[question_key], answer: section.settings[answer_key], attrs: '' %}
-      {%- endif %}
-    {%- endfor %}
-  {%- endcapture -%}
-{%- endif -%}
 {%- if items != blank -%}
 <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
   <div class="container ks-narrow">

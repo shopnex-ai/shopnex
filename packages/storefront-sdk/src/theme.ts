@@ -28,11 +28,6 @@ const field = {
   info: z.string().max(500).optional(),
   /** The editor shows neighbouring fields with the same group under one heading, e.g. "Social links" */
   group: z.string().min(1).max(60).optional(),
-  /**
-   * Kept for documents written before the section had blocks for this (numbered slide settings…): the theme still reads
-   * it while the section has no blocks, and the editor shows it only then, so a section with blocks has no clutter
-   */
-  legacy: z.boolean().optional(),
 }
 
 export const ThemeSettingField = z.discriminatedUnion('type', [

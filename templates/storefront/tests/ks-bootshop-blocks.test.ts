@@ -1,5 +1,5 @@
 // KS BootShop's hero, testimonials, FAQ, featured collections and footer, rendered from their real section files: one block per
-// slide, quote, question or collection, and the old numbered settings while a section has no blocks.
+// slide, quote, question, collection or footer column.
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { SafeHtml } from '../src/core/drops'
@@ -59,24 +59,6 @@ describe('hero carousel', () => {
     const html = await render(section('hero-carousel', settings, [block('a', 'slide', { heading: 'Only' })]))
     assert.doesNotMatch(html, /carousel-control|carousel-indicators|data-bs-ride/)
   })
-
-  test('without blocks the old numbered settings still show', async () => {
-    const html = await render(
-      section('hero-carousel', { ...settings, image_1: '/old.jpg', heading_1: 'Old', heading_2: 'Second' }),
-    )
-    assert.match(html, /<img src="\/old\.jpg"/)
-    assert.match(html, /<h1 class="display-4">Old<\/h1>/)
-    assert.match(html, /<h2 class="display-4">Second<\/h2>/)
-    assert.doesNotMatch(html, /data-block-id/)
-  })
-
-  test('blocks win over the old settings', async () => {
-    const html = await render(
-      section('hero-carousel', { ...settings, heading_1: 'Old' }, [block('a', 'slide', { heading: 'New' })]),
-    )
-    assert.match(html, /New/)
-    assert.doesNotMatch(html, /Old/)
-  })
 })
 
 describe('testimonials', () => {
@@ -92,11 +74,11 @@ describe('testimonials', () => {
     assert.match(html, /<figcaption>Sam<\/figcaption>/)
     assert.doesNotMatch(html, /Nobody/)
   })
+})
 
-  test('the old numbered quotes show while there are no blocks, and no quotes means no section', async () => {
-    const old = await render(section('testimonials', { quote_1: 'Old one', author_1: 'Al' }))
-    assert.match(old, /Old one/)
-    assert.doesNotMatch(await render(section('testimonials', {})), /ks-section/)
+describe('testimonials, empty', () => {
+  test('with no quote there is no section', async () => {
+    assert.doesNotMatch(await render(section('testimonials', {}, [block('a', 'quote', { quote: '  ' })])), /ks-section/)
   })
 })
 
@@ -116,12 +98,6 @@ describe('FAQ', () => {
     assert.match(html, /id="ks-faq-s1-b"[^>]*data-bs-parent="#ks-faq-s1"/)
     assert.match(html, /<div class="accordion" id="ks-faq-s1">/)
     assert.doesNotMatch(html, /data-block-id="c"/)
-  })
-
-  test('the old numbered questions show while there are no blocks', async () => {
-    const html = await render(section('faq', { ...settings, question_1: 'Old?', answer_1: 'Old answer' }))
-    assert.match(html, /data-bs-target="#ks-faq-s1-1"/)
-    assert.match(html, /Old answer/)
   })
 })
 
@@ -147,11 +123,10 @@ describe('featured collections', () => {
     assert.match(await render(section('featured-collections', settings, blocks)), /--ks-columns: 4/)
   })
 
-  test('without blocks: the old picks, else the shop’s first four collections', async () => {
-    const picked = await render(section('featured-collections', { ...settings, collection_1: collections[1] }))
-    assert.match(picked, /Beta/)
-    assert.doesNotMatch(picked, /Alpha/)
-    const first = await render(section('featured-collections', settings))
+  test('until a block has a collection, the shop’s first four collections', async () => {
+    const first = await render(
+      section('featured-collections', settings, [block('a', 'collection', { collection: null })]),
+    )
     assert.equal([...first.matchAll(/class="ks-tile"/g)].length, 4)
   })
 })

@@ -482,7 +482,7 @@ export function ThemeEditor({
                 <>
                   {selectedDefinition.settings.length > 0 || blockTypes.length === 0 ? (
                     <SettingFields
-                      fields={selectedDefinition.settings.filter((f) => !f.legacy || blocks.length === 0)}
+                      fields={selectedDefinition.settings}
                       values={resolveSettings(selectedDefinition.settings, selectedSection.settings)}
                       onChange={setSectionSetting}
                     />

@@ -4,8 +4,6 @@
 
 - A global section's definition can say `group: 'footer'`: the theme editor lists it in a Footer group below the page's sections
   (the others stay in the Header group above them).
-- Theme settings can be `legacy: true`: a field kept for documents written before a section had blocks for it. The theme still
-  reads it while the section has no blocks; the editor shows it only then.
 - Theme preview (`connectThemePreview`): the editor's preview is for editing, not shopping. Links, `data-add-to-cart` and
   `data-line-qty` buttons, submit buttons and form submits do nothing in it (`PREVIEW_BLOCKED_SELECTOR`); a click on a
   section still picks it, and carousels, tabs and menu toggles still work.

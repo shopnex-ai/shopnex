@@ -267,105 +267,6 @@
           "label": "Autoplay",
           "type": "checkbox",
           "default": true
-        },
-        {
-          "id": "image_1",
-          "label": "Slide 1: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-1.jpg",
-          "legacy": true,
-          "info": "Used only while the section has no blocks"
-        },
-        {
-          "id": "heading_1",
-          "label": "Slide 1: heading",
-          "type": "text",
-          "default": "Welcome to our store",
-          "legacy": true
-        },
-        {
-          "id": "text_1",
-          "label": "Slide 1: text",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "button_label_1",
-          "label": "Slide 1: button label",
-          "type": "text",
-          "default": "Shop now",
-          "legacy": true
-        },
-        {
-          "id": "button_link_1",
-          "label": "Slide 1: button link",
-          "type": "url",
-          "default": "/products",
-          "legacy": true
-        },
-        {
-          "id": "image_2",
-          "label": "Slide 2: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-2.jpg",
-          "legacy": true
-        },
-        {
-          "id": "heading_2",
-          "label": "Slide 2: heading",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "text_2",
-          "label": "Slide 2: text",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "button_label_2",
-          "label": "Slide 2: button label",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "button_link_2",
-          "label": "Slide 2: button link",
-          "type": "url",
-          "default": "/products",
-          "legacy": true
-        },
-        {
-          "id": "image_3",
-          "label": "Slide 3: image",
-          "type": "image",
-          "default": "/shopnex/assets/ks-bootshop/hero-3.jpg",
-          "legacy": true
-        },
-        {
-          "id": "heading_3",
-          "label": "Slide 3: heading",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "text_3",
-          "label": "Slide 3: text",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "button_label_3",
-          "label": "Slide 3: button label",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "button_link_3",
-          "label": "Slide 3: button link",
-          "type": "url",
-          "default": "/products",
-          "legacy": true
         }
       ],
       "limit": 1,
@@ -498,31 +399,6 @@
           "label": "Heading",
           "type": "text",
           "default": "Shop by collection"
-        },
-        {
-          "id": "collection_1",
-          "label": "Collection 1",
-          "type": "collection",
-          "legacy": true,
-          "info": "Used only while the section has no blocks"
-        },
-        {
-          "id": "collection_2",
-          "label": "Collection 2",
-          "type": "collection",
-          "legacy": true
-        },
-        {
-          "id": "collection_3",
-          "label": "Collection 3",
-          "type": "collection",
-          "legacy": true
-        },
-        {
-          "id": "collection_4",
-          "label": "Collection 4",
-          "type": "collection",
-          "legacy": true
         },
         {
           "id": "background",
@@ -780,45 +656,6 @@
           "default": "What customers say"
         },
         {
-          "id": "quote_1",
-          "label": "Quote 1",
-          "type": "textarea",
-          "legacy": true,
-          "info": "Used only while the section has no blocks"
-        },
-        {
-          "id": "author_1",
-          "label": "Author 1",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "quote_2",
-          "label": "Quote 2",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "author_2",
-          "label": "Author 2",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "quote_3",
-          "label": "Quote 3",
-          "type": "textarea",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "author_3",
-          "label": "Author 3",
-          "type": "text",
-          "default": "",
-          "legacy": true
-        },
-        {
           "id": "background",
           "label": "Background",
           "type": "select",
@@ -892,73 +729,6 @@
           "label": "Heading",
           "type": "text",
           "default": "Frequently asked questions"
-        },
-        {
-          "id": "question_1",
-          "label": "Question 1",
-          "type": "text",
-          "legacy": true,
-          "info": "Used only while the section has no blocks"
-        },
-        {
-          "id": "answer_1",
-          "label": "Answer 1",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "question_2",
-          "label": "Question 2",
-          "type": "text",
-          "legacy": true
-        },
-        {
-          "id": "answer_2",
-          "label": "Answer 2",
-          "type": "textarea",
-          "legacy": true
-        },
-        {
-          "id": "question_3",
-          "label": "Question 3",
-          "type": "text",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "answer_3",
-          "label": "Answer 3",
-          "type": "textarea",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "question_4",
-          "label": "Question 4",
-          "type": "text",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "answer_4",
-          "label": "Answer 4",
-          "type": "textarea",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "question_5",
-          "label": "Question 5",
-          "type": "text",
-          "default": "",
-          "legacy": true
-        },
-        {
-          "id": "answer_5",
-          "label": "Answer 5",
-          "type": "textarea",
-          "default": "",
-          "legacy": true
         },
         {
           "id": "background",

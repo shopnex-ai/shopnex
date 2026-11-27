@@ -1,27 +1,18 @@
 {%- comment -%}
-  Featured collections: one collection tile per block, with the collection's image. Without a collection picked in a
-  block, the old numbered settings (up to four) are used, and without those the shop's first collections.
+  Featured collections: one collection tile per block, with the collection's image. Until a block has a collection, the
+  shop's first four collections are shown.
 {%- endcomment -%}
 {%- assign picked = '' | split: ',' -%}
-{%- assign from_blocks = false -%}
 {%- for block in section.blocks -%}
   {%- if block.settings.collection != blank -%}
     {%- assign picked = picked | push: block -%}
-    {%- assign from_blocks = true -%}
   {%- endif -%}
 {%- endfor -%}
-{%- unless from_blocks -%}
-  {%- for i in (1..4) -%}
-    {%- assign key = 'collection_' | append: i -%}
-    {%- if section.settings[key] != blank -%}
-      {%- assign picked = picked | push: section.settings[key] -%}
-    {%- endif -%}
-  {%- endfor -%}
-  {%- comment %} Nothing picked yet: the shop's first collections {% endcomment -%}
-  {%- if picked.size == 0 -%}
-    {%- assign picked = collections | slice: 0, 4 -%}
-  {%- endif -%}
-{%- endunless -%}
+{%- assign from_blocks = true -%}
+{%- if picked.size == 0 -%}
+  {%- assign from_blocks = false -%}
+  {%- assign picked = collections | slice: 0, 4 -%}
+{%- endif -%}
 {%- if picked.size > 0 -%}
   <section class="ks-section {{ section.settings.background }} {{ section.settings.padding }}">
     <div class="container">
