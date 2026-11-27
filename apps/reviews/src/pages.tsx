@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { raw } from 'hono/html'
 import type { PropsWithChildren } from 'hono/jsx'
 import {
@@ -38,28 +39,7 @@ const STATUS_BADGE: Record<Review['status'], { tone: 'warning' | 'success' | 'de
 }
 
 // Only what is specific to a review row; tabs, filters, settings rows and panels come from the shared kit
-const css = `
-.snx-top{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem}.snx-top .snx-badge{margin-left:auto}
-.snx-stars{letter-spacing:.1em;white-space:nowrap}.snx-stars i{font-style:normal;color:#e8a317}.snx-stars u{text-decoration:none;opacity:.25}
-.snx-body{margin:.5rem 0 .25rem;white-space:pre-line}
-.snx-reply{margin:.6rem 0 0;padding:.1rem 0 .1rem .75rem;border-left:3px solid var(--border)}
-.snx-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}.snx-actions .sx-btn{height:2rem;padding:0 .75rem}.snx-actions .snx-sep{flex:1}
-.snx-replybox{margin-top:.75rem}
-.snx-overview{display:grid;grid-template-columns:minmax(8rem,auto) minmax(12rem,1fr);gap:1rem 2.5rem;align-items:center}
-@media (max-width:34rem){.snx-overview{grid-template-columns:1fr}}
-.snx-avg{font-size:2.75rem;font-weight:700;line-height:1;letter-spacing:-.03em}
-.snx-bars{display:flex;flex-direction:column;gap:.35rem;max-width:26rem}
-.snx-bar{display:flex;align-items:center;gap:.6rem;font-size:.85em}.snx-bar>span:first-child{width:.9rem;text-align:right}.snx-bar>span:last-child{width:2rem;color:var(--muted-fg)}
-.snx-track{flex:1;height:.5rem;border-radius:999px;background:var(--muted);overflow:hidden}.snx-fill{height:100%;border-radius:999px;background:#e8a317}
-.snx-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:1rem;padding-top:1rem;border-top:1px solid var(--border)}
-.snx-head{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem}.snx-head h2{margin:0;font-size:.95rem;font-weight:600}.snx-head .snx-end{margin-left:auto}
-.snx-rowline{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem 1rem}.snx-rowline .snx-grow{flex:1;min-width:12rem}
-.snx-products{display:flex;flex-direction:column}.snx-products>div{display:flex;align-items:center;gap:1rem;padding:.6rem 0;border-top:1px solid var(--border)}.snx-products>div:first-child{border-top:0;padding-top:0}
-.snx-products .snx-grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.snx-steps{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:.5rem}
-.snx-preview{border:1px solid var(--border);border-radius:var(--radius);padding:1rem;background:var(--muted)}
-.snx-preview p{margin:.4rem 0 0;white-space:pre-line}
-`
+const css = readFileSync(new URL('./admin.css', import.meta.url), 'utf8')
 
 function ReviewCard({ review }: { review: Review }) {
   const badge = STATUS_BADGE[review.status]
@@ -512,28 +492,7 @@ export function AdminPage(props: AdminPageProps) {
 }
 
 // The pages buyers see from their email link: one centred card, no admin
-const buyerCss = `
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:#f6f6f4;color:#1c1c1a;font:16px/1.5 system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;padding:1rem}
-main{background:#fff;border:1px solid #e4e4e0;border-radius:16px;padding:2rem;width:100%;max-width:32rem;box-shadow:0 1px 3px #0000000d}
-h1{font-size:1.4rem;line-height:1.25;margin:0 0 .25rem}
-.sub{color:#6b6b66;margin:0 0 1.5rem}
-label.l{display:block;margin:1.25rem 0 .35rem;font-weight:600;font-size:.95rem}
-input[type=text],textarea{width:100%;padding:.65rem .75rem;font:inherit;border:1px solid #d4d4cf;border-radius:10px;background:#fff}
-input[type=text]:focus,textarea:focus{outline:2px solid #e8a317;outline-offset:1px;border-color:#e8a317}
-.rating{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:.15rem}
-.rating input{position:absolute;opacity:0;pointer-events:none}
-.rating label{font-size:2.4rem;line-height:1;color:#d4d4cf;cursor:pointer;padding:0 .1rem;transition:color .1s,transform .1s}
-.rating label:hover{transform:scale(1.1)}
-.rating label:hover,.rating label:hover~label,.rating input:checked~label{color:#e8a317}
-.rating input:focus-visible+label{outline:2px solid #e8a317;border-radius:6px}
-button{margin-top:1.5rem;width:100%;padding:.8rem 1.2rem;font:inherit;font-weight:600;color:#fff;background:#1c1c1a;border:0;border-radius:10px;cursor:pointer}
-button:hover{opacity:.9}
-.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:10px;padding:.6rem .8rem;margin:0 0 1rem}
-@media (prefers-color-scheme:dark){body{background:#121211;color:#f1f1ee}main{background:#1c1c1a;border-color:#2e2e2b}.sub{color:#a3a39d}
-input[type=text],textarea{background:#121211;border-color:#3a3a36;color:inherit}.rating label{color:#3a3a36}button{background:#f1f1ee;color:#1c1c1a}
-.error{background:#3b1414;border-color:#7f1d1d;color:#fca5a5}}
-`
+const buyerCss = readFileSync(new URL('./buyer.css', import.meta.url), 'utf8')
 
 function Shell({ title, children }: PropsWithChildren<{ title: string }>) {
   return (
