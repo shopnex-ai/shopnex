@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { orpc, type Outputs } from '@/lib/orpc'
+import { LoadError } from '@/components/not-found'
 
 type Notification = Outputs['admin']['notifications']['get']['notification']
 type Template = Outputs['admin']['notifications']['get']
@@ -50,7 +51,15 @@ function useDebounced<T>(value: T, ms: number) {
 
 export function NotificationEditor({ notification }: { notification: Notification }) {
   const { data, error } = useQuery(orpc.admin.notifications.get.queryOptions({ input: { notification } }))
-  if (error) return <p className="text-sm text-destructive">{error.message}</p>
+  if (error) {
+    return (
+      <LoadError
+        error={error}
+        noun="Notification"
+        back={{ to: '/admin/settings/notifications', label: 'Notifications' }}
+      />
+    )
+  }
   if (!data) return <Skeleton className="h-96 w-full" />
   return <Editor template={data} />
 }
