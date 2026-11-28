@@ -283,7 +283,8 @@ function EmailForm({ settings }: { settings: Settings }) {
           control={form.control}
           name="fromName"
           label="From name"
-          placeholder="Your shop's name"
+          placeholder="Acme Store"
+          description="The sender name customers see in their inbox."
           autoComplete="off"
         />
         <TextField
