@@ -73,8 +73,13 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
         <Card>
           <CardContent className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
             {storefront ? (
-              // The live store itself (what buyers see now), not the theme's picture
-              <StorefrontThumbnail url={storefront.url} themeId={current.id} />
+              // The live store itself (what buyers see now), not the theme's picture. Keyed by the live copy and its
+              // publish time: the iframe's URL never changes, so without it a new live theme shows the old page until a refresh
+              <StorefrontThumbnail
+                key={`${current.id}:${String(current.publishedAt)}`}
+                url={storefront.url}
+                themeId={current.id}
+              />
             ) : (
               <div className="flex aspect-[16/10] items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground">
                 No preview
