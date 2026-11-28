@@ -1,6 +1,7 @@
-// CodeMirror with Liquid (HTML inside) highlighting. Uncontrolled: it starts from `value` and reports every
+// CodeMirror with Liquid (HTML inside) highlighting, or plain HTML (`language="html"`, for markup without Liquid). Uncontrolled: it starts from `value` and reports every
 // change; remount it (a new `key`) to load another file or content. Ctrl/Cmd+S calls `onSave`.
 import { indentWithTab } from '@codemirror/commands'
+import { html } from '@codemirror/lang-html'
 import { liquid } from '@codemirror/lang-liquid'
 import { Compartment, EditorState, Prec } from '@codemirror/state'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -14,6 +15,8 @@ type Props = {
   onChange: (value: string) => void
   onSave: () => void
   readOnly?: boolean
+  /** What to highlight; read when the editor mounts. Default: Liquid */
+  language?: 'liquid' | 'html'
   /** Scrolls to and selects this line (1-based) when it changes */
   line?: number | null
 }
@@ -37,7 +40,7 @@ const surface = EditorView.theme({
   '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'color-mix(in oklch, var(--muted) 55%, transparent)' },
 })
 
-export function LiquidEditor({ value, onChange, onSave, line, readOnly = false }: Props) {
+export function LiquidEditor({ value, onChange, onSave, line, readOnly = false, language = 'liquid' }: Props) {
   const parent = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView>(null)
   const colors = useRef(new Compartment())
@@ -54,7 +57,7 @@ export function LiquidEditor({ value, onChange, onSave, line, readOnly = false }
         doc: value,
         extensions: [
           basicSetup,
-          liquid(),
+          language === 'html' ? html() : liquid(),
           layout,
           Prec.high(surface),
           colors.current.of(dark ? oneDark : []),

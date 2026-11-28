@@ -89,6 +89,9 @@ importers:
       '@codemirror/commands':
         specifier: ^6.11.0
         version: 6.11.1
+      '@codemirror/lang-html':
+        specifier: ^6.4.12
+        version: 6.4.12
       '@codemirror/lang-liquid':
         specifier: ^6.3.3
         version: 6.3.3(patch_hash=671b07752131860e6dfc2a912bcadae2ff1c4378354fafe96aab82e0b1e76de6)
@@ -260,6 +263,9 @@ importers:
       pg:
         specifier: ^8.23.1
         version: 8.23.1
+      prettier:
+        specifier: 3.9.10
+        version: 3.9.10
       react:
         specifier: ^19.3.1
         version: 19.3.1
