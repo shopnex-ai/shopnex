@@ -33,6 +33,7 @@ describe('0053: saved themes get blocks from their old settings', () => {
   let client: PGlite
   const ids = new Map<string, string>()
   const inserted = new Map<string, { theme: string; draft: Doc; published: Doc | null }>()
+  let xminBefore = ''
 
   const put = async (key: string, theme: string, draft: Doc, published: Doc | null = null) => {
     const { rows } = await client.query<{ id: string }>(
@@ -177,6 +178,51 @@ describe('0053: saved themes get blocks from their old settings', () => {
       'maison',
       doc([section('hero', 'hero-carousel', { image_1: '/keep.jpg' })], { announcement_text: 'Stay' }),
     )
+
+    // Rows that must not stop the upgrade: shapes nothing expected, and an update that is refused
+    await put(
+      'poison',
+      'ks-bootshop',
+      doc([section('hero', 'hero-carousel', { image_1: '/p.jpg' })]),
+      doc([section('hero', 'hero-carousel', { image_1: '/p2.jpg' })]),
+    )
+    await put(
+      'null-settings',
+      'ks-bootshop',
+      doc([
+        section('hero', 'hero-carousel', null as never),
+        section('faq', 'faq', { question_1: 'Q?', answer_1: 'A.' }),
+      ]),
+    )
+    await put('pages-array', 'ks-bootshop', { settings: { announcement_text: 'Hi' }, pages: [] })
+    await put('static-string', 'ks-bootshop', {
+      settings: { announcement_text: 'Hi' },
+      pages: { home: { sections: [] }, static: 'oops' },
+    })
+    await put('sections-object', 'ks-bootshop', { settings: {}, pages: { home: { sections: { hero: 1 } } } })
+    await put(
+      'modern',
+      'ks-bootshop',
+      doc(
+        [
+          section(
+            'hero',
+            'hero-carousel',
+            { height: '60vh' },
+            { blocks: [{ id: 'slide-1', type: 'slide', settings: { image: '/a.jpg' } }] },
+          ),
+        ],
+        { color_primary: '#fff' },
+      ),
+    )
+    xminBefore = (
+      await client.query<{ x: string }>(`select xmin::text as x from shop_themes where id = $1`, [ids.get('modern')!])
+    ).rows[0]!.x
+    await client.exec(`
+      create function zz_poison() returns trigger language plpgsql as $$ begin
+        if new.name = 'poison' then raise exception 'update refused'; end if; return new; end $$;
+      create trigger zz_poison before update on shop_themes for each row execute function zz_poison();
+      alter table shop_themes enable always trigger zz_poison;`) // always: the session runs as a replica to skip foreign keys
 
     const sql = await readFile(join(folder, `${TAG}.sql`), 'utf8')
     for (const statement of sql.split('--> statement-breakpoint')) await client.exec(statement)
@@ -354,6 +400,40 @@ describe('0053: saved themes get blocks from their old settings', () => {
       [JSON.stringify(row.draft)],
     )
     assert.deepEqual(rows[0]!.again, row.draft)
+  })
+
+  test('a row that cannot be converted is left as it was, the rest are converted, and why is recorded', async () => {
+    const poison = await get('poison')
+    assert.deepEqual(poison.draft, inserted.get('poison')!.draft)
+    assert.deepEqual(poison.published, inserted.get('poison')!.published)
+    const errors = await client.query<{ id: string; error: string }>(
+      `select id, error from shop_themes_pre_blocks_backup where error is not null`,
+    )
+    assert.deepEqual(errors.rows, [{ id: ids.get('poison')!, error: 'update refused' }])
+    // The others of the same theme were converted
+    assert.equal((home(await get('ks'))[0] as { blocks?: unknown[] }).blocks?.length, 2)
+  })
+
+  test('documents of an unexpected shape are left alone and do not stop the upgrade', async () => {
+    for (const key of ['pages-array', 'static-string', 'sections-object'])
+      assert.deepEqual((await get(key)).draft, inserted.get(key)!.draft, key)
+    // A section whose settings is null is skipped; another section of the same document is still converted
+    const [hero, faq] = home(await get('null-settings'))
+    assert.deepEqual(hero, { id: 'hero', type: 'hero-carousel', settings: null })
+    assert.deepEqual(faq, {
+      id: 'faq',
+      type: 'faq',
+      settings: {},
+      blocks: [{ id: 'question-1', type: 'question', settings: { question: 'Q?', answer: 'A.' } }],
+    })
+  })
+
+  test('a row with nothing to convert is not written', async () => {
+    const x = (
+      await client.query<{ x: string }>(`select xmin::text as x from shop_themes where id = $1`, [ids.get('modern')!])
+    ).rows[0]!.x
+    assert.equal(x, xminBefore)
+    assert.deepEqual((await get('modern')).draft, inserted.get('modern')!.draft)
   })
 
   test('the old documents are kept in a backup table, for the themes that were changed only, and updated_at is as it was', async () => {
