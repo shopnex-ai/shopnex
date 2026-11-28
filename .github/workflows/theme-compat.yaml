@@ -1,0 +1,68 @@
+name: Theme compatibility
+
+# A merchant's saved theme is stored under the ids a theme declares: its settings, sections, block types and their
+# settings. Removing or renaming one leaves what merchants saved under it where nothing reads it (a hero that stays empty),
+# the way removing a response field breaks the API (see api-compat.yaml). This compares the themes' structure in the pull
+# request with its base branch (templates/storefront/scripts/theme-compat.ts) and fails on a removed or renamed
+# setting, section or block type, or a removed theme. Adding things is fine.
+#
+# A removal passes when the theme lists it in `removed` (dropped on purpose), or moves it into blocks (`from_settings`).
+# For a break that is intended, add the `breaking-theme-change` label and a SQL migration for the saved data in
+# modules/db/migrations (pnpm --filter @shopnex/db exec drizzle-kit generate --custom): the check then passes, and the
+# diff stays in the job summary for the release notes.
+# It runs on every pull request, with its steps skipped for ones that can't change a theme, so it can be a required
+# check: a workflow that never starts would leave a required check pending forever.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: theme-compat-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  breaking:
+    name: No breaking theme changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Only a pull request that touches the themes, the theme format, the migrations or this check can break a saved theme:
+      # the rest is skipped (and the check still passes)
+      - id: diff
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          code=false
+          if git diff --name-only "origin/$BASE...HEAD" | grep -qE '^(templates/storefront/themes/|templates/storefront/scripts/theme-compat|packages/storefront-sdk/src/theme|modules/db/migrations/|\.github/workflows/theme-compat\.yaml)'; then
+            code=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      - if: steps.diff.outputs.code == 'true'
+        uses: pnpm/action-setup@v6
+
+      - if: steps.diff.outputs.code == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install
+        if: steps.diff.outputs.code == 'true'
+        run: pnpm install --frozen-lockfile --filter "shopnex-storefront..."
+
+      - name: Compare the themes with the base branch
+        if: steps.diff.outputs.code == 'true'
+        env:
+          BASE: ${{ github.base_ref }}
+          ALLOWED: ${{ contains(github.event.pull_request.labels.*.name, 'breaking-theme-change') }}
+        run: |
+          flags=(--base "origin/$BASE")
+          if [ "$ALLOWED" = true ]; then flags+=(--allow); fi
+          pnpm --filter shopnex-storefront exec tsx scripts/theme-compat.ts "${flags[@]}"
