@@ -15,7 +15,7 @@ const { eq, inArray } = await import('drizzle-orm')
 const { storefrontModule } = await import('../src/storefront.module')
 const { productService, collectionService } = await import('@shopnex/catalog')
 const { channelService, storefrontKeyService } = await import('@shopnex/channels')
-const { pageService, menuService } = await import('@shopnex/content')
+const { content } = await import('@shopnex/content')
 const { cartService } = await import('@shopnex/cart')
 const { customerService, accountService } = await import('@shopnex/customers')
 const { orderService } = await import('@shopnex/orders')
@@ -44,7 +44,7 @@ const schemas = {
 const { shops } = await import('@shopnex/core/schema')
 
 export { db, prepareDatabase, eq, productService, collectionService, channelService, storefrontKeyService }
-export { pageService, menuService, cartService, customerService, accountService, orderService, themeService }
+export { content, cartService, customerService, accountService, orderService, themeService }
 export { createPreviewToken, discountService, paymentMethodService, customFieldService, schemas, shops }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'storefront-other-shop'

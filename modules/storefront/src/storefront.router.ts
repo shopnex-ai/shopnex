@@ -4,7 +4,7 @@ import { clientIp } from '@shopnex/auth'
 import { cartService, checkoutService } from '@shopnex/cart'
 import { publicationService } from '@shopnex/channels'
 import { collectionService, productService } from '@shopnex/catalog'
-import { menuService, pageService } from '@shopnex/content'
+import { content } from '@shopnex/content'
 import { accountService } from '@shopnex/customers'
 import { db } from '@shopnex/db'
 import { languageService } from '@shopnex/languages'
@@ -161,25 +161,25 @@ export const storefrontRouter = storefront.router({
   pages: {
     list: storefront.pages.list.handler(async ({ input, context }) => {
       const page = await paginate(input, (limit, offset) =>
-        pageService.listPublished(context.shop.id, { limit, offset }, db),
+        content.pages.listPublished(context.shop.id, { limit, offset }),
       )
       return { ...page, nodes: await translatePages(context, page.nodes.map(toPage)) }
     }),
     getByHandle: storefront.pages.getByHandle.handler(async ({ input, context }) => {
-      const page = await pageService.getPublishedByHandle(context.shop.id, input.handle, db)
+      const page = await content.pages.getPublishedByHandle(context.shop.id, input.handle)
       if (!page) throw new ORPCError('NOT_FOUND')
       return translatePage(context, toPage(page))
     }),
   },
   menu: {
     get: storefront.menu.get.handler(async ({ input, context }) => {
-      const menu = await menuService.getByHandle(context.shop.id, input.handle, db)
+      const menu = await content.menus.getByHandle(context.shop.id, input.handle)
       if (!menu) throw new ORPCError('NOT_FOUND')
       return {
         id: menu.id,
         handle: menu.handle,
         title: menu.title,
-        items: toMenuItems(await menuService.resolve(context.shop.id, menu.items, db)),
+        items: toMenuItems(await content.menus.resolve(context.shop.id, menu.items)),
       }
     }),
   },

@@ -202,7 +202,7 @@ export async function resolve(shopId: string, items: StoredMenuItem[], conn: Con
  * page, the catalog, search), so the menus are valid before there is a product or collection.
  * Never replaces an existing menu: a merchant who deleted or rebuilt theirs keeps it that way.
  */
-export async function seedDefault(conn: Conn, shopId: string) {
+export async function seedDefault(shopId: string, conn: Conn) {
   await conn
     .insert(menus)
     .values([

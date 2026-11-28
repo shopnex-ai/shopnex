@@ -41,7 +41,7 @@ export async function completeSetup(input: SetupInput) {
 
     await ensureDefaultShop()
     // Only on a fresh install, so it never brings back a menu the merchant deleted
-    await seedDefaultMenu(db, DEFAULT_SHOP_ID)
+    await seedDefaultMenu(DEFAULT_SHOP_ID, db)
 
     // No name field on the setup form: use the part of the email before the @ (editable in the profile)
     const [local = ''] = input.email.split('@')

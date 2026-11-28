@@ -393,10 +393,10 @@ describe('collections', () => {
 describe('pages and menus', () => {
   test('only published pages are listed or found, with a summary cut at a word', async () => {
     const long = `<p>${'word '.repeat(60)}</p>`
-    await fx.pageService.create(SHOP, { handle: 'about', title: 'About', bodyHtml: '<p>Short <b>text</b></p>' }, db)
-    await fx.pageService.create(SHOP, { handle: 'long', title: 'Long', bodyHtml: long }, db)
-    await fx.pageService.create(SHOP, { handle: 'draft', title: 'Draft', bodyHtml: '<p>x</p>', published: false }, db)
-    const later = await fx.pageService.create(SHOP, { handle: 'later', title: 'Later', bodyHtml: '<p>x</p>' }, db)
+    await fx.content.pages.create(SHOP, { handle: 'about', title: 'About', bodyHtml: '<p>Short <b>text</b></p>' })
+    await fx.content.pages.create(SHOP, { handle: 'long', title: 'Long', bodyHtml: long })
+    await fx.content.pages.create(SHOP, { handle: 'draft', title: 'Draft', bodyHtml: '<p>x</p>', published: false })
+    const later = await fx.content.pages.create(SHOP, { handle: 'later', title: 'Later', bodyHtml: '<p>x</p>' })
     await db
       .update(fx.schemas.pages)
       .set({ publishedAt: new Date(Date.now() + 3_600_000) })
@@ -420,8 +420,8 @@ describe('pages and menus', () => {
     ]
     const c = await fx.collectionService.create(SHOP, { title: 'Summer' }, db)
     const [pg, hiddenPage] = [
-      await fx.pageService.create(SHOP, { handle: 'about', title: 'About', bodyHtml: '<p>x</p>' }, db),
-      await fx.pageService.create(SHOP, { handle: 'hidden', title: 'Hidden', bodyHtml: '<p>x</p>' }, db),
+      await fx.content.pages.create(SHOP, { handle: 'about', title: 'About', bodyHtml: '<p>x</p>' }),
+      await fx.content.pages.create(SHOP, { handle: 'hidden', title: 'Hidden', bodyHtml: '<p>x</p>' }),
     ]
     const item = (type: string, extra: object = {}) => ({
       id: `i-${fx.unique()}`,
@@ -430,26 +430,22 @@ describe('pages and menus', () => {
       items: [],
       ...extra,
     })
-    await fx.menuService.create(
-      SHOP,
-      {
-        handle: 'main',
-        title: 'Main',
-        items: [
-          item('frontpage', {
-            items: [item('collection', { resourceId: c.id, items: [item('product', { resourceId: p.id })] })],
-          }),
-          item('product', { resourceId: soldOut.id }),
-          item('page', { resourceId: pg.id }),
-          item('page', { resourceId: hiddenPage.id }),
-          item('http', { url: 'https://example.com/x' }),
-          item('collection', { resourceId: gone.id }),
-        ],
-      } as never,
-      db,
-    )
+    await fx.content.menus.create(SHOP, {
+      handle: 'main',
+      title: 'Main',
+      items: [
+        item('frontpage', {
+          items: [item('collection', { resourceId: c.id, items: [item('product', { resourceId: p.id })] })],
+        }),
+        item('product', { resourceId: soldOut.id }),
+        item('page', { resourceId: pg.id }),
+        item('page', { resourceId: hiddenPage.id }),
+        item('http', { url: 'https://example.com/x' }),
+        item('collection', { resourceId: gone.id }),
+      ],
+    } as never)
     await fx.productService.update(SHOP, soldOut.id, { status: 'draft' }, db)
-    await fx.pageService.update(SHOP, hiddenPage.id, { published: false }, db)
+    await fx.content.pages.update(SHOP, hiddenPage.id, { published: false })
     await fx.collectionService.remove(SHOP, gone.id, db)
     const menu = await run<{ handle: string; items: Array<{ url: string; handle: string | null; items: any[] }> }>(
       sf.menu!.get,

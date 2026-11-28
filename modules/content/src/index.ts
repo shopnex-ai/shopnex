@@ -1,5 +1,4 @@
-export * as menuService from './menus'
-export * as pageService from './pages'
+export { content } from './content.services'
 export type { MenuInput, ResolvedMenuItem } from './menus'
 export type { PageInput } from './pages'
 export { ContentError, type ContentErrorCode } from './content.errors'

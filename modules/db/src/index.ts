@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import { setDefaultConn } from '@shopnex/kit'
 import { guardEmbeddedClient } from './embedded-guard'
 import { log } from './log'
 
@@ -99,6 +100,7 @@ const globalForDb = globalThis as unknown as { shopnexDb?: Created }
 // Reuse the pool (or the embedded database, which must not be opened twice) across hot reloads in dev
 const created = (globalForDb.shopnexDb ??= await createDb())
 export const db = created.db
+setDefaultConn(db)
 
 let prepared: Promise<void> | undefined
 /**

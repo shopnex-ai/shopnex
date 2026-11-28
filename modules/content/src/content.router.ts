@@ -1,10 +1,8 @@
-import { db } from '@shopnex/db'
 import { ORPCError } from '@orpc/server'
 import { z } from 'zod'
 import { createProcedures } from '@shopnex/rpc'
 import { menuInput, menuOutput, pageInput, pageOutput } from './content.contract'
-import * as menuService from './menus'
-import * as pageService from './pages'
+import { content } from './content.services'
 
 const { admin } = createProcedures()
 
@@ -20,23 +18,23 @@ export const menus = {
   list: admin
     .route({ method: 'GET', path: '/admin/menus' })
     .output(z.array(menuOutput))
-    .handler(({ context }) => menuService.list(context.shop.id, db)),
+    .handler(({ context }) => content.menus.list(context.shop.id)),
   get: admin
     .route({ method: 'GET', path: '/admin/menus/{id}' })
     .output(menuOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await menuService.getById(context.shop.id, input.id, db))),
+    .handler(async ({ input, context }) => found(await content.menus.getById(context.shop.id, input.id))),
   create: admin
     .route({ method: 'POST', path: '/admin/menus' })
     .output(menuOutput)
     .input(menuInput)
-    .handler(({ input, context }) => menuService.create(context.shop.id, input, db)),
+    .handler(({ input, context }) => content.menus.create(context.shop.id, input)),
   update: admin
     .route({ method: 'PATCH', path: '/admin/menus/{id}' })
     .output(menuOutput)
     .input(id.extend(menuInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await menuService.update(context.shop.id, id, patch, db)),
+      found(await content.menus.update(context.shop.id, id, patch)),
     ),
   deleteMany: admin
     .route({ method: 'DELETE', path: '/admin/menus/bulk' })
@@ -47,7 +45,7 @@ export const menus = {
     .route({ method: 'DELETE', path: '/admin/menus/{id}' })
     .output(menuOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await menuService.remove(context.shop.id, input.id, db))),
+    .handler(async ({ input, context }) => found(await content.menus.remove(context.shop.id, input.id))),
 }
 
 // Online store → Pages. Staff only for now (like themes and menus); read/write_online_store scopes later.
@@ -55,23 +53,23 @@ export const pages = {
   list: admin
     .route({ method: 'GET', path: '/admin/pages' })
     .output(z.array(pageOutput))
-    .handler(({ context }) => pageService.list(context.shop.id, db)),
+    .handler(({ context }) => content.pages.list(context.shop.id)),
   get: admin
     .route({ method: 'GET', path: '/admin/pages/{id}' })
     .output(pageOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await pageService.getById(context.shop.id, input.id, db))),
+    .handler(async ({ input, context }) => found(await content.pages.getById(context.shop.id, input.id))),
   create: admin
     .route({ method: 'POST', path: '/admin/pages' })
     .output(pageOutput)
     .input(pageInput)
-    .handler(({ input, context }) => pageService.create(context.shop.id, input, db)),
+    .handler(({ input, context }) => content.pages.create(context.shop.id, input)),
   update: admin
     .route({ method: 'PATCH', path: '/admin/pages/{id}' })
     .output(pageOutput)
     .input(id.extend(pageInput.partial().shape))
     .handler(async ({ input: { id, ...patch }, context }) =>
-      found(await pageService.update(context.shop.id, id, patch, db)),
+      found(await content.pages.update(context.shop.id, id, patch)),
     ),
   deleteMany: admin
     .route({ method: 'DELETE', path: '/admin/pages/bulk' })
@@ -82,5 +80,5 @@ export const pages = {
     .route({ method: 'DELETE', path: '/admin/pages/{id}' })
     .output(pageOutput)
     .input(id)
-    .handler(async ({ input, context }) => found(await pageService.remove(context.shop.id, input.id, db))),
+    .handler(async ({ input, context }) => found(await content.pages.remove(context.shop.id, input.id))),
 }

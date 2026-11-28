@@ -1121,6 +1121,9 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.5.16
         version: 0.5.16
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
       '@shopnex/log':
         specifier: workspace:*
         version: link:../log
