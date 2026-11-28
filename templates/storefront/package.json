@@ -9,6 +9,7 @@
     "dev": "node scripts/dev.mjs",
     "build": "node scripts/themes.mjs && astro build",
     "build:themes": "node scripts/themes.mjs",
+    "themes:compat": "tsx scripts/theme-compat.ts",
     "preview": "astro preview",
     "typecheck": "astro check",
     "test": "tsx --test \"tests/**/*.test.ts\""
