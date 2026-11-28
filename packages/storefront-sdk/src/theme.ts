@@ -148,6 +148,11 @@ export const ThemeSection = z.object({
 export const ThemePage = z.object({ sections: z.array(ThemeSection).max(50) })
 
 export const ThemeDocument = z.object({
+  /**
+   * Which generation of the theme's structure the document is written for (the theme's `document_version` when it was
+   * resolved and saved). Absent: the oldest, 1. See `resolveDocument`.
+   */
+  version: z.number().int().min(1).optional(),
   /** The style (a key of the definition's `presets`) the merchant last applied; absent: the theme's defaults */
   preset: Id.optional(),
   settings: ThemeSettings,
@@ -189,6 +194,14 @@ export const ThemeDefinition = z.object({
   id: Id,
   name: z.string().min(1).max(100),
   version: z.string().max(50).optional(),
+  /**
+   * The generation of the theme's structure, for the merchant's saved documents. Raise it by one whenever you add a
+   * `from_settings` or `from_lines`: a document saved at a lower number is migrated by them when it is read, and stamped
+   * with this number, so the migration never runs on it again (and what a merchant deleted after it stays deleted).
+   * A document saved at this number or higher is not migrated. The theme's structure check fails when a migration is
+   * added without raising this.
+   */
+  document_version: z.number().int().min(1).max(1000).default(1),
   /** A picture of the theme for the admin's theme list: a path on the storefront (a theme's assets/screenshot.jpg is picked up on its own) */
   screenshot: z
     .string()
@@ -409,14 +422,19 @@ export function blocksFromSettings(
 /**
  * A stored document as the theme means it today. Used by whatever reads a document, so the storefront and the editor
  * see the same sections:
- * - a section saved before it had blocks gets them from its numbered settings (`blocksFromSettings`);
- * - what the theme owns (its global sections) is complete (`resolveGlobalSections`).
+ * - a document saved for an older generation of the theme (`version` below the theme's `document_version`, absent
+ *   meaning 1) is migrated: a section saved before it had blocks gets them from its old settings (`blocksFromSettings`),
+ *   and the result is stamped with the theme's version, so it is migrated once and what the merchant deletes after that
+ *   stays deleted;
+ * - what the theme owns (its global sections) is always complete (`resolveGlobalSections`).
  * It keeps everything else the merchant saved; settings and a page the merchant never edited are filled from the theme's
  * defaults where they are read (`resolveSettings`, the page's default sections). Resolving again changes nothing.
  */
 export function resolveDocument(definition: ThemeDefinition, document: ThemeDocument): ThemeDocument {
+  const migrate = (document.version ?? 1) < definition.document_version
   const pages = Object.fromEntries(
     Object.entries(document.pages).map(([id, page]) => {
+      if (!migrate) return [id, page]
       const sections = page.sections.map((s) => blocksFromSettings(definition.sections[s.type], s))
       return [id, sections.every((s, i) => s === page.sections[i]) ? page : { ...page, sections }]
     }),
@@ -426,9 +444,11 @@ export function resolveDocument(definition: ThemeDefinition, document: ThemeDocu
       sections: resolveGlobalSections(definition, pages[THEME_STATIC_PAGE]?.sections),
     }
   const unchanged =
+    !migrate &&
     Object.keys(pages).length === Object.keys(document.pages).length &&
     Object.entries(pages).every(([id, page]) => page === document.pages[id])
-  return unchanged ? document : { ...document, pages }
+  if (unchanged) return document
+  return { ...document, ...(migrate && { version: definition.document_version }), pages }
 }
 
 /**
@@ -448,6 +468,21 @@ export function themeStructure(definition: ThemeDefinition): string[] {
     }
   }
   return paths.sort()
+}
+
+/**
+ * The block types that migrate old documents (they declare `from_settings` or `from_lines`), as paths like
+ * `sections/hero/blocks/slide`. A theme's structure check records them next to its `document_version`: a migration added
+ * without raising the version would never run on documents already saved at the current one.
+ */
+export function themeMigrations(definition: ThemeDefinition): string[] {
+  return Object.entries(definition.sections)
+    .flatMap(([type, section]) =>
+      Object.entries(section.blocks)
+        .filter(([, block]) => block.from_settings || block.from_lines)
+        .map(([name]) => `sections/${type}/blocks/${name}`),
+    )
+    .sort()
 }
 
 /**
@@ -478,6 +513,7 @@ export function unaccountedRemovals(previous: readonly string[], definition: The
 /** The document a shop starts from: default settings and each page's default sections */
 export function defaultDocument(definition: ThemeDefinition): ThemeDocument {
   return {
+    ...(definition.document_version > 1 && { version: definition.document_version }),
     settings: resolveSettings(definition.settings),
     pages: Object.fromEntries(Object.entries(definition.pages).map(([id, page]) => [id, { sections: page.sections }])),
   }

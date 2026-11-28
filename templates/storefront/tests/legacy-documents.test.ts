@@ -151,6 +151,22 @@ describe('a document saved before blocks', () => {
     })
   }
 
+  test("the resolved document is stamped with the theme's version, and the themes that migrate are past version 1", () => {
+    for (const theme of ['ks-bootshop', 'shopco', 'hydrogen']) assert.ok(load(theme).document_version >= 2, theme)
+    const definition = load('ks-bootshop')
+    const resolved = resolveDocument(definition, documentWith('hero-carousel', { image_1: '/a.jpg' }))
+    assert.equal(resolved.version, definition.document_version)
+  })
+
+  test("a document already at the theme's version is not migrated again", () => {
+    const definition = load('ks-bootshop')
+    const current: ThemeDocument = {
+      ...documentWith('hero-carousel', { image_1: '/deleted-after-migration.jpg' }),
+      version: definition.document_version,
+    }
+    assert.equal(resolveDocument(definition, current).pages.home!.sections[0]!.blocks, undefined)
+  })
+
   test('a section the merchant already moved to blocks keeps them', () => {
     const definition = load('ks-bootshop')
     const mine = { id: 's1', type: 'hero-carousel', settings: { image_1: '/old.jpg' }, blocks: [] }

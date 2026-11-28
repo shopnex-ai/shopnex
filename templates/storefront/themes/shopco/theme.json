@@ -2,6 +2,7 @@
   "id": "shopco",
   "name": "Shopco",
   "version": "1.0.0",
+  "document_version": 2,
   "settings": [
     {
       "id": "logo",

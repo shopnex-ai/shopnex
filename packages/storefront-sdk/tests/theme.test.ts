@@ -10,6 +10,7 @@ import {
   resolveBlocks,
   resolveDocument,
   resolveGlobalSections,
+  themeMigrations,
   themeStructure,
   unaccountedRemovals,
   withoutCodeSettings,
@@ -365,6 +366,7 @@ describe('blocksFromSettings: a section saved before it had blocks', () => {
   const slides = ThemeDefinition.parse({
     id: 'legacy',
     name: 'Legacy',
+    document_version: 2,
     sections: {
       hero: {
         name: 'Hero',
@@ -643,5 +645,124 @@ describe('the structure check: what a theme dropped must be accounted for', () =
       },
     })
     assert.deepEqual(unaccountedRemovals(['sections/brands/settings/names'], lines), [])
+  })
+})
+
+describe('document versions', () => {
+  const themed = (document_version: number) =>
+    ThemeDefinition.parse({
+      id: 'versions',
+      name: 'Versions',
+      document_version,
+      sections: {
+        hero: {
+          name: 'Hero',
+          max_blocks: 3,
+          settings: [],
+          blocks: {
+            slide: {
+              name: 'Slide',
+              settings: [{ id: 'heading', label: 'Heading', type: 'text' }],
+              from_settings: { heading: 'heading_{n}' },
+            },
+          },
+        },
+      },
+      pages: { home: { name: 'Home', sections: [] } },
+    })
+  const old = (version?: number) => ({
+    ...(version !== undefined && { version }),
+    settings: {},
+    pages: { home: { sections: [{ id: 'h', type: 'hero', settings: { heading_1: 'One' } }] } },
+  })
+
+  test("a document with no version is the oldest: migrated, and stamped with the theme's version", () => {
+    const result = resolveDocument(themed(2), old())
+    assert.equal(result.version, 2)
+    assert.deepEqual(result.pages.home!.sections[0]!.blocks, [
+      { id: 'slide-1', type: 'slide', settings: { heading: 'One' } },
+    ])
+  })
+
+  test("a document below the theme's version is migrated, and at or above it is not", () => {
+    assert.equal(resolveDocument(themed(3), old(2)).version, 3)
+    assert.equal(resolveDocument(themed(3), old(2)).pages.home!.sections[0]!.blocks!.length, 1)
+    const current = old(2)
+    assert.equal(resolveDocument(themed(2), current), current) // not migrated, nothing to complete: the same document
+    assert.equal(resolveDocument(themed(2), current).pages.home!.sections[0]!.blocks, undefined)
+    const newer = old(5)
+    assert.equal(resolveDocument(themed(2), newer), newer) // written for a newer theme: left as it is
+  })
+
+  test('what a merchant deleted after the migration stays deleted: a migrated document is not migrated again', () => {
+    const migrated = resolveDocument(themed(2), old())
+    // The merchant removes the slide, which leaves no blocks list at all in a document edited by hand or imported
+    const emptied = {
+      ...migrated,
+      pages: { home: { sections: [{ id: 'h', type: 'hero', settings: { heading_1: 'One' } }] } },
+    }
+    assert.equal(resolveDocument(themed(2), emptied), emptied)
+  })
+
+  test('a theme at version 1 changes nothing, whatever the document says', () => {
+    const doc = old()
+    assert.equal(resolveDocument(themed(1), doc), doc)
+  })
+
+  test('resolving again changes nothing', () => {
+    const once = resolveDocument(themed(2), old())
+    assert.deepEqual(resolveDocument(themed(2), once), once)
+  })
+
+  test('the default document of a theme past version 1 carries it; version 1 leaves it out', () => {
+    assert.equal(defaultDocument(themed(2)).version, 2)
+    assert.equal('version' in defaultDocument(themed(1)), false)
+  })
+
+  test('a stored document keeps its version when validated, and refuses a bad one', () => {
+    assert.equal(ThemeDocument.parse({ version: 2, settings: {}, pages: {} }).version, 2)
+    assert.equal(ThemeDocument.safeParse({ version: 0, settings: {}, pages: {} }).success, false)
+    assert.equal(ThemeDocument.safeParse({ version: 1.5, settings: {}, pages: {} }).success, false)
+  })
+
+  test('the global sections are completed at any version', () => {
+    const withFooter = ThemeDefinition.parse({
+      id: 'g',
+      name: 'G',
+      sections: { footer: { name: 'Footer', group: 'footer' } },
+      pages: { static: { name: 'Global', sections: [{ id: 'footer', type: 'footer', settings: {} }] } },
+    })
+    assert.equal(resolveDocument(withFooter, { version: 1, settings: {}, pages: {} }).pages.static!.sections.length, 1)
+  })
+})
+
+describe('themeMigrations', () => {
+  test('lists the block types that declare from_settings or from_lines, sorted', () => {
+    const definition = ThemeDefinition.parse({
+      id: 'm',
+      name: 'M',
+      sections: {
+        hero: {
+          name: 'Hero',
+          blocks: {
+            slide: { name: 'Slide', settings: [{ id: 'a', label: 'A', type: 'text' }], from_settings: { a: 'a_{n}' } },
+            plain: { name: 'Plain' },
+          },
+        },
+        brands: {
+          name: 'Brands',
+          blocks: {
+            brand: {
+              name: 'Brand',
+              settings: [{ id: 'name', label: 'N', type: 'text' }],
+              from_lines: { setting: 'names', into: 'name' },
+            },
+          },
+        },
+        faq: { name: 'FAQ' },
+      },
+      pages: {},
+    })
+    assert.deepEqual(themeMigrations(definition), ['sections/brands/blocks/brand', 'sections/hero/blocks/slide'])
   })
 })

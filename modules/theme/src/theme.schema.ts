@@ -15,6 +15,8 @@ export type ThemeRole = 'live' | 'unpublished'
 
 type ThemeSettings = Record<string, string | number | boolean | null>
 export interface StoredThemeDocument {
+  /** The generation of the theme's structure it is written for (`document_version`); absent: 1 */
+  version?: number
   preset?: string
   settings: ThemeSettings
   pages: Record<

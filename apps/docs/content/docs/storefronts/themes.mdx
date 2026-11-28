@@ -77,6 +77,8 @@ A section type can declare **blocks**: repeatable items inside it (a slide, an a
 
   For a text setting that held one item per line (a brand strip's `names`), use `from_lines` instead: `"from_lines": { "setting": "names", "into": "name" }` makes one block per non-blank line, with the line as the block's `name`.
 
+- **Versions.** A saved theme records which generation of the theme's structure it was written for (`version`), and the theme says which generation it is on (`"document_version"` in `theme.json`, 1 by default). `from_settings` and `from_lines` only run on a saved theme below the theme's `document_version`; the result is stamped with it, so the migration runs once and what the merchant deletes afterwards stays deleted. Raise `document_version` by one whenever you add a `from_settings` or `from_lines`: the theme's tests fail if you add one without raising it.
+
 - **Dropping something on purpose.** A saved theme keeps what merchants stored under the ids a theme declares, so removing or renaming a setting, section or block type would make that content silently stop showing. The theme's tests keep the last recorded structure (`tests/structure/<theme>.json`) and fail when something is gone that nothing accounts for. Moved into blocks? Declare `from_settings` or `from_lines`. Dropped for good? List its path in the theme's `removed`, like `"removed": ["sections/hero/settings/old_id"]` (a path covers what is under it). Then record the new structure with `UPDATE_THEME_STRUCTURE=1 pnpm --filter shopnex-storefront exec tsx --test tests/theme-structure.test.ts`.
 
 ### Global sections

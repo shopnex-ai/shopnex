@@ -2,6 +2,7 @@
   "id": "ks-bootshop",
   "name": "KS BootShop",
   "version": "1.0.0",
+  "document_version": 2,
   "settings": [
     {
       "id": "logo",

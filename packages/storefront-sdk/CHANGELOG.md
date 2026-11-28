@@ -2,6 +2,10 @@
 
 ## Unreleased (additive)
 
+- A saved theme document has a `version`, and a theme definition a `document_version` (default 1): the generation of the theme's structure. `resolveDocument`
+  runs the `from_settings` / `from_lines` migrations only on a document below the theme's version and stamps the result with it, so a migration runs
+  once and what a merchant deletes afterwards stays deleted. Raise `document_version` when you add a migration (`themeMigrations` lists them; the
+  storefront's structure check fails otherwise). A document with no `version` is version 1, so nothing existing changes. KS BootShop, Shopco and Hydrogen are at 2.
 - Block types can declare `from_settings` (`{ "image": "image_{n}" }`): the numbered settings of a section saved before blocks. `blocksFromSettings`,
   which `resolveDocument` applies on every page, turns them into one block per position that has something and drops the numbered
   settings; a section that has a block list (even an empty one) is left alone. KS BootShop, Shopco and Hydrogen declare theirs, so documents
