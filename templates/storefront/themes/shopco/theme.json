@@ -319,7 +319,11 @@
               "type": "text",
               "default": "Brand"
             }
-          ]
+          ],
+          "from_lines": {
+            "setting": "names",
+            "into": "name"
+          }
         }
       }
     },

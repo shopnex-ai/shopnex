@@ -28,6 +28,8 @@ type Case = {
   section: string
   /** What an old document stored in the section's settings */
   old: Record<string, string>
+  /** Old settings that are not numbered but go too (a text with one item per line) */
+  gone?: string[]
   /** The blocks that become of it */
   blocks: { id: string; type: string; settings: Record<string, string> }[]
 }
@@ -104,6 +106,17 @@ const cases: Case[] = [
   },
   {
     theme: 'shopco',
+    section: 'brands',
+    old: { names: 'Versace\n  Zara \n\nGucci' },
+    gone: ['names'],
+    blocks: [
+      { id: 'brand-1', type: 'brand', settings: { name: 'Versace' } },
+      { id: 'brand-2', type: 'brand', settings: { name: 'Zara' } },
+      { id: 'brand-3', type: 'brand', settings: { name: 'Gucci' } },
+    ],
+  },
+  {
+    theme: 'shopco',
     section: 'style-grid',
     old: { collection_2: 'casual' },
     blocks: [{ id: 'collection-2', type: 'collection', settings: { collection: 'casual' } }],
@@ -121,7 +134,7 @@ const cases: Case[] = [
 ]
 
 describe('a document saved before blocks', () => {
-  for (const { theme, section, old, blocks } of cases) {
+  for (const { theme, section, old, gone = [], blocks } of cases) {
     test(`${theme}: ${section} gets its blocks from the numbered settings`, () => {
       const definition = load(theme)
       const [resolved] = resolveDocument(definition, documentWith(section, old)).pages.home!.sections
@@ -129,7 +142,7 @@ describe('a document saved before blocks', () => {
       // Only what is not numbered stays in the settings
       assert.deepEqual(
         Object.keys(resolved!.settings),
-        Object.keys(old).filter((key) => !/_\d+(_|$)/.test(key)),
+        Object.keys(old).filter((key) => !/_\d+(_|$)/.test(key) && !gone.includes(key)),
       )
       // Resolving again changes nothing, and the blocks are valid ones for the section
       const again = resolveDocument(definition, { settings: {}, pages: { home: { sections: [resolved!] } } })

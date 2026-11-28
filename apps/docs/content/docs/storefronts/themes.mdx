@@ -75,6 +75,10 @@ A section type can declare **blocks**: repeatable items inside it (a slide, an a
 
   A saved section that has no list of blocks yet but has those settings becomes one block per position that has something (`slide-1`, `slide-3`…), and the numbered settings are dropped. This happens whenever a saved theme is read, in the storefront and in the editor, and changes nothing the second time. A section whose block list the merchant emptied is left empty.
 
+  For a text setting that held one item per line (a brand strip's `names`), use `from_lines` instead: `"from_lines": { "setting": "names", "into": "name" }` makes one block per non-blank line, with the line as the block's `name`.
+
+- **Dropping something on purpose.** A saved theme keeps what merchants stored under the ids a theme declares, so removing or renaming a setting, section or block type would make that content silently stop showing. The theme's tests keep the last recorded structure (`tests/structure/<theme>.json`) and fail when something is gone that nothing accounts for. Moved into blocks? Declare `from_settings` or `from_lines`. Dropped for good? List its path in the theme's `removed`, like `"removed": ["sections/hero/settings/old_id"]` (a path covers what is under it). Then record the new structure with `UPDATE_THEME_STRUCTURE=1 pnpm --filter shopnex-storefront exec tsx --test tests/theme-structure.test.ts`.
+
 ### Global sections
 
 `{% section 'announcement-bar' %}` renders one section wherever you put it, usually in the layout, and the merchant edits it once for every page. Its settings and blocks are stored on the page `static` (declare it in `pages` of `theme.json` with the sections it starts with, and give the section type `"limit": 1`): the tag renders the section there with that id, else the first of that type. A global section the page does not list shows with its defaults, and one the theme lists that a theme saved earlier lacks (a footer that became editable later) is added with its defaults when the saved theme is read, so the editor lists it too.

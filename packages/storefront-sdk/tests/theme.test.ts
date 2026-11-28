@@ -10,6 +10,8 @@ import {
   resolveBlocks,
   resolveDocument,
   resolveGlobalSections,
+  themeStructure,
+  unaccountedRemovals,
   withoutCodeSettings,
   type ThemeDefinitionInput,
 } from '../src/theme'
@@ -510,5 +512,136 @@ describe('blocksFromSettings: a section saved before it had blocks', () => {
       assert.equal(block({ image: 'image_1' }).success, false)
       assert.equal(block({ image: 'Image {n}' }).success, false)
     })
+  })
+})
+
+describe('blocksFromSettings: one item per line', () => {
+  const brands = ThemeDefinition.parse({
+    id: 'strip',
+    name: 'Strip',
+    sections: {
+      brands: {
+        name: 'Brands',
+        max_blocks: 3,
+        settings: [],
+        blocks: {
+          brand: {
+            name: 'Brand',
+            settings: [{ id: 'name', label: 'Name', type: 'text' }],
+            from_lines: { setting: 'names', into: 'name' },
+          },
+        },
+      },
+    },
+    pages: {},
+  })
+  const strip = (names: string, extra = {}) => ({ id: 'b', type: 'brands', settings: { names, ...extra } })
+
+  test('each non-blank line becomes a block, trimmed; the old setting is gone', () => {
+    const result = blocksFromSettings(brands.sections.brands, strip('  Zara \r\n\nH&M\n  \nUniqlo', { other: 'kept' }))
+    assert.deepEqual(
+      result.blocks!.map((b) => [b.id, b.settings.name]),
+      [
+        ['brand-1', 'Zara'],
+        ['brand-2', 'H&M'],
+        ['brand-3', 'Uniqlo'],
+      ],
+    )
+    assert.deepEqual(result.settings, { other: 'kept' })
+  })
+
+  test('stops at max_blocks; an empty text leaves the section as it is; running again changes nothing', () => {
+    assert.equal(blocksFromSettings(brands.sections.brands, strip('a\nb\nc\nd\ne')).blocks!.length, 3)
+    const empty = strip('  \n ')
+    assert.equal(blocksFromSettings(brands.sections.brands, empty), empty)
+    const once = blocksFromSettings(brands.sections.brands, strip('a\nb'))
+    assert.equal(blocksFromSettings(brands.sections.brands, once), once)
+  })
+
+  test('the declaration names a setting of the block type', () => {
+    const bad = {
+      id: 'x',
+      name: 'X',
+      sections: {
+        s: { name: 'S', blocks: { b: { name: 'B', settings: [], from_lines: { setting: 'names', into: 'nope' } } } },
+      },
+      pages: {},
+    }
+    assert.equal(ThemeDefinition.safeParse(bad).success, false)
+  })
+})
+
+describe('the structure check: what a theme dropped must be accounted for', () => {
+  const theme = (patch: Record<string, unknown> = {}) =>
+    ThemeDefinition.parse({
+      id: 'check',
+      name: 'Check',
+      settings: [{ id: 'logo', label: 'Logo', type: 'text' }],
+      sections: {
+        hero: {
+          name: 'Hero',
+          settings: [{ id: 'height', label: 'Height', type: 'text' }],
+          blocks: {
+            slide: {
+              name: 'Slide',
+              settings: [{ id: 'image', label: 'Image', type: 'text' }],
+              from_settings: { image: 'image_{n}' },
+            },
+          },
+        },
+      },
+      pages: {},
+      ...patch,
+    })
+
+  test('lists settings, sections, block types and block settings, sorted', () => {
+    assert.deepEqual(themeStructure(theme()), [
+      'sections/hero',
+      'sections/hero/blocks/slide',
+      'sections/hero/blocks/slide/settings/image',
+      'sections/hero/settings/height',
+      'settings/logo',
+    ])
+  })
+
+  test('a removal nobody accounts for is reported; additions are not', () => {
+    const before = [...themeStructure(theme()), 'sections/hero/settings/subtitle', 'sections/faq']
+    assert.deepEqual(unaccountedRemovals(before, theme()), ['sections/faq', 'sections/hero/settings/subtitle'])
+    assert.deepEqual(unaccountedRemovals([], theme()), [])
+  })
+
+  test('`removed` accounts for a path and everything under it', () => {
+    const before = ['sections/faq', 'sections/faq/settings/heading', 'sections/faq/blocks/question']
+    assert.deepEqual(unaccountedRemovals(before, theme()), [...before].sort())
+    assert.deepEqual(unaccountedRemovals(before, theme({ removed: ['sections/faq'] })), [])
+    assert.deepEqual(unaccountedRemovals(['settings/old'], theme({ removed: ['settings/old'] })), [])
+  })
+
+  test('numbered settings that from_settings reads, and a text setting from_lines reads, are accounted for', () => {
+    const numbered = ['sections/hero/settings/image_1', 'sections/hero/settings/image_12']
+    assert.deepEqual(unaccountedRemovals(numbered, theme()), [])
+    // Not numbered, so nothing reads it: a section setting called image was dropped for good
+    assert.deepEqual(unaccountedRemovals(['sections/hero/settings/image'], theme()), ['sections/hero/settings/image'])
+    assert.deepEqual(unaccountedRemovals(['sections/hero/settings/heading_1'], theme()), [
+      'sections/hero/settings/heading_1',
+    ])
+    assert.deepEqual(unaccountedRemovals(['sections/other/settings/image_1'], theme()), [
+      'sections/other/settings/image_1',
+    ])
+    const lines = theme({
+      sections: {
+        brands: {
+          name: 'Brands',
+          blocks: {
+            brand: {
+              name: 'Brand',
+              settings: [{ id: 'name', label: 'N', type: 'text' }],
+              from_lines: { setting: 'names', into: 'name' },
+            },
+          },
+        },
+      },
+    })
+    assert.deepEqual(unaccountedRemovals(['sections/brands/settings/names'], lines), [])
   })
 })
