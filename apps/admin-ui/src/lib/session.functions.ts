@@ -39,11 +39,13 @@ export const getAdminContext = publicFn({ method: 'GET' }).handler(async () => {
 
 export const getSetupStatus = publicFn({ method: 'GET' }).handler(async () => isSetupComplete())
 
-// Shops the sidebar's switcher offers (empty in single mode, or without a session)
-export const getSwitchableShops = publicFn({ method: 'GET' }).handler(async () => {
-  const session = await auth.api.getSession({ headers: getRequest().headers })
-  return session ? listSwitchableShops(session.user.id, isSuperAdmin(session.user)) : []
-})
+// Shops the sidebar's switcher offers (empty in single mode, or without a session); `data` narrows them to a name or slug
+export const getSwitchableShops = publicFn({ method: 'GET' })
+  .validator((search: string | undefined) => search?.slice(0, 200))
+  .handler(async ({ data: search }) => {
+    const session = await auth.api.getSession({ headers: getRequest().headers })
+    return session ? listSwitchableShops(session.user.id, isSuperAdmin(session.user), search) : []
+  })
 
 export const switchShop = publicFn({ method: 'POST' })
   .validator((shopId: string) => shopId)

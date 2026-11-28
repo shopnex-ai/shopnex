@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { and, asc, count, eq, isNotNull } from 'drizzle-orm'
+import { and, asc, count, eq, ilike, isNotNull, or } from 'drizzle-orm'
 import { db, type Conn } from '@shopnex/db'
 import { DEFAULT_SHOP_ID, ROOT_DOMAIN, isMultiTenant } from './config'
 import { isSubdomainSlug, subdomainUrl } from './subdomains'
 import { canonicalLanguage } from '@shopnex/languages/contract'
+import { likePattern } from './platform'
 import { shopDomains, shopMembers } from './tenancy.schema'
 import { type Shop, shops } from '@shopnex/core/schema'
 
@@ -145,16 +146,19 @@ export async function addMember(shopId: string, userId: string) {
 const SWITCHER_LIMIT = 100
 
 // The shops the admin's shop switcher offers: the user's own, or every shop for a super admin.
+// `search` narrows them to a name or slug containing it, so a shop past the first 100 by name can still be found.
 // Empty in single mode (there is one shop, nothing to switch).
-export async function listSwitchableShops(userId: string, superAdmin: boolean) {
+export async function listSwitchableShops(userId: string, superAdmin: boolean, search?: string) {
   if (!isMultiTenant) return []
   const columns = { id: shops.id, name: shops.name }
-  if (superAdmin) return db.select(columns).from(shops).orderBy(asc(shops.name)).limit(SWITCHER_LIMIT)
+  const term = search?.trim()
+  const matches = term ? or(ilike(shops.name, likePattern(term)), ilike(shops.slug, likePattern(term))) : undefined
+  if (superAdmin) return db.select(columns).from(shops).where(matches).orderBy(asc(shops.name)).limit(SWITCHER_LIMIT)
   return db
     .select(columns)
     .from(shops)
     .innerJoin(shopMembers, eq(shopMembers.organizationId, shops.id))
-    .where(eq(shopMembers.userId, userId))
+    .where(and(eq(shopMembers.userId, userId), matches))
     .orderBy(asc(shops.name))
     .limit(SWITCHER_LIMIT)
 }
