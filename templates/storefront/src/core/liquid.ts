@@ -30,6 +30,7 @@ import { formatMoney, moneyAmount } from '@shopnex/storefront-sdk/money'
 import { THEME_SECTION_ATTRIBUTE } from '@shopnex/storefront-sdk/theme-preview'
 import { ImageDrop, MoneyDrop, SafeHtml } from './drops'
 import { translateKey } from './locales'
+import { registerShopifyCompat } from './liquid-compat'
 
 /** A block as templates see it, like Shopify's (`block.id`, `block.type`, `block.settings`, `block.shopify_attributes`) */
 export type BlockObject = { id: string; type: string; settings: Record<string, unknown>; shopify_attributes: unknown }
@@ -176,6 +177,11 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
   })
   // `{{ 'cart.empty' | t }}`: the theme's text (locales/) in the visitor's language. Placeholders and plurals take keyword arguments:
   // `{{ 'cart.items' | t: count: cart.item_count }}`
+  // `10.00` is "$10", `10.50` stays "$10.50"
+  liquid.registerFilter('money_without_trailing_zeros', function (this: { context: Context }, value: unknown) {
+    const amount = MoneyDrop.unwrap(value)
+    return amount ? formatMoney(amount, languageOf(this.context)).replace(/[.,]00(?!\d)/, '') : ''
+  })
   liquid.registerFilter('t', function (this: { context: Context }, key: unknown, ...args: unknown[]) {
     const vars: Record<string, unknown> = {}
     for (const arg of args) if (Array.isArray(arg) && typeof arg[0] === 'string') vars[arg[0]] = arg[1]
@@ -233,6 +239,7 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
   liquid.registerTag('section', SectionTag)
   liquid.registerTag('schema', SchemaTag)
   liquid.registerTag('capture', CaptureTag)
+  registerShopifyCompat(liquid, { dir, escapeHtml, text })
   return liquid
 }
 
