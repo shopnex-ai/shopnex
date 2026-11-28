@@ -8,6 +8,11 @@
 --
 -- The helper functions are generic and stay for the next data migration of a theme document (rename a setting, move
 -- settings into blocks…). All of them take a theme document and return it, never changing the one they are given.
+--
+-- A theme is converted one row at a time, its draft and published copy together, and a row that can't be converted (a
+-- document of a shape nothing expected, a trigger or constraint refusing the update) is left exactly as it was and does not
+-- stop the upgrade: a WARNING names it, and its `error` in shop_themes_pre_blocks_backup says why. A row that has nothing to
+-- convert is not written at all.
 
 -- Trims all whitespace (tabs and line breaks too), as JavaScript's trim does: btrim only trims spaces.
 CREATE OR REPLACE FUNCTION shopnex_theme_trim(value text)
@@ -51,7 +56,7 @@ BEGIN
         CONTINUE;
       END IF;
       blocks := '[]'::jsonb;
-      rest := coalesce(section->'settings', '{}'::jsonb);
+      rest := CASE WHEN jsonb_typeof(section->'settings') = 'object' THEN section->'settings' ELSE '{}'::jsonb END;
       FOR n IN 1..slots LOOP
         block_settings := '{}'::jsonb;
         FOR entry IN SELECT m.k AS block_setting, m.v AS pattern FROM jsonb_each_text(mapping) AS m(k, v) LOOP
@@ -151,7 +156,9 @@ DECLARE
   b jsonb;
   block_settings jsonb;
 BEGIN
-  IF doc IS NULL OR jsonb_typeof(doc->'settings') IS DISTINCT FROM 'object' THEN
+  IF doc IS NULL OR jsonb_typeof(doc->'settings') IS DISTINCT FROM 'object'
+     OR (doc ? 'pages' AND jsonb_typeof(doc->'pages') IS DISTINCT FROM 'object')
+     OR (doc->'pages' ? 'static' AND jsonb_typeof(doc->'pages'->'static') IS DISTINCT FROM 'object') THEN
     RETURN doc;
   END IF;
   s := doc->'settings';
@@ -215,25 +222,89 @@ CREATE TABLE "shop_themes_pre_blocks_backup" AS
 SELECT "id", "shop_id", "theme_id", "draft", "published", now() AS "backed_up_at" FROM "shop_themes" WHERE "theme_id" IN ('ks-bootshop', 'shopco', 'hydrogen', 'storeplate');
 --> statement-breakpoint
 
-UPDATE "shop_themes" SET
-  "draft" = shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings("draft", 'hero-carousel', 'slide', '{"image": "image_{n}", "heading": "heading_{n}", "text": "text_{n}", "button_label": "button_label_{n}", "button_link": "button_link_{n}"}'::jsonb, 3), 'featured-collections', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"quote": "quote_{n}", "author": "author_{n}"}'::jsonb, 3), 'faq', 'question', '{"question": "question_{n}", "answer": "answer_{n}"}'::jsonb, 5), 'announcement_text', 'announcement_link', NULL, 'show_announcement'),
-  "published" = shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings("published", 'hero-carousel', 'slide', '{"image": "image_{n}", "heading": "heading_{n}", "text": "text_{n}", "button_label": "button_label_{n}", "button_link": "button_link_{n}"}'::jsonb, 3), 'featured-collections', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"quote": "quote_{n}", "author": "author_{n}"}'::jsonb, 3), 'faq', 'question', '{"question": "question_{n}", "answer": "answer_{n}"}'::jsonb, 5), 'announcement_text', 'announcement_link', NULL, 'show_announcement')
-WHERE "theme_id" = 'ks-bootshop';
+-- Why a row was left as it was, when it was (see above); null for every row that was converted or had nothing to convert.
+ALTER TABLE "shop_themes_pre_blocks_backup" ADD COLUMN "error" text;
 --> statement-breakpoint
 
-UPDATE "shop_themes" SET
-  "draft" = shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_lines(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings("draft", 'hero', 'stat', '{"value": "stat_{n}_value", "label": "stat_{n}_label"}'::jsonb, 3), 'style-grid', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"name": "name_{n}", "quote": "quote_{n}"}'::jsonb, 5), 'brands', 'brand', 'names', 'name', 8), 'announcement_text', 'announcement_link', 'announcement_link_label', NULL),
-  "published" = shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_lines(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings("published", 'hero', 'stat', '{"value": "stat_{n}_value", "label": "stat_{n}_label"}'::jsonb, 3), 'style-grid', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"name": "name_{n}", "quote": "quote_{n}"}'::jsonb, 5), 'brands', 'brand', 'names', 'name', 8), 'announcement_text', 'announcement_link', 'announcement_link_label', NULL)
-WHERE "theme_id" = 'shopco';
+DO $$
+DECLARE
+  r record;
+  new_draft jsonb;
+  new_published jsonb;
+BEGIN
+  FOR r IN SELECT "id", "draft", "published" FROM "shop_themes" WHERE "theme_id" = 'ks-bootshop' LOOP
+    BEGIN
+      new_draft := shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(r.draft, 'hero-carousel', 'slide', '{"image": "image_{n}", "heading": "heading_{n}", "text": "text_{n}", "button_label": "button_label_{n}", "button_link": "button_link_{n}"}'::jsonb, 3), 'featured-collections', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"quote": "quote_{n}", "author": "author_{n}"}'::jsonb, 3), 'faq', 'question', '{"question": "question_{n}", "answer": "answer_{n}"}'::jsonb, 5), 'announcement_text', 'announcement_link', NULL, 'show_announcement');
+      new_published := shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(r.published, 'hero-carousel', 'slide', '{"image": "image_{n}", "heading": "heading_{n}", "text": "text_{n}", "button_label": "button_label_{n}", "button_link": "button_link_{n}"}'::jsonb, 3), 'featured-collections', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"quote": "quote_{n}", "author": "author_{n}"}'::jsonb, 3), 'faq', 'question', '{"question": "question_{n}", "answer": "answer_{n}"}'::jsonb, 5), 'announcement_text', 'announcement_link', NULL, 'show_announcement');
+      IF new_draft IS DISTINCT FROM r.draft OR new_published IS DISTINCT FROM r.published THEN
+        UPDATE "shop_themes" SET "draft" = new_draft, "published" = new_published WHERE "id" = r.id;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'shop_themes %: left as it was, not converted: %', r.id, SQLERRM;
+      UPDATE "shop_themes_pre_blocks_backup" SET "error" = SQLERRM WHERE "id" = r.id;
+    END;
+  END LOOP;
+END $$;
 --> statement-breakpoint
 
-UPDATE "shop_themes" SET
-  "draft" = shopnex_theme_blocks_from_settings("draft", 'collection-list', 'collection', '{"collection": "collection_{n}"}'::jsonb, 6),
-  "published" = shopnex_theme_blocks_from_settings("published", 'collection-list', 'collection', '{"collection": "collection_{n}"}'::jsonb, 6)
-WHERE "theme_id" = 'hydrogen';
+DO $$
+DECLARE
+  r record;
+  new_draft jsonb;
+  new_published jsonb;
+BEGIN
+  FOR r IN SELECT "id", "draft", "published" FROM "shop_themes" WHERE "theme_id" = 'shopco' LOOP
+    BEGIN
+      new_draft := shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_lines(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(r.draft, 'hero', 'stat', '{"value": "stat_{n}_value", "label": "stat_{n}_label"}'::jsonb, 3), 'style-grid', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"name": "name_{n}", "quote": "quote_{n}"}'::jsonb, 5), 'brands', 'brand', 'names', 'name', 8), 'announcement_text', 'announcement_link', 'announcement_link_label', NULL);
+      new_published := shopnex_theme_announcement_to_block(shopnex_theme_blocks_from_lines(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(shopnex_theme_blocks_from_settings(r.published, 'hero', 'stat', '{"value": "stat_{n}_value", "label": "stat_{n}_label"}'::jsonb, 3), 'style-grid', 'collection', '{"collection": "collection_{n}"}'::jsonb, 4), 'testimonials', 'quote', '{"name": "name_{n}", "quote": "quote_{n}"}'::jsonb, 5), 'brands', 'brand', 'names', 'name', 8), 'announcement_text', 'announcement_link', 'announcement_link_label', NULL);
+      IF new_draft IS DISTINCT FROM r.draft OR new_published IS DISTINCT FROM r.published THEN
+        UPDATE "shop_themes" SET "draft" = new_draft, "published" = new_published WHERE "id" = r.id;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'shop_themes %: left as it was, not converted: %', r.id, SQLERRM;
+      UPDATE "shop_themes_pre_blocks_backup" SET "error" = SQLERRM WHERE "id" = r.id;
+    END;
+  END LOOP;
+END $$;
 --> statement-breakpoint
 
-UPDATE "shop_themes" SET
-  "draft" = shopnex_theme_announcement_to_block("draft", 'announcement_text', 'announcement_link', NULL, NULL),
-  "published" = shopnex_theme_announcement_to_block("published", 'announcement_text', 'announcement_link', NULL, NULL)
-WHERE "theme_id" = 'storeplate';
+DO $$
+DECLARE
+  r record;
+  new_draft jsonb;
+  new_published jsonb;
+BEGIN
+  FOR r IN SELECT "id", "draft", "published" FROM "shop_themes" WHERE "theme_id" = 'hydrogen' LOOP
+    BEGIN
+      new_draft := shopnex_theme_blocks_from_settings(r.draft, 'collection-list', 'collection', '{"collection": "collection_{n}"}'::jsonb, 6);
+      new_published := shopnex_theme_blocks_from_settings(r.published, 'collection-list', 'collection', '{"collection": "collection_{n}"}'::jsonb, 6);
+      IF new_draft IS DISTINCT FROM r.draft OR new_published IS DISTINCT FROM r.published THEN
+        UPDATE "shop_themes" SET "draft" = new_draft, "published" = new_published WHERE "id" = r.id;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'shop_themes %: left as it was, not converted: %', r.id, SQLERRM;
+      UPDATE "shop_themes_pre_blocks_backup" SET "error" = SQLERRM WHERE "id" = r.id;
+    END;
+  END LOOP;
+END $$;
+--> statement-breakpoint
+
+DO $$
+DECLARE
+  r record;
+  new_draft jsonb;
+  new_published jsonb;
+BEGIN
+  FOR r IN SELECT "id", "draft", "published" FROM "shop_themes" WHERE "theme_id" = 'storeplate' LOOP
+    BEGIN
+      new_draft := shopnex_theme_announcement_to_block(r.draft, 'announcement_text', 'announcement_link', NULL, NULL);
+      new_published := shopnex_theme_announcement_to_block(r.published, 'announcement_text', 'announcement_link', NULL, NULL);
+      IF new_draft IS DISTINCT FROM r.draft OR new_published IS DISTINCT FROM r.published THEN
+        UPDATE "shop_themes" SET "draft" = new_draft, "published" = new_published WHERE "id" = r.id;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'shop_themes %: left as it was, not converted: %', r.id, SQLERRM;
+      UPDATE "shop_themes_pre_blocks_backup" SET "error" = SQLERRM WHERE "id" = r.id;
+    END;
+  END LOOP;
+END $$;
