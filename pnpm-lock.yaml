@@ -152,6 +152,9 @@ importers:
       '@shopnex/channels':
         specifier: workspace:*
         version: link:../../modules/channels
+      '@shopnex/checkout-codes':
+        specifier: workspace:*
+        version: link:../../modules/checkout-codes
       '@shopnex/content':
         specifier: workspace:*
         version: link:../../modules/content
@@ -983,6 +986,37 @@ importers:
         specifier: ^4.23.15
         version: 4.23.15
 
+  modules/checkout-codes:
+    dependencies:
+      '@shopnex/cart':
+        specifier: workspace:*
+        version: link:../cart
+      '@shopnex/db':
+        specifier: workspace:*
+        version: link:../db
+      '@shopnex/gift-cards':
+        specifier: workspace:*
+        version: link:../gift-cards
+      '@shopnex/kit':
+        specifier: workspace:*
+        version: link:../kit
+      '@shopnex/pricing':
+        specifier: workspace:*
+        version: link:../pricing
+    devDependencies:
+      '@shopnex/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@shopnex/channels':
+        specifier: workspace:*
+        version: link:../channels
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.5
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+
   modules/content:
     dependencies:
       '@orpc/server':
@@ -1305,9 +1339,6 @@ importers:
       '@shopnex/orders':
         specifier: workspace:*
         version: link:../orders
-      '@shopnex/pricing':
-        specifier: workspace:*
-        version: link:../pricing
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc

@@ -1,0 +1,27 @@
+{
+  "name": "@shopnex/checkout-codes",
+  "description": "The checkout's one code box: a discount code or a gift card, and the limit on guessing them",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./module": "./src/checkout-codes.module.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "tsx --test \"tests/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@shopnex/cart": "workspace:*",
+    "@shopnex/db": "workspace:*",
+    "@shopnex/gift-cards": "workspace:*",
+    "@shopnex/kit": "workspace:*",
+    "@shopnex/pricing": "workspace:*"
+  },
+  "devDependencies": {
+    "@shopnex/catalog": "workspace:*",
+    "@shopnex/channels": "workspace:*",
+    "@types/node": "catalog:",
+    "tsx": "^4.23.15"
+  }
+}

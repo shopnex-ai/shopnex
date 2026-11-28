@@ -1,12 +1,12 @@
 // The one code box at checkout: a buyer types a discount code or a gift card code and this says which it is and what it does.
-// Lives here because gift cards sit above cart and pricing; the guessing limit is cart's (see code-guesses).
+// Its own module because it knows both kinds and each of those modules can't know the other; the guessing limit is cart's (see code-guesses).
 import { CartError, cartService, type Cart } from '@shopnex/cart'
 import type { Conn } from '@shopnex/db'
 import { discountService } from '@shopnex/pricing'
-import { lookup } from './gift-cards'
+import { giftCardService } from '@shopnex/gift-cards'
 
 /** What to tell the buyer: `error`, or what the code was. A gift card is only checked: it is spent when the order is placed. */
-export type CheckoutCodeResult = {
+export interface CheckoutCodeResult {
   error?: string
   kind?: 'discount' | 'giftCard'
   code?: string
@@ -17,7 +17,7 @@ const EXPIRED = 'This cart has expired.'
 
 async function checkGiftCard(cart: Cart, code: string, ip: string | null, conn: Conn) {
   const { currency } = await cartService.view(cart, conn)
-  const found = await lookup(cart.shopId, code, { currency, ip, throttle: true }, conn)
+  const found = await giftCardService.lookup(cart.shopId, code, { currency, ip, throttle: true }, conn)
   if (!found.card) return { error: found.error } satisfies CheckoutCodeResult
   return { kind: 'giftCard', code, balanceCents: found.card.balanceCents } satisfies CheckoutCodeResult
 }

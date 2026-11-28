@@ -7,7 +7,7 @@ import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { db, type Conn } from '@shopnex/db'
-import { checkoutCodes, type CheckoutCodeResult } from '@shopnex/gift-cards'
+import { checkoutCodeService, type CheckoutCodeResult } from '@shopnex/checkout-codes'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
 import { checkoutBranding } from './branding'
@@ -197,7 +197,7 @@ export const applyCode = publicFn({ method: 'POST' })
   .validator((input: { token: string; code: string }) => input)
   .handler(async ({ data }): Promise<CodeState> => {
     try {
-      return await checkoutCodes.applyCode(data.token, data.code, clientIp(getRequest().headers), db)
+      return await checkoutCodeService.applyCode(data.token, data.code, clientIp(getRequest().headers), db)
     } catch (error) {
       return { error: unexpected('apply this code', error) }
     }
