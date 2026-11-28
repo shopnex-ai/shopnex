@@ -62,19 +62,23 @@ npx fetches it into its cache the first time. The same works from the folder abo
 | `--port <n>`            | Admin, API and checkout. Default `3000`                                                                                                     |
 | `--storefront-port <n>` | Storefront. Default `4321`                                                                                                                  |
 | `--no-open`             | Do not open the browser                                                                                                                     |
-| `--with <apps>`         | Also start optional apps next to the shop: `stripe`, `cj`, `shippo` (comma separated, or repeat the flag)                                   |
+| `--with <apps>`         | Start only these apps: `stripe`, `cj`, `shippo`, `reviews` (comma separated, or repeat the flag). All four start by default                 |
+| `--no-apps`             | Start the shop alone, without the bundled apps                                                                                              |
 | `--from <store>`        | Bring a Shopify or WooCommerce store across: products, collections, pages and the look. It starts after you create the owner in the browser |
 | `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                                                              |
 | `--verbose`             | Show the servers' output while they start (otherwise only if one fails)                                                                     |
 | `--dry-run`             | Show what would run, and exit                                                                                                               |
 
-## Apps: Stripe, CJ Dropshipping and Shippo
+## Apps: Stripe, CJ Dropshipping, Shippo and Reviews
+
+All the bundled apps start by default. Pick some, or none:
 
 ```sh
-npx create-shopnex@latest --with stripe,cj,shippo
+npx create-shopnex@latest --with stripe,reviews   # only these
+npx create-shopnex@latest --no-apps               # the shop alone
 ```
 
-Each app runs as its own small server on this machine only (Stripe on port 4600, CJ Dropshipping on 4700, Shippo on 4900) and keeps
+Each app runs as its own small server on this machine only (Stripe on port 4600, CJ Dropshipping on 4700, Shippo on 4900, Reviews on 5100) and keeps
 its data in `<shop folder>/apps/`. The admin finds them by itself; install them from the admin like any app and enter
 your keys there. Stripe cannot reach a `localhost` address, so card payments need a public address for the app or
 `stripe listen`: see the Stripe app's settings page.

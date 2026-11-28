@@ -9,6 +9,8 @@ export type ProcessPlan = {
   env: Record<string, string>
   /** Answers (status below 500) once the process is ready */
   readyUrl: string
+  /** An app next to the shop: if it fails to start or stops, the rest keeps running */
+  optional?: boolean
 }
 
 export type Plan = {
@@ -101,6 +103,7 @@ export function planFromBundle(input: {
           }),
         },
         readyUrl: `http://127.0.0.1:${extra.port}/shopnex/app.js`,
+        optional: true,
       })),
     ],
   }
