@@ -2,8 +2,13 @@
 // the format KS BootShop wrote before blocks into the previous release's database, and after the upgrade checks that the
 // migration moved its content into blocks.
 //
+//   node scripts/upgrade-themes.mjs applies  # before the seed: exit 0 if the previous release has not run 0053 yet
 //   node scripts/upgrade-themes.mjs seed     # before the upgrade
 //   node scripts/upgrade-themes.mjs verify   # after it
+//
+// The check only means something while the release the test starts from lacks 0053. Once the latest release has it, the
+// theme is converted the moment that release migrates, there is no old format left to seed, and `applies` says so (the
+// script then skips seed and verify). Delete this file and its calls when 0053 is squashed away.
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -47,7 +52,11 @@ const { Client } = require('pg')
 const client = new Client({ connectionString: process.env.DATABASE_URL })
 await client.connect()
 try {
-  if (mode === 'seed') {
+  if (mode === 'applies') {
+    // 0053 creates this table, whatever the shop has in it
+    const { rows } = await client.query(`select to_regclass('shop_themes_pre_blocks_backup') as backup`)
+    process.exitCode = rows[0].backup === null ? 0 : 1
+  } else if (mode === 'seed') {
     const { rows } = await client.query(`select id from shops order by created_at limit 1`)
     assert.ok(rows[0], 'the seeded shop exists')
     await client.query(

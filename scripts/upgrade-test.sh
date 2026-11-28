@@ -40,8 +40,15 @@ echo "::endgroup::"
 echo "Installing $previous and seeding data"
 docker run --rm --network host "${env_args[@]}" "${legacy_env[@]}" --entrypoint bash "$old_image" \
   -c 'pnpm db:migrate && pnpm demo:seed'
-# The seed makes no themes: add one saved the way KS BootShop did before blocks, for the theme data migration (0053)
-node scripts/upgrade-themes.mjs seed
+# The seed makes no themes: add one saved the way KS BootShop did before blocks, for the theme data migration (0053).
+# A previous release that already ran 0053 has nothing to convert (it converted on its own migrate), so the theme check is skipped.
+if node scripts/upgrade-themes.mjs applies; then
+  themes=1
+  node scripts/upgrade-themes.mjs seed
+else
+  themes=0
+  echo "The previous release already has migration 0053: skipping the theme data check"
+fi
 node scripts/db-snapshot.mjs snapshot "$work/before.json"
 
 # 3. The build in this checkout
@@ -57,8 +64,11 @@ docker run --rm --network host "${env_args[@]}" --entrypoint bash "$current" -c 
 node scripts/db-snapshot.mjs snapshot "$work/after.json"
 # Migration 0053 changes the saved theme documents on purpose (numbered settings into blocks): their two columns are not
 # compared, and upgrade-themes.mjs checks that it came out right. Everything else, themes' other columns included, must be as it was.
-node scripts/db-snapshot.mjs compare "$work/before.json" "$work/after.json" --allow shop_themes.draft --allow shop_themes.published
-node scripts/upgrade-themes.mjs verify
+# With nothing to convert (themes=0) the comparison is strict.
+allow=()
+if [ "$themes" = 1 ]; then allow=(--allow shop_themes.draft --allow shop_themes.published); fi
+node scripts/db-snapshot.mjs compare "$work/before.json" "$work/after.json" ${allow[@]+"${allow[@]}"}
+if [ "$themes" = 1 ]; then node scripts/upgrade-themes.mjs verify; fi
 
 # 5. Smoke: start the current build on the upgraded database and run part of the e2e suite against it
 echo "Starting the current build"
