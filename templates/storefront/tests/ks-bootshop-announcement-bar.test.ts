@@ -54,5 +54,4 @@ describe('KS BootShop announcement bar', () => {
       assert.doesNotMatch(html, /ks-announcement/)
     }
   })
-
 })

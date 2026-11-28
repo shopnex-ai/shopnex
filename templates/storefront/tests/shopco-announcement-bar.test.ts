@@ -56,5 +56,4 @@ describe('Shopco announcement bar', () => {
       assert.doesNotMatch(html, /data-announcement/)
     }
   })
-
 })

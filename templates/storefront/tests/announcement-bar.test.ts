@@ -75,5 +75,4 @@ describe('without announcements', () => {
       assert.match(html, /^<div data-section-id="announcement-bar">\s*<\/div>$/)
     }
   })
-
 })
