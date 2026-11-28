@@ -458,7 +458,8 @@
               "id": "heading",
               "label": "Heading",
               "type": "text",
-              "default": "Follow us"
+              "default": "Follow us",
+              "info": "The links come from Theme settings → Social links"
             }
           ]
         }
