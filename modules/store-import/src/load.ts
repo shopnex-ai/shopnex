@@ -9,6 +9,7 @@ import type { Conn } from '@shopnex/db'
 import { eq } from 'drizzle-orm'
 import { boundProduct, COLLECTION_TITLE_MAX, httpUrl, PAGE_HANDLE_MAX, PAGE_HTML_MAX } from './bounds'
 import { usualPages } from './pages'
+import { defineFields } from './specs'
 import type { StoreImportCounts } from './store-import.schema'
 import type { Found } from './types'
 
@@ -69,6 +70,20 @@ export async function loadIntoShop(
       .filter((sku): sku is string => !!sku),
   )
 
+  // Facts the store lists beside the product (data tags, attributes, weight) become the shop's custom fields. A failure here
+  // costs those facts, not the products.
+  let fieldValues: Record<string, string | number | boolean | null>[] = sellable.map(() => ({}))
+  try {
+    fieldValues = await defineFields(
+      shopId,
+      sellable.map((p) => p.specs ?? []),
+      conn,
+    )
+  } catch (e) {
+    problems.push(`custom fields: ${why(e)}`)
+  }
+  const fieldsUsed = new Set(fieldValues.flatMap((values) => Object.keys(values)))
+
   const created: { id: string; key?: string; groups: string[]; groupImage: string | null }[] = []
   let variants = 0
   await progress({ step: 'Adding products', done: 0, total: sellable.length })
@@ -76,7 +91,12 @@ export async function loadIntoShop(
     try {
       // No marker tag of our own: themes print tags on the product page
       const fitted = fitCatalogRules(p.input, usedSkus)
-      const product = await productService.create(shopId, fitted, conn)
+      const customFields = fieldValues[index]
+      const product = await productService.create(
+        shopId,
+        customFields && Object.keys(customFields).length ? { ...fitted, customFields } : fitted,
+        conn,
+      )
       created.push({ id: product.id, key: p.key, groups: p.groups, groupImage: p.groupImage })
       variants += fitted.variants?.length ?? 1
     } catch (e) {
@@ -196,6 +216,7 @@ export async function loadIntoShop(
       variants,
       collections: collections.length,
       pages: pages.length,
+      customFields: fieldsUsed.size,
       skipped,
       total: input.total ?? null,
     },

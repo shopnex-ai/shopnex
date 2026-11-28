@@ -4,6 +4,7 @@
 import type { ProductInput } from '@shopnex/catalog'
 import { StoreImportError } from './store-import.errors'
 import type { Fetcher } from './fetcher'
+import type { Specs } from './specs'
 import type { Found } from './types'
 
 const NAMED: Record<string, string> = {
@@ -37,6 +38,30 @@ function fromText(text: unknown): Record<string, string> {
     if (i > 0) out[decode(part.slice(0, i))] = decode(part.slice(i + 2))
   }
   return out
+}
+
+/**
+ * The product's own attributes (Material: Cotton; the ones its variations choose between are options already), its weight
+ * and its size. The Store API sends them already formatted with the store's units ("2 kg", "10 × 5 × 3 cm").
+ */
+export function specsOf(p: any): Specs {
+  const specs: Specs = []
+  for (const a of p.attributes ?? []) {
+    if (a.has_variations) continue
+    const value = (a.terms ?? [])
+      .map((t: any) => decode(String(t.name)))
+      .filter(Boolean)
+      .join(', ')
+    if (a.name && value) specs.push({ label: decode(String(a.name)), value })
+  }
+  // A product with none says "N/A"
+  const measure = (label: string, text: unknown) => {
+    const value = typeof text === 'string' ? decode(text).trim() : ''
+    if (value && !/^n\/a$/i.test(value)) specs.push({ label, value })
+  }
+  measure('Weight', p.formatted_weight)
+  measure('Dimensions', p.formatted_dimensions)
+  return specs
 }
 
 export async function fetchWoo(origin: string, max: number, fetcher: Fetcher): Promise<Found> {
@@ -133,7 +158,7 @@ export async function fetchWoo(origin: string, max: number, fetcher: Fetcher): P
     const groups: string[] = (p.categories ?? [])
       .map((c: any) => decode(String(c.name)))
       .filter((n: string) => !/^uncategori[sz]ed$/i.test(n))
-    products.push({ input: await toInput(p), groups, groupImage: images(p)[0]?.url ?? null })
+    products.push({ input: await toInput(p), specs: specsOf(p), groups, groupImage: images(p)[0]?.url ?? null })
   }
 
   const pagesFeed: any[] = await getJson(`${origin}/wp-json/wp/v2/pages?per_page=100&_fields=slug,title,content`).catch(

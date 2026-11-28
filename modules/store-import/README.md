@@ -12,10 +12,15 @@ Only what the store publishes, with no login and no access to the store:
 
 ## What comes across
 
-Products with descriptions, images, options, variants, SKUs, prices and sale prices; collections (the biggest six groups of
+Products with descriptions, images, options, variants, SKUs, prices and sale prices; custom fields (below); collections (the biggest six groups of
 at least two products); the main and footer menus; up to six usual pages (About, Contact, FAQ, shipping, returns, size guide,
 privacy, terms, imprint, in English, German, French and Spanish); and, for a shop with no products yet or when asked, the
 shop's name, logo, favicon, color, social links, currency and language (a published Storeplate copy).
+
+Facts the store lists beside a product become the shop's **product custom fields** (text, shown on the storefront; at most 20
+fields, one per label, the most common first): a Shopify data tag `brand::material => Wool` (and keeps it out of the tags),
+a WooCommerce attribute that its variations do not choose between (`Material: Cotton`), and its weight and size. A key the shop
+already uses for a field of another type is left alone.
 
 ## What does not
 

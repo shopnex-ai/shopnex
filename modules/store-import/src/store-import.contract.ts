@@ -15,6 +15,8 @@ const counts = z.object({
   variants: z.number(),
   collections: z.number(),
   pages: z.number(),
+  // Absent on imports made before this existed
+  customFields: z.number().optional(),
   skipped: z.number(),
   total: z.number().nullable(),
   currency: z.string(),

@@ -197,6 +197,12 @@ function Result({ job, onboarding, onContinue }: { job: Job; onboarding: boolean
               A sample: the store has {counts.total} products and the first {counts.products} came across.
             </li>
           )}
+          {!!counts.customFields && (
+            <li>
+              {counts.customFields} product {counts.customFields === 1 ? 'field' : 'fields'} from what the store lists
+              (attributes, weight, data tags), under Settings → Custom fields.
+            </li>
+          )}
           {counts.branded && (
             <li>
               Your shop now has the store&apos;s name, logo, colors, currency ({counts.currency})

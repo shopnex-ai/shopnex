@@ -1,6 +1,7 @@
 // Shopify: /products.json (250 per page), /pages.json, /meta.json. All public, no login.
 import type { ProductInput } from '@shopnex/catalog'
 import type { Fetcher } from './fetcher'
+import { specsFromTags } from './specs'
 import type { Found } from './types'
 
 const ZERO_DECIMAL = new Set(['JPY', 'KRW', 'VND', 'CLP', 'ISK', 'UGX'])
@@ -13,6 +14,15 @@ export const isDataTag = (tag: string) => tag.includes('::') || tag.includes(' =
 
 // Shopify's automatic collections that only repeat the whole catalog
 const SKIPPED_COLLECTIONS = new Set(['all', 'all-products', 'frontpage'])
+
+/** A product's tags as a list, whether the feed sends a list or one comma-separated string */
+const tagsOf = (p: any): string[] =>
+  Array.isArray(p.tags)
+    ? p.tags.map(String)
+    : String(p.tags ?? '')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
 
 export async function fetchShopify(origin: string, max: number, fetcher: Fetcher): Promise<Found> {
   const getJson = fetcher.json
@@ -53,13 +63,7 @@ export async function fetchShopify(origin: string, max: number, fetcher: Fetcher
         ...(options.length ? { options: picked } : {}),
       }
     })
-    const tags: string[] = Array.isArray(p.tags)
-      ? p.tags
-      : String(p.tags ?? '')
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean)
-    const labels = tags.filter((t) => !isDataTag(String(t)))
+    const labels = tagsOf(p).filter((t) => !isDataTag(String(t)))
     return {
       title: String(p.title).slice(0, 250),
       status: 'active',
@@ -96,6 +100,7 @@ export async function fetchShopify(origin: string, max: number, fetcher: Fetcher
     products: raw.map((p) => ({
       key: String(p.handle),
       input: toInput(p),
+      specs: specsFromTags(tagsOf(p)),
       groups: String(p.product_type ?? '').trim() ? [String(p.product_type).trim()] : [],
       groupImage: p.images?.[0]?.src ?? null,
     })),
