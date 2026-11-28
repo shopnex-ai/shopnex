@@ -62,7 +62,7 @@ npx fetches it into its cache the first time. The same works from the folder abo
 | `--port <n>`            | Admin, API and checkout. Default `3000`                                                                                                     |
 | `--storefront-port <n>` | Storefront. Default `4321`                                                                                                                  |
 | `--no-open`             | Do not open the browser                                                                                                                     |
-| `--with <apps>`         | Start only these apps: `stripe`, `cj`, `shippo`, `reviews` (comma separated, or repeat the flag). All four start by default                |
+| `--with <apps>`         | Start only these apps: `stripe`, `cj`, `shippo`, `reviews` (comma separated, or repeat the flag). All four start by default                 |
 | `--no-apps`             | Start the shop alone, without the bundled apps                                                                                              |
 | `--from <store>`        | Bring a Shopify or WooCommerce store across: products, collections, pages and the look. It starts after you create the owner in the browser |
 | `--app <name>`          | What to start. Only `shop` today; a picker appears once there is more than one                                                              |

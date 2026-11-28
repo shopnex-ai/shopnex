@@ -143,6 +143,10 @@ test('apps are optional in the plan, the shop and the storefront are not', () =>
   })
   assert.deepEqual(
     plan.processes.map((p) => [p.name, Boolean(p.optional)]),
-    [['admin', false], ['storefront', false], ['stripe', true]],
+    [
+      ['admin', false],
+      ['storefront', false],
+      ['stripe', true],
+    ],
   )
 })

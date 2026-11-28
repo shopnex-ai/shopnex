@@ -1,8 +1,0 @@
-{
-  "name": "my-shop",
-  "private": true,
-  "scripts": {
-    "start": "npx --yes create-shopnex@0.16.1 .",
-    "dev": "npx --yes create-shopnex@0.16.1 ."
-  }
-}
