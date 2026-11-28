@@ -125,25 +125,6 @@
       "default": false
     },
     {
-      "id": "announcement_text",
-      "label": "Announcement (one message)",
-      "info": "Shown only while Header → Announcement bar has no announcements of its own",
-      "group": "Announcement bar",
-      "type": "text"
-    },
-    {
-      "id": "announcement_link_label",
-      "label": "Announcement link label",
-      "group": "Announcement bar",
-      "type": "text"
-    },
-    {
-      "id": "announcement_link",
-      "label": "Announcement link",
-      "group": "Announcement bar",
-      "type": "url"
-    },
-    {
       "id": "newsletter_heading",
       "label": "Newsletter heading",
       "group": "Footer",
@@ -297,11 +278,7 @@
               "label": "Label",
               "type": "text"
             }
-          ],
-          "from_settings": {
-            "value": "stat_{n}_value",
-            "label": "stat_{n}_label"
-          }
+          ]
         }
       }
     },
@@ -319,11 +296,7 @@
               "type": "text",
               "default": "Brand"
             }
-          ],
-          "from_lines": {
-            "setting": "names",
-            "into": "name"
-          }
+          ]
         }
       }
     },
@@ -387,10 +360,7 @@
               "label": "Collection",
               "type": "collection"
             }
-          ],
-          "from_settings": {
-            "collection": "collection_{n}"
-          }
+          ]
         }
       }
     },
@@ -425,11 +395,7 @@
               "label": "Quote",
               "type": "textarea"
             }
-          ],
-          "from_settings": {
-            "name": "name_{n}",
-            "quote": "quote_{n}"
-          }
+          ]
         }
       }
     },

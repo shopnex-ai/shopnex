@@ -137,19 +137,6 @@
       "default": false
     },
     {
-      "id": "announcement_text",
-      "label": "Announcement bar (one message)",
-      "info": "Shown only while Header → Announcement bar has no announcements of its own",
-      "group": "Announcement bar",
-      "type": "text"
-    },
-    {
-      "id": "announcement_link",
-      "label": "Announcement link",
-      "group": "Announcement bar",
-      "type": "url"
-    },
-    {
       "id": "footer_text",
       "label": "Footer text",
       "info": "Defaults to © year and the shop name",

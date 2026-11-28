@@ -1,10 +1,5 @@
-{%- comment -%} The strip above the header (theme settings: Announcement bar) {%- endcomment -%}
-{%- if settings.show_announcement and settings.announcement_text != blank -%}
-  <div class="ks-announcement text-center small py-2 px-3">
-    {%- if settings.announcement_link != blank -%}
-      <a href="{{ settings.announcement_link }}">{{ settings.announcement_text }}</a>
-    {%- else -%}
-      {{ settings.announcement_text }}
-    {%- endif -%}
-  </div>
-{%- endif -%}
+{%- comment -%}
+  Deprecated, and draws nothing. The announcement bar is the announcement-bar section ({% section 'announcement-bar' %}, one
+  message per block), and the old single message of the theme settings was moved into a block by a data migration. This file
+  stays for one more release so a shop whose edited layout (Edit code) still renders it keeps working; remove it then.
+{%- endcomment -%}

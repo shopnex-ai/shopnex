@@ -63,38 +63,12 @@ export const ThemeSettingField = z.discriminatedUnion('type', [
 ])
 
 /** A kind of block: a repeatable item inside a section (a slide, an announcement, a link), as in Shopify */
-export const ThemeBlockDefinition = z
-  .object({
-    name: z.string().min(1).max(100),
-    settings: z.array(ThemeSettingField).default([]),
-    /** How many blocks of this type one section can hold */
-    limit: z.number().int().min(1).optional(),
-    /**
-     * The section's old numbered settings this block type replaces, by this type's setting id: `{n}` is the position, so
-     * `{ "image": "image_{n}" }` reads image_1, image_2… A section that has no blocks yet but has such settings becomes one
-     * block per position when a document is resolved (`resolveDocument`), and the old settings are dropped, so a document
-     * saved before the section had blocks keeps its content.
-     */
-    from_settings: z.record(Id, z.string().max(64)).optional(),
-    /**
-     * A section's old text setting with one item per line (a brand strip's `names`) that this block type replaces: each
-     * non-blank line becomes a block with the line as its `into` setting, and the old setting is dropped (see `from_settings`).
-     */
-    from_lines: z.object({ setting: Id, into: Id }).optional(),
-  })
-  .superRefine((block, ctx) => {
-    if (block.from_lines && !block.settings.some((f) => f.id === block.from_lines!.into))
-      ctx.addIssue({
-        code: 'custom',
-        message: `from_lines: "${block.from_lines.into}" is not a setting of this block type`,
-      })
-    for (const [id, pattern] of Object.entries(block.from_settings ?? {})) {
-      if (!block.settings.some((f) => f.id === id))
-        ctx.addIssue({ code: 'custom', message: `from_settings: "${id}" is not a setting of this block type` })
-      if (!pattern.includes('{n}') || !Id.safeParse(pattern.replaceAll('{n}', '1')).success)
-        ctx.addIssue({ code: 'custom', message: `from_settings: "${pattern}" must be a setting id with {n} in it` })
-    }
-  })
+export const ThemeBlockDefinition = z.object({
+  name: z.string().min(1).max(100),
+  settings: z.array(ThemeSettingField).default([]),
+  /** How many blocks of this type one section can hold */
+  limit: z.number().int().min(1).optional(),
+})
 
 /**
  * The page whose sections are the theme's global ones (`{% section 'announcement-bar' %}`): the same on every page. The
@@ -210,8 +184,9 @@ export const ThemeDefinition = z.object({
   ),
   /**
    * Settings, sections and blocks the theme dropped on purpose, as paths (`sections/hero/settings/old_id`; a path covers
-   * what is under it). A removal that is not listed here or covered by `from_settings` / `from_lines` fails the theme's
-   * structure check (`unaccountedRemovals`), so a change that would orphan what merchants saved can't go unnoticed.
+   * what is under it). A removal that is not listed here is a break for saved themes (`unaccountedRemovals`): the pull
+   * request check (`theme-compat`) fails it unless it carries the `breaking-theme-change` label and a SQL migration that
+   * moves what merchants saved, so a change that would orphan their content can't go unnoticed.
    */
   removed: z.array(z.string().max(200)).default([]),
   /** Styles the merchant can start from, in display order. The theme's own defaults are always offered too. */
@@ -351,84 +326,27 @@ export function resolveGlobalSections(definition: ThemeDefinition, stored?: read
   return result
 }
 
-const isFilled = (value: unknown) => typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')
-
 /**
- * A section saved before it had blocks, with its content in numbered settings (image_1, heading_1…), as blocks: one per
- * position that has something, from the block types' `from_settings` (and a one-per-line text setting from `from_lines`),
- * and the old settings gone. A section that
- * has a list of blocks (even an empty one: the merchant emptied it), or has nothing in those settings, is returned as
- * it is, so this runs on every load and the second time changes nothing.
- */
-export function blocksFromSettings(
-  definition: ThemeSectionDefinition | undefined,
-  section: ThemeSection,
-): ThemeSection {
-  // A list of blocks, even an empty one, is the merchant's: it was saved after blocks, and what they deleted stays deleted
-  if (!definition || section.blocks !== undefined) return section
-  const max = definition.max_blocks ?? MAX_SECTION_BLOCKS
-  const blocks: ThemeBlock[] = []
-  const used = new Set<string>()
-  for (const [type, block] of Object.entries(definition.blocks)) {
-    const from = block.from_settings
-    const room = Math.min(block.limit ?? max, max)
-    let count = 0
-    const lines = block.from_lines
-    const raw = lines ? section.settings[lines.setting] : undefined
-    if (lines && typeof raw === 'string') {
-      const items = raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-      if (items.length > 0) used.add(lines.setting)
-      for (const [i, item] of items.entries()) {
-        if (count >= room || blocks.length >= max) break
-        blocks.push({ id: `${type}-${i + 1}`, type, settings: { [lines.into]: item } })
-        count++
-      }
-    }
-    if (!from) continue
-    for (let n = 1; n <= max && count < room && blocks.length < max; n++) {
-      const key = (pattern: string) => pattern.replaceAll('{n}', String(n))
-      const settings = Object.fromEntries(
-        Object.entries(from)
-          .map(([id, pattern]) => [id, section.settings[key(pattern)]] as const)
-          .filter(([, value]) => isFilled(value)),
-      )
-      if (Object.keys(settings).length === 0) continue
-      for (const pattern of Object.values(from)) used.add(key(pattern))
-      blocks.push({ id: `${type}-${n}`, type, settings: settings as ThemeSettings })
-      count++
-    }
-  }
-  if (blocks.length === 0) return section
-  const rest = Object.fromEntries(Object.entries(section.settings).filter(([key]) => !used.has(key)))
-  return { ...section, settings: rest, blocks }
-}
-
-/**
- * A stored document as the theme means it today. Used by whatever reads a document, so the storefront and the editor
- * see the same sections:
- * - a section saved before it had blocks gets them from its numbered settings (`blocksFromSettings`);
- * - what the theme owns (its global sections) is complete (`resolveGlobalSections`).
- * It keeps everything else the merchant saved; settings and a page the merchant never edited are filled from the theme's
- * defaults where they are read (`resolveSettings`, the page's default sections). Resolving again changes nothing.
+ * A stored document as the theme means it today: what the theme owns (its global sections) is always complete
+ * (`resolveGlobalSections`). Used by whatever reads a document, so the storefront and the editor see the same
+ * sections. It keeps everything else the merchant saved; settings and a page the merchant never edited are filled from
+ * the theme's defaults where they are read (`resolveSettings`, the page's default sections). Resolving again changes
+ * nothing.
+ *
+ * A change to what a document holds (a setting renamed, settings moved into blocks) is not done here but by a SQL
+ * migration in modules/db/migrations, once, for every saved theme: the pull request check refuses the change without it.
  */
 export function resolveDocument(definition: ThemeDefinition, document: ThemeDocument): ThemeDocument {
-  const pages = Object.fromEntries(
-    Object.entries(document.pages).map(([id, page]) => {
-      const sections = page.sections.map((s) => blocksFromSettings(definition.sections[s.type], s))
-      return [id, sections.every((s, i) => s === page.sections[i]) ? page : { ...page, sections }]
-    }),
-  )
-  if (THEME_STATIC_PAGE in definition.pages)
-    pages[THEME_STATIC_PAGE] = {
-      sections: resolveGlobalSections(definition, pages[THEME_STATIC_PAGE]?.sections),
-    }
-  const unchanged =
-    Object.keys(pages).length === Object.keys(document.pages).length &&
-    Object.entries(pages).every(([id, page]) => page === document.pages[id])
-  return unchanged ? document : { ...document, pages }
+  if (!(THEME_STATIC_PAGE in definition.pages)) return document
+  return {
+    ...document,
+    pages: {
+      ...document.pages,
+      [THEME_STATIC_PAGE]: {
+        sections: resolveGlobalSections(definition, document.pages[THEME_STATIC_PAGE]?.sections),
+      },
+    },
+  }
 }
 
 /**
@@ -451,28 +369,14 @@ export function themeStructure(definition: ThemeDefinition): string[] {
 }
 
 /**
- * What a theme used to declare (`previous`, from `themeStructure`) and no longer does, and nothing accounts for: a
- * merchant may have content saved there, which would silently stop showing. A removal is accounted for when the theme lists it
- * (or a path above it) in `removed`, or when it is a numbered setting `from_settings` reads, or the text setting `from_lines`
- * reads, which turn it into blocks. Additions are always fine.
+ * What a theme used to declare (`previous`, from `themeStructure`) and no longer does, unless the theme lists it (or a
+ * path above it) in `removed`: a merchant may have content saved there, which would silently stop showing. Additions are
+ * always fine. The pull request check (`theme-compat`) fails what this returns, unless it comes with a SQL migration.
  */
 export function unaccountedRemovals(previous: readonly string[], definition: ThemeDefinition): string[] {
   const now = new Set(themeStructure(definition))
   const listed = (path: string) => definition.removed.some((r) => path === r || path.startsWith(`${r}/`))
-  const migrated = (path: string) => {
-    const match = /^sections\/([^/]+)\/settings\/([^/]+)$/.exec(path)
-    if (!match) return false
-    const [, type, id] = match
-    return Object.values(definition.sections[type!]?.blocks ?? {}).some(
-      (block) =>
-        block.from_lines?.setting === id ||
-        // A pattern is a setting id (letters, digits, - and _) with {n} in it, so {n} is all that needs turning into a regex
-        Object.values(block.from_settings ?? {}).some((pattern) =>
-          new RegExp(`^${pattern.replaceAll('{n}', '\\d+')}$`).test(id!),
-        ),
-    )
-  }
-  return previous.filter((path) => !now.has(path) && !listed(path) && !migrated(path)).sort()
+  return previous.filter((path) => !now.has(path) && !listed(path)).sort()
 }
 
 /** The document a shop starts from: default settings and each page's default sections */

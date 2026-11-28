@@ -15,7 +15,7 @@ export type Comparison = {
   themesRemoved: string[]
   /** Per theme, what the new version declares and the old one did not */
   added: Record<string, string[]>
-  /** Per theme, what is gone but accounted for (the theme lists it in `removed`, or moves it into blocks) */
+  /** Per theme, what is gone but accounted for (the theme lists it in `removed`) */
   accounted: Record<string, string[]>
   /** Per theme, what is gone and nothing accounts for: the break */
   breaking: Record<string, string[]>
@@ -66,7 +66,7 @@ export function describe(c: Comparison): string {
     lines.push(`**Themes removed:** ${c.themesRemoved.map((id) => `\`${id}\``).join(', ')}`, '')
   if (c.themesAdded.length) lines.push(`**Themes added:** ${c.themesAdded.map((id) => `\`${id}\``).join(', ')}`, '')
   list('Breaking, nothing accounts for it', c.breaking)
-  list('Removed on purpose or moved into blocks', c.accounted)
+  list('Removed on purpose (listed in `removed`)', c.accounted)
   list('Added', c.added)
   return lines.length ? lines.join('\n') : "No change to any theme's structure."
 }

@@ -1,7 +1,6 @@
 {%- comment -%}
   The announcement bar (the Header group in the theme editor): one message per block, shown one at a time and moving on
-  by itself when there are several (src/ui.ts). The buyer can close it; it stays closed until the messages change. While
-  there are no blocks, the single "Announcement" of the theme settings is shown, for shops that set it before blocks existed.
+  by itself when there are several (src/ui.ts). The buyer can close it; it stays closed until the messages change.
 {%- endcomment -%}
 {%- assign messages = '' -%}
 {%- assign count = 0 -%}
@@ -11,40 +10,28 @@
     {%- assign messages = messages | append: block.settings.text -%}
   {%- endif -%}
 {%- endfor -%}
-{%- assign legacy = settings.announcement_text | strip -%}
-{%- if count > 0 or legacy != blank -%}
+{%- if count > 0 -%}
   <div
-    data-announcement="{% if count > 0 %}{{ messages | handleize }}{% else %}{{ legacy | handleize }}{% endif %}"
+    data-announcement="{{ messages | handleize }}"
     data-speed="{{ section.settings.speed }}"
     class="bg-acc text-on-acc"
     {%- if count > 1 %} role="region" aria-roledescription="carousel" aria-label="{{ 'general.announcements' | t }}"{% endif %}
   >
     <div class="relative mx-auto flex max-w-[1240px] items-center justify-center px-10 py-2.5 text-center text-[12px] sm:text-[14px]">
-      {%- if count > 0 -%}
-        {%- assign shown = false -%}
-        {%- for block in section.blocks -%}
-          {%- if block.settings.text != blank -%}
-            <p {{ block.shopify_attributes }} data-announcement-slide{% if shown %} hidden{% endif %} class="m-0">
-              {{ block.settings.text }}
-              {%- if block.settings.link != blank and block.settings.link_label != blank %}
-                <a href="{{ block.settings.link }}" class="font-medium underline underline-offset-2">
-                  {{- block.settings.link_label -}}
-                </a>
-              {%- endif %}
-            </p>
-            {%- assign shown = true -%}
-          {%- endif -%}
-        {%- endfor -%}
-      {%- else -%}
-        <p class="m-0">
-          {{ legacy }}
-          {%- if settings.announcement_link != blank and settings.announcement_link_label != blank %}
-            <a href="{{ settings.announcement_link }}" class="font-medium underline underline-offset-2">
-              {{- settings.announcement_link_label -}}
-            </a>
-          {%- endif %}
-        </p>
-      {%- endif -%}
+      {%- assign shown = false -%}
+      {%- for block in section.blocks -%}
+        {%- if block.settings.text != blank -%}
+          <p {{ block.shopify_attributes }} data-announcement-slide{% if shown %} hidden{% endif %} class="m-0">
+            {{ block.settings.text }}
+            {%- if block.settings.link != blank and block.settings.link_label != blank %}
+              <a href="{{ block.settings.link }}" class="font-medium underline underline-offset-2">
+                {{- block.settings.link_label -}}
+              </a>
+            {%- endif %}
+          </p>
+          {%- assign shown = true -%}
+        {%- endif -%}
+      {%- endfor -%}
       <button
         type="button"
         data-announcement-close

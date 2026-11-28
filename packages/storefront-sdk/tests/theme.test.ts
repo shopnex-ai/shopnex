@@ -5,7 +5,6 @@ import {
   ThemeDefinition,
   ThemeDocument,
   applyPreset,
-  blocksFromSettings,
   defaultDocument,
   resolveBlocks,
   resolveDocument,
@@ -361,216 +360,6 @@ describe('resolveGlobalSections', () => {
   })
 })
 
-describe('blocksFromSettings: a section saved before it had blocks', () => {
-  const slides = ThemeDefinition.parse({
-    id: 'legacy',
-    name: 'Legacy',
-    sections: {
-      hero: {
-        name: 'Hero',
-        max_blocks: 3,
-        settings: [{ id: 'height', label: 'Height', type: 'text' }],
-        blocks: {
-          slide: {
-            name: 'Slide',
-            settings: [
-              { id: 'image', label: 'Image', type: 'image' },
-              { id: 'heading', label: 'Heading', type: 'text' },
-            ],
-            from_settings: { image: 'image_{n}', heading: 'heading_{n}' },
-          },
-        },
-      },
-      stats: {
-        name: 'Stats',
-        settings: [],
-        blocks: {
-          stat: {
-            name: 'Stat',
-            settings: [
-              { id: 'value', label: 'Value', type: 'text' },
-              { id: 'label', label: 'Label', type: 'text' },
-            ],
-            from_settings: { value: 'stat_{n}_value', label: 'stat_{n}_label' },
-          },
-        },
-      },
-      plain: { name: 'Plain', settings: [] },
-    },
-    pages: { home: { name: 'Home', sections: [] } },
-  })
-  const hero = (settings: Record<string, string>, blocks?: ThemeBlockValue[]) => ({
-    id: 'h',
-    type: 'hero',
-    settings,
-    ...(blocks && { blocks }),
-  })
-  type ThemeBlockValue = { id: string; type: string; settings: Record<string, string> }
-
-  test('one block per numbered position that has something; the numbered settings are gone, the others stay', () => {
-    const result = blocksFromSettings(
-      slides.sections.hero,
-      hero({ height: '60vh', image_1: '/a.jpg', heading_1: 'One', image_2: '/b.jpg', heading_2: '' }),
-    )
-    assert.deepEqual(result.settings, { height: '60vh' })
-    assert.deepEqual(result.blocks, [
-      { id: 'slide-1', type: 'slide', settings: { image: '/a.jpg', heading: 'One' } },
-      { id: 'slide-2', type: 'slide', settings: { image: '/b.jpg' } },
-    ])
-  })
-
-  test('a gap keeps the position in the id, and the order is the number', () => {
-    const result = blocksFromSettings(slides.sections.hero, hero({ heading_3: 'Third', heading_1: 'First' }))
-    assert.deepEqual(
-      result.blocks!.map((b) => [b.id, b.settings.heading]),
-      [
-        ['slide-1', 'First'],
-        ['slide-3', 'Third'],
-      ],
-    )
-  })
-
-  test('the position can be in the middle of the setting id', () => {
-    const result = blocksFromSettings(slides.sections.stats, {
-      id: 's',
-      type: 'stats',
-      settings: { stat_1_value: '200+', stat_1_label: 'Brands', stat_2_value: '30,000+' },
-    })
-    assert.deepEqual(result.blocks, [
-      { id: 'stat-1', type: 'stat', settings: { value: '200+', label: 'Brands' } },
-      { id: 'stat-2', type: 'stat', settings: { value: '30,000+' } },
-    ])
-    assert.deepEqual(result.settings, {})
-  })
-
-  test('a section that has blocks already is left as it is, old settings and all', () => {
-    const section = hero({ image_1: '/old.jpg' }, [{ id: 'mine', type: 'slide', settings: {} }])
-    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
-  })
-
-  test('a list the merchant emptied stays empty: what they deleted does not come back', () => {
-    const section = hero({ image_1: '/old.jpg' }, [])
-    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
-  })
-
-  test('a section with nothing in the numbered settings is left as it is', () => {
-    const section = hero({ height: '60vh', image_1: '', heading_1: '  ' })
-    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
-    assert.equal(
-      blocksFromSettings(slides.sections.plain, { id: 'p', type: 'plain', settings: { image_1: 'x' } }).blocks,
-      undefined,
-    )
-    assert.equal(blocksFromSettings(undefined, section), section)
-  })
-
-  test('stops at the most blocks the section holds', () => {
-    const many = Object.fromEntries([1, 2, 3, 4, 5].map((n) => [`heading_${n}`, `H${n}`]))
-    assert.equal(blocksFromSettings(slides.sections.hero, hero(many)).blocks!.length, 3)
-  })
-
-  test('running again changes nothing', () => {
-    const once = blocksFromSettings(slides.sections.hero, hero({ image_1: '/a.jpg' }))
-    assert.equal(blocksFromSettings(slides.sections.hero, once), once)
-  })
-
-  test('what it makes is a valid stored section', () => {
-    const result = blocksFromSettings(slides.sections.hero, hero({ image_1: '/a.jpg', heading_2: 'Two' }))
-    assert.equal(ThemeDocument.safeParse({ settings: {}, pages: { home: { sections: [result] } } }).success, true)
-  })
-
-  test('resolveDocument does it on every page, and returns the same page when there is nothing to do', () => {
-    const document = {
-      settings: {},
-      pages: {
-        home: { sections: [hero({ image_1: '/a.jpg' })] },
-        other: { sections: [{ id: 'p', type: 'plain', settings: {} }] },
-      },
-    }
-    const result = resolveDocument(slides, document)
-    assert.equal(result.pages.home!.sections[0]!.blocks![0]!.id, 'slide-1')
-    assert.equal(result.pages.other, document.pages.other)
-    assert.deepEqual(resolveDocument(slides, result), result)
-  })
-
-  describe('the declaration', () => {
-    const block = (from_settings: Record<string, string>) =>
-      ThemeDefinition.safeParse({
-        id: 'x',
-        name: 'X',
-        sections: {
-          s: {
-            name: 'S',
-            blocks: { b: { name: 'B', settings: [{ id: 'image', label: 'I', type: 'text' }], from_settings } },
-          },
-        },
-        pages: {},
-      })
-
-    test('names a setting of the block type and has {n} in the old id', () => {
-      assert.equal(block({ image: 'image_{n}' }).success, true)
-      assert.equal(block({ nope: 'image_{n}' }).success, false)
-      assert.equal(block({ image: 'image_1' }).success, false)
-      assert.equal(block({ image: 'Image {n}' }).success, false)
-    })
-  })
-})
-
-describe('blocksFromSettings: one item per line', () => {
-  const brands = ThemeDefinition.parse({
-    id: 'strip',
-    name: 'Strip',
-    sections: {
-      brands: {
-        name: 'Brands',
-        max_blocks: 3,
-        settings: [],
-        blocks: {
-          brand: {
-            name: 'Brand',
-            settings: [{ id: 'name', label: 'Name', type: 'text' }],
-            from_lines: { setting: 'names', into: 'name' },
-          },
-        },
-      },
-    },
-    pages: {},
-  })
-  const strip = (names: string, extra = {}) => ({ id: 'b', type: 'brands', settings: { names, ...extra } })
-
-  test('each non-blank line becomes a block, trimmed; the old setting is gone', () => {
-    const result = blocksFromSettings(brands.sections.brands, strip('  Zara \r\n\nH&M\n  \nUniqlo', { other: 'kept' }))
-    assert.deepEqual(
-      result.blocks!.map((b) => [b.id, b.settings.name]),
-      [
-        ['brand-1', 'Zara'],
-        ['brand-2', 'H&M'],
-        ['brand-3', 'Uniqlo'],
-      ],
-    )
-    assert.deepEqual(result.settings, { other: 'kept' })
-  })
-
-  test('stops at max_blocks; an empty text leaves the section as it is; running again changes nothing', () => {
-    assert.equal(blocksFromSettings(brands.sections.brands, strip('a\nb\nc\nd\ne')).blocks!.length, 3)
-    const empty = strip('  \n ')
-    assert.equal(blocksFromSettings(brands.sections.brands, empty), empty)
-    const once = blocksFromSettings(brands.sections.brands, strip('a\nb'))
-    assert.equal(blocksFromSettings(brands.sections.brands, once), once)
-  })
-
-  test('the declaration names a setting of the block type', () => {
-    const bad = {
-      id: 'x',
-      name: 'X',
-      sections: {
-        s: { name: 'S', blocks: { b: { name: 'B', settings: [], from_lines: { setting: 'names', into: 'nope' } } } },
-      },
-      pages: {},
-    }
-    assert.equal(ThemeDefinition.safeParse(bad).success, false)
-  })
-})
-
 describe('the structure check: what a theme dropped must be accounted for', () => {
   const theme = (patch: Record<string, unknown> = {}) =>
     ThemeDefinition.parse({
@@ -585,7 +374,6 @@ describe('the structure check: what a theme dropped must be accounted for', () =
             slide: {
               name: 'Slide',
               settings: [{ id: 'image', label: 'Image', type: 'text' }],
-              from_settings: { image: 'image_{n}' },
             },
           },
         },
@@ -617,31 +405,11 @@ describe('the structure check: what a theme dropped must be accounted for', () =
     assert.deepEqual(unaccountedRemovals(['settings/old'], theme({ removed: ['settings/old'] })), [])
   })
 
-  test('numbered settings that from_settings reads, and a text setting from_lines reads, are accounted for', () => {
-    const numbered = ['sections/hero/settings/image_1', 'sections/hero/settings/image_12']
-    assert.deepEqual(unaccountedRemovals(numbered, theme()), [])
-    // Not numbered, so nothing reads it: a section setting called image was dropped for good
-    assert.deepEqual(unaccountedRemovals(['sections/hero/settings/image'], theme()), ['sections/hero/settings/image'])
-    assert.deepEqual(unaccountedRemovals(['sections/hero/settings/heading_1'], theme()), [
-      'sections/hero/settings/heading_1',
+  test('moving a setting into blocks is a removal too: only `removed` accounts for it (the data moves in a SQL migration)', () => {
+    const old = ['sections/hero/settings/image_1', 'sections/hero/settings/image_2']
+    assert.deepEqual(unaccountedRemovals(old, theme()), old)
+    assert.deepEqual(unaccountedRemovals(old, theme({ removed: ['sections/hero/settings/image_1'] })), [
+      'sections/hero/settings/image_2',
     ])
-    assert.deepEqual(unaccountedRemovals(['sections/other/settings/image_1'], theme()), [
-      'sections/other/settings/image_1',
-    ])
-    const lines = theme({
-      sections: {
-        brands: {
-          name: 'Brands',
-          blocks: {
-            brand: {
-              name: 'Brand',
-              settings: [{ id: 'name', label: 'N', type: 'text' }],
-              from_lines: { setting: 'names', into: 'name' },
-            },
-          },
-        },
-      },
-    })
-    assert.deepEqual(unaccountedRemovals(['sections/brands/settings/names'], lines), [])
   })
 })

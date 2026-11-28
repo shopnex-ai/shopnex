@@ -76,15 +76,4 @@ describe('without announcements', () => {
     }
   })
 
-  test('the old single message (theme settings) shows while there are no blocks', async () => {
-    const html = await render(bar([]), { announcement_text: 'Welcome back', announcement_link: '/search' })
-    assert.match(html, /<a href="\/search"[^>]*>Welcome back<\/a>/)
-    assert.doesNotMatch(html, /data-announcement-prev/)
-  })
-
-  test('blocks win over the old message', async () => {
-    const html = await render(bar([block('a', 'New one')]), { announcement_text: 'Old one' })
-    assert.match(html, /New one/)
-    assert.doesNotMatch(html, /Old one/)
-  })
 })

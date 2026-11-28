@@ -1,10 +1,14 @@
 // Snapshots and compares the data in a database, for the upgrade test (scripts/upgrade-test.sh).
 //
 //   node scripts/db-snapshot.mjs snapshot <file>   # every table in the public schema, as JSON
-//   node scripts/db-snapshot.mjs compare <before> <after>
+//   node scripts/db-snapshot.mjs compare <before> <after> [--allow table.column]...
 //
 // An upgrade may add tables, columns and rows. It must not drop a table or a column, lose a row, or change a
 // value that was already there. `compare` exits 1 and lists each difference otherwise.
+//
+// `--allow table.column` names a column whose values a migration changes on purpose (a data migration, like 0053's
+// theme documents). Its values are not compared; the migration's own test and the upgrade test's check of what it
+// converted are what say they came out right. Keep the list as short as the migrations need.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
@@ -12,12 +16,18 @@ import { fileURLToPath } from 'node:url'
 // Migration bookkeeping changes on every upgrade by design
 const SKIP_SCHEMAS = ['drizzle']
 
-const [command, ...args] = process.argv.slice(2)
+const [command, ...rest] = process.argv.slice(2)
+const allowed = new Set()
+const args = []
+for (let i = 0; i < rest.length; i++) {
+  if (rest[i] === '--allow' && rest[i + 1]) allowed.add(rest[++i])
+  else args.push(rest[i])
+}
 
 if (command === 'snapshot' && args.length === 1) await snapshot(args[0])
 else if (command === 'compare' && args.length === 2) compare(args[0], args[1])
 else {
-  console.error('usage: db-snapshot.mjs snapshot <file> | compare <before> <after>')
+  console.error('usage: db-snapshot.mjs snapshot <file> | compare <before> <after> [--allow table.column]...')
   process.exit(2)
 }
 
@@ -89,6 +99,7 @@ function compare(beforeFile, afterFile) {
         continue
       }
       for (const column of kept) {
+        if (allowed.has(`${table}.${column}`)) continue
         if (row[column] !== next[column]) {
           problems.push(`${table}: row ${key} column ${column} changed: ${clip(row[column])} -> ${clip(next[column])}`)
         }
@@ -102,7 +113,8 @@ function compare(beforeFile, afterFile) {
     if (problems.length > 50) console.error(`  … and ${problems.length - 50} more`)
     process.exit(1)
   }
-  console.log(`Upgrade kept all data: ${checked} rows in ${Object.keys(before).length} tables are unchanged.`)
+  const note = allowed.size ? ` (not compared, changed on purpose by a migration: ${[...allowed].join(', ')})` : ''
+  console.log(`Upgrade kept all data: ${checked} rows in ${Object.keys(before).length} tables are unchanged${note}.`)
 }
 
 function clip(value) {

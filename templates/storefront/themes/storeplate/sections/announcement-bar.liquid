@@ -1,22 +1,12 @@
 {%- comment -%}
   The announcement bar (the Header group in the theme editor): one message per block. With several it shows one at a time,
-  with arrows, and can move on by itself with a pause button (src/announcements.ts). While there are no blocks, the single
-  "Announcement bar" text of the theme settings is shown, for shops that set it before blocks existed.
+  with arrows, and can move on by itself with a pause button (src/announcements.ts).
 {%- endcomment -%}
 {%- assign count = 0 -%}
 {%- for block in section.blocks -%}
   {%- if block.settings.text != blank -%}{%- assign count = count | plus: 1 -%}{%- endif -%}
 {%- endfor -%}
-{%- assign legacy = settings.announcement_text | strip -%}
-{%- if count == 0 and legacy != blank -%}
-  <div class="relative z-50 bg-dark px-4 py-2 text-center text-sm text-white">
-    {%- if settings.announcement_link != blank -%}
-      <a href="{{ settings.announcement_link }}" class="underline-offset-2 hover:underline">{{ legacy }}</a>
-    {%- else -%}
-      {{ legacy }}
-    {%- endif -%}
-  </div>
-{%- elsif count > 0 -%}
+{%- if count > 0 -%}
   {%- assign several = false -%}
   {%- if count > 1 %}{% assign several = true %}{% endif -%}
   <div
