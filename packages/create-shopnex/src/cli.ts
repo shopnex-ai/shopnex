@@ -3,7 +3,7 @@ import * as p from '@clack/prompts'
 import { parse } from './args'
 import { pickApp } from './apps'
 import { loadAppKeys } from './app-keys'
-import { pickExtras, type Extra } from './extras'
+import { selectExtras, type Extra } from './extras'
 import { bundleDir, isEdge, isInstalled, resolveBundle } from '@shopnex/cli-core/bundle'
 import type { Plan } from './plan'
 import { UnavailableError, UsageError } from '@shopnex/cli-core/errors'
@@ -12,7 +12,7 @@ import { loadShopEnv, redactUrl } from '@shopnex/cli-core/env'
 import { writeScaffold } from './scaffold'
 import { resolveShopDir } from '@shopnex/cli-core/paths'
 import { brandBadge } from '@shopnex/cli-core/theme'
-import { assertPortsFree } from '@shopnex/cli-core/ports'
+import { assertPortsFree, portInUse } from '@shopnex/cli-core/ports'
 import { runPlan } from './run'
 
 type Pkg = { version: string; engines: { node: string } }
@@ -37,7 +37,8 @@ Options
   --port <n>               admin, API and checkout (default 3000)
   --storefront-port <n>    storefront (default 4321)
   --no-open                do not open the browser
-  --with <apps>            also start optional apps: stripe, cj, shippo (comma separated, or repeat the flag)
+  --with <apps>            start only these apps: stripe, cj, shippo, reviews (comma separated, or repeat the flag)
+  --no-apps                start the shop alone, without the bundled apps (all four start by default)
   --from <store>           bring a Shopify or WooCommerce store across (products, pages, look): its address, e.g. my-store.myshopify.com
   --app <name>             what to start (default shop; a picker appears once there is more than one)
   --verbose                show the output of the servers while they start
@@ -87,7 +88,7 @@ async function run(argv: string[]) {
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY)
   const name = options.name ?? DEFAULT_SHOP_NAME
   const shopDir = resolveShopDir(name)
-  const extras = pickExtras(options.with)
+  let extras = selectExtras(options)
   // The shop's .env (made on the first run): its DATABASE_URL decides which database is used
   const shopEnv = loadShopEnv(shopDir, { write: !options.dryRun })
   const scaffoldWarning = options.dryRun ? undefined : await writeScaffold(shopDir, pkg.version)
@@ -96,9 +97,22 @@ async function run(argv: string[]) {
   const ports = [
     { port: options.port, flag: '--port' },
     { port: options.storefrontPort, flag: '--storefront-port' },
-    ...extras.map((extra) => ({ port: extra.port, flag: `--with (${extra.name} needs it free)` })),
   ]
-  if (!options.dryRun) await assertPortsFree(ports)
+  if (!options.dryRun) {
+    await assertPortsFree(ports)
+    if (options.with.length) {
+      await assertPortsFree(extras.map((extra) => ({ port: extra.port, flag: `--with (${extra.name} needs it free)` })))
+    } else {
+      // The apps nobody asked for by name are not worth a failed start: skip the one whose port is taken
+      const busy = new Set<string>()
+      for (const extra of extras) if (await portInUse(extra.port)) busy.add(extra.name)
+      for (const name of busy) {
+        const extra = extras.find((e) => e.name === name)
+        p.log.warn(`Port ${extra?.port} is in use, so ${extra?.label} is not started. --no-apps hides this.`)
+      }
+      extras = extras.filter((extra) => !busy.has(extra.name))
+    }
+  }
 
   // A dry run never downloads: it shows where the build would be unpacked
   const root = options.dryRun ? bundleDir(pkg.version) : await resolveBundle({ version: pkg.version })

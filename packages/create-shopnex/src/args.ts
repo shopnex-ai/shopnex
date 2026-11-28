@@ -12,8 +12,10 @@ export type Options = {
   app: string | undefined
   /** --from: the address of a Shopify or WooCommerce store to bring across once the owner exists */
   from: string | undefined
-  /** --with: optional apps to start next to the shop (names, checked later against extras.ts) */
+  /** --with: apps to start next to the shop instead of all of them (names, checked later against extras.ts) */
   with: string[]
+  /** --no-apps: start the shop alone, without the bundled apps */
+  noApps: boolean
   verbose: boolean
   open: boolean
   dryRun: boolean
@@ -27,6 +29,7 @@ const options = {
   app: { type: 'string' },
   from: { type: 'string' },
   with: { type: 'string', multiple: true },
+  'no-apps': { type: 'boolean' },
   verbose: { type: 'boolean' },
   'no-open': { type: 'boolean' },
   'dry-run': { type: 'boolean' },
@@ -56,6 +59,7 @@ export function parse(argv: string[]): Options {
   const port = toPort('port', values.port, DEFAULT_PORT)
   const storefrontPort = toPort('storefront-port', values['storefront-port'], DEFAULT_STOREFRONT_PORT)
   if (port === storefrontPort) throw new UsageError('--port and --storefront-port must be different')
+  if (values['no-apps'] && values.with?.length) throw new UsageError('--no-apps and --with cannot be used together')
   const from = values.from?.trim()
   if (values.from !== undefined && !from)
     throw new UsageError('--from needs a store address, e.g. --from my-store.myshopify.com')
@@ -67,6 +71,7 @@ export function parse(argv: string[]): Options {
     app: values.app,
     from,
     with: values.with ?? [],
+    noApps: Boolean(values['no-apps']),
     verbose: Boolean(values.verbose),
     open: !values['no-open'],
     dryRun: Boolean(values['dry-run']),

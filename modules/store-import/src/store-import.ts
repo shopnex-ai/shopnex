@@ -51,7 +51,7 @@ async function failStale(shopId: string | null, conn: Conn) {
     )
 }
 
-/** Whether the shop has no products yet: the import then sets the shop up from the store, with no one's work to protect */
+/** Whether the shop has no products yet: the import sets the shop up from the store unless told not to, with no one's work to protect */
 export async function isFresh(shopId: string, conn: Conn) {
   const [row] = await conn.select({ n: count() }).from(products).where(eq(products.shopId, shopId))
   return (row?.n ?? 0) === 0
@@ -106,7 +106,8 @@ export async function start(shopId: string, input: StartInput, conn: Conn, hooks
   }
 
   const fresh = await isFresh(shopId, conn)
-  const branding = fresh || input.branding === true
+  // Asked for or not: left out, an empty shop is set up from the store and one with products is not
+  const branding = input.branding ?? fresh
   let row: StoreImport
   try {
     ;[row] = await conn
