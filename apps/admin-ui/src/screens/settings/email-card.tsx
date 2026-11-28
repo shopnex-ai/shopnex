@@ -150,7 +150,7 @@ export function EmailCard() {
 
 function EmailForm({ settings }: { settings: Settings }) {
   const queryClient = useQueryClient()
-  const [provider, setProvider] = useState(settings.provider)
+  const [enabled, setEnabled] = useState(settings.provider !== 'off')
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const form = useZodForm(smtpInput, { defaultValues: toValues(settings) })
   const update = useMutation(orpc.admin.email.update.mutationOptions())
@@ -200,40 +200,52 @@ function EmailForm({ settings }: { settings: Settings }) {
     }
   }
 
+  const choice = enabled ? form.watch('preset') : 'off'
+  const choose = (value: 'off' | Preset) => {
+    setEnabled(value !== 'off')
+    if (value !== 'off' && value !== form.getValues('preset')) applyPreset(value)
+  }
+
   const providerSelect = (
     <Field>
       <FieldLabel>Send email</FieldLabel>
       <Select
-        items={[
-          { value: 'off', label: 'Off' },
-          { value: 'smtp', label: 'Through an email provider (SMTP)' },
-        ]}
-        value={provider}
-        onValueChange={(value) => setProvider(value as Settings['provider'])}
+        items={[{ value: 'off', label: 'Off' }, ...presetOptions]}
+        value={choice}
+        onValueChange={(v) => choose(v as 'off' | Preset)}
       >
         <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="off">Off</SelectItem>
-          <SelectItem value="smtp">Through an email provider (SMTP)</SelectItem>
+          {presetOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <FieldDescription>
-        {provider === 'off'
-          ? 'Nothing is sent; messages only show up in the server log.'
-          : 'Resend, Postmark, SendGrid, Mailgun, Amazon SES, Brevo, Gmail, or any other SMTP server.'}
+        {enabled ? preset.help : 'Nothing is sent; messages only show up in the server log.'}
       </FieldDescription>
     </Field>
   )
 
-  if (provider === 'off') {
+  if (!enabled) {
     return (
       <FieldGroup>
         {providerSelect}
         {settings.provider !== 'off' && (
           <Field orientation="horizontal" className="justify-end">
-            <Button type="button" variant="ghost" onClick={() => setProvider(settings.provider)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                form.reset()
+                setEnabled(true)
+              }}
+            >
               Cancel
             </Button>
             <Button type="button" disabled={update.isPending} onClick={() => void turnOff()}>
@@ -252,26 +264,6 @@ function EmailForm({ settings }: { settings: Settings }) {
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         {providerSelect}
-        <Field>
-          <FieldLabel>Provider</FieldLabel>
-          <Select
-            items={presetOptions}
-            value={form.watch('preset')}
-            onValueChange={(value) => applyPreset(value as Preset)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {presetOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FieldDescription>{preset.help}</FieldDescription>
-        </Field>
         <TextField
           control={form.control}
           name="fromEmail"
@@ -345,7 +337,7 @@ function EmailForm({ settings }: { settings: Settings }) {
               variant="ghost"
               onClick={() => {
                 form.reset()
-                setProvider(settings.provider)
+                setEnabled(settings.provider !== 'off')
                 setTestResult(null)
               }}
             >
