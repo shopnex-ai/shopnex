@@ -85,6 +85,8 @@ Themes that are not part of this repository get no automatic migration of what t
 
 Sections written for Shopify's Liquid mostly render as they are: `section.settings`, `section.blocks`, `block.settings`, `block.type`, `block.id`, `block.shopify_attributes` and `{% sections %}` and `{% section %}` work the same. The `{% schema %}` at the end of a Shopify section file is ignored: a ShopNex theme declares its settings, blocks and styles in `theme.json`, not in the Liquid file.
 
+These Shopify tags and filters work too: `{% style %}`, `{% stylesheet %}` and `{% javascript %}` (the last two are written once per page, as they are), `{% doc %}` (skipped), `inline_asset_content` (a text file from `assets/`), `image_tag`, `placeholder_svg_tag`, `time_tag`, `link_to`, `money_without_trailing_zeros`, `color_lighten`, `color_darken` and `color_brightness`. Not there yet: `{% form %}`, `{% paginate %}`, and the filters that need a feature ShopNex doesn't have (payment buttons, video, metafields, fonts). An undefined filter is an error, so a theme that uses one fails loudly instead of rendering something wrong. Output is escaped here, so inside `{% style %}` write `{{ value | raw }}` where a value must keep its quotes.
+
 ## Text in several languages
 
 A theme keeps the text it writes itself ("Add to cart", "Your cart is empty") in `locales/`, not in the templates. `en.default.json` is the theme's own wording and the fallback; `fr.json`, `pt-BR.json`… translate it. The files are nested JSON, read as dotted keys:
