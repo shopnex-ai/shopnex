@@ -290,6 +290,54 @@ export function resolveBlocks(section: ThemeSectionDefinition, blocks: readonly 
   return resolved
 }
 
+/**
+ * The theme's global sections ({% section %}: the announcement bar, the footer…) as a document should hold them. The
+ * theme owns which exist, so the merchant's saved list is kept as it is (order, settings, blocks, hidden), and every
+ * section the theme's static page lists that it lacks is added with the theme's defaults, right after the nearest
+ * section before it in the theme's list. A document saved before the theme had a global section (a footer that became
+ * editable later) has none of it, and the editor and the storefront must agree that it is there.
+ *
+ * A section the merchant has counts as the theme's by id, else by type (as `{% section 'footer' %}` finds it), so a
+ * second one the merchant added never makes a duplicate. Nothing the merchant saved is changed or dropped, and
+ * resolving the result again changes nothing. `stored` undefined: the merchant never saved any, so the theme's own.
+ */
+export function resolveGlobalSections(definition: ThemeDefinition, stored?: readonly ThemeSection[]): ThemeSection[] {
+  const themeSections = definition.pages[THEME_STATIC_PAGE]?.sections ?? []
+  const result = [...(stored ?? themeSections)]
+  if (!stored) return result
+  let insertAt = 0
+  for (const base of themeSections) {
+    const has = result.findIndex((s) => s.id === base.id)
+    const found = has !== -1 ? has : result.findIndex((s) => s.type === base.type)
+    if (found !== -1) {
+      insertAt = found + 1
+      continue
+    }
+    result.splice(insertAt, 0, base)
+    insertAt++
+  }
+  return result
+}
+
+/**
+ * A stored document as the theme means it today: what the theme owns (its global sections) is complete. Used by
+ * whatever reads a document, so the storefront and the editor see the same sections. It keeps everything the
+ * merchant saved; settings and a page the merchant never edited are filled from the theme's defaults where they are
+ * read (`resolveSettings`, the page's default sections).
+ */
+export function resolveDocument(definition: ThemeDefinition, document: ThemeDocument): ThemeDocument {
+  if (!(THEME_STATIC_PAGE in definition.pages)) return document
+  return {
+    ...document,
+    pages: {
+      ...document.pages,
+      [THEME_STATIC_PAGE]: {
+        sections: resolveGlobalSections(definition, document.pages[THEME_STATIC_PAGE]?.sections),
+      },
+    },
+  }
+}
+
 /** The document a shop starts from: default settings and each page's default sections */
 export function defaultDocument(definition: ThemeDefinition): ThemeDocument {
   return {

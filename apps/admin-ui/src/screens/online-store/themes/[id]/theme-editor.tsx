@@ -9,6 +9,7 @@ import {
   MAX_SECTION_BLOCKS,
   THEME_STATIC_PAGE,
   applyPreset,
+  resolveGlobalSections,
   resolveSettings,
   type ThemeBlock,
   type ThemeDefinition,
@@ -149,7 +150,8 @@ export function ThemeEditor({
   // The theme's global sections ({% section %}), pinned above every page's own: a group the merchant can edit and
   // hide here, whichever page is open. Which sections it holds is the theme's to say.
   const groupDefinition = definition.pages[THEME_STATIC_PAGE]
-  const group = groupDefinition ? pageSections(THEME_STATIC_PAGE) : []
+  // Complete: a theme saved before it had a global section (the footer) still lists it, as the storefront shows it
+  const group = groupDefinition ? resolveGlobalSections(definition, draft.pages[THEME_STATIC_PAGE]?.sections) : []
   // Which list a global section is in is its definition's to say (the footer group, else the header's)
   const inFooter = (s: ThemeSection) => definition.sections[s.type]?.group === 'footer'
   const headerGroup = group.filter((s) => !inFooter(s))

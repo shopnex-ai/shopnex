@@ -7,6 +7,8 @@ import {
   applyPreset,
   defaultDocument,
   resolveBlocks,
+  resolveDocument,
+  resolveGlobalSections,
   withoutCodeSettings,
   type ThemeDefinitionInput,
 } from '../src/theme'
@@ -239,5 +241,119 @@ describe('applyPreset: a style changes the settings styles set, and keeps the me
   test('the merchant’s sections stay; an unknown style is refused', () => {
     assert.deepEqual(applyPreset(definition, document, 'cool').pages, document.pages)
     assert.throws(() => applyPreset(definition, document, 'nope'), /Unknown preset/)
+  })
+})
+
+describe('resolveGlobalSections', () => {
+  const withGlobals = ThemeDefinition.parse({
+    id: 'globals',
+    name: 'Globals',
+    sections: {
+      'announcement-bar': { name: 'Announcement bar' },
+      menu: { name: 'Menu' },
+      footer: { name: 'Footer', group: 'footer' },
+    },
+    pages: {
+      home: { name: 'Home', sections: [] },
+      static: {
+        name: 'Global sections',
+        sections: [
+          { id: 'announcement-bar', type: 'announcement-bar', settings: {} },
+          { id: 'menu', type: 'menu', settings: {} },
+          { id: 'footer', type: 'footer', settings: {}, blocks: [] },
+        ],
+      },
+    },
+  })
+  const theirs = withGlobals.pages.static!.sections
+  const saved = (id: string, type = id, extra = {}) => ({ id, type, settings: { saved: true }, ...extra })
+  const ids = (sections: { id: string }[]) => sections.map((s) => s.id)
+
+  test("a merchant who never saved any gets the theme's own", () => {
+    assert.deepEqual(resolveGlobalSections(withGlobals), theirs)
+  })
+
+  test('a section the theme has and the saved list lacks is added with the theme defaults, after its predecessor', () => {
+    const stored = [saved('announcement-bar'), saved('menu')]
+    const result = resolveGlobalSections(withGlobals, stored)
+    assert.deepEqual(ids(result), ['announcement-bar', 'menu', 'footer'])
+    assert.deepEqual(result[2], theirs[2])
+  })
+
+  test('one missing at the start or in the middle is put where the theme has it', () => {
+    assert.deepEqual(ids(resolveGlobalSections(withGlobals, [saved('menu'), saved('footer')])), [
+      'announcement-bar',
+      'menu',
+      'footer',
+    ])
+    assert.deepEqual(ids(resolveGlobalSections(withGlobals, [saved('announcement-bar'), saved('footer')])), [
+      'announcement-bar',
+      'menu',
+      'footer',
+    ])
+  })
+
+  test("the merchant's sections are kept as saved: order, settings, blocks and hidden", () => {
+    const stored = [
+      saved('footer', 'footer', { disabled: true, blocks: [{ id: 'b1', type: 'text', settings: {} }] }),
+      saved('announcement-bar'),
+      saved('menu'),
+    ]
+    const result = resolveGlobalSections(withGlobals, stored)
+    assert.deepEqual(result, stored)
+    assert.equal(result[0], stored[0]) // untouched, not copied
+  })
+
+  test("a section the merchant added of the theme's type covers it: no duplicate", () => {
+    const stored = [saved('announcement-bar'), saved('menu'), saved('s9f3a2', 'footer')]
+    assert.deepEqual(ids(resolveGlobalSections(withGlobals, stored)), ['announcement-bar', 'menu', 's9f3a2'])
+  })
+
+  test('a section of a type the theme does not list is left alone', () => {
+    const stored = [saved('old', 'removed-type'), saved('announcement-bar'), saved('menu'), saved('footer')]
+    assert.deepEqual(ids(resolveGlobalSections(withGlobals, stored)), ['old', 'announcement-bar', 'menu', 'footer'])
+  })
+
+  test('resolving again changes nothing', () => {
+    const once = resolveGlobalSections(withGlobals, [saved('announcement-bar')])
+    assert.deepEqual(resolveGlobalSections(withGlobals, once), once)
+  })
+
+  test('does not change the list it is given', () => {
+    const stored = [saved('announcement-bar')]
+    resolveGlobalSections(withGlobals, stored)
+    assert.deepEqual(ids(stored), ['announcement-bar'])
+  })
+
+  describe('resolveDocument', () => {
+    const document = {
+      settings: { color: '#fff' },
+      pages: {
+        home: { sections: [saved('hero', 'announcement-bar')] },
+        static: { sections: [saved('announcement-bar')] },
+      },
+    }
+
+    test('completes the global sections and keeps everything else as saved', () => {
+      const result = resolveDocument(withGlobals, document)
+      assert.deepEqual(ids(result.pages.static!.sections), ['announcement-bar', 'menu', 'footer'])
+      assert.deepEqual(result.settings, document.settings)
+      assert.equal(result.pages.home, document.pages.home)
+    })
+
+    test("a document without a static page gets the theme's", () => {
+      const result = resolveDocument(withGlobals, { settings: {}, pages: {} })
+      assert.deepEqual(result.pages.static!.sections, theirs)
+    })
+
+    test('a theme without global sections returns the document as it is', () => {
+      const without = ThemeDefinition.parse({
+        id: 'x',
+        name: 'X',
+        sections: {},
+        pages: { home: { name: 'Home', sections: [] } },
+      })
+      assert.equal(resolveDocument(without, document), document)
+    })
   })
 })

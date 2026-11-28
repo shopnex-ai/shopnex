@@ -2,6 +2,10 @@
 
 ## Unreleased (additive)
 
+- `resolveDocument(definition, document)` and `resolveGlobalSections(definition, stored?)`: a stored document completed with the
+  global sections the theme lists (`pages.static`) and the document lacks, with the theme's defaults, so a document saved before the
+  footer became editable still has one. Everything the merchant saved is kept; resolving again changes nothing. The storefront
+  and the theme editor both use it, so the editor's Footer group shows for older themes too.
 - `applyPreset` no longer resets the merchant's other settings: applying a style used to rebuild every setting from the style and the defaults, which emptied
   the logo, the announcement text and the social links. Now only the settings that styles set (colors, fonts…) change.
 - A global section's definition can say `group: 'footer'`: the theme editor lists it in a Footer group below the page's sections

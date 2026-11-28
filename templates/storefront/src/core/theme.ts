@@ -23,6 +23,7 @@ import {
   THEME_PREVIEW_PARAM,
   ThemeDefinition,
   defaultDocument,
+  resolveDocument,
   resolveSettings,
   type Collection,
   type Page,
@@ -166,7 +167,8 @@ export async function loadTheme(url: URL): Promise<LoadedTheme> {
   const theme = found ?? all[0]!
   const { definition } = theme
   const defaults = defaultDocument(definition)
-  const document = (found && current.document) || defaults
+  // What the theme owns (its global sections) is completed, so a document saved before the footer was editable still has one
+  const document = resolveDocument(definition, (found && current.document) || defaults)
   let liquid = theme.liquid
   if (found && current.files) {
     try {
