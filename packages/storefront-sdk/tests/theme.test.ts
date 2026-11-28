@@ -5,6 +5,7 @@ import {
   ThemeDefinition,
   ThemeDocument,
   applyPreset,
+  blocksFromSettings,
   defaultDocument,
   resolveBlocks,
   resolveDocument,
@@ -354,6 +355,160 @@ describe('resolveGlobalSections', () => {
         pages: { home: { name: 'Home', sections: [] } },
       })
       assert.equal(resolveDocument(without, document), document)
+    })
+  })
+})
+
+describe('blocksFromSettings: a section saved before it had blocks', () => {
+  const slides = ThemeDefinition.parse({
+    id: 'legacy',
+    name: 'Legacy',
+    sections: {
+      hero: {
+        name: 'Hero',
+        max_blocks: 3,
+        settings: [{ id: 'height', label: 'Height', type: 'text' }],
+        blocks: {
+          slide: {
+            name: 'Slide',
+            settings: [
+              { id: 'image', label: 'Image', type: 'image' },
+              { id: 'heading', label: 'Heading', type: 'text' },
+            ],
+            from_settings: { image: 'image_{n}', heading: 'heading_{n}' },
+          },
+        },
+      },
+      stats: {
+        name: 'Stats',
+        settings: [],
+        blocks: {
+          stat: {
+            name: 'Stat',
+            settings: [
+              { id: 'value', label: 'Value', type: 'text' },
+              { id: 'label', label: 'Label', type: 'text' },
+            ],
+            from_settings: { value: 'stat_{n}_value', label: 'stat_{n}_label' },
+          },
+        },
+      },
+      plain: { name: 'Plain', settings: [] },
+    },
+    pages: { home: { name: 'Home', sections: [] } },
+  })
+  const hero = (settings: Record<string, string>, blocks?: ThemeBlockValue[]) => ({
+    id: 'h',
+    type: 'hero',
+    settings,
+    ...(blocks && { blocks }),
+  })
+  type ThemeBlockValue = { id: string; type: string; settings: Record<string, string> }
+
+  test('one block per numbered position that has something; the numbered settings are gone, the others stay', () => {
+    const result = blocksFromSettings(
+      slides.sections.hero,
+      hero({ height: '60vh', image_1: '/a.jpg', heading_1: 'One', image_2: '/b.jpg', heading_2: '' }),
+    )
+    assert.deepEqual(result.settings, { height: '60vh' })
+    assert.deepEqual(result.blocks, [
+      { id: 'slide-1', type: 'slide', settings: { image: '/a.jpg', heading: 'One' } },
+      { id: 'slide-2', type: 'slide', settings: { image: '/b.jpg' } },
+    ])
+  })
+
+  test('a gap keeps the position in the id, and the order is the number', () => {
+    const result = blocksFromSettings(slides.sections.hero, hero({ heading_3: 'Third', heading_1: 'First' }))
+    assert.deepEqual(
+      result.blocks!.map((b) => [b.id, b.settings.heading]),
+      [
+        ['slide-1', 'First'],
+        ['slide-3', 'Third'],
+      ],
+    )
+  })
+
+  test('the position can be in the middle of the setting id', () => {
+    const result = blocksFromSettings(slides.sections.stats, {
+      id: 's',
+      type: 'stats',
+      settings: { stat_1_value: '200+', stat_1_label: 'Brands', stat_2_value: '30,000+' },
+    })
+    assert.deepEqual(result.blocks, [
+      { id: 'stat-1', type: 'stat', settings: { value: '200+', label: 'Brands' } },
+      { id: 'stat-2', type: 'stat', settings: { value: '30,000+' } },
+    ])
+    assert.deepEqual(result.settings, {})
+  })
+
+  test('a section that has blocks already is left as it is, old settings and all', () => {
+    const section = hero({ image_1: '/old.jpg' }, [{ id: 'mine', type: 'slide', settings: {} }])
+    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
+  })
+
+  test('a list the merchant emptied stays empty: what they deleted does not come back', () => {
+    const section = hero({ image_1: '/old.jpg' }, [])
+    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
+  })
+
+  test('a section with nothing in the numbered settings is left as it is', () => {
+    const section = hero({ height: '60vh', image_1: '', heading_1: '  ' })
+    assert.equal(blocksFromSettings(slides.sections.hero, section), section)
+    assert.equal(
+      blocksFromSettings(slides.sections.plain, { id: 'p', type: 'plain', settings: { image_1: 'x' } }).blocks,
+      undefined,
+    )
+    assert.equal(blocksFromSettings(undefined, section), section)
+  })
+
+  test('stops at the most blocks the section holds', () => {
+    const many = Object.fromEntries([1, 2, 3, 4, 5].map((n) => [`heading_${n}`, `H${n}`]))
+    assert.equal(blocksFromSettings(slides.sections.hero, hero(many)).blocks!.length, 3)
+  })
+
+  test('running again changes nothing', () => {
+    const once = blocksFromSettings(slides.sections.hero, hero({ image_1: '/a.jpg' }))
+    assert.equal(blocksFromSettings(slides.sections.hero, once), once)
+  })
+
+  test('what it makes is a valid stored section', () => {
+    const result = blocksFromSettings(slides.sections.hero, hero({ image_1: '/a.jpg', heading_2: 'Two' }))
+    assert.equal(ThemeDocument.safeParse({ settings: {}, pages: { home: { sections: [result] } } }).success, true)
+  })
+
+  test('resolveDocument does it on every page, and returns the same page when there is nothing to do', () => {
+    const document = {
+      settings: {},
+      pages: {
+        home: { sections: [hero({ image_1: '/a.jpg' })] },
+        other: { sections: [{ id: 'p', type: 'plain', settings: {} }] },
+      },
+    }
+    const result = resolveDocument(slides, document)
+    assert.equal(result.pages.home!.sections[0]!.blocks![0]!.id, 'slide-1')
+    assert.equal(result.pages.other, document.pages.other)
+    assert.deepEqual(resolveDocument(slides, result), result)
+  })
+
+  describe('the declaration', () => {
+    const block = (from_settings: Record<string, string>) =>
+      ThemeDefinition.safeParse({
+        id: 'x',
+        name: 'X',
+        sections: {
+          s: {
+            name: 'S',
+            blocks: { b: { name: 'B', settings: [{ id: 'image', label: 'I', type: 'text' }], from_settings } },
+          },
+        },
+        pages: {},
+      })
+
+    test('names a setting of the block type and has {n} in the old id', () => {
+      assert.equal(block({ image: 'image_{n}' }).success, true)
+      assert.equal(block({ nope: 'image_{n}' }).success, false)
+      assert.equal(block({ image: 'image_1' }).success, false)
+      assert.equal(block({ image: 'Image {n}' }).success, false)
     })
   })
 })

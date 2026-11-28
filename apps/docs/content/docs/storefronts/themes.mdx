@@ -63,10 +63,21 @@ A section type can declare **blocks**: repeatable items inside it (a slide, an a
 - `max_blocks` limits a section's blocks (up to 50). A block type's own `limit` limits how many of that type fit.
 - Hidden blocks are left out of `section.blocks`. A block whose type the theme no longer has, or past a limit, is skipped, so an older saved page still renders.
 - A page's default sections in `theme.json` can list their `blocks`, each `{ "id", "type", "settings" }`.
+- **Moving a section to blocks without losing what merchants saved.** If a section used to keep its content in numbered settings (`image_1`, `heading_1`, `image_2`…), tell each block type which settings it replaces with `from_settings`, where `{n}` is the position:
+
+  ```json
+  "slide": {
+    "name": "Slide",
+    "settings": [{ "id": "image", "label": "Image", "type": "image" }, { "id": "heading", "label": "Heading", "type": "text" }],
+    "from_settings": { "image": "image_{n}", "heading": "heading_{n}" }
+  }
+  ```
+
+  A saved section that has no list of blocks yet but has those settings becomes one block per position that has something (`slide-1`, `slide-3`…), and the numbered settings are dropped. This happens whenever a saved theme is read, in the storefront and in the editor, and changes nothing the second time. A section whose block list the merchant emptied is left empty.
 
 ### Global sections
 
-`{% section 'announcement-bar' %}` renders one section wherever you put it, usually in the layout, and the merchant edits it once for every page. Its settings and blocks are stored on the page `static` (declare it in `pages` of `theme.json` with the sections it starts with, and give the section type `"limit": 1`): the tag renders the section there with that id, else the first of that type. A global section the page does not list shows with its defaults.
+`{% section 'announcement-bar' %}` renders one section wherever you put it, usually in the layout, and the merchant edits it once for every page. Its settings and blocks are stored on the page `static` (declare it in `pages` of `theme.json` with the sections it starts with, and give the section type `"limit": 1`): the tag renders the section there with that id, else the first of that type. A global section the page does not list shows with its defaults, and one the theme lists that a theme saved earlier lacks (a footer that became editable later) is added with its defaults when the saved theme is read, so the editor lists it too.
 
 ### Liquid from Shopify themes
 

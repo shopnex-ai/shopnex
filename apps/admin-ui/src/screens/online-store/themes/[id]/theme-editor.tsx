@@ -9,6 +9,7 @@ import {
   MAX_SECTION_BLOCKS,
   THEME_STATIC_PAGE,
   applyPreset,
+  resolveDocument,
   resolveGlobalSections,
   resolveSettings,
   type ThemeBlock,
@@ -73,8 +74,10 @@ export function ThemeEditor({
 }: Props) {
   const id = theme.id
   const [live, setLive] = useState(theme.live)
-  const [draft, setDraft] = useState(initialDraft)
-  const [published, setPublished] = useState(initialPublished)
+  // As the storefront reads them (sections saved before blocks get theirs, the theme's global sections are complete), and
+  // both the same way, so an untouched theme isn't "changed". Nothing is saved until the merchant edits.
+  const [draft, setDraft] = useState(() => resolveDocument(definition, initialDraft))
+  const [published, setPublished] = useState(() => initialPublished && resolveDocument(definition, initialPublished))
   const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
   const [selected, setSelected] = useState<string | null>(null) // section id; null = theme settings
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null) // a block of the selected section
@@ -298,7 +301,8 @@ export function ThemeEditor({
       if (inFlight.current) await inFlight.current
       return client.admin.themes.discardDraft({ id })
     },
-    onSuccess: ({ draft: restored }) => {
+    onSuccess: ({ draft: saved }) => {
+      const restored = resolveDocument(definition, saved)
       latest.current = restored
       setDraft(restored)
       setSaveState('saved')

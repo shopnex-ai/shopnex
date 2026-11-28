@@ -297,7 +297,11 @@
               "label": "Label",
               "type": "text"
             }
-          ]
+          ],
+          "from_settings": {
+            "value": "stat_{n}_value",
+            "label": "stat_{n}_label"
+          }
         }
       }
     },
@@ -379,7 +383,10 @@
               "label": "Collection",
               "type": "collection"
             }
-          ]
+          ],
+          "from_settings": {
+            "collection": "collection_{n}"
+          }
         }
       }
     },
@@ -414,7 +421,11 @@
               "label": "Quote",
               "type": "textarea"
             }
-          ]
+          ],
+          "from_settings": {
+            "name": "name_{n}",
+            "quote": "quote_{n}"
+          }
         }
       }
     },
