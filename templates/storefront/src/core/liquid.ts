@@ -124,12 +124,13 @@ export function createLiquid(themeId: string, dir: string, files: Record<string,
   const liquid = new Liquid({
     fs: themeFs(dir, files),
     root: [dir],
-    partials: [join(dir, 'snippets')],
+    // snippets first, so a merchant's own snippets/x.liquid wins over the theme's blocks/x.liquid
+    partials: [join(dir, 'snippets'), join(dir, 'blocks')],
     layouts: [join(dir, 'layout')],
     extname: '.liquid',
     cache: !dev,
     strictFilters: true,
-    // Shopify's {% render %} looks names up in snippets only
+    // Shopify's {% render %} looks names up in snippets (and our blocks) only
     relativeReference: false,
     // HTML-escape every output, except SafeHtml (admin HTML, content_for_*) and filters marked raw
     outputEscape: (value: unknown) => (value instanceof SafeHtml ? value.toString() : escapeHtml(text(value))),

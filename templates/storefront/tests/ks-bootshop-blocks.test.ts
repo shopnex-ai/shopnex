@@ -28,8 +28,8 @@ const collections = [
   { url: '/collections/e', title: 'Epsilon', image: null },
 ]
 
-function render(s: SectionObject) {
-  const liquid = createLiquid('ks-bootshop', dir)
+function render(s: SectionObject, files: Record<string, string> = {}) {
+  const liquid = createLiquid('ks-bootshop', dir, files)
   const data: RenderData = { sections: () => [s], section: () => null }
   return liquid.parseAndRender("{% sections 'home' %}", {}, { globals: { [RENDER]: data, collections } })
 }
@@ -58,6 +58,20 @@ describe('hero carousel', () => {
   test('one slide has no indicators or arrows', async () => {
     const html = await render(section('hero-carousel', settings, [block('a', 'slide', { heading: 'Only' })]))
     assert.doesNotMatch(html, /carousel-control|carousel-indicators|data-bs-ride/)
+  })
+})
+
+describe('block files', () => {
+  const slides = section('hero-carousel', { height: '60vh', autoplay: true }, [block('a', 'slide', { heading: 'One' })])
+
+  test('{% render %} finds a block file in blocks/', async () => {
+    assert.match(await render(slides), /class="ks-hero-slide"/)
+  })
+
+  test("a merchant's own snippets/ file of the same name wins over the theme's blocks/ one", async () => {
+    const html = await render(slides, { 'snippets/hero-slide.liquid': '<p class="mine">{{ heading }}</p>' })
+    assert.match(html, /<p class="mine">One<\/p>/)
+    assert.doesNotMatch(html, /ks-hero-slide/)
   })
 })
 

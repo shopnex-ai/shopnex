@@ -4,6 +4,7 @@ import { describe, test } from 'node:test'
 import {
   ThemeDefinition,
   ThemeDocument,
+  ThemeFilePath,
   applyPreset,
   defaultDocument,
   resolveBlocks,
@@ -239,5 +240,19 @@ describe('applyPreset: a style changes the settings styles set, and keeps the me
   test('the merchant’s sections stay; an unknown style is refused', () => {
     assert.deepEqual(applyPreset(definition, document, 'cool').pages, document.pages)
     assert.throws(() => applyPreset(definition, document, 'nope'), /Unknown preset/)
+  })
+})
+
+describe('editable theme files', () => {
+  test('layout, templates, sections, blocks and snippets can be edited; other folders cannot', () => {
+    for (const path of [
+      'layout/theme.liquid',
+      'sections/faq.liquid',
+      'blocks/hero-slide.liquid',
+      'snippets/price.liquid',
+    ])
+      assert.equal(ThemeFilePath.safeParse(path).success, true, path)
+    for (const path of ['assets/theme.js', 'blocks/hero-slide.js', 'blocks/Hero.liquid', 'blocks/a/b.liquid'])
+      assert.equal(ThemeFilePath.safeParse(path).success, false, path)
   })
 })

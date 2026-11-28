@@ -5,6 +5,7 @@
 //   layout/theme.liquid    every page: {{ content_for_header }} in <head>, {{ content_for_layout }} in <body>
 //   templates/             index, collection, product, page, 404 (.liquid)
 //   sections/{type}.liquid one per section type in theme.json; `{% sections 'home' %}` renders a page's
+//   blocks/                what draws one block of a section, for {% render %}
 //   snippets/              for {% render %}
 //   assets/                served at /shopnex/assets/{theme}/…; `{{ 'theme.css' | asset_url }}`
 //

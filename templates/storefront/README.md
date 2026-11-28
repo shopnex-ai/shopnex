@@ -48,6 +48,7 @@ themes/<id>/
   layout/theme.liquid    every page: {{ content_for_header }} in <head>, {{ content_for_layout }} in <body>
   templates/             index, collection (/products and /collections/{handle}), product, page, 404
   sections/<type>.liquid one per section type in theme.json
+  blocks/                one file per block a section draws, for {% render 'name' %} (a section's block types are in theme.json)
   snippets/              for {% render 'name' %}
   assets/                served at /shopnex/assets/<id>/…, linked with {{ 'file' | asset_url }}
   src/theme.css          → assets/theme.css (Tailwind, scanning the theme's folder)

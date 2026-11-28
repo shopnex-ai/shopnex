@@ -49,6 +49,7 @@ const FOLDER_NAMES: Record<(typeof THEME_CODE_FOLDERS)[number], string> = {
   layout: 'Layout',
   templates: 'Templates',
   sections: 'Sections',
+  blocks: 'Blocks',
   snippets: 'Snippets',
 }
 

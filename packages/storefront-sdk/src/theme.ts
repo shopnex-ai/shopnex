@@ -215,10 +215,13 @@ export const THEME_SOURCE_PATH = '/shopnex/themes/{id}/source.json'
 export const themeSourcePath = (themeId: string) => THEME_SOURCE_PATH.replace('{id}', encodeURIComponent(themeId))
 
 /** The folders a merchant can edit; files are `{folder}/{name}.liquid` */
-export const THEME_CODE_FOLDERS = ['layout', 'templates', 'sections', 'snippets'] as const
+export const THEME_CODE_FOLDERS = ['layout', 'templates', 'sections', 'blocks', 'snippets'] as const
 export const ThemeFilePath = z
   .string()
-  .regex(/^(layout|templates|sections|snippets)\/[a-z0-9][a-z0-9_-]{0,63}\.liquid$/, 'Like snippets/my-snippet.liquid')
+  .regex(
+    /^(layout|templates|sections|blocks|snippets)\/[a-z0-9][a-z0-9_-]{0,63}\.liquid$/,
+    'Like snippets/my-snippet.liquid',
+  )
 /** Large enough for any template; a theme with more is doing something else */
 export const MAX_THEME_FILE_BYTES = 256 * 1024
 export const MAX_THEME_FILES = 200
