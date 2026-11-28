@@ -21,7 +21,7 @@ import type {
 } from '@shopnex/storefront-sdk'
 import type { SaidActiveFilter, SaidFilterGroup } from './catalog'
 import { menuItemHref, safeUrl } from './links'
-import { orNull, shopnex } from './shopnex'
+import { browserBaseUrl, orNull, shopnex } from './shopnex'
 
 /** HTML output as is (not escaped): rich text from the admin, `code` settings, content_for_* */
 export class SafeHtml extends Drop {
@@ -535,6 +535,13 @@ export const pageObject = (page: Page) => ({
 })
 
 /**
+ * An image the merchant uploaded in the theme editor is saved as its path (`/api/files/{key}`), so it survives a change of
+ * domain. The page needs it where the browser reaches the API: the same host behind the proxy, another one in development.
+ */
+const uploadedFileUrl = (url: string) =>
+  url.startsWith('/api/files/') ? browserBaseUrl().replace(/\/$/, '') + url : url
+
+/**
  * Settings (the theme's, or a section's) as templates see them: `collection` fields are the collection,
  * `url` and `image` fields only safe URLs ('' otherwise: no javascript:), `code` fields output as is.
  */
@@ -546,8 +553,9 @@ export function settingsObject(fields: readonly ThemeSettingField[], values: The
         case 'collection':
           return [field.id, collectionSetting(value, loader)]
         case 'url':
-        case 'image':
           return [field.id, safeUrl(value as string) ?? '']
+        case 'image':
+          return [field.id, uploadedFileUrl(safeUrl(value as string) ?? '')]
         case 'code':
           return [field.id, typeof value === 'string' && value.trim() ? new SafeHtml(value) : '']
         default:
