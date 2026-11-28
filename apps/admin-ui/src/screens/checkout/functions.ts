@@ -241,6 +241,11 @@ export const applyCode = publicFn({ method: 'POST' })
     if (!code) return { error: 'Enter a discount or gift card code' }
     const cart = await cartService.findByToken(null, data.token, db)
     if (!cart) return { error: 'This cart has expired.' }
+    // Discount codes can be guessed here too, and a hit costs the visitor nothing: so a visitor who used up their failed
+    // guesses (counted by the gift card lookup) is refused before either kind is looked up.
+    if (await giftCardService.guessesUsedUp(cart.shopId, clientIp(getRequest().headers))) {
+      return { error: 'Too many attempts. Wait a few minutes and try again.' }
+    }
     const discount = await discountService.findByCode(cart.shopId, code, db)
     if (discount) return applyDiscount(data.token, code)
     return checkGiftCard(data.token, code)

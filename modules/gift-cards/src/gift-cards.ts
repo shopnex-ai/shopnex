@@ -65,6 +65,16 @@ const MISSES_WINDOW_MS = 15 * 60_000
 const MISSES_PER_IP = 10
 const MISSES_PER_SHOP = 100
 
+const TOO_MANY_MISSES = 'Too many attempts. Wait a few minutes and try again.'
+
+const missKey = (shopId: string, ip: string | null) =>
+  ip ? `gift-card-miss:${shopId}:${ip}` : `gift-card-miss:${shopId}`
+
+/** Whether this visitor has used up their failed code guesses (the checkout code box asks before looking anything up) */
+export async function guessesUsedUp(shopId: string, ip: string | null): Promise<boolean> {
+  return (await rateLeft(missKey(shopId, ip), ip ? MISSES_PER_IP : MISSES_PER_SHOP)) !== null
+}
+
 /**
  * The card a buyer's code names, when it can be spent on an order in `currency`; otherwise what to tell the buyer.
  * `throttle` counts a code that names no card against the visitor (`ip`): turn it off where the code was already checked
@@ -76,11 +86,9 @@ export async function lookup(
   opts: { currency: string; ip: string | null; throttle: boolean },
   conn: Conn,
 ): Promise<{ card: GiftCard; error: null } | { card: null; error: string }> {
-  const key = opts.ip ? `gift-card-miss:${shopId}:${opts.ip}` : `gift-card-miss:${shopId}`
+  const key = missKey(shopId, opts.ip)
   const max = opts.ip ? MISSES_PER_IP : MISSES_PER_SHOP
-  if (opts.throttle && (await rateLeft(key, max)) !== null) {
-    return { card: null, error: 'Too many attempts. Wait a few minutes and try again.' }
-  }
+  if (opts.throttle && (await guessesUsedUp(shopId, opts.ip))) return { card: null, error: TOO_MANY_MISSES }
   const card = normalizeCode(code) ? await findByCode(shopId, code, conn) : null
   if (!card) {
     if (opts.throttle) await takeRate(key, max, MISSES_WINDOW_MS)
