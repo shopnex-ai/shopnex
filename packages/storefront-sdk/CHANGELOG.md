@@ -2,6 +2,18 @@
 
 ## Unreleased (additive)
 
+- Block types can declare `from_settings` (`{ "image": "image_{n}" }`): the numbered settings of a section saved before blocks. `blocksFromSettings`,
+  which `resolveDocument` applies on every page, turns them into one block per position that has something and drops the numbered
+  settings; a section that has a block list (even an empty one) is left alone. KS BootShop, Shopco and Hydrogen declare theirs, so documents
+  saved before blocks keep their slides, questions, quotes, stats and collections.
+- Block types can also declare `from_lines` (`{ "setting": "names", "into": "name" }`): a section's old text setting with one item per line
+  becomes one block per non-blank line. The theme definition has `removed` (paths of settings, sections and blocks dropped on purpose), and
+  `themeStructure(definition)` and `unaccountedRemovals(previous, definition)` list what a theme declares and what it lost without saying why;
+  the storefront's tests use them to fail a theme change that would orphan what merchants saved.
+- `resolveDocument(definition, document)` and `resolveGlobalSections(definition, stored?)`: a stored document completed with the
+  global sections the theme lists (`pages.static`) and the document lacks, with the theme's defaults, so a document saved before the
+  footer became editable still has one. Everything the merchant saved is kept; resolving again changes nothing. The storefront
+  and the theme editor both use it, so the editor's Footer group shows for older themes too.
 - `applyPreset` no longer resets the merchant's other settings: applying a style used to rebuild every setting from the style and the defaults, which emptied
   the logo, the announcement text and the social links. Now only the settings that styles set (colors, fonts…) change.
 - A global section's definition can say `group: 'footer'`: the theme editor lists it in a Footer group below the page's sections

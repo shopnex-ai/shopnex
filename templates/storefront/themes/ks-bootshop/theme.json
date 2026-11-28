@@ -303,7 +303,14 @@
               "type": "url",
               "default": "/products"
             }
-          ]
+          ],
+          "from_settings": {
+            "image": "image_{n}",
+            "heading": "heading_{n}",
+            "text": "text_{n}",
+            "button_label": "button_label_{n}",
+            "button_link": "button_link_{n}"
+          }
         }
       }
     },
@@ -455,7 +462,10 @@
               "label": "Collection",
               "type": "collection"
             }
-          ]
+          ],
+          "from_settings": {
+            "collection": "collection_{n}"
+          }
         }
       }
     },
@@ -715,7 +725,11 @@
               "label": "Author",
               "type": "text"
             }
-          ]
+          ],
+          "from_settings": {
+            "quote": "quote_{n}",
+            "author": "author_{n}"
+          }
         }
       }
     },
@@ -789,7 +803,11 @@
               "label": "Answer",
               "type": "textarea"
             }
-          ]
+          ],
+          "from_settings": {
+            "question": "question_{n}",
+            "answer": "answer_{n}"
+          }
         }
       }
     },

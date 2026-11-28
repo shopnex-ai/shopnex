@@ -9,6 +9,8 @@ import {
   MAX_SECTION_BLOCKS,
   THEME_STATIC_PAGE,
   applyPreset,
+  resolveDocument,
+  resolveGlobalSections,
   resolveSettings,
   type ThemeBlock,
   type ThemeDefinition,
@@ -72,8 +74,10 @@ export function ThemeEditor({
 }: Props) {
   const id = theme.id
   const [live, setLive] = useState(theme.live)
-  const [draft, setDraft] = useState(initialDraft)
-  const [published, setPublished] = useState(initialPublished)
+  // As the storefront reads them (sections saved before blocks get theirs, the theme's global sections are complete), and
+  // both the same way, so an untouched theme isn't "changed". Nothing is saved until the merchant edits.
+  const [draft, setDraft] = useState(() => resolveDocument(definition, initialDraft))
+  const [published, setPublished] = useState(() => initialPublished && resolveDocument(definition, initialPublished))
   const [page, setPage] = useState(HOME in definition.pages ? HOME : (Object.keys(definition.pages)[0] ?? HOME))
   const [selected, setSelected] = useState<string | null>(null) // section id; null = theme settings
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null) // a block of the selected section
@@ -149,7 +153,8 @@ export function ThemeEditor({
   // The theme's global sections ({% section %}), pinned above every page's own: a group the merchant can edit and
   // hide here, whichever page is open. Which sections it holds is the theme's to say.
   const groupDefinition = definition.pages[THEME_STATIC_PAGE]
-  const group = groupDefinition ? pageSections(THEME_STATIC_PAGE) : []
+  // Complete: a theme saved before it had a global section (the footer) still lists it, as the storefront shows it
+  const group = groupDefinition ? resolveGlobalSections(definition, draft.pages[THEME_STATIC_PAGE]?.sections) : []
   // Which list a global section is in is its definition's to say (the footer group, else the header's)
   const inFooter = (s: ThemeSection) => definition.sections[s.type]?.group === 'footer'
   const headerGroup = group.filter((s) => !inFooter(s))
@@ -296,7 +301,8 @@ export function ThemeEditor({
       if (inFlight.current) await inFlight.current
       return client.admin.themes.discardDraft({ id })
     },
-    onSuccess: ({ draft: restored }) => {
+    onSuccess: ({ draft: saved }) => {
+      const restored = resolveDocument(definition, saved)
       latest.current = restored
       setDraft(restored)
       setSaveState('saved')
