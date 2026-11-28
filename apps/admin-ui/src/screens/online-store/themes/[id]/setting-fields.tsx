@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
+import { ImageSetting } from './image-setting'
 
 // Select items can't be empty strings
 const NONE = '__none'
@@ -154,14 +155,7 @@ function SettingField({
       input = <CollectionChoice id={id} value={text} onChange={onChange} />
       break
     case 'image':
-      input = (
-        <div className="space-y-2">
-          <Input id={id} value={text} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />
-          {/^https?:\/\//.test(text) && (
-            <img src={text} alt="" className="h-24 w-full rounded-md border object-cover" />
-          )}
-        </div>
-      )
+      input = <ImageSetting id={id} value={text} onChange={onChange} />
       break
     default:
       input = (
