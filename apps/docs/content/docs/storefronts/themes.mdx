@@ -64,6 +64,8 @@ A section type can declare **blocks**: repeatable items inside it (a slide, an a
 - Hidden blocks are left out of `section.blocks`. A block whose type the theme no longer has, or past a limit, is skipped, so an older saved page still renders.
 - A page's default sections in `theme.json` can list their `blocks`, each `{ "id", "type", "settings" }`.
 
+A setting can carry `"show_if": "<id of another setting>"`: the editor then shows it only while that setting has a value, for example a logo's width once there is a logo. It changes what the editor lists, nothing the theme reads.
+
 ### Changing a theme's structure
 
 A saved theme keeps what merchants stored under the ids a theme declares: its settings, sections, block types and their settings. Removing or renaming one, or moving settings into blocks, would make that content silently stop showing, so a change like that comes with a **SQL migration** that moves the saved data, once, for every shop, when the app is upgraded.

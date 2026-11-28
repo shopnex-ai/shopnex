@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useId } from 'react'
+import { isSettingShown } from '@shopnex/storefront-sdk/theme'
 import type { ThemeSettingField, ThemeSettingValue, ThemeSettings } from '@shopnex/storefront-sdk/theme'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -28,7 +29,8 @@ export function SettingFields({
 }) {
   if (!fields.length) return <p className="text-sm text-muted-foreground">This section has no settings.</p>
   const runs: { group?: string; fields: ThemeSettingField[] }[] = []
-  for (const f of fields) {
+  // A field with `show_if` waits for the setting it names to have a value
+  for (const f of fields.filter((field) => isSettingShown(field, values))) {
     const last = runs.at(-1)
     if (last && last.group === f.group) last.fields.push(f)
     else runs.push({ group: f.group, fields: [f] })

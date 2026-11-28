@@ -28,6 +28,8 @@ const field = {
   info: z.string().max(500).optional(),
   /** The editor shows neighbouring fields with the same group under one heading, e.g. "Social links" */
   group: z.string().min(1).max(60).optional(),
+  /** The editor shows this field only while the setting with this id (in the same list) has a value: a logo's width once there is a logo */
+  show_if: Id.optional(),
 }
 
 export const ThemeSettingField = z.discriminatedUnion('type', [
@@ -271,6 +273,13 @@ function valid(f: ThemeSettingField, v: unknown): boolean {
 const fallback = (f: ThemeSettingField): ThemeSettingValue =>
   f.default ??
   (f.type === 'checkbox' ? false : f.type === 'range' ? f.min : f.type === 'select' ? f.options[0]!.value : '')
+
+/** Whether the editor shows a field: it has no `show_if`, or the setting it names is set (not empty, not off) */
+export function isSettingShown(field: ThemeSettingField, values: ThemeSettings): boolean {
+  if (!field.show_if) return true
+  const value = values[field.show_if]
+  return value !== undefined && value !== null && value !== '' && value !== false
+}
 
 /** Every field's value: the stored one when valid for the field, else its default. Unknown keys are dropped. */
 export function resolveSettings(fields: readonly ThemeSettingField[], values: ThemeSettings = {}): ThemeSettings {

@@ -6,6 +6,7 @@ import {
   ThemeDocument,
   applyPreset,
   defaultDocument,
+  isSettingShown,
   resolveBlocks,
   resolveDocument,
   resolveGlobalSections,
@@ -411,5 +412,41 @@ describe('the structure check: what a theme dropped must be accounted for', () =
     assert.deepEqual(unaccountedRemovals(old, theme({ removed: ['sections/hero/settings/image_1'] })), [
       'sections/hero/settings/image_2',
     ])
+  })
+})
+
+describe('show_if', () => {
+  const logo = ThemeDefinition.parse({
+    id: 'test',
+    name: 'Test',
+    settings: [
+      { id: 'logo', label: 'Logo', type: 'image' },
+      { id: 'logo_width', label: 'Logo width', type: 'range', min: 60, max: 300, show_if: 'logo' },
+      { id: 'note', label: 'Note', type: 'text' },
+    ],
+    sections: {},
+    pages: {},
+  }).settings
+  const [, width, note] = logo as [unknown, (typeof logo)[number], (typeof logo)[number]]
+
+  test('a field with show_if is shown once the setting it names has a value', () => {
+    assert.equal(isSettingShown(width, { logo: '/api/files/a/b.png' }), true)
+    assert.equal(isSettingShown(width, { logo: '' }), false)
+    assert.equal(isSettingShown(width, { logo: null }), false)
+    assert.equal(isSettingShown(width, {}), false)
+  })
+  test('a checkbox that is off, or a setting that is 0, keeps it hidden only when off or empty', () => {
+    const toggle = { ...width, show_if: 'enabled' }
+    assert.equal(isSettingShown(toggle, { enabled: true }), true)
+    assert.equal(isSettingShown(toggle, { enabled: false }), false)
+    assert.equal(isSettingShown(toggle, { enabled: 0 }), true)
+  })
+  test('a field without show_if is always shown, and show_if is not part of the theme structure', () => {
+    assert.equal(isSettingShown(note, {}), true)
+    assert.ok(
+      themeStructure(
+        ThemeDefinition.parse({ id: 'test', name: 'Test', settings: logo, sections: {}, pages: {} }),
+      ).includes('settings/logo_width'),
+    )
   })
 })
