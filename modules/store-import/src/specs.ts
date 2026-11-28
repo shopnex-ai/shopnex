@@ -15,14 +15,17 @@ export type Specs = { label: string; value: string }[]
 
 /** "Care Instructions" -> care_instructions; null when nothing usable is left */
 export function fieldKey(label: string): string | null {
-  const slug = label
+  // Words split on anything that is not a letter or digit, so there is no edge to trim with a pattern (an untrusted label
+  // of many underscores would make `_+$` slow); the label is cut first, as only the start of it can reach the key
+  const words = label
+    .slice(0, 200)
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, KEY_MAX)
-    .replace(/_+$/, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+  let slug = words.join('_').slice(0, KEY_MAX)
+  while (slug.endsWith('_')) slug = slug.slice(0, -1)
   if (!slug) return null
   return /^[a-z]/.test(slug) ? slug : `f_${slug}`.slice(0, KEY_MAX)
 }

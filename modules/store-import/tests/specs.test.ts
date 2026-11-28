@@ -84,6 +84,8 @@ describe('reading specs', () => {
     assert.equal(fieldKey('Größe (EU)'), 'gro_e_eu')
     assert.equal(fieldKey('3D print'), 'f_3d_print')
     assert.equal(fieldKey('---'), null)
+    assert.equal(fieldKey('_'.repeat(100_000) + 'a'), null)
+    assert.equal(fieldKey('a' + '_'.repeat(100_000)), 'a')
     assert.ok((fieldKey('x'.repeat(200)) ?? '').length <= 40)
   })
 
