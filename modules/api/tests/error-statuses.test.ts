@@ -104,6 +104,7 @@ const cases: Case[] = [
       'INVALID_SHIPPING_RATE',
       'INVALID_PAYMENT_METHOD',
       'GIFT_CARD_NOT_APPLICABLE',
+      'TOO_MANY_GUESSES',
       'NOT_A_CARRIER_APP',
       'INVALID_RATES_URL',
     ],
@@ -114,7 +115,9 @@ const cases: Case[] = [
           ? 'CONFLICT'
           : code === 'NOT_A_CARRIER_APP'
             ? 'FORBIDDEN'
-            : 'BAD_REQUEST',
+            : code === 'TOO_MANY_GUESSES'
+              ? 'TOO_MANY_REQUESTS'
+              : 'BAD_REQUEST',
   },
   {
     name: 'CatalogError',
