@@ -14,6 +14,11 @@ async function isUp(url: string) {
   }
 }
 
+/** Where the browser opens: the admin, or (with --from) the page that creates the owner and then imports that store */
+export function adminEntry(appUrl: string, from?: string) {
+  return from ? `${appUrl}/admin/signup?import=${encodeURIComponent(from)}` : `${appUrl}/admin`
+}
+
 function openBrowser(url: string) {
   const [command, args]: [string, string[]] =
     process.platform === 'darwin'
@@ -30,7 +35,7 @@ function openBrowser(url: string) {
  * Starts the planned processes, waits until they answer, prints where to open the shop, and stops them all on
  * Ctrl+C or when either exits. Resolves with the exit code.
  */
-export function runPlan(plan: Plan, { open, verbose }: { open: boolean; verbose: boolean }) {
+export function runPlan(plan: Plan, { open, verbose, from }: { open: boolean; verbose: boolean; from?: string }) {
   return new Promise<number>((resolve) => {
     const children: ChildProcess[] = []
     const tails = new Map<string, string[]>() // the last lines of each process, shown if one fails while starting
@@ -107,11 +112,12 @@ export function runPlan(plan: Plan, { open, verbose }: { open: boolean; verbose:
         [
           `${pc.bold('Shop ')}  ${brand(plan.storefrontUrl)}`,
           `${pc.bold('Admin')}  ${brand(`${plan.appUrl}/admin`)}  (the first run opens the setup wizard)`,
+          ...(from ? [`${pc.bold('Import')} ${from}  (starts once you have created the owner)`] : []),
         ].join('\n'),
         'Open',
       )
       p.outro('Create the owner account right away. Ctrl+C stops everything.')
-      if (open) openBrowser(`${plan.appUrl}/admin`)
+      if (open) openBrowser(adminEntry(plan.appUrl, from))
     })()
   })
 }

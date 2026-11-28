@@ -1,4 +1,3 @@
-import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Fragment, useState } from 'react'
@@ -11,6 +10,7 @@ import { FormError, TextField, setServerError, useZodForm } from '@/components/a
 import { OrderStatusBadges } from '@/components/admin/order-status'
 import { ProductThumb } from '@/components/admin/product-thumb'
 import { PageHeader } from '@/components/admin/page-header'
+import { LoadError } from '@/components/not-found'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -65,19 +65,7 @@ export function OrderDetail({ id }: { id: string }) {
       </div>
     )
   }
-  if (order.error) {
-    // BAD_REQUEST: the id in the URL isn't a valid uuid
-    const notFound =
-      order.error instanceof ORPCError && (order.error.code === 'NOT_FOUND' || order.error.code === 'BAD_REQUEST')
-    return (
-      <div className="space-y-4">
-        <PageHeader back={back} title={notFound ? 'Order not found' : 'Could not load order'} />
-        <p className="text-muted-foreground">
-          {notFound ? 'It may have been removed, or it belongs to another shop.' : order.error.message}
-        </p>
-      </div>
-    )
-  }
+  if (order.error) return <LoadError error={order.error} noun="Order" back={back} />
 
   const o = order.data
   const money = (cents: number) => formatMoney(cents, o.currency)

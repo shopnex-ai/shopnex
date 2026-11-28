@@ -45,6 +45,7 @@ import {
   type Path,
 } from '../menu-items'
 import { LinkLabel, MenuItemDialog } from './menu-item-dialog'
+import { LoadError } from '@/components/not-found'
 
 const back = { to: '/admin/online-store/navigation', label: 'Navigation' } as const
 
@@ -91,7 +92,9 @@ export function MenuEditor({ id }: { id: string }) {
     onError: (e) => toast.error(e.message),
   })
 
-  if (error) return <p className="text-sm text-destructive">{error.message}</p>
+  if (error) {
+    return <LoadError error={error} noun="Menu" back={{ to: '/admin/online-store/navigation', label: 'Navigation' }} />
+  }
   if (!menu || !draft) return <Skeleton className="h-96 w-full" />
 
   const dirty = JSON.stringify(draft) !== JSON.stringify({ title: menu.title, handle: menu.handle, items: menu.items })

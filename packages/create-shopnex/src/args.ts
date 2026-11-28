@@ -10,6 +10,8 @@ export type Options = {
   port: number
   storefrontPort: number
   app: string | undefined
+  /** --from: the address of a Shopify or WooCommerce store to bring across once the owner exists */
+  from: string | undefined
   /** --with: optional apps to start next to the shop (names, checked later against extras.ts) */
   with: string[]
   verbose: boolean
@@ -23,6 +25,7 @@ const options = {
   port: { type: 'string' },
   'storefront-port': { type: 'string' },
   app: { type: 'string' },
+  from: { type: 'string' },
   with: { type: 'string', multiple: true },
   verbose: { type: 'boolean' },
   'no-open': { type: 'boolean' },
@@ -53,11 +56,16 @@ export function parse(argv: string[]): Options {
   const port = toPort('port', values.port, DEFAULT_PORT)
   const storefrontPort = toPort('storefront-port', values['storefront-port'], DEFAULT_STOREFRONT_PORT)
   if (port === storefrontPort) throw new UsageError('--port and --storefront-port must be different')
+  const from = values.from?.trim()
+  if (values.from !== undefined && !from)
+    throw new UsageError('--from needs a store address, e.g. --from my-store.myshopify.com')
+  if (from && from.length > 300) throw new UsageError('--from is too long: give the store address, not a page')
   return {
     name: positionals[0],
     port,
     storefrontPort,
     app: values.app,
+    from,
     with: values.with ?? [],
     verbose: Boolean(values.verbose),
     open: !values['no-open'],

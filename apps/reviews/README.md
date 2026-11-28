@@ -6,7 +6,8 @@ own process.
 - After an order is **fulfilled** (`order.fulfilled` webhook) the app waits N days (default 7, set in the app), then
   emails the buyer a private, single-use link, through the shop's own email settings (Settings → Email, by way of
   `POST /email/send`, scope `write_email`). The app has no email server of its own.
-- The buyer's review waits for the shop's approval (embedded page: Publish / Hide / Delete, or auto-publish 4–5 stars or everything) and is marked **Verified buyer**. The shop can reply publicly.
+- The buyer's review waits for the shop's approval (embedded page: Publish / Hide / Delete, **Publish all waiting**, or auto-publish 4–5 stars or everything) and is marked **Verified buyer**. The shop can reply publicly.
+- The embedded page (`src/pages.tsx`, on the `@shopnex/app/ui` kit) opens on the shop's numbers (average, rating breakdown, requests sent and answered) with four sections: **Reviews** (filter by status, rating, product; by-product table), **Requests** (every review request, with **Send now**), **Widget** (the snippet) and **Settings** (publishing, days to wait, the request email's subject and message with a preview).
 - A widget (`/widget.js`) shows the average, the rating breakdown and published reviews (with replies, paged) on the product page, plus `aggregateRating` markup.
 - The public routes are rate limited (below).
 

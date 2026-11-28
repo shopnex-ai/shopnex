@@ -76,7 +76,26 @@
         </div>
 
         <div class="grid flex-[999_1_560px] grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-4">
-          {%- if menu and menu.links.size > 0 -%}
+          {%- if blocks.size > 0 -%}
+            {%- for block in blocks %}
+              <div {{ block.shopify_attributes }} class="flex flex-col gap-4">
+                {%- if block.settings.heading != blank %}
+                  <span class="text-[14px] font-medium tracking-[3px] uppercase">{{ block.settings.heading }}</span>
+                {%- endif %}
+                {%- case block.type %}
+                  {%- when 'text' %}
+                    {%- if block.settings.text != blank %}
+                      <p class="m-0 text-[14px] leading-[22px] whitespace-pre-line text-soft md:text-[16px]">{{ block.settings.text }}</p>
+                    {%- endif %}
+                  {%- when 'menu' %}
+                    {%- assign block_menu = linklists[block.settings.menu] %}
+                    {%- for link in block_menu.links %}
+                      <a href="{{ link.url }}" class="text-[14px] text-soft transition hover:text-ink md:text-[16px]">{{ link.title }}</a>
+                    {%- endfor %}
+                {%- endcase %}
+              </div>
+            {%- endfor %}
+          {%- elsif menu and menu.links.size > 0 -%}
             {%- for link in menu.links %}
               {%- if link.links.size > 0 %}
                 <div class="flex flex-col gap-4">

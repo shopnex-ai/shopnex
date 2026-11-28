@@ -284,3 +284,100 @@ describe('the migration', () => {
     assert.deepEqual(await store.counts(shop), { pending: 0, published: 0, hidden: 0 })
   })
 })
+
+describe('the overview', () => {
+  const PLATE = '22222222-2222-4222-8222-222222222222'
+
+  test('counts published reviews only, across products, and how the requests did', async () => {
+    const mug = await firstToken(shop, order('o1'))
+    const plate = await firstToken(shop, order('o2', [{ productId: PLATE, title: 'Plate' }]))
+    await store.addRequests(shop, order('o3'), Date.now() + 86_400_000) // not sent
+    const waiting = await firstToken(shop, order('o4'))
+    await store.markSent(mug, 1)
+    await store.markSent(plate, 1)
+    await store.markSent(waiting, 1)
+    const five = await store.submit(mug, { rating: 5, body: 'Great' }, 'all')
+    await store.submit(plate, { rating: 3, body: 'Fine' }, 'all')
+    await store.submit(waiting, { rating: 1, body: 'Held back' }) // stays pending: not counted
+    assert.ok(five.id)
+
+    const overview = await store.overview(shop)
+    assert.equal(overview.count, 2)
+    assert.equal(overview.average, 4)
+    assert.deepEqual(overview.distribution, { 1: 0, 2: 0, 3: 1, 4: 0, 5: 1 })
+    assert.deepEqual(overview.requests, { total: 4, sent: 3, reviewed: 3 })
+  })
+
+  test('is empty for a shop with nothing, and never includes another shop', async () => {
+    await review(await firstToken(other))
+    const overview = await store.overview(shop)
+    assert.equal(overview.count, 0)
+    assert.equal(overview.average, null)
+    assert.deepEqual(overview.requests, { total: 0, sent: 0, reviewed: 0 })
+  })
+})
+
+describe('products with reviews', () => {
+  test('most reviewed first, with what is published and its average', async () => {
+    const PLATE = '22222222-2222-4222-8222-222222222222'
+    await store.submit(await firstToken(shop, order('o1')), { rating: 5, body: 'a' }, 'all')
+    await store.submit(await firstToken(shop, order('o2')), { rating: 4, body: 'b' }, 'all')
+    await store.submit(await firstToken(shop, order('o3')), { rating: 1, body: 'c' }) // waiting
+    await store.submit(
+      await firstToken(shop, order('o4', [{ productId: PLATE, title: 'Plate' }])),
+      { rating: 2, body: 'd' },
+      'all',
+    )
+    assert.deepEqual(await store.products(shop), [
+      { productId: PRODUCT, title: 'Mug', total: 3, published: 2, average: 4.5 },
+      { productId: PLATE, title: 'Plate', total: 1, published: 1, average: 2 },
+    ])
+    assert.deepEqual(await store.products(other), [])
+  })
+})
+
+describe('the shop’s requests', () => {
+  test('say whether each is scheduled, sent or answered', async () => {
+    const later = Date.now() + 86_400_000
+    await store.addRequests(shop, order('o1'), later)
+    const sent = await firstToken(shop, order('o2', [{ productId: 'p2', title: 'Plate' }]))
+    const answered = await firstToken(shop, order('o3', [{ productId: 'p3', title: 'Cup' }]))
+    await store.markSent(sent, 5)
+    await store.markSent(answered, 5)
+    await review(answered)
+    const byProduct = Object.fromEntries((await store.requests(shop)).map((r) => [r.productTitle, r.status]))
+    assert.deepEqual(byProduct, { Mug: 'scheduled', Plate: 'sent', Cup: 'reviewed' })
+    assert.deepEqual(await store.requests(other), [])
+  })
+
+  test('“send now” makes a scheduled request due, and only in its own shop', async () => {
+    const later = Date.now() + 86_400_000
+    const [request] = await store.addRequests(shop, order(), later)
+    assert.equal(await store.sendNow(other, request!.token, 100), false)
+    assert.equal((await store.due(100)).length, 0)
+    assert.equal(await store.sendNow(shop, request!.token, 100), true)
+    assert.equal((await store.due(100)).length, 1)
+  })
+
+  test('“send now” leaves a request that was sent or answered as it is', async () => {
+    const token = await firstToken(shop)
+    await store.markSent(token, 5)
+    assert.equal(await store.sendNow(shop, token, 100), false)
+    await review(token)
+    assert.equal(await store.sendNow(shop, token, 100), false)
+  })
+})
+
+describe('publishing what is waiting', () => {
+  test('publishes the shop’s waiting reviews and nothing else', async () => {
+    await review(await firstToken(shop, order('o1')))
+    await review(await firstToken(shop, order('o2')))
+    const hidden = await review(await firstToken(shop, order('o3')))
+    await store.setStatus(shop, hidden.id, 'hidden')
+    await review(await firstToken(other, order('o4')))
+    assert.equal(await store.publishPending(shop), 2)
+    assert.deepEqual(await store.counts(shop), { pending: 0, published: 2, hidden: 1 })
+    assert.deepEqual(await store.counts(other), { pending: 1, published: 0, hidden: 0 })
+    assert.equal(await store.publishPending(shop), 0)
+  })
+})

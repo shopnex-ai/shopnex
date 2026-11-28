@@ -1,7 +1,8 @@
 import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
+import { useEffect, useRef } from 'react'
 import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/admin/app-sidebar'
 import { ACTIONS_SLOT, TITLE_SLOT, TopBarContext } from '@/components/admin/page-header'
 import { SignOutButton } from '@/components/auth/sign-out-button'
@@ -33,9 +34,9 @@ export const Route = createFileRoute('/admin')({
       return { access }
     }
     if (location.pathname === '/admin/signup') {
-      if (!access.setupComplete) throw redirect({ to: '/admin/setup' })
-      // Already signed in with a store address in the link: import it into their shop instead of dropping it
       const importUrl = new URLSearchParams(location.searchStr).get('import')
+      if (!access.setupComplete) throw redirect({ to: '/admin/setup', search: { import: importUrl?.slice(0, 300) } })
+      // Already signed in with a store address in the link: import it into their shop instead of dropping it
       if (access.session && importUrl) {
         throw redirect({ to: '/admin/settings/import', search: { url: importUrl.slice(0, 300) } })
       }
@@ -115,6 +116,7 @@ function AdminLayout() {
     <TopBarContext.Provider value>
       <SidebarProvider defaultOpen>
         <NavigationProgress />
+        <CollapseSidebarForEditors />
         <AppSidebar
           shop={{
             id: tenant.shop.id,
@@ -148,4 +150,22 @@ function AdminLayout() {
       </SidebarProvider>
     </TopBarContext.Provider>
   )
+}
+
+// Routes with `staticData: { collapseSidebar: true }` get the room: the sidebar collapses while one is open (moving between
+// them keeps it collapsed) and opens again after. A sidebar the user had closed is left alone.
+function CollapseSidebarForEditors() {
+  const { open, setOpen } = useSidebar()
+  const openRef = useRef(open)
+  openRef.current = open
+  const collapse = useRouterState({
+    select: (state) => state.matches.some((match) => match.staticData?.collapseSidebar),
+  })
+  useEffect(() => {
+    if (!collapse || !openRef.current) return
+    setOpen(false)
+    return () => setOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpen changes with `open`; this runs when entering or leaving the editors
+  }, [collapse])
+  return null
 }

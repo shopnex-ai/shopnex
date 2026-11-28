@@ -84,6 +84,8 @@ export const ThemeSectionDefinition = z.object({
   settings: z.array(ThemeSettingField).default([]),
   /** How many times the section can appear on one page */
   limit: z.number().int().min(1).optional(),
+  /** For a global section (on the page `static`): which group of the editor's list it is in; default `header` */
+  group: z.enum(['header', 'footer']).optional(),
   /** The block types the merchant can add to this section; none: the section has no blocks */
   blocks: z.record(Id, ThemeBlockDefinition).default({}),
   /** How many blocks (of any type) the section can hold; Shopify's `max_blocks` */
@@ -128,8 +130,9 @@ export const ThemeDocument = z.object({
 })
 
 /**
- * A style: ready-made theme settings (colors, fonts…), and optionally pages. Applying one keeps the
- * merchant's `code` settings, and their sections on pages the preset doesn't define (see `applyPreset`).
+ * A style: ready-made theme settings (colors, fonts…), and optionally pages. Applying one changes only the settings the
+ * theme's styles set; the merchant's others (logo, announcement, social links, custom code…) are kept, and so are
+ * their sections on pages the preset doesn't define (see `applyPreset`).
  */
 export const ThemePreset = z.object({
   name: z.string().min(1).max(100),
@@ -160,6 +163,11 @@ export const ThemeDefinition = z.object({
   id: Id,
   name: z.string().min(1).max(100),
   version: z.string().max(50).optional(),
+  /** A picture of the theme for the admin's theme list: a path on the storefront (a theme's assets/screenshot.jpg is picked up on its own) */
+  screenshot: z
+    .string()
+    .regex(/^\/[^?#]*$/, 'A path like /shopnex/assets/acme/screenshot.jpg')
+    .optional(),
   settings: z.array(ThemeSettingField).default([]),
   sections: z.record(Id, ThemeSectionDefinition),
   pages: z.record(
@@ -291,9 +299,11 @@ export function defaultDocument(definition: ThemeDefinition): ThemeDocument {
 }
 
 /**
- * The document with a style applied (a key of `presets`, or null for the theme's defaults). Theme settings
- * come from the style, except `code` ones (the merchant's own CSS/HTML), which are kept. Pages the style
- * defines get its sections; the others keep the merchant's.
+ * The document with a style applied (a key of `presets`, or null for the theme's own look). Only the settings that
+ * styles set (any style's `settings`, e.g. colors and fonts) change: they come from the style, or are the theme's defaults
+ * where this style leaves one out, so nothing of the previous style stays behind. Every other setting, the merchant's
+ * logo, announcement, links and custom code, is kept. Pages the style defines get its sections; the others keep the
+ * merchant's.
  */
 export function applyPreset(
   definition: ThemeDefinition,
@@ -302,11 +312,8 @@ export function applyPreset(
 ): ThemeDocument {
   const preset = presetId === null ? undefined : definition.presets[presetId]
   if (presetId !== null && !preset) throw new Error(`Unknown preset: ${presetId}`)
-  const kept = Object.fromEntries(
-    definition.settings
-      .filter((f) => f.type === 'code' && f.id in document.settings)
-      .map((f) => [f.id, document.settings[f.id]!]),
-  )
+  const styled = new Set(Object.values(definition.presets).flatMap((p) => Object.keys(p.settings)))
+  const kept = Object.fromEntries(Object.entries(document.settings).filter(([id]) => !styled.has(id)))
   const { preset: _, ...rest } = document
   return {
     ...rest,

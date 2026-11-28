@@ -714,7 +714,7 @@ export interface paths {
         };
         get: operations["admin.themes.list"];
         put?: never;
-        post?: never;
+        post: operations["admin.themes.add"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5670,6 +5670,73 @@ export interface operations {
                         updatedAt: string;
                         unpublishedChanges: boolean;
                     }[];
+                };
+            };
+        };
+    };
+    "admin.themes.add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    themeId: string;
+                    name: string;
+                    document: {
+                        preset?: string;
+                        settings: {
+                            [key: string]: string | number | boolean | null;
+                        };
+                        pages: {
+                            [key: string]: {
+                                sections: {
+                                    id: string;
+                                    type: string;
+                                    disabled?: boolean;
+                                    settings: {
+                                        [key: string]: string | number | boolean | null;
+                                    };
+                                    blocks?: {
+                                        id: string;
+                                        type: string;
+                                        disabled?: boolean;
+                                        settings: {
+                                            [key: string]: string | number | boolean | null;
+                                        };
+                                    }[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        themeId: string;
+                        name: string;
+                        marketplaceThemeId: string | null;
+                        /** @enum {string} */
+                        role: "live" | "unpublished";
+                        publishedAt: string | null;
+                        filesVersion: number;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                    };
                 };
             };
         };

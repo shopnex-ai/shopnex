@@ -1,4 +1,3 @@
-import { ORPCError } from '@orpc/client'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon, PrinterIcon } from 'lucide-react'
@@ -8,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
 import { formatMoney } from '@/lib/money'
+import { isMissing } from '@/lib/not-found'
 import { orpc, type Outputs } from '@/lib/orpc'
 
 type Order = Outputs['admin']['orders']['get']
@@ -34,11 +34,9 @@ export function InvoicePage({ id }: { id: string }) {
   const shop = useQuery(orpc.admin.shop.get.queryOptions())
 
   if (order.error) {
-    const notFound =
-      order.error instanceof ORPCError && (order.error.code === 'NOT_FOUND' || order.error.code === 'BAD_REQUEST')
     return (
       <Frame>
-        <p className="p-8 text-sm">{notFound ? 'Order not found.' : order.error.message}</p>
+        <p className="p-8 text-sm">{isMissing(order.error) ? 'Order not found.' : order.error.message}</p>
       </Frame>
     )
   }

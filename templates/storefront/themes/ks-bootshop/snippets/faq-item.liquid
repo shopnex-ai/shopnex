@@ -1,0 +1,21 @@
+{%- comment -%}
+  One question of the FAQ accordion (sections/faq.liquid). Params: id (of the answer panel), parent (the accordion's id),
+  question, answer, attrs (the block's editor attributes)
+{%- endcomment -%}
+<div {{ attrs }} class="accordion-item">
+  <h3 class="accordion-header">
+    <button
+      class="accordion-button collapsed"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#{{ id }}"
+      aria-expanded="false"
+      aria-controls="{{ id }}"
+    >
+      {{- question -}}
+    </button>
+  </h3>
+  <div id="{{ id }}" class="accordion-collapse collapse" data-bs-parent="#{{ parent }}">
+    <div class="accordion-body">{{ answer }}</div>
+  </div>
+</div>

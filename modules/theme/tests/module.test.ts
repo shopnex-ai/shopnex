@@ -27,6 +27,7 @@ describe('theme manifest', () => {
   test('the name is the folder, and the routes are the ones themes always had', () => {
     assert.equal(themeModule.name, 'theme')
     assert.deepEqual(Object.keys(themeModule.router).sort(), [
+      'add',
       'addFromStore',
       'delete',
       'deleteFile',

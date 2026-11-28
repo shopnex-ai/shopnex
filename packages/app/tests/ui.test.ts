@@ -4,17 +4,36 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, test } from 'node:test'
-import { clientScript } from '../src/client'
-import { Button, Disclosure, FilterItem, Filterable, Page, Panel } from '../src/ui'
+import { generateKeyPair } from '@shopnex/marketplace-sdk/keys'
+import { createShopnexApp } from '../src'
+import { Button, Disclosure, FilterItem, Filterable, Page, Panel, TabPanel, Tabs } from '../src/ui'
 
 const html = async (node: unknown) => String(await node)
 
 describe('the browser script', () => {
-  test('is valid JavaScript (it travels as a string, so nothing else would notice a typo)', () => {
+  const served = async (path: string) => {
+    const shopnex = createShopnexApp({ clientId: 'app_test', appKey: (await generateKeyPair()).privateKey })
+    return shopnex.routes.request(path)
+  }
+
+  test('is served at /shopnex/app.js as plain JavaScript compiled from client.ts', async () => {
+    const res = await served('/shopnex/app.js')
+    assert.equal(res.status, 200)
+    assert.equal(res.headers.get('content-type'), 'text/javascript')
+    const body = await res.text()
+    // client.ts, compiled: the behaviour is there, the types are gone
+    assert.match(body, /data-sx-tabs/)
+    assert.match(body, /data-shopnex-action/)
+    assert.doesNotMatch(body, /: HTMLElement|as Control|import type|<HTML/)
     const file = join(mkdtempSync(join(tmpdir(), 'sx-client-')), 'app.mjs')
-    writeFileSync(file, clientScript)
+    writeFileSync(file, body)
     const check = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' })
     assert.equal(check.status, 0, check.stderr)
+  })
+
+  test('imports the app bridge from the file served next to it', async () => {
+    assert.match(await (await served('/shopnex/app.js')).text(), /from ["']\.\/app-bridge\.js["']/)
+    assert.equal((await served('/shopnex/app-bridge.js')).status, 200)
   })
 })
 
@@ -110,5 +129,36 @@ describe('Page', () => {
     const out = await html(Page({ title: 'Reviews', header: false, actions: 'Go', children: 'x' }))
     assert.match(out, /<header/)
     assert.doesNotMatch(out, /<h1>/)
+  })
+})
+
+describe('Tabs and TabPanel', () => {
+  test('render a tab per section, the default one selected, with counts only when there is something to count', async () => {
+    const out = await html(
+      Tabs({
+        tabs: [
+          { id: 'reviews', label: 'Reviews', count: 3, alert: true },
+          { id: 'requests', label: 'Requests', count: 0 },
+          { id: 'settings', label: 'Settings' },
+        ],
+        defaultTab: 'reviews',
+      }),
+    )
+    assert.match(out, /data-sx-view-button="reviews"[^>]*aria-selected="true"[^>]*>Reviews<b>3<\/b>/)
+    assert.match(out, /sx-nav-alert/)
+    assert.match(out, /data-sx-view-button="requests"[^>]*aria-selected="false"[^>]*>Requests<\/button>/)
+    // Until the script runs, only the default section shows
+    assert.match(out, /not\(\[data-sx-view="reviews"\]\)/)
+  })
+
+  test('a panel carries the id of its tab', async () => {
+    assert.match(await html(TabPanel({ id: 'settings', children: [] })), /data-sx-view="settings"/)
+  })
+
+  test('a list can be named, so several fit on one page', async () => {
+    const out = await html(
+      Filterable({ name: 'requests', tabs: [{ value: 'all', label: 'All' }], defaultTab: 'all', children: [] }),
+    )
+    assert.match(out, /data-name="requests"/)
   })
 })

@@ -5,13 +5,14 @@
 //
 // Everything is inlined (no node_modules at runtime), except the embedded database (PGlite ships its WebAssembly as
 // files, and is only used when no Postgres URL is set; its Drizzle driver would import it at startup) and an app's drizzle/ migrations folder, which is copied next to the
-// bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that one read is replaced by
-// the file's contents. The same goes for an app's own icon:
+// bundle. @shopnex/app reads the app-bridge file from disk, which a bundle can't do, so that read is replaced by the
+// file's contents; its own browser script (client.ts) is compiled here and the compiled text put in the same way, and so
+// is its stylesheet (ui.css). The same goes for an app's own icon:
 // `readFileSync(new URL('./icon.svg', import.meta.url), 'utf8')` becomes the SVG's text (a `.js` file the app serves,
-// like the reviews widget, the same way).
-import { build } from 'esbuild'
+// like the reviews widget, or a `.css` file it writes into its pages, the same way).
+import { build, transformSync } from 'esbuild'
 import { cpSync, existsSync, readFileSync, rmSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -22,20 +23,47 @@ if (!entry) {
   process.exit(1)
 }
 
-const bridgeRead = "readFileSync(fileURLToPath(import.meta.resolve('@shopnex/app-bridge')), 'utf8')"
-const inlineAppBridge = {
-  name: 'inline-app-bridge',
+// What @shopnex/app reads from disk for the browser: per source file, the exact expression that reads it (in
+// packages/app/src) and the text to put there
+const minifyCss = (css) => transformSync(css, { loader: 'css', minify: true }).code
+const browserFiles = {
+  'index.ts': [
+    {
+      read: "readFileSync(fileURLToPath(import.meta.resolve('@shopnex/app-bridge')), 'utf8')",
+      text: () => readFileSync(join(root, 'packages/app-bridge/src/index.js'), 'utf8'),
+    },
+    {
+      read: "toBrowserJs(readFileSync(new URL('./client.ts', import.meta.url), 'utf8'))",
+      text: () =>
+        transformSync(readFileSync(join(root, 'packages/app/src/client.ts'), 'utf8'), {
+          loader: 'ts',
+          target: 'es2022',
+          minify: true,
+        }).code,
+    },
+  ],
+  'ui.tsx': [
+    {
+      read: "readFileSync(new URL('./ui.css', import.meta.url), 'utf8')",
+      text: () => minifyCss(readFileSync(join(root, 'packages/app/src/ui.css'), 'utf8')),
+    },
+  ],
+}
+const inlineBrowserFiles = {
+  name: 'inline-browser-files',
   setup(b) {
-    b.onLoad({ filter: /packages[\\/]app[\\/]src[\\/]index\.ts$/ }, (args) => {
-      const source = readFileSync(args.path, 'utf8')
-      if (!source.includes(bridgeRead)) throw new Error(`inline-app-bridge: ${bridgeRead} not found in ${args.path}`)
-      const bridge = readFileSync(join(root, 'packages/app-bridge/src/index.js'), 'utf8')
-      return { contents: source.replace(bridgeRead, JSON.stringify(bridge)), loader: 'ts' }
+    b.onLoad({ filter: /packages[\\/]app[\\/]src[\\/](index\.ts|ui\.tsx)$/ }, (args) => {
+      let source = readFileSync(args.path, 'utf8')
+      for (const { read, text } of browserFiles[basename(args.path)]) {
+        if (!source.includes(read)) throw new Error(`inline-browser-files: ${read} not found in ${args.path}`)
+        source = source.replace(read, () => JSON.stringify(text()))
+      }
+      return { contents: source, loader: args.path.endsWith('x') ? 'tsx' : 'ts' }
     })
   },
 }
 
-const svgRead = /readFileSync\(new URL\('(\.\/[\w.-]+\.(?:svg|js))', import\.meta\.url\), 'utf8'\)/g
+const svgRead = /readFileSync\(new URL\('(\.\/[\w.-]+\.(?:svg|js|css))', import\.meta\.url\), 'utf8'\)/g
 const inlineSvgFiles = {
   name: 'inline-svg-files',
   setup(b) {
@@ -44,9 +72,10 @@ const inlineSvgFiles = {
       const source = readFileSync(args.path, 'utf8')
       if (!svgRead.test(source)) return
       svgRead.lastIndex = 0
-      const contents = source.replace(svgRead, (_, file) =>
-        JSON.stringify(readFileSync(join(dirname(args.path), file), 'utf8')),
-      )
+      const contents = source.replace(svgRead, (_, file) => {
+        const text = readFileSync(join(dirname(args.path), file), 'utf8')
+        return JSON.stringify(file.endsWith('.css') ? minifyCss(text) : text)
+      })
       return { contents, loader: args.path.endsWith('x') ? 'tsx' : 'ts' }
     })
   },
@@ -65,7 +94,7 @@ await build({
   legalComments: 'none',
   // Bundled CommonJS dependencies call require()
   banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
-  plugins: [inlineAppBridge, inlineSvgFiles],
+  plugins: [inlineBrowserFiles, inlineSvgFiles],
   logLevel: 'info',
 })
 

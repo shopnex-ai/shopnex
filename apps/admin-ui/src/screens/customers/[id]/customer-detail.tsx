@@ -1,9 +1,9 @@
-import { ORPCError } from '@orpc/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CustomFieldsCard } from '@/components/admin/custom-fields-card'
 import { DataTable, columnHelper } from '@/components/admin/data-table'
 import { OrderStatusBadges } from '@/components/admin/order-status'
 import { PageHeader } from '@/components/admin/page-header'
+import { LoadError } from '@/components/not-found'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDate, orderName } from '@/lib/format'
@@ -47,20 +47,7 @@ export function CustomerDetail({ id, canManage }: { id: string; canManage: boole
       </div>
     )
   }
-  if (customer.error) {
-    // BAD_REQUEST: the id in the URL isn't a valid uuid
-    const notFound =
-      customer.error instanceof ORPCError &&
-      (customer.error.code === 'NOT_FOUND' || customer.error.code === 'BAD_REQUEST')
-    return (
-      <div className="space-y-4">
-        <PageHeader back={back} title={notFound ? 'Customer not found' : 'Could not load customer'} />
-        <p className="text-muted-foreground">
-          {notFound ? 'It may have been removed, or it belongs to another shop.' : customer.error.message}
-        </p>
-      </div>
-    )
-  }
+  if (customer.error) return <LoadError error={customer.error} noun="Customer" back={back} />
 
   const c = customer.data
   return (

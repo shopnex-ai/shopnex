@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { TriangleAlertIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { PageHeader } from '@/components/admin/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,8 @@ import { formatDate } from '@/lib/format'
 import { orpc } from '@/lib/orpc'
 import type { Storefront } from './definition'
 import { StorefrontThumbnail } from './storefront-thumbnail'
-import type { Theme } from './theme-dialogs'
+import { useThemeDialogs, type Theme } from './theme-dialogs'
+import { ThemeMenu, copySettings } from './theme-menu'
 
 type Props = {
   /** The storefront's themes; null when it can't be reached */
@@ -25,7 +27,18 @@ function status(theme: Theme) {
 }
 
 export function CurrentTheme({ storefront, storefrontError }: Props) {
+  const queryClient = useQueryClient()
   const { data, error, isPending } = useQuery(orpc.admin.themes.list.queryOptions())
+  const { open, dialogs } = useThemeDialogs()
+  const duplicate = useMutation(
+    orpc.admin.themes.duplicate.mutationOptions({
+      onSuccess: (copy) => {
+        toast.success(`Added ${copy.name}`)
+        return queryClient.invalidateQueries({ queryKey: orpc.admin.themes.key() })
+      },
+      onError: (e) => toast.error(e.message),
+    }),
+  )
   const current = data?.find((t) => t.role === 'live')
   const theme = current && storefront?.themes.find((d) => d.id === current.themeId)
   // A live copy of a theme the storefront doesn't include: it falls back to its default theme
@@ -33,15 +46,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
 
   return (
     <div className="space-y-4">
-      <PageHeader
-        title="Online store"
-
-        actions={
-          <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/admin/online-store/select" />}>
-            Change theme
-          </Button>
-        }
-      />
+      <PageHeader title="Online store" />
 
       {!storefront && (
         <Card>
@@ -68,6 +73,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
         <Card>
           <CardContent className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:items-center">
             {storefront ? (
+              // The live store itself (what buyers see now), not the theme's picture
               <StorefrontThumbnail url={storefront.url} themeId={current.id} />
             ) : (
               <div className="flex aspect-[16/10] items-center justify-center rounded-md border bg-muted text-sm text-muted-foreground">
@@ -88,7 +94,7 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
                 {missing && (
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     Your storefront doesn’t include this theme, so buyers see {storefront.themes[0]!.name}’s defaults.
-                    Choose another one under Change theme.
+                    Choose another one under Your themes.
                   </p>
                 )}
               </div>
@@ -119,11 +125,20 @@ export function CurrentTheme({ storefront, storefrontError }: Props) {
                     View store
                   </Button>
                 )}
+                <ThemeMenu
+                  theme={current}
+                  onRename={() => open('rename', current)}
+                  onDuplicate={() => duplicate.mutate({ id: current.id })}
+                  onCopySettings={() => copySettings(current)}
+                  onDelete={() => open('delete', current)}
+                />
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {dialogs}
     </div>
   )
 }

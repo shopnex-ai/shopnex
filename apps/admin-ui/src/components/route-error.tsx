@@ -1,7 +1,9 @@
 import { ErrorComponent } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { NotFound } from '@/components/not-found'
 import { Button } from '@/components/ui/button'
+import { isMissing } from '@/lib/not-found'
 import { isStaleChunkError, reloadForNewBuild } from '@/lib/stale-chunk'
 
 export function RouteError({ error }: ErrorComponentProps) {
@@ -11,7 +13,8 @@ export function RouteError({ error }: ErrorComponentProps) {
     if (stale) reloadForNewBuild()
   }, [stale])
 
-  if (!stale) return <ErrorComponent error={error} />
+  // A loader that let the API's "no such record" through: say so, as the not-found page does
+  if (!stale) return isMissing(error) ? <NotFound /> : <ErrorComponent error={error} />
 
   return (
     <div className="flex flex-col items-start gap-3 p-6">
