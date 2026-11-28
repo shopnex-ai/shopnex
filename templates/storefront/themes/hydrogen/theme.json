@@ -306,10 +306,7 @@
               "label": "Collection",
               "type": "collection"
             }
-          ],
-          "from_settings": {
-            "collection": "collection_{n}"
-          }
+          ]
         }
       }
     },

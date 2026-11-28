@@ -54,16 +54,4 @@ describe('KS BootShop announcement bar', () => {
       assert.doesNotMatch(html, /ks-announcement/)
     }
   })
-
-  test('the old single message shows while there are no blocks, if the bar is on', async () => {
-    const on = { show_announcement: true, announcement_text: 'Welcome back', announcement_link: '/search' }
-    assert.match(await render(bar([]), on), /<a href="\/search">Welcome back<\/a>/)
-    assert.doesNotMatch(await render(bar([]), { ...on, show_announcement: false }), /Welcome back/)
-  })
-
-  test('blocks win over the old message', async () => {
-    const html = await render(bar([block('a', 'New one')]), { show_announcement: true, announcement_text: 'Old one' })
-    assert.match(html, /New one/)
-    assert.doesNotMatch(html, /Old one/)
-  })
 })

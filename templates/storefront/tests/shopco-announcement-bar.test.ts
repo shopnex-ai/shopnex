@@ -56,20 +56,4 @@ describe('Shopco announcement bar', () => {
       assert.doesNotMatch(html, /data-announcement/)
     }
   })
-
-  test('the old single message shows while there are no blocks', async () => {
-    const html = await render(bar([]), {
-      announcement_text: 'Welcome back',
-      announcement_link: '/s',
-      announcement_link_label: 'Go',
-    })
-    assert.match(html, /Welcome back/)
-    assert.match(html, /<a href="\/s"[^>]*>Go<\/a>/)
-  })
-
-  test('blocks win over the old message', async () => {
-    const html = await render(bar([block('a', 'New one')]), { announcement_text: 'Old one' })
-    assert.match(html, /New one/)
-    assert.doesNotMatch(html, /Old one/)
-  })
 })

@@ -6,7 +6,7 @@ name: Theme compatibility
 # request with its base branch (templates/storefront/scripts/theme-compat.ts) and fails on a removed or renamed
 # setting, section or block type, or a removed theme. Adding things is fine.
 #
-# A removal passes when the theme lists it in `removed` (dropped on purpose), or moves it into blocks (`from_settings`).
+# A removal passes when the theme lists it in `removed` (dropped on purpose, nothing to move).
 # For a break that is intended, add the `breaking-theme-change` label and a SQL migration for the saved data in
 # modules/db/migrations (pnpm --filter @shopnex/db exec drizzle-kit generate --custom): the check then passes, and the
 # diff stays in the job summary for the release notes.

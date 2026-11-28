@@ -2,14 +2,9 @@
 
 ## Unreleased (additive)
 
-- Block types can declare `from_settings` (`{ "image": "image_{n}" }`): the numbered settings of a section saved before blocks. `blocksFromSettings`,
-  which `resolveDocument` applies on every page, turns them into one block per position that has something and drops the numbered
-  settings; a section that has a block list (even an empty one) is left alone. KS BootShop, Shopco and Hydrogen declare theirs, so documents
-  saved before blocks keep their slides, questions, quotes, stats and collections.
-- Block types can also declare `from_lines` (`{ "setting": "names", "into": "name" }`): a section's old text setting with one item per line
-  becomes one block per non-blank line. The theme definition has `removed` (paths of settings, sections and blocks dropped on purpose), and
-  `themeStructure(definition)` and `unaccountedRemovals(previous, definition)` list what a theme declares and what it lost without saying why;
-  the storefront's tests use them to fail a theme change that would orphan what merchants saved.
+- The theme definition has `removed` (paths of settings, sections and blocks dropped on purpose), and `themeStructure(definition)` and
+  `unaccountedRemovals(previous, definition)` list what a theme declares and what it lost without saying why. The pull request check
+  (`theme-compat`) uses them: a removal needs the `breaking-theme-change` label and a SQL migration for what merchants saved.
 - `resolveDocument(definition, document)` and `resolveGlobalSections(definition, stored?)`: a stored document completed with the
   global sections the theme lists (`pages.static`) and the document lacks, with the theme's defaults, so a document saved before the
   footer became editable still has one. Everything the merchant saved is kept; resolving again changes nothing. The storefront

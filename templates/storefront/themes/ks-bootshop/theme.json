@@ -152,26 +152,6 @@
       "default": false
     },
     {
-      "id": "show_announcement",
-      "label": "Announcement bar",
-      "group": "Announcement bar",
-      "type": "checkbox",
-      "default": true
-    },
-    {
-      "id": "announcement_text",
-      "label": "Announcement bar (one message)",
-      "group": "Announcement bar",
-      "type": "text",
-      "info": "Shown only while Header → Announcement bar has no announcements of its own"
-    },
-    {
-      "id": "announcement_link",
-      "label": "Announcement link",
-      "group": "Announcement bar",
-      "type": "url"
-    },
-    {
       "id": "footer_text",
       "label": "Footer text",
       "group": "Footer",
@@ -303,14 +283,7 @@
               "type": "url",
               "default": "/products"
             }
-          ],
-          "from_settings": {
-            "image": "image_{n}",
-            "heading": "heading_{n}",
-            "text": "text_{n}",
-            "button_label": "button_label_{n}",
-            "button_link": "button_link_{n}"
-          }
+          ]
         }
       }
     },
@@ -462,10 +435,7 @@
               "label": "Collection",
               "type": "collection"
             }
-          ],
-          "from_settings": {
-            "collection": "collection_{n}"
-          }
+          ]
         }
       }
     },
@@ -725,11 +695,7 @@
               "label": "Author",
               "type": "text"
             }
-          ],
-          "from_settings": {
-            "quote": "quote_{n}",
-            "author": "author_{n}"
-          }
+          ]
         }
       }
     },
@@ -803,11 +769,7 @@
               "label": "Answer",
               "type": "textarea"
             }
-          ],
-          "from_settings": {
-            "question": "question_{n}",
-            "answer": "answer_{n}"
-          }
+          ]
         }
       }
     },

@@ -73,24 +73,20 @@ describe('comparing two versions of the themes', () => {
     assert.deepEqual(c.accounted.demo, ['settings/logo'])
   })
 
-  test('numbered settings moved into blocks (from_settings) are accounted for', () => {
+  test('settings moved into blocks are a break too: only `removed` accounts for them (the data moves in a migration)', () => {
     const before = theme({
-      sections: {
-        hero: { name: 'Hero', settings: [field('image_1'), field('image_2')], blocks: {} },
-      },
+      sections: { hero: { name: 'Hero', settings: [field('image_1'), field('image_2')], blocks: {} } },
     })
     const after = theme({
       sections: {
-        hero: {
-          name: 'Hero',
-          settings: [],
-          blocks: { slide: { name: 'Slide', settings: [field('image')], from_settings: { image: 'image_{n}' } } },
-        },
+        hero: { name: 'Hero', settings: [], blocks: { slide: { name: 'Slide', settings: [field('image')] } } },
       },
     })
     const c = compareThemes(files(before), files(after))
-    assert.equal(isBreaking(c), false)
-    assert.deepEqual(c.accounted.demo, ['sections/hero/settings/image_1', 'sections/hero/settings/image_2'])
+    assert.equal(isBreaking(c), true)
+    assert.deepEqual(c.breaking.demo, ['sections/hero/settings/image_1', 'sections/hero/settings/image_2'])
+    const listed = compareThemes(files(before), files({ ...after, removed: ['sections/hero/settings'] }))
+    assert.equal(isBreaking(listed), false)
   })
 
   test('a theme dropped from the list is a break: every saved theme of it is orphaned', () => {
