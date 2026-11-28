@@ -28,7 +28,8 @@ export function StoreImportPanel({
   const queryClient = useQueryClient()
   const overview = useQuery(orpc.admin.storeImport.overview.queryOptions())
   const [url, setUrl] = useState(initialUrl ?? '')
-  const [branding, setBranding] = useState(false)
+  // Until it is touched, the box follows the shop: ticked while it has no products
+  const [brandingChoice, setBrandingChoice] = useState<boolean | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const autoStarted = useRef(false)
@@ -72,6 +73,7 @@ export function StoreImportPanel({
   if (overview.isPending) return <Skeleton className="h-40 w-full" />
   if (overview.error) return <p className="text-sm text-destructive">{overview.error.message}</p>
   const fresh = overview.data?.fresh ?? true
+  const branding = brandingChoice ?? fresh
 
   return (
     <div className="space-y-4">
@@ -80,7 +82,7 @@ export function StoreImportPanel({
           className="space-y-4"
           onSubmit={(event) => {
             event.preventDefault()
-            submit(url, onboarding || fresh || branding)
+            submit(url, onboarding || branding)
           }}
           noValidate
         >
@@ -98,13 +100,13 @@ export function StoreImportPanel({
               autoFocus={!onboarding}
             />
           </div>
-          {!fresh && !onboarding && (
+          {!onboarding && (
             <label className="flex items-start gap-2 text-sm">
               <input
                 type="checkbox"
                 className="mt-1"
                 checked={branding}
-                onChange={(event) => setBranding(event.target.checked)}
+                onChange={(event) => setBrandingChoice(event.target.checked)}
               />
               <span>
                 <span className="font-medium">Set up my shop from this store.</span>
