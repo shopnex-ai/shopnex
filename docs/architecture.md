@@ -67,7 +67,7 @@ db → (nothing)
 drafts → core, db
 email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
 files → core, db, rpc, tenancy, webhooks
-gift-cards → cart, catalog, core, db, orders, rpc
+gift-cards → cart, catalog, core, db, orders, pricing, rpc
 kit → (nothing)
 languages → core, db, rpc
 log → (nothing)

@@ -1305,6 +1305,9 @@ importers:
       '@shopnex/orders':
         specifier: workspace:*
         version: link:../orders
+      '@shopnex/pricing':
+        specifier: workspace:*
+        version: link:../pricing
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
