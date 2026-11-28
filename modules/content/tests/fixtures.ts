@@ -11,9 +11,9 @@ process.env.SHOPNEX_SECRET = 'test-secret-test-secret-test-secret-0123'
 const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/db')
 requireEmbeddedDatabase()
 const { eq, inArray } = await import('drizzle-orm')
-const { content } = await import('../src')
+const { menuService, pageService } = await import('../src')
 
-export { db, prepareDatabase, eq, content }
+export { db, prepareDatabase, eq, menuService, pageService }
 export const SHOP = 'default'
 export const OTHER_SHOP = 'content-other-shop'
 

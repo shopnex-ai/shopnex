@@ -4,7 +4,6 @@
 import type { AnyPgTable } from 'drizzle-orm/pg-core'
 export * from './errors'
 export * from './conn'
-export * from './services'
 export * from './hooks'
 
 export interface ModuleManifest {
@@ -14,8 +13,6 @@ export interface ModuleManifest {
   dependsOn: readonly string[]
   /** The tables it owns, from its `*.schema.ts` files (migrations stay one history in modules/db) */
   tables?: Readonly<Record<string, AnyPgTable>>
-  /** Its services, from `defineServices` (the functions that take a connection, bound to the shared one). Other modules call these */
-  services?: object
   /** Its Admin API routes. Typed by the module: modules/api mounts it by name so the client types stay end to end */
   router?: object
 }

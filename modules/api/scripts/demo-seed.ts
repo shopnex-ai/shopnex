@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { db } from '@shopnex/db'
 import { auth, SUPER_ADMIN_ROLE, withSignUpAllowed } from '@shopnex/auth'
-import { content } from '@shopnex/content'
+import { menuService, pageService } from '@shopnex/content'
 import { seedDemoCatalog } from './lib/demo-catalog'
 import { seedDemoOrders } from './lib/demo-orders'
 import { DEFAULT_SHOP_ID, addMember, ensureDefaultShop, updateShop } from '@shopnex/tenancy'
@@ -52,44 +52,60 @@ await createAccount('Demo User', demoEmail, demoPassword, false)
 
 const { collections, productIds } = await seedDemoCatalog(DEFAULT_SHOP_ID)
 
-const about = await content.pages.create(DEFAULT_SHOP_ID, {
-  title: 'About',
-  published: true,
-  bodyHtml:
-    "<p>This is a demo store running on <strong>ShopNex</strong>. Sign in to the admin to edit products, themes and settings.</p><p>Data resets regularly, so please don't enter real personal information.</p>",
-})
-const contact = await content.pages.create(DEFAULT_SHOP_ID, {
-  title: 'Contact',
-  published: true,
-  bodyHtml: '<p>Questions about ShopNex? Visit the project website.</p>',
-})
+const about = await pageService.create(
+  DEFAULT_SHOP_ID,
+  {
+    title: 'About',
+    published: true,
+    bodyHtml:
+      "<p>This is a demo store running on <strong>ShopNex</strong>. Sign in to the admin to edit products, themes and settings.</p><p>Data resets regularly, so please don't enter real personal information.</p>",
+  },
+  db,
+)
+const contact = await pageService.create(
+  DEFAULT_SHOP_ID,
+  {
+    title: 'Contact',
+    published: true,
+    bodyHtml: '<p>Questions about ShopNex? Visit the project website.</p>',
+  },
+  db,
+)
 
-await content.menus.create(DEFAULT_SHOP_ID, {
-  handle: 'main-menu',
-  title: 'Main menu',
-  items: [
-    { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
-    { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
-    ...collections.map((c) => ({
+await menuService.create(
+  DEFAULT_SHOP_ID,
+  {
+    handle: 'main-menu',
+    title: 'Main menu',
+    items: [
+      { id: randomUUID(), title: 'Home', type: 'frontpage', items: [] },
+      { id: randomUUID(), title: 'Shop all', type: 'catalog', items: [] },
+      ...collections.map((c) => ({
+        id: randomUUID(),
+        title: c.title,
+        type: 'collection' as const,
+        resourceId: c.id,
+        items: [],
+      })),
+    ],
+  },
+  db,
+)
+await menuService.create(
+  DEFAULT_SHOP_ID,
+  {
+    handle: 'footer',
+    title: 'Footer menu',
+    items: [about, contact].map((p) => ({
       id: randomUUID(),
-      title: c.title,
-      type: 'collection' as const,
-      resourceId: c.id,
+      title: p.title,
+      type: 'page' as const,
+      resourceId: p.id,
       items: [],
     })),
-  ],
-})
-await content.menus.create(DEFAULT_SHOP_ID, {
-  handle: 'footer',
-  title: 'Footer menu',
-  items: [about, contact].map((p) => ({
-    id: randomUUID(),
-    title: p.title,
-    type: 'page' as const,
-    resourceId: p.id,
-    items: [],
-  })),
-})
+  },
+  db,
+)
 
 const sales = await seedDemoOrders(DEFAULT_SHOP_ID)
 
