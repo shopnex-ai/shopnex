@@ -34,6 +34,7 @@
 - /rpc # the building blocks of a route (who is calling, the shop, scopes) for every module that exposes routes. It answers any error made with `defineError` by itself, so nothing here knows a module. Depends on `core` and `kit` only: how a request is recognised (the session, the admin's shop, an API or app token, scopes) is registered once by `modules/api` (`configureRpc`, with the session type supplied by interface augmentation), so a module that sits below auth or tenancy can have routes too. Its tests use fake resolvers
 - /customers # shop-scoped customers, guests matched by email (customerService), storefront sign-in codes (accountService) and the admin customer routes
 - /privacy # a customer's personal data: what the shop hands over and what it erases on request (privacyService), and the two routes for it; no tables of its own → uses customers, orders, carts, emails
+- /checkout-codes # the checkout's one code box (checkoutCodeService): a typed code is a discount or a gift card, and what to tell the buyer; no tables or routes of its own → uses cart, pricing, gift-cards. The limit on guessing codes is cart's (`code-guesses`)
 - /cart # server-side carts (token, live prices) + checkout → order (one transaction, idempotent), shipping rates and carrier services, and their admin routes
 - /orders # orders + line items with price snapshots, status transitions (orderService), the dashboard numbers (orderAnalytics) and the admin order routes → uses catalog, customers
 - /tenancy # TENANCY_MODE, default shop, resolving the current shop (storefront host / admin active shop)
@@ -56,9 +57,10 @@ ai → apps, catalog, content, core, db, rpc, tenancy
 api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, store-import, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme, webhooks
 auth → content, core, db, tenancy
-cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
+cart → apps, auth, catalog, channels, core, customers, db, orders, payments, pricing, rpc
 catalog → channels, core, custom-fields, db, languages, rpc, webhooks
 channels → core, db, rpc
+checkout-codes → cart, db, gift-cards, pricing
 content → catalog, core, db, languages, rpc
 core → (nothing)
 custom-fields → core, db, rpc
@@ -67,7 +69,7 @@ db → (nothing)
 drafts → core, db
 email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
 files → core, db, rpc, tenancy, webhooks
-gift-cards → auth, cart, catalog, core, db, orders, rpc
+gift-cards → cart, catalog, core, db, orders, rpc
 kit → (nothing)
 languages → core, db, rpc
 log → (nothing)

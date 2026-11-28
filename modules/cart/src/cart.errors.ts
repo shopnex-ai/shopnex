@@ -21,6 +21,8 @@ const CartErrorBase = defineError('CartError', {
   INVALID_PAYMENT_METHOD: 'BAD_REQUEST',
   // checkout: the gift card code can't be used (unknown, disabled, expired, empty)
   GIFT_CARD_NOT_APPLICABLE: 'BAD_REQUEST',
+  // too many codes the shop doesn't have, from one visitor
+  TOO_MANY_GUESSES: 'TOO_MANY_REQUESTS',
   // a carrier service: not an installed app, or a rates URL outside the app's origin
   NOT_A_CARRIER_APP: 'FORBIDDEN',
   INVALID_RATES_URL: 'BAD_REQUEST',

@@ -261,7 +261,11 @@ export const storefrontRouter = storefront.router({
       toCart(await cartService.removeLines(context.shop.id, input.cartId, input.lineIds, db)),
     ),
     discountCodesUpdate: storefront.cart.discountCodesUpdate.handler(async ({ input, context }) =>
-      toCart(await cartService.setDiscountCode(context.shop.id, input.cartId, input.discountCodes[0] ?? null, db)),
+      toCart(
+        await cartService.setDiscountCode(context.shop.id, input.cartId, input.discountCodes[0] ?? null, db, {
+          ip: clientIp(context.headers),
+        }),
+      ),
     ),
   },
   customer: {

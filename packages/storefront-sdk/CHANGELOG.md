@@ -2,6 +2,8 @@
 
 ## Unreleased (additive)
 
+- `cart.discountCodesUpdate` can answer `TOO_MANY_REQUESTS` (429): a visitor who sends 10 codes the shop doesn't have in 15 minutes is
+  refused until the window ends. Codes the shop has are never counted.
 - The theme definition has `removed` (paths of settings, sections and blocks dropped on purpose), and `themeStructure(definition)` and
   `unaccountedRemovals(previous, definition)` list what a theme declares and what it lost without saying why. The pull request check
   (`theme-compat`) uses them: a removal needs the `breaking-theme-change` label and a SQL migration for what merchants saved.

@@ -2,7 +2,7 @@
 // The balance changes only through `record`, which locks the card's row and writes the transaction that explains the change.
 import { randomInt } from 'node:crypto'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
-import { rateLeft, takeRate } from '@shopnex/auth'
+import { codeGuesses } from '@shopnex/cart'
 import type { Conn } from '@shopnex/db'
 import { shops } from '@shopnex/core/schema'
 import { GiftCardError } from './gift-cards.errors'
@@ -59,11 +59,7 @@ export async function findByCode(shopId: string, code: string, conn: Conn) {
   return card ?? null
 }
 
-// Guessing codes: failed lookups are counted per visitor address (shared by every process, in the database) and a visitor that has
-// used them up is refused before any lookup, so a lucky guess is refused too. Without a trusted address the limit is the shop's.
-const MISSES_WINDOW_MS = 15 * 60_000
-const MISSES_PER_IP = 10
-const MISSES_PER_SHOP = 100
+// Guessing codes is limited by the cart module's counter (shared with discount codes): see cart's code-guesses.
 
 /**
  * The card a buyer's code names, when it can be spent on an order in `currency`; otherwise what to tell the buyer.
@@ -76,14 +72,11 @@ export async function lookup(
   opts: { currency: string; ip: string | null; throttle: boolean },
   conn: Conn,
 ): Promise<{ card: GiftCard; error: null } | { card: null; error: string }> {
-  const key = opts.ip ? `gift-card-miss:${shopId}:${opts.ip}` : `gift-card-miss:${shopId}`
-  const max = opts.ip ? MISSES_PER_IP : MISSES_PER_SHOP
-  if (opts.throttle && (await rateLeft(key, max)) !== null) {
-    return { card: null, error: 'Too many attempts. Wait a few minutes and try again.' }
-  }
+  if (opts.throttle && (await codeGuesses.usedUp(shopId, opts.ip)))
+    return { card: null, error: codeGuesses.TOO_MANY_GUESSES }
   const card = normalizeCode(code) ? await findByCode(shopId, code, conn) : null
   if (!card) {
-    if (opts.throttle) await takeRate(key, max, MISSES_WINDOW_MS)
+    if (opts.throttle) await codeGuesses.recordMiss(shopId, opts.ip)
     return { card: null, error: "This gift card code isn't valid" }
   }
   const reason = unavailableReason(card)

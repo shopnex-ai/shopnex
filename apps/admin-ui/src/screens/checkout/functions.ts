@@ -7,8 +7,7 @@ import { abandonedCartService } from '@shopnex/email'
 import { OrderError, orderService } from '@shopnex/orders'
 import { PaymentError, paymentService } from '@shopnex/payments'
 import { db, type Conn } from '@shopnex/db'
-import { giftCardService } from '@shopnex/gift-cards'
-import { discountService } from '@shopnex/pricing'
+import { checkoutCodeService, type CheckoutCodeResult } from '@shopnex/checkout-codes'
 import { getShopById } from '@shopnex/tenancy'
 import { countryOptions } from '@/lib/countries'
 import { checkoutBranding } from './branding'
@@ -191,55 +190,17 @@ export const payNow = publicFn({ method: 'POST' })
     }
   })
 
-export type GiftCardState = { error?: string; code?: string; balanceCents?: number }
+export type CodeState = CheckoutCodeResult
 
-/** A gift card code the buyer entered: whether it can be used, and what it holds. Spends nothing; placing the order does. */
-export const checkGiftCard = publicFn({ method: 'POST' })
+/** One box for both: a discount code if the shop has one by that name, otherwise a gift card. */
+export const applyCode = publicFn({ method: 'POST' })
   .validator((input: { token: string; code: string }) => input)
-  .handler(async ({ data }): Promise<GiftCardState> => {
-    const code = data.code.trim()
-    if (!code) return { error: 'Enter a gift card code' }
-    const cart = await cartService.findByToken(null, data.token, db)
-    if (!cart) return { error: 'This cart has expired.' }
+  .handler(async ({ data }): Promise<CodeState> => {
     try {
-      const { currency } = await cartService.view(cart, db)
-      const found = await giftCardService.lookup(
-        cart.shopId,
-        code,
-        { currency, ip: clientIp(getRequest().headers), throttle: true },
-        db,
-      )
-      if (!found.card) return { error: found.error }
-      return { code, balanceCents: found.card.balanceCents }
+      return await checkoutCodeService.applyCode(data.token, data.code, clientIp(getRequest().headers), db)
     } catch (error) {
-      return { error: unexpected('check this gift card', error) }
-    }
-  })
-
-export type DiscountCodeState = { error?: string }
-export const applyDiscountCode = publicFn({ method: 'POST' })
-  .validator((input: { token: string; code: string }) => input)
-  .handler(async ({ data }): Promise<DiscountCodeState> => {
-    const code = data.code.trim()
-    if (!code) return { error: 'Enter a discount code' }
-    const cart = await cartService.findByToken(null, data.token, db)
-    if (!cart) return { error: 'This cart has expired.' }
-    try {
-      const view = await cartService.setDiscountCode(cart.shopId, data.token, code, db)
-      if (!view.discountCode?.applicable) {
-        await cartService.setDiscountCode(cart.shopId, data.token, null, db)
-        const discount = await discountService.findByCode(cart.shopId, code, db)
-        return {
-          error: !discount
-            ? 'Enter a valid discount code'
-            : (discountService.unavailableReason(discount) ?? `Your order doesn't qualify for "${discount.code}" yet`),
-        }
-      }
-    } catch (error) {
-      if (error instanceof CartError) return { error: error.message }
       return { error: unexpected('apply this code', error) }
     }
-    return {}
   })
 
 export const removeDiscountCode = publicFn({ method: 'POST' })

@@ -174,11 +174,14 @@ export const storefrontContract = {
       .input(z.object({ cartId: z.string(), lineIds: z.array(z.uuid()).min(1).max(100) }))
       .errors(cartErrors)
       .output(Cart),
-    /** Replaces the cart's codes (Shopify cartDiscountCodesUpdate); [] removes. Unknown codes are kept with applicable: false */
+    /**
+     * Replaces the cart's codes (Shopify cartDiscountCodesUpdate); [] removes. Unknown codes are kept with applicable: false.
+     * Guessing is limited: a visitor who sends too many codes the shop doesn't have is answered TOO_MANY_REQUESTS for a while.
+     */
     discountCodesUpdate: oc
       .route({ method: 'PUT', path: '/storefront/carts/{cartId}/discount-codes' })
       .input(z.object({ cartId: z.string(), discountCodes: z.array(z.string().trim().min(1).max(100)).max(1) }))
-      .errors(cartErrors)
+      .errors({ ...cartErrors, TOO_MANY_REQUESTS })
       .output(Cart),
   }),
 

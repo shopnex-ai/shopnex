@@ -73,4 +73,4 @@ await me.customer.signOut()
 
 ## Errors
 
-Typed in the contract, e.g. `OUT_OF_STOCK { merchandiseId, available }`, `MERCHANDISE_NOT_FOUND`, `LINE_NOT_FOUND`, `CART_COMPLETED`, and for customer accounts `UNAUTHORIZED`, `INVALID_CODE`, `TOO_MANY_REQUESTS` and `CUSTOMER_LOGIN_UNAVAILABLE`.
+Typed in the contract, e.g. `OUT_OF_STOCK { merchandiseId, available }`, `MERCHANDISE_NOT_FOUND`, `LINE_NOT_FOUND`, `CART_COMPLETED`, and for customer accounts `UNAUTHORIZED`, `INVALID_CODE`, `TOO_MANY_REQUESTS` and `CUSTOMER_LOGIN_UNAVAILABLE`. `cart.discountCodesUpdate` can answer `TOO_MANY_REQUESTS` too: a visitor who sends 10 codes the shop doesn't have in 15 minutes is refused for the rest of the window, shared with the gift card code limit at checkout (visitors are told apart by `CLIENT_IP_HEADER`, as above).

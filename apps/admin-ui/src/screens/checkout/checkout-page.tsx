@@ -9,8 +9,7 @@ import { formatMoney } from '@/lib/money'
 import type { getCheckout } from './functions'
 import type { CheckoutBranding } from './branding'
 import { CheckoutForm } from './checkout-form'
-import { DiscountCodeForm } from './discount-code-form'
-import { GiftCardForm } from './gift-card-form'
+import { CodeForm } from './code-form'
 import { OffsitePayment } from './offsite-payment'
 import { SummaryToggle, TotalsBreakdown, TotalsProvider } from './totals'
 
@@ -85,12 +84,7 @@ export function CheckoutPage({ data }: { data: CheckoutView }) {
               />
               {cart.lines.length > 0 && (
                 <div className="mt-3 border-t pt-3">
-                  <DiscountCodeForm token={cart.token} current={cart.discountCode} />
-                </div>
-              )}
-              {cart.lines.length > 0 && (
-                <div className="mt-3 border-t pt-3">
-                  <GiftCardForm token={cart.token} />
+                  <CodeForm token={cart.token} current={cart.discountCode} />
                 </div>
               )}
               {cart.lines.length > 0 && (

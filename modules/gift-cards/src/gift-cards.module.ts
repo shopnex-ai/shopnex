@@ -5,7 +5,7 @@ import { giftCards, giftCardTransactions } from './gift-cards.schema'
 
 export const giftCardsModule = defineModule({
   name: 'gift-cards',
-  dependsOn: ['auth', 'cart', 'catalog', 'core', 'db', 'orders', 'rpc'],
+  dependsOn: ['cart', 'catalog', 'core', 'db', 'orders', 'rpc'],
   tables: { giftCards, giftCardTransactions },
   router: { giftCards: giftCardRoutes },
 })
