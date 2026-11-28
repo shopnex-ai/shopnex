@@ -3,12 +3,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useId } from 'react'
+import { isSettingShown } from '@shopnex/storefront-sdk/theme'
 import type { ThemeSettingField, ThemeSettingValue, ThemeSettings } from '@shopnex/storefront-sdk/theme'
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
+import { ImageSetting } from './image-setting'
 
 // Select items can't be empty strings
 const NONE = '__none'
@@ -27,7 +29,8 @@ export function SettingFields({
 }) {
   if (!fields.length) return <p className="text-sm text-muted-foreground">This section has no settings.</p>
   const runs: { group?: string; fields: ThemeSettingField[] }[] = []
-  for (const f of fields) {
+  // A field with `show_if` waits for the setting it names to have a value
+  for (const f of fields.filter((field) => isSettingShown(field, values))) {
     const last = runs.at(-1)
     if (last && last.group === f.group) last.fields.push(f)
     else runs.push({ group: f.group, fields: [f] })
@@ -154,14 +157,7 @@ function SettingField({
       input = <CollectionChoice id={id} value={text} onChange={onChange} />
       break
     case 'image':
-      input = (
-        <div className="space-y-2">
-          <Input id={id} value={text} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />
-          {/^https?:\/\//.test(text) && (
-            <img src={text} alt="" className="h-24 w-full rounded-md border object-cover" />
-          )}
-        </div>
-      )
+      input = <ImageSetting id={id} value={text} onChange={onChange} />
       break
     default:
       input = (
