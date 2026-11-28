@@ -25,7 +25,7 @@
     "@shopnex/db": "workspace:*",
     "@shopnex/kit": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
-    "better-auth": "^1.7.18",
+    "better-auth": "^1.7.28",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },

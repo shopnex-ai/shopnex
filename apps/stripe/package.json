@@ -10,10 +10,10 @@
     "test": "tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.6",
+    "@hono/node-server": "^2.1.11",
     "@shopnex/app": "workspace:*",
     "hono": "catalog:",
-    "stripe": "^23.1.0"
+    "stripe": "^23.2.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
