@@ -1625,6 +1625,9 @@ importers:
       '@shopnex/core':
         specifier: workspace:*
         version: link:../core
+      '@shopnex/custom-fields':
+        specifier: workspace:*
+        version: link:../custom-fields
       '@shopnex/db':
         specifier: workspace:*
         version: link:../db

@@ -1,4 +1,5 @@
 import type { ProductInput } from '@shopnex/catalog'
+import type { Specs } from './specs'
 
 /** What a platform's fetcher found, in one shape the loader understands whatever the platform */
 export type Found = {
@@ -12,6 +13,8 @@ export type Found = {
     /** The product's handle on the store, to tell which of its collections it is in */
     key?: string
     input: ProductInput
+    /** Facts with no catalog column (Shopify data tags, WooCommerce attributes, weight): they become custom fields */
+    specs?: Specs
     /** Collection names this product belongs to (categories or product types) */
     groups: string[]
     /** What a collection made from it shows, when it is the first of its group */

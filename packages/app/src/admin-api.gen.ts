@@ -5519,6 +5519,7 @@ export interface operations {
                                 variants: number;
                                 collections: number;
                                 pages: number;
+                                customFields?: number;
                                 skipped: number;
                                 total: number | null;
                                 currency: string;
@@ -5574,6 +5575,7 @@ export interface operations {
                             variants: number;
                             collections: number;
                             pages: number;
+                            customFields?: number;
                             skipped: number;
                             total: number | null;
                             currency: string;
@@ -5623,6 +5625,7 @@ export interface operations {
                             variants: number;
                             collections: number;
                             pages: number;
+                            customFields?: number;
                             skipped: number;
                             total: number | null;
                             currency: string;

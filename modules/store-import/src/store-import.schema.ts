@@ -14,6 +14,8 @@ export type StoreImportCounts = {
   variants: number
   collections: number
   pages: number
+  /** Product custom fields made from facts the store lists (Shopify data tags, WooCommerce attributes, weight); absent on older imports */
+  customFields?: number
   /** Products the store listed that were left out (free placeholders), or failed to load */
   skipped: number
   /** Products the store has in all, when it says (the import takes a sample) */
