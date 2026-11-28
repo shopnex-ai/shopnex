@@ -38,6 +38,16 @@ export const extras: Extra[] = [
   },
 ]
 
+/**
+ * The apps to start: all of them by default, only the --with ones when given, none with --no-apps. The same choice
+ * decides the ports checked, the keys made and the addresses the admin is told.
+ */
+export function selectExtras(options: { with: string[]; noApps: boolean }, list: Extra[] = extras): Extra[] {
+  if (options.noApps) return []
+  const picked = pickExtras(options.with, list)
+  return picked.length ? picked : list
+}
+
 /** --with stripe,cj (and --with stripe --with cj) → the apps, once each; unknown names are usage errors */
 export function pickExtras(values: string[] | undefined, list: Extra[] = extras): Extra[] {
   const names = (values ?? []).flatMap((value) => value.split(',')).map((name) => name.trim().toLowerCase())

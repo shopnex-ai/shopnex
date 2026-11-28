@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { loadAppKeys } from '../src/app-keys'
 import { UsageError } from '@shopnex/cli-core/errors'
-import { pickExtras } from '../src/extras'
+import { pickExtras, selectExtras, extras } from '../src/extras'
 import { parse } from '../src/args'
 import { planFromBundle } from '../src/plan'
 
@@ -114,4 +114,18 @@ test('an app key is made once, kept in the shop folder, and a dry run makes noth
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('every bundled app starts by default; --with narrows it and --no-apps turns it off', () => {
+  assert.deepEqual(selectExtras(parse([])), extras)
+  assert.deepEqual(
+    selectExtras(parse(['--with', 'stripe'])).map((e) => e.name),
+    ['stripe'],
+  )
+  assert.deepEqual(selectExtras(parse(['--no-apps'])), [])
+  assert.deepEqual(
+    extras.map((e) => e.name),
+    ['stripe', 'cj', 'shippo', 'reviews'],
+  )
+  assert.throws(() => parse(['--no-apps', '--with', 'stripe']), UsageError)
 })
