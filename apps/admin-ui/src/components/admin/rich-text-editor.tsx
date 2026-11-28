@@ -1,5 +1,5 @@
 // Rich text for merchant content (pages; product and collection descriptions later). Edits HTML, which
-// the API sanitizes on save. "HTML" switches to the source, for pasting embeds or fixing markup.
+// the API sanitizes on save. "HTML" switches to the source (formatted, highlighted), for pasting embeds or fixing markup.
 import Image from '@tiptap/extension-image'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -18,11 +18,12 @@ import {
   UnderlineIcon,
   Undo2Icon,
 } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { formatHtml } from '@/lib/format-html'
 import { cn } from '@/lib/utils'
+import { LiquidEditor } from './liquid-editor'
 
 // Content styles (no typography plugin in the admin)
 const contentClass = cn(
@@ -51,6 +52,11 @@ export function RichTextEditor({
   actions?: ReactNode
 }) {
   const [source, setSource] = useState(false)
+  // The source as shown: the HTML formatted when the view was opened (null while it is being formatted). Only edits
+  // reach `onChange`, so looking at the source does not change the content.
+  const [formatted, setFormatted] = useState<string | null>(null)
+  const latest = useRef(value)
+  latest.current = value
   const [prompt, setPrompt] = useState<Prompt>(null)
   const [promptValue, setPromptValue] = useState('')
 
@@ -68,6 +74,17 @@ export function RichTextEditor({
     editorProps: { attributes: { class: contentClass, ...(id && { id }), 'aria-multiline': 'true' } },
     onUpdate: ({ editor }) => onChange(editor.isEmpty ? '' : editor.getHTML()),
   })
+
+  useEffect(() => {
+    if (!source) return
+    let current = true
+    void formatHtml(latest.current).then((text) => {
+      if (current) setFormatted(text)
+    })
+    return () => {
+      current = false
+    }
+  }, [source])
 
   // A new value from outside (form reset, HTML mode) replaces the content
   useEffect(() => {
@@ -104,7 +121,10 @@ export function RichTextEditor({
             variant={source ? 'secondary' : 'ghost'}
             size="sm"
             aria-pressed={source}
-            onClick={() => setSource(!source)}
+            onClick={() => {
+              setFormatted(null)
+              setSource(!source)
+            }}
           >
             <CodeXmlIcon />
             HTML
@@ -137,13 +157,13 @@ export function RichTextEditor({
         </div>
       )}
       {source ? (
-        <Textarea
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          spellCheck={false}
-          className="h-64 max-h-96 min-h-0 field-sizing-fixed resize-none overflow-y-auto rounded-none border-0 px-3 py-2 text-sm leading-5 font-mono shadow-none focus-visible:ring-0"
-        />
+        <div className="h-64 max-h-96">
+          {formatted === null ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">Formatting…</p>
+          ) : (
+            <LiquidEditor language="html" value={formatted} onChange={onChange} onSave={() => undefined} />
+          )}
+        </div>
       ) : (
         <EditorContent editor={editor} />
       )}
