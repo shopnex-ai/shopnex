@@ -56,7 +56,7 @@ ai → apps, catalog, content, core, db, rpc, tenancy
 api → ai, apps, auth, cart, catalog, channels, content, core, custom-fields, customers, email, files, gift-cards, languages, orders, payments, pricing, privacy, rpc, store-import, storefront, tenancy, theme, webhooks
 apps → core, db, rpc, tenancy, theme, webhooks
 auth → content, core, db, tenancy
-cart → apps, catalog, channels, core, customers, db, orders, payments, pricing, rpc
+cart → apps, auth, catalog, channels, core, customers, db, orders, payments, pricing, rpc
 catalog → channels, core, custom-fields, db, languages, rpc, webhooks
 channels → core, db, rpc
 content → catalog, core, db, languages, rpc
@@ -67,7 +67,7 @@ db → (nothing)
 drafts → core, db
 email → cart, catalog, core, customers, db, orders, rpc, tenancy, webhooks
 files → core, db, rpc, tenancy, webhooks
-gift-cards → auth, cart, catalog, core, db, orders, rpc
+gift-cards → cart, catalog, core, db, orders, rpc
 kit → (nothing)
 languages → core, db, rpc
 log → (nothing)
@@ -77,7 +77,7 @@ pricing → core, db, rpc
 privacy → auth, cart, core, custom-fields, customers, db, email, gift-cards, orders, rpc, tenancy, webhooks
 rpc → core
 store-import → catalog, content, core, custom-fields, db, rpc, theme, webhooks
-storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, gift-cards, languages, orders, pricing, rpc, tenancy, theme
+storefront → apps, auth, cart, catalog, channels, content, custom-fields, customers, db, email, languages, orders, rpc, tenancy, theme
 tenancy → channels, content, core, db, languages, rpc, webhooks
 theme → core, db, drafts, rpc
 webhooks → core, db, rpc

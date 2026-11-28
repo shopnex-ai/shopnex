@@ -6,6 +6,7 @@ import { variantService } from '@shopnex/catalog'
 import { all, type Conn } from '@shopnex/db'
 import { calculate, discountService, type PricingDiscount } from '@shopnex/pricing'
 import { CartError } from './cart.errors'
+import * as codeGuesses from './code-guesses'
 import { shops } from '@shopnex/core/schema'
 import { productImages } from '@shopnex/catalog/schema'
 import { type Cart, cartLines, carts, type CartStatus } from './cart.schema'
@@ -290,8 +291,21 @@ export async function removeLines(shopId: string, token: string, lineIds: string
 }
 
 // One code per cart for now; null (or blank) removes it. Stored even when not applicable, like Shopify:
-// the view says whether it applies.
-export async function setDiscountCode(shopId: string, token: string, code: string | null, conn: Conn) {
+// the view says whether it applies. With `visitor` (a buyer typing codes) the answer is a way to guess codes, so it is limited: a
+// visitor who used up their failed guesses gets TOO_MANY_GUESSES before anything is looked up, and a code the shop doesn't have
+// counts as one. Codes the shop has are never counted.
+export async function setDiscountCode(
+  shopId: string,
+  token: string,
+  code: string | null,
+  conn: Conn,
+  visitor?: { ip: string | null },
+) {
+  if (visitor && code?.trim()) {
+    if (await codeGuesses.usedUp(shopId, visitor.ip))
+      throw new CartError('TOO_MANY_GUESSES', codeGuesses.TOO_MANY_GUESSES)
+    if (!(await discountService.findByCode(shopId, code, conn))) await codeGuesses.recordMiss(shopId, visitor.ip)
+  }
   return conn.transaction(async (tx) => {
     const cart = await requireActive(shopId, token, tx)
     await tx

@@ -356,6 +356,30 @@ describe('how a cart is shown', () => {
 })
 
 describe('the discount code', () => {
+  test('a buyer typing codes can guess ten that the shop does not have, then is refused, even for a real one; real codes never count', async () => {
+    const d = await fx.discount()
+    const c = await fx.cart()
+    const visitor = { ip: '203.0.113.71' }
+    for (let i = 0; i < 12; i++) {
+      assert.equal(
+        (await cartService.setDiscountCode(SHOP, c.token, d.code, db, visitor)).discountCode?.applicable,
+        true,
+      )
+    }
+    for (let i = 0; i < 10; i++) {
+      const miss = await cartService.setDiscountCode(SHOP, c.token, `NOPE${String(i)}`, db, visitor)
+      assert.equal(miss.discountCode?.applicable, false)
+    }
+    await assert.rejects(cartService.setDiscountCode(SHOP, c.token, d.code, db, visitor), refused('TOO_MANY_GUESSES'))
+    // Removing the code is not a guess, another address is not affected, and without a visitor (staff, checkout) nothing is counted
+    assert.equal((await cartService.setDiscountCode(SHOP, c.token, null, db, visitor)).discountCode, null)
+    assert.equal(
+      (await cartService.setDiscountCode(SHOP, c.token, d.code, db, { ip: '203.0.113.72' })).discountCode?.applicable,
+      true,
+    )
+    assert.equal((await cartService.setDiscountCode(SHOP, c.token, d.code, db)).discountCode?.applicable, true)
+  })
+
   test('a code that applies shows what it takes off each line; the total is the subtotal less the line discounts', async () => {
     const [a, b] = [
       await fx.product({ title: 'A', priceCents: 1000 }),

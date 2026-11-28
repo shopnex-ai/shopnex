@@ -12,7 +12,7 @@ const { db, prepareDatabase, requireEmbeddedDatabase } = await import('@shopnex/
 requireEmbeddedDatabase()
 const { productService } = await import('@shopnex/catalog')
 const { channelService } = await import('@shopnex/channels')
-const { cartService, checkoutService, CartError } = await import('@shopnex/cart')
+const { cartService, checkoutService, codeGuesses, CartError } = await import('@shopnex/cart')
 const { orderService } = await import('@shopnex/orders')
 const { giftCardService } = await import('../src')
 const { GiftCardError } = await import('../src/gift-cards.errors')
@@ -145,12 +145,12 @@ describe('guessing codes', () => {
     assert.equal((await giftCardService.lookup(SHOP, gc.code, opts('203.0.113.8'), db)).card?.id, gc.id)
   })
 
-  test('guessesUsedUp tells the checkout code box to refuse a visitor before it looks up any code', async () => {
+  test('the shared counter says a visitor used up their guesses, which gift card lookups count too', async () => {
     const ip = '203.0.113.99'
-    assert.equal(await giftCardService.guessesUsedUp(SHOP, ip), false)
+    assert.equal(await codeGuesses.usedUp(SHOP, ip), false)
     for (let i = 0; i < 10; i++) await giftCardService.lookup(SHOP, `USEDUP${String(i)}`, opts(ip), db)
-    assert.equal(await giftCardService.guessesUsedUp(SHOP, ip), true)
-    assert.equal(await giftCardService.guessesUsedUp(SHOP, '203.0.113.98'), false)
+    assert.equal(await codeGuesses.usedUp(SHOP, ip), true)
+    assert.equal(await codeGuesses.usedUp(SHOP, '203.0.113.98'), false)
   })
 
   test('right codes are never counted, however often they are asked for', async () => {

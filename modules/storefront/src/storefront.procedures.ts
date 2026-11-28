@@ -54,6 +54,8 @@ function fromCart(error: CartError) {
             available: error.data.available ?? 0,
           })
         : undefined
+    case 'TOO_MANY_GUESSES':
+      return defined('TOO_MANY_REQUESTS', error.message)
     case 'INVALID_SHIPPING_RATE':
     case 'INVALID_PAYMENT_METHOD':
     case 'GIFT_CARD_NOT_APPLICABLE':

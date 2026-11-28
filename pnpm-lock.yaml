@@ -835,6 +835,9 @@ importers:
       '@shopnex/apps':
         specifier: workspace:*
         version: link:../apps
+      '@shopnex/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@shopnex/catalog':
         specifier: workspace:*
         version: link:../catalog
@@ -1284,9 +1287,6 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.16.2(@opentelemetry/api@1.10.0)(crossws@0.3.5)
-      '@shopnex/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@shopnex/cart':
         specifier: workspace:*
         version: link:../cart
@@ -1698,9 +1698,6 @@ importers:
       '@shopnex/email':
         specifier: workspace:*
         version: link:../email
-      '@shopnex/gift-cards':
-        specifier: workspace:*
-        version: link:../gift-cards
       '@shopnex/kit':
         specifier: workspace:*
         version: link:../kit
@@ -1713,9 +1710,6 @@ importers:
       '@shopnex/orders':
         specifier: workspace:*
         version: link:../orders
-      '@shopnex/pricing':
-        specifier: workspace:*
-        version: link:../pricing
       '@shopnex/rpc':
         specifier: workspace:*
         version: link:../rpc
@@ -1741,6 +1735,9 @@ importers:
       '@shopnex/payments':
         specifier: workspace:*
         version: link:../payments
+      '@shopnex/pricing':
+        specifier: workspace:*
+        version: link:../pricing
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.5

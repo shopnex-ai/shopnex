@@ -12,6 +12,7 @@ export const cartModule = defineModule({
   name: 'cart',
   dependsOn: [
     'apps',
+    'auth',
     'catalog',
     'channels',
     'core',

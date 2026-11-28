@@ -2,7 +2,7 @@
 // The balance changes only through `record`, which locks the card's row and writes the transaction that explains the change.
 import { randomInt } from 'node:crypto'
 import { and, asc, desc, eq, inArray } from 'drizzle-orm'
-import { rateLeft, takeRate } from '@shopnex/auth'
+import { codeGuesses } from '@shopnex/cart'
 import type { Conn } from '@shopnex/db'
 import { shops } from '@shopnex/core/schema'
 import { GiftCardError } from './gift-cards.errors'
@@ -59,26 +59,7 @@ export async function findByCode(shopId: string, code: string, conn: Conn) {
   return card ?? null
 }
 
-// Guessing codes: failed lookups are counted per visitor address (shared by every process, in the database) and a visitor that has
-// used them up is refused before any lookup, so a lucky guess is refused too. Without a trusted address the limit is the shop's.
-const MISSES_WINDOW_MS = 15 * 60_000
-const MISSES_PER_IP = 10
-const MISSES_PER_SHOP = 100
-
-const TOO_MANY_MISSES = 'Too many attempts. Wait a few minutes and try again.'
-
-const missKey = (shopId: string, ip: string | null) =>
-  ip ? `gift-card-miss:${shopId}:${ip}` : `gift-card-miss:${shopId}`
-
-/** Whether this visitor has used up their failed code guesses (the checkout code box asks before looking anything up) */
-export async function guessesUsedUp(shopId: string, ip: string | null): Promise<boolean> {
-  return (await rateLeft(missKey(shopId, ip), ip ? MISSES_PER_IP : MISSES_PER_SHOP)) !== null
-}
-
-/** Counts a code that named nothing against this visitor (the checkout code box and the Storefront API's discount route do too) */
-export async function recordMiss(shopId: string, ip: string | null) {
-  await takeRate(missKey(shopId, ip), ip ? MISSES_PER_IP : MISSES_PER_SHOP, MISSES_WINDOW_MS)
-}
+// Guessing codes is limited by the cart module's counter (shared with discount codes): see cart's code-guesses.
 
 /**
  * The card a buyer's code names, when it can be spent on an order in `currency`; otherwise what to tell the buyer.
@@ -91,10 +72,11 @@ export async function lookup(
   opts: { currency: string; ip: string | null; throttle: boolean },
   conn: Conn,
 ): Promise<{ card: GiftCard; error: null } | { card: null; error: string }> {
-  if (opts.throttle && (await guessesUsedUp(shopId, opts.ip))) return { card: null, error: TOO_MANY_MISSES }
+  if (opts.throttle && (await codeGuesses.usedUp(shopId, opts.ip)))
+    return { card: null, error: codeGuesses.TOO_MANY_GUESSES }
   const card = normalizeCode(code) ? await findByCode(shopId, code, conn) : null
   if (!card) {
-    if (opts.throttle) await recordMiss(shopId, opts.ip)
+    if (opts.throttle) await codeGuesses.recordMiss(shopId, opts.ip)
     return { card: null, error: "This gift card code isn't valid" }
   }
   const reason = unavailableReason(card)
