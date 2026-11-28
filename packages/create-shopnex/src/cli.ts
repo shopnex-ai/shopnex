@@ -12,7 +12,7 @@ import { loadShopEnv, redactUrl } from '@shopnex/cli-core/env'
 import { writeScaffold } from './scaffold'
 import { resolveShopDir } from '@shopnex/cli-core/paths'
 import { brandBadge } from '@shopnex/cli-core/theme'
-import { assertPortsFree } from '@shopnex/cli-core/ports'
+import { assertPortsFree, portInUse } from '@shopnex/cli-core/ports'
 import { runPlan } from './run'
 
 type Pkg = { version: string; engines: { node: string } }
@@ -88,7 +88,7 @@ async function run(argv: string[]) {
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY)
   const name = options.name ?? DEFAULT_SHOP_NAME
   const shopDir = resolveShopDir(name)
-  const extras = selectExtras(options)
+  let extras = selectExtras(options)
   // The shop's .env (made on the first run): its DATABASE_URL decides which database is used
   const shopEnv = loadShopEnv(shopDir, { write: !options.dryRun })
   const scaffoldWarning = options.dryRun ? undefined : await writeScaffold(shopDir, pkg.version)
@@ -97,9 +97,22 @@ async function run(argv: string[]) {
   const ports = [
     { port: options.port, flag: '--port' },
     { port: options.storefrontPort, flag: '--storefront-port' },
-    ...extras.map((extra) => ({ port: extra.port, flag: `--with or --no-apps (${extra.name} needs it free)` })),
   ]
-  if (!options.dryRun) await assertPortsFree(ports)
+  if (!options.dryRun) {
+    await assertPortsFree(ports)
+    if (options.with.length) {
+      await assertPortsFree(extras.map((extra) => ({ port: extra.port, flag: `--with (${extra.name} needs it free)` })))
+    } else {
+      // The apps nobody asked for by name are not worth a failed start: skip the one whose port is taken
+      const busy = new Set<string>()
+      for (const extra of extras) if (await portInUse(extra.port)) busy.add(extra.name)
+      for (const name of busy) {
+        const extra = extras.find((e) => e.name === name)
+        p.log.warn(`Port ${extra?.port} is in use, so ${extra?.label} is not started. --no-apps hides this.`)
+      }
+      extras = extras.filter((extra) => !busy.has(extra.name))
+    }
+  }
 
   // A dry run never downloads: it shows where the build would be unpacked
   const root = options.dryRun ? bundleDir(pkg.version) : await resolveBundle({ version: pkg.version })

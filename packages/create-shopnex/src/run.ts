@@ -41,6 +41,7 @@ export function runPlan(plan: Plan, { open, verbose, from }: { open: boolean; ve
     const tails = new Map<string, string[]>() // the last lines of each process, shown if one fails while starting
     let stopping = false
     let ready = false
+    const failed = new Set<string>() // optional apps that did not start or stopped
     const spinner = p.spinner()
     const animate = Boolean(process.stdout.isTTY) && !verbose
     if (animate) spinner.start('Starting ShopNex (the first start takes a minute)')
@@ -85,11 +86,20 @@ export function runPlan(plan: Plan, { open, verbose, from }: { open: boolean; ve
         })
       }
       child.on('error', (error) => {
+        if (stopping) return
         console.error(`Could not start ${proc.name}: ${error.message}`)
+        if (proc.optional) return void failed.add(proc.name)
         stop(1)
       })
       child.on('exit', (code, signal) => {
         if (stopping) return
+        if (proc.optional) {
+          // One app failing is not the shop failing: say why, and keep everything else running
+          failed.add(proc.name)
+          console.error(`${proc.name} stopped (${signal ?? `exit ${code}`}); the shop keeps running without it.`)
+          if (!verbose) for (const line of tails.get(proc.name) ?? []) console.error(pc.dim(`  ${line}`))
+          return
+        }
         if (animate && !ready) spinner.stop(`${proc.name} stopped`, 1)
         console.error(`${proc.name} stopped (${signal ?? `exit ${code}`}).`)
         if (!verbose) for (const line of tails.get(proc.name) ?? []) console.error(pc.dim(`  ${line}`))
@@ -102,12 +112,16 @@ export function runPlan(plan: Plan, { open, verbose, from }: { open: boolean; ve
 
     void (async () => {
       for (let i = 0; i < 180 && !stopping; i++) {
-        if ((await Promise.all(plan.processes.map((proc) => isUp(proc.readyUrl)))).every(Boolean)) break
+        const up = await Promise.all(
+          plan.processes.map(async (proc) => (proc.optional && failed.has(proc.name)) || (await isUp(proc.readyUrl))),
+        )
+        if (up.every(Boolean)) break
         await sleep(1000)
       }
       if (stopping) return
       ready = true
       if (animate) spinner.stop('ShopNex is running')
+      if (failed.size) p.log.warn(`Not running: ${[...failed].join(', ')} (see above). The rest of the shop is up.`)
       p.note(
         [
           `${pc.bold('Shop ')}  ${brand(plan.storefrontUrl)}`,

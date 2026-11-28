@@ -129,3 +129,20 @@ test('every bundled app starts by default; --with narrows it and --no-apps turns
   )
   assert.throws(() => parse(['--no-apps', '--with', 'stripe']), UsageError)
 })
+
+test('apps are optional in the plan, the shop and the storefront are not', () => {
+  const plan = planFromBundle({
+    root: '/r',
+    shopDir: '/shop',
+    databaseUrl: 'pglite:/shop/.pglite',
+    env: {},
+    port: 3000,
+    storefrontPort: 4321,
+    secret: 's',
+    extras: pickExtras(['stripe']),
+  })
+  assert.deepEqual(
+    plan.processes.map((p) => [p.name, Boolean(p.optional)]),
+    [['admin', false], ['storefront', false], ['stripe', true]],
+  )
+})
