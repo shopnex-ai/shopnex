@@ -25,6 +25,8 @@ type PresetInfo = {
   port: number
   /** Fixed by the provider (e.g. "apikey"); empty when it's the merchant's own login */
   username: string
+  /** Providers where the host varies (a region, an EU endpoint) stay editable; so does "Other" */
+  hostEditable?: boolean
   usernamePlaceholder: string
   passwordLabel: string
   help: string
@@ -63,6 +65,7 @@ const presets: Record<Preset, PresetInfo> = {
     host: 'smtp.mailgun.org',
     port: 587,
     username: '',
+    hostEditable: true,
     usernamePlaceholder: 'postmaster@mg.yourshop.com',
     passwordLabel: 'SMTP password',
     help: 'Use the SMTP credentials from your domain’s settings. Domains in the EU region use smtp.eu.mailgun.org.',
@@ -72,6 +75,7 @@ const presets: Record<Preset, PresetInfo> = {
     host: 'email-smtp.us-east-1.amazonaws.com',
     port: 587,
     username: '',
+    hostEditable: true,
     usernamePlaceholder: 'SMTP username (AKIA…)',
     passwordLabel: 'SMTP password',
     help: 'Create SMTP credentials in the SES console (your AWS access keys won’t work), and put your region in the host.',
@@ -99,6 +103,7 @@ const presets: Record<Preset, PresetInfo> = {
     host: '',
     port: 587,
     username: '',
+    hostEditable: true,
     usernamePlaceholder: 'Leave empty if the server needs no login',
     passwordLabel: 'Password',
     help: 'Any SMTP server: Mailjet, Zoho, your host’s mail server… For local testing, Mailpit on localhost port 1025 with no username.',
@@ -150,13 +155,14 @@ export function EmailCard() {
 
 function EmailForm({ settings }: { settings: Settings }) {
   const queryClient = useQueryClient()
-  const [provider, setProvider] = useState(settings.provider)
+  const [enabled, setEnabled] = useState(settings.provider !== 'off')
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const form = useZodForm(smtpInput, { defaultValues: toValues(settings) })
   const update = useMutation(orpc.admin.email.update.mutationOptions())
   const test = useMutation(orpc.admin.email.test.mutationOptions())
 
   const preset = presets[form.watch('preset')]
+  const isOther = form.watch('preset') === 'other'
   const hasPassword = Boolean(settings.smtp?.hasPassword)
 
   const saved = (next: Settings, message: string) => {
@@ -200,40 +206,52 @@ function EmailForm({ settings }: { settings: Settings }) {
     }
   }
 
+  const choice = enabled ? form.watch('preset') : 'off'
+  const choose = (value: 'off' | Preset) => {
+    setEnabled(value !== 'off')
+    if (value !== 'off' && value !== form.getValues('preset')) applyPreset(value)
+  }
+
   const providerSelect = (
     <Field>
       <FieldLabel>Send email</FieldLabel>
       <Select
-        items={[
-          { value: 'off', label: 'Off' },
-          { value: 'smtp', label: 'Through an email provider (SMTP)' },
-        ]}
-        value={provider}
-        onValueChange={(value) => setProvider(value as Settings['provider'])}
+        items={[{ value: 'off', label: 'Off' }, ...presetOptions]}
+        value={choice}
+        onValueChange={(v) => choose(v as 'off' | Preset)}
       >
         <SelectTrigger className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="off">Off</SelectItem>
-          <SelectItem value="smtp">Through an email provider (SMTP)</SelectItem>
+          {presetOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <FieldDescription>
-        {provider === 'off'
-          ? 'Nothing is sent; messages only show up in the server log.'
-          : 'Resend, Postmark, SendGrid, Mailgun, Amazon SES, Brevo, Gmail, or any other SMTP server.'}
+        {enabled ? preset.help : 'Nothing is sent; messages only show up in the server log.'}
       </FieldDescription>
     </Field>
   )
 
-  if (provider === 'off') {
+  if (!enabled) {
     return (
       <FieldGroup>
         {providerSelect}
         {settings.provider !== 'off' && (
           <Field orientation="horizontal" className="justify-end">
-            <Button type="button" variant="ghost" onClick={() => setProvider(settings.provider)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                form.reset()
+                setEnabled(true)
+              }}
+            >
               Cancel
             </Button>
             <Button type="button" disabled={update.isPending} onClick={() => void turnOff()}>
@@ -252,26 +270,6 @@ function EmailForm({ settings }: { settings: Settings }) {
     <form onSubmit={onSubmit} noValidate>
       <FieldGroup>
         {providerSelect}
-        <Field>
-          <FieldLabel>Provider</FieldLabel>
-          <Select
-            items={presetOptions}
-            value={form.watch('preset')}
-            onValueChange={(value) => applyPreset(value as Preset)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {presetOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FieldDescription>{preset.help}</FieldDescription>
-        </Field>
         <TextField
           control={form.control}
           name="fromEmail"
@@ -285,7 +283,8 @@ function EmailForm({ settings }: { settings: Settings }) {
           control={form.control}
           name="fromName"
           label="From name"
-          placeholder="Your shop's name"
+          placeholder="Acme Store"
+          description="The sender name customers see in their inbox."
           autoComplete="off"
         />
         <TextField
@@ -293,6 +292,7 @@ function EmailForm({ settings }: { settings: Settings }) {
           name="host"
           label="SMTP host"
           placeholder="smtp.example.com"
+          disabled={!preset.hostEditable}
           autoComplete="off"
         />
         <IntegerField
@@ -300,6 +300,7 @@ function EmailForm({ settings }: { settings: Settings }) {
           name="port"
           label="Port"
           min={1}
+          disabled={!isOther}
           description="465 uses TLS from the start; other ports switch to TLS before logging in."
         />
         <TextField
@@ -307,6 +308,7 @@ function EmailForm({ settings }: { settings: Settings }) {
           name="username"
           label="Username"
           placeholder={preset.usernamePlaceholder}
+          disabled={Boolean(preset.username)}
           autoComplete="off"
         />
         <TextField
@@ -345,7 +347,7 @@ function EmailForm({ settings }: { settings: Settings }) {
               variant="ghost"
               onClick={() => {
                 form.reset()
-                setProvider(settings.provider)
+                setEnabled(settings.provider !== 'off')
                 setTestResult(null)
               }}
             >
