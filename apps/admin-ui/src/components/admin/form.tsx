@@ -283,7 +283,7 @@ export function MoneyField<T extends FieldValues>({
 
 /** Whole number; `nullable`: empty means null (e.g. stock not tracked) */
 export function IntegerField<T extends FieldValues>(
-  props: BaseFieldProps<T> & { nullable?: boolean } & Pick<ComponentProps<'input'>, 'placeholder' | 'min'>,
+  props: BaseFieldProps<T> & { nullable?: boolean } & Pick<ComponentProps<'input'>, 'placeholder' | 'min' | 'disabled'>,
 ) {
   return <NumberField {...props} step={1} />
 }
@@ -297,7 +297,10 @@ export function NumberField<T extends FieldValues>({
   nullable,
   step = 'any',
   ...props
-}: BaseFieldProps<T> & { nullable?: boolean } & Pick<ComponentProps<'input'>, 'placeholder' | 'min' | 'max' | 'step'>) {
+}: BaseFieldProps<T> & { nullable?: boolean } & Pick<
+    ComponentProps<'input'>,
+    'placeholder' | 'min' | 'max' | 'step' | 'disabled'
+  >) {
   const id = useId()
   const { field, fieldState } = useController({ control, name })
   return (
