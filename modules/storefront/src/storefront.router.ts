@@ -7,9 +7,11 @@ import { collectionService, productService } from '@shopnex/catalog'
 import { menuService, pageService } from '@shopnex/content'
 import { accountService } from '@shopnex/customers'
 import { db } from '@shopnex/db'
+import { giftCardService } from '@shopnex/gift-cards'
 import { languageService } from '@shopnex/languages'
 import { sendLoginCode } from '@shopnex/email'
 import { orderService } from '@shopnex/orders'
+import { discountService } from '@shopnex/pricing'
 import { CUSTOMER_TOKEN_HEADER } from '@shopnex/storefront-sdk/constants'
 import { themeService, verifyPreviewToken } from '@shopnex/theme'
 import {
@@ -260,9 +262,20 @@ export const storefrontRouter = storefront.router({
     linesRemove: storefront.cart.linesRemove.handler(async ({ input, context }) =>
       toCart(await cartService.removeLines(context.shop.id, input.cartId, input.lineIds, db)),
     ),
-    discountCodesUpdate: storefront.cart.discountCodesUpdate.handler(async ({ input, context }) =>
-      toCart(await cartService.setDiscountCode(context.shop.id, input.cartId, input.discountCodes[0] ?? null, db)),
-    ),
+    discountCodesUpdate: storefront.cart.discountCodesUpdate.handler(async ({ input, context }) => {
+      const shopId = context.shop.id
+      const code = input.discountCodes[0] ?? null
+      if (code) {
+        // The answer says whether a code is real, so guessing is limited like gift cards (one counter for both): a visitor who
+        // used up their failed guesses is refused before any code is looked up, and a code the shop doesn't have counts as one.
+        const ip = clientIp(context.headers)
+        if (await giftCardService.guessesUsedUp(shopId, ip)) {
+          throw defined('TOO_MANY_REQUESTS', 'Too many attempts. Wait a few minutes and try again.')
+        }
+        if (!(await discountService.findByCode(shopId, code, db))) await giftCardService.recordMiss(shopId, ip)
+      }
+      return toCart(await cartService.setDiscountCode(shopId, input.cartId, code, db))
+    }),
   },
   customer: {
     requestCode: storefront.customer.requestCode.handler(async ({ input, context }) => {

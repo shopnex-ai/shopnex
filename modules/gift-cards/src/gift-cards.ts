@@ -75,6 +75,11 @@ export async function guessesUsedUp(shopId: string, ip: string | null): Promise<
   return (await rateLeft(missKey(shopId, ip), ip ? MISSES_PER_IP : MISSES_PER_SHOP)) !== null
 }
 
+/** Counts a code that named nothing against this visitor (the checkout code box and the Storefront API's discount route do too) */
+export async function recordMiss(shopId: string, ip: string | null) {
+  await takeRate(missKey(shopId, ip), ip ? MISSES_PER_IP : MISSES_PER_SHOP, MISSES_WINDOW_MS)
+}
+
 /**
  * The card a buyer's code names, when it can be spent on an order in `currency`; otherwise what to tell the buyer.
  * `throttle` counts a code that names no card against the visitor (`ip`): turn it off where the code was already checked
@@ -86,12 +91,10 @@ export async function lookup(
   opts: { currency: string; ip: string | null; throttle: boolean },
   conn: Conn,
 ): Promise<{ card: GiftCard; error: null } | { card: null; error: string }> {
-  const key = missKey(shopId, opts.ip)
-  const max = opts.ip ? MISSES_PER_IP : MISSES_PER_SHOP
   if (opts.throttle && (await guessesUsedUp(shopId, opts.ip))) return { card: null, error: TOO_MANY_MISSES }
   const card = normalizeCode(code) ? await findByCode(shopId, code, conn) : null
   if (!card) {
-    if (opts.throttle) await takeRate(key, max, MISSES_WINDOW_MS)
+    if (opts.throttle) await recordMiss(shopId, opts.ip)
     return { card: null, error: "This gift card code isn't valid" }
   }
   const reason = unavailableReason(card)

@@ -143,6 +143,64 @@ describe('the cart', () => {
     assert.ok(d)
   })
 
+  test('guessing discount codes: ten codes the shop does not have, then TOO_MANY_REQUESTS (429 typed), even for a real code', async () => {
+    const p = await fx.product({ priceCents: 1000 })
+    const real = `GUESS${fx
+      .unique()
+      .replace(/[^a-z0-9]/gi, '')
+      .slice(0, 8)}`.toUpperCase()
+    await fx.discountService.create(
+      SHOP,
+      {
+        code: real,
+        type: 'percentage',
+        value: 10,
+        minSubtotalCents: null,
+        usageLimit: null,
+        oncePerCustomer: false,
+        active: true,
+        startsAt: null,
+        endsAt: null,
+      },
+      db,
+    )
+    const cart = await run<Cart>(sf.cart!.create, { lines: [{ merchandiseId: variantOf(p), quantity: 1 }] })
+    const from = (ip: string) => ({ 'x-forwarded-for': ip })
+    // A real code is never counted, however often it is sent
+    for (let i = 0; i < 12; i++) {
+      const ok = await run<Cart>(
+        sf.cart!.discountCodesUpdate,
+        { cartId: cart.id, discountCodes: [real] },
+        from('203.0.113.60'),
+      )
+      assert.equal(ok.discountCodes[0].applicable, true)
+    }
+    for (let i = 0; i < 10; i++) {
+      const miss = await run<Cart>(
+        sf.cart!.discountCodesUpdate,
+        { cartId: cart.id, discountCodes: [`NOPE${String(i)}`] },
+        from('203.0.113.60'),
+      )
+      assert.equal(miss.discountCodes[0].applicable, false)
+    }
+    await assert.rejects(
+      run(sf.cart!.discountCodesUpdate, { cartId: cart.id, discountCodes: [real] }, from('203.0.113.60')),
+      typed('TOO_MANY_REQUESTS', 429),
+    )
+    // Removing the code is not a guess, and another address is not affected
+    assert.deepEqual(
+      (await run<Cart>(sf.cart!.discountCodesUpdate, { cartId: cart.id, discountCodes: [] }, from('203.0.113.60')))
+        .discountCodes,
+      [],
+    )
+    const other = await run<Cart>(
+      sf.cart!.discountCodesUpdate,
+      { cartId: cart.id, discountCodes: [real] },
+      from('203.0.113.61'),
+    )
+    assert.equal(other.discountCodes[0].applicable, true)
+  })
+
   test('input is checked: one code at most, line quantities 1–999, ids are ids', async () => {
     const cart = await run<Cart>(sf.cart!.create, {})
     const bad = (e: unknown) => e instanceof ORPCError && e.code === 'BAD_REQUEST'

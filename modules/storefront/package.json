@@ -22,11 +22,13 @@
     "@shopnex/custom-fields": "workspace:*",
     "@shopnex/customers": "workspace:*",
     "@shopnex/db": "workspace:*",
-    "@shopnex/languages": "workspace:*",
     "@shopnex/email": "workspace:*",
+    "@shopnex/gift-cards": "workspace:*",
     "@shopnex/kit": "workspace:*",
+    "@shopnex/languages": "workspace:*",
     "@shopnex/log": "workspace:*",
     "@shopnex/orders": "workspace:*",
+    "@shopnex/pricing": "workspace:*",
     "@shopnex/rpc": "workspace:*",
     "@shopnex/storefront-sdk": "workspace:*",
     "@shopnex/tenancy": "workspace:*",
@@ -37,7 +39,6 @@
   "devDependencies": {
     "@shopnex/core": "workspace:*",
     "@shopnex/payments": "workspace:*",
-    "@shopnex/pricing": "workspace:*",
     "@types/node": "catalog:",
     "tsx": "^4.23.15"
   }
