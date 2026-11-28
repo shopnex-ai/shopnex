@@ -6,11 +6,12 @@ import {
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
+  SearchIcon,
   SettingsIcon,
   StoreIcon,
   SunIcon,
 } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from 'cn'
 import { Link, useLocation, useRouteContext } from '@tanstack/react-router'
@@ -26,6 +27,7 @@ import { AppIcon } from '@/screens/apps/installed-apps-card'
 import { orpc } from '@/lib/orpc'
 import { getSwitchableShops, switchShop } from '@/lib/session.functions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,12 +146,33 @@ export function AppSidebar({ shop, user }: { shop: SidebarShop; user: SidebarUse
   )
 }
 
+// With more shops than this the switcher gets a search box (the list holds 100 at most, so the rest are found by it)
+const SEARCH_FROM = 8
+
 // Single mode (or one shop): just the name. Multi mode with several shops: a switcher. The page reloads after a
 // switch so nothing cached for the previous shop survives.
 function ShopIdentity({ shop }: { shop: SidebarShop }) {
   const { isMobile } = useSidebar()
-  const { data: shops = [] } = useQuery({ queryKey: ['switchable-shops'], queryFn: () => getSwitchableShops() })
-  const switchable = shops.length > 1 || (shop.superAdmin && shops.length > 0)
+  const [search, setSearch] = useState('')
+  const [term, setTerm] = useState('')
+  const { data: all = [] } = useQuery({
+    queryKey: ['switchable-shops'],
+    queryFn: () => getSwitchableShops({ data: undefined }),
+  })
+  // Typing waits for a pause before asking the server; the previous result stays until the new one arrives
+  useEffect(() => {
+    const timer = setTimeout(() => setTerm(search.trim()), 250)
+    return () => clearTimeout(timer)
+  }, [search])
+  const { data: found } = useQuery({
+    queryKey: ['switchable-shops', term],
+    queryFn: () => getSwitchableShops({ data: term }),
+    enabled: term !== '',
+    placeholderData: keepPreviousData,
+  })
+  const shops = term ? (found ?? []) : all
+  const switchable = all.length > 1 || (shop.superAdmin && all.length > 0)
+  const searchable = all.length > SEARCH_FROM
 
   const identity = (
     <>
@@ -184,7 +207,7 @@ function ShopIdentity({ shop }: { shop: SidebarShop }) {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => !open && setSearch('')}>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" className="data-popup-open:bg-sidebar-accent" />}>
             {identity}
             <ChevronsUpDownIcon className="ml-auto" />
@@ -195,8 +218,33 @@ function ShopIdentity({ shop }: { shop: SidebarShop }) {
             sideOffset={4}
             className="max-h-80 min-w-56 overflow-y-auto"
           >
+            {searchable && (
+              <div className="sticky top-0 z-10 -mx-1 -mt-1 bg-popover p-2 pb-2.5">
+                <div className="relative">
+                  <SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    // Typing in a menu would otherwise jump to items by their first letter (and a space would pick one)
+                    onKeyDown={(e) => {
+                      if (
+                        e.key.length === 1 ||
+                        ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)
+                      )
+                        e.stopPropagation()
+                    }}
+                    placeholder="Search shops…"
+                    aria-label="Search shops"
+                    autoFocus
+                    className="h-8 pl-7 text-sm"
+                  />
+                </div>
+              </div>
+            )}
             <DropdownMenuGroup>
-              <DropdownMenuLabel>Shops</DropdownMenuLabel>
+              {term && shops.length === 0 && (
+                <p className="px-2 py-1.5 text-sm text-muted-foreground">No shops match “{term}”.</p>
+              )}
               {shops.map((s) => (
                 <DropdownMenuItem key={s.id} onClick={() => s.id !== shop.id && void onSwitch(s.id)}>
                   <StoreIcon />

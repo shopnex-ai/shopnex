@@ -12,7 +12,7 @@ const RECENT_DAYS = 7
 
 type Paging = { limit: number; offset: number; search?: string }
 
-const likePattern = (search: string) => `%${search.replace(/[\\%_]/g, '\\$&')}%`
+export const likePattern = (search: string) => `%${search.replace(/[\\%_]/g, '\\$&')}%`
 
 export async function overview(now = new Date()) {
   const since = new Date(now.getTime() - RECENT_DAYS * 24 * 60 * 60 * 1000)

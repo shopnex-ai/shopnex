@@ -149,6 +149,24 @@ describe('the shop switcher', () => {
     assert.ok(all.length <= 100 && all.some((s) => s.id === c.id))
     assert.deepEqual(await tenancy.listSwitchableShops((await fx.user()).id, false), [])
   })
+
+  test('a search narrows the list by name or slug, for a member and for a super admin', async () => {
+    const u = await fx.user()
+    const tag = `zq${Math.random().toString(36).slice(2, 8)}`
+    const [mine, other] = [await fx.shop({ name: `Find ${tag} mine` }), await fx.shop({ name: `Find ${tag} other` })]
+    await fx.member(mine.id, u.id)
+    assert.deepEqual(
+      (await tenancy.listSwitchableShops(u.id, false, tag.toUpperCase())).map((s) => s.id),
+      [mine.id],
+    )
+    assert.deepEqual(
+      (await tenancy.listSwitchableShops(u.id, true, ` ${tag} `)).map((s) => s.id).sort(),
+      [mine.id, other.id].sort(),
+    )
+    assert.deepEqual(await tenancy.listSwitchableShops(u.id, true, `${tag}-nothing`), [])
+    // % and _ in a search are plain characters, not wildcards
+    assert.deepEqual(await tenancy.listSwitchableShops(u.id, true, `${tag}%`), [])
+  })
 })
 
 describe('domains under the root', () => {
